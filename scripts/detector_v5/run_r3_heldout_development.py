@@ -638,6 +638,17 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
     records_by_id = {item["identity"]: item for item in records}
     _check_split_closure({f"{family}_{split}": split_ids[f"{family}_{split}"] for split in evaluated_splits}, records, family, loaded_ids=required_ids)
     normal = split_meta["normalization"]
+    if args.normalization_r2_root is not None:
+        r2_root = args.normalization_r2_root.resolve(strict=True)
+        if r2_root.parent != Path(g2_binding["g1_root"]).parent:
+            raise ValueError("G1-R2 root must be sibling of G1 root")
+        r2_seal = verify_seal(r2_root)
+        r2_data = _load_json(r2_root / "NORMALIZATION.json")
+        r2_train = r2_data.get("episode_heldout", {}).get("train", {})
+        if not isinstance(r2_train, Mapping) or len(r2_train.get("mean", [])) != 25:
+            raise ValueError("G1-R2 normalization is not valid")
+        report["normalization_source"] = "G1_R2_recomputed"
+        normal = r2_train
     train_ids = split_ids[f"{family}_train"]; mean = np.asarray(normal["mean"], dtype=np.float64); std = np.asarray(normal["std"], dtype=np.float64)
     recomputed_train = np.concatenate([records_by_id[identity]["features"] for identity in train_ids], axis=0)
     rmean = recomputed_train.mean(axis=0).astype(np.float64)
@@ -823,6 +834,7 @@ def main() -> int:
     parser.add_argument("--threads", type=int, default=16)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--read-test", action="store_true", help="read and evaluate the frozen test split exactly once; default is train/validation only")
+    parser.add_argument("--normalization-r2-root", type=Path, help="optional G1-R2 normalization root (recomputed with current feature adapter)")
     args = parser.parse_args()
     print(json.dumps(run(args), indent=2, sort_keys=True))
     return 0
