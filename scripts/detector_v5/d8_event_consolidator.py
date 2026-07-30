@@ -48,32 +48,48 @@ def _step_is_unk_allowed(lab: dict | None) -> bool:
     return reason in BRIDGE_REASON_ALLOWLIST
 
 
-def _relation_signature(ep_rel: dict | None) -> str:
-    """Stable signature. Returns empty string if critical fields missing (fail-closed).
+# --- Canonical relation binding digest ---
 
-    entity_type and object_entity_id/target_entity_id are optional identity
-    fields that may be legitimately empty in the sidecar data.
+_CANONICAL_RELATION_FIELDS = [
+    "logical_object", "logical_target", "selected_relation",
+    "object_entity_id", "target_entity_id",
+    "entity_role", "entity_type",
+]
+
+
+def canonical_relation_binding_digest(rel: dict | None) -> str:
+    """Canonical digest from all available relation identity fields.
+
+    Only entity_type is genuinely optional (never populated in current
+    Teacher data). All other fields must be present and non-empty.
+    Returns empty string on any critical field violation.
     """
-    if not isinstance(ep_rel, dict):
+    if not isinstance(rel, dict):
         return ""
-    # Critical fields: must be non-empty (fail-closed)
+    # entity_type is the only field known to be absent from Teacher identity data
     critical = [
         "logical_object", "logical_target", "selected_relation",
-        "binding_identity", "entity_role",
+        "object_entity_id", "target_entity_id", "entity_role",
     ]
     values = []
     for f in critical:
-        v = ep_rel.get(f, "")
-        if v is None or (isinstance(v, str) and v.strip() == ""):
-            return ""
-        values.append(str(v))
-    # Optional fields: included when present, empty string when absent
-    for f in ("entity_type", "object_entity_id", "target_entity_id"):
-        v = ep_rel.get(f, "")
+        v = rel.get(f)
         if v is None:
-            v = ""
-        values.append(str(v))
+            return ""
+        s = str(v).strip()
+        if not s:
+            return ""
+        values.append(s)
+    # entity_type: optional, may be empty
+    et = rel.get("entity_type")
+    if et is None:
+        et = ""
+    values.append(str(et).strip())
     return hashlib.sha256("|".join(values).encode()).hexdigest()
+
+
+# Backward-compatible alias used by tests
+_relation_signature = canonical_relation_binding_digest
 
 
 def _validate_steps(labels: Dict[int, dict]) -> Optional[str]:
@@ -111,7 +127,7 @@ def consolidate_physical_events(
     Args:
         episode_id: e.g. "libero_10/task_02/state_05"
         labels: step -> physical_criticality label dict (contiguous, zero-based)
-        relations: per-step or episode-level relation records (REQUIRED in formal mode)
+        relations: per-step dict {step: sidecar_entry} (REQUIRED in formal mode)
         G: max gap length for bridge
         diagnostic_unbound_relations: if True, skip identity checks (DIAGNOSTIC ONLY)
 
@@ -169,32 +185,40 @@ def consolidate_physical_events(
             gap_start_step = raw_spans[j - 1][1] + 1
             gap_end_step = raw_spans[j][0] - 1
             if gap_start_step > gap_end_step:
-                # Adjacent spans
                 j += 1
                 fragments.append((raw_spans[j - 1][0], raw_spans[j - 1][1]))
                 continue
 
             gap_len = gap_end_step - gap_start_step + 1
             if gap_len > G:
+                gaps.append({
+                    "start": gap_start_step, "end": gap_end_step,
+                    "length": gap_len, "bridgeable": False,
+                    "reject_reason": "GAP_EXCEEDS_G",
+                })
                 break
 
-            gap_valid, gap_reason = _validate_gap(
+            gap_valid, gap_evidence = _validate_gap(
                 labels, steps_sorted, gap_start_step, gap_end_step,
                 raw_spans[j - 1], raw_spans[j], relations, diagnostic_unbound_relations,
             )
             if not gap_valid:
-                gaps.append({
+                gap_entry = {
                     "start": gap_start_step, "end": gap_end_step,
                     "length": gap_len, "bridgeable": False,
-                    "reject_reason": gap_reason,
-                })
+                    "reject_reason": gap_evidence.get("reject_reason", "OTHER"),
+                    "step_evidence": gap_evidence.get("step_evidence", []),
+                }
+                gaps.append(gap_entry)
                 break
 
-            gaps.append({
+            gap_entry = {
                 "start": gap_start_step, "end": gap_end_step,
                 "length": gap_len, "bridgeable": True,
-                "reason": gap_reason,
-            })
+                "reason": "REL_UNK_BRIDGE",
+                "step_evidence": gap_evidence.get("step_evidence", []),
+            }
+            gaps.append(gap_entry)
             fragments.append((raw_spans[j][0], raw_spans[j][1]))
             j += 1
 
@@ -238,66 +262,222 @@ def _empty_result(episode_id, G, is_articulated, diagnostic):
     }
 
 
+def _build_step_evidence(labels, step, relations) -> dict:
+    """Build per-step evidence record for gap step."""
+    lab = labels.get(step, {})
+    evidence = {
+        "step": step,
+        "label_value": lab.get("value", "?"),
+        "label_reason": lab.get("reason", "?"),
+        "right_censored": bool(lab.get("right_censored", False)),
+        "mask": bool(lab.get("mask", False)),
+        "valid_mask": bool(lab.get("valid_mask", False)),
+    }
+    # Include candidate ledger info from sidecar
+    entry = _get_sidecar_entry(relations, step)
+    if entry is not None:
+        evidence["selection_status"] = entry.get("selection_status", "?")
+        evidence["candidate_relation_indices"] = entry.get("candidate_relation_indices", [])
+        evidence["selected_relation_id"] = entry.get("selected_relation_id")
+        # Per-relation verdicts
+        per_rel = entry.get("per_relation", [])
+        evidence["per_relation_verdicts"] = [
+            {"relation_index": r.get("relation_index"), "verdict": r.get("verdict")}
+            for r in per_rel
+        ]
+    return evidence
+
+
 def _validate_gap(
     labels, steps_sorted, gap_start, gap_end,
     left_span, right_span, relations, diagnostic,
-) -> Tuple[bool, str]:
+) -> Tuple[bool, dict]:
+    """Validate a gap for bridging.
+
+    Returns (valid, evidence_dict). evidence_dict contains reject_reason
+    and per-step evidence when rejected.
+    """
     gap_steps = [s for s in steps_sorted if gap_start <= s <= gap_end]
+    gap_evidence = []
+
+    # Phase 1: Basic label checks on gap steps
     for step in gap_steps:
         lab = labels.get(step)
+        ev = _build_step_evidence(labels, step, relations)
         if lab is None:
-            return False, "MISSING_LABEL"
+            ev["gap_check"] = "MISSING_LABEL"
+            gap_evidence.append(ev)
+            return False, {"reject_reason": "MISSING_LABEL", "step_evidence": gap_evidence}
         if _step_is_known_false(lab):
-            return False, "KNOWN_FALSE_IN_GAP"
+            ev["gap_check"] = "KNOWN_FALSE"
+            gap_evidence.append(ev)
+            return False, {"reject_reason": "KNOWN_FALSE_IN_GAP", "step_evidence": gap_evidence}
         if lab.get("reason") == "GEOMETRY_NOT_APPLICABLE":
-            return False, "GEOMETRY_NOT_APPLICABLE_IN_GAP"
+            ev["gap_check"] = "GEOMETRY_NOT_APPLICABLE"
+            gap_evidence.append(ev)
+            return False, {"reject_reason": "GEOMETRY_NOT_APPLICABLE_IN_GAP", "step_evidence": gap_evidence}
         if lab.get("reason") == "RIGHT_CENSORED" or lab.get("right_censored"):
-            return False, "RIGHT_CENSORED_IN_GAP"
+            ev["gap_check"] = "RIGHT_CENSORED"
+            gap_evidence.append(ev)
+            return False, {"reject_reason": "RIGHT_CENSORED_IN_GAP", "step_evidence": gap_evidence}
         if not _step_is_unk_allowed(lab):
-            return False, f"GAP_STEP_NOT_ALLOWED: reason={lab.get('reason')} value={lab.get('value')}"
+            ev["gap_check"] = "NOT_ALLOWED"
+            gap_evidence.append(ev)
+            return False, {
+                "reject_reason": f"GAP_STEP_NOT_ALLOWED: reason={lab.get('reason')} value={lab.get('value')}",
+                "step_evidence": gap_evidence,
+            }
+        gap_evidence.append(ev)
 
-    # Identity checks (formal mode only)
+    # Phase 2: Identity checks (formal mode only) — real candidate ledger verification
     if relations is not None:
-        rel_left = _episode_relation_at(labels, left_span[0], relations)
-        rel_right = _episode_relation_at(labels, right_span[0], relations)
-        sig_left = _relation_signature(rel_left)
-        sig_right = _relation_signature(rel_right)
+        # Get boundary relation IDs (not list positions — P0-2 fix)
+        left_rel_id = _boundary_relation_id(relations, left_span[0])
+        right_rel_id = _boundary_relation_id(relations, right_span[0])
+
+        if left_rel_id is None or right_rel_id is None:
+            return False, {"reject_reason": "BOUNDARY_RELATION_UNRESOLVED", "step_evidence": gap_evidence}
+
+        if left_rel_id != right_rel_id:
+            return False, {"reject_reason": "BOUNDARY_RELATION_ID_MISMATCH", "step_evidence": gap_evidence}
+
+        boundary_rel_id = left_rel_id
+
+        # Get relation signatures for the boundary relation
+        rel_left = _find_relation_by_id(relations, left_span[0], boundary_rel_id)
+        rel_right = _find_relation_by_id(relations, right_span[0], boundary_rel_id)
+
+        sig_left = canonical_relation_binding_digest(rel_left)
+        sig_right = canonical_relation_binding_digest(rel_right)
         if not sig_left or not sig_right:
-            return False, "RELATION_SIGNATURE_EMPTY"
+            return False, {"reject_reason": "RELATION_SIGNATURE_EMPTY", "step_evidence": gap_evidence}
         if sig_left != sig_right:
-            return False, "RELATION_SIGNATURE_MISMATCH"
-        # Verify gap candidate ledger contains same relation
+            return False, {"reject_reason": "RELATION_SIGNATURE_MISMATCH", "step_evidence": gap_evidence}
+
+        # P0-1 fix: Real candidate ledger verification
+        # The boundary relation_id must appear in candidate_relation_indices of
+        # every gap step. Also verify no competing TRUE relation exists.
         for step in gap_steps:
-            rel_gap = _episode_relation_at(labels, step, relations)
-            if rel_gap and _relation_signature(rel_gap) not in (sig_left, ""):
-                return False, "RELATION_CANDIDATE_CONFLICT_IN_GAP"
+            entry = _get_sidecar_entry(relations, step)
+            if entry is None:
+                return False, {
+                    "reject_reason": "GAP_CANDIDATE_MISSING_ENTRY",
+                    "step_evidence": gap_evidence,
+                }
+
+            candidate_ids = entry.get("candidate_relation_indices", [])
+            if boundary_rel_id not in candidate_ids:
+                return False, {
+                    "reject_reason": "GAP_CANDIDATE_MISSING_RELATION",
+                    "step_evidence": gap_evidence,
+                }
+
+            # Check no competing TRUE support in gap
+            per_rel = entry.get("per_relation", [])
+            for r in per_rel:
+                if r.get("relation_index") == boundary_rel_id:
+                    continue  # Our candidate relation is fine
+                if r.get("verdict") == "TRUE":
+                    return False, {
+                        "reject_reason": "GAP_COMPETING_TRUE_RELATION",
+                        "step_evidence": gap_evidence,
+                    }
+
+            # Verify candidate ledger signature consistency for our relation
+            gap_rel = _find_relation_by_id(relations, step, boundary_rel_id)
+            if gap_rel is not None:
+                sig_gap = canonical_relation_binding_digest(gap_rel)
+                # Empty sig is OK for REL_UNK steps (identity may be incomplete)
+                # But if present, it must match boundary
+                if sig_gap and sig_gap not in (sig_left, ""):
+                    return False, {
+                        "reject_reason": "RELATION_BINDING_CHANGED_IN_GAP",
+                        "step_evidence": gap_evidence,
+                    }
+            # gap_rel is None when relation exists in candidates but has no
+            # detailed binding — that's OK for REL_UNK steps
+
+        # Store boundary evidence in gap_evidence last element
+        if gap_evidence:
+            gap_evidence[-1]["boundary_relation_id"] = boundary_rel_id
+            gap_evidence[-1]["boundary_signature"] = sig_left[:16]
+
     elif not diagnostic:
-        return False, "IDENTITY_CHECKS_SKIPPED_FORMAL_MODE"
+        return False, {"reject_reason": "IDENTITY_CHECKS_SKIPPED_FORMAL_MODE", "step_evidence": gap_evidence}
 
-    return True, "REL_UNK_BRIDGE"
+    return True, {"step_evidence": gap_evidence}
 
 
+# --- Relation lookup helpers (P0-2 fix: relation_id ≠ list position) ---
+
+def _get_sidecar_entry(relations, step) -> dict | None:
+    """Get the raw sidecar entry dict for a step."""
+    if not isinstance(relations, dict):
+        return None
+    entry = relations.get(step)
+    if isinstance(entry, dict):
+        return entry
+    return None
+
+
+def _find_relation_by_id(relations, step, relation_id) -> dict | None:
+    """Find a specific relation by its relation_index/ID (not list position)."""
+    entry = _get_sidecar_entry(relations, step)
+    if entry is None:
+        return None
+    per_rel = entry.get("per_relation", [])
+    for r in per_rel:
+        if r.get("relation_index") == relation_id:
+            return r
+    return None
+
+
+def _boundary_relation_id(relations, step) -> int | None:
+    """Get the unique relation ID for a TRUE boundary step.
+
+    Only UNIQUE_SUPPORT boundary steps are eligible (P0-2 fix).
+    MULTI_SUPPORT or AMBIGUOUS boundaries are rejected.
+    """
+    entry = _get_sidecar_entry(relations, step)
+    if entry is None:
+        return None
+    status = entry.get("selection_status", "")
+    if status != "UNIQUE_SUPPORT":
+        return None
+    # Use selected_relation_id (canonical) if present, else fall back
+    rid = entry.get("selected_relation_id")
+    if rid is None:
+        # Legacy: selected_relation_index may have been stored as list position
+        # Try the selected_relation_index as relation_id directly
+        rid = entry.get("selected_relation_index")
+    if rid is None:
+        return None
+    # Verify the ID actually exists in per_relation
+    per_rel = entry.get("per_relation", [])
+    for r in per_rel:
+        if r.get("relation_index") == rid:
+            return rid
+    return None
+
+
+# Legacy compatibility: old function renamed internally
 def _episode_relation_at(labels, step, relations) -> dict | None:
-    """Find relation record active at a given step.
+    """Legacy: returns relation for a step using selected_relation_index as list position.
 
-    Supports two formats:
-    1. Per-step dict: relations[step] = sidecar entry with per_relation list
-    2. List of dicts with 'step' field (legacy)
+    Deprecated by _find_relation_by_id and _boundary_relation_id.
+    Kept for backward compatibility with existing tests.
     """
     if not relations:
         return None
-    # Format 1: dict keyed by step
     if isinstance(relations, dict):
         entry = relations.get(step)
         if not isinstance(entry, dict):
             return None
-        # Get the selected relation from the sidecar entry
         per_rel = entry.get("per_relation", [])
         sel_idx = entry.get("selected_relation_index")
         if sel_idx is not None and sel_idx < len(per_rel):
             return per_rel[sel_idx]
         return None
-    # Format 2: list of dicts with step field (legacy)
     has_steps = any(isinstance(r, dict) and "step" in r for r in relations)
     if has_steps:
         for r in relations:
@@ -323,11 +503,13 @@ def build_physical_event_weights(
 ) -> np.ndarray:
     """Teacher-event-based weights.
 
-    Each consolidated TRUE event gets equal total positive weight (shared across
-    all fragments). Known FALSE spans get equal total negative weight.
-    UNKNOWN/articulated steps get zero weight.
-    RIGHT_CENSORED and GEOMETRY_NOT_APPLICABLE steps get zero weight
-    regardless of mask.
+    Weight hierarchy (frozen):
+      Per-episode: each episode gets equal total positive weight (1.0).
+        Within each episode, each consolidated TRUE event gets equal share
+        (distributed evenly across its fragments).
+      Known FALSE spans get equal total negative weight per episode.
+      RIGHT_CENSORED, GEOMETRY_NOT_APPLICABLE, UNKNOWN, articulated steps
+      get zero training weight regardless of mask.
 
     Precondition: labels and masks are contiguous zero-based arrays where
     index i corresponds to step i.
@@ -335,7 +517,6 @@ def build_physical_event_weights(
     n = len(labels)
     weights = np.zeros(n, dtype=np.float32)
 
-    # Zero out effective mask for right_censored and GEOM_NA steps
     effective_mask = masks.copy()
     if right_censored is not None:
         effective_mask = effective_mask & (~right_censored)
@@ -350,8 +531,6 @@ def build_physical_event_weights(
     num_events = len(event_groups)
     pos_weight_per_event = 1.0 / max(num_events, 1)
 
-    # Positive weights: each consolidated event gets equal share,
-    # distributed evenly across ALL true steps in that event
     for group in event_groups:
         group_steps = []
         for frag_start, frag_end in group["fragment_ranges"]:
@@ -363,7 +542,6 @@ def build_physical_event_weights(
             for i in group_steps:
                 weights[i] = per_step
 
-    # Negative weights: contiguous known FALSE spans
     i = 0
     neg_spans = []
     while i < n:

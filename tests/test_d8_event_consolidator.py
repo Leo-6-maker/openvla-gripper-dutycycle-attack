@@ -26,15 +26,38 @@ def _label(value, reason="RELATION_EVIDENCE_UNKNOWN", mask=True, valid_mask=True
 
 
 def _rel(**kw):
-    """Make a relation record with required identity fields."""
+    """Make a per-relation record with required identity fields."""
     defaults = {
         "logical_object": "obj_1", "logical_target": "tgt_1",
-        "selected_relation": "grasp", "binding_identity": "bind_1",
+        "selected_relation": "grasp",
         "entity_role": "MANIPULATED_OBJECT", "entity_type": "box",
         "object_entity_id": 1, "target_entity_id": 2,
+        "relation_index": 0,
     }
     defaults.update(kw)
     return defaults
+
+
+def _make_sidecar_entry(step, per_relation, selection_status="UNIQUE_SUPPORT",
+                         selected_relation_id=0, **kw):
+    """Make a dict-format sidecar entry for a step."""
+    entry = {
+        "episode_id": "test/ep/state",
+        "step": step,
+        "per_relation": per_relation,
+        "selection_status": selection_status,
+        "selected_relation_id": selected_relation_id,
+        "selected_relation_index": selected_relation_id,
+        "candidate_relation_indices": [r["relation_index"] for r in per_relation],
+        "supporting_relation_indices": [r["relation_index"] for r in per_relation if r.get("verdict") == "TRUE"],
+        "aggregate_physical_label": "TRUE" if selection_status == "UNIQUE_SUPPORT" else "UNKNOWN",
+        "aggregate_mask": True,
+        "aggregate_reason": "",
+        "candidate_close": False,
+        "suite": "test", "task_id": 0, "state_id": 0, "seed": 0,
+        **kw,
+    }
+    return entry
 
 
 class TestMergeRejection(unittest.TestCase):
@@ -121,52 +144,58 @@ class TestMergeRejection(unittest.TestCase):
 
 
 class TestRelationIdentity(unittest.TestCase):
-    """Relation identity checks."""
+    """Relation identity checks with dict-format sidecar (P0-2)."""
+
+    def _make_relations_dict(self, step0_rel, step1_rel, step2_rel):
+        """Build dict-format relations from per-step per_relation lists."""
+        return {
+            0: _make_sidecar_entry(0, [step0_rel]),
+            1: _make_sidecar_entry(1, [step1_rel], selection_status="RELATION_AMBIGUOUS", selected_relation_id=None),
+            2: _make_sidecar_entry(2, [step2_rel]),
+        }
 
     def test_13_same_relation_bridges(self):
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
-        relations = [
-            _rel(step=0), _rel(step=1), _rel(step=2),
-        ]
+        relations = self._make_relations_dict(_rel(), _rel(), _rel())
         r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 1)
         self.assertTrue(r["identity_checks_performed"])
 
     def test_14_different_object_rejects(self):
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
-        relations = [
-            _rel(step=0, logical_object="obj_A"),
-            _rel(step=1, logical_object="obj_A"),
-            _rel(step=2, logical_object="obj_B"),
-        ]
+        relations = self._make_relations_dict(
+            _rel(logical_object="obj_A"), _rel(logical_object="obj_A"), _rel(logical_object="obj_B"),
+        )
         r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 0)
 
     def test_15_different_relation_rejects(self):
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
-        relations = [
-            _rel(step=0, selected_relation="grasp"),
-            _rel(step=1, selected_relation="grasp"),
-            _rel(step=2, selected_relation="push"),
-        ]
+        relations = self._make_relations_dict(
+            _rel(selected_relation="grasp"), _rel(selected_relation="grasp"), _rel(selected_relation="push"),
+        )
         r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 0)
 
     def test_16_empty_relation_field_rejects(self):
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
-        relations = [
-            _rel(step=0, logical_object=""),
-            _rel(step=1),
-            _rel(step=2, logical_object=""),
-        ]
+        relations = self._make_relations_dict(
+            _rel(logical_object=""), _rel(), _rel(logical_object=""),
+        )
         r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 0)
 
-    def test_17_no_step_field_raises(self):
+    def test_17_unsupported_boundary_rejects(self):
+        """MULTI_SUPPORT boundary step must reject (not UNIQUE_SUPPORT)."""
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
-        relations = [{"logical_object": "x", "logical_target": "y", "selected_relation": "grasp", "binding_identity": "b", "entity_role": "r", "entity_type": "t", "object_entity_id": 1, "target_entity_id": 2}]
-        with self.assertRaises(ValueError):
-            consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
+        # Step 0 boundary has MULTI_SUPPORT (ambiguous)
+        rels = {
+            0: _make_sidecar_entry(0, [_rel()], selection_status="MULTI_SUPPORT", selected_relation_id=None),
+            1: _make_sidecar_entry(1, [_rel()], selection_status="RELATION_AMBIGUOUS", selected_relation_id=None),
+            2: _make_sidecar_entry(2, [_rel()], selection_status="UNIQUE_SUPPORT", selected_relation_id=0),
+        }
+        r = consolidate_physical_events("test/ep/state", labels, relations=rels, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 0)
 
 
 class TestStepIntegrity(unittest.TestCase):
@@ -379,15 +408,15 @@ class TestSidecarLoaderCorrectness(unittest.TestCase):
         self.assertIn(eid, sidecar)
         self.assertNotIn("libero_10/task_07/state_03", sidecar)
 
-    def test_35_malformed_id_not_rejected_at_load(self):
-        """Malformed episode IDs are passed through (validated downstream)."""
+    def test_35_malformed_id_rejected_at_load(self):
+        """Malformed episode IDs must be rejected at load time (P0-5 fix)."""
         eid = "weird_format_without_slashes"
         ep = {str(i): self._make_entry(i, eid) for i in range(2)}
         (self.ep_dir / "weird.json").write_text(json.dumps(ep) + "\n")
         self._seal()
         from run_d8_formal_g_sensitivity import load_sidecar_correct
-        sidecar = load_sidecar_correct(self.tmpdir)
-        self.assertIn(eid, sidecar)
+        with self.assertRaises(ValueError):
+            load_sidecar_correct(self.tmpdir)
 
     def test_36_missing_episode_id_field(self):
         """Entry without episode_id field must fail."""
@@ -442,57 +471,43 @@ class TestSidecarLoaderCorrectness(unittest.TestCase):
 
 
 class TestRelationSignatureOptionalFields(unittest.TestCase):
-    """Relation signature treats entity_type as optional."""
+    """Canonical digest treats entity_type as optional."""
 
     def test_41_empty_entity_type_bridges(self):
         """Empty entity_type should NOT block bridging (optional field)."""
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
-        base_rel = {
-            "step": 0, "logical_object": "obj_1", "logical_target": "tgt_1",
-            "selected_relation": "grasp", "binding_identity": "bind_1",
-            "entity_role": "MANIPULATED_OBJECT",
-            "object_entity_id": 1, "target_entity_id": 2,
+        rel = _rel(entity_type="")
+        relations = {
+            0: _make_sidecar_entry(0, [rel], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [rel], selection_status="RELATION_AMBIGUOUS", selected_relation_id=None),
+            2: _make_sidecar_entry(2, [rel], selected_relation_id=0),
         }
-        rels = [
-            {**base_rel, "step": 0, "entity_type": ""},
-            {**base_rel, "step": 1, "entity_type": ""},
-            {**base_rel, "step": 2, "entity_type": ""},
-        ]
-        r = consolidate_physical_events("test/ep/state", labels, relations=rels, G=3)
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 1)
 
     def test_42_missing_critical_field_still_rejects(self):
         """Missing logical_object (critical) must still reject."""
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
-        base_rel = {
-            "step": 0, "logical_target": "tgt_1",
-            "selected_relation": "grasp", "binding_identity": "bind_1",
-            "entity_role": "MANIPULATED_OBJECT",
-            "object_entity_id": 1, "target_entity_id": 2,
+        rel_empty = _rel(logical_object="")
+        rel_ok = _rel()
+        relations = {
+            0: _make_sidecar_entry(0, [rel_empty], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [rel_ok], selection_status="RELATION_AMBIGUOUS", selected_relation_id=None),
+            2: _make_sidecar_entry(2, [rel_empty], selected_relation_id=0),
         }
-        rels = [
-            {**base_rel, "step": 0, "logical_object": ""},
-            {**base_rel, "step": 1, "logical_object": "x"},
-            {**base_rel, "step": 2, "logical_object": ""},
-        ]
-        r = consolidate_physical_events("test/ep/state", labels, relations=rels, G=3)
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 0)
 
     def test_43_none_entity_type_allowed(self):
         """None entity_type should be treated as empty (optional)."""
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
-        base_rel = {
-            "step": 0, "logical_object": "obj_1", "logical_target": "tgt_1",
-            "selected_relation": "grasp", "binding_identity": "bind_1",
-            "entity_role": "MANIPULATED_OBJECT",
-            "object_entity_id": 1, "target_entity_id": 2,
+        rel = _rel(entity_type=None)
+        relations = {
+            0: _make_sidecar_entry(0, [rel], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [rel], selection_status="RELATION_AMBIGUOUS", selected_relation_id=None),
+            2: _make_sidecar_entry(2, [rel], selected_relation_id=0),
         }
-        rels = [
-            {**base_rel, "step": 0, "entity_type": None},
-            {**base_rel, "step": 1, "entity_type": None},
-            {**base_rel, "step": 2, "entity_type": None},
-        ]
-        r = consolidate_physical_events("test/ep/state", labels, relations=rels, G=3)
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 1)
 
 

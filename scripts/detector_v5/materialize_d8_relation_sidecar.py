@@ -121,26 +121,21 @@ def build(
             candidate_close = row.get("candidate_close", False)
 
             per_rel = []
-            for idx in relation_indices:
+            # P0-3 fix: Match identities to relations by position within side groups
+            objects = [i for i in relation_identity if isinstance(i, dict) and i.get("side") == "object"]
+            targets = [i for i in relation_identity if isinstance(i, dict) and i.get("side") == "target"]
+            for pos, idx in enumerate(relation_indices):
                 if idx >= len(relation_labels) or idx >= len(relation_bindings):
                     continue
                 rl = relation_labels[idx]
                 rb = relation_bindings[idx]
 
-                # Get identity entries for object and target
-                obj_ident = None
-                tgt_ident = None
-                if isinstance(relation_identity, list):
-                    for ident in relation_identity:
-                        if isinstance(ident, dict) and ident.get("side") == "object":
-                            if obj_ident is None:
-                                obj_ident = ident
-                        elif isinstance(ident, dict) and ident.get("side") == "target":
-                            if tgt_ident is None:
-                                tgt_ident = ident
+                # Get identity for THIS specific relation by position
+                obj_ident = objects[pos] if pos < len(objects) else None
+                tgt_ident = targets[pos] if pos < len(targets) else None
 
                 sig = _extract_relation_signature_fields(rb, obj_ident)
-                # Also extract target identity fields
+                # Target identity fields
                 if isinstance(tgt_ident, dict):
                     sig["target_entity_id"] = int(tgt_ident.get("entity_id", -1))
                     sig["target_name"] = str(tgt_ident.get("logical_name", ""))
@@ -203,6 +198,7 @@ def build(
                 "aggregate_reason": pc.get("reason", ""),
                 "per_relation": per_rel,
                 "selection_status": selection_status,
+                "selected_relation_id": selected_id,
                 "selected_relation_index": selected_id,
                 "candidate_relation_indices": candidate_ids,
                 "supporting_relation_indices": [r["relation_index"] for r in supporting],

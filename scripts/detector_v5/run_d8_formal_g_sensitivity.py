@@ -60,42 +60,76 @@ def load_sidecar_correct(sidecar_root: Path) -> Dict[str, Dict[int, dict]]:
     """Load sidecar with episode_id from JSON entry (NOT filename).
 
     Returns: episode_id -> {step: sidecar_entry}
+
+    P0-5: Strict validation:
+      - Non-integer step keys raise ValueError
+      - Numeric key collisions ("1"/"01") raise ValueError
+      - entry.step must equal JSON key
+      - All entries must have non-empty episode_id
     """
     ep_dir = sidecar_root / "per_episode"
     if not ep_dir.is_dir():
         raise ValueError(f"per_episode directory not found in {sidecar_root}")
 
     sidecar: Dict[str, Dict[int, dict]] = {}
-    file_count = 0
-    step_count = 0
     eps_seen: Dict[str, str] = {}  # eid -> first filename
 
     for fname in sorted(ep_dir.iterdir()):
         if not fname.suffix == ".json":
             continue
-        file_count += 1
         with open(fname, encoding="utf-8") as fh:
             ep_data = json.load(fh)
 
-        # Extract episode_id from the FIRST entry (fail-closed if missing)
         eid = None
         ep_steps: Dict[int, dict] = {}
+        seen_numeric: Dict[int, str] = {}  # detect "1"/"01" collisions
+
         for step_key, entry in ep_data.items():
             if not isinstance(entry, dict):
-                continue
+                raise ValueError(
+                    f"non-dict entry in {fname.name}: key={step_key} type={type(entry).__name__}"
+                )
+            # P0-5: Non-integer step key raises (not silently continues)
             try:
                 step = int(step_key)
             except (ValueError, TypeError):
-                continue
+                raise ValueError(
+                    f"non-integer step key '{step_key}' in {fname.name}"
+                ) from None
+            # P0-5: String "1" vs "01" collision
+            if step_key != str(step):
+                raise ValueError(
+                    f"step key collision: '{step_key}' normalizes to {step} "
+                    f"(possible duplicate with '{step}') in {fname.name}"
+                )
+            # P0-5: entry.step must match JSON key
+            entry_step = entry.get("step")
+            if entry_step is not None and int(entry_step) != step:
+                raise ValueError(
+                    f"entry.step={entry_step} != JSON key={step} in {fname.name}"
+                )
+            # P0-5: Detect numeric collision
+            if step in seen_numeric:
+                raise ValueError(
+                    f"duplicate step {step} in {fname.name}: "
+                    f"keys '{seen_numeric[step]}' and '{step_key}'"
+                )
+            seen_numeric[step] = step_key
+
             if eid is None:
                 eid = entry.get("episode_id", "")
                 if not eid:
                     raise ValueError(
                         f"empty episode_id in entry step={step} in file {fname.name}"
                     )
-            # Verify all steps have consistent episode_id
+                _validate_episode_id_format(eid, fname.name)
+            # P0-5: All entries must have episode_id
             entry_eid = entry.get("episode_id", "")
-            if entry_eid and entry_eid != eid:
+            if not entry_eid:
+                raise ValueError(
+                    f"empty episode_id at step {step} in {fname.name}"
+                )
+            if entry_eid != eid:
                 raise ValueError(
                     f"episode_id mismatch in {fname.name}: "
                     f"step {step} has '{entry_eid}' but expected '{eid}'"
@@ -114,13 +148,26 @@ def load_sidecar_correct(sidecar_root: Path) -> Dict[str, Dict[int, dict]]:
         eps_seen[eid] = fname.name
 
         sidecar[eid] = ep_steps
-        step_count += len(ep_steps)
 
     return sidecar
 
 
+def _validate_episode_id_format(eid: str, source: str):
+    """Validate episode_id has the required suite/task/state format."""
+    parts = eid.split("/")
+    if len(parts) < 3:
+        raise ValueError(f"malformed episode_id '{eid}' in {source}: expected suite/task_XX/state_YY")
+    suite = parts[0]
+    if suite not in ("libero_10", "libero_goal", "libero_object", "libero_spatial"):
+        raise ValueError(f"unknown suite '{suite}' in episode_id '{eid}' in {source}")
+    if not parts[1].startswith("task_"):
+        raise ValueError(f"expected task_XX in episode_id '{eid}' in {source}")
+    if not parts[2].startswith("state_"):
+        raise ValueError(f"expected state_YY in episode_id '{eid}' in {source}")
+
+
 def load_teacher_labels(teacher_root: Path) -> Tuple[Dict[str, Dict[int, dict]], int, int]:
-    """Load teacher labels.
+    """Load teacher labels. P0-5: detect duplicate (eid, step) pairs.
 
     Returns: (ep_labels, total_steps, total_identities)
     """
@@ -131,6 +178,7 @@ def load_teacher_labels(teacher_root: Path) -> Tuple[Dict[str, Dict[int, dict]],
     ep_labels: Dict[str, Dict[int, dict]] = defaultdict(dict)
     identities: set = set()
     total = 0
+    seen_pairs: set = set()
 
     with open(records_path, encoding="utf-8") as fh:
         for line in fh:
@@ -141,6 +189,11 @@ def load_teacher_labels(teacher_root: Path) -> Tuple[Dict[str, Dict[int, dict]],
             identities.add(eid)
             step = row["step"]
             total += 1
+            # P0-5: Detect duplicate (episode_id, step)
+            pair = (eid, step)
+            if pair in seen_pairs:
+                raise ValueError(f"duplicate Teacher record: {eid} step={step}")
+            seen_pairs.add(pair)
             pc = row.get("labels", {}).get("physical_criticality", {})
             if isinstance(pc, dict):
                 ep_labels[eid][step] = dict(pc)
@@ -184,12 +237,43 @@ def run_formal_g(
     for eid in sorted(teacher_ids):
         labels = ep_labels.get(eid, {})
         relations = sidecar.get(eid, {})
+
+        # P0-5: Per-episode step set closure
+        sc_steps = set(relations.keys())
+        t_steps = set(labels.keys())
+        if sc_steps != t_steps:
+            only_sc = sc_steps - t_steps
+            only_t = t_steps - sc_steps
+            details = []
+            if only_sc: details.append(f"sidecar-only steps: {sorted(only_sc)[:5]}...")
+            if only_t: details.append(f"teacher-only steps: {sorted(only_t)[:5]}...")
+            raise ValueError(
+                f"per-episode step set mismatch in {eid}: {', '.join(details)}"
+            )
+
         result = consolidate_physical_events(eid, labels, relations=relations, G=G)
 
-        if result.get("articulated"):
-            continue
+        is_art = result.get("articulated", False)
+        is_applicable = result.get("applicable", True)
 
-        if not result.get("applicable", True):
+        suite = eid.split("/")[0] if "/" in eid else "?"
+        task = "/".join(eid.split("/")[:2]) if "/" in eid else eid
+
+        # P0-6: Include ALL 670 episodes in per_episode for A/B comparison
+        ep_detail = {
+            "suite": suite,
+            "task": task,
+            "articulated": is_art,
+            "applicable": is_applicable,
+            "raw_spans": result.get("raw_true_span_count", 0),
+            "cons_events": result.get("consolidated_event_count", 0),
+            "bridged": result.get("total_bridged_gaps", 0),
+            "rejected": result.get("total_rejected_gaps", 0),
+            "digest": compute_consolidation_digest(result),
+        }
+        per_episode[eid] = ep_detail
+
+        if not is_applicable or is_art:
             continue
 
         global_stats["applicable_identities"] += 1
@@ -198,9 +282,6 @@ def run_formal_g(
         global_stats["bridged_gaps"] += result.get("total_bridged_gaps", 0)
         global_stats["rejected_gaps"] += result.get("total_rejected_gaps", 0)
 
-        # Per-suite stats
-        suite = eid.split("/")[0] if "/" in eid else "?"
-        task = "/".join(eid.split("/")[:2]) if "/" in eid else eid
         ss = suite_stats[suite]
         ss["raw_spans"] += result.get("raw_true_span_count", 0)
         ss["cons_events"] += result.get("consolidated_event_count", 0)
@@ -208,46 +289,33 @@ def run_formal_g(
         ss["rejected"] += result.get("total_rejected_gaps", 0)
         ss["tasks"].add(task)
 
-        # Per-episode detail
-        per_episode[eid] = {
-            "suite": suite,
-            "task": task,
-            "raw_spans": result.get("raw_true_span_count", 0),
-            "cons_events": result.get("consolidated_event_count", 0),
-            "bridged": result.get("total_bridged_gaps", 0),
-            "rejected": result.get("total_rejected_gaps", 0),
-            "digest": compute_consolidation_digest(result),
-        }
-
         # Collect reject taxonomy
         for group in result.get("event_groups", []):
             for gap in group.get("rejected_gaps", []):
                 reason = gap.get("reject_reason", "OTHER")
                 reject_taxonomy[reason] += 1
 
-            # Multi-fragment count
             if group.get("fragment_count", 1) > 1:
                 global_stats["multi_fragment_events"] += 1
 
             global_stats["raw_true_steps"] += group.get("raw_true_step_count", 0)
             global_stats["unknown_gap_steps"] += group.get("unknown_gap_step_count", 0)
 
-        # Invariant checks
-        for group in result.get("event_groups", []):
+            # P0-6: Invariant checks from step_evidence, not reason strings
             for gap in group.get("bridged_gaps", []):
-                reason = gap.get("reason", "")
-                if reason == "GEOMETRY_NOT_APPLICABLE":
-                    invariant_violations.append(
-                        f"{eid}: GEOM_NA bridge in event {group['consolidated_event_id']}"
-                    )
-                if reason == "KNOWN_FALSE":
-                    invariant_violations.append(
-                        f"{eid}: known-FALSE bridge in event {group['consolidated_event_id']}"
-                    )
-            for gap in group.get("rejected_gaps", []):
-                reason = gap.get("reject_reason", "")
-                if reason == "RIGHT_CENSORED_IN_GAP":
-                    pass  # expected rejection, not a violation
+                for ev in gap.get("step_evidence", []):
+                    if ev.get("label_reason") == "GEOMETRY_NOT_APPLICABLE":
+                        invariant_violations.append(
+                            f"{eid} step={ev['step']}: GEOM_NA in bridged gap"
+                        )
+                    if ev.get("label_value") == "FALSE" and ev.get("mask"):
+                        invariant_violations.append(
+                            f"{eid} step={ev['step']}: known-FALSE in bridged gap"
+                        )
+                    if ev.get("right_censored"):
+                        invariant_violations.append(
+                            f"{eid} step={ev['step']}: RIGHT_CENSORED in bridged gap"
+                        )
 
     # Compile suite stats
     suite_summary = {}
