@@ -55,6 +55,9 @@ RISK_DIRECTION = {
     "instability": "probability_is_risk",
     "gripper_closing_state": "probability_is_risk",
 }
+EVENT_DEFINITION = "contiguous_known_TRUE_span_v1"
+"""Teacher critical event: max-length contiguous span where known mask is True AND target==1.0.
+UNKNOWN/masked steps cut the span so that event boundaries are unambiguous."""
 FORBIDDEN_OUTPUT_PARTS = {"protected", "cal", "check", "g10", "t2r-d", "attack", "rollout"}
 
 
@@ -293,28 +296,35 @@ def _safe_auc(y: np.ndarray, score: np.ndarray) -> float | None:
 
 
 def _safe_auprc(y: np.ndarray, score: np.ndarray) -> float | None:
+    """Standard tie-grouped average precision (sklearn-compatible).
+
+    Sorts by score descending, accumulates TP/FP at each unique threshold,
+    and interpolates precision-vs-recall with the "previous" rule.  All-equal
+    scores yield prevalence; the result is invariant to input permutation.
+    """
     positives = int(y.sum())
     if positives == 0:
         return None
     order = np.argsort(-score, kind="mergesort")
-    y_sorted = y[order]
+    y_sorted = y[order].astype(np.float64)
     n = len(y)
-    cum_pos = 0.0
-    auprc = 0.0
+    cum_tp = 0.0
+    ap = 0.0
     i = 0
     while i < n:
         j = i + 1
         while j < n and score[order[j]] == score[order[i]]:
             j += 1
+        group_tp = float(y_sorted[i:j].sum())
         group_size = j - i
-        group_pos = float(y_sorted[i:j].sum())
-        if group_pos > 0:
-            for k in range(group_size):
-                expected_cum = cum_pos + (k + 1) * group_pos / group_size
-                auprc += (expected_cum / (i + k + 1)) * (group_pos / group_size)
-        cum_pos += group_pos
+        prev_tp = cum_tp
+        cum_tp += group_tp
+        if group_tp > 0:
+            precision = cum_tp / j  # prev precision for this threshold group
+            recall_change = group_tp / positives
+            ap += precision * recall_change
         i = j
-    return float(auprc / positives)
+    return float(ap)
 
 
 def _binary_metrics(y: np.ndarray, score: np.ndarray, threshold: float = 0.5) -> dict[str, Any]:
@@ -614,22 +624,8 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
     torch.manual_seed(args.seed); np.random.seed(args.seed)
     device = torch.device(args.device)
     transition, g2_binding = _load_g2(args.g2_root)
-    test_policy = transition.get("test_read_policy")
     if args.read_test:
-        if test_policy != "G7_ONE_TIME_AFTER_VALIDATION_FREEZE":
-            raise ValueError("--read-test requires G7 authorization; G2 transition test_read_policy is not G7_ONE_TIME_AFTER_VALIDATION_FREEZE")
-        g7_transition_path = args.g2_root.parent / "G7_TEST_TRANSITION" / "G7_TEST_READ_TRANSITION.json"
-        if not g7_transition_path.is_file():
-            raise ValueError("G7 test-read transition not found; test payload read is not authorized at G4/G5/G6")
-        g7 = _load_json(g7_transition_path)
-        if g7.get("status") != "PASS_G7_TEST_READ_AUTHORIZED" or g7.get("schema") != "V5_R3_G7_TEST_READ_TRANSITION_V1":
-            raise ValueError("G7 transition is not authorized for test read")
-        if g7.get("consumption_count", 0) != 0:
-            raise ValueError("G7 transition has already been consumed; test can only be read once")
-        g7_binding = g7.get("binding", {})
-        if (g7_binding.get("trainer_sha256") != sha256_file(Path(__file__)) or
-            g7_binding.get("g1_test_manifest_sha256") != g2_binding["split_manifests"].get(f"{args.split_family}_test", {}).get("file_sha256")):
-            raise ValueError("G7 transition binding does not match current execution context")
+        raise ValueError("test read is forbidden in G4/G5/G6; G7 transition + independent runner required")
     allowed_parent = Path(g2_binding["g2_root"]).parent
     _safe_output_root(args.output_root, allowed_parent)
     family = args.split_family
@@ -648,11 +644,16 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("G1 normalization is not exactly train-only")
     split_batches = {f"{family}_{split}": _batch(records_by_id, split_ids[f"{family}_{split}"], mean, std, device) for split in evaluated_splits}
     model_cls = _load_model()
-    model = model_cls(input_dim=25, hidden=64, short_rf=32, long_rf=128, dropout=0.0).to(device)
     init_rng_state = torch.get_rng_state()
     init_np_state = np.random.get_state()
+    model = model_cls(input_dim=25, hidden=64, short_rf=32, long_rf=128, dropout=0.0).to(device)
     import hashlib as _hashlib
-    init_state_digest = _hashlib.sha256(b"".join(param.detach().cpu().numpy().tobytes() for param in model.parameters())).hexdigest()
+    import copy as _copy
+    frozen_initial_state = _copy.deepcopy(model.state_dict())
+    init_state_digest = _hashlib.sha256(b"".join(
+        param.detach().cpu().numpy().tobytes()
+        for param in model.parameters()
+    )).hexdigest()
     active = CONFIG_HEADS[args.config]
     history = _train(model, split_batches[f"{family}_train"], active, args.epochs, args.learning_rate, args.weight_decay, args.gradient_clip)
     # Verify inactive heads (safe_release) receive zero gradient through shared encoder.
@@ -682,12 +683,14 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
         thresholds[head] = {"status": "HOLD_COVERAGE", "threshold": None}
     shuffle_results: dict[str, Any] = {}
     for shuffle_seed in (args.seed + 101, args.seed + 102, args.seed + 103):
-        torch.set_rng_state(init_rng_state)
-        np.random.set_state(init_np_state)
         shuffle_model = model_cls(input_dim=25, hidden=64, short_rf=32, long_rf=128, dropout=0.0).to(device)
-        shuffle_init_digest = _hashlib.sha256(b"".join(param.detach().cpu().numpy().tobytes() for param in shuffle_model.parameters())).hexdigest()
+        shuffle_model.load_state_dict(frozen_initial_state, strict=True)
+        shuffle_init_digest = _hashlib.sha256(b"".join(
+            param.detach().cpu().numpy().tobytes()
+            for param in shuffle_model.parameters()
+        )).hexdigest()
         if shuffle_init_digest != init_state_digest:
-            raise AssertionError(f"shuffle model seed={shuffle_seed} does not share real model initialization")
+            raise AssertionError(f"shuffle model seed={shuffle_seed} does not share real model initialization: {shuffle_init_digest} != {init_state_digest}")
         torch.manual_seed(shuffle_seed)
         np.random.seed(shuffle_seed)
         shuffled_targets = _shuffle_targets(split_batches[f"{family}_train"], active, shuffle_seed)
@@ -731,7 +734,7 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
         if grad_sum != 0.0:
             safe_release_grad_zero = False
 
-    report = {"schema": "V5_R3_HELDOUT_DEVELOPMENT_V3", "status": "ENGINEERING_DEVELOPMENT_NONCONSUMABLE", "split_family": family, "config": args.config, "seed": args.seed, "epochs": args.epochs, "device": str(device), "random_initialization": True, "all_670_checkpoint_loaded": False, "initial_state_sha256": init_state_digest, "label_shuffle_same_initialization": True, "risk_direction": dict(RISK_DIRECTION), "safe_release_gradient_zero": safe_release_grad_zero, "active_heads": list(active), "inactive_heads": list(INACTIVE_HEADS), "train_identity_count": len(train_ids), "validation_identity_count": len(split_ids[f"{family}_validation"]), "test_identity_count": len(split_ids[f"{family}_test"]), "test_payload_read": bool(args.read_test), "test_evaluation_performed": bool(args.read_test), "history": history, "thresholds_validation_only": thresholds, "metrics": metrics, "baselines": baselines, "label_shuffle": shuffle_results, "privileged_oracle": {"status": "NOT_AVAILABLE_SEPARATE_PRIVILEGED_INPUT", "deployable": False}, "binding": {"g2_root": g2_binding["g2_root"], "g2_seal_sha256sums_sha256": g2_binding["g2_seal_sha256sums_sha256"], "g1_root": g2_binding["g1_root"], "g1_seal_sha256sums_sha256": g2_binding["g1_seal_sha256sums_sha256"], "split_manifests": g2_binding["split_manifests"], "normalization_sha256": split_meta["normalization_sha256"], "t4_root": record_binding["t4_root"], "t4_seal_sha256sums_sha256": record_binding["t4_seal_sha256sums_sha256"], "teacher_root_sha256sums_sha256": record_binding["teacher_root_sha256sums_sha256"], "feature_order_sha256": record_binding["feature_order_sha256"], "trainer_sha256": sha256_file(Path(__file__))}, "permissions": {"teacher_labels_read": True, "fit_development_features_read": True, "student_training": True, "development_inference": True, "privileged_oracle_diagnostic": False, "shadow_offline": False, "shadow_live": False, "formal_training": False, "full_fit": False, "rollout": False, "attack": False, "protected_reads": 0}, "threshold_selection_split": "validation_only", "test_read_once": True, "teacher_privileged_fields_in_student": False, "safe_release_status": "NOT_EVALUABLE_COVERAGE"}
+    report = {"schema": "V5_R3_HELDOUT_DEVELOPMENT_V3", "status": "ENGINEERING_DEVELOPMENT_NONCONSUMABLE", "split_family": family, "config": args.config, "seed": args.seed, "epochs": args.epochs, "device": str(device), "random_initialization": True, "all_670_checkpoint_loaded": False, "initial_state_sha256": init_state_digest, "label_shuffle_same_initialization": True, "risk_direction": dict(RISK_DIRECTION), "event_definition": EVENT_DEFINITION, "safe_release_gradient_zero": safe_release_grad_zero, "active_heads": list(active), "inactive_heads": list(INACTIVE_HEADS), "train_identity_count": len(train_ids), "validation_identity_count": len(split_ids[f"{family}_validation"]), "test_identity_count": len(split_ids[f"{family}_test"]), "test_payload_read": False, "test_evaluation_performed": False, "history": history, "thresholds_validation_only": thresholds, "metrics": metrics, "baselines": baselines, "label_shuffle": shuffle_results, "privileged_oracle": {"status": "NOT_AVAILABLE_SEPARATE_PRIVILEGED_INPUT", "deployable": False}, "binding": {"g2_root": g2_binding["g2_root"], "g2_seal_sha256sums_sha256": g2_binding["g2_seal_sha256sums_sha256"], "g1_root": g2_binding["g1_root"], "g1_seal_sha256sums_sha256": g2_binding["g1_seal_sha256sums_sha256"], "split_manifests": g2_binding["split_manifests"], "normalization_sha256": split_meta["normalization_sha256"], "t4_root": record_binding["t4_root"], "t4_seal_sha256sums_sha256": record_binding["t4_seal_sha256sums_sha256"], "teacher_root_sha256sums_sha256": record_binding["teacher_root_sha256sums_sha256"], "feature_order_sha256": record_binding["feature_order_sha256"], "trainer_sha256": sha256_file(Path(__file__))}, "permissions": {"teacher_labels_read": True, "fit_development_features_read": True, "student_training": True, "development_inference": True, "privileged_oracle_diagnostic": False, "shadow_offline": False, "shadow_live": False, "formal_training": False, "full_fit": False, "rollout": False, "attack": False, "protected_reads": 0}, "threshold_selection_split": "validation_only", "test_read_once": False, "teacher_privileged_fields_in_student": False, "safe_release_status": "NOT_EVALUABLE_COVERAGE"}
     staging = args.output_root.with_name(f".{args.output_root.name}.staging.{os.getpid()}")
     if staging.exists() or staging.is_symlink():
         raise FileExistsError(f"staging root already exists: {staging}")

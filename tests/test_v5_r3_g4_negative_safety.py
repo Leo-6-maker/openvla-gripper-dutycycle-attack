@@ -5,6 +5,8 @@ All tests must pass before source can be committed.
 """
 from __future__ import annotations
 
+import copy
+import hashlib
 import json
 import os
 import sys
@@ -34,6 +36,7 @@ from run_r3_heldout_development import (
     _step_metrics,
     _select_threshold,
     _majority_probability,
+    EVENT_DEFINITION,
     RISK_DIRECTION,
     THRESHOLDS,
 )
@@ -73,14 +76,25 @@ class TestAUPRCTies(unittest.TestCase):
         s = np.random.rand(10).astype(np.float64)
         self.assertIsNone(_safe_auprc(y, s))
 
-    def test_mixed_ties_vs_sklearn(self):
-        """AUPRC with mixed ties is consistent with property checks."""
+    def test_sklearn_compatible(self):
+        """AUPRC matches sklearn average_precision_score when available."""
         y = np.array([1, 1, 0, 0, 1, 0, 0, 1], dtype=np.int64)
         s = np.array([0.9, 0.5, 0.5, 0.5, 0.5, 0.2, 0.2, 0.1], dtype=np.float64)
         auprc = _safe_auprc(y, s)
-        self.assertIsNotNone(auprc)
-        self.assertGreater(auprc, 0.5)
-        self.assertLess(auprc, 1.0)
+        try:
+            from sklearn.metrics import average_precision_score
+            sk_ap = average_precision_score(y, s)
+            self.assertAlmostEqual(auprc, sk_ap, places=10)
+        except ImportError:
+            self.assertIsNotNone(auprc)
+            self.assertGreater(auprc, 0.5)
+
+    def test_grouped_ties_preserves_rank_order(self):
+        """AUPRC with grouped ties: all scores equal → prevalence."""
+        y = np.array([1, 0, 1, 0, 1, 0], dtype=np.int64)
+        s = np.full(6, 0.5, dtype=np.float64)
+        auprc = _safe_auprc(y, s)
+        self.assertAlmostEqual(auprc, 3.0 / 6.0, places=10)
 
     def test_auc_all_equal(self):
         """AUC for all-equal must be 0.5."""
@@ -181,30 +195,47 @@ class TestEventMetrics(unittest.TestCase):
 
 
 class TestShuffleInitialization(unittest.TestCase):
-    """P0-C: Shuffle must share initialization with real model."""
+    """P0-C: Shuffle must share initialization with real model via frozen state_dict."""
 
-    def test_same_init_detection(self):
-        """Two models created with same RNG state must have identical params."""
+    def test_load_state_dict_same_params(self):
+        """load_state_dict(frozen_initial_state) → identical parameters."""
         from n5_student_model import N5MultiHeadStudent
+        import copy
 
         torch.manual_seed(42)
-        rng = torch.get_rng_state()
         m1 = N5MultiHeadStudent(input_dim=25)
-        torch.set_rng_state(rng)
+        frozen = copy.deepcopy(m1.state_dict())
+        digest1 = hashlib.sha256(b"".join(
+            p.detach().cpu().numpy().tobytes() for p in m1.parameters())).hexdigest()
+
         m2 = N5MultiHeadStudent(input_dim=25)
+        m2.load_state_dict(frozen, strict=True)
+        digest2 = hashlib.sha256(b"".join(
+            p.detach().cpu().numpy().tobytes() for p in m2.parameters())).hexdigest()
+
+        self.assertEqual(digest1, digest2)
         for p1, p2 in zip(m1.parameters(), m2.parameters()):
             self.assertTrue(torch.equal(p1, p2))
 
-    def test_different_init_detection(self):
-        """Two models created without reset must differ (very likely)."""
+    def test_load_state_dict_no_rng_dependency(self):
+        """load_state_dict is independent of RNG (model created with any seed)."""
         from n5_student_model import N5MultiHeadStudent
+        import copy
 
         torch.manual_seed(42)
         m1 = N5MultiHeadStudent(input_dim=25)
+        frozen = copy.deepcopy(m1.state_dict())
+        digest1 = hashlib.sha256(b"".join(
+            p.detach().cpu().numpy().tobytes() for p in m1.parameters())).hexdigest()
+
+        # Create with completely different RNG state, but load same state_dict
+        torch.manual_seed(99999)
         m2 = N5MultiHeadStudent(input_dim=25)
-        # At least one parameter should differ
-        any_diff = any(not torch.equal(p1, p2) for p1, p2 in zip(m1.parameters(), m2.parameters()))
-        self.assertTrue(any_diff)
+        m2.load_state_dict(frozen, strict=True)
+        digest2 = hashlib.sha256(b"".join(
+            p.detach().cpu().numpy().tobytes() for p in m2.parameters())).hexdigest()
+
+        self.assertEqual(digest1, digest2)
 
     def test_shuffle_targets_preserves_mask_structure(self):
         """Shuffle only permutes known positions; mask structure unchanged."""
@@ -235,15 +266,16 @@ class TestRiskDirection(unittest.TestCase):
 
 
 class TestTestBarrier(unittest.TestCase):
-    """P0-A: Test read barrier must be active at G4/G5/G6."""
+    """P0-A: Test read barrier must be active at G4/G5/G6 — unconditional rejection."""
 
-    def test_g7_policy_rejection(self):
-        """--read-test must reject when G7 transition policy says G7_ONE_TIME."""
-        policy = "G7_ONE_TIME_AFTER_VALIDATION_FREEZE"
-        # If G7 transition is not present, --read-test must fail
-        self.assertEqual(policy, "G7_ONE_TIME_AFTER_VALIDATION_FREEZE")
-        # The check is: if args.read_test and no G7 transition → ValueError
-        # This is tested via integration test on the server
+    def test_unconditional_rejection(self):
+        """--read-test is unconditionally rejected in G4 runner."""
+        # The code has: if args.read_test: raise ValueError("test read forbidden...")
+        # This test verifies the barrier at the module level.
+        from run_r3_heldout_development import _run_impl
+        import inspect
+        source = inspect.getsource(_run_impl)
+        self.assertIn("test read is forbidden", source)
 
     def test_default_no_read_test(self):
         """Default flag value is False (no test read)."""
@@ -252,6 +284,22 @@ class TestTestBarrier(unittest.TestCase):
         parser.add_argument("--read-test", action="store_true")
         args = parser.parse_args([])
         self.assertFalse(args.read_test)
+
+
+class TestEventDefinition(unittest.TestCase):
+    """P0-D: Event definition semantics must be frozen."""
+
+    def test_event_definition_value(self):
+        self.assertEqual(EVENT_DEFINITION, "contiguous_known_TRUE_span_v1")
+
+    def test_unknown_cuts_span(self):
+        """UNKNOWN steps cut the teacher critical span."""
+        item = {
+            "masks": {"h": np.array([True, True, False, True, True])},
+            "targets": {"h": np.array([1.0, 1.0, 1.0, 1.0, 1.0])},
+        }
+        spans = _teacher_critical_spans(item, "h")
+        self.assertEqual(spans, [(0, 1), (3, 4)])  # step 2 masked→cut
 
 
 class TestSafeReleaseGradient(unittest.TestCase):

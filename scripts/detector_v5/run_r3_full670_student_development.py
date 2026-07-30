@@ -400,9 +400,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "components": components,
         }
 
-    model = N5MultiHeadStudent(input_dim=25, dropout=0.0).to(device)
     init_rng_state = torch.get_rng_state()
     init_np_state = np.random.get_state()
+    model = N5MultiHeadStudent(input_dim=25, dropout=0.0).to(device)
+    frozen_initial_state = copy.deepcopy(model.state_dict())
     init_state_digest = hashlib.sha256(b"".join(param.detach().cpu().numpy().tobytes() for param in model.parameters())).hexdigest()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     active_masks = {head: (masks[head] if head in ACTIVE_HEADS else torch.zeros_like(masks[head])) for head in HEADS}
@@ -453,9 +454,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise AssertionError(f"checkpoint continuation mismatch: {continuation_diff}")
 
     shuffled_targets = _shuffle_known_targets(targets, active_masks, args.seed + 1)
-    torch.set_rng_state(init_rng_state)
-    np.random.set_state(init_np_state)
     shuffle_model = N5MultiHeadStudent(input_dim=25, dropout=0.0).to(device)
+    shuffle_model.load_state_dict(frozen_initial_state, strict=True)
     shuffle_init_digest = hashlib.sha256(b"".join(param.detach().cpu().numpy().tobytes() for param in shuffle_model.parameters())).hexdigest()
     if shuffle_init_digest != init_state_digest:
         raise AssertionError("label-shuffle model does not share real model initialization")
