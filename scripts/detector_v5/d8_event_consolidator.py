@@ -21,6 +21,13 @@ FORBIDDEN_REASONS = {
     "GEOMETRY_NOT_APPLICABLE", "RIGHT_CENSORED", "NONFINITE",
     "IDENTITY_UNRESOLVED", "KNOWN_FALSE",
 }
+# R6.1: Per-relation reason allowlist for gap bridgeability.
+# Per-relation taxonomy differs from aggregate; only these reasons are
+# consistent with the UNKNOWN verdict at the per-relation level.
+PER_RELATION_BRIDGE_REASON_ALLOWLIST = {
+    "INSUFFICIENT_CAUSAL_PREFIX",
+    "RELATION_EVIDENCE_UNKNOWN",
+}
 ARTICULATED_TASKS = {"libero_goal/task_00", "libero_goal/task_07"}
 HEAD = "physical_criticality"
 
@@ -395,9 +402,7 @@ def _validate_gap(
                 }
 
             # R6.1: Per-relation verdict must be UNKNOWN (not TRUE/FALSE).
-            # Aggregate reason=RELATION_EVIDENCE_UNKNOWN gates bridgeability;
-            # per-relation reason uses a different taxonomy (e.g.,
-            # INSUFFICIENT_CAUSAL_PREFIX) and must only be non-forbidden.
+            # Per-relation reason must be in explicit allowlist (whitelist).
             if gap_rel.get("verdict") != "UNKNOWN":
                 return False, {
                     "reject_reason": f"GAP_RELATION_VERDICT_NOT_UNKNOWN: {gap_rel.get('verdict')}",
@@ -405,9 +410,9 @@ def _validate_gap(
                 }
 
             gap_reason = gap_rel.get("reason", "")
-            if gap_reason in FORBIDDEN_REASONS:
+            if gap_reason not in PER_RELATION_BRIDGE_REASON_ALLOWLIST:
                 return False, {
-                    "reject_reason": f"GAP_RELATION_FORBIDDEN_REASON: {gap_reason}",
+                    "reject_reason": f"GAP_RELATION_REASON_NOT_ALLOWED: {gap_reason or '<empty>'}",
                     "step_evidence": gap_evidence,
                 }
 

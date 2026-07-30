@@ -550,24 +550,36 @@ class TestR6GapDetailFailClosed(unittest.TestCase):
         r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 0)
 
-    def test_46_gap_relation_forbidden_reason_rejects(self):
-        """Gap per-relation with GEOMETRY_NOT_APPLICABLE must reject (forbidden)."""
+    def test_46_gap_relation_not_in_allowlist_rejects(self):
+        """Gap per-relation reason not in explicit allowlist must reject."""
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
         rel_boundary = _rel(relation_index=0)
-        rel_gap_forbidden = _rel(relation_index=0, verdict="UNKNOWN",
-                                 reason="GEOMETRY_NOT_APPLICABLE")
+        rel_gap_bad = _rel(relation_index=0, verdict="UNKNOWN", reason="OTHER_REASON")
         relations = {
             0: _make_sidecar_entry(0, [rel_boundary], selected_relation_id=0),
-            1: _make_sidecar_entry(1, [rel_gap_forbidden], selection_status="RELATION_AMBIGUOUS",
+            1: _make_sidecar_entry(1, [rel_gap_bad], selection_status="RELATION_AMBIGUOUS",
                                    selected_relation_id=None),
             2: _make_sidecar_entry(2, [rel_boundary], selected_relation_id=0),
         }
         r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 0)
 
-    def test_46b_gap_relation_non_rel_unk_reason_bridges(self):
-        """Gap per-relation with INSUFFICIENT_CAUSAL_PREFIX still bridges
-        (not forbidden — aggregate RELATION_EVIDENCE_UNKNOWN is the gate)."""
+    def test_46b_empty_reason_rejects(self):
+        """Gap per-relation with empty reason must reject (not in allowlist)."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        rel_boundary = _rel(relation_index=0)
+        rel_gap_empty = _rel(relation_index=0, verdict="UNKNOWN", reason="")
+        relations = {
+            0: _make_sidecar_entry(0, [rel_boundary], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [rel_gap_empty], selection_status="RELATION_AMBIGUOUS",
+                                   selected_relation_id=None),
+            2: _make_sidecar_entry(2, [rel_boundary], selected_relation_id=0),
+        }
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 0)
+
+    def test_46c_allowlist_reason_bridges(self):
+        """Gap per-relation with INSUFFICIENT_CAUSAL_PREFIX bridges (in allowlist)."""
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
         rel_same = _rel(relation_index=0)
         rel_gap = _rel(relation_index=0, verdict="UNKNOWN",
