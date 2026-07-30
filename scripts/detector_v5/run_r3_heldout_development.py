@@ -152,7 +152,7 @@ def _load_split_ids(g1_root: Path, split_name: str, expected: Mapping[str, Any])
         "task_test": "TASK_TEST_MANIFEST.json",
     }
     path = g1_root / files[split_name]
-    if expected.get("file_sha256") != sha256_file(path):
+    if expected.get("sha256") != sha256_file(path) and expected.get("file_sha256") != sha256_file(path):
         raise ValueError(f"G1 split file binding mismatch: {split_name}")
     rows = _load_json(path)
     if not isinstance(rows, list) or not rows:
