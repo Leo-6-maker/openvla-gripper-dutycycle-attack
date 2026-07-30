@@ -45,6 +45,32 @@ def _write_seal(p: Path) -> str:
     return d
 
 
+def _match_identity(identities: list, logical_name: str) -> list:
+    """Find identity entries matching a logical_name.
+
+    Multiple matches are allowed only if all have the same entity_id
+    (same entity appearing in multiple relations).
+    Returns the list of matching entries (fail-closed: empty list on 0 matches).
+    Raises ValueError on ambiguous matches (different entity_ids).
+    """
+    if not logical_name:
+        return []
+    matches = [i for i in identities if i.get("logical_name") == logical_name]
+    if not matches:
+        # Try alias_to as fallback
+        matches = [i for i in identities if i.get("alias_to") == logical_name]
+    if len(matches) <= 1:
+        return matches
+    # Multiple matches: must all have same entity_id
+    eids = {m.get("entity_id") for m in matches}
+    if len(eids) > 1:
+        raise ValueError(
+            f"ambiguous identity match: logical_name='{logical_name}' "
+            f"matches {len(matches)} entries with different entity_ids: {eids}"
+        )
+    return matches
+
+
 def _extract_relation_signature_fields(binding: dict | None, identity_entry: dict | None) -> dict:
     """Extract identity fields from relation binding + identity."""
     fields = {
@@ -124,18 +150,35 @@ def build(
             candidate_close = row.get("candidate_close", False)
 
             per_rel = []
-            # P0-3 fix: Match identities to relations by position within side groups
+            # R6.1: Explicit identity matching by logical_name, not positional guess
             objects = [i for i in relation_identity if isinstance(i, dict) and i.get("side") == "object"]
             targets = [i for i in relation_identity if isinstance(i, dict) and i.get("side") == "target"]
+
             for pos, idx in enumerate(relation_indices):
                 if idx >= len(relation_labels) or idx >= len(relation_bindings):
                     continue
                 rl = relation_labels[idx]
                 rb = relation_bindings[idx]
 
-                # Get identity for THIS specific relation by position
-                obj_ident = objects[pos] if pos < len(objects) else None
-                tgt_ident = targets[pos] if pos < len(targets) else None
+                # Match object identity by logical_name from binding
+                obj_ln = str(rb.get("object", {}).get("logical_name", ""))
+                obj_matches = _match_identity(objects, obj_ln)
+                if not obj_matches:
+                    raise ValueError(
+                        f"R6.1 identity match failure at {eid} step={step} "
+                        f"rel[{idx}]: no object identity for logical_name='{obj_ln}'"
+                    )
+                obj_ident = obj_matches[0]
+
+                # Match target identity by logical_name from binding
+                tgt_ln = str(rb.get("target", {}).get("logical_name", ""))
+                tgt_matches = _match_identity(targets, tgt_ln)
+                if not tgt_matches:
+                    raise ValueError(
+                        f"R6.1 identity match failure at {eid} step={step} "
+                        f"rel[{idx}]: no target identity for logical_name='{tgt_ln}'"
+                    )
+                tgt_ident = tgt_matches[0]
 
                 sig = _extract_relation_signature_fields(rb, obj_ident)
                 # Target identity fields
@@ -168,19 +211,23 @@ def build(
                     **sig,
                 })
 
-            # R6 P0-1: Verify identity ordering invariant for this step
-            # For multi-relation steps, object/target identity counts must match
-            # relation count to guarantee positional pairing is valid.
-            n_obj = len(objects)
-            n_tgt = len(targets)
-            n_rel = len(per_rel)
-            if n_obj != n_rel or n_tgt != n_rel:
-                # Only fail if there are identities at all (some steps have none)
-                if n_obj > 0 or n_tgt > 0:
+            # R6.1: Verify relation data closure for this step
+            # relation_indices, relation_labels, relation_bindings must be consistently sized.
+            # Each per_relation entry must have been successfully matched (no skip).
+            n_indices = len(relation_indices)
+            n_labels = len(relation_labels)
+            n_bindings = len(relation_bindings)
+            n_built = len(per_rel)
+            if n_indices > 0:
+                if n_indices != n_labels or n_indices != n_bindings:
                     raise ValueError(
-                        f"R6 identity ordering violation at {eid} step={step}: "
-                        f"objects={n_obj} targets={n_tgt} relations={n_rel} "
-                        f"(all must be equal or all zero)"
+                        f"R6.1 relation data closure violation at {eid} step={step}: "
+                        f"indices={n_indices} labels={n_labels} bindings={n_bindings}"
+                    )
+                if n_built != n_indices:
+                    raise ValueError(
+                        f"R6.1 relation build closure violation at {eid} step={step}: "
+                        f"indices={n_indices} built={n_built} (some relations skipped)"
                     )
 
             # Determine selection status
