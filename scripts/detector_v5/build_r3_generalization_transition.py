@@ -314,7 +314,7 @@ def build(*, t4_root: Path, g0_root: Path, g1_root: Path, protocol_path: Path, o
     if t4_transition.get("t0_a", {}).get("manifest_sha256") != t0a_manifest_sha or t4_transition.get("t0_a", {}).get("seal_sha256sums_sha256") != verify_seal(t0a_root)["sha256sums_sha256"]:
         raise ValueError("T4/T0-A seal binding mismatch")
     g0_report, g0_report_sha = _json(g0_root, "G0_LABEL_BASELINE_AUDIT.json")
-    if g0_report.get("status") != "PASS_LABEL_AND_BASELINE_AUDIT" or g0_report.get("protected_reads") != 0 or g0_report.get("consumable") is not False:
+    if g0_report.get("status") != "PASS_LABEL_AND_BASELINE_AUDIT" or g0_report.get("checks", {}).get("protected_reads") != 0 or g0_report.get("consumable") is not False:
         raise ValueError("G0 is not a passing non-consumable diagnostic")
     _validate_g0_permissions(g0_report.get("permissions", {}))
     feature_path = ROOT / "configs" / "R3_SC5_FEATURE_BINDING_V1.json"
