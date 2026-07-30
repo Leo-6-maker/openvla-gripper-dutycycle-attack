@@ -273,18 +273,18 @@ def main() -> int:
     for G in [0, 1, 2, 3, 5]:
         report = audit(G, sidecar, ep_labels)
         status = "PASS" if report["pass"] else f"FAIL: {len(report['issues'])} issues"
+        p = report["positive"]
+        n = report["negative"]
+        z = report["zero_weight"]
+        b = report["balance"]
         print(f"\nG={G}: {status}")
-        print(f"  Positive: {report['positive']['event_count']} events, "
-              f"weight={report['positive']['per_event_mean']:.6f}, "
-              f"equal={report['positive']['equal_weight_pass']}")
-        print(f"  Negative: {report['negative']['span_count']} spans, "
-              f"weight={report['negative']['per_span_mean']:.6f}, "
-              f"nonzero={report['negative']['all_nonzero']}")
-        print(f"  Zero-weight: UNK={report['zero_weight']['UNKNOWN']:.6f} "
-              f"GEOM_NA={report['zero_weight']['GEOM_NA']:.6f} "
-              f"RC={report['zero_weight']['RIGHT_CENSORED']:.6f}")
-        print(f"  Multi-frag: {report['positive']['multi_fragment_events']} events, "
-              f"same_weight={report['positive']['mf_sf_equal']}")
+        print(f"  Positive: {p['event_count']} events, mean_w={p['per_event_mean']:.6f}, "
+              f"per_ep_equal={p['per_episode_equal']}, ESS={b['ess_positive']:.1f}")
+        print(f"  Negative: {n['span_count']} spans, mean_w={n['per_span_mean']:.6f}, "
+              f"nonzero={n['all_nonzero']}, ESS={b['ess_negative']:.1f}")
+        print(f"  Zero-weight: UNK={z['UNKNOWN']:.6f} GEOM_NA={z['GEOM_NA']:.6f} "
+              f"RC={z['RIGHT_CENSORED']:.6f} all_zero={z['all_zero']}")
+        print(f"  Multi-frag: {p['multi_fragment_events']} events")
         for issue in report["issues"]:
             print(f"  ISSUE: {issue}")
 
