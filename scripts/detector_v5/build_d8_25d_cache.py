@@ -365,15 +365,30 @@ def build_cache(
             raise FormalContractError(f"fold {f_str} role sum != 670")
     print("Fold role closure: PASS")
 
-    # P0-2: Read provenance from SOURCE_SNAPSHOT.json (deployed alongside this script)
+    # P0-2: Read and VALIDATE SOURCE_SNAPSHOT.json — fail-closed on any issue
     snapshot_path = Path(__file__).with_name("SOURCE_SNAPSHOT.json")
-    if snapshot_path.is_file():
-        snap = json.loads(snapshot_path.read_text("utf-8"))
-        commit = snap["github_commit"]
-        tree = snap["github_tree"]
-    else:
-        commit = "UNKNOWN"
-        tree = "UNKNOWN"
+    if not snapshot_path.is_file():
+        raise FormalContractError("SOURCE_SNAPSHOT.json missing — cannot bind provenance")
+    snap = json.loads(snapshot_path.read_text("utf-8"))
+    if snap.get("schema") != "SOURCE_SNAPSHOT_V1":
+        raise FormalContractError("SOURCE_SNAPSHOT.json schema not SOURCE_SNAPSHOT_V1")
+    commit = snap.get("github_commit", "")
+    tree = snap.get("github_tree", "")
+    if len(commit) != 40 or len(tree) != 40:
+        raise FormalContractError(f"Invalid commit/tree in SOURCE_SNAPSHOT: {commit[:16]}... / {tree[:16]}...")
+    # Validate all file SHAs
+    file_map = snap.get("file_sha256_map", {})
+    if not file_map:
+        raise FormalContractError("SOURCE_SNAPSHOT file_sha256_map is empty")
+    for rel_path, expected_sha in file_map.items():
+        actual_path = ROOT / rel_path
+        if not actual_path.is_file():
+            raise FormalContractError(f"SOURCE_SNAPSHOT file missing: {rel_path}")
+        actual_sha = sha256_file(actual_path)
+        if actual_sha != expected_sha:
+            raise FormalContractError(f"SOURCE_SNAPSHOT SHA mismatch: {rel_path}\n  expected: {expected_sha}\n  actual:   {actual_sha}")
+    snapshot_sha = sha256_file(snapshot_path)
+    print(f"SOURCE_SNAPSHOT validated: {len(file_map)} files, commit={commit[:12]}...")
 
     run_uuid = hashlib.sha256(os.urandom(32)).hexdigest()[:16]
 
@@ -385,7 +400,12 @@ def build_cache(
     mapping_sha = sha256_file(ROOT / "configs" / "FIT670_25D_SOURCE_MAPPING.json")
     sidecar_seal = sha256_file(sidecar_root / "SHA256SUMS.sha256")
     teacher_seal = sha256_file(teacher_root / "SHA256SUMS.sha256")
-    telemetry_seal = sha256_file(telemetry_root / "SHA256SUMS.sha256") if (telemetry_root / "SHA256SUMS.sha256").is_file() else "unsealed"
+    telemetry_seal_path = telemetry_root / "SHA256SUMS.sha256"
+    if not telemetry_seal_path.is_file():
+        raise FormalContractError(f"telemetry root is not sealed: {telemetry_root}")
+    telemetry_seal = sha256_file(telemetry_seal_path)
+    verify_seal(telemetry_root)  # validates all sealed files
+    print(f"Telemetry seal verified: {telemetry_seal[:20]}...")
 
     manifest = {
         "schema": "DETECTOR_V3_D8_25D_CACHE_V2",
@@ -394,7 +414,11 @@ def build_cache(
         "run_label": run_label,
         "run_uuid": run_uuid,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-        "code_snapshot": {"commit": commit, "tree": tree},
+        "code_snapshot": {
+            "executable_source_commit": commit,
+            "executable_source_tree": tree,
+            "snapshot_sha256": snapshot_sha,
+        },
         "script_provenance": {
             "cache_builder_sha256": self_sha,
             "consolidator_sha256": consolidator_sha,

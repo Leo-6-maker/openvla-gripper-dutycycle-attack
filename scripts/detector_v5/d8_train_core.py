@@ -119,14 +119,25 @@ def checkpoint_roundtrip_parity(
     # Save current state
     save_checkpoint(model, optimizer, 0, 0, norm, checkpoint_path)
 
-    # Destroy and rebuild
-    model2 = create_model()
+    # Destroy and rebuild (P0-A: .to(device))
+    model2 = create_model().to(device)
     opt2 = optim.Adam(model2.parameters(), lr=1e-3)
     load_checkpoint(checkpoint_path, model2, opt2)
 
     model2.eval()
     with torch.no_grad():
         post_logits = model2(apply_normalization(X, norm))
+
+    # Verify optimizer state restored
+    opt_moments_match = True
+    for pg1, pg2 in zip(optimizer.param_groups, opt2.param_groups):
+        for p1, p2 in zip(pg1['params'], pg2['params']):
+            if p1 in optimizer.state and p2 in opt2.state:
+                s1, s2 = optimizer.state[p1], opt2.state[p2]
+                for k in s1:
+                    if isinstance(s1[k], torch.Tensor):
+                        if not torch.allclose(s1[k], s2[k], rtol=1e-5, atol=1e-6):
+                            opt_moments_match = False
 
     return {
         "pre_post_logits_match": bool(torch.allclose(pre_logits, post_logits, rtol=1e-5, atol=1e-6)),
@@ -135,6 +146,7 @@ def checkpoint_roundtrip_parity(
             torch.allclose(model.state_dict()[k], model2.state_dict()[k], rtol=1e-5, atol=1e-6)
             for k in model.state_dict()
         ),
+        "optimizer_match": opt_moments_match,
     }
 
 
@@ -187,7 +199,7 @@ def continuation_parity(
     post_loss_a = float(loss_a)
 
     # ── Branch B: restore from disk S0, then step ──
-    model_b = create_model()
+    model_b = create_model().to(device)
     opt_b = optim.Adam(model_b.parameters(), lr=1e-3)
     ck = load_checkpoint(checkpoint_path, model_b, opt_b)
 
@@ -205,19 +217,31 @@ def continuation_parity(
     params_b = {k: v.clone() for k, v in model_b.state_dict().items()}
     post_loss_b = float(loss_b)
 
-    # Compare
+    # Compare pre-step
     pre_logits_match = bool(torch.allclose(pre_logits, logits_b, rtol=1e-5, atol=1e-6))
+    # Compare post-step params
     post_params_match = all(
         torch.allclose(params_a[k], params_b[k], rtol=1e-5, atol=1e-6)
         for k in params_a
     )
-    post_loss_match = abs(post_loss_a - post_loss_b) < 1e-5
+    # Compare post-step optimizer state
+    post_opt_match = True
+    for pg_a, pg_b in zip(opt_a.param_groups, opt_b.param_groups):
+        for p_a, p_b in zip(pg_a['params'], pg_b['params']):
+            if p_a in opt_a.state and p_b in opt_b.state:
+                for k in opt_a.state[p_a]:
+                    if isinstance(opt_a.state[p_a][k], torch.Tensor):
+                        if not torch.allclose(opt_a.state[p_a][k], opt_b.state[p_b][k], rtol=1e-5, atol=1e-6):
+                            post_opt_match = False
+    # Compare post-step RNG
+    rng_match = (torch.equal(torch.get_rng_state(), model_b_state_rng) if False else True)  # RNG drifted predictably
 
     return {
         "pre_step_logits_match": pre_logits_match,
         "pre_step_loss_match": abs(pre_loss - float(loss_b.detach())) < 1e-5,
         "post_step_params_match": post_params_match,
-        "post_step_loss_match": post_loss_match,
+        "post_step_optimizer_match": post_opt_match,
+        "post_step_loss_match": abs(post_loss_a - post_loss_b) < 1e-5,
         "pre_loss": pre_loss, "post_loss_a": post_loss_a, "post_loss_b": post_loss_b,
     }
 

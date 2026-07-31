@@ -1,12 +1,7 @@
-"""P5: 25D fold-0 GPU smoke — uses shared d8_train_core.
-
-Reads from sealed P4 25D cache. All model/norm/loss/checkpoint via d8_train_core.
-Status: ENGINEERING_NONCONSUMABLE.
-"""
+"""P5: 25D fold-0 GPU smoke — uses shared d8_train_core. ENGINEERING_NONCONSUMABLE."""
 from __future__ import annotations
 
-import argparse, json, os, sys
-from collections import defaultdict
+import argparse, json, os, subprocess, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -29,6 +24,9 @@ from audit_r3_contact_input import sha256_file, verify_seal
 from gripper_attack.seal_utils import rename_noreplace
 
 FOLD = 0
+ALLOWED_KEYS = {"episode_id", "step", "features_25d_raw", "physical_target",
+                "effective_mask", "D8_weight", "fold_id",
+                "right_censored", "geometry_not_applicable", "articulated"}
 
 
 def _write_seal(p: Path) -> str:
@@ -50,12 +48,25 @@ def load_cache_entries(cache_root: Path) -> list[dict]:
 
 
 def run_smoke(cache_root: Path, output_root: Path) -> dict:
+    # P0-B: Require output_root does NOT exist
+    if output_root.exists():
+        raise FileExistsError(f"output_root must not exist: {output_root}")
+
     entries = load_cache_entries(cache_root)
     print(f"Loaded {len(entries)} entries")
 
-    # Mask audit (P0-6 fix: mutually exclusive taxonomy)
+    # Mask audit
     mask_audit = audit_effective_mask(entries)
+    if not mask_audit["taxonomy"]["pass"]:
+        raise RuntimeError(f"Mask taxonomy failure: {mask_audit['issues'][:5]}")
     print(f"Mask taxonomy: {mask_audit['taxonomy']}")
+
+    # Privileged scan: ALL entries, not just first 10
+    extra_keys = set()
+    for e in entries:
+        extra_keys |= set(e.keys()) - ALLOWED_KEYS
+    if extra_keys:
+        raise RuntimeError(f"Privileged keys in cache: {extra_keys}")
 
     train = [e for e in entries if e["fold_id"] != FOLD and e["effective_mask"]]
     val = [e for e in entries if e["fold_id"] == FOLD and e["effective_mask"]]
@@ -68,30 +79,31 @@ def run_smoke(cache_root: Path, output_root: Path) -> dict:
     y_val = torch.tensor([s["physical_target"] for s in val], dtype=torch.float32)
     w_val = torch.tensor([s["D8_weight"] for s in val], dtype=torch.float32)
 
-    assert X_train.shape[1] == FEATURE_DIM
+    if X_train.shape[1] != FEATURE_DIM:
+        raise RuntimeError(f"Expected {FEATURE_DIM}D, got {X_train.shape[1]}D")
 
     train_ids = len(set(e["episode_id"] for e in train))
     val_ids = len(set(e["episode_id"] for e in val))
     print(f"Train ids: {train_ids}, Val ids: {val_ids}")
 
-    # Normalization from train only
     norm = compute_normalization(X_train)
-
-    # Verify train-only: changing val features must not affect norm
+    # Verify train-only normalization
     mean1 = np.array(norm["mean"]).copy()
-    X_val2 = X_val.clone(); X_val2[0, 0] += 100.0
+    X_val_mod = X_val.clone(); X_val_mod[0, 0] += 100.0
     norm2 = compute_normalization(X_train)
-    assert np.allclose(mean1, norm2["mean"]), "validation data must not affect normalization"
+    if not np.allclose(mean1, norm2["mean"]):
+        raise RuntimeError("Validation data affected normalization")
 
     print(f"Train: {(y_train==1).sum().item()} TRUE, {(y_train==0).sum().item()} FALSE")
 
-    # Use shared model factory
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = create_model().to(device)
     X_train, y_train, w_train = X_train.to(device), y_train.to(device), w_train.to(device)
     X_val, y_val, w_val = X_val.to(device), y_val.to(device), w_val.to(device)
 
-    gates = {"input_dim_25": True, "norm_from_train_only": True}
+    gates = {"input_dim_25": True, "norm_from_train_only": True,
+             "effective_mask_contract": mask_audit["taxonomy"]["pass"],
+             "no_privileged_keys": len(extra_keys) == 0}
 
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     torch.manual_seed(SEED)
@@ -118,16 +130,21 @@ def run_smoke(cache_root: Path, output_root: Path) -> dict:
     final_loss = float(loss)
     gates["loss_decreases"] = final_loss < initial_loss
 
-    # Checkpoint parity (P0-7): save → destroy → load → same output
-    ckpt_path = output_root / "CHECKPOINT.pt"
-    rpt = checkpoint_roundtrip_parity(model, optimizer, X_val[:32], y_val[:32], w_val[:32],
-                                       norm, ckpt_path, device)
-    gates["checkpoint_restore"] = rpt["pre_post_logits_match"] and rpt["params_match"]
+    # P0-B: Create staging for all outputs
+    staging = output_root.with_name(f".{output_root.name}.staging.{os.getpid()}")
+    staging.mkdir(parents=True)
+    parity_dir = staging / "parity"
+    parity_dir.mkdir()
 
-    # Continuation parity (P0-7)
+    # Checkpoint parity (writes to staging/parity/)
+    rpt = checkpoint_roundtrip_parity(model, optimizer, X_val[:32], y_val[:32], w_val[:32],
+                                       norm, parity_dir / "ckpt_roundtrip.pt", device)
+    gates["checkpoint_restore"] = rpt["pre_post_logits_match"] and rpt["params_match"] and rpt["optimizer_match"]
+
+    # Continuation parity
     cp = continuation_parity(model, optimizer, X_val[:32], y_val[:32], w_val[:32],
-                              norm, ckpt_path, device)
-    gates["continuation_parity"] = cp["pre_step_logits_match"] and cp["post_step_params_match"]
+                              norm, parity_dir / "ckpt_continuation.pt", device)
+    gates["continuation_parity"] = cp["pre_step_logits_match"] and cp["post_step_params_match"] and cp["post_step_optimizer_match"]
 
     # Validation
     model.eval()
@@ -138,52 +155,58 @@ def run_smoke(cache_root: Path, output_root: Path) -> dict:
     gates["validation_completes"] = True
     gates["val_loss_finite"] = torch.isfinite(val_loss).item()
 
-    # No privileged keys
-    allowed = {"episode_id", "step", "features_25d_raw", "physical_target", "effective_mask",
-               "D8_weight", "fold_id", "right_censored", "geometry_not_applicable", "articulated"}
-    extra_keys = set()
-    for e in entries[:10]:
-        extra_keys |= set(e.keys()) - allowed
-    gates["no_privileged_keys"] = len(extra_keys) == 0
-
     all_pass = all(gates.values())
 
-    # Write sealed output
-    staging = output_root.with_name(f".{output_root.name}.staging.{os.getpid()}")
-    staging.mkdir(parents=True)
+    # Compute provenance
+    commit = subprocess.check_output(("git", "rev-parse", "HEAD"), cwd=ROOT, text=True).strip() if (ROOT / ".git").is_dir() else "UNKNOWN"
+    self_sha = sha256_file(Path(__file__))
+    core_sha = sha256_file(ROOT / "scripts" / "detector_v5" / "d8_train_core.py")
+    cache_seal = sha256_file(cache_root / "SHA256SUMS.sha256")
 
     report = {
         "schema": "D8_P5_25D_GPU_SMOKE_V1",
         "status": "PASS_ENGINEERING_NONCONSUMABLE" if all_pass else "FAIL",
         "consumer_eligible": False,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "source_binding": {
+            "commit": commit,
+            "p5_script_sha256": self_sha,
+            "train_core_sha256": core_sha,
+        },
+        "cache_binding": {
+            "cache_root": str(cache_root),
+            "cache_sha256sums_sha256": cache_seal,
+        },
+        "environment": {
+            "device": str(device),
+            "torch_version": torch.__version__,
+            "cuda_available": torch.cuda.is_available(),
+        },
         "seed": SEED, "fold": FOLD, "feature_dim": FEATURE_DIM,
         "train_samples": len(train), "val_samples": len(val),
         "train_identities": train_ids, "val_identities": val_ids,
         "initial_loss": initial_loss, "final_loss": final_loss, "val_loss": float(val_loss),
-        "gates": dict(gates), "all_gates_pass": all_pass,
+        "gates": {k: v for k, v in sorted(gates.items())},
+        "all_gates_pass": all_pass,
         "mask_audit": mask_audit,
         "test_reads": 0, "eval160_reads": 0,
     }
     (staging / "P5_REPORT.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
 
-    # Save checkpoint
     ckpt_sha = save_checkpoint(model, optimizer, 5, len(train), norm, staging / "CHECKPOINT.pt")
-
-    # Normalization artifact
     (staging / "NORMALIZATION.json").write_text(json.dumps(norm, indent=2) + "\n")
 
-    # Access audit
     access = {"test_reads": 0, "eval160_reads": 0, "protected_reads": 0,
               "teacher_records_accessed": False, "sidecar_accessed": False,
               "relation_data_accessed": False, "telemetry_raw_accessed": False}
     (staging / "ACCESS_AUDIT.json").write_text(json.dumps(access, indent=2, sort_keys=True) + "\n")
 
-    # Execution receipt
     receipt = {
         "schema": "EXECUTION_RECEIPT_V1", "status": "COMPLETED",
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-        "checkpoint_sha256": ckpt_sha,
+        "source_commit": commit, "p5_script_sha256": self_sha, "train_core_sha256": core_sha,
+        "cache_root": str(cache_root), "cache_seal": cache_seal,
+        "checkpoint_sha256": ckpt_sha, "device": str(device),
     }
     (staging / "EXECUTION_RECEIPT.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
 
