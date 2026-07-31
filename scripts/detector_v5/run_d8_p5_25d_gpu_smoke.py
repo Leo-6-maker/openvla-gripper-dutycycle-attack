@@ -207,6 +207,7 @@ def run_smoke(cache_root: Path, output_root: Path) -> dict:
         "source_commit": commit, "p5_script_sha256": self_sha, "train_core_sha256": core_sha,
         "cache_root": str(cache_root), "cache_seal": cache_seal,
         "checkpoint_sha256": ckpt_sha, "device": str(device),
+        "torch_version": torch.__version__,
     }
     (staging / "EXECUTION_RECEIPT.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
 

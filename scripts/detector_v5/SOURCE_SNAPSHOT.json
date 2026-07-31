@@ -1,17 +1,17 @@
 {
-  "schema": "SOURCE_SNAPSHOT_V1",
-  "github_commit": "61423d00353e07e16689343da2f1a7df2621296c",
-  "github_tree": "0cb0cd99c413362f880098a2c31299a97a79aa0d",
-  "github_branch": "deepseek/detector-v3-d8-continuation-20260730",
-  "github_remote": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack.git",
-  "snapshot_date": "2026-07-31",
   "file_sha256_map": {
-    "src/gripper_attack/d8_streaming_features_v3.py": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3",
-    "scripts/detector_v5/build_d8_25d_cache.py": "49d44f0ef07acb1224bfa332eadf9b0e82da18072bf91e38ddb93f23d14207f4",
-    "scripts/detector_v5/load_fit670_25d_telemetry.py": "1a19e281e6671a2b1009f81176c12942790078cb3cd47c0c0624f7aae4c249da",
-    "scripts/detector_v5/d8_train_core.py": "f724b3c43ec902520faae5669399d381f557711177c4a4db4e567491e09d48c5",
-    "scripts/detector_v5/run_d8_p5_25d_gpu_smoke.py": "d8797541230f2f41690f6c4de4c51020c4bea1a745861ea4251ce8ef212cefdb",
     "configs/DETECTOR_V3_25D_CAUSAL_FEATURE_SCHEMA.json": "9ecb83a6cfbaaa2c785c9bca378f26aef74015e347e871f7b5a7c74f3cbc1f94",
-    "configs/FIT670_25D_SOURCE_MAPPING.json": "ba3c7ea978c7ad2df1aee8cd96f8068547830a34502aec75d12e4a7fc75fcd60"
-  }
+    "configs/FIT670_25D_SOURCE_MAPPING.json": "ba3c7ea978c7ad2df1aee8cd96f8068547830a34502aec75d12e4a7fc75fcd60",
+    "scripts/detector_v5/build_d8_25d_cache.py": "20a9d531cc1d3ce2c0433fed08449b18b8d9efd253c4bfb34f7dcd023b7a27fc",
+    "scripts/detector_v5/d8_train_core.py": "56b99186abc01a4854a7fa1d5d1b66f98cbe4d37753e1f3320b14678bd5775ec",
+    "scripts/detector_v5/load_fit670_25d_telemetry.py": "1a19e281e6671a2b1009f81176c12942790078cb3cd47c0c0624f7aae4c249da",
+    "scripts/detector_v5/run_d8_p5_25d_gpu_smoke.py": "a3cfadb0eb1376cf9384057d3adbc919589849780668e8b37f2a0f9a6b276b0b",
+    "src/gripper_attack/d8_streaming_features_v3.py": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3"
+  },
+  "github_branch": "deepseek/detector-v3-d8-continuation-20260730",
+  "github_commit": "c218944d76ecdc3d293b87e356c62e036d9d09cd",
+  "github_remote": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack.git",
+  "github_tree": "e2868c967b15d1a4e6acd6dac6c9c4480270954f",
+  "schema": "SOURCE_SNAPSHOT_V1",
+  "snapshot_date": "2026-07-31"
 }
