@@ -347,7 +347,7 @@ def audit(
     assert_violations = _assert_free_files()
     checks["formal_code_has_no_assert"] = not assert_violations
     legacy_snapshot_references = []
-    for rel in FORMAL_PYTHON_FILES:
+    for rel in (item for item in FORMAL_PYTHON_FILES if item != "scripts/detector_v5/audit_d8_h1_r9.py"):
         text = (ROOT / rel).read_text("utf-8")
         if 'with_name("SOURCE_SNAPSHOT.json")' in text or "SOURCE_SNAPSHOT_V1" in text:
             legacy_snapshot_references.append(rel)
