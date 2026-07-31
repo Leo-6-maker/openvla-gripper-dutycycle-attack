@@ -19,6 +19,12 @@ from typing import Deque, List, Optional
 
 import numpy as np
 
+from .action_contract import (
+    classify_openvla_raw_gripper,
+    classify_libero_env_gripper,
+    GripperIntent,
+)
+
 HISTORY_LEN = 32  # frozen — must match MIN_HISTORY
 MIN_HISTORY = HISTORY_LEN
 MAX_FLIPS = HISTORY_LEN - 1  # maximum possible flips in a 32-state window
@@ -133,20 +139,21 @@ class D8StreamingFeatureAdapterV3:
             return {'step': step_id, 'valid': False, 'features': None,
                     'error': f'missing_fields: {missing}'}
 
-        # Gripper semantics
-        raw_close = raw_gripper <= 0.5
-        env_close = env_gripper > 0
-        if raw_close != env_close:
+        # P0-8: Use canonical action contract — no local threshold reimplementation
+        raw_intent = classify_openvla_raw_gripper(raw_gripper)
+        env_intent = classify_libero_env_gripper(env_gripper)
+        if raw_intent == GripperIntent.BOUNDARY or env_intent == GripperIntent.BOUNDARY:
             self.history.append({'step': step_id, 'valid': False, 'features': None})
             return {'step': step_id, 'valid': False, 'features': None,
-                    'error': 'gripper_semantics_invalid'}
+                    'error': 'gripper_semantics_boundary'}
+        if raw_intent != env_intent:
+            self.history.append({'step': step_id, 'valid': False, 'features': None})
+            return {'step': step_id, 'valid': False, 'features': None,
+                    'error': 'gripper_semantics_inconsistent'}
+
+        raw_close = (raw_intent == GripperIntent.CLOSE)
 
         # Update flip window BEFORE computing flip count
-        # (window includes the current state after append)
-        if self._flip_window:
-            prev_close = self._flip_window[-1]
-        else:
-            prev_close = None
         self._flip_window.append(raw_close)
 
         # Streaks
@@ -234,7 +241,7 @@ class D8StreamingFeatureAdapterV3:
         }
 
         record = {'step': step_id, 'valid': True, 'features': features,
-                  'raw_close': raw_close, 'env_close': env_close,
+                  'raw_close': raw_close, 'env_close': (env_intent == GripperIntent.CLOSE),
                   'gripper_qpos': gripper_qpos, 'gripper_opening_proxy': gripper_opening_proxy,
                   'eef_x': eef_x, 'eef_y': eef_y, 'eef_z': eef_z,
                   'eef_vx': eef_vx, 'eef_vy': eef_vy, 'eef_vz': eef_vz}

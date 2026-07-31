@@ -94,12 +94,12 @@ def materialize_fit670_features(episode: Mapping[str, Any]) -> list[dict[str, An
         else:
             velocity = eef - previous_eef
         previous_eef = eef
-        # V3: action_gripper = env_action[6] (LIBERO postprocessed), not raw_action[6]
+        # H1-R2: gripper_qpos = SIGNED sum, gripper_opening_proxy = ABSOLUTE sum
         result = adapter.update(
             step_id=expected_step,
             raw_gripper=float(raw_action[6]),
             env_gripper=float(env_action[6]),
-            gripper_qpos=float(abs(qpos[0]) + abs(qpos[1])),
+            gripper_qpos=float(qpos[0] + qpos[1]),
             gripper_opening_proxy=float(abs(qpos[0]) + abs(qpos[1])),
             eef_x=float(eef[0]), eef_y=float(eef[1]), eef_z=float(eef[2]),
             eef_vx=float(velocity[0]), eef_vy=float(velocity[1]), eef_vz=float(velocity[2]),

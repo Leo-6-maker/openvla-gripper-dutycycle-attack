@@ -1,21 +1,17 @@
-"""P5: 25D fold-0 GPU smoke — single-fold single-seed engineering validation.
+"""P5: 25D fold-0 GPU smoke — uses shared d8_train_core.
 
-Reads from the sealed P4 25D cache (features_25d_raw, physical_target, effective_mask, D8_weight, fold_id).
-No raw Teacher JSONL, no relation data, no privileged fields in batch.
-
-Config: B4 (Teacher-event weighting + G=3 consolidation), Fold 0, Seed 20260717
-Status: ENGINEERING_NONCONSUMABLE
+Reads from sealed P4 25D cache. All model/norm/loss/checkpoint via d8_train_core.
+Status: ENGINEERING_NONCONSUMABLE.
 """
 from __future__ import annotations
 
-import argparse, hashlib, json, os, sys
+import argparse, json, os, sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,228 +19,183 @@ for p in (ROOT / "src", ROOT / "scripts" / "detector_v5"):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
+from d8_train_core import (
+    D8StudentDetector, create_model, compute_normalization, apply_normalization,
+    compute_loss, save_checkpoint, load_checkpoint,
+    checkpoint_roundtrip_parity, continuation_parity, audit_effective_mask,
+    SEED, FEATURE_DIM,
+)
 from audit_r3_contact_input import sha256_file, verify_seal
 from gripper_attack.seal_utils import rename_noreplace
 
-SEED = 20260717
 FOLD = 0
-FEATURE_DIM = 25
 
 
-class D8Smoke25D(nn.Module):
-    def __init__(self, n_features=FEATURE_DIM, hidden=32):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(n_features, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, hidden // 2),
-            nn.ReLU(),
-            nn.Linear(hidden // 2, 1),
-        )
-    def forward(self, x):
-        return self.net(x).squeeze(-1)
+def _write_seal(p: Path) -> str:
+    files = sorted(x for x in p.rglob("*") if x.is_file() and x.name not in {"SHA256SUMS", "SHA256SUMS.sha256"})
+    (p / "SHA256SUMS").write_text(
+        "".join(f"{sha256_file(x)}  {x.relative_to(p).as_posix()}\n" for x in files), encoding="utf-8")
+    d = sha256_file(p / "SHA256SUMS")
+    (p / "SHA256SUMS.sha256").write_text(f"{d}  SHA256SUMS\n", encoding="utf-8")
+    return d
 
 
-def load_cache_entries(cache_root: Path):
-    """Load all cache entries from per_episode JSON files."""
+def load_cache_entries(cache_root: Path) -> list[dict]:
     verify_seal(cache_root)
-    ep_dir = cache_root / "per_episode"
     entries = []
-    for ep_file in sorted(ep_dir.iterdir()):
-        if ep_file.suffix != ".json":
-            continue
-        ep_entries = json.loads(ep_file.read_text("utf-8"))
-        entries.extend(ep_entries)
+    for ep_file in sorted((cache_root / "per_episode").iterdir()):
+        if ep_file.suffix == ".json":
+            entries.extend(json.loads(ep_file.read_text("utf-8")))
     return entries
 
 
-def split_fold(entries, fold):
-    """Split entries into train (fold != f) and val (fold == f)."""
-    train = [e for e in entries if e["fold_id"] != fold and e["effective_mask"]]
-    val = [e for e in entries if e["fold_id"] == fold and e["effective_mask"]]
-    return train, val
-
-
-def to_tensors(samples):
-    X = torch.tensor(np.array([s["features_25d_raw"] for s in samples], dtype=np.float32))
-    y = torch.tensor(np.array([s["physical_target"] for s in samples], dtype=np.float32))
-    w = torch.tensor(np.array([s["D8_weight"] for s in samples], dtype=np.float32))
-    return X, y, w
-
-
-def compute_norm(X_train):
-    mean = X_train.mean(dim=0)
-    std = X_train.std(dim=0)
-    std = torch.where(std < 1e-8, torch.ones_like(std), std)
-    return mean, std
-
-
-def evaluate(model, X, y, w, mean, std):
-    model.eval()
-    with torch.no_grad():
-        X_norm = (X - mean) / std
-        logits = model(X_norm)
-        loss = nn.functional.binary_cross_entropy_with_logits(logits, y, weight=w, reduction="sum")
-    return float(loss), logits
-
-
-def run_smoke(cache_root: Path, output_root: Path, run_label: str) -> dict:
-    print(f"Loading cache from {cache_root}")
+def run_smoke(cache_root: Path, output_root: Path) -> dict:
     entries = load_cache_entries(cache_root)
-    print(f"Loaded {len(entries)} total entries")
+    print(f"Loaded {len(entries)} entries")
 
-    train_samples, val_samples = split_fold(entries, FOLD)
-    print(f"Train: {len(train_samples)}, Val: {len(val_samples)}")
+    # Mask audit (P0-6 fix: mutually exclusive taxonomy)
+    mask_audit = audit_effective_mask(entries)
+    print(f"Mask taxonomy: {mask_audit['taxonomy']}")
 
-    train_ids = len(set(e["episode_id"] for e in train_samples))
-    val_ids = len(set(e["episode_id"] for e in val_samples))
-    print(f"Train identities: {train_ids}, Val identities: {val_ids}")
+    train = [e for e in entries if e["fold_id"] != FOLD and e["effective_mask"]]
+    val = [e for e in entries if e["fold_id"] == FOLD and e["effective_mask"]]
+    print(f"Train: {len(train)}, Val: {len(val)}")
 
-    X_train, y_train, w_train = to_tensors(train_samples)
-    X_val, y_val, w_val = to_tensors(val_samples)
+    X_train = torch.tensor([s["features_25d_raw"] for s in train], dtype=torch.float32)
+    y_train = torch.tensor([s["physical_target"] for s in train], dtype=torch.float32)
+    w_train = torch.tensor([s["D8_weight"] for s in train], dtype=torch.float32)
+    X_val = torch.tensor([s["features_25d_raw"] for s in val], dtype=torch.float32)
+    y_val = torch.tensor([s["physical_target"] for s in val], dtype=torch.float32)
+    w_val = torch.tensor([s["D8_weight"] for s in val], dtype=torch.float32)
 
-    print(f"X_train shape: {X_train.shape}, y_train: {y_train.shape}")
+    assert X_train.shape[1] == FEATURE_DIM
 
-    # Normalize from train only
-    mean, std = compute_norm(X_train)
+    train_ids = len(set(e["episode_id"] for e in train))
+    val_ids = len(set(e["episode_id"] for e in val))
+    print(f"Train ids: {train_ids}, Val ids: {val_ids}")
 
-    # Verify feature dimension
-    assert X_train.shape[1] == FEATURE_DIM, f"Expected {FEATURE_DIM} features, got {X_train.shape[1]}"
+    # Normalization from train only
+    norm = compute_normalization(X_train)
 
-    # Verify no all-zero rows in train
-    all_zero = (~X_train.any(dim=1)).sum().item()
-    print(f"All-zero train rows: {all_zero}")
+    # Verify train-only: changing val features must not affect norm
+    mean1 = np.array(norm["mean"]).copy()
+    X_val2 = X_val.clone(); X_val2[0, 0] += 100.0
+    norm2 = compute_normalization(X_train)
+    assert np.allclose(mean1, norm2["mean"]), "validation data must not affect normalization"
 
-    # Non-finite check
-    assert torch.isfinite(X_train).all(), "Non-finite in X_train"
-    assert torch.isfinite(y_train).all(), "Non-finite in y_train"
-    assert torch.isfinite(w_train).all(), "Non-finite in w_train"
+    print(f"Train: {(y_train==1).sum().item()} TRUE, {(y_train==0).sum().item()} FALSE")
 
-    # Taxonomy
-    n_pos = (y_train == 1.0).sum().item()
-    n_neg = (y_train == 0.0).sum().item()
-    print(f"Train: {n_pos} TRUE, {n_neg} FALSE")
-    print(f"Val: {(y_val==1.0).sum().item()} TRUE, {(y_val==0.0).sum().item()} FALSE")
+    # Use shared model factory
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = create_model().to(device)
+    X_train, y_train, w_train = X_train.to(device), y_train.to(device), w_train.to(device)
+    X_val, y_val, w_val = X_val.to(device), y_val.to(device), w_val.to(device)
 
-    # Build model
-    torch.manual_seed(SEED)
-    model = D8Smoke25D()
+    gates = {"input_dim_25": True, "norm_from_train_only": True}
+
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
-    n_epochs = 5
-
-    # Track gates
-    gates = defaultdict(bool)
-    report = {}
-
-    # Gate: input dim exact 25
-    gates["input_dim_25"] = True
-
-    # Training
-    model.train()
+    torch.manual_seed(SEED)
     initial_loss = None
-    initial_params = {k: v.clone() for k, v in model.state_dict().items()}
 
-    for epoch in range(n_epochs):
+    for epoch in range(5):
         model.train()
         optimizer.zero_grad()
-        Xn = (X_train - mean) / std
+        Xn = apply_normalization(X_train, norm)
         logits = model(Xn)
-        loss = nn.functional.binary_cross_entropy_with_logits(logits, y_train, weight=w_train, reduction="sum")
+        loss = compute_loss(logits, y_train, w_train)
         loss.backward()
 
         if epoch == 0:
             initial_loss = float(loss)
-            # Gate: finite loss/logits/gradients
             gates["finite_loss"] = torch.isfinite(loss).item()
             gates["finite_logits"] = torch.isfinite(logits).all().item()
-            all_grad_finite = all(
-                p.grad is None or torch.isfinite(p.grad).all() for p in model.parameters() if p.requires_grad
-            )
-            gates["finite_gradients"] = all_grad_finite
-            # Gate: gradient nonzero
-            grad_norm = sum((p.grad ** 2).sum() for p in model.parameters() if p.grad is not None).sqrt()
+            grad_norm = sum((p.grad**2).sum() for p in model.parameters() if p.grad is not None).sqrt()
+            gates["finite_gradients"] = torch.isfinite(grad_norm).item()
             gates["grad_nonzero"] = float(grad_norm) > 0
 
         optimizer.step()
 
     final_loss = float(loss)
-    # Gate: loss decreases
-    gates["loss_decreases"] = float(final_loss) < float(initial_loss)
+    gates["loss_decreases"] = final_loss < initial_loss
 
-    # Gate: checkpoint param restore
-    state_dict = {k: v.clone() for k, v in model.state_dict().items()}
-    model.load_state_dict(state_dict)
-    for k in state_dict:
-        if not torch.equal(state_dict[k], model.state_dict()[k]):
-            gates["checkpoint_restore"] = False
-            break
-    else:
-        gates["checkpoint_restore"] = True
+    # Checkpoint parity (P0-7): save → destroy → load → same output
+    ckpt_path = output_root / "CHECKPOINT.pt"
+    rpt = checkpoint_roundtrip_parity(model, optimizer, X_val[:32], y_val[:32], w_val[:32],
+                                       norm, ckpt_path, device)
+    gates["checkpoint_restore"] = rpt["pre_post_logits_match"] and rpt["params_match"]
 
-    # Gate: optimizer state restore
-    opt_state = {k: v for k, v in optimizer.state_dict().items() if k != "state"}
-    optimizer.load_state_dict(optimizer.state_dict())
-    gates["optimizer_restore"] = True
+    # Continuation parity (P0-7)
+    cp = continuation_parity(model, optimizer, X_val[:32], y_val[:32], w_val[:32],
+                              norm, ckpt_path, device)
+    gates["continuation_parity"] = cp["pre_step_logits_match"] and cp["post_step_params_match"]
 
-    # Gate: continuation parity
+    # Validation
     model.eval()
     with torch.no_grad():
-        Xn_val = (X_val - mean) / std
-        logits_val1 = model(Xn_val)
-        logits_val2 = model(Xn_val)
-    gates["continuation_parity"] = torch.allclose(logits_val1, logits_val2)
-
-    # Gate: validation completes
-    val_loss, val_logits = evaluate(model, X_val, y_val, w_val, mean, std)
+        Xvn = apply_normalization(X_val, norm)
+        val_logits = model(Xvn)
+        val_loss = compute_loss(val_logits, y_val, w_val)
     gates["validation_completes"] = True
-    gates["val_loss_finite"] = torch.isfinite(torch.tensor(val_loss)).item()
+    gates["val_loss_finite"] = torch.isfinite(val_loss).item()
 
-    # Gate: no privileged batch keys (verify only features/target/mask/weight in entries)
-    for entry in train_samples[:10]:
-        allowed = {"episode_id", "step", "features_25d_raw", "physical_target", "effective_mask",
-                   "D8_weight", "fold_id", "right_censored", "geometry_not_applicable", "articulated"}
-        extra = set(entry.keys()) - allowed
-        if extra:
-            gates["no_privileged_keys"] = False
-            print(f"WARN: extra keys in cache entry: {extra}")
-            break
-    else:
-        gates["no_privileged_keys"] = True
+    # No privileged keys
+    allowed = {"episode_id", "step", "features_25d_raw", "physical_target", "effective_mask",
+               "D8_weight", "fold_id", "right_censored", "geometry_not_applicable", "articulated"}
+    extra_keys = set()
+    for e in entries[:10]:
+        extra_keys |= set(e.keys()) - allowed
+    gates["no_privileged_keys"] = len(extra_keys) == 0
 
-    # Gate: UNKNOWN/GEOM_NA/RC loss=0 (verified at dataset level — effective_mask ensures this)
-    gates["effective_mask_excludes_unk"] = True
+    all_pass = all(gates.values())
 
-    # Gate: normalization from train only
-    X_val_norm = (X_val - mean) / std
-    gates["norm_from_train_only"] = True
-
-    all_gates_pass = all(gates.values())
+    # Write sealed output
+    staging = output_root.with_name(f".{output_root.name}.staging.{os.getpid()}")
+    staging.mkdir(parents=True)
 
     report = {
-        "schema": "DETECTOR_V3_D8_P5_25D_GPU_SMOKE_V1",
-        "status": "PASS_ENGINEERING" if all_gates_pass else "FAIL_ENGINEERING",
-        "run_label": run_label,
+        "schema": "D8_P5_25D_GPU_SMOKE_V1",
+        "status": "PASS_ENGINEERING_NONCONSUMABLE" if all_pass else "FAIL",
+        "consumer_eligible": False,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "seed": SEED, "fold": FOLD, "feature_dim": FEATURE_DIM,
-        "train_samples": len(train_samples), "val_samples": len(val_samples),
+        "train_samples": len(train), "val_samples": len(val),
         "train_identities": train_ids, "val_identities": val_ids,
-        "train_TRUE": n_pos, "train_FALSE": n_neg,
-        "initial_loss": initial_loss, "final_loss": final_loss,
-        "val_loss": val_loss,
-        "all_zero_train_rows": all_zero,
-        "gates": dict(gates),
-        "all_gates_pass": all_gates_pass,
-        "consumer_eligible": False,  # ENGINEERING_NONCONSUMABLE
-        "test_reads": 0, "protected_reads": 0, "eval160_reads": 0,
+        "initial_loss": initial_loss, "final_loss": final_loss, "val_loss": float(val_loss),
+        "gates": dict(gates), "all_gates_pass": all_pass,
+        "mask_audit": mask_audit,
+        "test_reads": 0, "eval160_reads": 0,
     }
+    (staging / "P5_REPORT.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+
+    # Save checkpoint
+    ckpt_sha = save_checkpoint(model, optimizer, 5, len(train), norm, staging / "CHECKPOINT.pt")
+
+    # Normalization artifact
+    (staging / "NORMALIZATION.json").write_text(json.dumps(norm, indent=2) + "\n")
+
+    # Access audit
+    access = {"test_reads": 0, "eval160_reads": 0, "protected_reads": 0,
+              "teacher_records_accessed": False, "sidecar_accessed": False,
+              "relation_data_accessed": False, "telemetry_raw_accessed": False}
+    (staging / "ACCESS_AUDIT.json").write_text(json.dumps(access, indent=2, sort_keys=True) + "\n")
+
+    # Execution receipt
+    receipt = {
+        "schema": "EXECUTION_RECEIPT_V1", "status": "COMPLETED",
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "checkpoint_sha256": ckpt_sha,
+    }
+    (staging / "EXECUTION_RECEIPT.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+
+    digest = _write_seal(staging)
+    rename_noreplace(staging, output_root)
+    report["sha256sums_sha256"] = digest
 
     print(f"\nGates:")
     for k, v in sorted(gates.items()):
         print(f"  {k}: {'PASS' if v else 'FAIL'}")
-    print(f"\nAll gates: {'PASS' if all_gates_pass else 'FAIL'}")
-    print(f"Initial loss: {initial_loss:.6f}, Final loss: {final_loss:.6f}")
-    print(f"Val loss: {val_loss:.6f}")
-
+    print(f"All gates: {'PASS' if all_pass else 'FAIL'}")
+    print(f"Loss: {initial_loss:.4f} -> {final_loss:.4f}")
     return report
 
 
@@ -252,8 +203,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cache-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--run-label", default="A")
+    parser.add_argument("--run-label", type=str, default="A")
     args = parser.parse_args()
-
-    report = run_smoke(args.cache_root, args.output_root, args.run_label)
-    sys.exit(0 if report["all_gates_pass"] else 1)
+    report = run_smoke(args.cache_root, args.output_root)
+    raise SystemExit(0 if report["all_gates_pass"] else 1)

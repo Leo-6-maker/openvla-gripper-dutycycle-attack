@@ -365,9 +365,16 @@ def build_cache(
             raise FormalContractError(f"fold {f_str} role sum != 670")
     print("Fold role closure: PASS")
 
-    # Provenance
-    commit = "a270176658100ff1e2d96a69c11084a26f53f8e9"
-    tree = "4f42c91b20ba8cf86a7ad7e1f9d85cb450aa980d"
+    # P0-2: Read provenance from SOURCE_SNAPSHOT.json (deployed alongside this script)
+    snapshot_path = Path(__file__).with_name("SOURCE_SNAPSHOT.json")
+    if snapshot_path.is_file():
+        snap = json.loads(snapshot_path.read_text("utf-8"))
+        commit = snap["github_commit"]
+        tree = snap["github_tree"]
+    else:
+        commit = "UNKNOWN"
+        tree = "UNKNOWN"
+
     run_uuid = hashlib.sha256(os.urandom(32)).hexdigest()[:16]
 
     self_sha = sha256_file(Path(__file__))
@@ -378,11 +385,12 @@ def build_cache(
     mapping_sha = sha256_file(ROOT / "configs" / "FIT670_25D_SOURCE_MAPPING.json")
     sidecar_seal = sha256_file(sidecar_root / "SHA256SUMS.sha256")
     teacher_seal = sha256_file(teacher_root / "SHA256SUMS.sha256")
+    telemetry_seal = sha256_file(telemetry_root / "SHA256SUMS.sha256") if (telemetry_root / "SHA256SUMS.sha256").is_file() else "unsealed"
 
     manifest = {
         "schema": "DETECTOR_V3_D8_25D_CACHE_V2",
-        "status": "BUILT",
-        "consumer_eligible": True,
+        "status": "BUILT_PENDING_H1",
+        "consumer_eligible": False,
         "run_label": run_label,
         "run_uuid": run_uuid,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -398,6 +406,7 @@ def build_cache(
         "input_seals": {
             "sidecar_sha256sums_sha256": sidecar_seal,
             "teacher_sha256sums_sha256": teacher_seal,
+            "telemetry_sha256sums_sha256": telemetry_seal,
         },
         "executed_loader": {
             "module": "load_fit670_25d_telemetry",
@@ -420,17 +429,14 @@ def build_cache(
         "test_reads": 0, "protected_reads": 0, "eval160_reads": 0,
     }
 
+    # P0-3: Write all files once, seal once, never modify after seal
     (staging / "CACHE_MANIFEST.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (staging / "FOLD_ASSIGNMENT.json").write_text(
         json.dumps({e: assignments[e] for e in sorted(assignments)}, indent=2) + "\n", encoding="utf-8")
 
     digest = _write_seal(staging)
     rename_noreplace(staging, output_root)
-    manifest["sha256sums_sha256"] = digest
-
-    # Rewrite manifest with seal included
-    (output_root / "CACHE_MANIFEST.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    digest = _write_seal(output_root)
+    # P0-3: Package digest returned but NOT written into sealed manifest
     manifest["sha256sums_sha256"] = digest
     return manifest
 
@@ -446,7 +452,7 @@ def main() -> int:
     parser.add_argument("--workers", type=int, default=None)
     args = parser.parse_args()
 
-    if output_root.exists():
+    if args.output_root.exists():
         raise FileExistsError(f"output root already exists: {args.output_root}")
 
     sidecar_root = args.sidecar_root.resolve(strict=True)

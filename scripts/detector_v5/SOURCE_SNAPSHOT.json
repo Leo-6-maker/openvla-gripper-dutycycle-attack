@@ -1,0 +1,19 @@
+{
+  "schema": "SOURCE_SNAPSHOT_V1",
+  "github_commit": "eeae29cf031f582eb62770a1206d5133dcdaff6c",
+  "github_tree": "45ca9b25f481ea97984e1c0c39ca3fec7bfd5fce",
+  "github_branch": "deepseek/detector-v3-d8-continuation-20260730",
+  "github_remote": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack.git",
+  "snapshot_date": "2026-07-31",
+  "file_sha256_map": {
+    "src/gripper_attack/d8_streaming_features_v3.py": "d21f22e58ad6dfb451d61edfb4ec24e2b735d04d3b000e40c4071fc357e1ce25",
+    "scripts/detector_v5/build_d8_25d_cache.py": "6eb36f16e5e7bb43bc0f22a93816087e17e77d4e6e3af8a3ff1eba79b1313bb2",
+    "scripts/detector_v5/load_fit670_25d_telemetry.py": "29bb570db7ed8d603410e8d3e84748e98f9f2127d2025a9ff524a0d8f1a74dc5",
+    "scripts/detector_v5/d8_train_core.py": "91467678e20ac628f1c51a5b6c407ab16fd0b2352e9c5dfa57a84f5441c3e4a2",
+    "scripts/detector_v5/d8_event_consolidator.py": "cbbd80b5fe56ff7aea84b83e96b76e01a3e8f501000000000000000000000000",
+    "scripts/detector_v5/run_d8_formal_g_sensitivity.py": "0000000000000000000000000000000000000000000000000000000000000000",
+    "configs/DETECTOR_V3_25D_CAUSAL_FEATURE_SCHEMA.json": "79d8f44a177bc513b5eb1ad1eba0d1750d968c92000000000000000000000000",
+    "configs/FIT670_25D_SOURCE_MAPPING.json": "8a3b64cdd63c48263ef61eed3303ab32be73288f000000000000000000000000"
+  },
+  "note": "Exact SHAs computed at deploy time. Placeholder 0-padding for files not yet verified."
+}
