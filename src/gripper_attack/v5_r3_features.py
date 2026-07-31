@@ -1,4 +1,4 @@
-"""Frozen FIT670 -> official 25D causal feature materialization."""
+"""Frozen FIT670 -> official 25D causal feature materialization (V3 adapter)."""
 from __future__ import annotations
 
 import hashlib
@@ -8,12 +8,12 @@ from typing import Any, Mapping
 
 import numpy as np
 
-from .sc5_streaming_features_v2 import FEATURE_NAMES, SC5StreamingFeatureAdapterV2
+from .d8_streaming_features_v3 import FEATURE_NAMES, D8StreamingFeatureAdapterV3
 from .action_contract import action_semantics_parity, raw_gripper_is_close
 
 
 FEATURE_ORDER = tuple(FEATURE_NAMES)
-ACTION_GRIPPER_SOURCE = "raw_action_7d[6] via SC5StreamingFeatureAdapterV2 implementation"
+ACTION_GRIPPER_SOURCE = "action_env_7d[6] via D8StreamingFeatureAdapterV3"
 
 
 def load_feature_binding(binding_path: Path, source_root: Path) -> dict[str, Any]:
@@ -58,17 +58,17 @@ def _finite_vector(value: Any, size: int, name: str) -> np.ndarray:
 
 
 def materialize_fit670_features(episode: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """Rebuild the exact SC5 25D stream from recorded causal runtime fields.
+    """Rebuild the exact D8 25D stream from recorded causal runtime fields.
 
-    Only the current step and the previously emitted EEF position are used.
-    The adapter itself remains the single source of feature ordering and
-    derived-feature semantics.
+    Uses D8StreamingFeatureAdapterV3 for multi-event causality.
+    action_gripper = action_env_7d[6] (LIBERO postprocessed), semantically
+    distinct from gripper_command = raw_action_7d[6] (OpenVLA native).
     """
     steps = episode.get("steps")
     telemetry = episode.get("telemetry")
     if not isinstance(steps, list) or not isinstance(telemetry, list) or len(steps) != len(telemetry) or not steps:
         raise ValueError("FIT670 steps/telemetry closure is incomplete")
-    adapter = SC5StreamingFeatureAdapterV2()
+    adapter = D8StreamingFeatureAdapterV3()
     previous_eef: np.ndarray | None = None
     output: list[dict[str, Any]] = []
     for expected_step, (step, state) in enumerate(zip(steps, telemetry)):
@@ -94,6 +94,7 @@ def materialize_fit670_features(episode: Mapping[str, Any]) -> list[dict[str, An
         else:
             velocity = eef - previous_eef
         previous_eef = eef
+        # V3: action_gripper = env_action[6] (LIBERO postprocessed), not raw_action[6]
         result = adapter.update(
             step_id=expected_step,
             raw_gripper=float(raw_action[6]),
@@ -103,24 +104,28 @@ def materialize_fit670_features(episode: Mapping[str, Any]) -> list[dict[str, An
             eef_x=float(eef[0]), eef_y=float(eef[1]), eef_z=float(eef[2]),
             eef_vx=float(velocity[0]), eef_vy=float(velocity[1]), eef_vz=float(velocity[2]),
             action_dx=float(raw_action[0]), action_dy=float(raw_action[1]), action_dz=float(raw_action[2]),
-            action_gripper=float(raw_action[6]),
+            action_gripper=float(env_action[6]),
         )
         if not result.get("valid"):
-            raise ValueError(f"SC5 feature adapter rejected step {expected_step}: {result.get('error')}")
+            raise ValueError(f"D8 V3 feature adapter rejected step {expected_step}: {result.get('error')}")
         values = result.get("features")
         vector = np.asarray([values[name] for name in FEATURE_ORDER], dtype=np.float32)
         if vector.shape != (25,) or not np.isfinite(vector).all():
             raise ValueError(f"invalid 25D feature vector at step {expected_step}")
+        # V3: gripper_command (index 0) = raw, action_gripper (index 12) = env — must differ in general
+        gripper_cmd_index = FEATURE_ORDER.index("gripper_command")
         action_gripper_index = FEATURE_ORDER.index("action_gripper")
-        if not np.isclose(vector[action_gripper_index], raw_action[6], rtol=0.0, atol=1e-6):
-            raise ValueError(f"SC5 action_gripper source mismatch at step {expected_step}")
+        if not np.isclose(vector[gripper_cmd_index], raw_action[6], rtol=0.0, atol=1e-6):
+            raise ValueError(f"D8 V3 gripper_command source mismatch at step {expected_step}")
+        if not np.isclose(vector[action_gripper_index], env_action[6], rtol=0.0, atol=1e-6):
+            raise ValueError(f"D8 V3 action_gripper source mismatch at step {expected_step}")
         output.append({
             "step": expected_step,
             "features_25d": vector.tolist(),
             "candidate_close": bool(raw_gripper_is_close(float(raw_action[6]))),
-            "feature_schema": "SC5StreamingFeatureAdapterV2_25D",
+            "feature_schema": "D8StreamingFeatureAdapterV3_25D",
             "feature_order": list(FEATURE_ORDER),
-            "feature_source": "FIT670.step+telemetry -> SC5StreamingFeatureAdapterV2",
+            "feature_source": "FIT670.step+telemetry -> D8StreamingFeatureAdapterV3",
             "action_gripper_source": ACTION_GRIPPER_SOURCE,
         })
     return output
