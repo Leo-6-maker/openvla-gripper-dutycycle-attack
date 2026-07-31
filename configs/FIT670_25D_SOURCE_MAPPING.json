@@ -11,68 +11,44 @@
       "shape": [7],
       "dtype": "float64",
       "range": "[0,1] for gripper[6]",
-      "canonical_source": true,
       "maps_to_features": ["gripper_command (index 0)", "action_dx (index 9)", "action_dy (index 10)", "action_dz (index 11)"],
       "alias_fields": ["action_raw_7d"],
-      "notes": "OpenVLA native raw action. raw_action_7d and action_raw_7d are identical. Do NOT use scored_action_7d or score_action_7d (attack-adjacent)."
+      "notes": "OpenVLA native raw action. action_raw_7d must match byte-for-byte if present."
     },
     "action_env_7d": {
       "json_path": "steps[*].action_env_7d",
       "shape": [7],
       "dtype": "float64",
       "range": "[-1,1] for gripper[6]",
-      "canonical_source": true,
       "maps_to_features": ["action_gripper (index 12)"],
-      "alias_fields": [],
-      "notes": "LIBERO postprocessed env action. Universally equals executed_action_7d[6] for the gripper dimension."
-    },
-    "executed_action_7d": {
-      "json_path": "steps[*].executed_action_7d",
-      "shape": [7],
-      "dtype": "float64",
-      "range": "[-1,1] for gripper[6]",
-      "canonical_source": false,
-      "maps_to_features": [],
-      "alias_fields": [],
-      "notes": "Confirmed: executed_action_7d[6] == action_env_7d[6] for all steps. Use action_env_7d as canonical source."
+      "notes": "LIBERO postprocessed env action. Confirmed executed_action_7d[6] == action_env_7d[6] universally."
     },
     "robot0_eef_pos": {
       "json_path": "telemetry[*].robot0_eef_pos",
       "shape": [3],
       "dtype": "float64",
-      "range": "meters, unconstrained",
-      "canonical_source": true,
+      "range": "meters",
       "maps_to_features": ["eef_x (index 3)", "eef_y (index 4)", "eef_z (index 5)"],
-      "alias_fields": [],
-      "notes": "EEF velocity (features 6-8) computed as eef[t] - eef[t-1]."
+      "notes": "Velocity (features 6-8) computed as eef[t] - eef[t-1]."
     },
     "robot0_gripper_qpos": {
       "json_path": "telemetry[*].robot0_gripper_qpos",
       "shape": [2],
       "dtype": "float64",
       "range": "radians",
-      "canonical_source": true,
-      "maps_to_features": ["gripper_qpos (index 1)", "gripper_opening_proxy (index 2)"],
-      "alias_fields": [],
-      "notes": "gripper_qpos = |qpos[0]| + |qpos[1]|. gripper_opening_proxy = same computation. NOT gripper_width (different metric)."
+      "maps_to_features": [
+        "gripper_qpos (index 1) = qpos[0] + qpos[1] (SIGNED sum)",
+        "gripper_opening_proxy (index 2) = |qpos[0]| + |qpos[1]| (ABSOLUTE sum)"
+      ],
+      "notes": "H1-R2: Feature 1 uses SIGNED sum, Feature 2 uses ABSOLUTE sum. They are semantically distinct."
     }
   },
   "privileged_fields_not_consumed": [
-    "telemetry[*].object_state (object poses)",
-    "telemetry[*].entities (entity positions)",
-    "telemetry[*].contact_pairs (contact data)",
-    "steps[*].scored_action_7d (attack-adjacent)",
-    "steps[*].score_action_7d (attack-adjacent)",
-    "SNAPSHOT_model_geometry.json (model geometry)"
-  ],
-  "available_but_not_used": [
-    "telemetry[*].robot0_eef_quat (EEF orientation)",
-    "telemetry[*].gripper_width (different from qpos proxy)"
-  ],
-  "step_identity": {
-    "step_field": "steps[*].step",
-    "telemetry_step_field": "telemetry[*].step",
-    "expected": "0-indexed, contiguous, no gaps",
-    "episode_id_field": "episode_id"
-  }
+    "telemetry[*].object_state",
+    "telemetry[*].entities",
+    "telemetry[*].contact_pairs",
+    "steps[*].scored_action_7d",
+    "steps[*].score_action_7d",
+    "SNAPSHOT_model_geometry.json"
+  ]
 }

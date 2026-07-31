@@ -284,5 +284,105 @@ class TestV3FutureParity(unittest.TestCase):
         self.assertEqual(features_at_step3["close_onset"], 1)
 
 
+class TestH1R2QposContract(unittest.TestCase):
+    """H1-R2: Feature 1 (signed sum) vs Feature 2 (absolute sum) must differ."""
+
+    def test_80_qpos_signed_vs_absolute(self):
+        """qpos=[0.02, -0.01]: signed sum=0.01, abs sum=0.03 — must differ."""
+        adapter = D8StreamingFeatureAdapterV3()
+        r = _make_step(adapter, 0, raw_gripper=0.0, env_gripper=1.0,
+                       gripper_qpos=0.01, gripper_opening_proxy=0.03)
+        self.assertTrue(r["valid"])
+        f = r["features"]
+        self.assertEqual(f["gripper_qpos"], 0.01)
+        self.assertEqual(f["gripper_opening_proxy"], 0.03)
+        self.assertNotEqual(f["gripper_qpos"], f["gripper_opening_proxy"])
+
+    def test_81_qpos_positive_equal(self):
+        """qpos=[0.02, 0.01]: signed=abs=0.03 — equal when both same sign."""
+        adapter = D8StreamingFeatureAdapterV3()
+        r = _make_step(adapter, 0, raw_gripper=0.0, env_gripper=1.0,
+                       gripper_qpos=0.03, gripper_opening_proxy=0.03)
+        f = r["features"]
+        self.assertEqual(f["gripper_qpos"], f["gripper_opening_proxy"],
+                         "signed and abs equal when both joints same sign")
+
+    def test_82_qpos_negative_both(self):
+        """qpos=[-0.01, -0.02]: signed=-0.03, abs=0.03."""
+        adapter = D8StreamingFeatureAdapterV3()
+        r = _make_step(adapter, 0, raw_gripper=0.0, env_gripper=1.0,
+                       gripper_qpos=-0.03, gripper_opening_proxy=0.03)
+        f = r["features"]
+        self.assertEqual(f["gripper_qpos"], -0.03)
+        self.assertEqual(f["gripper_opening_proxy"], 0.03)
+        self.assertNotEqual(f["gripper_qpos"], f["gripper_opening_proxy"])
+
+
+class TestH1R3FlipWindow(unittest.TestCase):
+    """H1-R3: Flip window uses deque(maxlen=32), max=31."""
+
+    def test_90_one_state_zero_flips(self):
+        adapter = D8StreamingFeatureAdapterV3()
+        r = _make_step(adapter, 0, raw_gripper=0.0, env_gripper=1.0)
+        self.assertEqual(r["features"]["recent_gripper_flip_count"], 0)
+
+    def test_91_two_alternating_one_flip(self):
+        adapter = D8StreamingFeatureAdapterV3()
+        _make_step(adapter, 0, raw_gripper=0.0, env_gripper=1.0)
+        r = _make_step(adapter, 1, raw_gripper=1.0, env_gripper=-1.0)
+        self.assertEqual(r["features"]["recent_gripper_flip_count"], 1)
+
+    def test_92_32_alternating_max_31(self):
+        adapter = D8StreamingFeatureAdapterV3()
+        for i in range(32):
+            raw = 0.0 if i % 2 == 0 else 1.0
+            env = 1.0 if i % 2 == 0 else -1.0
+            _make_step(adapter, i, raw_gripper=raw, env_gripper=env)
+        r = _make_step(adapter, 32, raw_gripper=0.0, env_gripper=1.0)
+        self.assertEqual(r["features"]["recent_gripper_flip_count"], 31,
+                         f"32 states alternating: expected 31, got {r['features']['recent_gripper_flip_count']}")
+
+    def test_93_33_alternating_still_31(self):
+        """33 pre-steps + opposite final = window at max 31 flips."""
+        adapter = D8StreamingFeatureAdapterV3()
+        for i in range(33):
+            raw = 0.0 if i % 2 == 0 else 1.0
+            env = 1.0 if i % 2 == 0 else -1.0
+            _make_step(adapter, i, raw_gripper=raw, env_gripper=env)
+        # Step 33: OPPOSITE of step 32 to create a flip at the boundary
+        # step 32 is even→close, so step 33 is odd→open
+        r = _make_step(adapter, 33, raw_gripper=1.0, env_gripper=-1.0)
+        self.assertEqual(r["features"]["recent_gripper_flip_count"], 31,
+                         f"33+1 alternating: expected 31, got {r['features']['recent_gripper_flip_count']}")
+
+    def test_94_96_alternating_still_31(self):
+        adapter = D8StreamingFeatureAdapterV3()
+        for i in range(96):
+            raw = 0.0 if i % 2 == 0 else 1.0
+            env = 1.0 if i % 2 == 0 else -1.0
+            _make_step(adapter, i, raw_gripper=raw, env_gripper=env)
+        r = _make_step(adapter, 96, raw_gripper=0.0, env_gripper=1.0)
+        self.assertEqual(r["features"]["recent_gripper_flip_count"], 31,
+                         "96 states alternating: window always capped at 31")
+
+    def test_95_long_constant_then_one_flip(self):
+        adapter = D8StreamingFeatureAdapterV3()
+        for i in range(50):
+            _make_step(adapter, i, raw_gripper=0.0, env_gripper=1.0)
+        r = _make_step(adapter, 50, raw_gripper=1.0, env_gripper=-1.0)
+        self.assertEqual(r["features"]["recent_gripper_flip_count"], 1,
+                         "one flip after long constant: should be 1")
+
+    def test_96_reset_clears_flip_window(self):
+        adapter = D8StreamingFeatureAdapterV3()
+        for i in range(10):
+            raw = 0.0 if i % 2 == 0 else 1.0
+            env = 1.0 if i % 2 == 0 else -1.0
+            _make_step(adapter, i, raw_gripper=raw, env_gripper=env)
+        adapter.reset()
+        r = _make_step(adapter, 0, raw_gripper=0.0, env_gripper=1.0)
+        self.assertEqual(r["features"]["recent_gripper_flip_count"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,11 +1,12 @@
 """D8 streaming feature adapter V3 — multi-event causal, no single-close assumption.
 
 Key differences from SC5StreamingFeatureAdapterV2:
-  - close_onset: fires on EVERY OPEN→CLOSE transition (not just first)
+  - close_onset: fires on EVERY OPEN->CLOSE transition (not just first)
   - time_since_close: relative to most recent close onset
   - eef_z_delta_since_close: relative to most recent close onset
-  - flip_count: windowed (last history_len steps), not episode-cumulative
+  - flip_count: windowed via deque(maxlen=32), max=31, not episode-cumulative
   - action_gripper: LIBERO postprocessed env gripper (semantically distinct from gripper_command)
+  - gripper_qpos: SIGNED sum of qpos[0]+qpos[1] (distinct from opening_proxy=abs sum)
   - history_len frozen at 32
 
 V2 is preserved as-is for baseline comparison.
@@ -13,26 +14,27 @@ V2 is preserved as-is for baseline comparison.
 from __future__ import annotations
 
 import math
-from typing import List, Optional
+from collections import deque
+from typing import Deque, List, Optional
 
 import numpy as np
 
-MIN_HISTORY = 32  # frozen
+HISTORY_LEN = 32  # frozen — must match MIN_HISTORY
+MIN_HISTORY = HISTORY_LEN
+MAX_FLIPS = HISTORY_LEN - 1  # maximum possible flips in a 32-state window
+
 FEATURE_NAMES = [
-    # 13D proprio/action
     "gripper_command", "gripper_qpos", "gripper_opening_proxy",
     "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
     "action_dx", "action_dy", "action_dz", "action_gripper",
-    # Causal derived features
     "recent_close_streak", "recent_open_streak", "recent_gripper_flip_count",
-    # Multi-event causal features
     "close_onset", "time_since_close", "eef_speed",
     "eef_z_delta_since_close", "qpos_delta_1", "qpos_delta_3",
     "opening_proxy_delta_3", "opening_proxy_variance_5", "eef_speed_variance_5",
 ]
 
-# Identity: same names, same order as V2 (and schema)
-assert FEATURE_NAMES == [
+# Frozen feature contract — verified at import time
+_EXPECTED = [
     "gripper_command", "gripper_qpos", "gripper_opening_proxy",
     "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
     "action_dx", "action_dy", "action_dz", "action_gripper",
@@ -40,7 +42,9 @@ assert FEATURE_NAMES == [
     "close_onset", "time_since_close", "eef_speed",
     "eef_z_delta_since_close", "qpos_delta_1", "qpos_delta_3",
     "opening_proxy_delta_3", "opening_proxy_variance_5", "eef_speed_variance_5",
-], "V3 feature names must match frozen schema order"
+]
+if FEATURE_NAMES != _EXPECTED:
+    raise SystemError("V3 feature names diverged from frozen schema order")
 
 
 def _is_valid_float(v) -> bool:
@@ -55,17 +59,20 @@ def _is_valid_float(v) -> bool:
 class D8StreamingFeatureAdapterV3:
     """Continuous per-step feature adapter — multi-event causal.
 
-    Every OPEN→CLOSE transition produces close_onset=1.
+    Every OPEN->CLOSE transition produces close_onset=1.
     All derived features reference the most recent close onset.
-    Flip count is windowed, not cumulative.
+    Flip count uses a fixed-length deque(maxlen=32) — max value is 31.
     """
 
     def __init__(self, history_len: int = MIN_HISTORY):
-        self.history_len = max(history_len, MIN_HISTORY)
+        if history_len != MIN_HISTORY:
+            raise ValueError(f"history_len is frozen at {MIN_HISTORY}")
+        self.history_len = MIN_HISTORY
         self._reset()
 
     def _reset(self):
         self.history: List[dict] = []
+        self._flip_window: Deque[bool] = deque(maxlen=self.history_len)
         self._next_expected_step = 0
         self._close_streak = 0
         self._open_streak = 0
@@ -80,13 +87,15 @@ class D8StreamingFeatureAdapterV3:
         return self._next_expected_step
 
     def _windowed_flip_count(self) -> int:
-        """Count gripper state flips within the history window only."""
+        """Count gripper state flips within the deque window.
+
+        With maxlen=32, the max possible flip count is 31
+        (31 transitions between 32 states).
+        """
         count = 0
-        start = max(0, len(self.history) - self.history_len)
-        for i in range(start + 1, len(self.history)):
-            prev = self.history[i - 1].get('raw_close')
-            curr = self.history[i].get('raw_close')
-            if prev is not None and curr is not None and prev != curr:
+        items = list(self._flip_window)
+        for i in range(1, len(items)):
+            if items[i - 1] != items[i]:
                 count += 1
         return count
 
@@ -97,7 +106,13 @@ class D8StreamingFeatureAdapterV3:
                eef_vx: float, eef_vy: float, eef_vz: float,
                action_dx: float, action_dy: float, action_dz: float,
                action_gripper: float) -> dict:
-        """Process one step. action_gripper = LIBERO postprocessed env gripper."""
+        """Process one step.
+
+        Args:
+            gripper_qpos: SIGNED sum qpos[0] + qpos[1]
+            gripper_opening_proxy: ABSOLUTE sum |qpos[0]| + |qpos[1]|
+            action_gripper: LIBERO postprocessed env gripper
+        """
 
         if step_id != self._next_expected_step:
             raise ValueError(
@@ -126,6 +141,14 @@ class D8StreamingFeatureAdapterV3:
             return {'step': step_id, 'valid': False, 'features': None,
                     'error': 'gripper_semantics_invalid'}
 
+        # Update flip window BEFORE computing flip count
+        # (window includes the current state after append)
+        if self._flip_window:
+            prev_close = self._flip_window[-1]
+        else:
+            prev_close = None
+        self._flip_window.append(raw_close)
+
         # Streaks
         if raw_close:
             self._close_streak += 1
@@ -134,7 +157,7 @@ class D8StreamingFeatureAdapterV3:
             self._open_streak += 1
             self._close_streak = 0
 
-        # V3: close_onset fires on EVERY open→close transition
+        # V3: close_onset fires on EVERY open->close transition
         close_onset = 1 if (raw_close and self._close_streak == 1) else 0
         if close_onset:
             self._last_close_step = step_id
@@ -152,15 +175,12 @@ class D8StreamingFeatureAdapterV3:
         else:
             eef_z_delta = 0.0
 
-        # V3: windowed flip count (not cumulative)
+        # V3: windowed flip count — count transitions within the deque window
         flip_count = self._windowed_flip_count()
-        # Add current flip if transition just happened
-        if self._prev_gripper_close is not None and self._prev_gripper_close != raw_close:
-            flip_count += 1
 
         self._prev_gripper_close = raw_close
 
-        # Qpos deltas
+        # Qpos deltas (using gripper_qpos = signed sum)
         qpos_delta_1 = 0.0
         qpos_delta_3 = 0.0
         if len(self.history) >= 1 and self.history[-1].get('valid'):
@@ -168,7 +188,7 @@ class D8StreamingFeatureAdapterV3:
         if len(self.history) >= 3 and self.history[-3].get('valid'):
             qpos_delta_3 = gripper_qpos - self.history[-3]['gripper_qpos']
 
-        # Opening proxy deltas
+        # Opening proxy deltas (using gripper_opening_proxy = abs sum)
         op_delta_3 = 0.0
         op_var_5 = 0.0
         recent_proxies = []
@@ -191,15 +211,16 @@ class D8StreamingFeatureAdapterV3:
 
         features = {
             'gripper_command': raw_gripper,
+            # H1-R2: gripper_qpos = SIGNED sum (feature 1), distinct from opening_proxy
             'gripper_qpos': gripper_qpos,
             'gripper_opening_proxy': gripper_opening_proxy,
             'eef_x': eef_x, 'eef_y': eef_y, 'eef_z': eef_z,
             'eef_vx': eef_vx, 'eef_vy': eef_vy, 'eef_vz': eef_vz,
             'action_dx': action_dx, 'action_dy': action_dy, 'action_dz': action_dz,
-            # V3: action_gripper = LIBERO postprocessed env gripper (semantically distinct from gripper_command)
             'action_gripper': action_gripper,
             'recent_close_streak': self._close_streak,
             'recent_open_streak': self._open_streak,
+            # H1-R3: windowed flip count, max=31, via deque
             'recent_gripper_flip_count': flip_count,
             'close_onset': close_onset,
             'time_since_close': time_since_close,
