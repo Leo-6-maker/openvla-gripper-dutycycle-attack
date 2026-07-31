@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import math
 import os
 import sys
 from datetime import datetime, timezone
@@ -57,6 +58,28 @@ REQUIRED_P5_GATES = {
     "validation_completes",
     "val_loss_finite",
 }
+REQUIRED_FOLD_STAT_KEYS = {
+    "raw_val_identities",
+    "raw_train_identities",
+    "effective_val_identities",
+    "effective_train_identities",
+    "raw_val_steps",
+    "raw_train_steps",
+    "effective_val_steps",
+    "effective_train_steps",
+    "train_TRUE",
+    "train_FALSE",
+    "val_TRUE",
+    "val_FALSE",
+    "train_positive_events",
+    "val_positive_events",
+    "train_negative_spans",
+    "val_negative_spans",
+    "train_positive_ESS",
+    "train_negative_ESS",
+    "val_positive_ESS",
+    "val_negative_ESS",
+}
 
 
 def _write_seal(root: Path) -> str:
@@ -93,6 +116,61 @@ def _load_json(path: Path) -> dict:
     if not isinstance(value, dict):
         raise RuntimeError(f"expected JSON object: {path}")
     return value
+
+
+def _event_weight_closure(manifest: dict) -> dict:
+    stats = manifest.get("fold_statistics")
+    failures = []
+    if not isinstance(stats, dict) or set(stats) != {"0", "1", "2", "3", "4"}:
+        return {
+            "pass": False,
+            "failures": ["fold_statistics must contain exactly folds 0..4"],
+        }
+
+    total_val_events = 0
+    total_val_negative_spans = 0
+    for fold in sorted(stats):
+        row = stats[fold]
+        if not isinstance(row, dict):
+            failures.append(f"fold {fold}: statistics row is not an object")
+            continue
+        missing = sorted(REQUIRED_FOLD_STAT_KEYS - set(row))
+        if missing:
+            failures.append(f"fold {fold}: missing keys {missing}")
+            continue
+        for key in (
+            "train_positive_events",
+            "val_positive_events",
+            "train_negative_spans",
+            "val_negative_spans",
+        ):
+            value = row[key]
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                failures.append(f"fold {fold}: invalid {key}={value!r}")
+        for key in (
+            "train_positive_ESS",
+            "train_negative_ESS",
+            "val_positive_ESS",
+            "val_negative_ESS",
+        ):
+            value = row[key]
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                failures.append(f"fold {fold}: invalid {key}={value!r}")
+            elif not math.isfinite(float(value)) or float(value) <= 0.0:
+                failures.append(f"fold {fold}: nonpositive/nonfinite {key}={value!r}")
+        total_val_events += int(row["val_positive_events"])
+        total_val_negative_spans += int(row["val_negative_spans"])
+
+    if total_val_events != 675:
+        failures.append(f"validation positive-event union {total_val_events} != 675")
+    if total_val_negative_spans <= 0:
+        failures.append("validation negative-span union is empty")
+    return {
+        "pass": not failures,
+        "total_val_positive_events": total_val_events,
+        "total_val_negative_spans": total_val_negative_spans,
+        "failures": failures,
+    }
 
 
 def audit(
@@ -140,7 +218,8 @@ def audit(
     checks["identity_closure"] = all(
         manifest.get("identity_closure", {}).get("included") == 643
         and manifest.get("identity_closure", {}).get("fully_excluded") == 27
-        and manifest.get("identity_closure", {}).get("excluded_by_category") == {"articulated_task": 27}
+        and manifest.get("identity_closure", {}).get("excluded_by_category")
+        == {"articulated_task": 27}
         for manifest in (cache_manifest_a, cache_manifest_b)
     )
     checks["step_closure"] = all(
@@ -149,25 +228,38 @@ def audit(
         and manifest.get("total_episodes") == 670
         for manifest in (cache_manifest_a, cache_manifest_b)
     )
+    event_closure_a = _event_weight_closure(cache_manifest_a)
+    event_closure_b = _event_weight_closure(cache_manifest_b)
+    checks["cache_a_event_weight_closure"] = event_closure_a["pass"]
+    checks["cache_b_event_weight_closure"] = event_closure_b["pass"]
+    checks["cache_ab_event_weight_identity"] = event_closure_a == event_closure_b
 
     p5_gates = p5_report.get("gates", {})
     checks["p5_schema"] = p5_report.get("schema") == "D8_P5_25D_GPU_SMOKE_V2"
     checks["p5_all_required_gates_present"] = set(p5_gates) == REQUIRED_P5_GATES
-    checks["p5_all_gates_pass"] = bool(p5_report.get("all_gates_pass")) and all(p5_gates.values())
+    checks["p5_all_gates_pass"] = bool(p5_report.get("all_gates_pass")) and all(
+        p5_gates.values()
+    )
     checks["p5_status_nonconsumer"] = (
         p5_report.get("status") == "PASS_ENGINEERING_NONCONSUMABLE"
         and p5_report.get("consumer_eligible") is False
     )
     checks["p5_source_binding"] = p5_report.get("source_binding") == expected_binding
-    checks["p5_receipt_source_binding"] = p5_receipt.get("source_binding") == expected_binding
+    checks["p5_receipt_source_binding"] = (
+        p5_receipt.get("source_binding") == expected_binding
+    )
 
     cache_seals = {
         cache_comparison["cache_a"]["package_seal"],
         cache_comparison["cache_b"]["package_seal"],
     }
-    bound_cache_seal = p5_report.get("cache_binding", {}).get("cache_sha256sums_sha256")
+    bound_cache_seal = p5_report.get("cache_binding", {}).get(
+        "cache_sha256sums_sha256"
+    )
     checks["p5_cache_binding"] = bound_cache_seal in cache_seals
-    checks["p5_receipt_cache_binding"] = p5_receipt.get("cache_binding") == p5_report.get("cache_binding")
+    checks["p5_receipt_cache_binding"] = (
+        p5_receipt.get("cache_binding") == p5_report.get("cache_binding")
+    )
     if bound_cache_seal == cache_comparison["cache_a"]["package_seal"]:
         bound_cache_manifest = cache_a / "CACHE_MANIFEST.json"
     elif bound_cache_seal == cache_comparison["cache_b"]["package_seal"]:
@@ -181,7 +273,8 @@ def audit(
     )
     checks["p5_artifact_sealed"] = p5_seal["listed_file_count"] >= 7
     checks["protected_access_zero"] = all(
-        access.get(key) == 0 for key in ("test_reads", "protected_reads", "eval160_reads")
+        access.get(key) == 0
+        for key in ("test_reads", "protected_reads", "eval160_reads")
     ) and all(
         access.get(key) is False
         for key in (
@@ -192,11 +285,19 @@ def audit(
         )
     )
     expected_script_provenance = {
-        "p5_script_sha256": sha256_file(ROOT / "scripts/detector_v5/run_d8_p5_25d_gpu_smoke.py"),
-        "train_core_sha256": sha256_file(ROOT / "scripts/detector_v5/d8_train_core.py"),
-        "source_contract_sha256": sha256_file(ROOT / "scripts/detector_v5/d8_source_contract.py"),
+        "p5_script_sha256": sha256_file(
+            ROOT / "scripts/detector_v5/run_d8_p5_25d_gpu_smoke.py"
+        ),
+        "train_core_sha256": sha256_file(
+            ROOT / "scripts/detector_v5/d8_train_core.py"
+        ),
+        "source_contract_sha256": sha256_file(
+            ROOT / "scripts/detector_v5/d8_source_contract.py"
+        ),
     }
-    checks["p5_script_provenance"] = p5_report.get("script_provenance") == expected_script_provenance
+    checks["p5_script_provenance"] = (
+        p5_report.get("script_provenance") == expected_script_provenance
+    )
     checks["p5_counts"] = (
         p5_report.get("train_samples") == 141_694
         and p5_report.get("val_samples") == 37_980
@@ -206,8 +307,10 @@ def audit(
     checks["p5_normalization_binding"] = (
         normalization.get("schema") == "D8_NORMALIZATION_V2"
         and normalization.get("fit_on") == "outer_training_fold_only"
-        and normalization.get("source_identity_digest") == p5_report.get("train_identity_digest")
-        and normalization.get("train_sample_count") == p5_report.get("train_samples")
+        and normalization.get("source_identity_digest")
+        == p5_report.get("train_identity_digest")
+        and normalization.get("train_sample_count")
+        == p5_report.get("train_samples")
     )
     checks["p5_batch_schema"] = (
         batch_schema.get("schema") == "D8_BATCH_SCHEMA_V1"
@@ -216,16 +319,21 @@ def audit(
     )
     try:
         try:
-            checkpoint = torch.load(p5_root / "CHECKPOINT.pt", map_location="cpu", weights_only=False)
+            checkpoint = torch.load(
+                p5_root / "CHECKPOINT.pt", map_location="cpu", weights_only=False
+            )
         except TypeError:
             checkpoint = torch.load(p5_root / "CHECKPOINT.pt", map_location="cpu")
     except Exception:
         checkpoint = {}
     checks["p5_checkpoint_binding"] = (
         checkpoint.get("schema") == "D8_STUDENT_CHECKPOINT_V2"
-        and checkpoint.get("source_snapshot_sha256") == source["source_snapshot_sha256"]
-        and checkpoint.get("executable_source_commit") == source["executable_source_commit"]
-        and checkpoint.get("executable_source_tree") == source["executable_source_tree"]
+        and checkpoint.get("source_snapshot_sha256")
+        == source["source_snapshot_sha256"]
+        and checkpoint.get("executable_source_commit")
+        == source["executable_source_commit"]
+        and checkpoint.get("executable_source_tree")
+        == source["executable_source_tree"]
         and checkpoint.get("normalization") == normalization
     )
 
@@ -249,6 +357,8 @@ def audit(
     )
 
     details["cache_comparison"] = cache_comparison
+    details["cache_a_event_weight_closure"] = event_closure_a
+    details["cache_b_event_weight_closure"] = event_closure_b
     details["assert_violations"] = assert_violations
     details["legacy_snapshot_references"] = legacy_snapshot_references
     details["p5_package_seal"] = p5_seal["sha256sums_sha256"]
@@ -286,7 +396,9 @@ def main() -> int:
     )
     report["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
     args.output_root.parent.mkdir(parents=True, exist_ok=True)
-    staging = args.output_root.with_name(f".{args.output_root.name}.staging.{os.getpid()}")
+    staging = args.output_root.with_name(
+        f".{args.output_root.name}.staging.{os.getpid()}"
+    )
     staging.mkdir(parents=True, exist_ok=False)
     (staging / "SUBAGENT_REVIEW.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
