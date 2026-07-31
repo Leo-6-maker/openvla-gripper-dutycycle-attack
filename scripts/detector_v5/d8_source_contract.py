@@ -1,8 +1,8 @@
 """Fail-closed source and artifact provenance helpers for Detector-v3 D8.
 
-SOURCE_SNAPSHOT_V2 is deliberately external to the Git tree.  It is generated
+SOURCE_SNAPSHOT_V2 is deliberately external to the Git tree. It is generated
 from the exact committed checkout that will be archived/deployed and is passed
-explicitly to cache/P5 commands.  This avoids the self-referential failure mode
+explicitly to cache/P5 commands. This avoids the self-referential failure mode
 of committing a snapshot that hashes files changed by a later metadata commit.
 """
 from __future__ import annotations
@@ -16,6 +16,9 @@ from typing import Iterable
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 GIT_OID_RE = re.compile(r"^[0-9a-f]{40}$")
 
+# These lists include direct execution files and import-time transitive
+# dependencies. A formal artifact must never execute code absent from the
+# external source snapshot.
 CACHE_REQUIRED_SOURCE_FILES = (
     "scripts/detector_v5/build_d8_25d_cache.py",
     "scripts/detector_v5/d8_source_contract.py",
@@ -23,6 +26,7 @@ CACHE_REQUIRED_SOURCE_FILES = (
     "scripts/detector_v5/d8_event_consolidator.py",
     "scripts/detector_v5/run_d8_formal_g_sensitivity.py",
     "scripts/detector_v5/audit_r3_contact_input.py",
+    "src/gripper_attack/v5_r3_teacher.py",
     "src/gripper_attack/d8_streaming_features_v3.py",
     "src/gripper_attack/action_contract.py",
     "src/gripper_attack/seal_utils.py",
@@ -35,6 +39,7 @@ P5_REQUIRED_SOURCE_FILES = (
     "scripts/detector_v5/d8_train_core.py",
     "scripts/detector_v5/d8_source_contract.py",
     "scripts/detector_v5/audit_r3_contact_input.py",
+    "src/gripper_attack/v5_r3_teacher.py",
     "src/gripper_attack/seal_utils.py",
     "configs/DETECTOR_V3_25D_CAUSAL_FEATURE_SCHEMA.json",
 )
@@ -160,11 +165,19 @@ def verify_sha256_manifest(
         raise SourceContractError(f"missing SHA256SUMS seal in {root}")
 
     actual_manifest_sha = sha256_file(sums)
-    sidecar_lines = [line.strip() for line in sums_sidecar.read_text("utf-8").splitlines() if line.strip()]
+    sidecar_lines = [
+        line.strip()
+        for line in sums_sidecar.read_text("utf-8").splitlines()
+        if line.strip()
+    ]
     if len(sidecar_lines) != 1:
         raise SourceContractError(f"{sums_sidecar}: expected exactly one non-empty line")
     parts = sidecar_lines[0].split(maxsplit=1)
-    if len(parts) != 2 or parts[1].strip() != "SHA256SUMS" or parts[0] != actual_manifest_sha:
+    if (
+        len(parts) != 2
+        or parts[1].strip() != "SHA256SUMS"
+        or parts[0] != actual_manifest_sha
+    ):
         raise SourceContractError(f"{sums_sidecar}: SHA256SUMS digest mismatch")
 
     listed: dict[str, str] = {}
