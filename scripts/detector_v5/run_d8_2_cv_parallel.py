@@ -1,247 +1,1040 @@
-"""D8 CV: Safe parallel launcher — single dispatch queue, one job per GPU at a time.
+"""Fail-closed D8-3B dispatcher.
 
-D8-3B protocol: CONFIGS must be ["B3"]. Any other configuration aborts.
-Kill switch: touch STOP_D8_3B in output root to prevent new launches + drain running jobs.
+This file only dispatches the frozen B3 matrix.  It does not select GPUs,
+change training definitions, or authorize downstream evaluation/attack work.
 """
 from __future__ import annotations
 
-import argparse, json, os, signal, subprocess, sys, time
-from collections import defaultdict
+import argparse
+import hashlib
+import json
+import math
+import os
+import signal
+import subprocess
+import sys
+import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Callable, Mapping
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 
-FOLDS = [0, 1, 2, 3, 4]
-GPU_IDS = [0, 1, 2, 3, 6, 7]
+D8_3B_CONFIGS = ["B3"]
+D8_3B_SEEDS = list(range(20260720, 20260730))
+D8_3B_FOLDS = [0, 1, 2, 3, 4]
+D8_3B_EPOCHS = 100
+D8_3B_TOTAL_JOBS = 50
+FOLDS = D8_3B_FOLDS
 
-# ── D8-3B frozen matrix ──────────────────────────────────────────────
-# Changing CONFIGS or FOLDS without gate re-approval invalidates D8-3B.
-ALLOWED_D8_3B_CONFIGS = frozenset({"B3"})
-ALLOWED_D8_3B_FOLDS = frozenset(FOLDS)
+ALLOWED_STATES = {
+    "PENDING",
+    "RUNNING",
+    "COMPLETED",
+    "FAILED",
+    "SKIPPED_KILL_SWITCH",
+    "ABORTED",
+}
+METRIC_FIELDS = ("auroc", "balanced_accuracy", "mcc")
+PROVENANCE_FIELDS = (
+    "config",
+    "seed",
+    "fold",
+    "epochs",
+    "threshold",
+    "optimizer",
+    "learning_rate",
+    "weight_normalization",
+    "cache_root",
+    "cache_seal",
+    "source_commit",
+    "source_tree",
+    "unit_script_sha256",
+    "parallel_launcher_sha256",
+    "train_core_sha256",
+    "python_environment",
+    "started_utc",
+    "finished_utc",
+)
 
 
-def _check_kill_switch(output_root: Path) -> bool:
-    return (output_root / "STOP_D8_3B").exists()
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
-def _build_job_list(configs: list[str], folds: list[int], gpu_ids: list[int], seeds: list[int]):
-    """Flat list of (config, fold, seed) — GPU assigned at dispatch time."""
-    jobs = []
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def atomic_write_text(path: Path, value: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent)
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
+            handle.write(value)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, Mapping):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
+def atomic_write_json(path: Path, value: Mapping[str, Any]) -> None:
+    atomic_write_text(
+        path,
+        json.dumps(_json_safe(value), indent=2, sort_keys=True, allow_nan=False) + "\n",
+    )
+
+
+def _split_csv(raw: str, cast: Callable[[str], Any] = str) -> list[Any]:
+    if raw is None:
+        raise ValueError("CSV value is required")
+    pieces = [item.strip() for item in raw.split(",")]
+    if not pieces or any(not item for item in pieces):
+        raise ValueError(f"empty CSV item: {raw!r}")
+    try:
+        return [cast(item) for item in pieces]
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"invalid CSV value: {raw!r}") from exc
+
+
+def validate_gpu_ids(gpu_ids: list[int]) -> list[int]:
+    if not gpu_ids:
+        raise ValueError("GPU list must be non-empty")
+    if any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in gpu_ids):
+        raise ValueError(f"GPU IDs must be unique non-negative integers: {gpu_ids!r}")
+    if len(set(gpu_ids)) != len(gpu_ids):
+        raise ValueError(f"duplicate GPU IDs are forbidden: {gpu_ids!r}")
+    return list(gpu_ids)
+
+
+def validate_d8_3b_matrix(
+    configs: list[str],
+    seeds: list[int],
+    folds: list[int],
+    epochs: int,
+    gpu_ids: list[int],
+) -> int:
+    """Validate every frozen matrix dimension before creating output or children."""
+
+    if list(configs) != D8_3B_CONFIGS:
+        raise ValueError(f"D8-3B requires configs exactly {D8_3B_CONFIGS!r}, got {configs!r}")
+    if list(seeds) != D8_3B_SEEDS:
+        raise ValueError(f"D8-3B requires seeds exactly {D8_3B_SEEDS!r}, got {seeds!r}")
+    if list(folds) != D8_3B_FOLDS:
+        raise ValueError(f"D8-3B requires folds exactly {D8_3B_FOLDS!r}, got {folds!r}")
+    if epochs != D8_3B_EPOCHS:
+        raise ValueError(f"D8-3B requires epochs={D8_3B_EPOCHS}, got {epochs!r}")
+    validate_gpu_ids(gpu_ids)
+    total_jobs = len(configs) * len(seeds) * len(folds)
+    if total_jobs != D8_3B_TOTAL_JOBS:
+        raise ValueError(f"D8-3B requires total_jobs={D8_3B_TOTAL_JOBS}, got {total_jobs}")
+    return total_jobs
+
+
+def _is_hex(value: Any, length: int) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == length
+        and all(character in "0123456789abcdefABCDEF" for character in value)
+    )
+
+
+def validate_python_environment(python_bin: str) -> dict[str, Any]:
+    if not python_bin:
+        raise ValueError("--python-bin or D8_PYTHON_BIN is required")
+    executable = Path(python_bin).expanduser()
+    if not executable.is_absolute() or not executable.is_file():
+        raise ValueError(f"python executable must be an existing absolute file: {python_bin!r}")
+    executable = executable.resolve()
+    probe = (
+        "import json, os, platform, sys\n"
+        "import numpy, sklearn, torch\n"
+        "print(json.dumps({"
+        "'python_version': sys.version,"
+        "'python_implementation': platform.python_implementation(),"
+        "'executable': os.path.abspath(sys.executable),"
+        "'torch_version': torch.__version__,"
+        "'cuda_version': torch.version.cuda,"
+        "'cuda_available': bool(torch.cuda.is_available()),"
+        "'numpy_version': numpy.__version__,"
+        "'sklearn_version': sklearn.__version__"
+        "}, sort_keys=True))"
+    )
+    try:
+        result = subprocess.run(
+            [str(executable), "-c", probe],
+            cwd=str(ROOT),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(f"python environment probe failed: {executable}") from exc
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"python environment probe returned {result.returncode}: {result.stderr[-1000:]}"
+        )
+    try:
+        environment = json.loads(result.stdout.strip())
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("python environment probe did not return JSON") from exc
+    if environment.get("executable") != str(executable):
+        raise RuntimeError(
+            f"python executable binding mismatch: {environment.get('executable')!r} != {str(executable)!r}"
+        )
+    required = (
+        "python_version",
+        "torch_version",
+        "cuda_version",
+        "cuda_available",
+        "numpy_version",
+        "sklearn_version",
+        "executable",
+    )
+    if any(key not in environment for key in required):
+        raise RuntimeError(f"python environment probe missing keys: {required!r}")
+    return environment
+
+
+def _git_value(*args: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(ROOT), *args],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"git provenance failed: {args!r}: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def git_provenance() -> dict[str, str]:
+    if _git_value("status", "--porcelain"):
+        raise RuntimeError("source worktree is dirty; refusing to launch")
+    commit = _git_value("rev-parse", "HEAD")
+    tree = _git_value("rev-parse", "HEAD^{tree}")
+    if not _is_hex(commit, 40) or not _is_hex(tree, 40):
+        raise RuntimeError("source commit/tree are not full SHA-1 values")
+    return {"source_commit": commit, "source_tree": tree}
+
+
+def _job_identity(config: str, seed: int, fold: int) -> str:
+    return f"{config}_seed{seed}_fold{fold}"
+
+
+def _expected_provenance(
+    *,
+    config: str,
+    seed: int,
+    fold: int,
+    epochs: int,
+    cache_root: str,
+    cache_seal: str,
+    source_commit: str,
+    source_tree: str,
+    unit_script_sha256: str,
+    parallel_launcher_sha256: str,
+    train_core_sha256: str,
+    python_environment: Mapping[str, Any],
+    started_utc: str,
+    finished_utc: str | None,
+) -> dict[str, Any]:
+    return {
+        "config": config,
+        "seed": seed,
+        "fold": fold,
+        "epochs": epochs,
+        "threshold": 0.0,
+        "optimizer": "Adam",
+        "learning_rate": 1e-3,
+        "weight_normalization": "mean_to_one",
+        "cache_root": cache_root,
+        "cache_seal": cache_seal,
+        "source_commit": source_commit,
+        "source_tree": source_tree,
+        "unit_script_sha256": unit_script_sha256,
+        "parallel_launcher_sha256": parallel_launcher_sha256,
+        "train_core_sha256": train_core_sha256,
+        "python_environment": dict(python_environment),
+        "started_utc": started_utc,
+        "finished_utc": finished_utc,
+    }
+
+
+def build_jobs(
+    *,
+    configs: list[str],
+    seeds: list[int],
+    folds: list[int],
+    gpu_ids: list[int],
+    epochs: int,
+    cache_root: str,
+    cache_seal: str,
+    output_root: Path,
+    python_bin: str,
+    source_commit: str,
+    source_tree: str,
+    python_environment: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    unit_script = ROOT / "scripts" / "detector_v5" / "run_d8_2_cv_unit.py"
+    launcher_script = Path(__file__).resolve()
+    train_core = ROOT / "scripts" / "detector_v5" / "d8_train_core.py"
+    unit_sha = sha256_file(unit_script)
+    launcher_sha = sha256_file(launcher_script)
+    train_core_sha = sha256_file(train_core)
+    receipt_path = output_root / "EXECUTION_RECEIPT.json"
+    jobs: list[dict[str, Any]] = []
+    planned_index = 0
     for seed in seeds:
         for config in configs:
             for fold in folds:
-                jobs.append((config, fold, seed))
+                unit_dir = output_root / f"seed{seed}" / f"{config}_fold{fold}"
+                metrics_path = unit_dir / "metrics.json"
+                checkpoint_path = unit_dir / "checkpoint.pt"
+                predictions_path = unit_dir / "predictions.json"
+                log_path = unit_dir / "train.log"
+                command = [
+                    str(Path(python_bin).resolve()),
+                    "-u",
+                    str(unit_script),
+                    "--cache-root",
+                    cache_root,
+                    "--config",
+                    config,
+                    "--fold",
+                    str(fold),
+                    "--seed",
+                    str(seed),
+                    "--epochs",
+                    str(epochs),
+                    "--output-dir",
+                    str(unit_dir),
+                    "--expected-cache-seal",
+                    cache_seal,
+                    "--source-commit",
+                    source_commit,
+                    "--source-tree",
+                    source_tree,
+                    "--launcher-sha256",
+                    launcher_sha,
+                    "--train-core-sha256",
+                    train_core_sha,
+                    "--execution-receipt",
+                    str(receipt_path),
+                ]
+                started_utc = utc_now()
+                job = {
+                    "job_id": _job_identity(config, seed, fold),
+                    "config": config,
+                    "seed": seed,
+                    "fold": fold,
+                    "planned_index": planned_index,
+                    "status": "PENDING",
+                    "gpu": None,
+                    "planned_gpu": gpu_ids[planned_index % len(gpu_ids)],
+                    "pid": None,
+                    "command": command,
+                    "started_utc": None,
+                    "finished_utc": None,
+                    "exit_code": None,
+                    "metrics_path": str(metrics_path),
+                    "checkpoint_path": str(checkpoint_path),
+                    "predictions_path": str(predictions_path),
+                    "log_path": str(log_path),
+                    "failure_reason": None,
+                    "expected_provenance": _expected_provenance(
+                        config=config,
+                        seed=seed,
+                        fold=fold,
+                        epochs=epochs,
+                        cache_root=cache_root,
+                        cache_seal=cache_seal,
+                        source_commit=source_commit,
+                        source_tree=source_tree,
+                        unit_script_sha256=unit_sha,
+                        parallel_launcher_sha256=launcher_sha,
+                        train_core_sha256=train_core_sha,
+                        python_environment=python_environment,
+                        started_utc=started_utc,
+                        finished_utc=None,
+                    ),
+                }
+                jobs.append(job)
+                planned_index += 1
     return jobs
 
 
-def launch_unit(config: str, fold: int, seed: int, gpu: int,
-                cache_root: str, output_root: str, python: str, epochs: int) -> subprocess.Popen:
-    unit_dir = Path(output_root) / f"seed{seed}" / f"{config}_fold{fold}"
-    unit_dir.mkdir(parents=True, exist_ok=True)
-    log_path = unit_dir / "train.log"
+def new_manifest(
+    *,
+    jobs: list[dict[str, Any]],
+    configs: list[str],
+    seeds: list[int],
+    folds: list[int],
+    epochs: int,
+    gpu_ids: list[int],
+    source: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema": "D8_3B_JOB_MANIFEST_V2",
+        "state_machine": sorted(ALLOWED_STATES),
+        "dispatcher_pid": os.getpid(),
+        "created_utc": utc_now(),
+        "finished_utc": None,
+        "abort_reason": None,
+        "verdict": None,
+        "matrix": {
+            "configs": list(configs),
+            "seeds": list(seeds),
+            "folds": list(folds),
+            "epochs": epochs,
+            "gpus": list(gpu_ids),
+            "planned_jobs": len(jobs),
+        },
+        "provenance": dict(source),
+        "jobs": jobs,
+    }
 
-    cmd = [
-        python, "-u", str(ROOT / "scripts" / "detector_v5" / "run_d8_2_cv_unit.py"),
-        "--cache-root", cache_root,
-        "--config", config,
-        "--fold", str(fold),
-        "--seed", str(seed),
-        "--epochs", str(epochs),
-        "--output-dir", str(unit_dir),
+
+def _check_path(path_value: str, expected: Path) -> bool:
+    path = Path(path_value)
+    return path == expected and not path.is_symlink() and path.is_file()
+
+
+def _load_checkpoint(path: Path) -> Mapping[str, Any]:
+    import torch
+
+    try:
+        return torch.load(str(path), map_location="cpu", weights_only=False)
+    except TypeError:
+        return torch.load(str(path), map_location="cpu")
+
+
+def validate_job_artifacts(job: Mapping[str, Any], returncode: int) -> tuple[bool, str, dict[str, Any]]:
+    """Return strict completion status; nonzero children never become complete."""
+
+    if returncode != 0:
+        return False, f"nonzero_returncode:{returncode}", {}
+    identity = f"{job['config']}_seed{job['seed']}_fold{job['fold']}"
+    unit_dir = Path(job["metrics_path"]).parent
+    expected_paths = {
+        "metrics_path": unit_dir / "metrics.json",
+        "checkpoint_path": unit_dir / "checkpoint.pt",
+        "predictions_path": unit_dir / "predictions.json",
+    }
+    for field, expected in expected_paths.items():
+        if not _check_path(str(job[field]), expected):
+            return False, f"invalid_or_missing_{field}", {}
+    try:
+        metrics = json.loads(Path(job["metrics_path"]).read_text(encoding="utf-8"))
+        predictions = json.loads(Path(job["predictions_path"]).read_text(encoding="utf-8"))
+        checkpoint = _load_checkpoint(Path(job["checkpoint_path"]))
+    except Exception as exc:
+        return False, f"artifact_parse_error:{type(exc).__name__}", {}
+    if not isinstance(metrics, dict) or not isinstance(predictions, list) or not isinstance(checkpoint, Mapping):
+        return False, "artifact_types_invalid", {}
+    required = {"schema", *METRIC_FIELDS, *PROVENANCE_FIELDS}
+    missing = sorted(key for key in required if key not in metrics)
+    if missing:
+        return False, f"metrics_missing:{','.join(missing)}", {}
+    if metrics.get("schema") != "D8_3B_UNIT_METRICS_V2":
+        return False, "metrics_schema_mismatch", {}
+    expected = dict(job["expected_provenance"])
+    for key, expected_value in expected.items():
+        if key in {"started_utc", "finished_utc"}:
+            if not isinstance(metrics.get(key), str) or not metrics.get(key):
+                return False, f"metrics_timestamp_missing:{key}", {}
+            continue
+        if metrics.get(key) != expected_value:
+            return False, f"metrics_provenance_mismatch:{key}", {}
+    for key in METRIC_FIELDS:
+        try:
+            if not math.isfinite(float(metrics[key])):
+                return False, f"nonfinite_metric:{key}", {}
+        except (TypeError, ValueError):
+            return False, f"invalid_metric:{key}", {}
+    for key, expected_value in expected.items():
+        expected_value = metrics[key] if key in {"started_utc", "finished_utc"} else expected_value
+        if checkpoint.get(key) != expected_value:
+            return False, f"checkpoint_provenance_mismatch:{key}", {}
+    if checkpoint.get("schema") != "D8_3B_CHECKPOINT_V2" or "model_state" not in checkpoint:
+        return False, "checkpoint_schema_or_model_missing", {}
+    if metrics.get("config") != job["config"] or metrics.get("seed") != job["seed"] or metrics.get("fold") != job["fold"]:
+        return False, f"identity_mismatch:{identity}", {}
+    return True, "ok", metrics
+
+
+def _metrics_for_gate(job: Mapping[str, Any]) -> dict[str, Any] | None:
+    inline = job.get("metrics")
+    if isinstance(inline, dict):
+        return inline
+    path = Path(str(job.get("metrics_path", "")))
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def final_gate(records: list[Mapping[str, Any]]) -> dict[str, Any]:
+    expected = {
+        (config, seed, fold)
+        for config in D8_3B_CONFIGS
+        for seed in D8_3B_SEEDS
+        for fold in D8_3B_FOLDS
+    }
+    identities = [
+        (record.get("config"), record.get("seed"), record.get("fold"))
+        for record in records
     ]
-    env = os.environ.copy()
-    env["CUDA_VISIBLE_DEVICES"] = str(gpu)
-    env["PYTHONPATH"] = f"{ROOT / 'scripts' / 'detector_v5'}:{ROOT / 'src'}:{env.get('PYTHONPATH', '')}"
-    env["OMP_NUM_THREADS"] = "1"
-    env["MKL_NUM_THREADS"] = "1"
-    env["OPENBLAS_NUM_THREADS"] = "1"
-    env["NUMEXPR_NUM_THREADS"] = "1"
+    identity_set = set(identities)
+    duplicates = len(identities) != len(identity_set)
+    unexpected = sorted(identity_set - expected, key=str)
+    missing = sorted(expected - identity_set, key=str)
+    completed = [record for record in records if record.get("status") == "COMPLETED"]
+    failed = [record for record in records if record.get("status") == "FAILED"]
+    skipped = [record for record in records if record.get("status") == "SKIPPED_KILL_SWITCH"]
+    aborted = [record for record in records if record.get("status") == "ABORTED"]
+    seed_summary: dict[str, dict[str, Any]] = {}
+    all_metrics_finite = True
+    for seed in D8_3B_SEEDS:
+        rows = [
+            record
+            for record in completed
+            if record.get("config") == "B3" and record.get("seed") == seed
+        ]
+        values: dict[str, list[float]] = {key: [] for key in METRIC_FIELDS}
+        for row in rows:
+            metrics = _metrics_for_gate(row)
+            if metrics is None:
+                all_metrics_finite = False
+                continue
+            for key in METRIC_FIELDS:
+                try:
+                    value = float(metrics[key])
+                except (KeyError, TypeError, ValueError):
+                    all_metrics_finite = False
+                    continue
+                if not math.isfinite(value):
+                    all_metrics_finite = False
+                values[key].append(value)
+        if len(rows) == len(D8_3B_FOLDS) and all(len(values[key]) == len(D8_3B_FOLDS) for key in METRIC_FIELDS):
+            seed_summary[str(seed)] = {
+                "folds_completed": len(rows),
+                "mean_auroc": float(np.mean(values["auroc"])),
+                "mean_bacc": float(np.mean(values["balanced_accuracy"])),
+                "mean_mcc": float(np.mean(values["mcc"])),
+                "auroc_std_folds": float(np.std(values["auroc"], ddof=1)),
+            }
+        else:
+            seed_summary[str(seed)] = {
+                "folds_completed": len(rows),
+                "mean_auroc": float("nan"),
+                "mean_bacc": float("nan"),
+                "mean_mcc": float("nan"),
+                "auroc_std_folds": float("nan"),
+            }
+    seed_means = [seed_summary[str(seed)]["mean_auroc"] for seed in D8_3B_SEEDS]
+    stability_std = float(np.std(seed_means, ddof=1)) if len(seed_means) == 10 and all(math.isfinite(value) for value in seed_means) else float("nan")
+    per_seed_pass = all(
+        math.isfinite(seed_summary[str(seed)]["mean_auroc"])
+        and math.isfinite(seed_summary[str(seed)]["mean_bacc"])
+        and math.isfinite(seed_summary[str(seed)]["mean_mcc"])
+        and seed_summary[str(seed)]["mean_auroc"] >= 0.80
+        and seed_summary[str(seed)]["mean_bacc"] >= 0.70
+        and seed_summary[str(seed)]["mean_mcc"] > 0.0
+        for seed in D8_3B_SEEDS
+    )
+    checks = {
+        "planned_jobs_50": len(records) == D8_3B_TOTAL_JOBS,
+        "completed_50": len(completed) == D8_3B_TOTAL_JOBS,
+        "failed_0": len(failed) == 0,
+        "skipped_0": len(skipped) == 0,
+        "aborted_0": len(aborted) == 0,
+        "identity_exact": not duplicates and not missing and not unexpected,
+        "seed_coverage_10": all(seed_summary[str(seed)]["folds_completed"] == 5 for seed in D8_3B_SEEDS),
+        "config_b3_only": all(record.get("config") == "B3" for record in records),
+        "metrics_finite": all_metrics_finite,
+        "per_seed_metrics": per_seed_pass,
+        "auroc_sample_std_le_003": math.isfinite(stability_std) and stability_std <= 0.03,
+    }
+    return {
+        "pass": all(checks.values()),
+        "checks": checks,
+        "planned_jobs": len(records),
+        "completed_jobs": len(completed),
+        "failed_jobs": len(failed),
+        "skipped_jobs": len(skipped),
+        "aborted_jobs": len(aborted),
+        "missing_identities": [list(item) for item in missing],
+        "unexpected_identities": [list(item) for item in unexpected],
+        "duplicate_identity": duplicates,
+        "seed_summary": seed_summary,
+        "seed_means_auroc": seed_means,
+        "stability_std_ddof1": stability_std,
+        "stability_threshold": 0.03,
+    }
 
-    log_fh = open(log_path, "w")
-    proc = subprocess.Popen(cmd, env=env, stdout=log_fh, stderr=subprocess.STDOUT)
-    launched = datetime.now(timezone.utc)
-    print(f"  [{config} fold {fold} seed {seed}] GPU {gpu} PID {proc.pid} @ {launched.isoformat(timespec='seconds')}")
-    return proc, log_fh
+
+def _signal_process(proc: subprocess.Popen, kill: bool = False) -> None:
+    requested = signal.SIGKILL if kill else signal.SIGTERM
+    if os.name != "nt" and hasattr(os, "killpg"):
+        try:
+            os.killpg(os.getpgid(proc.pid), requested)
+            return
+        except (OSError, ProcessLookupError):
+            pass
+    try:
+        (proc.kill if kill else proc.terminate)()
+    except (OSError, ProcessLookupError):
+        pass
 
 
-def main():
+def launch_unit(job: Mapping[str, Any]) -> tuple[subprocess.Popen, Any]:
+    log_path = Path(str(job["log_path"]))
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_handle = log_path.open("w", encoding="utf-8")
+    environment = os.environ.copy()
+    gpu = job.get("gpu")
+    environment["CUDA_VISIBLE_DEVICES"] = str(gpu)
+    environment["PYTHONPATH"] = os.pathsep.join(
+        [
+            str(ROOT / "scripts" / "detector_v5"),
+            str(ROOT / "src"),
+            environment.get("PYTHONPATH", ""),
+        ]
+    )
+    for key in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+        environment[key] = "1"
+    kwargs: dict[str, Any] = {
+        "env": environment,
+        "stdout": log_handle,
+        "stderr": subprocess.STDOUT,
+        "cwd": str(ROOT),
+    }
+    if os.name == "nt":
+        kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    else:
+        kwargs["start_new_session"] = True
+    try:
+        process = subprocess.Popen(list(job["command"]), **kwargs)
+    except Exception:
+        log_handle.close()
+        raise
+    return process, log_handle
+
+
+def _close_log(handle: Any) -> None:
+    try:
+        handle.close()
+    except Exception:
+        pass
+
+
+def dispatch_jobs(
+    manifest_path: Path,
+    stop_path: Path,
+    manifest: dict[str, Any],
+    *,
+    launch_fn: Callable[[Mapping[str, Any]], tuple[Any, Any]] = launch_unit,
+    validate_fn: Callable[[Mapping[str, Any], int], tuple[bool, str, dict[str, Any]]] = validate_job_artifacts,
+    abort_reason_fn: Callable[[], str | None] = lambda: None,
+    sleep_fn: Callable[[float], None] = time.sleep,
+    poll_interval: float = 0.25,
+    job_timeout_seconds: float = 24 * 60 * 60,
+    grace_seconds: float = 30.0,
+) -> dict[str, Any]:
+    jobs = manifest["jobs"]
+    gpu_ids = list(manifest["matrix"]["gpus"])
+    slots: dict[int, dict[str, Any]] = {}
+    abort_reason: str | None = None
+
+    def persist() -> None:
+        atomic_write_json(manifest_path, manifest)
+
+    def mark_abort(reason: str) -> None:
+        nonlocal abort_reason
+        if abort_reason is not None:
+            return
+        abort_reason = reason
+        manifest["abort_reason"] = reason
+        pending_state = "SKIPPED_KILL_SWITCH" if reason == "KILL_SWITCH" else "ABORTED"
+        for job in jobs:
+            if job["status"] == "PENDING":
+                job["status"] = pending_state
+                job["finished_utc"] = utc_now()
+                job["failure_reason"] = reason
+        persist()
+        for slot in slots.values():
+            _signal_process(slot["process"], kill=False)
+        deadline = time.monotonic() + max(grace_seconds, 0.0)
+        while slots and time.monotonic() < deadline:
+            for gpu, slot in list(slots.items()):
+                if slot["process"].poll() is not None:
+                    _close_log(slot["log_handle"])
+                    job = slot["job"]
+                    job["status"] = "ABORTED"
+                    job["finished_utc"] = utc_now()
+                    job["exit_code"] = slot["process"].poll()
+                    job["failure_reason"] = reason
+                    del slots[gpu]
+            if slots:
+                sleep_fn(0.1)
+        for gpu, slot in list(slots.items()):
+            process = slot["process"]
+            if process.poll() is None:
+                _signal_process(process, kill=True)
+                try:
+                    process.wait(timeout=2)
+                except Exception:
+                    pass
+            _close_log(slot["log_handle"])
+            job = slot["job"]
+            job["status"] = "ABORTED"
+            job["finished_utc"] = utc_now()
+            job["exit_code"] = process.poll()
+            job["failure_reason"] = f"{reason}:terminated"
+            del slots[gpu]
+        persist()
+
+    try:
+        while True:
+            if abort_reason is None:
+                external_reason = abort_reason_fn()
+                if external_reason:
+                    mark_abort(external_reason)
+                elif stop_path.exists():
+                    mark_abort("KILL_SWITCH")
+            if abort_reason is not None:
+                break
+
+            changed = False
+            for gpu, slot in list(slots.items()):
+                process = slot["process"]
+                elapsed = time.monotonic() - slot["started_monotonic"]
+                if process.poll() is None and elapsed > job_timeout_seconds:
+                    mark_abort(f"WATCHDOG_TIMEOUT:{slot['job']['job_id']}")
+                    break
+                returncode = process.poll()
+                if returncode is None:
+                    continue
+                _close_log(slot["log_handle"])
+                job = slot["job"]
+                ok, reason, metrics = validate_fn(job, returncode)
+                job["status"] = "COMPLETED" if ok else "FAILED"
+                job["finished_utc"] = utc_now()
+                job["exit_code"] = returncode
+                job["failure_reason"] = None if ok else reason
+                if metrics:
+                    job["metrics"] = metrics
+                del slots[gpu]
+                changed = True
+            if abort_reason is not None:
+                break
+            if changed:
+                persist()
+
+            pending = [job for job in jobs if job["status"] == "PENDING"]
+            while pending and len(slots) < len(gpu_ids):
+                external_reason = abort_reason_fn()
+                if external_reason:
+                    mark_abort(external_reason)
+                    break
+                if stop_path.exists():
+                    mark_abort("KILL_SWITCH")
+                    break
+                available = [gpu for gpu in gpu_ids if gpu not in slots]
+                if not available:
+                    break
+                job = pending.pop(0)
+                gpu = available[0]
+                job["gpu"] = gpu
+                try:
+                    process, log_handle = launch_fn(job)
+                except Exception as exc:
+                    job["status"] = "FAILED"
+                    job["gpu"] = gpu
+                    job["finished_utc"] = utc_now()
+                    job["failure_reason"] = f"launch_error:{type(exc).__name__}"
+                    job["exit_code"] = None
+                    persist()
+                    pending = [item for item in jobs if item["status"] == "PENDING"]
+                    continue
+                job["status"] = "RUNNING"
+                job["pid"] = process.pid
+                job["started_utc"] = utc_now()
+                slots[gpu] = {
+                    "job": job,
+                    "process": process,
+                    "log_handle": log_handle,
+                    "started_monotonic": time.monotonic(),
+                }
+                persist()
+                pending = [item for item in jobs if item["status"] == "PENDING"]
+            if abort_reason is not None:
+                break
+            if not slots and not any(job["status"] == "PENDING" for job in jobs):
+                break
+            sleep_fn(poll_interval)
+    except Exception as exc:
+        if abort_reason is None:
+            mark_abort(f"DISPATCHER_EXCEPTION:{type(exc).__name__}")
+    finally:
+        for slot in slots.values():
+            _signal_process(slot["process"], kill=True)
+            _close_log(slot["log_handle"])
+        slots.clear()
+        for job in jobs:
+            if job["status"] in {"PENDING", "RUNNING"}:
+                job["status"] = "ABORTED"
+                job["finished_utc"] = utc_now()
+                job["failure_reason"] = abort_reason or "DISPATCHER_FINALIZE"
+        persist()
+    return manifest
+
+
+def _write_hash_seal(root: Path) -> None:
+    names = sorted(
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path.is_file() and path.name not in {"SHA256SUMS", "SHA256SUMS.sha256"}
+    )
+    content = "".join(f"{sha256_file(root / name)}  {name}\n" for name in names)
+    atomic_write_text(root / "SHA256SUMS", content)
+    atomic_write_text(
+        root / "SHA256SUMS.sha256",
+        f"{sha256_file(root / 'SHA256SUMS')}  SHA256SUMS\n",
+    )
+
+
+def _finalize_run(
+    output_root: Path,
+    manifest: dict[str, Any],
+    receipt: dict[str, Any],
+    *,
+    abort_reason: str | None,
+) -> int:
+    gate = final_gate(manifest["jobs"])
+    manifest["finished_utc"] = utc_now()
+    manifest["gate"] = gate
+    manifest["verdict"] = "ABORTED_INCOMPLETE" if abort_reason else ("PASS" if gate["pass"] else "FAIL")
+    atomic_write_json(output_root / "JOB_MANIFEST.json", manifest)
+
+    summary = {
+        "schema": "D8_3B_SUMMARY_V2",
+        "verdict": manifest["verdict"],
+        "abort_reason": abort_reason,
+        "matrix": manifest["matrix"],
+        "gate": gate,
+        "dispatcher_pid": manifest["dispatcher_pid"],
+        "created_utc": manifest["created_utc"],
+        "finished_utc": manifest["finished_utc"],
+        "auditor_verdict": None,
+        "auditor_agreement": False,
+    }
+    receipt.update(
+        {
+            "state": "FINISHED",
+            "verdict": manifest["verdict"],
+            "abort_reason": abort_reason,
+            "finished_utc": manifest["finished_utc"],
+            "exit_code": 0 if manifest["verdict"] == "PASS" else 1,
+        }
+    )
+    atomic_write_json(output_root / "D8_3B_SUMMARY.json", summary)
+    atomic_write_json(output_root / "EXECUTION_RECEIPT.json", receipt)
+
+    try:
+        from audit_d8_3b_run import audit_run
+    except Exception as exc:
+        audit = {"verdict": "FAIL", "errors": [f"auditor_import:{type(exc).__name__}"]}
+        atomic_write_json(output_root / "D8_3B_AUDIT.json", audit)
+    else:
+        audit = audit_run(output_root, write_artifacts=True)
+
+    final_verdict = manifest["verdict"]
+    if audit.get("verdict") != final_verdict:
+        final_verdict = (
+            "ABORTED_INCOMPLETE"
+            if final_verdict == "ABORTED_INCOMPLETE" or audit.get("verdict") == "ABORTED_INCOMPLETE"
+            else "FAIL"
+        )
+        manifest["verdict"] = final_verdict
+        atomic_write_json(output_root / "JOB_MANIFEST.json", manifest)
+
+    summary["verdict"] = final_verdict
+    summary["auditor_verdict"] = audit.get("verdict")
+    summary["auditor_agreement"] = audit.get("verdict") == final_verdict
+    receipt["verdict"] = final_verdict
+    receipt["exit_code"] = 0 if final_verdict == "PASS" else 1
+    atomic_write_json(output_root / "D8_3B_SUMMARY.json", summary)
+    atomic_write_json(output_root / "EXECUTION_RECEIPT.json", receipt)
+    try:
+        audit = audit_run(output_root, write_artifacts=True)
+    except Exception as exc:
+        atomic_write_json(
+            output_root / "D8_3B_AUDIT.json",
+            {"verdict": "FAIL", "errors": [f"auditor_final:{type(exc).__name__}"]},
+        )
+    try:
+        from audit_d8_3b_run import write_sha256_seal
+
+        write_sha256_seal(output_root)
+    except Exception:
+        _write_hash_seal(output_root)
+    return 0 if final_verdict == "PASS" and summary["auditor_agreement"] else 1
+
+
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cache-root", type=Path, required=True)
+    parser.add_argument("--cache-seal", default=os.environ.get("D8_CACHE_SEAL"))
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--python", type=str, default=sys.executable)
-    parser.add_argument("--gpus", type=str, default=",".join(str(g) for g in GPU_IDS))
-    parser.add_argument("--epochs", type=int, default=100)
-    parser.add_argument("--seed", type=int, default=None,
-                        help="Single seed (legacy). Use --seeds for multi-seed D8-3B.")
-    parser.add_argument("--seeds", type=str, default=None,
-                        help="Comma-separated seed list, e.g. 20260720,20260721,...")
-    parser.add_argument("--configs", type=str, default="B3",
-                        help="Comma-separated config list (default: B3 for D8-3B)")
-    args = parser.parse_args()
+    parser.add_argument("--log-root", type=Path, required=True)
+    parser.add_argument("--python-bin", default=os.environ.get("D8_PYTHON_BIN"))
+    parser.add_argument("--gpus", default=os.environ.get("D8_GPUS"))
+    parser.add_argument("--seeds", required=True)
+    parser.add_argument("--configs", required=True)
+    parser.add_argument("--epochs", type=int, required=True)
+    parser.add_argument("--job-timeout-seconds", type=float, default=24 * 60 * 60)
+    parser.add_argument("--terminate-grace-seconds", type=float, default=30.0)
+    args = parser.parse_args(argv)
 
-    # ── Seed resolution ──
-    if args.seeds:
-        seeds = [int(s.strip()) for s in args.seeds.split(",")]
-    elif args.seed is not None:
-        seeds = [args.seed]
-    else:
-        seeds = [20260717]
+    # Keep this before any output creation or training child.
+    configs = _split_csv(args.configs)
+    seeds = _split_csv(args.seeds, int)
+    gpu_ids = validate_gpu_ids(_split_csv(args.gpus, int) if args.gpus else [])
+    validate_d8_3b_matrix(configs, seeds, FOLDS, args.epochs, gpu_ids)
+    if not _is_hex(args.cache_seal, 64):
+        raise ValueError("--cache-seal or D8_CACHE_SEAL must be a 64-character SHA256")
+    python_environment = validate_python_environment(args.python_bin)
 
-    # ── Config resolution + D8-3B gate ──
-    configs = [c.strip() for c in args.configs.split(",")]
-
-    # Detect D8-3B multi-seed run
-    is_d8_3b = len(seeds) > 1
-
-    if is_d8_3b:
-        invalid_configs = set(configs) - ALLOWED_D8_3B_CONFIGS
-        if invalid_configs:
-            raise RuntimeError(
-                f"D8-3B requires B3-only execution. "
-                f"Got configs={configs}, invalid={sorted(invalid_configs)}. "
-                f"ABORTING."
-            )
-        print(f"D8-3B FROZEN MATRIX: configs={configs} folds={FOLDS} seeds={seeds} epochs={args.epochs}")
-        print(f"Gate assertion: CONFIGS subset of {set(ALLOWED_D8_3B_CONFIGS)} — PASSED")
-
-    gpu_ids = [int(x) for x in args.gpus.split(",")]
-    cache_root = str(args.cache_root.resolve())
+    cache_root = args.cache_root.resolve()
+    if not cache_root.is_dir():
+        raise FileNotFoundError(f"cache root is not a directory: {cache_root}")
+    log_root = args.log_root.resolve()
+    if not log_root.is_dir():
+        raise FileNotFoundError(f"log root must pre-exist: {log_root}")
     output_root = args.output_root.resolve()
+    if output_root == log_root:
+        raise ValueError("run root and dispatcher log root must be different paths")
     if output_root.exists():
-        raise FileExistsError(f"{output_root} already exists — refusing to clobber")
-    output_root.mkdir(parents=True)
+        raise FileExistsError(f"run root already exists; refusing to clobber: {output_root}")
 
-    # ── Build job queue ──
-    job_queue = _build_job_list(configs, FOLDS, gpu_ids, seeds)
-    total_jobs = len(job_queue)
-    print(f"\nJob queue: {total_jobs} jobs on {len(gpu_ids)} GPUs ({configs} x {len(FOLDS)} folds x {len(seeds)} seeds)")
-    if is_d8_3b:
-        print(f"Kill switch: touch {output_root / 'STOP_D8_3B'} to drain and stop")
-
-    # ── Single-queue dispatch ──
-    # One slot per GPU. A slot holds (proc, log_fh, config, fold, seed, gpu, started_at).
-    slots: dict[int, tuple] = {}  # gpu -> slot
-    results: dict[str, dict] = {}
-    job_idx = 0
-    manifest_entries: list[dict] = []
-
-    while job_idx < total_jobs or slots:
-        # Drain completed slots
-        finished_gpus = []
-        for gpu, (proc, fh, cfg, fld, s, _gpu, started) in list(slots.items()):
-            ret = proc.poll()
-            if ret is not None:
-                fh.close()
-                finished_at = datetime.now(timezone.utc)
-                unit_dir = output_root / f"seed{s}" / f"{cfg}_fold{fld}"
-                metrics_path = unit_dir / "metrics.json"
-                status = "UNKNOWN"
-                metrics = {}
-                if metrics_path.exists():
-                    metrics = json.loads(metrics_path.read_text())
-                    auroc = metrics.get("auroc", float("nan"))
-                    bacc = metrics.get("balanced_accuracy", 0)
-                    status = "OK" if bacc > 0 else "WARN"
-                else:
-                    status = f"EXIT_{ret}"
-                key = f"seed{s}/{cfg}_fold{fld}"
-                results[key] = {"config": cfg, "fold": fld, "seed": s, "gpu": gpu,
-                                "exit_code": ret, "status": status, **metrics}
-                elapsed = (finished_at - started).total_seconds()
-                print(f"  [{cfg} fold {fld} seed {s}] GPU {gpu} {status} "
-                      f"(exit {ret}, {elapsed:.0f}s, AUROC={metrics.get('auroc', float('nan')):.4f})")
-                manifest_entries.append({
-                    "config": cfg, "fold": fld, "seed": s, "gpu": gpu,
-                    "pid": proc.pid, "exit_code": ret, "status": status,
-                    "started_utc": started.isoformat(), "finished_utc": finished_at.isoformat(),
-                    "elapsed_s": elapsed,
-                })
-                finished_gpus.append(gpu)
-
-        for gpu in finished_gpus:
-            del slots[gpu]
-
-        # Fill empty slots from queue
-        while job_idx < total_jobs and len(slots) < len(gpu_ids):
-            # Kill switch check
-            if is_d8_3b and _check_kill_switch(output_root):
-                print(f"\n*** KILL SWITCH ACTIVE — draining {len(slots)} running job(s), "
-                      f"{total_jobs - job_idx} pending job(s) skipped ***")
-                job_idx = total_jobs  # skip all pending
-                break
-
-            available_gpus = [g for g in gpu_ids if g not in slots]
-            if not available_gpus:
-                break
-
-            gpu = available_gpus[0]
-            config, fold, seed = job_queue[job_idx]
-            proc, fh = launch_unit(config, fold, seed, gpu, cache_root, str(output_root),
-                                   args.python, args.epochs)
-            slots[gpu] = (proc, fh, config, fold, seed, gpu, datetime.now(timezone.utc))
-            job_idx += 1
-            time.sleep(0.5)  # brief stagger for CUDA init
-
-        # Brief sleep to avoid busy-waiting
-        if job_idx < total_jobs or slots:
-            time.sleep(2)
-
-    # ── Aggregate ──
-    completed = [e for e in manifest_entries if e["status"] == "OK"]
-    failed = [e for e in manifest_entries if e["status"] != "OK"]
-    print(f"\n{'='*60}")
-    print(f"COMPLETED: {len(completed)}/{len(manifest_entries)}  FAILED: {len(failed)}/{len(manifest_entries)}")
-    if failed:
-        for e in failed:
-            print(f"  FAIL: seed{e['seed']}/{e['config']}_fold{e['fold']} GPU {e['gpu']} exit {e['exit_code']}")
-
-    # Per-seed aggregate
-    seed_summary = {}
-    for seed in seeds:
-        seed_results = [r for r in manifest_entries if r["seed"] == seed and r["status"] == "OK"]
-        if seed_results:
-            aurocs = [results[f"seed{seed}/{r['config']}_fold{r['fold']}"].get("auroc", float("nan"))
-                      for r in seed_results]
-            baccs = [results[f"seed{seed}/{r['config']}_fold{r['fold']}"].get("balanced_accuracy", 0)
-                     for r in seed_results]
-            seed_summary[str(seed)] = {
-                "mean_auroc": float(np.nanmean(auroc_vals)) if (auroc_vals := [a for a in aurocs if not np.isnan(a)]) else float("nan"),
-                "mean_bacc": float(np.mean(baccs)) if baccs else 0,
-                "folds_completed": len(seed_results),
-                "auroc_std_folds": float(np.std(aurocs, ddof=1)) if len(aurocs) > 1 else float("nan"),
-            }
-
-    # D8-3B stability gate
-    if is_d8_3b and seed_summary:
-        seed_means = [s["mean_auroc"] for s in seed_summary.values()
-                      if not np.isnan(s["mean_auroc"])]
-        stability_std = float(np.std(seed_means, ddof=1)) if len(seed_means) > 1 else float("nan")
-        stability_pass = stability_std <= 0.03 if not np.isnan(stability_std) else False
-        print(f"\nD8-3B STABILITY GATE: AUROC std={stability_std:.5f} (n={len(seed_means)} seeds) "
-              f"{'PASS' if stability_pass else 'FAIL'} (threshold <=0.03)")
-        gate = {"std": stability_std, "n_seeds": len(seed_means), "pass": stability_pass,
-                "seed_means": seed_means, "threshold": 0.03}
-    else:
-        gate = None
-
-    # ── Write manifests ──
-    summary = {
-        "schema": "D8_CV_SAFE_SUMMARY_V1",
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-        "configs": configs, "folds": FOLDS, "seeds": seeds, "epochs": args.epochs,
-        "gpus": gpu_ids, "dispatch": "single_queue_per_gpu",
-        "total_jobs": total_jobs, "completed": len(completed), "failed": len(failed),
-        "stability_gate": gate,
-        "seed_summary": seed_summary,
+    source = git_provenance()
+    unit_script_sha = sha256_file(ROOT / "scripts" / "detector_v5" / "run_d8_2_cv_unit.py")
+    launcher_sha = sha256_file(Path(__file__).resolve())
+    train_core_sha = sha256_file(ROOT / "scripts" / "detector_v5" / "d8_train_core.py")
+    started_utc = utc_now()
+    source_receipt = {
+        "source_commit": source["source_commit"],
+        "source_tree": source["source_tree"],
+        "unit_script_sha256": unit_script_sha,
+        "parallel_launcher_sha256": launcher_sha,
+        "train_core_sha256": train_core_sha,
+        "cache_root": str(cache_root),
+        "cache_seal": args.cache_seal.lower(),
+        "python_environment": python_environment,
     }
-    (output_root / "D8_CV_SUMMARY.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
-    (output_root / "JOB_MANIFEST.json").write_text(json.dumps(manifest_entries, indent=2) + "\n")
 
-    print(f"\nManifests written to {output_root}")
-    return 0 if not failed else 1
+    output_root.parent.mkdir(parents=True, exist_ok=True)
+    output_root.mkdir(parents=False, exist_ok=False)
+    receipt = {
+        "schema": "D8_3B_EXECUTION_RECEIPT_V2",
+        "state": "RUNNING",
+        "run_root": str(output_root),
+        "log_root": str(log_root),
+        "dispatcher_pid": os.getpid(),
+        "dispatcher_command": [sys.executable, *sys.argv],
+        "started_utc": started_utc,
+        "matrix": {
+            "configs": configs,
+            "seeds": seeds,
+            "folds": FOLDS,
+            "epochs": args.epochs,
+            "gpus": gpu_ids,
+            "planned_jobs": D8_3B_TOTAL_JOBS,
+        },
+        "provenance": source_receipt,
+    }
+    atomic_write_json(output_root / "EXECUTION_RECEIPT.json", receipt)
+    jobs = build_jobs(
+        configs=configs,
+        seeds=seeds,
+        folds=FOLDS,
+        gpu_ids=gpu_ids,
+        epochs=args.epochs,
+        cache_root=str(cache_root),
+        cache_seal=args.cache_seal.lower(),
+        output_root=output_root,
+        python_bin=args.python_bin,
+        source_commit=source["source_commit"],
+        source_tree=source["source_tree"],
+        python_environment=python_environment,
+    )
+    manifest = new_manifest(
+        jobs=jobs,
+        configs=configs,
+        seeds=seeds,
+        folds=FOLDS,
+        epochs=args.epochs,
+        gpu_ids=gpu_ids,
+        source=source_receipt,
+    )
+    atomic_write_json(output_root / "JOB_MANIFEST.json", manifest)
+
+    abort_state: dict[str, str | None] = {"reason": None}
+    previous_handlers: dict[int, Any] = {}
+
+    def on_signal(signum: int, _frame: Any) -> None:
+        if abort_state["reason"] is None:
+            abort_state["reason"] = signal.Signals(signum).name
+
+    for signum in (signal.SIGINT, signal.SIGTERM):
+        previous_handlers[signum] = signal.getsignal(signum)
+        signal.signal(signum, on_signal)
+    try:
+        manifest = dispatch_jobs(
+            output_root / "JOB_MANIFEST.json",
+            output_root / "STOP_D8_3B",
+            manifest,
+            abort_reason_fn=lambda: abort_state["reason"],
+            job_timeout_seconds=args.job_timeout_seconds,
+            grace_seconds=args.terminate_grace_seconds,
+        )
+    finally:
+        for signum, handler in previous_handlers.items():
+            signal.signal(signum, handler)
+
+    return _finalize_run(
+        output_root,
+        manifest,
+        receipt,
+        abort_reason=manifest.get("abort_reason"),
+    )
 
 
 if __name__ == "__main__":
