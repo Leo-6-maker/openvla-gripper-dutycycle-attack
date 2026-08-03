@@ -164,6 +164,13 @@ def _provenance(
     train_core_sha256 = train_core_sha256 or receipt_provenance.get("train_core_sha256")
     if not source_commit or not source_tree or not launcher_sha256 or not train_core_sha256:
         raise RuntimeError("D8-3B provenance binding is incomplete")
+    lineage_digest = receipt.get("lineage_digest") or receipt_provenance.get("lineage_digest")
+    if (
+        not isinstance(lineage_digest, str)
+        or len(lineage_digest) != 64
+        or any(char not in "0123456789abcdefABCDEF" for char in lineage_digest)
+    ):
+        raise RuntimeError("D8-3B execution receipt lineage binding is incomplete")
     environment = receipt_provenance.get("python_environment")
     if not isinstance(environment, Mapping):
         environment = _local_python_environment()
@@ -185,6 +192,7 @@ def _provenance(
         "parallel_launcher_sha256": launcher_sha256,
         "train_core_sha256": train_core_sha256,
         "python_environment": dict(environment),
+        "lineage_digest": lineage_digest.lower(),
         "started_utc": started_utc,
     }
 

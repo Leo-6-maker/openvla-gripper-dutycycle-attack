@@ -11,6 +11,7 @@ from typing import Any, Mapping
 
 import numpy as np
 
+ROOT = Path(__file__).resolve().parents[2]
 D8_3B_CONFIGS = ["B3"]
 D8_3B_SEEDS = list(range(20260720, 20260730))
 D8_3B_FOLDS = [0, 1, 2, 3, 4]
@@ -24,7 +25,18 @@ ALLOWED_STATES = {
     "SKIPPED_KILL_SWITCH",
     "ABORTED",
 }
+H1_LINEAGE_FIELDS = (
+    "h1_source_commit",
+    "h1_source_tree",
+    "source_snapshot_sha256",
+    "cache_a_seal",
+    "cache_b_seal",
+    "comparator_seal",
+    "p5_artifact_seal",
+    "h1_review_seal",
+)
 METRIC_FIELDS = ("auroc", "balanced_accuracy", "mcc")
+METRIC_TOLERANCE = 1e-9
 PROVENANCE_FIELDS = (
     "config",
     "seed",
@@ -42,6 +54,7 @@ PROVENANCE_FIELDS = (
     "parallel_launcher_sha256",
     "train_core_sha256",
     "python_environment",
+    "lineage_digest",
     "started_utc",
     "finished_utc",
 )
@@ -129,6 +142,21 @@ def _verify_existing_seal(root: Path) -> list[str]:
     return errors
 
 
+def verify_sha256_seal(root: Path) -> dict[str, Any]:
+    root = root.resolve()
+    errors = _verify_existing_seal(root)
+    if errors:
+        raise ValueError(f"final seal verification failed: {errors}")
+    sums = root / "SHA256SUMS"
+    sidecar = root / "SHA256SUMS.sha256"
+    if not sums.is_file() or not sidecar.is_file():
+        raise ValueError("final seal files are missing")
+    return {
+        "sha256sums_sha256": sha256_file(sums),
+        "file_count": len(sums.read_text(encoding="utf-8").splitlines()),
+    }
+
+
 def _load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -164,6 +192,183 @@ def _expected_identities() -> set[tuple[str, int, int]]:
     }
 
 
+def _canonical_lineage_digest(lineage: Mapping[str, Any]) -> str:
+    payload = {key: str(lineage[key]).lower() for key in H1_LINEAGE_FIELDS}
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def _is_hex_sha(value: Any, length: int) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == length
+        and all(char in "0123456789abcdefABCDEF" for char in value)
+    )
+
+
+def _validate_lineage(lineage: Any, errors: list[str], prefix: str) -> dict[str, str] | None:
+    if not isinstance(lineage, Mapping):
+        errors.append(f"{prefix}:lineage_missing")
+        return None
+    for key in H1_LINEAGE_FIELDS:
+        length = 40 if key in {"h1_source_commit", "h1_source_tree"} else 64
+        value = lineage.get(key)
+        if not _is_hex_sha(value, length):
+            errors.append(f"{prefix}:lineage_invalid:{key}")
+    if any(f"{prefix}:lineage_invalid:{key}" in errors for key in H1_LINEAGE_FIELDS):
+        return None
+    normalized = {key: str(lineage[key]).lower() for key in H1_LINEAGE_FIELDS}
+    digest = _canonical_lineage_digest(normalized)
+    if lineage.get("lineage_digest") != digest:
+        errors.append(f"{prefix}:lineage_digest")
+    normalized["lineage_digest"] = digest
+    return normalized
+
+
+def _close_enough(actual: Any, expected: float) -> bool:
+    try:
+        actual_float = float(actual)
+    except (TypeError, ValueError):
+        return False
+    return math.isfinite(actual_float) and math.isclose(
+        actual_float, expected, rel_tol=METRIC_TOLERANCE, abs_tol=METRIC_TOLERANCE
+    )
+
+
+def _recompute_predictions(predictions: Any) -> dict[str, Any]:
+    if not isinstance(predictions, list) or not predictions:
+        raise ValueError("predictions must be a non-empty list")
+    targets: list[int] = []
+    predicted: list[int] = []
+    logits: list[float] = []
+    identities: set[tuple[Any, Any]] = set()
+    for index, row in enumerate(predictions):
+        if not isinstance(row, Mapping):
+            raise ValueError(f"prediction row {index} is not a mapping")
+        required = {"episode_id", "step", "target", "logit", "pred"}
+        if not required.issubset(row):
+            raise ValueError(f"prediction row {index} is missing fields")
+        try:
+            identity = (row["episode_id"], row["step"])
+            if identity in identities:
+                raise ValueError(f"duplicate episode-step at row {index}")
+            identities.add(identity)
+        except TypeError as exc:
+            raise ValueError(f"unhashable episode-step at row {index}") from exc
+        if not isinstance(row["episode_id"], str) or not row["episode_id"]:
+            raise ValueError(f"invalid episode_id at row {index}")
+        for key in ("target", "pred"):
+            value = row[key]
+            if isinstance(value, bool):
+                raise ValueError(f"boolean {key} at row {index}")
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"invalid {key} at row {index}") from exc
+            if not math.isfinite(numeric) or numeric not in (0.0, 1.0):
+                raise ValueError(f"non-binary {key} at row {index}")
+        try:
+            logit = float(row["logit"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"invalid logit at row {index}") from exc
+        if not math.isfinite(logit):
+            raise ValueError(f"non-finite logit at row {index}")
+        target = int(float(row["target"]))
+        pred = int(float(row["pred"]))
+        expected_pred = 1 if logit > 0.0 else 0
+        if pred != expected_pred:
+            raise ValueError(f"threshold mismatch at row {index}")
+        targets.append(target)
+        predicted.append(pred)
+        logits.append(logit)
+    y_true = np.asarray(targets)
+    y_pred = np.asarray(predicted)
+    y_logit = np.asarray(logits)
+    tp = int(((y_true == 1) & (y_pred == 1)).sum())
+    tn = int(((y_true == 0) & (y_pred == 0)).sum())
+    fp = int(((y_true == 0) & (y_pred == 1)).sum())
+    fn = int(((y_true == 1) & (y_pred == 0)).sum())
+    total = len(predictions)
+    recall = tp / max(tp + fn, 1)
+    specificity = tn / max(tn + fp, 1)
+    mcc_den = max(np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)), 1)
+    try:
+        from sklearn.metrics import roc_auc_score
+
+        auroc = float(roc_auc_score(y_true, y_logit))
+    except (ImportError, ValueError):
+        auroc = float("nan")
+    return {
+        "n": total,
+        "tp": tp,
+        "tn": tn,
+        "fp": fp,
+        "fn": fn,
+        "accuracy": (tp + tn) / max(total, 1),
+        "recall": recall,
+        "specificity": specificity,
+        "balanced_accuracy": (recall + specificity) / 2,
+        "mcc": (tp * tn - fp * fn) / mcc_den,
+        "auroc": auroc,
+    }
+
+
+def _check_recomputed_metrics(
+    metrics: Mapping[str, Any], predictions: Any, job_id: str, errors: list[str]
+) -> None:
+    try:
+        recomputed = _recompute_predictions(predictions)
+    except ValueError as exc:
+        errors.append(f"{job_id}:predictions:{exc}")
+        return
+    integer_fields = ("n", "tp", "tn", "fp", "fn")
+    for key in integer_fields:
+        try:
+            if int(metrics.get(key)) != recomputed[key]:
+                errors.append(f"{job_id}:metric_mismatch:{key}")
+        except (TypeError, ValueError):
+            errors.append(f"{job_id}:metric_invalid:{key}")
+    for key in ("accuracy", "recall", "specificity", "balanced_accuracy", "mcc", "auroc"):
+        if not _close_enough(metrics.get(key), recomputed[key]):
+            errors.append(f"{job_id}:metric_mismatch:{key}")
+
+
+def _check_checkpoint_contract(checkpoint: Mapping[str, Any], job_id: str, errors: list[str]) -> None:
+    normalization = checkpoint.get("normalization")
+    if not isinstance(normalization, Mapping):
+        errors.append(f"{job_id}:normalization_missing")
+        return
+    if normalization.get("schema") != "D8_NORMALIZATION_V2":
+        errors.append(f"{job_id}:normalization_schema")
+    if normalization.get("feature_dim") != 25:
+        errors.append(f"{job_id}:normalization_feature_dim")
+    for key in ("mean", "std"):
+        values = normalization.get(key)
+        if not isinstance(values, list) or len(values) != 25:
+            errors.append(f"{job_id}:normalization_{key}_length")
+        else:
+            try:
+                finite = all(math.isfinite(float(value)) for value in values)
+            except (TypeError, ValueError):
+                finite = False
+            if not finite:
+                errors.append(f"{job_id}:normalization_{key}_nonfinite")
+
+
+def _check_source_scripts(global_provenance: Mapping[str, Any], errors: list[str]) -> None:
+    paths = {
+        "unit_script_sha256": ROOT / "scripts" / "detector_v5" / "run_d8_2_cv_unit.py",
+        "parallel_launcher_sha256": ROOT / "scripts" / "detector_v5" / "run_d8_2_cv_parallel.py",
+        "train_core_sha256": ROOT / "scripts" / "detector_v5" / "d8_train_core.py",
+        "shell_script_sha256": ROOT / "scripts" / "detector_v5" / "d8_launch_3b_safe.sh",
+    }
+    for field, path in paths.items():
+        expected = global_provenance.get(field)
+        if not isinstance(expected, str) or not path.is_file() or sha256_file(path) != expected:
+            errors.append(f"source_script_mismatch:{field}")
+
+
 def _audit_job(
     root: Path,
     job: Mapping[str, Any],
@@ -194,6 +399,7 @@ def _audit_job(
     if not isinstance(metrics, Mapping) or not isinstance(predictions, list):
         errors.append(f"{job_id}:artifact_type")
         return None
+    _check_recomputed_metrics(metrics, predictions, job_id, errors)
     if job.get("exit_code") != 0:
         errors.append(f"{job_id}:returncode_not_zero")
     if metrics.get("schema") != "D8_3B_UNIT_METRICS_V2":
@@ -223,6 +429,7 @@ def _audit_job(
     elif "model_state" not in checkpoint:
         errors.append(f"{job_id}:checkpoint_model_missing")
     else:
+        _check_checkpoint_contract(checkpoint, job_id, errors)
         for key in PROVENANCE_FIELDS:
             if checkpoint.get(key) != metrics.get(key):
                 errors.append(f"{job_id}:checkpoint_provenance:{key}")
@@ -278,6 +485,25 @@ def audit_run(run_root: Path, *, write_artifacts: bool = True) -> dict[str, Any]
     if not isinstance(global_provenance, Mapping):
         global_provenance = {}
         errors.append("manifest_provenance_invalid")
+    manifest_lineage = _validate_lineage(
+        global_provenance.get("h1_lineage"), errors, "manifest"
+    )
+    if manifest_lineage is not None and global_provenance.get("lineage_digest") != manifest_lineage["lineage_digest"]:
+        errors.append("manifest:lineage_digest_binding")
+    for key in ("source_commit", "source_tree", "expected_source_commit", "expected_source_tree"):
+        if not _is_hex_sha(global_provenance.get(key), 40):
+            errors.append(f"manifest:source_binding:{key}")
+    if (
+        global_provenance.get("source_commit") != global_provenance.get("expected_source_commit")
+        or global_provenance.get("source_tree") != global_provenance.get("expected_source_tree")
+    ):
+        errors.append("manifest:source_binding:mismatch")
+    if manifest_lineage is not None and global_provenance.get("cache_seal") != manifest_lineage["cache_a_seal"]:
+        errors.append("manifest:cache_a_seal_binding")
+    for counter in ("eval160_reads", "protected_eval_reads", "attack_rollouts"):
+        if global_provenance.get(counter) != 0:
+            errors.append(f"manifest:{counter}_not_zero")
+    _check_source_scripts(global_provenance, errors)
     completed_metrics: dict[int, list[dict[str, Any]]] = {seed: [] for seed in D8_3B_SEEDS}
     for job in jobs:
         if not isinstance(job, Mapping):
@@ -334,8 +560,15 @@ def audit_run(run_root: Path, *, write_artifacts: bool = True) -> dict[str, Any]
             or ":checkpoint_" in error
             or ":nonfinite" in error
             or ":invalid_metric" in error
+            or ":predictions" in error
+            or ":metric_" in error
+            or ":normalization" in error
+            or error.startswith("source_script_mismatch")
+            or "lineage" in error
             for error in errors
         ),
+        "source_binding": not any(error.startswith("manifest:source_binding") for error in errors),
+        "lineage_binding": not any("lineage" in error for error in errors),
     }
     summary = {}
     try:
@@ -351,6 +584,16 @@ def audit_run(run_root: Path, *, write_artifacts: bool = True) -> dict[str, Any]
                 errors.append("receipt_matrix_mismatch")
             if receipt.get("provenance") != global_provenance:
                 errors.append("receipt_provenance_mismatch")
+            receipt_lineage = _validate_lineage(
+                receipt.get("h1_lineage"), errors, "receipt"
+            )
+            if receipt_lineage is not None and receipt_lineage != manifest_lineage:
+                errors.append("receipt_lineage_mismatch")
+            if receipt.get("lineage_digest") != global_provenance.get("lineage_digest"):
+                errors.append("receipt_lineage_digest_mismatch")
+            for counter in ("eval160_reads", "protected_eval_reads", "attack_rollouts"):
+                if receipt.get(counter) != 0:
+                    errors.append(f"receipt:{counter}_not_zero")
     except Exception as exc:
         errors.append(f"receipt_unreadable:{type(exc).__name__}")
 

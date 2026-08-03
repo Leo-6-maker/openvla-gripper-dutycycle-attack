@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 
 import numpy as np
+from audit_r3_contact_input import verify_seal
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -39,6 +40,16 @@ ALLOWED_STATES = {
     "ABORTED",
 }
 METRIC_FIELDS = ("auroc", "balanced_accuracy", "mcc")
+H1_LINEAGE_FIELDS = (
+    "h1_source_commit",
+    "h1_source_tree",
+    "source_snapshot_sha256",
+    "cache_a_seal",
+    "cache_b_seal",
+    "comparator_seal",
+    "p5_artifact_seal",
+    "h1_review_seal",
+)
 PROVENANCE_FIELDS = (
     "config",
     "seed",
@@ -56,6 +67,7 @@ PROVENANCE_FIELDS = (
     "parallel_launcher_sha256",
     "train_core_sha256",
     "python_environment",
+    "lineage_digest",
     "started_utc",
     "finished_utc",
 )
@@ -161,7 +173,79 @@ def _is_hex(value: Any, length: int) -> bool:
     )
 
 
-def validate_python_environment(python_bin: str) -> dict[str, Any]:
+def canonical_lineage_digest(lineage: Mapping[str, Any]) -> str:
+    payload = {key: str(lineage[key]).lower() for key in H1_LINEAGE_FIELDS}
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def validate_h1_lineage(lineage: Mapping[str, Any]) -> dict[str, str]:
+    if not isinstance(lineage, Mapping):
+        raise ValueError("H1 lineage must be a mapping")
+    for key in H1_LINEAGE_FIELDS:
+        length = 40 if key in {"h1_source_commit", "h1_source_tree"} else 64
+        if not _is_hex(lineage.get(key), length):
+            raise ValueError(f"H1 lineage field is not a complete SHA: {key}")
+    normalized = {key: str(lineage[key]).lower() for key in H1_LINEAGE_FIELDS}
+    digest = canonical_lineage_digest(normalized)
+    supplied = lineage.get("lineage_digest")
+    if supplied is not None and supplied != digest:
+        raise ValueError("H1 lineage digest mismatch")
+    normalized["lineage_digest"] = digest
+    return normalized
+
+
+def validate_expected_source(
+    expected_commit: str,
+    expected_tree: str,
+    actual: Mapping[str, str],
+) -> dict[str, str]:
+    if not _is_hex(expected_commit, 40) or not _is_hex(expected_tree, 40):
+        raise ValueError("expected source commit/tree must be complete 40-character SHA-1 values")
+    if actual.get("source_commit") != expected_commit.lower():
+        raise RuntimeError(
+            f"expected source commit mismatch: {expected_commit} != {actual.get('source_commit')}"
+        )
+    if actual.get("source_tree") != expected_tree.lower():
+        raise RuntimeError(
+            f"expected source tree mismatch: {expected_tree} != {actual.get('source_tree')}"
+        )
+    return {
+        "expected_source_commit": expected_commit.lower(),
+        "expected_source_tree": expected_tree.lower(),
+    }
+
+
+def validate_cuda_environment(environment: Mapping[str, Any], gpu_ids: list[int]) -> None:
+    validate_gpu_ids(gpu_ids)
+    if environment.get("cuda_available") is not True:
+        raise RuntimeError("CUDA is not available; refusing D8-3B launch")
+    count = environment.get("cuda_device_count")
+    if isinstance(count, bool) or not isinstance(count, int) or count <= max(gpu_ids):
+        raise RuntimeError(
+            f"CUDA device count {count!r} cannot cover selected physical GPUs {gpu_ids!r}"
+        )
+    inherited = environment.get("inherited_CUDA_VISIBLE_DEVICES", "")
+    if inherited:
+        raise RuntimeError(
+            "inherited CUDA_VISIBLE_DEVICES is non-empty; refusing implicit GPU remapping"
+        )
+
+
+def validate_cache_seal(cache_root: Path, expected_seal: str) -> str:
+    if not cache_root.is_dir():
+        raise FileNotFoundError(f"cache root is not a directory: {cache_root}")
+    try:
+        actual = str(verify_seal(cache_root)["sha256sums_sha256"]).lower()
+    except Exception as exc:
+        raise RuntimeError(f"Cache A seal verification failed: {cache_root}") from exc
+    if actual != expected_seal.lower():
+        raise RuntimeError(f"Cache A seal mismatch: expected {expected_seal.lower()}, got {actual}")
+    return actual
+
+
+def validate_python_environment(python_bin: str, gpu_ids: list[int]) -> dict[str, Any]:
     if not python_bin:
         raise ValueError("--python-bin or D8_PYTHON_BIN is required")
     executable = Path(python_bin).expanduser()
@@ -178,6 +262,8 @@ def validate_python_environment(python_bin: str) -> dict[str, Any]:
         "'torch_version': torch.__version__,"
         "'cuda_version': torch.version.cuda,"
         "'cuda_available': bool(torch.cuda.is_available()),"
+        "'cuda_device_count': int(torch.cuda.device_count()),"
+        "'inherited_CUDA_VISIBLE_DEVICES': os.environ.get('CUDA_VISIBLE_DEVICES', ''),"
         "'numpy_version': numpy.__version__,"
         "'sklearn_version': sklearn.__version__"
         "}, sort_keys=True))"
@@ -210,12 +296,15 @@ def validate_python_environment(python_bin: str) -> dict[str, Any]:
         "torch_version",
         "cuda_version",
         "cuda_available",
+        "cuda_device_count",
+        "inherited_CUDA_VISIBLE_DEVICES",
         "numpy_version",
         "sklearn_version",
         "executable",
     )
     if any(key not in environment for key in required):
         raise RuntimeError(f"python environment probe missing keys: {required!r}")
+    validate_cuda_environment(environment, gpu_ids)
     return environment
 
 
@@ -260,6 +349,7 @@ def _expected_provenance(
     parallel_launcher_sha256: str,
     train_core_sha256: str,
     python_environment: Mapping[str, Any],
+    lineage_digest: str,
     started_utc: str,
     finished_utc: str | None,
 ) -> dict[str, Any]:
@@ -280,6 +370,7 @@ def _expected_provenance(
         "parallel_launcher_sha256": parallel_launcher_sha256,
         "train_core_sha256": train_core_sha256,
         "python_environment": dict(python_environment),
+        "lineage_digest": lineage_digest,
         "started_utc": started_utc,
         "finished_utc": finished_utc,
     }
@@ -299,6 +390,7 @@ def build_jobs(
     source_commit: str,
     source_tree: str,
     python_environment: Mapping[str, Any],
+    lineage_digest: str,
 ) -> list[dict[str, Any]]:
     unit_script = ROOT / "scripts" / "detector_v5" / "run_d8_2_cv_unit.py"
     launcher_script = Path(__file__).resolve()
@@ -379,6 +471,7 @@ def build_jobs(
                         parallel_launcher_sha256=launcher_sha,
                         train_core_sha256=train_core_sha,
                         python_environment=python_environment,
+                        lineage_digest=lineage_digest,
                         started_utc=started_utc,
                         finished_utc=None,
                     ),
@@ -836,16 +929,21 @@ def _finalize_run(
     receipt: dict[str, Any],
     *,
     abort_reason: str | None,
+    audit_fn: Callable[..., dict[str, Any]] | None = None,
+    seal_writer: Callable[[Path], None] | None = None,
+    seal_verifier: Callable[[Path], Mapping[str, Any]] | None = None,
 ) -> int:
     gate = final_gate(manifest["jobs"])
     manifest["finished_utc"] = utc_now()
     manifest["gate"] = gate
-    manifest["verdict"] = "ABORTED_INCOMPLETE" if abort_reason else ("PASS" if gate["pass"] else "FAIL")
-    atomic_write_json(output_root / "JOB_MANIFEST.json", manifest)
-
+    gate_verdict = (
+        "ABORTED_INCOMPLETE"
+        if abort_reason
+        else ("PASS" if gate["pass"] else "FAIL")
+    )
     summary = {
         "schema": "D8_3B_SUMMARY_V2",
-        "verdict": manifest["verdict"],
+        "verdict": gate_verdict,
         "abort_reason": abort_reason,
         "matrix": manifest["matrix"],
         "gate": gate,
@@ -855,63 +953,137 @@ def _finalize_run(
         "auditor_verdict": None,
         "auditor_agreement": False,
     }
-    receipt.update(
-        {
-            "state": "FINISHED",
-            "verdict": manifest["verdict"],
-            "abort_reason": abort_reason,
-            "finished_utc": manifest["finished_utc"],
-            "exit_code": 0 if manifest["verdict"] == "PASS" else 1,
-        }
-    )
-    atomic_write_json(output_root / "D8_3B_SUMMARY.json", summary)
-    atomic_write_json(output_root / "EXECUTION_RECEIPT.json", receipt)
+    receipt["state"] = "PROVISIONAL"
 
-    try:
-        from audit_d8_3b_run import audit_run
-    except Exception as exc:
-        audit = {"verdict": "FAIL", "errors": [f"auditor_import:{type(exc).__name__}"]}
-        atomic_write_json(output_root / "D8_3B_AUDIT.json", audit)
-    else:
-        audit = audit_run(output_root, write_artifacts=True)
-
-    final_verdict = manifest["verdict"]
-    if audit.get("verdict") != final_verdict:
-        final_verdict = (
-            "ABORTED_INCOMPLETE"
-            if final_verdict == "ABORTED_INCOMPLETE" or audit.get("verdict") == "ABORTED_INCOMPLETE"
-            else "FAIL"
+    def write_bundle(verdict: str, audit_verdict: str | None, agreement: bool) -> None:
+        manifest["verdict"] = verdict
+        manifest["auditor_verdict"] = audit_verdict
+        manifest["auditor_agreement"] = agreement
+        summary["verdict"] = verdict
+        summary["auditor_verdict"] = audit_verdict
+        summary["auditor_agreement"] = agreement
+        receipt.update(
+            {
+                "state": "FINISHED",
+                "verdict": verdict,
+                "abort_reason": abort_reason,
+                "finished_utc": manifest["finished_utc"],
+                "auditor_verdict": audit_verdict,
+                "auditor_agreement": agreement,
+                "exit_code": 0 if verdict == "PASS" else 1,
+            }
         )
-        manifest["verdict"] = final_verdict
         atomic_write_json(output_root / "JOB_MANIFEST.json", manifest)
+        atomic_write_json(output_root / "D8_3B_SUMMARY.json", summary)
+        atomic_write_json(output_root / "EXECUTION_RECEIPT.json", receipt)
 
-    summary["verdict"] = final_verdict
-    summary["auditor_verdict"] = audit.get("verdict")
-    summary["auditor_agreement"] = audit.get("verdict") == final_verdict
-    receipt["verdict"] = final_verdict
-    receipt["exit_code"] = 0 if final_verdict == "PASS" else 1
+    atomic_write_json(output_root / "JOB_MANIFEST.json", manifest)
     atomic_write_json(output_root / "D8_3B_SUMMARY.json", summary)
     atomic_write_json(output_root / "EXECUTION_RECEIPT.json", receipt)
-    try:
-        audit = audit_run(output_root, write_artifacts=True)
-    except Exception as exc:
-        atomic_write_json(
-            output_root / "D8_3B_AUDIT.json",
-            {"verdict": "FAIL", "errors": [f"auditor_final:{type(exc).__name__}"]},
-        )
-    try:
-        from audit_d8_3b_run import write_sha256_seal
 
-        write_sha256_seal(output_root)
+    if audit_fn is None:
+        try:
+            from audit_d8_3b_run import audit_run
+        except Exception as exc:
+            error_name = type(exc).__name__
+            audit_fn = lambda _root, **_kwargs: {
+                "verdict": "FAIL",
+                "errors": [f"auditor_import:{error_name}"],
+            }
+        else:
+            audit_fn = audit_run
+    if seal_writer is None or seal_verifier is None:
+        try:
+            from audit_d8_3b_run import verify_sha256_seal, write_sha256_seal
+        except Exception:
+            seal_writer = seal_writer or _write_hash_seal
+            seal_verifier = seal_verifier or (lambda _root: {"fallback": True})
+        else:
+            seal_writer = seal_writer or write_sha256_seal
+            seal_verifier = seal_verifier or verify_sha256_seal
+
+    try:
+        first_audit = audit_fn(output_root, write_artifacts=True)
+    except Exception as exc:
+        first_audit = {"verdict": "FAIL", "errors": [f"auditor_exception:{type(exc).__name__}"]}
+        atomic_write_json(output_root / "D8_3B_AUDIT.json", first_audit)
+
+    def resolve_verdict(audit_verdict: Any) -> str:
+        if abort_reason:
+            return "ABORTED_INCOMPLETE"
+        return "PASS" if gate["pass"] and audit_verdict == "PASS" else "FAIL"
+
+    current_verdict = resolve_verdict(first_audit.get("verdict"))
+    current_audit = first_audit
+    for _ in range(3):
+        write_bundle(
+            current_verdict,
+            current_audit.get("verdict"),
+            current_audit.get("verdict") == current_verdict,
+        )
+        try:
+            audit_fn(output_root, write_artifacts=True)
+            readonly_audit = audit_fn(output_root, write_artifacts=False)
+        except Exception as exc:
+            readonly_audit = {
+                "verdict": "FAIL",
+                "errors": [f"final_auditor_exception:{type(exc).__name__}"],
+            }
+        desired_verdict = resolve_verdict(readonly_audit.get("verdict"))
+        write_bundle(
+            desired_verdict,
+            readonly_audit.get("verdict"),
+            readonly_audit.get("verdict") == desired_verdict,
+        )
+        try:
+            final_audit = audit_fn(output_root, write_artifacts=False)
+        except Exception as exc:
+            final_audit = {
+                "verdict": "FAIL",
+                "errors": [f"post_summary_auditor_exception:{type(exc).__name__}"],
+            }
+        stable_verdict = resolve_verdict(final_audit.get("verdict"))
+        if stable_verdict == desired_verdict:
+            write_bundle(
+                stable_verdict,
+                final_audit.get("verdict"),
+                final_audit.get("verdict") == stable_verdict,
+            )
+            current_verdict = stable_verdict
+            current_audit = final_audit
+            break
+        current_verdict = stable_verdict
+        current_audit = final_audit
+    else:
+        write_bundle(
+            current_verdict,
+            current_audit.get("verdict"),
+            current_audit.get("verdict") == current_verdict,
+        )
+
+    try:
+        seal_writer(output_root)
+        seal_verifier(output_root)
     except Exception:
-        _write_hash_seal(output_root)
-    return 0 if final_verdict == "PASS" and summary["auditor_agreement"] else 1
+        return 1
+    return 0 if current_verdict == "PASS" and current_audit.get("verdict") == "PASS" else 1
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cache-root", type=Path, required=True)
     parser.add_argument("--cache-seal", default=os.environ.get("D8_CACHE_SEAL"))
+    parser.add_argument("--cache-a-seal", default=os.environ.get("D8_CACHE_A_SEAL"))
+    parser.add_argument("--cache-b-seal", default=os.environ.get("D8_CACHE_B_SEAL"))
+    parser.add_argument("--comparator-seal", default=os.environ.get("D8_COMPARATOR_SEAL"))
+    parser.add_argument("--p5-artifact-seal", default=os.environ.get("D8_P5_ARTIFACT_SEAL"))
+    parser.add_argument("--h1-review-seal", default=os.environ.get("D8_H1_REVIEW_SEAL"))
+    parser.add_argument("--h1-source-commit", default=os.environ.get("D8_H1_SOURCE_COMMIT"))
+    parser.add_argument("--h1-source-tree", default=os.environ.get("D8_H1_SOURCE_TREE"))
+    parser.add_argument("--source-snapshot-sha256", default=os.environ.get("D8_SOURCE_SNAPSHOT_SHA256"))
+    parser.add_argument("--expected-source-commit", default=os.environ.get("D8_EXPECTED_SOURCE_COMMIT"))
+    parser.add_argument("--expected-source-tree", default=os.environ.get("D8_EXPECTED_SOURCE_TREE"))
+    parser.add_argument("--shell-script-sha256", default=os.environ.get("D8_SHELL_SCRIPT_SHA256"))
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--log-root", type=Path, required=True)
     parser.add_argument("--python-bin", default=os.environ.get("D8_PYTHON_BIN"))
@@ -930,11 +1102,34 @@ def main(argv: list[str] | None = None) -> int:
     validate_d8_3b_matrix(configs, seeds, FOLDS, args.epochs, gpu_ids)
     if not _is_hex(args.cache_seal, 64):
         raise ValueError("--cache-seal or D8_CACHE_SEAL must be a 64-character SHA256")
-    python_environment = validate_python_environment(args.python_bin)
+    source = git_provenance()
+    expected_source = validate_expected_source(
+        args.expected_source_commit,
+        args.expected_source_tree,
+        source,
+    )
+    lineage = validate_h1_lineage(
+        {
+            "h1_source_commit": args.h1_source_commit,
+            "h1_source_tree": args.h1_source_tree,
+            "source_snapshot_sha256": args.source_snapshot_sha256,
+            "cache_a_seal": args.cache_a_seal,
+            "cache_b_seal": args.cache_b_seal,
+            "comparator_seal": args.comparator_seal,
+            "p5_artifact_seal": args.p5_artifact_seal,
+            "h1_review_seal": args.h1_review_seal,
+        }
+    )
+    if lineage["cache_a_seal"] != args.cache_seal.lower():
+        raise RuntimeError(
+            f"H1 cache_a_seal mismatch: {lineage['cache_a_seal']} != {args.cache_seal.lower()}"
+        )
+    if not _is_hex(args.shell_script_sha256, 64):
+        raise ValueError("--shell-script-sha256 or D8_SHELL_SCRIPT_SHA256 must be a 64-character SHA256")
+    python_environment = validate_python_environment(args.python_bin, gpu_ids)
 
     cache_root = args.cache_root.resolve()
-    if not cache_root.is_dir():
-        raise FileNotFoundError(f"cache root is not a directory: {cache_root}")
+    actual_cache_seal = validate_cache_seal(cache_root, args.cache_seal)
     log_root = args.log_root.resolve()
     if not log_root.is_dir():
         raise FileNotFoundError(f"log root must pre-exist: {log_root}")
@@ -944,7 +1139,6 @@ def main(argv: list[str] | None = None) -> int:
     if output_root.exists():
         raise FileExistsError(f"run root already exists; refusing to clobber: {output_root}")
 
-    source = git_provenance()
     unit_script_sha = sha256_file(ROOT / "scripts" / "detector_v5" / "run_d8_2_cv_unit.py")
     launcher_sha = sha256_file(Path(__file__).resolve())
     train_core_sha = sha256_file(ROOT / "scripts" / "detector_v5" / "d8_train_core.py")
@@ -952,12 +1146,19 @@ def main(argv: list[str] | None = None) -> int:
     source_receipt = {
         "source_commit": source["source_commit"],
         "source_tree": source["source_tree"],
+        **expected_source,
         "unit_script_sha256": unit_script_sha,
         "parallel_launcher_sha256": launcher_sha,
         "train_core_sha256": train_core_sha,
+        "shell_script_sha256": args.shell_script_sha256.lower(),
         "cache_root": str(cache_root),
-        "cache_seal": args.cache_seal.lower(),
+        "cache_seal": actual_cache_seal,
         "python_environment": python_environment,
+        "h1_lineage": lineage,
+        "lineage_digest": lineage["lineage_digest"],
+        "eval160_reads": 0,
+        "protected_eval_reads": 0,
+        "attack_rollouts": 0,
     }
 
     output_root.parent.mkdir(parents=True, exist_ok=True)
@@ -979,6 +1180,11 @@ def main(argv: list[str] | None = None) -> int:
             "planned_jobs": D8_3B_TOTAL_JOBS,
         },
         "provenance": source_receipt,
+        "h1_lineage": lineage,
+        "lineage_digest": lineage["lineage_digest"],
+        "eval160_reads": 0,
+        "protected_eval_reads": 0,
+        "attack_rollouts": 0,
     }
     atomic_write_json(output_root / "EXECUTION_RECEIPT.json", receipt)
     jobs = build_jobs(
@@ -988,12 +1194,13 @@ def main(argv: list[str] | None = None) -> int:
         gpu_ids=gpu_ids,
         epochs=args.epochs,
         cache_root=str(cache_root),
-        cache_seal=args.cache_seal.lower(),
+        cache_seal=actual_cache_seal,
         output_root=output_root,
         python_bin=args.python_bin,
-        source_commit=source["source_commit"],
-        source_tree=source["source_tree"],
+        source_commit=source_receipt["source_commit"],
+        source_tree=source_receipt["source_tree"],
         python_environment=python_environment,
+        lineage_digest=lineage["lineage_digest"],
     )
     manifest = new_manifest(
         jobs=jobs,
