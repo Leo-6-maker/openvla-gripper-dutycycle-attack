@@ -150,7 +150,8 @@ while (( SECONDS < STARTUP_DEADLINE )); do
         exit "${rc}"
     fi
     if [[ -f "${RUN_ROOT}/EXECUTION_RECEIPT.json" ]] \
-        && startup_manifest_ready "${RUN_ROOT}/JOB_MANIFEST.json"; then
+        && startup_manifest_ready "${RUN_ROOT}/JOB_MANIFEST.json" \
+        && kill -0 "${DISPATCHER_PID}" 2>/dev/null; then
         STARTUP_READY=1
         break
     fi
