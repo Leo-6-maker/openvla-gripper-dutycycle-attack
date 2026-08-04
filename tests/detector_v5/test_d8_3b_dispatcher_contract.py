@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import io
 import json
+import os
 from pathlib import Path
+import stat
+import subprocess
 
 import numpy as np
 import pytest
@@ -17,6 +20,8 @@ if str(SCRIPTS) not in sys.path:
 
 import audit_d8_3b_run as auditor
 import run_d8_2_cv_parallel as dispatcher
+
+BASH = Path(r"C:\msys64\usr\bin\bash.exe")
 
 
 def _records(
@@ -150,6 +155,48 @@ def _fake_probe_environment() -> dict:
         "cuda_device_count": 1,
         "inherited_CUDA_VISIBLE_DEVICES": "",
     }
+
+
+def test_preflight_only_success_has_no_run_root_manifest_or_dispatch(tmp_path, monkeypatch, capsys):
+    args = _valid_main_args(tmp_path) + ["--preflight-only"]
+    monkeypatch.setattr(
+        dispatcher,
+        "git_provenance",
+        lambda: {"source_commit": "a" * 40, "source_tree": "b" * 40},
+    )
+    monkeypatch.setattr(dispatcher, "validate_python_environment", lambda *_: _fake_probe_environment())
+    monkeypatch.setattr(dispatcher, "validate_cache_seal", lambda *_: "f" * 64)
+    monkeypatch.setattr(dispatcher, "dispatch_jobs", lambda *_args, **_kwargs: pytest.fail("dispatch ran"))
+    monkeypatch.setattr(dispatcher, "build_jobs", lambda *_args, **_kwargs: pytest.fail("jobs built"))
+    assert dispatcher.main(args) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "PASS"
+    assert report["run_root_created"] is False
+    assert report["manifest_created"] is False
+    assert report["children_launched"] == 0
+    assert report["gpu_training"] == 0
+    assert not (tmp_path / "run").exists()
+
+
+def test_preflight_only_failure_is_structured_and_has_no_run_root(tmp_path, monkeypatch, capsys):
+    args = _valid_main_args(tmp_path) + ["--preflight-only"]
+    monkeypatch.setattr(
+        dispatcher,
+        "git_provenance",
+        lambda: {"source_commit": "a" * 40, "source_tree": "b" * 40},
+    )
+    monkeypatch.setattr(dispatcher, "validate_python_environment", lambda *_: _fake_probe_environment())
+    monkeypatch.setattr(
+        dispatcher,
+        "validate_cache_seal",
+        lambda *_: (_ for _ in ()).throw(RuntimeError("cache mismatch")),
+    )
+    assert dispatcher.main(args) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "FAIL"
+    assert report["error"]["message"] == "cache mismatch"
+    assert report["children_launched"] == 0
+    assert not (tmp_path / "run").exists()
 
 
 def test_expected_source_commit_mismatch_is_before_probe_and_run_root(tmp_path, monkeypatch):
@@ -808,3 +855,172 @@ def test_independent_auditor_passes_and_detects_tamper(tmp_path):
     tampered = auditor.audit_run(root, write_artifacts=False)
     assert tampered["verdict"] == "FAIL"
     assert tampered["errors"]
+
+
+def _fake_python_for_shell(tmp_path: Path) -> Path:
+    script = tmp_path / "fake-python.sh"
+    script.write_text(
+        """#!/usr/bin/env bash
+set -u
+MODE="__DOLLAR__{FAKE_D8_MODE:-success}"
+ROOT=""
+PREFLIGHT=0
+for arg in "__DOLLAR__@"; do
+    if [[ "__DOLLAR__{arg}" == "--preflight-only" ]]; then
+        PREFLIGHT=1
+    fi
+done
+for ((i=1; i<=__DOLLAR__#; i++)); do
+    if [[ "__DOLLAR__{!i}" == "--output-root" ]]; then
+        j=__DOLLAR__((i + 1))
+        ROOT="__DOLLAR__{!j}"
+    fi
+done
+mkdir -p "__DOLLAR__(dirname "__DOLLAR__{ROOT}")"
+if (( PREFLIGHT == 1 )); then
+    if [[ "__DOLLAR__{MODE}" == "preflight_fail" ]]; then
+        echo "synthetic preflight failure" >&2
+        exit 17
+    fi
+    if [[ "__DOLLAR__{MODE}" == "slow_preflight" ]]; then
+        sleep 1.2
+    fi
+    printf '%s\n' '{"schema":"D8_3B_PREFLIGHT_V1","verdict":"PASS","run_root_created":false}'
+    exit 0
+fi
+printf '%s\n' "$$" > "__DOLLAR__{ROOT}.fakepid"
+printf '%s\n' formal >> "__DOLLAR__{ROOT}.formal_count"
+trap 'printf "%s\n" terminated > "__DOLLAR__{ROOT}.terminated"; exit 143' TERM INT
+write_artifacts() {
+    local count="__DOLLAR__1"
+    mkdir -p "__DOLLAR__{ROOT}"
+    printf '%s\n' '{}' > "__DOLLAR__{ROOT}/EXECUTION_RECEIPT.json"
+    {
+        printf '%s\n' '{"matrix": {"planned_jobs": 50}, "jobs": ['
+        for n in __DOLLAR__(seq 1 "__DOLLAR__{count}"); do
+            printf '%s\n' "{\\\"job_id\\\": \\"job__DOLLAR__{n}\\\", \\"status\\\": \\"PENDING\\\"},"
+        done
+        printf '%s\n' '{}]}'
+    } > "__DOLLAR__{ROOT}/JOB_MANIFEST.json"
+}
+case "__DOLLAR__{MODE}" in
+    delay) sleep 1.5; write_artifacts 50; sleep 1 ;;
+    success|slow_preflight) write_artifacts 50; sleep 1 ;;
+    early_fail) echo "synthetic dispatcher early failure" >&2; exit 23 ;;
+    timeout) sleep 20 ;;
+    receipt_only) mkdir -p "__DOLLAR__{ROOT}"; printf '%s\n' '{}' > "__DOLLAR__{ROOT}/EXECUTION_RECEIPT.json"; sleep 20 ;;
+    wrong_manifest) write_artifacts 49; sleep 20 ;;
+esac
+""".replace("__DOLLAR__", "$"),
+        encoding="utf-8",
+    )
+    script.chmod(script.stat().st_mode | stat.S_IXUSR)
+    return script
+
+
+def _run_shell_launcher(tmp_path: Path, mode: str, *, timeout: int = 4):
+    fake_python = _fake_python_for_shell(tmp_path)
+    cache = tmp_path / "cache"
+    logs = tmp_path / "logs"
+    shim_bin = tmp_path / "bin"
+    cache.mkdir()
+    logs.mkdir()
+    shim_bin.mkdir()
+    setsid_shim = shim_bin / "setsid"
+    setsid_shim.write_text("#!/usr/bin/env bash\nexec \"$@\"\n", encoding="utf-8")
+    setsid_shim.chmod(setsid_shim.stat().st_mode | stat.S_IXUSR)
+    nohup_shim = shim_bin / "nohup"
+    nohup_shim.write_text("#!/usr/bin/env bash\nexec \"$@\"\n", encoding="utf-8")
+    nohup_shim.chmod(nohup_shim.stat().st_mode | stat.S_IXUSR)
+    def msys_path(path: Path) -> str:
+        value = path.as_posix()
+        return f"/{value[0].lower()}{value[2:]}" if len(value) > 1 and value[1] == ":" else value
+
+    env = os.environ.copy()
+    env["PATH"] = ":".join([shim_bin.as_posix(), "/usr/bin", "/bin", "/c/Program Files/Git/cmd"])
+    env.update(
+        {
+            "D8_CACHE_ROOT": msys_path(cache),
+            "D8_CACHE_SEAL": "f" * 64,
+            "D8_CACHE_A_SEAL": "f" * 64,
+            "D8_CACHE_B_SEAL": "4" * 64,
+            "D8_COMPARATOR_SEAL": "5" * 64,
+            "D8_P5_ARTIFACT_SEAL": "6" * 64,
+            "D8_H1_REVIEW_SEAL": "7" * 64,
+            "D8_H1_SOURCE_COMMIT": "1" * 40,
+            "D8_H1_SOURCE_TREE": "2" * 40,
+            "D8_SOURCE_SNAPSHOT_SHA256": "3" * 64,
+            "D8_EXPECTED_SOURCE_COMMIT": "a" * 40,
+            "D8_EXPECTED_SOURCE_TREE": "b" * 40,
+            "D8_LOG_ROOT": msys_path(logs),
+            "D8_RUN_ROOT": msys_path(tmp_path / "run"),
+            "D8_PYTHON_BIN": msys_path(fake_python),
+            "D8_GPUS": "0",
+            "D8_STARTUP_TIMEOUT_SECONDS": str(timeout),
+            "D8_STARTUP_POLL_SECONDS": "0.1",
+            "D8_STARTUP_GRACE_SECONDS": "1",
+            "FAKE_D8_MODE": mode,
+        }
+    )
+    result = subprocess.run(
+        [str(BASH), str(SCRIPTS / "d8_launch_3b_safe.sh")],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    return result, tmp_path / "run"
+
+
+def _assert_shell_pid_dead(pid: int):
+    probe = subprocess.run(
+        [str(BASH), "-lc", f"kill -0 {int(pid)}"],
+        capture_output=True,
+        text=True,
+    )
+    assert probe.returncode != 0, probe.stderr
+
+
+def test_shell_waits_for_late_receipt_and_manifest(tmp_path):
+    result, root = _run_shell_launcher(tmp_path, "delay")
+    assert result.returncode == 0, result.stderr
+    assert (root / "EXECUTION_RECEIPT.json").is_file()
+    assert (root / "JOB_MANIFEST.json").is_file()
+    assert (root.with_suffix(".formal_count")).read_text().splitlines() == ["formal"]
+
+
+def test_shell_slow_preflight_does_not_duplicate_formal_dispatch(tmp_path):
+    result, root = _run_shell_launcher(tmp_path, "slow_preflight")
+    assert result.returncode == 0, result.stderr
+    assert (root.with_suffix(".formal_count")).read_text().splitlines() == ["formal"]
+
+
+def test_shell_early_dispatcher_exit_is_nonzero_and_logs_tail(tmp_path):
+    result, _root = _run_shell_launcher(tmp_path, "early_fail")
+    assert result.returncode == 23
+    assert "synthetic dispatcher early failure" in result.stderr
+
+
+def test_shell_timeout_reaps_dispatcher_process_group(tmp_path):
+    result, root = _run_shell_launcher(tmp_path, "timeout", timeout=2)
+    assert result.returncode != 0
+    assert root.with_suffix(".fakepid").is_file()
+    pid = int(root.with_suffix(".fakepid").read_text())
+    _assert_shell_pid_dead(pid)
+
+
+def test_shell_receipt_without_manifest_is_not_startup_success(tmp_path):
+    result, root = _run_shell_launcher(tmp_path, "receipt_only", timeout=2)
+    assert result.returncode != 0
+    assert (root / "EXECUTION_RECEIPT.json").is_file()
+    assert not (root / "JOB_MANIFEST.json").is_file()
+    _assert_shell_pid_dead(int(root.with_suffix(".fakepid").read_text()))
+
+
+def test_shell_non_exact_manifest_is_not_startup_success(tmp_path):
+    result, root = _run_shell_launcher(tmp_path, "wrong_manifest", timeout=2)
+    assert result.returncode != 0
+    assert (root / "EXECUTION_RECEIPT.json").is_file()
+    assert (root / "JOB_MANIFEST.json").is_file()
+    _assert_shell_pid_dead(int(root.with_suffix(".fakepid").read_text()))

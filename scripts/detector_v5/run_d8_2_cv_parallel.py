@@ -1069,36 +1069,12 @@ def _finalize_run(
     return 0 if current_verdict == "PASS" and current_audit.get("verdict") == "PASS" else 1
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--cache-root", type=Path, required=True)
-    parser.add_argument("--cache-seal", default=os.environ.get("D8_CACHE_SEAL"))
-    parser.add_argument("--cache-a-seal", default=os.environ.get("D8_CACHE_A_SEAL"))
-    parser.add_argument("--cache-b-seal", default=os.environ.get("D8_CACHE_B_SEAL"))
-    parser.add_argument("--comparator-seal", default=os.environ.get("D8_COMPARATOR_SEAL"))
-    parser.add_argument("--p5-artifact-seal", default=os.environ.get("D8_P5_ARTIFACT_SEAL"))
-    parser.add_argument("--h1-review-seal", default=os.environ.get("D8_H1_REVIEW_SEAL"))
-    parser.add_argument("--h1-source-commit", default=os.environ.get("D8_H1_SOURCE_COMMIT"))
-    parser.add_argument("--h1-source-tree", default=os.environ.get("D8_H1_SOURCE_TREE"))
-    parser.add_argument("--source-snapshot-sha256", default=os.environ.get("D8_SOURCE_SNAPSHOT_SHA256"))
-    parser.add_argument("--expected-source-commit", default=os.environ.get("D8_EXPECTED_SOURCE_COMMIT"))
-    parser.add_argument("--expected-source-tree", default=os.environ.get("D8_EXPECTED_SOURCE_TREE"))
-    parser.add_argument("--shell-script-sha256", default=os.environ.get("D8_SHELL_SCRIPT_SHA256"))
-    parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--log-root", type=Path, required=True)
-    parser.add_argument("--python-bin", default=os.environ.get("D8_PYTHON_BIN"))
-    parser.add_argument("--gpus", default=os.environ.get("D8_GPUS"))
-    parser.add_argument("--seeds", required=True)
-    parser.add_argument("--configs", required=True)
-    parser.add_argument("--epochs", type=int, required=True)
-    parser.add_argument("--job-timeout-seconds", type=float, default=24 * 60 * 60)
-    parser.add_argument("--terminate-grace-seconds", type=float, default=30.0)
-    args = parser.parse_args(argv)
-
-    # Keep this before any output creation or training child.
-    configs = _split_csv(args.configs)
-    seeds = _split_csv(args.seeds, int)
-    gpu_ids = validate_gpu_ids(_split_csv(args.gpus, int) if args.gpus else [])
+def _run_preflight(
+    args: argparse.Namespace,
+    configs: list[str],
+    seeds: list[int],
+    gpu_ids: list[int],
+) -> dict[str, Any]:
     validate_d8_3b_matrix(configs, seeds, FOLDS, args.epochs, gpu_ids)
     if not _is_hex(args.cache_seal, 64):
         raise ValueError("--cache-seal or D8_CACHE_SEAL must be a 64-character SHA256")
@@ -1142,7 +1118,6 @@ def main(argv: list[str] | None = None) -> int:
     unit_script_sha = sha256_file(ROOT / "scripts" / "detector_v5" / "run_d8_2_cv_unit.py")
     launcher_sha = sha256_file(Path(__file__).resolve())
     train_core_sha = sha256_file(ROOT / "scripts" / "detector_v5" / "d8_train_core.py")
-    started_utc = utc_now()
     source_receipt = {
         "source_commit": source["source_commit"],
         "source_tree": source["source_tree"],
@@ -1160,6 +1135,114 @@ def main(argv: list[str] | None = None) -> int:
         "protected_eval_reads": 0,
         "attack_rollouts": 0,
     }
+    return {
+        "cache_root": cache_root,
+        "cache_seal": actual_cache_seal,
+        "log_root": log_root,
+        "output_root": output_root,
+        "source_receipt": source_receipt,
+        "lineage": lineage,
+        "python_environment": python_environment,
+    }
+
+
+def _preflight_report(
+    args: argparse.Namespace,
+    configs: list[str],
+    seeds: list[int],
+    gpu_ids: list[int],
+    *,
+    context: Mapping[str, Any] | None = None,
+    error: Exception | None = None,
+) -> dict[str, Any]:
+    report: dict[str, Any] = {
+        "schema": "D8_3B_PREFLIGHT_V1",
+        "verdict": "PASS" if error is None else "FAIL",
+        "run_root": str(args.output_root.resolve()),
+        "log_root": str(args.log_root.resolve()),
+        "run_root_created": False,
+        "manifest_created": False,
+        "children_launched": 0,
+        "gpu_training": 0,
+        "matrix": {
+            "configs": configs,
+            "seeds": seeds,
+            "folds": FOLDS,
+            "epochs": args.epochs,
+            "gpus": gpu_ids,
+            "planned_jobs": D8_3B_TOTAL_JOBS,
+        },
+    }
+    if context is not None:
+        report["provenance"] = context["source_receipt"]
+    if error is not None:
+        report["error"] = {"type": type(error).__name__, "message": str(error)}
+    return report
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cache-root", type=Path, required=True)
+    parser.add_argument("--cache-seal", default=os.environ.get("D8_CACHE_SEAL"))
+    parser.add_argument("--cache-a-seal", default=os.environ.get("D8_CACHE_A_SEAL"))
+    parser.add_argument("--cache-b-seal", default=os.environ.get("D8_CACHE_B_SEAL"))
+    parser.add_argument("--comparator-seal", default=os.environ.get("D8_COMPARATOR_SEAL"))
+    parser.add_argument("--p5-artifact-seal", default=os.environ.get("D8_P5_ARTIFACT_SEAL"))
+    parser.add_argument("--h1-review-seal", default=os.environ.get("D8_H1_REVIEW_SEAL"))
+    parser.add_argument("--h1-source-commit", default=os.environ.get("D8_H1_SOURCE_COMMIT"))
+    parser.add_argument("--h1-source-tree", default=os.environ.get("D8_H1_SOURCE_TREE"))
+    parser.add_argument("--source-snapshot-sha256", default=os.environ.get("D8_SOURCE_SNAPSHOT_SHA256"))
+    parser.add_argument("--expected-source-commit", default=os.environ.get("D8_EXPECTED_SOURCE_COMMIT"))
+    parser.add_argument("--expected-source-tree", default=os.environ.get("D8_EXPECTED_SOURCE_TREE"))
+    parser.add_argument("--shell-script-sha256", default=os.environ.get("D8_SHELL_SCRIPT_SHA256"))
+    parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--log-root", type=Path, required=True)
+    parser.add_argument("--python-bin", default=os.environ.get("D8_PYTHON_BIN"))
+    parser.add_argument("--gpus", default=os.environ.get("D8_GPUS"))
+    parser.add_argument("--seeds", required=True)
+    parser.add_argument("--configs", required=True)
+    parser.add_argument("--epochs", type=int, required=True)
+    parser.add_argument("--preflight-only", action="store_true")
+    parser.add_argument("--job-timeout-seconds", type=float, default=24 * 60 * 60)
+    parser.add_argument("--terminate-grace-seconds", type=float, default=30.0)
+    args = parser.parse_args(argv)
+
+    configs: list[str] = []
+    seeds: list[int] = []
+    gpu_ids: list[int] = []
+    try:
+        configs = _split_csv(args.configs)
+        seeds = _split_csv(args.seeds, int)
+        gpu_ids = validate_gpu_ids(_split_csv(args.gpus, int) if args.gpus else [])
+        context = _run_preflight(args, configs, seeds, gpu_ids)
+    except Exception as exc:
+        if args.preflight_only:
+            print(
+                json.dumps(
+                    _preflight_report(
+                        args,
+                        configs,
+                        seeds,
+                        gpu_ids,
+                        error=exc,
+                    ),
+                    sort_keys=True,
+                )
+            )
+            return 1
+        raise
+    if args.preflight_only:
+        print(json.dumps(_preflight_report(args, configs, seeds, gpu_ids, context=context), sort_keys=True))
+        return 0
+
+    cache_root = context["cache_root"]
+    actual_cache_seal = context["cache_seal"]
+    log_root = context["log_root"]
+    output_root = context["output_root"]
+    source_receipt = context["source_receipt"]
+    python_environment = context["python_environment"]
+    lineage = context["lineage"]
+    started_utc = utc_now()
 
     output_root.parent.mkdir(parents=True, exist_ok=True)
     output_root.mkdir(parents=False, exist_ok=False)
