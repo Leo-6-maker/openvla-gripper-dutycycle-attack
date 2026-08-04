@@ -33,7 +33,9 @@ for path in (ROOT / "src", ROOT / "scripts" / "detector_v5"):
 
 from audit_d8_3b_run import audit_run, verify_sha256_seal
 from audit_r3_contact_input import sha256_file, verify_seal
+from d8_event_consolidator import consolidate_physical_events, compute_consolidation_digest
 from d8_train_core import apply_normalization, compute_loss, compute_normalization, create_model
+from run_d8_formal_g_sensitivity import load_sidecar_correct, load_teacher_labels
 
 
 DEPLOYMENT_SEED = 20260805
@@ -49,6 +51,12 @@ H1_SOURCE_COMMIT = "9dd324ad70a9be17548f72437da8454356abfd28"
 H1_SOURCE_TREE = "0333510e291f8ec0c5b8738136019f30c5de17aa"
 SOURCE_SNAPSHOT_SHA256 = "99648bdee45cde6411159f6d6586b8b7e46b626ea000f07a6cff0b38251efdbd"
 LINEAGE_DIGEST = "d42b1fd9a2e511facb71faaedb84c575ff5fa649e16071685626547c96a61833"
+SIDECAR_SEAL = "633ae69da69916b85ebff70d3c38994b00081c7b5cbb47ef80d3356526d13be0"
+TEACHER_SEAL = "16e8934fa564809adad68ed27a9324e895bdd7d4f32659fe2682218aa4709866"
+EVENT_G = 3
+EXPECTED_RAW_EVENT_SPANS = 734
+EXPECTED_CONSOLIDATED_EVENTS = 675
+EXPECTED_BRIDGED_GAPS = 59
 EVENT_GATE = {
     "event_recall_min": 0.70,
     "false_trigger_episode_rate_max": 0.10,
@@ -161,6 +169,129 @@ def load_cache(cache_root: Path, expected_seal: str) -> tuple[list[dict[str, Any
     if len(rows) != int(manifest.get("total_steps", -1)):
         raise RuntimeError("Cache A total row count mismatch")
     return rows, manifest, {**seal, "sha256sums_sha256": actual}
+
+
+def load_clean_event_groups(
+    sidecar_root: Path,
+    teacher_root: Path,
+    cache_rows: list[dict[str, Any]],
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, Any]]:
+    """Bind clean Teacher events to the Cache A effective identities.
+
+    The cache contains step labels and weights, but not the formal event
+    grouping.  Reconstructing G=3 from the sealed clean inputs keeps UNKNOWN
+    gaps abstained while preserving the D8-1 event identity.
+    """
+    sidecar_root = sidecar_root.resolve(strict=True)
+    teacher_root = teacher_root.resolve(strict=True)
+    sidecar_seal = verify_seal(sidecar_root)
+    teacher_seal = verify_seal(teacher_root)
+    if sidecar_seal["sha256sums_sha256"].lower() != SIDECAR_SEAL:
+        raise RuntimeError("D8 sidecar seal mismatch")
+    if teacher_seal["sha256sums_sha256"].lower() != TEACHER_SEAL:
+        raise RuntimeError("D8 Teacher seal mismatch")
+
+    sidecar = load_sidecar_correct(sidecar_root)
+    labels_by_episode, teacher_steps, teacher_identities = load_teacher_labels(teacher_root)
+    if teacher_identities != 670 or teacher_steps != 196483:
+        raise RuntimeError("D8 clean Teacher closure mismatch")
+    if set(sidecar) != set(labels_by_episode):
+        raise RuntimeError("D8 clean sidecar/Teacher identity mismatch")
+    if sum(len(value) for value in sidecar.values()) != teacher_steps:
+        raise RuntimeError("D8 clean sidecar/Teacher step mismatch")
+
+    effective = cache_effective_rows(cache_rows)
+    effective_keys = {(str(row["episode_id"]), int(row["step"])) for row in effective}
+    effective_ids = {key[0] for key in effective_keys}
+    cache_positive_keys = {
+        (str(row["episode_id"]), int(row["step"]))
+        for row in effective
+        if float(row["physical_target"]) == 1.0
+    }
+    event_groups: dict[str, list[dict[str, Any]]] = {}
+    digest_rows: list[dict[str, Any]] = []
+    grouped_positive_keys: set[tuple[str, int]] = set()
+    raw_spans = consolidated_events = bridged_gaps = 0
+
+    for episode_id in sorted(labels_by_episode):
+        result = consolidate_physical_events(
+            episode_id,
+            labels_by_episode[episode_id],
+            relations=sidecar[episode_id],
+            G=EVENT_G,
+        )
+        if result.get("articulated"):
+            if episode_id in effective_ids:
+                raise RuntimeError(f"articulated identity leaked into Cache A: {episode_id}")
+            continue
+        groups: list[dict[str, Any]] = []
+        for group in result.get("event_groups", []):
+            fragments = [
+                (int(start), int(end))
+                for start, end in group["fragment_ranges"]
+            ]
+            for start, end in fragments:
+                for step in range(start, end + 1):
+                    label = labels_by_episode[episode_id].get(step, {})
+                    if label.get("value") != "TRUE" or not label.get("mask") or not label.get("valid_mask"):
+                        raise RuntimeError(f"G=3 event contains non-effective TRUE step: {episode_id} {step}")
+                    key = (episode_id, step)
+                    if key not in effective_keys:
+                        raise RuntimeError(f"G=3 event step missing from Cache A: {key}")
+                    grouped_positive_keys.add(key)
+            groups.append(
+                {
+                    "consolidated_event_id": int(group["consolidated_event_id"]),
+                    "fragment_ranges": fragments,
+                    "fragment_count": int(group["fragment_count"]),
+                }
+            )
+        event_groups[episode_id] = groups
+        raw_spans += int(result.get("raw_true_span_count", 0))
+        consolidated_events += int(result.get("consolidated_event_count", 0))
+        bridged_gaps += int(result.get("total_bridged_gaps", 0))
+        digest_rows.append(
+            {
+                "episode_id": episode_id,
+                "consolidation_digest": compute_consolidation_digest(result),
+                "event_count": len(groups),
+            }
+        )
+
+    if effective_ids != set(event_groups):
+        raise RuntimeError("Cache A effective identity closure does not match clean event binding")
+    if cache_positive_keys != grouped_positive_keys:
+        raise RuntimeError("Cache A positive labels do not match formal G=3 event fragments")
+    if (raw_spans, consolidated_events, bridged_gaps) != (
+        EXPECTED_RAW_EVENT_SPANS,
+        EXPECTED_CONSOLIDATED_EVENTS,
+        EXPECTED_BRIDGED_GAPS,
+    ):
+        raise RuntimeError(
+            "D8 G=3 closure mismatch: "
+            f"raw={raw_spans} events={consolidated_events} bridges={bridged_gaps}"
+        )
+
+    binding = {
+        "schema": "D8_CLEAN_TEACHER_EVENT_BINDING_V1",
+        "G": EVENT_G,
+        "sidecar_root": str(sidecar_root),
+        "sidecar_seal": sidecar_seal["sha256sums_sha256"],
+        "teacher_root": str(teacher_root),
+        "teacher_seal": teacher_seal["sha256sums_sha256"],
+        "teacher_identities": teacher_identities,
+        "teacher_steps": teacher_steps,
+        "effective_identities": len(effective_ids),
+        "raw_true_spans": raw_spans,
+        "consolidated_events": consolidated_events,
+        "bridged_gaps": bridged_gaps,
+        "event_group_digest": sha256_json(digest_rows),
+        "unknown_gap_steps_remain_abstained": True,
+        "eval160_reads": 0,
+        "protected_eval_reads": 0,
+        "attack_rollouts": 0,
+    }
+    return event_groups, binding
 
 
 def load_oof(
@@ -314,6 +445,7 @@ def event_metrics(
     persistence: int,
     hysteresis: float,
     cooldown: int,
+    event_groups: Mapping[str, list[dict[str, Any]]],
 ) -> dict[str, Any]:
     by_episode: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -330,7 +462,7 @@ def event_metrics(
     for episode_id, sequence in sorted(by_episode.items()):
         suite = episode_id.split("/", 1)[0]
         suite_totals[suite]["episodes"] += 1
-        events = positive_spans(sequence)
+        events = event_groups.get(episode_id, [])
         suite_totals[suite]["events"] += len(events)
         event_count += len(events)
         if events:
@@ -339,19 +471,26 @@ def event_metrics(
         false = [row for row in emissions if row["target"] == 0.0]
         if false:
             false_trigger_episodes.add(episode_id)
-        last_event_end = max((int(event[-1]["step"]) for event in events), default=-1)
+        last_event_end = max(
+            (int(fragment[1]) for event in events for fragment in event["fragment_ranges"]),
+            default=-1,
+        )
         if events and any(int(row["step"]) > last_event_end for row in false):
             safe_release_episodes.add(episode_id)
         for event in events:
-            start, end = int(event[0]["step"]), int(event[-1]["step"])
-            hits = [row for row in emissions if start <= int(row["step"]) <= end]
+            fragments = [(int(start), int(end)) for start, end in event["fragment_ranges"]]
+            start = fragments[0][0]
+            hits = [
+                row
+                for row in emissions
+                if any(fragment_start <= int(row["step"]) <= fragment_end for fragment_start, fragment_end in fragments)
+            ]
             if hits:
                 hit_count += 1
                 suite_totals[suite]["hits"] += 1
                 delays.append(int(hits[0]["step"]) - start)
-                event_steps = {int(row["step"]) for row in event}
                 if any(
-                    int(row["step"]) in event_steps
+                    any(fragment_start <= int(row["step"]) <= fragment_end for fragment_start, fragment_end in fragments)
                     for row in emissions
                     if row["target"] == 1.0
                 ):
@@ -374,6 +513,7 @@ def event_metrics(
         "episode_count": len(by_episode),
         "positive_event_episode_count": positive_event_episode_count,
         "suite_breakdown": {key: dict(value) for key, value in sorted(suite_totals.items())},
+        "event_binding": "D8-1 formal G=3 consolidated Teacher event groups",
     }
 
 
@@ -383,7 +523,11 @@ def b1_logit(row: Mapping[str, Any]) -> float:
     return 1.0 if float(features[13]) >= 3.0 and float(features[19]) > 0.02 else -1.0
 
 
-def b1_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def b1_report(
+    rows: list[dict[str, Any]],
+    event_groups: Mapping[str, list[dict[str, Any]]],
+    event_binding: Mapping[str, Any],
+) -> dict[str, Any]:
     effective = cache_effective_rows(rows)
     fold_metrics: dict[str, Any] = {}
     for fold in FOLDS:
@@ -405,7 +549,8 @@ def b1_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "fold_metrics": fold_metrics,
         "seed_metrics": seed_metrics,
         "overall_metrics": all_metrics,
-        "event_metrics": event_metrics(b1_rows, 0.0, 1, 0.5, 0),
+        "event_binding": dict(event_binding),
+        "event_metrics": event_metrics(b1_rows, 0.0, 1, 0.5, 0, event_groups),
         "eval160_reads": 0,
         "protected_eval_reads": 0,
         "attack_rollouts": 0,
@@ -413,7 +558,11 @@ def b1_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def oof_report(
-    rows: list[dict[str, Any]], seed_scores: dict[int, dict[tuple[str, int], float]], oof_meta: dict[str, Any]
+    rows: list[dict[str, Any]],
+    seed_scores: dict[int, dict[tuple[str, int], float]],
+    oof_meta: dict[str, Any],
+    event_groups: Mapping[str, list[dict[str, Any]]],
+    event_binding: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     effective = cache_effective_rows(rows)
     by_key = {(str(row["episode_id"]), int(row["step"])): row for row in effective}
@@ -441,7 +590,9 @@ def oof_report(
         for persistence in PERSISTENCE_CANDIDATES:
             for hysteresis in HYSTERESIS_CANDIDATES:
                 for cooldown in COOLDOWN_CANDIDATES:
-                    metrics = event_metrics(aggregate_rows, threshold, persistence, hysteresis, cooldown)
+                    metrics = event_metrics(
+                        aggregate_rows, threshold, persistence, hysteresis, cooldown, event_groups
+                    )
                     gate = {
                         "event_recall": metrics["event_recall"] >= EVENT_GATE["event_recall_min"],
                         "false_trigger_episode_rate": metrics["false_trigger_episode_rate"] <= EVENT_GATE["false_trigger_episode_rate_max"],
@@ -465,27 +616,28 @@ def oof_report(
         "passing_candidate_count": len(passed),
         "failure_reasons": [] if selected else [
             "no_clean_OOF_scheduler_candidate_satisfies_all_event_gate_criteria",
-            "event_definition_is_contiguous_effective_physical_target_positive_spans",
+            "formal_G3_event_candidate_did_not_meet_all_scheduler_criteria",
         ],
     }
     report = {
         "schema": "D8_B3_CLEAN_OOF_EVENT_REPORT_V1",
         "formal_oof": oof_meta,
         "aggregation": "mean_logit_over_10_seeds_at_each_effective_episode_step",
-        "event_definition": "contiguous effective physical_target=1 spans with step increments of one",
-        "event_metadata_limitation": [
-            "Cache A does not contain candidate_close, event_id, success, or attack fields.",
-            "No candidate/event metadata was reconstructed from forbidden or future fields.",
-        ],
+        "event_definition": "D8-1 formal G=3 consolidated Teacher physical-criticality events",
+        "event_binding": dict(event_binding),
         "fold_metrics": fold_metrics,
         "seed_metrics": seed_metrics,
         "aggregate_step_metrics": metric_summary(
             [float(row["target"]) for row in aggregate_rows], [float(row["score"]) for row in aggregate_rows]
         ),
-        "event_metrics_at_training_threshold": event_metrics(aggregate_rows, 0.0, 1, 0.5, 0),
+        "event_metrics_at_training_threshold": event_metrics(
+            aggregate_rows, 0.0, 1, 0.5, 0, event_groups
+        ),
         "scheduler_search": search,
         "scheduler_gate": event_gate,
-        "clean_task_suite_breakdown": event_metrics(aggregate_rows, 0.0, 1, 0.5, 0)["suite_breakdown"],
+        "clean_task_suite_breakdown": event_metrics(
+            aggregate_rows, 0.0, 1, 0.5, 0, event_groups
+        )["suite_breakdown"],
         "unknown_abstain": {
             "raw_cache_rows": len(rows),
             "excluded_rows": len(unknown_rows),
@@ -604,7 +756,10 @@ def train_final_detector(rows: list[dict[str, Any]], output_root: Path, provenan
 
 
 def clean_replay_report(
-    rows: list[dict[str, Any]], checkpoint_path: Path, scheduler: Mapping[str, Any]
+    rows: list[dict[str, Any]],
+    checkpoint_path: Path,
+    scheduler: Mapping[str, Any],
+    event_groups: Mapping[str, list[dict[str, Any]]],
 ) -> dict[str, Any]:
     checkpoint = torch.load(str(checkpoint_path), map_location="cpu", weights_only=False)
     model = create_model(DEPLOYMENT_SEED)
@@ -641,7 +796,7 @@ def clean_replay_report(
             key=lambda row: int(row["step"]),
         )
         traces_again[episode_id] = scheduler_emissions(sequence, **scheduler_args)
-    replay_event_metrics = event_metrics(replay_rows, **scheduler_args)
+    replay_event_metrics = event_metrics(replay_rows, event_groups=event_groups, **scheduler_args)
     # Cache A deliberately has no task-success field, so success regression is
     # not silently replaced with Teacher physical_target accuracy.
     replay_gate = {
@@ -678,9 +833,24 @@ def self_test() -> None:
     ]
     assert [len(span) for span in positive_spans(rows)] == [3]
     assert [row["step"] for row in scheduler_emissions(rows, 0.0, 2, 0.5, 10)] == [3]
-    result = event_metrics(rows, 0.0, 2, 0.5, 10)
+    event_groups = {"s/task/state": [{"fragment_ranges": [(2, 4)]}]}
+    result = event_metrics(rows, 0.0, 2, 0.5, 10, event_groups)
     assert result["event_recall"] == 1.0
     assert result["median_first_hit_delay"] == 1
+    bridged_rows = [
+        {"episode_id": "s/task/state", "step": i, "target": float(i in {2, 4}), "score": 1.0}
+        for i in (2, 4)
+    ]
+    bridged = event_metrics(
+        bridged_rows,
+        0.0,
+        1,
+        0.5,
+        0,
+        {"s/task/state": [{"fragment_ranges": [(2, 2), (4, 4)]}]},
+    )
+    assert bridged["event_count"] == 1
+    assert bridged["event_recall"] == 1.0
     print("SELF_TEST_PASS")
 
 
@@ -701,11 +871,16 @@ def run(args: argparse.Namespace) -> int:
     started = utc_now()
     try:
         cache_rows, cache_manifest, cache_seal = load_cache(args.cache_root.resolve(), args.expected_cache_seal)
+        event_groups, event_binding = load_clean_event_groups(
+            args.sidecar_root,
+            args.teacher_root,
+            cache_rows,
+        )
         seed_scores, oof_meta = load_oof(
             args.formal_root.resolve(), cache_rows, args.expected_source_commit, args.expected_source_tree
         )
-        b1 = b1_report(cache_rows)
-        b3, gate = oof_report(cache_rows, seed_scores, oof_meta)
+        b1 = b1_report(cache_rows, event_groups, event_binding)
+        b3, gate = oof_report(cache_rows, seed_scores, oof_meta, event_groups, event_binding)
         common_provenance = {
             "source_commit": actual_commit,
             "source_tree": actual_tree,
@@ -714,6 +889,7 @@ def run(args: argparse.Namespace) -> int:
             "source_snapshot_sha256": SOURCE_SNAPSHOT_SHA256,
             "cache_root": str(args.cache_root.resolve()),
             "cache_seal": cache_seal["sha256sums_sha256"],
+            "event_binding": event_binding,
             "lineage_digest": LINEAGE_DIGEST,
             "clean_script_sha256": sha256_file(Path(__file__).resolve()),
             "python_environment": python_environment(),
@@ -790,6 +966,7 @@ def run(args: argparse.Namespace) -> int:
                 cache_rows,
                 staging / "FINAL_DETECTOR_CHECKPOINT.pt",
                 gate["selected"],
+                event_groups,
             )
             atomic_json(staging / "CLEAN_REPLAY.json", replay)
             replay_pass = all(bool(value) for value in replay["gate"].values())
@@ -885,6 +1062,8 @@ def main() -> int:
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--cache-root", type=Path)
     parser.add_argument("--formal-root", type=Path)
+    parser.add_argument("--sidecar-root", type=Path)
+    parser.add_argument("--teacher-root", type=Path)
     parser.add_argument("--expected-cache-seal")
     parser.add_argument("--expected-source-commit")
     parser.add_argument("--expected-source-tree")
@@ -893,7 +1072,16 @@ def main() -> int:
     if args.self_test:
         self_test()
         return 0
-    required = (args.cache_root, args.formal_root, args.expected_cache_seal, args.expected_source_commit, args.expected_source_tree, args.output_root)
+    required = (
+        args.cache_root,
+        args.formal_root,
+        args.sidecar_root,
+        args.teacher_root,
+        args.expected_cache_seal,
+        args.expected_source_commit,
+        args.expected_source_tree,
+        args.output_root,
+    )
     if any(value is None for value in required):
         parser.error("all execution arguments are required unless --self-test is used")
     return run(args)
