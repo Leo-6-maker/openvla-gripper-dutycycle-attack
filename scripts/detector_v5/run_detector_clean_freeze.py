@@ -211,6 +211,7 @@ def load_clean_event_groups(
     event_groups: dict[str, list[dict[str, Any]]] = {}
     digest_rows: list[dict[str, Any]] = []
     grouped_positive_keys: set[tuple[str, int]] = set()
+    right_censored_event_steps = 0
     raw_spans = consolidated_events = bridged_gaps = 0
 
     for episode_id in sorted(labels_by_episode):
@@ -237,6 +238,9 @@ def load_clean_event_groups(
                         raise RuntimeError(f"G=3 event contains non-effective TRUE step: {episode_id} {step}")
                     key = (episode_id, step)
                     if key not in effective_keys:
+                        if label.get("right_censored"):
+                            right_censored_event_steps += 1
+                            continue
                         raise RuntimeError(f"G=3 event step missing from Cache A: {key}")
                     grouped_positive_keys.add(key)
             groups.append(
@@ -285,6 +289,7 @@ def load_clean_event_groups(
         "raw_true_spans": raw_spans,
         "consolidated_events": consolidated_events,
         "bridged_gaps": bridged_gaps,
+        "right_censored_event_steps": right_censored_event_steps,
         "event_group_digest": sha256_json(digest_rows),
         "unknown_gap_steps_remain_abstained": True,
         "eval160_reads": 0,
