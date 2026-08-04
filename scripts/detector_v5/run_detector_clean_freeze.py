@@ -325,6 +325,7 @@ def event_metrics(
     safe_release_episodes: set[str] = set()
     delays: list[int] = []
     persistence_hits = 0
+    positive_event_episode_count = 0
     suite_totals: dict[str, dict[str, int]] = defaultdict(lambda: {"episodes": 0, "events": 0, "hits": 0})
     for episode_id, sequence in sorted(by_episode.items()):
         suite = episode_id.split("/", 1)[0]
@@ -332,6 +333,8 @@ def event_metrics(
         events = positive_spans(sequence)
         suite_totals[suite]["events"] += len(events)
         event_count += len(events)
+        if events:
+            positive_event_episode_count += 1
         emissions = scheduler_emissions(sequence, threshold, persistence, hysteresis, cooldown)
         false = [row for row in emissions if row["target"] == 0.0]
         if false:
@@ -353,7 +356,6 @@ def event_metrics(
                     if row["target"] == 1.0
                 ):
                     persistence_hits += 1
-    positive_event_episodes = sum(1 for value in suite_totals.values() if value["events"])
     return {
         "threshold": threshold,
         "persistence": persistence,
@@ -368,9 +370,9 @@ def event_metrics(
         "false_trigger_episode_count": len(false_trigger_episodes),
         "false_trigger_episode_rate": len(false_trigger_episodes) / max(len(by_episode), 1),
         "safe_release_false_positive_episode_count": len(safe_release_episodes),
-        "safe_release_false_positive_rate": len(safe_release_episodes) / max(positive_event_episodes, 1),
+        "safe_release_false_positive_rate": len(safe_release_episodes) / max(positive_event_episode_count, 1),
         "episode_count": len(by_episode),
-        "positive_event_episode_count": positive_event_episodes,
+        "positive_event_episode_count": positive_event_episode_count,
         "suite_breakdown": {key: dict(value) for key, value in sorted(suite_totals.items())},
     }
 
@@ -741,9 +743,9 @@ def run(args: argparse.Namespace) -> int:
                 "stage4_authorized": False,
                 "event_gate": gate,
                 "failure_boundary": (
-                    None
+                    "Event Gate passed; final detector and clean replay remain pending."
                     if gate["status"] == "PASS"
-                    else "Event Gate passed; final detector and clean replay remain pending."
+                    else "Detector clean/event scientific Gate FAIL; no final checkpoint or attack rollout is authorized."
                 ),
                 "eval160_reads": 0,
                 "protected_eval_reads": 0,
