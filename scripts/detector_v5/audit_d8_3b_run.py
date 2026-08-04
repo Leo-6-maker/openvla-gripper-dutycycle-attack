@@ -436,6 +436,48 @@ def _audit_job(
     return dict(metrics)
 
 
+def audit_unit_bundle(
+    root: Path,
+    job: Mapping[str, Any],
+    *,
+    global_provenance: Mapping[str, Any] | None = None,
+    verify_source_scripts: bool = False,
+) -> dict[str, Any]:
+    """Strictly audit one producer bundle for dispatcher and canary reuse."""
+
+    root = root.resolve()
+    errors: list[str] = []
+    if not isinstance(job, Mapping):
+        return {"schema": "D8_3B_UNIT_AUDIT_V1", "verdict": "FAIL", "errors": ["job_not_mapping"]}
+    if job.get("status") != "COMPLETED":
+        errors.append("job_not_completed")
+    if job.get("exit_code") != 0:
+        errors.append("returncode_not_zero")
+    provenance = global_provenance
+    if not isinstance(provenance, Mapping):
+        provenance = job.get("expected_provenance", {})
+    if not isinstance(provenance, Mapping):
+        provenance = {}
+        errors.append("provenance_not_mapping")
+    if verify_source_scripts:
+        _check_source_scripts(provenance, errors)
+    lineage = provenance.get("h1_lineage")
+    if lineage is not None:
+        normalized = _validate_lineage(lineage, errors, "unit")
+        if normalized is not None and provenance.get("lineage_digest") != normalized["lineage_digest"]:
+            errors.append("unit:lineage_digest_binding")
+    metrics = _audit_job(root, job, provenance, errors) if job.get("status") == "COMPLETED" else None
+    if metrics is None and not errors:
+        errors.append("unit_artifacts_missing")
+    return {
+        "schema": "D8_3B_UNIT_AUDIT_V1",
+        "verdict": "PASS" if not errors else "FAIL",
+        "errors": errors,
+        "job_id": str(job.get("job_id", "UNKNOWN")),
+        "metrics": metrics or {},
+    }
+
+
 def audit_run(run_root: Path, *, write_artifacts: bool = True) -> dict[str, Any]:
     root = run_root.resolve()
     errors = _verify_existing_seal(root)

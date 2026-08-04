@@ -20,6 +20,7 @@ if str(SCRIPTS) not in sys.path:
 
 import audit_d8_3b_run as auditor
 import run_d8_2_cv_parallel as dispatcher
+import run_d8_2_cv_unit as unit
 
 BASH = Path(r"C:\msys64\usr\bin\bash.exe")
 
@@ -429,6 +430,47 @@ def test_mocked_dispatch_never_exceeds_gpu_slots(tmp_path):
     assert all(process.returncode == 0 for process in processes)
 
 
+def test_first_formal_job_failure_aborts_without_launching_second(tmp_path):
+    path, manifest = _dispatch_manifest(tmp_path, count=3)
+    manifest["matrix"]["gpus"] = [0]
+    manifest["dispatcher_pid"] = 1
+    manifest["created_utc"] = "2026-08-04T00:00:00+00:00"
+    launched = []
+
+    def launch(job):
+        launched.append(job["job_id"])
+        return _FakeProcess(finish_after=1), io.StringIO()
+
+    def validate(job, _returncode):
+        if job["job_id"] == "job0":
+            return False, "checkpoint_schema", {}
+        return True, "ok", {"auroc": 0.85, "balanced_accuracy": 0.75, "mcc": 0.1}
+
+    dispatcher.dispatch_jobs(
+        path,
+        tmp_path / "STOP_D8_3B",
+        manifest,
+        launch_fn=launch,
+        validate_fn=validate,
+        sleep_fn=lambda _: None,
+        poll_interval=0,
+    )
+    assert launched == ["job0"]
+    assert manifest["jobs"][0]["status"] == "FAILED"
+    assert manifest["jobs"][1]["status"] == "ABORTED"
+    assert manifest["jobs"][2]["status"] == "ABORTED"
+    assert manifest["abort_reason"].startswith("JOB_FAILURE:job0:checkpoint_schema")
+    assert dispatcher._finalize_run(
+        tmp_path,
+        manifest,
+        {},
+        abort_reason=manifest["abort_reason"],
+        audit_fn=lambda _root, **_kwargs: {"verdict": "FAIL", "errors": []},
+        seal_writer=lambda _root: None,
+        seal_verifier=lambda _root: {},
+    ) == 1
+
+
 def test_kill_switch_skips_pending_and_is_not_pass(tmp_path):
     path, manifest = _dispatch_manifest(tmp_path)
     (tmp_path / "STOP_D8_3B").touch()
@@ -540,6 +582,140 @@ def test_job_validator_rejects_nonzero_and_missing_or_nonfinite_artifacts(tmp_pa
         missing_job["predictions_path"] = str(missing / "predictions.json")
         ok, _, _ = dispatcher.validate_job_artifacts(missing_job, 0)
         assert not ok
+
+
+def _synthetic_unit_entries():
+    def row(episode_id, fold_id, target, step):
+        return {
+            "episode_id": episode_id,
+            "fold_id": fold_id,
+            "step": step,
+            "effective_mask": True,
+            "physical_target": float(target),
+            "D8_weight": 1.0,
+            "features_25d_raw": [float(target) + (index / 100.0) for index in range(25)],
+        }
+
+    return [
+        row("train_neg", 1, 0, 0),
+        row("train_pos", 1, 1, 0),
+        row("val_neg", 0, 0, 0),
+        row("val_pos", 0, 1, 0),
+    ]
+
+
+def _synthetic_lineage():
+    lineage = {
+        "h1_source_commit": "1" * 40,
+        "h1_source_tree": "2" * 40,
+        "source_snapshot_sha256": "3" * 64,
+        "cache_a_seal": "f" * 64,
+        "cache_b_seal": "4" * 64,
+        "comparator_seal": "5" * 64,
+        "p5_artifact_seal": "6" * 64,
+        "h1_review_seal": "7" * 64,
+    }
+    lineage["lineage_digest"] = dispatcher.canonical_lineage_digest(lineage)
+    return lineage
+
+
+def test_provenance_has_no_schema_and_payload_collision_is_rejected(tmp_path):
+    lineage = _synthetic_lineage()
+    provenance = unit._provenance(
+        cache_root=tmp_path / "cache",
+        cache_seal="f" * 64,
+        config="B3",
+        fold=0,
+        seed=20260719,
+        epochs=1,
+        started_utc="2026-08-04T00:00:00+00:00",
+        source_commit="a" * 40,
+        source_tree="b" * 40,
+        launcher_sha256="c" * 64,
+        train_core_sha256="d" * 64,
+        receipt={"lineage_digest": lineage["lineage_digest"]},
+    )
+    assert "schema" not in provenance
+    with pytest.raises(RuntimeError, match="schema"):
+        unit._artifact_payload("D8_3B_CHECKPOINT_V2", {"schema": "wrong"}, provenance)
+    with pytest.raises(RuntimeError, match="schema"):
+        unit._artifact_payload("D8_3B_CHECKPOINT_V2", {}, {**provenance, "schema": "wrong"})
+
+
+def test_real_run_unit_producer_roundtrip_and_strict_canary_audit(tmp_path, monkeypatch):
+    cache_root = tmp_path / "cache"
+    cache_root.mkdir()
+    lineage = _synthetic_lineage()
+    monkeypatch.setattr(
+        unit,
+        "load_cache",
+        lambda _root, _seal: (_synthetic_unit_entries(), {"sha256sums_sha256": "f" * 64}),
+    )
+    monkeypatch.setattr(unit.torch.cuda, "is_available", lambda: False)
+    receipt = tmp_path / "EXECUTION_RECEIPT.json"
+    receipt.write_text(json.dumps({"lineage_digest": lineage["lineage_digest"]}))
+    output_root = tmp_path / "bundle"
+    unit_dir = output_root / "seed20260719" / "B3_fold0"
+    metrics = unit.run_unit(
+        cache_root,
+        "B3",
+        0,
+        20260719,
+        1,
+        unit_dir,
+        expected_cache_seal="f" * 64,
+        source_commit="a" * 40,
+        source_tree="b" * 40,
+        launcher_sha256=dispatcher.sha256_file(SCRIPTS / "run_d8_2_cv_parallel.py"),
+        train_core_sha256=dispatcher.sha256_file(SCRIPTS / "d8_train_core.py"),
+        execution_receipt=receipt,
+    )
+    checkpoint = torch.load(unit_dir / "checkpoint.pt", map_location="cpu", weights_only=False)
+    metrics_file = json.loads((unit_dir / "metrics.json").read_text())
+    predictions = json.loads((unit_dir / "predictions.json").read_text())
+    assert metrics["schema"] == metrics_file["schema"] == "D8_3B_UNIT_METRICS_V2"
+    assert checkpoint["schema"] == "D8_3B_CHECKPOINT_V2"
+    assert checkpoint["schema"] != metrics_file["schema"]
+    assert checkpoint["model_state"]
+    assert checkpoint["normalization"]["schema"] == "D8_NORMALIZATION_V2"
+    assert checkpoint["normalization"]["feature_dim"] == 25
+    assert predictions
+    expected = {key: metrics_file[key] for key in dispatcher.PROVENANCE_FIELDS}
+    job = {
+        "job_id": "B3_seed20260719_fold0",
+        "config": "B3",
+        "seed": 20260719,
+        "fold": 0,
+        "status": "COMPLETED",
+        "exit_code": 0,
+        "metrics_path": str(unit_dir / "metrics.json"),
+        "checkpoint_path": str(unit_dir / "checkpoint.pt"),
+        "predictions_path": str(unit_dir / "predictions.json"),
+        "expected_provenance": expected,
+    }
+    ok, reason, observed = dispatcher.validate_job_artifacts(job, 0)
+    assert (ok, reason) == (True, "ok")
+    assert observed["schema"] == "D8_3B_UNIT_METRICS_V2"
+    global_provenance = {
+        **expected,
+        "shell_script_sha256": auditor.sha256_file(SCRIPTS / "d8_launch_3b_safe.sh"),
+        "h1_lineage": lineage,
+    }
+    canary_audit = auditor.audit_unit_bundle(
+        output_root,
+        job,
+        global_provenance=global_provenance,
+        verify_source_scripts=True,
+    )
+    assert canary_audit["verdict"] == "PASS", canary_audit
+
+    checkpoint["schema"] = "D8_3B_UNIT_METRICS_V2"
+    torch.save(checkpoint, unit_dir / "checkpoint.pt")
+    ok, reason, _ = dispatcher.validate_job_artifacts(job, 0)
+    assert not ok and "checkpoint" in reason
+    rejected = auditor.audit_unit_bundle(output_root, job, global_provenance=global_provenance)
+    assert rejected["verdict"] == "FAIL"
+    assert any("checkpoint_schema" in error for error in rejected["errors"])
 
 
 def _make_auditor_fixture(tmp_path: Path) -> Path:

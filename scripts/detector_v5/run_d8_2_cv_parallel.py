@@ -531,8 +531,10 @@ def validate_job_artifacts(job: Mapping[str, Any], returncode: int) -> tuple[boo
 
     if returncode != 0:
         return False, f"nonzero_returncode:{returncode}", {}
-    identity = f"{job['config']}_seed{job['seed']}_fold{job['fold']}"
-    unit_dir = Path(job["metrics_path"]).parent
+    for field in ("config", "seed", "fold", "metrics_path", "checkpoint_path", "predictions_path"):
+        if field not in job:
+            return False, f"job_missing:{field}", {}
+    unit_dir = Path(str(job["metrics_path"])).parent
     expected_paths = {
         "metrics_path": unit_dir / "metrics.json",
         "checkpoint_path": unit_dir / "checkpoint.pt",
@@ -542,42 +544,23 @@ def validate_job_artifacts(job: Mapping[str, Any], returncode: int) -> tuple[boo
         if not _check_path(str(job[field]), expected):
             return False, f"invalid_or_missing_{field}", {}
     try:
-        metrics = json.loads(Path(job["metrics_path"]).read_text(encoding="utf-8"))
-        predictions = json.loads(Path(job["predictions_path"]).read_text(encoding="utf-8"))
-        checkpoint = _load_checkpoint(Path(job["checkpoint_path"]))
+        from audit_d8_3b_run import audit_unit_bundle
+
+        strict_job = dict(job)
+        strict_job["status"] = "COMPLETED"
+        strict_job["exit_code"] = returncode
+        result = audit_unit_bundle(
+            unit_dir.parent.parent,
+            strict_job,
+            global_provenance=job.get("expected_provenance", {}),
+        )
     except Exception as exc:
-        return False, f"artifact_parse_error:{type(exc).__name__}", {}
-    if not isinstance(metrics, dict) or not isinstance(predictions, list) or not isinstance(checkpoint, Mapping):
-        return False, "artifact_types_invalid", {}
-    required = {"schema", *METRIC_FIELDS, *PROVENANCE_FIELDS}
-    missing = sorted(key for key in required if key not in metrics)
-    if missing:
-        return False, f"metrics_missing:{','.join(missing)}", {}
-    if metrics.get("schema") != "D8_3B_UNIT_METRICS_V2":
-        return False, "metrics_schema_mismatch", {}
-    expected = dict(job["expected_provenance"])
-    for key, expected_value in expected.items():
-        if key in {"started_utc", "finished_utc"}:
-            if not isinstance(metrics.get(key), str) or not metrics.get(key):
-                return False, f"metrics_timestamp_missing:{key}", {}
-            continue
-        if metrics.get(key) != expected_value:
-            return False, f"metrics_provenance_mismatch:{key}", {}
-    for key in METRIC_FIELDS:
-        try:
-            if not math.isfinite(float(metrics[key])):
-                return False, f"nonfinite_metric:{key}", {}
-        except (TypeError, ValueError):
-            return False, f"invalid_metric:{key}", {}
-    for key, expected_value in expected.items():
-        expected_value = metrics[key] if key in {"started_utc", "finished_utc"} else expected_value
-        if checkpoint.get(key) != expected_value:
-            return False, f"checkpoint_provenance_mismatch:{key}", {}
-    if checkpoint.get("schema") != "D8_3B_CHECKPOINT_V2" or "model_state" not in checkpoint:
-        return False, "checkpoint_schema_or_model_missing", {}
-    if metrics.get("config") != job["config"] or metrics.get("seed") != job["seed"] or metrics.get("fold") != job["fold"]:
-        return False, f"identity_mismatch:{identity}", {}
-    return True, "ok", metrics
+        return False, f"strict_auditor_error:{type(exc).__name__}", {}
+    if result.get("verdict") != "PASS":
+        errors = result.get("errors")
+        reason = errors[0] if isinstance(errors, list) and errors else "strict_artifact_validation"
+        return False, str(reason), {}
+    return True, "ok", dict(result.get("metrics", {}))
 
 
 def _metrics_for_gate(job: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -829,14 +812,24 @@ def dispatch_jobs(
                 process = slot["process"]
                 elapsed = time.monotonic() - slot["started_monotonic"]
                 if process.poll() is None and elapsed > job_timeout_seconds:
-                    mark_abort(f"WATCHDOG_TIMEOUT:{slot['job']['job_id']}")
+                    timed_job = slot["job"]
+                    failure = f"JOB_FAILURE:{timed_job['job_id']}:WATCHDOG_TIMEOUT"
+                    mark_abort(failure)
+                    timed_job["status"] = "FAILED"
+                    timed_job["finished_utc"] = utc_now()
+                    timed_job["failure_reason"] = "WATCHDOG_TIMEOUT"
+                    timed_job["exit_code"] = process.poll()
+                    atomic_write_json(manifest_path, manifest)
                     break
                 returncode = process.poll()
                 if returncode is None:
                     continue
                 _close_log(slot["log_handle"])
                 job = slot["job"]
-                ok, reason, metrics = validate_fn(job, returncode)
+                try:
+                    ok, reason, metrics = validate_fn(job, returncode)
+                except Exception as exc:
+                    ok, reason, metrics = False, f"validator_exception:{type(exc).__name__}", {}
                 job["status"] = "COMPLETED" if ok else "FAILED"
                 job["finished_utc"] = utc_now()
                 job["exit_code"] = returncode
@@ -845,6 +838,10 @@ def dispatch_jobs(
                     job["metrics"] = metrics
                 del slots[gpu]
                 changed = True
+                if not ok:
+                    persist()
+                    mark_abort(f"JOB_FAILURE:{job['job_id']}:{reason}")
+                    break
             if abort_reason is not None:
                 break
             if changed:
@@ -874,8 +871,8 @@ def dispatch_jobs(
                     job["failure_reason"] = f"launch_error:{type(exc).__name__}"
                     job["exit_code"] = None
                     persist()
-                    pending = [item for item in jobs if item["status"] == "PENDING"]
-                    continue
+                    mark_abort(f"JOB_FAILURE:{job['job_id']}:launch_error:{type(exc).__name__}")
+                    break
                 job["status"] = "RUNNING"
                 job["pid"] = process.pid
                 job["started_utc"] = utc_now()

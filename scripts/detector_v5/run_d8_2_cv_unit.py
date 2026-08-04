@@ -37,6 +37,8 @@ THRESHOLD = 0.0
 OPTIMIZER_NAME = "Adam"
 LEARNING_RATE = 1e-3
 WEIGHT_NORMALIZATION = "mean_to_one"
+UNIT_METRICS_SCHEMA = "D8_3B_UNIT_METRICS_V2"
+CHECKPOINT_SCHEMA = "D8_3B_CHECKPOINT_V2"
 
 
 def utc_now() -> str:
@@ -91,6 +93,19 @@ def _atomic_torch_save(path: Path, value: Mapping[str, Any]) -> None:
     except Exception:
         temporary.unlink(missing_ok=True)
         raise
+
+
+def _artifact_payload(
+    schema: str,
+    payload: Mapping[str, Any],
+    provenance: Mapping[str, Any],
+) -> dict[str, Any]:
+    if "schema" in payload or "schema" in provenance:
+        raise RuntimeError("artifact schema must be owned by the artifact envelope")
+    overlap = set(payload).intersection(provenance)
+    if overlap:
+        raise RuntimeError(f"artifact payload/provenance collision: {sorted(overlap)!r}")
+    return {"schema": schema, **dict(payload), **dict(provenance)}
 
 
 def _local_python_environment() -> dict[str, Any]:
@@ -175,7 +190,6 @@ def _provenance(
     if not isinstance(environment, Mapping):
         environment = _local_python_environment()
     return {
-        "schema": "D8_3B_UNIT_METRICS_V2",
         "config": config,
         "seed": seed,
         "fold": fold,
@@ -337,15 +351,11 @@ def run_unit(
 
     finished_utc = utc_now()
     metadata["finished_utc"] = finished_utc
-    metrics.update(metadata)
+    metrics = _artifact_payload(UNIT_METRICS_SCHEMA, metrics, metadata)
     if checkpoint_payload is not None:
         _atomic_torch_save(
             output_dir / "checkpoint.pt",
-            {
-                "schema": "D8_3B_CHECKPOINT_V2",
-                **checkpoint_payload,
-                **metadata,
-            },
+            _artifact_payload(CHECKPOINT_SCHEMA, checkpoint_payload, metadata),
         )
     _atomic_json(output_dir / "predictions.json", preds)
     _atomic_json(output_dir / "metrics.json", metrics)
