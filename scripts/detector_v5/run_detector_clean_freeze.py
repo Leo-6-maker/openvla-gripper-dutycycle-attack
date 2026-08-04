@@ -340,7 +340,7 @@ def event_metrics(
         if false:
             false_trigger_episodes.add(episode_id)
         last_event_end = max((int(event[-1]["step"]) for event in events), default=-1)
-        if any(int(row["step"]) > last_event_end for row in false):
+        if events and any(int(row["step"]) > last_event_end for row in false):
             safe_release_episodes.add(episode_id)
         for event in events:
             start, end = int(event[0]["step"]), int(event[-1]["step"])
