@@ -251,7 +251,7 @@ def _search(
     active_hits = np.zeros((count, event_count), dtype=bool)
     emission_hits = np.zeros((count, event_count), dtype=bool)
     first_active = np.full((count, event_count), -1, dtype=np.int32)
-    false_episodes = np.zeros(count, dtype=bool)
+    false_episode_counts = np.zeros(count, dtype=np.int64)
     false_onsets = np.zeros(count, dtype=np.int64)
     negative_active_steps = np.zeros(count, dtype=np.int64)
     negative_steps = 0
@@ -269,6 +269,7 @@ def _search(
         consecutive = np.zeros(count, dtype=np.int16)
         latched = np.zeros(count, dtype=bool)
         next_allowed = np.full(count, -10**9, dtype=np.int32)
+        episode_false = np.zeros(count, dtype=bool)
         previous_step: int | None = None
         for row in by_episode[episode_id]:
             step = int(row["step"])
@@ -294,11 +295,12 @@ def _search(
                     newly_active, step, first_active[:, event_index]
                 )
             if not protected_at.get(step):
-                false_episodes |= emission
+                episode_false |= emission
                 false_onsets += emission.astype(np.int64)
                 if float(row["target"]) == 0.0:
                     negative_steps += 1
                     negative_active_steps += latched.astype(np.int64)
+        false_episode_counts += episode_false.astype(np.int64)
 
     starts = np.asarray([int(event["event_start"]) for event in events], dtype=np.int32)
     ends = np.asarray([int(event["event_end"]) for event in events], dtype=np.int32)
@@ -349,8 +351,8 @@ def _search(
             "p25_first_activation_delay": None if not finite(p25[index]) else float(p25[index]),
             "p75_first_activation_delay": None if not finite(p75[index]) else float(p75[index]),
             "first_activation_samples": int(np.sum(delay_mask[index])),
-            "false_onset_episode_count": int(false_episodes[index]),
-            "false_onset_episode_rate": float(false_episodes[index] / max(len(by_episode), 1)),
+            "false_onset_episode_count": int(false_episode_counts[index]),
+            "false_onset_episode_rate": float(false_episode_counts[index] / max(len(by_episode), 1)),
             "negative_active_step_count": int(negative_active_steps[index]),
             "negative_step_count": int(negative_steps),
             "negative_active_step_rate": None if negative_steps == 0 else float(negative_active_steps[index] / negative_steps),
