@@ -736,6 +736,14 @@ def self_test() -> None:
         0,
     )
     assert any(row["latched_active"] for row in bridged if row["step"] in (1, 3))
+
+    aggregate = [dict(row, target=1.0 if row["step"] in (2, 3) else 0.0) for row in rows([0.0, 1.0, 1.0, 1.0, 0.0])]
+    groups = {"suite/task/state": [{"consolidated_event_id": 0, "fragment_ranges": [(2, 3)], "fragment_count": 1}]}
+    indexed, _ = event_index(aggregate, groups)
+    _, search = _search(aggregate, indexed, groups)
+    candidate = search["closest_to_original_gate"]
+    details, _ = detailed_candidate_metrics(aggregate, groups, candidate)
+    assert abs(details["false_onset_episode_rate"] - candidate["false_onset_episode_rate"]) < 1e-12
     print("SELF_TEST_PASS")
 
 
@@ -800,7 +808,11 @@ def run(args: argparse.Namespace) -> int:
         selected_details, traces = detailed_candidate_metrics(aggregate_rows, event_groups, selected)
         for key in ("active_overlap_event_recall", "emission_event_recall", "false_onset_episode_rate"):
             if abs(float(selected_details[key]) - float(selected[key])) > 1e-12:
-                raise RuntimeError(f"batched/detail metric mismatch: {key}")
+                raise RuntimeError(
+                    f"batched/detail metric mismatch: {key}; "
+                    f"candidate={json.dumps(selected, sort_keys=True)}; "
+                    f"batched={selected[key]!r}; detailed={selected_details[key]!r}"
+                )
         trace_path = staging / "STAGE2_R2_SCHEDULER_TRACE.jsonl"
         trace_sha = write_trace(trace_path, selected, traces)
         r1 = _r1_reclassification(r1_root)
