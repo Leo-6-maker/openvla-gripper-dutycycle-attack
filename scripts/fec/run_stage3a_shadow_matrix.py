@@ -387,7 +387,9 @@ def main() -> int:
     output_root.mkdir(parents=True, exist_ok=False)
     head = git(repo, "rev-parse", "HEAD")
     tree = git(repo, "rev-parse", "HEAD^{tree}")
-    branch = git(repo, "branch", "--show-current")
+    # The server checkout is intentionally detached; bind the explicit remote
+    # branch passed by the launch plan instead of relying on branch --show-current.
+    branch = args.branch
     if git(repo, "status", "--porcelain"):
         fail("Stage3A server worktree is not clean")
     remote_ref = git(repo, "ls-remote", "origin", f"refs/heads/{branch}").split()
