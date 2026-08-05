@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import signal
+import shutil
 import subprocess
 import sys
 import time
@@ -496,7 +497,7 @@ def main() -> int:
     }
     atomic_json(output_root / "STAGE3A_SHADOW_RUN_MANIFEST.json", run_manifest)
     if r3_mode:
-        atomic_json(output_root / "R3A_TRANSFER_AUDIT.json", json.loads(args.r3_transfer_audit.resolve(strict=True).read_text(encoding="utf-8")))
+        shutil.copyfile(args.r3_transfer_audit.resolve(strict=True), output_root / "R3A_TRANSFER_AUDIT.json")
         transfer_report = json.loads(args.r3_transfer_audit.resolve(strict=True).read_text(encoding="utf-8"))
     else:
         transfer_cmd = [
