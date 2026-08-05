@@ -19,6 +19,7 @@ import importlib.util
 import inspect
 import json
 import os
+import pickle
 import random
 import sys
 import time
@@ -40,6 +41,13 @@ ARMS = (
     "COMMAND_OPEN_ORACLE",
     "RANDOM_TIME_T10",
 )
+STAGE3A_CONDITION_TO_ARM = {
+    "CLEAN_SHADOW": "CLEAN",
+    "RANDOM_NORM_MATCHED_E006_S20_SHADOW": "RAND_T10",
+    "PGD_E003_S20_SHADOW": "TRUE_T10",
+    "PGD_E006_S20_SHADOW": "TRUE_T10",
+    "ORACLE_OPEN_SHADOW": "COMMAND_OPEN_ORACLE",
+}
 TARGET_OBJECTIVE = "autoregressive_prefix_gripper_target_token_logratio_arm_v3"
 TARGET_TOKEN_ID = 31745  # FIXED: was off-by-one (31744→31745 canonical OPEN)
 TARGET_EXECUTION_CLASS = "NATIVE_OPEN"  # FIXED: CLIP_MEDIATED_OPEN has 0 tokens
@@ -211,6 +219,23 @@ def effective_config(base: dict[str, Any], arm: str, *, rand_direction_seed: int
     opt["gradient_transform_seed"] = int(rand_direction_seed)
     cfg["effective_arm"] = arm
     return cfg
+
+
+def validate_stage3a_config(base: dict[str, Any], condition: str) -> None:
+    """Bind each preregistered condition to an existing sweep config."""
+    opt = base["attack_optimizer"]
+    expected = {
+        "CLEAN_SHADOW": (0.06, 0.003, 20),
+        "RANDOM_NORM_MATCHED_E006_S20_SHADOW": (0.06, 0.003, 20),
+        "PGD_E003_S20_SHADOW": (0.03, 0.0015, 20),
+        "PGD_E006_S20_SHADOW": (0.06, 0.003, 20),
+        "ORACLE_OPEN_SHADOW": (0.06, 0.003, 20),
+    }[condition]
+    actual = (float(opt.get("epsilon")), float(opt.get("step_size")), int(opt.get("num_steps")))
+    if actual != expected:
+        raise ContractError(f"{condition} config mismatch: actual={actual}, expected={expected}")
+    if int(base["runtime"].get("attack_burst_frames", -1)) != 10:
+        raise ContractError("Stage3A attack burst must be 10")
 
 
 def normalize_and_invert_gripper(raw_action: Any):
@@ -496,6 +521,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--center-crop", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--render-size", type=int, default=256)
     parser.add_argument("--dry-run-contract", action="store_true")
+    parser.add_argument("--stage3a-condition", choices=sorted(STAGE3A_CONDITION_TO_ARM), default=None)
+    parser.add_argument("--stage3a-episode-id", default=None)
+    parser.add_argument("--stage3a-checkpoint", type=Path, default=None)
+    parser.add_argument("--stage3a-freeze-receipt", type=Path, default=None)
+    parser.add_argument("--stage3a-expected-checkpoint-sha256", default=None)
+    parser.add_argument("--stage3a-expected-scheduler-sha256", default=None)
+    parser.add_argument("--stage3a-source-commit", default=None)
+    parser.add_argument("--stage3a-source-tree", default=None)
+    parser.add_argument("--stage3a-expected-init-state-sha256", default=None)
     return parser.parse_args()
 
 
@@ -511,6 +545,22 @@ def main() -> int:
 
     base_config = load_yaml(args.config)
     validate_base_config(base_config)
+    stage3a_mode = args.stage3a_condition is not None
+    if stage3a_mode:
+        required = {
+            "stage3a-episode-id": args.stage3a_episode_id,
+            "stage3a-checkpoint": args.stage3a_checkpoint,
+            "stage3a-freeze-receipt": args.stage3a_freeze_receipt,
+            "stage3a-expected-checkpoint-sha256": args.stage3a_expected_checkpoint_sha256,
+            "stage3a-expected-scheduler-sha256": args.stage3a_expected_scheduler_sha256,
+            "stage3a-source-commit": args.stage3a_source_commit,
+            "stage3a-source-tree": args.stage3a_source_tree,
+            "stage3a-expected-init-state-sha256": args.stage3a_expected_init_state_sha256,
+        }
+        missing = [name for name, value in required.items() if value in (None, "")]
+        if missing:
+            raise ContractError(f"Stage3A arguments missing: {missing}")
+        validate_stage3a_config(base_config, args.stage3a_condition)
     config_sha = sha256_file(args.config)
     n4_module_sha = sha256_file(args.n4_module)
     n4_norm_sha = sha256_file(args.n4_norm_data)
@@ -521,6 +571,20 @@ def main() -> int:
     attacker_sha = sha256_file(attacker_realpath)
     if attacker_sha != args.expected_attacker_sha256:
         raise ContractError(f"attacker SHA mismatch: {attacker_sha} != {args.expected_attacker_sha256}")
+
+    shadow_detector = None
+    if stage3a_mode:
+        from stage3a_runtime import FrozenStage2R2DetectorRuntime
+
+        shadow_detector = FrozenStage2R2DetectorRuntime(
+            args.stage3a_checkpoint,
+            args.stage3a_freeze_receipt,
+            expected_checkpoint_sha256=args.stage3a_expected_checkpoint_sha256,
+            expected_scheduler_sha256=args.stage3a_expected_scheduler_sha256,
+            expected_source_commit=args.stage3a_source_commit,
+            expected_source_tree=args.stage3a_source_tree,
+            episode_id=args.stage3a_episode_id,
+        )
 
     if args.dry_run_contract:
         print(json.dumps({
@@ -605,7 +669,16 @@ def main() -> int:
         if args.state_index < 0 or args.state_index >= len(initial_states):
             raise ContractError(f"state index {args.state_index} outside available init states {len(initial_states)}")
         initial_state = copy.deepcopy(initial_states[args.state_index])
-        state_identity = {"kind": "benchmark_index", "index": args.state_index}
+        state_identity = {
+            "kind": "benchmark_index",
+            "index": args.state_index,
+            "initial_state_sha256": hashlib.sha256(pickle.dumps(initial_state, protocol=4)).hexdigest(),
+        }
+    if stage3a_mode and state_identity.get("initial_state_sha256") != args.stage3a_expected_init_state_sha256:
+        raise ContractError(
+            "Stage3A initial-state SHA mismatch: "
+            f"{state_identity.get('initial_state_sha256')} != {args.stage3a_expected_init_state_sha256}"
+        )
 
     policy_horizon = POLICY_HORIZONS[args.suite]
     burst_frames = int(base_config["runtime"]["attack_burst_frames"])
@@ -624,9 +697,22 @@ def main() -> int:
     else:
         args.output_root.mkdir(parents=True, exist_ok=False)
     run_manifest = {
-        "scientific_role": "SMOKE_ONLY",
+        "scientific_role": "STAGE3A_SHADOW_ONLY" if stage3a_mode else "SMOKE_ONLY",
         "counts_toward_fec": False,
-        "formal_matrix_execution": False,
+        "counts_toward_stage3a": bool(stage3a_mode),
+        "formal_matrix_execution": bool(stage3a_mode),
+        "stage3a_condition": args.stage3a_condition,
+        "stage3a_episode_id": args.stage3a_episode_id,
+        "stage3a_checkpoint_sha256": None if shadow_detector is None else shadow_detector.checkpoint_sha256,
+        "stage3a_scheduler_freeze_sha256": None if shadow_detector is None else shadow_detector.scheduler_sha256,
+        "stage3a_source_commit": args.stage3a_source_commit,
+        "stage3a_source_tree": args.stage3a_source_tree,
+        "attack_trigger_source": "N4 first emit",
+        "evaluation_detector_role": "shadow_logging_only",
+        "guard_intervention_count": 0,
+        "eval160_reads": 0,
+        "protected_eval_reads": 0,
+        "attack_rollouts": 1 if stage3a_mode else 0,
         "cs200_access": False,
         "suite": args.suite,
         "task_index": args.task_index,
@@ -648,7 +734,7 @@ def main() -> int:
         "n4_norm_sha256": n4_norm_sha,
         "model_path": str(args.model_path),
         "unnorm_key": unnorm_key,
-        "arms": list(ARMS),
+        "arms": [STAGE3A_CONDITION_TO_ARM[args.stage3a_condition]] if stage3a_mode else list(ARMS),
         "created_unix": time.time(),
     }
     atomic_write_json(args.output_root / "run_manifest.json", run_manifest)
@@ -656,7 +742,8 @@ def main() -> int:
     all_results: dict[str, Any] = {}
     fatal_error: dict[str, Any] | None = None
 
-    for arm in ARMS:
+    selected_arms = (STAGE3A_CONDITION_TO_ARM[args.stage3a_condition],) if stage3a_mode else ARMS
+    for arm in selected_arms:
         arm_dir = args.output_root / arm
         arm_dir.mkdir(parents=True, exist_ok=False)
         steps_path = arm_dir / "steps.jsonl"
@@ -671,6 +758,7 @@ def main() -> int:
         env = None
         result = {
             "arm": arm,
+            "condition": args.stage3a_condition,
             "status": "RUNNING",
             "emit_policy_step": None,
             "emit_env_step": None,
@@ -681,6 +769,17 @@ def main() -> int:
             "policy_steps": 0,
             "env_steps": 0,
             "termination": None,
+            "attack_trigger_source": "N4 first emit",
+            "attack_trigger_step": None,
+            "evaluation_detector_checkpoint_sha256": None if shadow_detector is None else shadow_detector.checkpoint_sha256,
+            "evaluation_detector_scheduler_sha256": None if shadow_detector is None else shadow_detector.scheduler_sha256,
+            "evaluation_detector_first_emission": None,
+            "evaluation_detector_first_active": None,
+            "first_harmful_open": None,
+            "first_premature_open": None,
+            "guard_intervention_count": 0,
+            "eval160_reads": 0,
+            "protected_eval_reads": 0,
         }
         try:
             env = OffScreenRenderEnv(
@@ -712,6 +811,8 @@ def main() -> int:
                     raise ContractError("environment terminated during official wait phase")
 
             detector.reset_episode()
+            if shadow_detector is not None:
+                shadow_detector.reset_episode(args.stage3a_episode_id)
             for attacker in attackers.values():
                 attacker.reset_temporal_state()
 
@@ -733,10 +834,26 @@ def main() -> int:
                     model=model,
                     processor=processor,
                 )
+                shadow_row = None
+                if shadow_detector is not None:
+                    # Shadow-only evaluation: this call is before attack planning;
+                    # no shadow field is read by the action/timing path below.
+                    shadow_row = shadow_detector.step(
+                        episode_id=args.stage3a_episode_id,
+                        policy_step=policy_step,
+                        raw_action=clean_raw_action,
+                        env_action=clean_env_action,
+                        observation=obs,
+                    )
+                    if shadow_row["emission"] and result["evaluation_detector_first_emission"] is None:
+                        result["evaluation_detector_first_emission"] = policy_step
+                    if shadow_row["latched_active"] and result["evaluation_detector_first_active"] is None:
+                        result["evaluation_detector_first_active"] = policy_step
                 if bool(n4["emitted_this_step"]) and emit_step is None:
                     emit_step = policy_step
                     result["emit_policy_step"] = policy_step
                     result["emit_env_step"] = env_step
+                    result["attack_trigger_step"] = policy_step
 
                 planned = False
                 if arm in {"TRUE_T10", "RAND_T10", "COMMAND_OPEN_ORACLE"} and emit_step is not None:
@@ -793,6 +910,10 @@ def main() -> int:
                 result["policy_steps"] += 1
                 if attack_executed:
                     result["attack_executed_frames"] += 1
+                    if result["first_harmful_open"] is None and float(final_env_action[-1]) <= -0.5:
+                        result["first_harmful_open"] = policy_step
+                    if result["first_premature_open"] is None and float(final_env_action[-1]) <= -0.5:
+                        result["first_premature_open"] = policy_step
                     append_jsonl(attacks_path, {
                         "arm": arm,
                         "env_step": env_step,
@@ -822,10 +943,16 @@ def main() -> int:
                     "feature_sha256": n4.get("feature_sha256"),
                     "attack_planned": bool(planned),
                     "attack_executed": bool(attack_executed),
+                    "clean_raw_action": clean_raw_action.tolist(),
+                    "clean_env_action": clean_env_action.tolist(),
+                    "final_env_action": final_env_action.tolist(),
                     "clean_env_gripper": float(clean_env_action[-1]),
                     "final_env_gripper": float(final_env_action[-1]),
                     "done": bool(done),
                     "success": check_success(env, bool(done), info),
+                    "evaluation_detector_emission": None if shadow_row is None else bool(shadow_row["emission"]),
+                    "evaluation_detector_active": None if shadow_row is None else bool(shadow_row["latched_active"]),
+                    "evaluation_detector_logit": None if shadow_row is None else float(shadow_row["logit"]),
                 })
 
                 success = check_success(env, bool(done), info)
@@ -854,6 +981,10 @@ def main() -> int:
 
             result["status"] = "PASS"
             result["detector_trajectory"] = json_safe(detector.trajectory())
+            if shadow_detector is not None:
+                atomic_write_json(arm_dir / "evaluation_detector_trace.json", shadow_detector.trace())
+                result["evaluation_detector_trace_sha256"] = sha256_file(arm_dir / "evaluation_detector_trace.json")
+                result["evaluation_detector_trace_steps"] = len(shadow_detector.trace())
             atomic_write_json(arm_dir / "result.json", result)
             atomic_write_json(arm_dir / "COMPLETE.json", {
                 "status": "PASS",
@@ -885,9 +1016,18 @@ def main() -> int:
 
         all_results[arm] = result
 
-    overall_valid = fatal_error is None and set(all_results) == set(ARMS)
+    overall_valid = fatal_error is None and set(all_results) == set(selected_arms)
     pairing = {}
-    if overall_valid:
+    if stage3a_mode and overall_valid:
+        arm_result = all_results[selected_arms[0]]
+        pairing["clean_no_attack"] = (
+            arm_result["attack_executed_frames"] == 0
+            if selected_arms[0] == "CLEAN" else True
+        )
+        pairing["shadow_trace_complete"] = bool(arm_result.get("evaluation_detector_trace_steps", 0))
+        pairing["guard_disabled"] = arm_result.get("guard_intervention_count") == 0
+        overall_valid = all(pairing.values())
+    elif overall_valid:
         emit_steps = {arm: all_results[arm]["emit_policy_step"] for arm in (
             "CLEAN", "TRUE_T10", "RAND_T10", "COMMAND_OPEN_ORACLE"
         )}
@@ -902,6 +1042,7 @@ def main() -> int:
     summary = {
         "valid": bool(overall_valid),
         "engineering_status": "PASS" if overall_valid else "FAIL",
+        "scientific_role": "STAGE3A_SHADOW_ONLY" if stage3a_mode else "SMOKE_ONLY",
         "scientific_outcome_is_not_a_gate": True,
         "results": all_results,
         "pairing": pairing,
@@ -915,6 +1056,12 @@ def main() -> int:
             "status": "PASS",
             "summary_sha256": sha256_file(args.output_root / "smoke_summary.json"),
         })
+        if stage3a_mode:
+            atomic_write_json(args.output_root / "STAGE3A_ROLLOUT_PASS.json", {
+                "status": "PASS",
+                "condition": args.stage3a_condition,
+                "summary_sha256": sha256_file(args.output_root / "smoke_summary.json"),
+            })
         print("FEC GPU SMOKE: PASS", flush=True)
         return 0
     print(f"FEC GPU SMOKE: FAIL: {fatal_error or pairing}", file=sys.stderr, flush=True)
