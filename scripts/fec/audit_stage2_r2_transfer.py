@@ -18,10 +18,10 @@ for _path in (ROOT / "src", ROOT / "scripts", ROOT / "scripts" / "detector_v5"):
     if str(_path) not in sys.path:
         sys.path.insert(0, str(_path))
 
-from d8_train_core import apply_normalization, create_model, load_checkpoint
+from d8_train_core import apply_normalization, create_model
 from run_detector_clean_freeze import cache_effective_rows, load_cache, load_clean_event_groups
-from run_detector_stage2_r2 import detailed_candidate_metrics, scheduler_trace
-from stage3a_runtime import sha256_file
+from run_detector_stage2_r2 import detailed_candidate_metrics
+from stage3a_runtime import load_frozen_checkpoint, sha256_file
 
 
 def atomic_json(path: Path, value: Any) -> None:
@@ -32,7 +32,7 @@ def atomic_json(path: Path, value: Any) -> None:
 
 def _load_scores(checkpoint: Path, rows: list[dict[str, Any]], norm: dict[str, Any]) -> list[float]:
     model = create_model(seed=20260717).to("cpu")
-    load_checkpoint(checkpoint, model, map_location="cpu")
+    load_frozen_checkpoint(checkpoint, model)
     model.eval()
     output: list[float] = []
     batch_size = 8192
@@ -101,7 +101,7 @@ def main() -> int:
             raise RuntimeError("Cache A has no effective rows")
         norm = None
         model = create_model(seed=20260717).to("cpu")
-        checkpoint_data = load_checkpoint(checkpoint, model, map_location="cpu")
+        checkpoint_data = load_frozen_checkpoint(checkpoint, model)
         norm = checkpoint_data.get("normalization")
         if not isinstance(norm, dict) or norm.get("schema") != "D8_NORMALIZATION_V2" or norm.get("feature_dim") != 25:
             raise RuntimeError("checkpoint normalization binding mismatch")
@@ -181,4 +181,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

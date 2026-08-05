@@ -23,7 +23,7 @@ for _path in (ROOT / "src", ROOT / "scripts"):
 
 from gripper_attack.action_contract import action_semantics_parity
 from gripper_attack.d8_streaming_features_v3 import D8StreamingFeatureAdapterV3, FEATURE_NAMES
-from detector_v5.d8_train_core import apply_normalization, create_model, load_checkpoint
+from detector_v5.d8_train_core import apply_normalization, create_model
 
 
 class ShadowContractError(RuntimeError):
@@ -43,6 +43,23 @@ def _finite_vector(value: Any, size: int, name: str) -> np.ndarray:
     if array.shape != (size,) or not np.isfinite(array).all():
         raise ShadowContractError(f"{name} must be finite with shape ({size},)")
     return array
+
+
+def load_frozen_checkpoint(path: Path, model: torch.nn.Module) -> dict[str, Any]:
+    """Load both sealed Stage2 R2 and training-core checkpoint schemas."""
+    try:
+        value = torch.load(str(path), map_location="cpu", weights_only=False)
+    except TypeError:
+        value = torch.load(str(path), map_location="cpu")
+    if not isinstance(value, Mapping) or value.get("schema") not in {
+        "D8_3B_CHECKPOINT_V2",
+        "D8_STUDENT_CHECKPOINT_V2",
+    }:
+        raise ShadowContractError(f"unsupported checkpoint schema: {value.get('schema') if isinstance(value, Mapping) else None!r}")
+    if "model_state" not in value:
+        raise ShadowContractError("checkpoint model_state is missing")
+    model.load_state_dict(value["model_state"])
+    return dict(value)
 
 
 class FrozenStage2R2DetectorRuntime:
@@ -115,15 +132,17 @@ class FrozenStage2R2DetectorRuntime:
             raise ShadowContractError("feature order does not match frozen schema")
 
         self.model = create_model(seed=20260717).to("cpu")
-        checkpoint = load_checkpoint(self.checkpoint_path, self.model, map_location="cpu")
+        checkpoint = load_frozen_checkpoint(self.checkpoint_path, self.model)
         self.model.eval()
         if self.model.feature_dim != 25:
             raise ShadowContractError("checkpoint model feature dimension is not 25")
-        if checkpoint.get("feature_schema_sha256") not in ("", sha256_file(schema_path)):
+        if checkpoint.get("feature_schema_sha256") not in (None, "", sha256_file(schema_path)):
             raise ShadowContractError("checkpoint feature schema binding mismatch")
-        if checkpoint.get("executable_source_commit") not in ("", expected_source_commit):
+        checkpoint_source_commit = checkpoint.get("source_commit", checkpoint.get("executable_source_commit"))
+        checkpoint_source_tree = checkpoint.get("source_tree", checkpoint.get("executable_source_tree"))
+        if checkpoint_source_commit not in (None, "", expected_source_commit):
             raise ShadowContractError("checkpoint source commit binding mismatch")
-        if checkpoint.get("executable_source_tree") not in ("", expected_source_tree):
+        if checkpoint_source_tree not in (None, "", expected_source_tree):
             raise ShadowContractError("checkpoint source tree binding mismatch")
         norm = checkpoint.get("normalization")
         if not isinstance(norm, Mapping) or norm.get("schema") != "D8_NORMALIZATION_V2":
@@ -238,4 +257,3 @@ class FrozenStage2R2DetectorRuntime:
 
     def trace(self) -> list[dict[str, Any]]:
         return list(self._trace)
-
