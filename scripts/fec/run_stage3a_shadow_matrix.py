@@ -95,6 +95,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--branch", default="codex/stage3a-shadow-only-20260805")
     parser.add_argument("--diagnostic", action="store_true")
     parser.add_argument("--preflight-only", action="store_true")
+    parser.add_argument("--r3-ensemble-root", type=Path, default=None)
+    parser.add_argument("--r3-ensemble-manifest", type=Path, default=None)
+    parser.add_argument("--r3-transfer-audit", type=Path, default=None)
+    parser.add_argument("--r3-transfer-receipt", type=Path, default=None)
+    parser.add_argument("--r3-ensemble-source-commit", default=None)
+    parser.add_argument("--r3-ensemble-source-tree", default=None)
     return parser.parse_args()
 
 
@@ -293,7 +299,7 @@ def kill_own_processes(active: dict[int, tuple[subprocess.Popen[Any], dict[str, 
                 pass
 
 
-def dispatch(jobs: list[dict[str, Any]], gpu_ids: list[int], repo: Path, output_root: Path, checkpoint: Path, receipt: Path, n4_norm: Path, attacker_sha: str, stage2_source_commit: str, stage2_source_tree: str) -> None:
+def dispatch(jobs: list[dict[str, Any]], gpu_ids: list[int], repo: Path, output_root: Path, checkpoint: Path, receipt: Path, n4_norm: Path, attacker_sha: str, stage2_source_commit: str, stage2_source_tree: str, r3_binding: dict[str, str] | None = None) -> None:
     runner = repo / "scripts" / "fec" / "run_gpu_smoke_v5_open.py"
     active: dict[int, tuple[subprocess.Popen[Any], dict[str, Any], Any]] = {}
     pending = list(jobs)
@@ -336,6 +342,19 @@ def dispatch(jobs: list[dict[str, Any]], gpu_ids: list[int], repo: Path, output_
                     "--stage3a-source-commit", stage2_source_commit, "--stage3a-source-tree", stage2_source_tree,
                     "--stage3a-expected-init-state-sha256", job["initial_state_sha256"],
                 ]
+                if r3_binding is not None:
+                    cmd.extend([
+                        "--stage3a-ensemble-root", r3_binding["ensemble_root"],
+                        "--stage3a-ensemble-manifest", r3_binding["ensemble_manifest"],
+                        "--stage3a-transfer-audit", r3_binding["transfer_audit"],
+                        "--stage3a-transfer-receipt", r3_binding["transfer_receipt"],
+                        "--stage3a-expected-ensemble-root-seal", r3_binding["ensemble_root_seal"],
+                        "--stage3a-expected-ensemble-manifest-sha256", r3_binding["ensemble_manifest_sha256"],
+                        "--stage3a-expected-transfer-audit-sha256", r3_binding["transfer_audit_sha256"],
+                        "--stage3a-expected-transfer-receipt-sha256", r3_binding["transfer_receipt_sha256"],
+                        "--stage3a-ensemble-source-commit", r3_binding["ensemble_source_commit"],
+                        "--stage3a-ensemble-source-tree", r3_binding["ensemble_source_tree"],
+                    ])
                 process = subprocess.Popen(cmd, cwd=str(repo), env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
                 active[gpu] = (process, job, log)
             write_snapshot()
@@ -377,6 +396,31 @@ def main() -> int:
     receipt = assert_safe_path(args.freeze_receipt.resolve(strict=True))
     parent_path = assert_safe_path(args.parent_manifest.resolve(strict=True))
     n4_norm = assert_safe_path(args.n4_norm_data.resolve(strict=True))
+    r3_mode = args.r3_transfer_audit is not None
+    r3_binding: dict[str, str] | None = None
+    if r3_mode:
+        r3_root = assert_safe_path(args.r3_ensemble_root.resolve(strict=True))
+        r3_manifest = assert_safe_path(args.r3_ensemble_manifest.resolve(strict=True))
+        r3_audit = assert_safe_path(args.r3_transfer_audit.resolve(strict=True))
+        r3_receipt = assert_safe_path(args.r3_transfer_receipt.resolve(strict=True))
+        if not all(path.is_file() for path in (r3_manifest, r3_audit, r3_receipt, r3_root / "SHA256SUMS", r3_root / "SHA256SUMS.sha256")):
+            fail("R3-A detector artifacts are incomplete")
+        root_seal = sha256_file(r3_root / "SHA256SUMS")
+        if (r3_root / "SHA256SUMS.sha256").read_text(encoding="utf-8").strip() != f"{root_seal}  SHA256SUMS":
+            fail("R3-A ensemble root sidecar mismatch")
+        transfer = json.loads(r3_audit.read_text(encoding="utf-8"))
+        receipt_value = json.loads(r3_receipt.read_text(encoding="utf-8"))
+        if transfer.get("status") != "R3A_MATCHED_ENSEMBLE_TRANSFER_PASS" or receipt_value.get("status") != "PASS":
+            fail("R3-A clean transfer is not PASS")
+        if not args.r3_ensemble_source_commit or not args.r3_ensemble_source_tree:
+            fail("R3-A ensemble producer source binding is missing")
+        r3_binding = {
+            "ensemble_root": str(r3_root), "ensemble_manifest": str(r3_manifest),
+            "transfer_audit": str(r3_audit), "transfer_receipt": str(r3_receipt),
+            "ensemble_root_seal": root_seal, "ensemble_manifest_sha256": sha256_file(r3_manifest),
+            "transfer_audit_sha256": sha256_file(r3_audit), "transfer_receipt_sha256": sha256_file(r3_receipt),
+            "ensemble_source_commit": args.r3_ensemble_source_commit, "ensemble_source_tree": args.r3_ensemble_source_tree,
+        }
     if os.environ.get("CUDA_VISIBLE_DEVICES", ""):
         fail("inherited CUDA_VISIBLE_DEVICES must be unset/empty")
     gpu_ids = sorted({int(value.strip()) for value in args.gpu_ids.split(",") if value.strip()})
@@ -395,7 +439,7 @@ def main() -> int:
     remote_ref = git(repo, "ls-remote", "origin", f"refs/heads/{branch}").split()
     if not remote_ref or remote_ref[0] != head:
         fail(f"GitHub remote branch does not contain exact Stage3A HEAD: {branch} {remote_ref}")
-    if not receipt.is_file() or sha256_file(checkpoint) != CHECKPOINT_SHA:
+    if not r3_mode and (not receipt.is_file() or sha256_file(checkpoint) != CHECKPOINT_SHA):
         fail("Stage 2 R2 checkpoint binding failed")
     parent_sha = sha256_file(parent_path)
     if parent_sha != PARENT_MANIFEST_SHA:
@@ -433,6 +477,13 @@ def main() -> int:
         "stage2_checkpoint_sha256": CHECKPOINT_SHA,
         "stage2_scheduler_freeze_sha256": sha256_file(receipt),
         "stage2_scheduler_freeze_path": str(receipt),
+        "stage3a_detector_mode": "R3A_MATCHED_ENSEMBLE" if r3_mode else "R2_SINGLE_CHECKPOINT",
+        "stage3a_ensemble_root_seal": None if r3_binding is None else r3_binding["ensemble_root_seal"],
+        "stage3a_ensemble_manifest_sha256": None if r3_binding is None else r3_binding["ensemble_manifest_sha256"],
+        "stage3a_transfer_audit_sha256": None if r3_binding is None else r3_binding["transfer_audit_sha256"],
+        "stage3a_transfer_receipt_sha256": None if r3_binding is None else r3_binding["transfer_receipt_sha256"],
+        "stage3a_ensemble_source_commit": None if r3_binding is None else r3_binding["ensemble_source_commit"],
+        "stage3a_ensemble_source_tree": None if r3_binding is None else r3_binding["ensemble_source_tree"],
         "stage2_root": str(stage2_root),
         "n4_trigger_source": "N4 first emit",
         "evaluation_detector_role": "shadow_logging_only",
@@ -444,20 +495,24 @@ def main() -> int:
         "jobs": jobs,
     }
     atomic_json(output_root / "STAGE3A_SHADOW_RUN_MANIFEST.json", run_manifest)
-    transfer_cmd = [
-        sys.executable, str(repo / "scripts/fec/audit_stage2_r2_transfer.py"),
-        "--stage2-root", str(stage2_root), "--checkpoint", str(checkpoint),
-        "--freeze-receipt", str(receipt), "--output-root", str(output_root),
-        "--expected-source-commit", STAGE2_COMMIT, "--expected-source-tree", STAGE2_TREE,
-        "--expected-checkpoint-sha256", CHECKPOINT_SHA,
-        "--expected-cache-seal", "929a0a666a867c93094b13752f4c2f848640bbedb2dadc9a20d834f3ee8b6814",
-    ]
-    transfer = subprocess.run(transfer_cmd, cwd=str(repo), check=False)
-    if transfer.returncode != 0:
-        fail("FINAL_CHECKPOINT_TRANSFER_FAIL")
-    transfer_report = json.loads((output_root / "FINAL_CHECKPOINT_TRANSFER_AUDIT.json").read_text(encoding="utf-8"))
-    if transfer_report.get("status") != "PASS":
-        fail("FINAL_CHECKPOINT_TRANSFER_FAIL")
+    if r3_mode:
+        atomic_json(output_root / "R3A_TRANSFER_AUDIT.json", json.loads(args.r3_transfer_audit.resolve(strict=True).read_text(encoding="utf-8")))
+        transfer_report = json.loads(args.r3_transfer_audit.resolve(strict=True).read_text(encoding="utf-8"))
+    else:
+        transfer_cmd = [
+            sys.executable, str(repo / "scripts/fec/audit_stage2_r2_transfer.py"),
+            "--stage2-root", str(stage2_root), "--checkpoint", str(checkpoint),
+            "--freeze-receipt", str(receipt), "--output-root", str(output_root),
+            "--expected-source-commit", STAGE2_COMMIT, "--expected-source-tree", STAGE2_TREE,
+            "--expected-checkpoint-sha256", CHECKPOINT_SHA,
+            "--expected-cache-seal", "929a0a666a867c93094b13752f4c2f848640bbedb2dadc9a20d834f3ee8b6814",
+        ]
+        transfer = subprocess.run(transfer_cmd, cwd=str(repo), check=False)
+        if transfer.returncode != 0:
+            fail("FINAL_CHECKPOINT_TRANSFER_FAIL")
+        transfer_report = json.loads((output_root / "FINAL_CHECKPOINT_TRANSFER_AUDIT.json").read_text(encoding="utf-8"))
+    if (transfer_report.get("status") != "R3A_MATCHED_ENSEMBLE_TRANSFER_PASS" if r3_mode else transfer_report.get("status") != "PASS"):
+        fail("R3A_MATCHED_ENSEMBLE_TRANSFER_FAIL" if r3_mode else "FINAL_CHECKPOINT_TRANSFER_FAIL")
     if args.preflight_only:
         run_manifest["status"] = "PREFLIGHT_PASS"
         run_manifest["attack_rollouts"] = 0
@@ -467,7 +522,7 @@ def main() -> int:
     run_manifest["status"] = "RUNNING"
     run_manifest["attack_rollouts"] = len(jobs)
     atomic_json(output_root / "STAGE3A_SHADOW_RUN_MANIFEST.json", run_manifest)
-    dispatch(jobs, gpu_ids, repo, output_root, checkpoint, receipt, n4_norm, attacker_sha, STAGE2_COMMIT, STAGE2_TREE)
+    dispatch(jobs, gpu_ids, repo, output_root, checkpoint, receipt, n4_norm, attacker_sha, head, tree, r3_binding)
     run_manifest["status"] = "CLOSED"
     run_manifest["completed_jobs"] = sum(job["status"] == "COMPLETED" for job in jobs)
     atomic_json(output_root / "STAGE3A_SHADOW_RUN_MANIFEST.json", run_manifest)

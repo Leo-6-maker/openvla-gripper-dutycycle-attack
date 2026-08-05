@@ -80,10 +80,18 @@ def audit_job(job: dict[str, Any], transfer: dict[str, Any], config_index: dict[
         raise RuntimeError(f"COMPLETE result seal mismatch: {job['job_id']}")
     if manifest.get("stage3a_condition") != job["condition"] or manifest.get("suite") != job["suite"] or manifest.get("task_index") != job["task_index"] or manifest.get("seed") != job["seed"]:
         raise RuntimeError(f"job identity binding mismatch: {job['job_id']}")
-    if manifest.get("stage3a_source_commit") != STAGE2_COMMIT or manifest.get("stage3a_source_tree") != STAGE2_TREE:
-        raise RuntimeError(f"job Stage 2 source binding mismatch: {job['job_id']}")
-    if manifest.get("stage3a_checkpoint_sha256") != transfer.get("checkpoint_sha256") or manifest.get("stage3a_scheduler_freeze_sha256") != transfer.get("scheduler_freeze_sha256"):
-        raise RuntimeError(f"job checkpoint/scheduler binding mismatch: {job['job_id']}")
+    r3_mode = manifest.get("stage3a_detector_mode") == "R3A_MATCHED_ENSEMBLE"
+    if r3_mode:
+        producer = transfer.get("producer") or {}
+        if manifest.get("stage3a_ensemble_source_commit") != producer.get("ensemble_commit") or manifest.get("stage3a_ensemble_source_tree") != producer.get("ensemble_tree"):
+            raise RuntimeError(f"job R3 ensemble source binding mismatch: {job['job_id']}")
+        if manifest.get("stage3a_ensemble_manifest_sha256") != transfer.get("ensemble_manifest_sha256") or manifest.get("stage3a_transfer_audit_sha256") != transfer.get("_report_sha256") or manifest.get("stage3a_scheduler_freeze_sha256") != transfer.get("r2_scheduler_receipt_sha256"):
+            raise RuntimeError(f"job R3 ensemble/scheduler binding mismatch: {job['job_id']}")
+    else:
+        if manifest.get("stage3a_source_commit") != STAGE2_COMMIT or manifest.get("stage3a_source_tree") != STAGE2_TREE:
+            raise RuntimeError(f"job Stage 2 source binding mismatch: {job['job_id']}")
+        if manifest.get("stage3a_checkpoint_sha256") != transfer.get("checkpoint_sha256") or manifest.get("stage3a_scheduler_freeze_sha256") != transfer.get("scheduler_freeze_sha256"):
+            raise RuntimeError(f"job checkpoint/scheduler binding mismatch: {job['job_id']}")
     if manifest.get("guard_intervention_count") != 0 or manifest.get("eval160_reads") != 0 or manifest.get("protected_eval_reads") != 0:
         raise RuntimeError(f"job crossed forbidden boundary: {job['job_id']}")
     if result.get("attack_trigger_source") != "N4 first emit" or result.get("guard_intervention_count") != 0:
@@ -181,7 +189,9 @@ def main() -> int:
     args = parser.parse_args()
     root = args.root.resolve(strict=True)
     manifest = read_json(root / "STAGE3A_SHADOW_RUN_MANIFEST.json")
-    transfer = read_json(root / "FINAL_CHECKPOINT_TRANSFER_AUDIT.json")
+    transfer_path = root / "R3A_TRANSFER_AUDIT.json" if (root / "R3A_TRANSFER_AUDIT.json").is_file() else root / "FINAL_CHECKPOINT_TRANSFER_AUDIT.json"
+    transfer = read_json(transfer_path)
+    transfer["_report_sha256"] = sha256_file(transfer_path)
     config_index = read_json(root / "STAGE3A_ATTACK_CONFIG_INDEX.json")
     task_manifest = read_json(root / "STAGE3A_TASK_MANIFEST.json")
     jobs = manifest.get("jobs", [])
@@ -204,7 +214,10 @@ def main() -> int:
     try:
         if len(jobs) != expected_count or manifest.get("max_workers_per_physical_gpu") != 1:
             raise RuntimeError("planned matrix or worker contract mismatch")
-        if transfer.get("status") != "PASS" or transfer.get("checkpoint_sha256") != CHECKPOINT_SHA:
+        if manifest.get("stage3a_detector_mode") == "R3A_MATCHED_ENSEMBLE":
+            if transfer.get("status") != "R3A_MATCHED_ENSEMBLE_TRANSFER_PASS":
+                raise RuntimeError("R3-A transfer audit is not PASS")
+        elif transfer.get("status") != "PASS" or transfer.get("checkpoint_sha256") != CHECKPOINT_SHA:
             raise RuntimeError("transfer audit is not PASS")
         if task_manifest.get("status") != "FROZEN":
             raise RuntimeError("task manifest is not frozen")

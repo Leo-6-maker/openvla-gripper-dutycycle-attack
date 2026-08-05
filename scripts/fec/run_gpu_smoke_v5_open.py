@@ -530,6 +530,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--stage3a-source-commit", default=None)
     parser.add_argument("--stage3a-source-tree", default=None)
     parser.add_argument("--stage3a-expected-init-state-sha256", default=None)
+    parser.add_argument("--stage3a-ensemble-root", type=Path, default=None)
+    parser.add_argument("--stage3a-ensemble-manifest", type=Path, default=None)
+    parser.add_argument("--stage3a-transfer-audit", type=Path, default=None)
+    parser.add_argument("--stage3a-transfer-receipt", type=Path, default=None)
+    parser.add_argument("--stage3a-expected-ensemble-root-seal", default=None)
+    parser.add_argument("--stage3a-expected-ensemble-manifest-sha256", default=None)
+    parser.add_argument("--stage3a-expected-transfer-audit-sha256", default=None)
+    parser.add_argument("--stage3a-expected-transfer-receipt-sha256", default=None)
+    parser.add_argument("--stage3a-ensemble-source-commit", default=None)
+    parser.add_argument("--stage3a-ensemble-source-tree", default=None)
     return parser.parse_args()
 
 
@@ -546,6 +556,7 @@ def main() -> int:
     base_config = load_yaml(args.config)
     validate_base_config(base_config)
     stage3a_mode = args.stage3a_condition is not None
+    r3_ensemble_mode = stage3a_mode and args.stage3a_ensemble_root is not None
     if stage3a_mode:
         required = {
             "stage3a-episode-id": args.stage3a_episode_id,
@@ -560,6 +571,22 @@ def main() -> int:
         missing = [name for name, value in required.items() if value in (None, "")]
         if missing:
             raise ContractError(f"Stage3A arguments missing: {missing}")
+        if r3_ensemble_mode:
+            r3_required = {
+                "stage3a-ensemble-root": args.stage3a_ensemble_root,
+                "stage3a-ensemble-manifest": args.stage3a_ensemble_manifest,
+                "stage3a-transfer-audit": args.stage3a_transfer_audit,
+                "stage3a-transfer-receipt": args.stage3a_transfer_receipt,
+                "stage3a-expected-ensemble-root-seal": args.stage3a_expected_ensemble_root_seal,
+                "stage3a-expected-ensemble-manifest-sha256": args.stage3a_expected_ensemble_manifest_sha256,
+                "stage3a-expected-transfer-audit-sha256": args.stage3a_expected_transfer_audit_sha256,
+                "stage3a-expected-transfer-receipt-sha256": args.stage3a_expected_transfer_receipt_sha256,
+                "stage3a-ensemble-source-commit": args.stage3a_ensemble_source_commit,
+                "stage3a-ensemble-source-tree": args.stage3a_ensemble_source_tree,
+            }
+            missing.extend(name for name, value in r3_required.items() if value in (None, ""))
+            if missing:
+                raise ContractError(f"Stage3A R3 arguments missing: {missing}")
         validate_stage3a_config(base_config, args.stage3a_condition)
     config_sha = sha256_file(args.config)
     n4_module_sha = sha256_file(args.n4_module)
@@ -574,17 +601,36 @@ def main() -> int:
 
     shadow_detector = None
     if stage3a_mode:
-        from stage3a_runtime import FrozenStage2R2DetectorRuntime
+        if r3_ensemble_mode:
+            from stage3a_runtime import FrozenR3EnsembleRuntime
 
-        shadow_detector = FrozenStage2R2DetectorRuntime(
-            args.stage3a_checkpoint,
-            args.stage3a_freeze_receipt,
-            expected_checkpoint_sha256=args.stage3a_expected_checkpoint_sha256,
-            expected_scheduler_sha256=args.stage3a_expected_scheduler_sha256,
-            expected_source_commit=args.stage3a_source_commit,
-            expected_source_tree=args.stage3a_source_tree,
-            episode_id=args.stage3a_episode_id,
-        )
+            shadow_detector = FrozenR3EnsembleRuntime(
+                args.stage3a_ensemble_root,
+                args.stage3a_ensemble_manifest,
+                args.stage3a_transfer_audit,
+                args.stage3a_transfer_receipt,
+                args.stage3a_freeze_receipt,
+                expected_ensemble_root_seal=args.stage3a_expected_ensemble_root_seal,
+                expected_ensemble_manifest_sha256=args.stage3a_expected_ensemble_manifest_sha256,
+                expected_transfer_audit_sha256=args.stage3a_expected_transfer_audit_sha256,
+                expected_transfer_receipt_sha256=args.stage3a_expected_transfer_receipt_sha256,
+                expected_scheduler_sha256=args.stage3a_expected_scheduler_sha256,
+                expected_ensemble_source_commit=args.stage3a_ensemble_source_commit,
+                expected_ensemble_source_tree=args.stage3a_ensemble_source_tree,
+                episode_id=args.stage3a_episode_id,
+            )
+        else:
+            from stage3a_runtime import FrozenStage2R2DetectorRuntime
+
+            shadow_detector = FrozenStage2R2DetectorRuntime(
+                args.stage3a_checkpoint,
+                args.stage3a_freeze_receipt,
+                expected_checkpoint_sha256=args.stage3a_expected_checkpoint_sha256,
+                expected_scheduler_sha256=args.stage3a_expected_scheduler_sha256,
+                expected_source_commit=args.stage3a_source_commit,
+                expected_source_tree=args.stage3a_source_tree,
+                episode_id=args.stage3a_episode_id,
+            )
 
     if args.dry_run_contract:
         print(json.dumps({
@@ -705,6 +751,13 @@ def main() -> int:
         "stage3a_episode_id": args.stage3a_episode_id,
         "stage3a_checkpoint_sha256": None if shadow_detector is None else shadow_detector.checkpoint_sha256,
         "stage3a_scheduler_freeze_sha256": None if shadow_detector is None else shadow_detector.scheduler_sha256,
+        "stage3a_detector_mode": "R3A_MATCHED_ENSEMBLE" if r3_ensemble_mode else "R2_SINGLE_CHECKPOINT",
+        "stage3a_ensemble_manifest_sha256": None if not r3_ensemble_mode else shadow_detector.ensemble_manifest_sha256,
+        "stage3a_ensemble_root_seal": None if not r3_ensemble_mode else shadow_detector.ensemble_root_seal,
+        "stage3a_transfer_audit_sha256": None if not r3_ensemble_mode else shadow_detector.transfer_audit_sha256,
+        "stage3a_transfer_receipt_sha256": None if not r3_ensemble_mode else shadow_detector.transfer_receipt_sha256,
+        "stage3a_ensemble_source_commit": None if not r3_ensemble_mode else args.stage3a_ensemble_source_commit,
+        "stage3a_ensemble_source_tree": None if not r3_ensemble_mode else args.stage3a_ensemble_source_tree,
         "stage3a_source_commit": args.stage3a_source_commit,
         "stage3a_source_tree": args.stage3a_source_tree,
         "attack_trigger_source": "N4 first emit",
