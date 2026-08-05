@@ -24,7 +24,7 @@ for path in (ROOT / "src", ROOT / "scripts", ROOT / "scripts" / "detector_v5", R
 from audit_d8_3b_run import verify_sha256_seal
 from audit_r3_contact_input import sha256_file, verify_seal
 from d8_train_core import apply_normalization, create_model
-from run_detector_clean_freeze import cache_effective_rows, load_cache, load_clean_event_groups, load_oof, sha256_json, utc_now
+from run_detector_clean_freeze import cache_effective_rows, load_cache, load_clean_event_groups, load_oof, seal_directory, sha256_json, utc_now
 from run_detector_stage2_r2 import detailed_candidate_metrics, build_aggregate_rows
 from audit_stage2_r2_discrepancy import correlation, episode_rows, rank_values, score_summary, suite_summary
 
@@ -32,7 +32,7 @@ SEEDS = tuple(range(20260720, 20260730))
 STAGE1_COMMIT = "990befe126bcce4bcc95c965f3677eda32a2e8e9"
 STAGE1_TREE = "268b97da25c398120fd42ccec050f945b5a59756"
 CACHE_A_SEAL = "929a0a666a867c93094b13752f4c2f848640bbedb2dadc9a20d834f3ee8b6814"
-R2_ROOT_SEAL = "f36ac1e18fca516fb8fae82e1290d034848ad572f6ad6908beb2d40b9bc9277"
+R2_ROOT_SEAL = "f36ac1e18fca516fb8fae82e1290d034848ad572f6fad6908beb2d40b9bc9277"
 R2_SCHEDULER = {"threshold": 0.43356089500710393, "persistence": 5, "hysteresis": 1.0, "cooldown": 0}
 CORE_BLOB = "bd4c505ada3696913b061f3132b7ea67622b3cad"
 FEATURE_SCHEMA_BLOB = "3f6c62dd7b263d4d1faf42e6c6eae5e7d52196ab"
@@ -228,10 +228,10 @@ def main() -> int:
         atomic_json(output_root / "R3A_SCORE_DISTRIBUTION.json", distribution)
         atomic_json(output_root / "R3A_TRANSFER_DISCREPANCY_VS_OOF.json", discrepancy)
         atomic_json(output_root / "R3A_TRANSFER_AUDIT.json", {"schema": "R3A_MATCHED_ENSEMBLE_TRANSFER_AUDIT_V1", "status": "R3A_MATCHED_ENSEMBLE_TRANSFER_PASS" if gate_pass else "R3A_MATCHED_ENSEMBLE_TRANSFER_FAIL", "ensemble_root": str(ensemble_root), "ensemble_root_seal": ensemble_seal, "ensemble_manifest": str(manifest_path), "ensemble_manifest_sha256": sha256_file(manifest_path), "r2_root": str(r2_root), "r2_root_seal": R2_ROOT_SEAL, "r2_scheduler_receipt_sha256": sha256_file(r2_receipt_path), "scheduler": candidate, "oof_metrics": oof_metrics, "r3a_metrics": ensemble_metrics, "gate": gate, "event_binding": event_binding, "cache_manifest_schema": cache_manifest.get("schema"), "cache_seal": cache_seal, "oof_meta": {key: value for key, value in oof_meta.items() if key != "formal_audit"}, "score_deterministic": score_deterministic, "scheduler_deterministic": scheduler_deterministic, "producer": {"commit": commit, "tree": tree, "d8_train_core_blob": CORE_BLOB, "feature_schema_blob": FEATURE_SCHEMA_BLOB}, "thresholds_changed": False, "attack_informed_tuning": False, "eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0})
-        seal = __import__("run_detector_clean_freeze").seal_directory(output_root)
-        atomic_json(output_root / "R3A_TRANSFER_RECEIPT.json", {"schema": "R3A_TRANSFER_RECEIPT_V1", "status": "PASS" if gate_pass else "FAIL", "audit": "R3A_TRANSFER_AUDIT.json", "audit_sha256": sha256_file(output_root / "R3A_TRANSFER_AUDIT.json"), "seal": seal, "stage3a_authorized": gate_pass, "active_guard_authorized": False, "eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0})
+        seal = seal_directory(output_root)
+        atomic_json(output_root / "R3A_TRANSFER_RECEIPT.json", {"schema": "R3A_TRANSFER_RECEIPT_V1", "status": "PASS" if gate_pass else "FAIL", "audit": "R3A_TRANSFER_AUDIT.json", "audit_sha256": sha256_file(output_root / "R3A_TRANSFER_AUDIT.json"), "payload_seal_before_receipt": seal, "stage3a_authorized": gate_pass, "active_guard_authorized": False, "eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0})
         # Re-seal after the receipt is added.
-        seal = __import__("run_detector_clean_freeze").seal_directory(output_root)
+        seal = seal_directory(output_root)
         audit_sha = sha256_file(output_root / "R3A_TRANSFER_AUDIT.json")
         update_goal(args.goal_root.resolve(strict=True), "R3A_MATCHED_ENSEMBLE_TRANSFER_PASS" if gate_pass else "R3A_MATCHED_ENSEMBLE_TRANSFER_FAIL", "proceed to Stage3A A0 canary" if gate_pass else "enter preregistered R3-B", output_root, audit_sha, gate_pass)
         report["status"] = "R3A_MATCHED_ENSEMBLE_TRANSFER_PASS" if gate_pass else "R3A_MATCHED_ENSEMBLE_TRANSFER_FAIL"
