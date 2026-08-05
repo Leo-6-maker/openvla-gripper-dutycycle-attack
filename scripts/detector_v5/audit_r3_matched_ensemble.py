@@ -147,6 +147,8 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--expected-source-commit", required=True)
     parser.add_argument("--expected-source-tree", required=True)
+    parser.add_argument("--expected-ensemble-source-commit", required=True)
+    parser.add_argument("--expected-ensemble-source-tree", required=True)
     args = parser.parse_args()
     output_root = args.output_root.resolve()
     if output_root.exists():
@@ -166,11 +168,11 @@ def main() -> int:
         manifest = read_json(manifest_path)
         if manifest.get("status") != "PASS_10_OF_10_COMPLETED" or sorted(manifest.get("seeds", [])) != list(SEEDS) or len(manifest.get("members", [])) != 10:
             raise RuntimeError("R3-A ensemble manifest closure failed")
-        if manifest.get("provenance", {}).get("r3_source_commit") != commit or manifest.get("provenance", {}).get("r3_source_tree") != tree:
+        if manifest.get("provenance", {}).get("r3_source_commit") != args.expected_ensemble_source_commit or manifest.get("provenance", {}).get("r3_source_tree") != args.expected_ensemble_source_tree:
             raise RuntimeError("R3-A manifest source binding mismatch")
         plan_path = args.goal_root.resolve(strict=True) / "R3A_MATCHED_ENSEMBLE_PLAN.json"
         plan = read_json(plan_path)
-        if plan.get("status") != "PREREGISTERED" or plan.get("r2_scheduler", {}).get("scheduler") != R2_SCHEDULER:
+        if plan.get("status") != "PREREGISTERED" or plan.get("r3_source", {}).get("commit") != args.expected_ensemble_source_commit or plan.get("r3_source", {}).get("tree") != args.expected_ensemble_source_tree or plan.get("r2_scheduler", {}).get("scheduler") != R2_SCHEDULER:
             raise RuntimeError("R3-A plan/scheduler binding failed")
         if manifest.get("plan_sha256") != sha256_file(plan_path):
             raise RuntimeError("R3-A manifest/plan hash mismatch")
@@ -184,13 +186,13 @@ def main() -> int:
             sidecar = checkpoint_path.with_suffix(checkpoint_path.suffix + ".sha256").read_text(encoding="utf-8").strip()
             if sidecar != f"{checkpoint_sha}  {checkpoint_path.name}":
                 raise RuntimeError(f"checkpoint sidecar mismatch: {checkpoint_path.name}")
-            members.append({"seed": int(member["seed"]), "path": str(checkpoint_path), "checkpoint_sha256": checkpoint_sha, "normalization_sha256": norm_sha, "r3_source_commit": commit, "r3_source_tree": tree})
+            members.append({"seed": int(member["seed"]), "path": str(checkpoint_path), "checkpoint_sha256": checkpoint_sha, "normalization_sha256": norm_sha, "r3_source_commit": args.expected_ensemble_source_commit, "r3_source_tree": args.expected_ensemble_source_tree})
         rows, cache_manifest, cache_seal = load_cache(args.cache_a.resolve(strict=True), CACHE_A_SEAL)
         effective = sorted(cache_effective_rows(rows), key=lambda row: (str(row["episode_id"]), int(row["step"])))
         keys = [f"{row['episode_id']}::{int(row['step'])}" for row in effective]
         targets = np.asarray([float(row["physical_target"]) for row in effective], dtype=np.float64)
-        scores = compute_scores(members, effective, norm_sha, {"r3_source_commit": commit, "r3_source_tree": tree})
-        scores_again = compute_scores(members, effective, norm_sha, {"r3_source_commit": commit, "r3_source_tree": tree})
+        scores = compute_scores(members, effective, norm_sha, {"r3_source_commit": args.expected_ensemble_source_commit, "r3_source_tree": args.expected_ensemble_source_tree})
+        scores_again = compute_scores(members, effective, norm_sha, {"r3_source_commit": args.expected_ensemble_source_commit, "r3_source_tree": args.expected_ensemble_source_tree})
         score_deterministic = bool(np.array_equal(scores, scores_again))
         mean_scores = np.mean(scores, axis=1, dtype=np.float64)
         if not score_deterministic or not np.isfinite(mean_scores).all():
@@ -227,7 +229,7 @@ def main() -> int:
         save_npz(output_root / "R3A_CLEAN_SCORES.npz", keys, scores, mean_scores, targets)
         atomic_json(output_root / "R3A_SCORE_DISTRIBUTION.json", distribution)
         atomic_json(output_root / "R3A_TRANSFER_DISCREPANCY_VS_OOF.json", discrepancy)
-        atomic_json(output_root / "R3A_TRANSFER_AUDIT.json", {"schema": "R3A_MATCHED_ENSEMBLE_TRANSFER_AUDIT_V1", "status": "R3A_MATCHED_ENSEMBLE_TRANSFER_PASS" if gate_pass else "R3A_MATCHED_ENSEMBLE_TRANSFER_FAIL", "ensemble_root": str(ensemble_root), "ensemble_root_seal": ensemble_seal, "ensemble_manifest": str(manifest_path), "ensemble_manifest_sha256": sha256_file(manifest_path), "r2_root": str(r2_root), "r2_root_seal": R2_ROOT_SEAL, "r2_scheduler_receipt_sha256": sha256_file(r2_receipt_path), "scheduler": candidate, "oof_metrics": oof_metrics, "r3a_metrics": ensemble_metrics, "gate": gate, "event_binding": event_binding, "cache_manifest_schema": cache_manifest.get("schema"), "cache_seal": cache_seal, "oof_meta": {key: value for key, value in oof_meta.items() if key != "formal_audit"}, "score_deterministic": score_deterministic, "scheduler_deterministic": scheduler_deterministic, "producer": {"commit": commit, "tree": tree, "d8_train_core_blob": CORE_BLOB, "feature_schema_blob": FEATURE_SCHEMA_BLOB}, "thresholds_changed": False, "attack_informed_tuning": False, "eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0})
+        atomic_json(output_root / "R3A_TRANSFER_AUDIT.json", {"schema": "R3A_MATCHED_ENSEMBLE_TRANSFER_AUDIT_V1", "status": "R3A_MATCHED_ENSEMBLE_TRANSFER_PASS" if gate_pass else "R3A_MATCHED_ENSEMBLE_TRANSFER_FAIL", "ensemble_root": str(ensemble_root), "ensemble_root_seal": ensemble_seal, "ensemble_manifest": str(manifest_path), "ensemble_manifest_sha256": sha256_file(manifest_path), "r2_root": str(r2_root), "r2_root_seal": R2_ROOT_SEAL, "r2_scheduler_receipt_sha256": sha256_file(r2_receipt_path), "scheduler": candidate, "oof_metrics": oof_metrics, "r3a_metrics": ensemble_metrics, "gate": gate, "event_binding": event_binding, "cache_manifest_schema": cache_manifest.get("schema"), "cache_seal": cache_seal, "oof_meta": {key: value for key, value in oof_meta.items() if key != "formal_audit"}, "score_deterministic": score_deterministic, "scheduler_deterministic": scheduler_deterministic, "producer": {"audit_commit": commit, "audit_tree": tree, "ensemble_commit": args.expected_ensemble_source_commit, "ensemble_tree": args.expected_ensemble_source_tree, "d8_train_core_blob": CORE_BLOB, "feature_schema_blob": FEATURE_SCHEMA_BLOB}, "thresholds_changed": False, "attack_informed_tuning": False, "eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0})
         seal = seal_directory(output_root)
         atomic_json(output_root / "R3A_TRANSFER_RECEIPT.json", {"schema": "R3A_TRANSFER_RECEIPT_V1", "status": "PASS" if gate_pass else "FAIL", "audit": "R3A_TRANSFER_AUDIT.json", "audit_sha256": sha256_file(output_root / "R3A_TRANSFER_AUDIT.json"), "payload_seal_before_receipt": seal, "stage3a_authorized": gate_pass, "active_guard_authorized": False, "eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0})
         # Re-seal after the receipt is added.
