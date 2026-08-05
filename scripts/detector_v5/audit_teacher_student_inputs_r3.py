@@ -152,7 +152,6 @@ def main() -> int:
         checks["cache_a_seal"] = cache_seal["sha256sums_sha256"] == CACHE_A_SEAL
         checks["cache_a_feature_dim"] = cache_manifest.get("feature_dim") == 25
         checks["oof_prediction_identity_closure"] = False
-        from run_detector_clean_freeze import load_oof
         _, oof_meta = load_oof(formal_root, cache_rows, STAGE1_COMMIT, STAGE1_TREE)
         checks["oof_prediction_identity_closure"] = oof_meta.get("prediction_file_count") == 50 and oof_meta.get("effective_identity_count") == sum(bool(row.get("effective_mask")) for row in cache_rows)
 
