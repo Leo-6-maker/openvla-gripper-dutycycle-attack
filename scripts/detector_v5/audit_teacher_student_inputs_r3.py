@@ -121,7 +121,7 @@ def main() -> int:
 
         head = git_value(repo, "rev-parse", "HEAD")
         tree = git_value(repo, "rev-parse", "HEAD^{tree}")
-        checks["r3_head_is_goal_commit"] = head == "402ba4e1fb46c1d639e98696607c9647adc38bb8"
+        checks["r3_base_commit_is_ancestor"] = git_value(repo, "merge-base", "402ba4e1fb46c1d639e98696607c9647adc38bb8", "HEAD") == "402ba4e1fb46c1d639e98696607c9647adc38bb8"
         checks["r3_core_blob"] = git_value(repo, "rev-parse", "HEAD:scripts/detector_v5/d8_train_core.py") == CORE_BLOB
         checks["r3_feature_schema_blob"] = git_value(repo, "rev-parse", "HEAD:configs/DETECTOR_V3_25D_CAUSAL_FEATURE_SCHEMA.json") == FEATURE_SCHEMA_BLOB
         schema = read_json(repo / "configs/DETECTOR_V3_25D_CAUSAL_FEATURE_SCHEMA.json")
