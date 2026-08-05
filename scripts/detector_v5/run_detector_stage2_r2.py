@@ -447,6 +447,11 @@ def _candidate_by_id(metrics: list[dict[str, Any]], candidate_id: int) -> dict[s
     raise RuntimeError(f"candidate not found: {candidate_id}")
 
 
+def delay_sort_value(row: Mapping[str, Any]) -> float:
+    value = row.get("median_first_activation_delay")
+    return float(value) if finite(value) else 10**9
+
+
 def detailed_candidate_metrics(
     aggregate_rows: list[dict[str, Any]],
     event_groups: Mapping[str, list[dict[str, Any]]],
@@ -853,10 +858,10 @@ def run(args: argparse.Namespace) -> int:
             {
                 "schema": "D8_STAGE2_R2_PARETO_FRONTIER_V1",
                 "frontier_definition": "non-dominated on false_onset_episode_rate, active_overlap_event_recall, and median_first_activation_delay",
-                "max_recall_at_false_onset_le_0.10": max((row for row in metrics if row["false_onset_episode_rate"] <= 0.10), key=lambda row: (row["active_overlap_event_recall"], -row["median_first_activation_delay"], -row["persistence"]), default=None),
-                "min_false_onset_at_recall_ge_0.70": min((row for row in metrics if row["active_overlap_event_recall"] >= 0.70), key=lambda row: (row["false_onset_episode_rate"], row["median_first_activation_delay"], row["persistence"]), default=None),
+                "max_recall_at_false_onset_le_0.10": max((row for row in metrics if row["false_onset_episode_rate"] <= 0.10), key=lambda row: (row["active_overlap_event_recall"], -delay_sort_value(row), -row["persistence"]), default=None),
+                "min_false_onset_at_recall_ge_0.70": min((row for row in metrics if row["active_overlap_event_recall"] >= 0.70), key=lambda row: (row["false_onset_episode_rate"], delay_sort_value(row), row["persistence"]), default=None),
                 "closest_to_original_gate": closest,
-                "best_by_persistence": {str(persistence): max((row for row in metrics if row["persistence"] == persistence and row["s1_pass"]), key=lambda row: (row["active_overlap_event_recall"], -row["false_onset_episode_rate"], -row["median_first_activation_delay"]), default=None) for persistence in PERSISTENCE_CANDIDATES},
+                "best_by_persistence": {str(persistence): max((row for row in metrics if row["persistence"] == persistence and row["s1_pass"]), key=lambda row: (row["active_overlap_event_recall"], -row["false_onset_episode_rate"], -delay_sort_value(row)), default=None) for persistence in PERSISTENCE_CANDIDATES},
                 "selected_candidate_detail": selected_details,
                 "event_length_groups": selected_details["event_length_breakdown"],
                 "event_fragment_count_groups": selected_details["event_fragment_count_breakdown"],
