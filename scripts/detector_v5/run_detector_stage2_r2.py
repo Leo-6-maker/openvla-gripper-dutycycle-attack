@@ -404,11 +404,12 @@ def _search(
     shadow = _best(s1)
     distances = []
     for row in metrics:
+        negative_rate = row["negative_active_step_rate"]
         distances.append(
             (
                 max(0.0, 0.70 - row["active_overlap_event_recall"]) / 0.70
                 + max(0.0, row["false_onset_episode_rate"] - 0.10) / 0.10
-                + max(0.0, row["negative_active_step_rate"] - 0.05) / 0.05
+                + (1.0 if negative_rate is None else max(0.0, negative_rate - 0.05) / 0.05)
                 + max(0.0, (row["median_first_activation_delay"] or 10**9) - 2.0) / 2.0,
                 row["candidate_id"],
             )
