@@ -22,6 +22,7 @@ CHECKPOINT_SHA = "ce7f03088d84a796d38fbdc107cea7f21bdb4808e35f7dc754e1b52e48bce1
 PARENT_MANIFEST_SHA = "a82715cf2ca111de9f7fe24e9812a8c4166658026ab846fc6a61cb57f92e70fd"
 FORMAL_SEEDS = (2026080501, 2026080502, 2026080503)
 DIAGNOSTIC_SEED = 2026080499
+MIN_ATTACK_WINDOW = 50
 SUITE_ORDER = ("libero_spatial", "libero_object", "libero_goal", "libero_10")
 CONDITIONS = (
     "CLEAN_SHADOW",
@@ -109,7 +110,7 @@ def _valid_parent(row: dict[str, Any]) -> bool:
     return all(
         bool(row.get(key))
         for key in ("eligible", "clean_success", "k10_executable", "runtime_valid")
-    ) and int(row.get("remaining_horizon") or 0) >= 10
+    ) and int(row.get("remaining_horizon") or 0) >= MIN_ATTACK_WINDOW
 
 
 def choose_tasks(parent: dict[str, Any], parent_path: Path) -> list[dict[str, Any]]:
@@ -453,7 +454,7 @@ def main() -> int:
         "status": "FROZEN",
         "source_manifest": str(parent_path),
         "source_manifest_sha256": parent_sha,
-        "selection_rule": "suite priority, canonical_parent_key dictionary order, clean_success+eligible+k10+runtime_valid",
+        "selection_rule": f"suite priority, canonical_parent_key dictionary order, clean_success+eligible+k10+runtime_valid+remaining_horizon>={MIN_ATTACK_WINDOW}",
         "tasks": tasks[:1] if args.diagnostic else tasks,
     })
     atomic_json(output_root / "STAGE3A_ATTACK_CONFIG_INDEX.json", index)
