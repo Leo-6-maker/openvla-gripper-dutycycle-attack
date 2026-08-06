@@ -30,6 +30,14 @@ EXPECTED_SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial"
 DEFAULT_SALT = "STAGE_V_R2_CONTROL_QUALIFICATION_20260807"
 
 
+def _render_command(template: str, **values: object) -> str:
+    """Replace only our placeholders; preserve shell syntax such as ``${IFS}``."""
+    rendered = str(template)
+    for key, value in values.items():
+        rendered = rendered.replace("{" + key + "}", str(value))
+    return rendered
+
+
 def ranked(rows: list[dict[str, Any]], salt: str) -> list[dict[str, Any]]:
     output = []
     for row in rows:
@@ -49,7 +57,8 @@ def _result_from_directory(directory: Path) -> Mapping[str, Any] | None:
 
 
 def _run_once(template: str, *, candidate_path: Path, output_dir: Path, replicate: str, source_commit: str, source_tree: str, gpu: int = 0) -> tuple[int, dict[str, Any]]:
-    command_text = template.format(
+    command_text = _render_command(
+        template,
         candidate_path=str(candidate_path), output_dir=str(output_dir), replicate=replicate,
         source_commit=source_commit, source_tree=source_tree, gpu=gpu,
     )

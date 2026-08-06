@@ -130,6 +130,15 @@ def test_load_rows_reads_selected_parents_manifest(tmp_path: Path) -> None:
     assert control_qualification.load_rows(path) == [{"suite": "libero_goal", "task_index": 0, "state_index": 48}]
 
 
+def test_qualification_command_render_preserves_shell_braces() -> None:
+    rendered = control_qualification._render_command(
+        "echo ${IFS} {candidate_path} {replicate}",
+        candidate_path="/tmp/candidate.json",
+        replicate="A",
+    )
+    assert rendered == "echo ${IFS} /tmp/candidate.json A"
+
+
 def test_queue_projection_has_pending_running_complete_failed(tmp_path: Path) -> None:
     root = tmp_path / "run"
     project_queue(root, [{"cell_id": "a", "state": "PENDING"}, {"cell_id": "b", "state": "RUNNING"}, {"cell_id": "c", "state": "DONE_VALID"}, {"cell_id": "d", "state": "FAILED_FATAL_POST_ACTION"}])
