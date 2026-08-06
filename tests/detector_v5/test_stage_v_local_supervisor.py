@@ -100,6 +100,7 @@ def _run_cli(tmp_path: Path, *, dispatcher_code: str, ssh_probe: str = "false") 
         "--min-available-ram-gib", "0",
         "--gpu-query-command", "false",
         "--kernel-log-command", "false",
+        "--skip-gpu-check",
         "--ssh-probe-command", ssh_probe,
         "--stdout-log", str(logs / "stdout.log"),
         "--stderr-log", str(logs / "stderr.log"),
