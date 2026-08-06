@@ -123,6 +123,9 @@ def pid_alive(pid: int | None) -> bool:
             return False
     try:
         os.kill(pid, 0)
+    except PermissionError:
+        # A root-owned process is visible but not signalable by dty_user.
+        return True
     except (OSError, ProcessLookupError):
         return False
     proc_stat = Path(f"/proc/{pid}/stat")
@@ -347,7 +350,11 @@ def read_gpu_snapshot(command: str, *, skip_errors: bool) -> tuple[list[dict[str
 def read_xid_status(command: str, since: str, *, skip_errors: bool) -> tuple[str, str | None]:
     if not command:
         return "NOT_CHECKED", None
-    rendered = command.format(since=since)
+    try:
+        query_since = _datetime.datetime.fromisoformat(since).strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        query_since = since
+    rendered = command.format(since=query_since)
     code, stdout, stderr = run_text_command(rendered)
     if code != 0 and not skip_errors:
         return "UNKNOWN", f"KERNEL_LOG_QUERY_FAILED:{stderr.strip() or code}"
