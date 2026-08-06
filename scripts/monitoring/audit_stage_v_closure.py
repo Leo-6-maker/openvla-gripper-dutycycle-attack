@@ -25,6 +25,7 @@ REQUIRED_BRANCH_ARMS = {
     "NOOP_T10_REPLAY",
 }
 OPEN_ARMS = {"OPEN_T3", "OPEN_T5", "OPEN_T10"}
+ACTIVE_PRODUCER_STATUSES = {"RUNNING", "IN_PROGRESS", "PENDING", "STARTED", "WRITING"}
 BOUNDARY_KEYS = (
     "eval160_reads",
     "protected_eval_reads",
@@ -103,6 +104,19 @@ def _counter(value: Mapping[str, Any], key: str) -> int:
     return number if number is not None else 0
 
 
+def _producer_state(result: Mapping[str, Any] | None, *, branch_complete: bool, audited: bool) -> str:
+    if not isinstance(result, Mapping):
+        return "MISSING"
+    status = str(result.get("status", "")).upper()
+    if status in ACTIVE_PRODUCER_STATUSES:
+        return "LIVE_IN_PROGRESS"
+    if status == "PASS" and branch_complete:
+        return "ACCEPTED" if audited else "BRANCH_COMPLETE_PENDING_AUDIT"
+    if status == "PASS":
+        return "QUIESCENT_INCOMPLETE"
+    return "TERMINAL_INVALID"
+
+
 def _safe_relative(raw: str) -> Path:
     rel = Path(raw)
     if rel.is_absolute() or ".." in rel.parts:
@@ -174,6 +188,7 @@ def verify_parent(
     if not isinstance(result, Mapping):
         return {
             "canonical_parent_key": str(expected.get("canonical_parent_key")),
+            "parent_state": "MISSING",
             "audit_status": "FAIL",
             "seal_status": "FAIL",
             "accepted": False,
@@ -246,11 +261,13 @@ def verify_parent(
             errors.append("branch_exit_status_not_pass")
     seal_ok, seal_errors, checked = verify_sha_manifest(parent_dir)
     errors.extend(seal_errors)
+    branch_complete = expected_branch_count is not None and len(rows) == expected_branch_count
     return {
         "canonical_parent_key": identity or str(expected.get("canonical_parent_key")),
         "suite": result.get("suite"),
         "task_index": result.get("task_index"),
         "state_index": result.get("state_index"),
+        "parent_state": "ACCEPTED" if not errors else "TERMINAL_INVALID",
         "expected_branch_count": expected_branch_count,
         "completed_branch_count": len(rows),
         "failed_branch_count": failed_branches,
@@ -318,6 +335,10 @@ def parent_progress(
     branch_complete = 0
     missing_branch_count = 0
     invalid_parent_count = 0
+    missing_parent_count = 0
+    live_parent_count = 0
+    terminal_invalid_parent_count = 0
+    branch_complete_pending_audit_count = 0
     local_positive = 0
     task_positive = 0
     for key in sorted(expected):
@@ -325,6 +346,7 @@ def parent_progress(
         if len(paths) != 1:
             item = {
                 "canonical_parent_key": key,
+                "parent_state": "MISSING" if not paths else "DUPLICATE_IDENTITY",
                 "expected_branch_count": None,
                 "completed_branch_count": 0,
                 "failed_branch_count": 0,
@@ -365,6 +387,11 @@ def parent_progress(
                 basic_errors.append("parent_producer_status_not_pass")
             item = {
                 "canonical_parent_key": key,
+                "parent_state": _producer_state(
+                    result if isinstance(result, Mapping) else None,
+                    branch_complete=expected_branch_count is not None and completed_branch_count == expected_branch_count,
+                    audited=False,
+                ),
                 "expected_branch_count": expected_branch_count,
                 "completed_branch_count": completed_branch_count,
                 "failed_branch_count": 0,
@@ -387,6 +414,15 @@ def parent_progress(
             if item.get("missing_branches"):
                 missing_branch_count += len(item.get("missing_branches", []))
             invalid_parent_count += 1
+        state = str(item.get("parent_state", "UNKNOWN"))
+        if state == "MISSING":
+            missing_parent_count += 1
+        elif state == "LIVE_IN_PROGRESS":
+            live_parent_count += 1
+        elif state in {"TERMINAL_INVALID", "QUIESCENT_INCOMPLETE"}:
+            terminal_invalid_parent_count += 1
+        elif state == "BRANCH_COMPLETE_PENDING_AUDIT":
+            branch_complete_pending_audit_count += 1
         if item.get("accepted"):
             accepted += 1
         rows.append(item)
@@ -398,6 +434,10 @@ def parent_progress(
         "audited_parent_count": audited,
         "accepted_parent_count": accepted,
         "invalid_parent_count": invalid_parent_count + len(manifest_errors),
+        "missing_parent_count": missing_parent_count,
+        "live_parent_count": live_parent_count,
+        "terminal_invalid_parent_count": terminal_invalid_parent_count,
+        "branch_complete_pending_audit_count": branch_complete_pending_audit_count,
         "missing_branch_count": missing_branch_count,
         "duplicate_identity_count": duplicate_count,
         "orphan_artifact_count": orphan_count,
@@ -515,6 +555,14 @@ def audit_closure(
         errors.append("audited_parent_count_mismatch")
     if progress["accepted_parent_count"] != expected_parent_count:
         errors.append("accepted_parent_count_mismatch")
+    if progress["missing_parent_count"] != 0:
+        errors.append("missing_parent_count_nonzero")
+    if progress["live_parent_count"] != 0:
+        errors.append("live_parent_count_nonzero")
+    if progress["terminal_invalid_parent_count"] != 0:
+        errors.append("terminal_invalid_parent_count_nonzero")
+    if progress["branch_complete_pending_audit_count"] != 0:
+        errors.append("branch_complete_pending_audit_count_nonzero")
     for key in ("invalid_parent_count", "missing_branch_count", "duplicate_identity_count", "orphan_artifact_count"):
         if progress[key] != 0:
             errors.append(f"{key}_nonzero")
@@ -536,6 +584,10 @@ def audit_closure(
         "completed_parent_count": progress["branch_complete_parent_count"],
         "audited_parent_count": progress["audited_parent_count"],
         "accepted_parent_count": progress["accepted_parent_count"],
+        "missing_parent_count": progress["missing_parent_count"],
+        "live_parent_count": progress["live_parent_count"],
+        "terminal_invalid_parent_count": progress["terminal_invalid_parent_count"],
+        "branch_complete_pending_audit_count": progress["branch_complete_pending_audit_count"],
         "branch_complete_parent_count": progress["branch_complete_parent_count"],
         "invalid_parent_count": progress["invalid_parent_count"],
         "missing_branch_count": progress["missing_branch_count"],
