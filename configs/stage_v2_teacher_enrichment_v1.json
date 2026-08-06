@@ -1,0 +1,29 @@
+{
+  "schema": "STAGE_V2_TEACHER_ENRICHMENT_CONFIG_V1",
+  "stage": "V2_TEACHER_ENRICHMENT",
+  "read_only": true,
+  "observation_unit": "one valid direct OPEN_T3/OPEN_T5/OPEN_T10 branch row",
+  "open_arms": ["OPEN_T3", "OPEN_T5", "OPEN_T10"],
+  "groups": [
+    "teacher_corridor",
+    "background_random",
+    "safe_release_support"
+  ],
+  "labels": ["local_vulnerability", "task_vulnerability"],
+  "gates": {
+    "local_vulnerability_enrichment_min": 3.0,
+    "local_vulnerability_recall_min": 0.6,
+    "suite_local_enrichment_strict_min": 1.0,
+    "all_denominators_required": true,
+    "finite_metrics_required": true,
+    "unknown_rows_are_abstain": true
+  },
+  "zero_denominator": "UNAVAILABLE_ZERO_DENOMINATOR",
+  "boundary": {
+    "eval160_reads": 0,
+    "protected_eval_reads": 0,
+    "attack_rollouts": 0,
+    "vis_rollouts": 0,
+    "pgd_rollouts": 0
+  }
+}
