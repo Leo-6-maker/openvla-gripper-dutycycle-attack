@@ -55,6 +55,7 @@ def test_atomic_queue_claim_is_single_owner(tmp_path: Path) -> None:
 
 
 def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    assert control_qualification.DEFAULT_SALT == "STAGE_V_R2_CONTROL_QUALIFICATION_20260807"
     manifest = tmp_path / "candidates.json"
     write_json(manifest, {"parents": [{
         "canonical_parent_key": "libero_goal/task_00/state_48",

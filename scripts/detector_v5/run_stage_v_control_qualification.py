@@ -27,7 +27,7 @@ except ImportError:  # direct server execution
 
 FORBIDDEN = re.compile(r"(?<![A-Za-z0-9_])(?:OPEN(?:_T[0-9]+)?|VIS|PGD|ATTACK|EVAL160|PROTECTED|TEACHER)(?![A-Za-z0-9_])", re.IGNORECASE)
 EXPECTED_SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
-DEFAULT_SALT = "STAGE_V_CONTROL_QUALIFICATION_V2_20260806"
+DEFAULT_SALT = "STAGE_V_R2_CONTROL_QUALIFICATION_20260807"
 
 
 def ranked(rows: list[dict[str, Any]], salt: str) -> list[dict[str, Any]]:
@@ -165,7 +165,7 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
     selected: dict[str, list[dict[str, Any]]] = {suite: [] for suite in suites}
     gpus = _parse_gpus(args.gpus)
     queue_db = args.output_dir / "CONTROL_QUALIFICATION.sqlite"
-    queue = AtomicTaskQueue(str(queue_db), run_id="STAGE_V_CONTROL_QUALIFICATION_V2_20260806")
+    queue = AtomicTaskQueue(str(queue_db), run_id=args.salt)
     manifest_sha = sha256_file(args.candidate_manifest)
     source_sha = f"{args.source_commit}:{args.source_tree}"
     queue.init_run(
