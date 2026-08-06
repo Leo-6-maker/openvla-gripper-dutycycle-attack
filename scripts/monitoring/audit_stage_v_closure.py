@@ -346,10 +346,11 @@ def parent_progress(
             probe_count = _int(result.get("probe_count")) if isinstance(result, Mapping) else None
             expected_branch_count = probe_count * 3 if probe_count and probe_count > 0 else None
             branch_file = paths[0] / "COUNTERFACTUAL_BRANCHES.jsonl"
-            try:
-                completed_branch_count = sum(1 for line in branch_file.open(encoding="utf-8") if line.strip())
-            except OSError:
-                completed_branch_count = 0
+            completed_branch_count = (
+                _int(result.get("branch_count"))
+                if isinstance(result, Mapping) and branch_file.is_file()
+                else 0
+            ) or 0
             missing = []
             if expected_branch_count is None:
                 missing.append("PARENT_RESULT.probe_count")
