@@ -304,3 +304,34 @@ def test_v2_command_plan_waits_for_closure_then_materializes(tmp_path: Path) -> 
     assert final["schema"] == "STAGE_V2_COMMAND_V2"
     assert final["expected_stage_v_closure_receipt_sha256"] == sha(root / "STAGE_V_CLOSURE_RECEIPT.json")
     assert monitor._load_v2_spec()[1] is None
+
+
+def test_stage_v2_pass_transitions_to_stage_o_waiting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root, _, _ = make_root(tmp_path)
+    goal = tmp_path / "goal"
+    goal.mkdir()
+    args = type("Args", (), {
+        "stage_v_root": root, "goal_root": goal, "expected_source_commit": COMMIT, "expected_source_tree": TREE,
+        "expected_parent_count": 1, "expected_gpus": [1], "reserved_gpus": [5], "protected_pid": 0,
+        "lock_path": tmp_path / "lock", "kill_grace_seconds": 0.01,
+        "stage_v2_command_file": goal / "MONITOR" / "STAGE_V2_COMMAND.json",
+        "stage_o_command_file": goal / "MONITOR" / "STAGE_O_COMMAND.json",
+    })()
+    monitor = Gatekeeper(args)
+    monitor.stage_v2_root = goal / "v2"
+    monitor.last_status = "STAGE_V2_PASS"
+    monkeypatch.setattr(monitor, "_resource_snapshot", lambda: {"hard_stop_errors": [], "gpu_assignments": []})
+    assert monitor.tick() == "CONTINUE"
+    state = json.loads((goal / "MONITOR" / "STAGE_V_MONITOR_STATE.json").read_text())
+    assert state["status"] == "STAGE_O_WAITING_FOR_REGISTERED_COMMAND"
+
+
+def test_stage_o_audit_requires_full_job_closure(tmp_path: Path) -> None:
+    output = tmp_path / "stage-o"
+    output.mkdir()
+    write_json(output / "STAGE_O_MANIFEST.json", {"jobs": 480, "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0})
+    report = {"status": "PASS", "completed_jobs": 480, "failed_jobs": 0, "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0}
+    audit = {"verdict": "PASS", "missing_job_count": 0, "duplicate_job_ids": [], "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0}
+    assert Gatekeeper._audit_o_report(report, audit, 0, output) == ("PASS", "stage_o_closure_pass")
+    report["completed_jobs"] = 479
+    assert Gatekeeper._audit_o_report(report, audit, 0, output)[0] == "FAIL"

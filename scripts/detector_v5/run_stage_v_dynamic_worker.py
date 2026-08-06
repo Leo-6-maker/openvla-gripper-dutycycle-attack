@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as _datetime
 import json
 import os
 from pathlib import Path
@@ -16,12 +17,12 @@ from typing import Any
 try:
     from .stage_v_dynamic_common import (
         atomic_write_json, attempt_dir, canonical_parent_key, project_queue, read_json,
-        science_artifact_status, sha256_file, sha256_json, load_rows, utc_now,
+        science_artifact_status, sha256_file, sha256_json, load_rows, terminate_process_group, utc_now,
     )
 except ImportError:  # direct server execution
     from stage_v_dynamic_common import (
         atomic_write_json, attempt_dir, canonical_parent_key, project_queue, read_json,
-        science_artifact_status, sha256_file, sha256_json, load_rows, utc_now,
+        science_artifact_status, sha256_file, sha256_json, load_rows, terminate_process_group, utc_now,
     )
 
 try:
@@ -48,6 +49,17 @@ def _gpu_row(gpu_id: int) -> dict[str, Any]:
         return {"gpu_utilization_percent": None, "gpu_memory_used_mib": None, "gpu_memory_free_mib": None}
 
 
+def _proc_cpu_seconds(pid: int | None) -> float | None:
+    if not pid or os.name != "posix":
+        return None
+    try:
+        fields = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8").rsplit(")", 1)[1].split()
+        ticks = int(os.sysconf("SC_CLK_TCK"))
+        return (int(fields[11]) + int(fields[12])) / ticks
+    except (OSError, IndexError, ValueError):
+        return None
+
+
 class Worker:
     def __init__(self, args: argparse.Namespace):
         self.args = args
@@ -62,12 +74,15 @@ class Worker:
         }
         self.current: dict[str, Any] | None = None
         self.child: subprocess.Popen[Any] | None = None
+        self.child_pgid: int | None = None
         self.stop_event = threading.Event()
         self.thread: threading.Thread | None = None
         self.progress_lock = threading.Lock()
         self.sequence = 0
         self.last_progress_epoch = time.time()
         self.last_artifact_epoch = time.time()
+        self.last_cpu_progress_epoch = time.time()
+        self.last_child_cpu_seconds = 0.0
         self.parent_started_epoch: float | None = None
 
     def _status(self, state: str, *, child_pid: int | None = None, error: str | None = None) -> dict[str, Any]:
@@ -92,6 +107,9 @@ class Worker:
                 "last_artifact_epoch": self.last_artifact_epoch,
                 "parent_started_epoch": self.parent_started_epoch,
                 "child_pid": child_pid,
+                "child_pgid": self.child_pgid,
+                "child_cpu_seconds": progress.get("child_cpu_seconds"),
+                "last_cpu_progress_epoch": self.last_cpu_progress_epoch,
                 "gpu_utilization_percent": gpu.get("gpu_utilization_percent"),
                 "gpu_memory_used_mib": gpu.get("gpu_memory_used_mib"),
                 "gpu_memory_free_mib": gpu.get("gpu_memory_free_mib"),
@@ -121,6 +139,19 @@ class Worker:
         progress = read_json(progress_file, {}) if progress_file.is_file() else {}
         if not isinstance(progress, dict):
             progress = {}
+        child_cpu_seconds = _proc_cpu_seconds(self.child.pid if self.child else None)
+        if child_cpu_seconds is not None:
+            if child_cpu_seconds > self.last_child_cpu_seconds:
+                self.last_cpu_progress_epoch = time.time()
+            self.last_child_cpu_seconds = max(self.last_child_cpu_seconds, child_cpu_seconds)
+        progress_updated = progress.get("updated_epoch")
+        if progress_updated is None and progress.get("updated_utc"):
+            try:
+                progress_updated = _datetime.datetime.fromisoformat(str(progress["updated_utc"]).replace("Z", "+00:00")).timestamp()
+            except (TypeError, ValueError):
+                progress_updated = None
+        if isinstance(progress_updated, (int, float)) and float(progress_updated) > self.last_progress_epoch:
+            self.last_progress_epoch = float(progress_updated)
         if newest and newest > self.last_artifact_epoch:
             self.last_artifact_epoch = newest
             self.last_progress_epoch = newest
@@ -130,6 +161,7 @@ class Worker:
             "current_branch": progress.get("current_branch"),
             "last_progress_utc": progress.get("updated_utc"),
             "last_artifact_utc": progress.get("last_artifact_utc"),
+            "child_cpu_seconds": child_cpu_seconds,
         }
 
     def _heartbeat_loop(self) -> None:
@@ -201,20 +233,33 @@ class Worker:
             command = self._command(task, output_dir)
             with log_path.open("w", encoding="utf-8") as log:
                 self.child = subprocess.Popen(command, cwd=str(self.args.repo_root), env=environment,
-                                              stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
+                                              stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
+                                              start_new_session=(os.name == "posix"))
                 job["child_pid"] = self.child.pid
+                self.child_pgid = os.getpgid(self.child.pid) if hasattr(os, "getpgid") else self.child.pid
+                job["child_pgid"] = self.child_pgid
                 atomic_write_json(output_dir / "JOB.json", job)
                 code = self.child.wait()
             self.child = None
+            self.child_pgid = None
         except Exception as exc:
             code = 127
             atomic_write_json(output_dir / "WORKER_EXCEPTION.json", {"error": f"{type(exc).__name__}: {exc}", "utc": utc_now()})
-        artifact = science_artifact_status(output_dir, task["canonical_parent_key"])
+        artifact = science_artifact_status(
+            output_dir, task["canonical_parent_key"],
+            expected_source_commit=self.args.science_source_commit or None,
+            expected_source_tree=self.args.science_source_tree or None,
+            expected_row=self.manifest_rows.get(task["canonical_parent_key"])
+            if (self.args.science_source_commit or self.args.science_source_tree) else None,
+        )
         validation = {
             "schema": "STAGE_V_PARENT_VALIDATION_V2",
             "canonical_parent_key": task["canonical_parent_key"],
             "source_commit": self.args.source_commit,
             "source_tree": self.args.source_tree,
+            "science_source_commit": self.args.science_source_commit,
+            "science_source_tree": self.args.science_source_tree,
+            "science_provenance": self.args.science_provenance,
             "exit_code": code,
             "artifact_audit_verdict": "PASS" if artifact["valid"] and code == 0 else "FAIL",
             "label_status": artifact.get("label_status") if artifact["valid"] and code == 0 else "INVALID",
@@ -281,10 +326,7 @@ class Worker:
         finally:
             self.stop_event.set()
             if self.child is not None and self.child.poll() is None:
-                try:
-                    self.child.terminate()
-                except OSError:
-                    pass
+                terminate_process_group(self.child, grace_seconds=10)
             if self.thread:
                 self.thread.join(timeout=max(1.0, self.args.heartbeat_seconds + 1))
             self._status("STOPPED" if self.stop_event.is_set() else "EXITED", child_pid=None)
@@ -309,6 +351,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--science-runner", type=Path)
     parser.add_argument("--science-repo-root", type=Path)
     parser.add_argument("--science-parent-manifest", type=Path)
+    parser.add_argument("--science-source-commit", default="")
+    parser.add_argument("--science-source-tree", default="")
+    parser.add_argument("--science-provenance", type=Path)
     parser.add_argument("--worker-command", default="")
     return parser
 

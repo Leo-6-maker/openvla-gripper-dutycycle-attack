@@ -249,12 +249,15 @@ def gpu_preflight(*, required_count: int, excluded_gpus: Iterable[int], canary_p
         else:
             safe.append(gpu_id)
             decisions.append({**row, "safe": True, "reasons": []})
-    safe = sorted(set(safe))
+    all_safe = sorted(set(safe))
+    safe = all_safe[:required_count]
     return {
         "schema": "STAGE_V_GPU_PREFLIGHT_V2",
         "status": "PASS" if len(safe) >= required_count and not error else "PRELAUNCH_WAITING_FOR_8_GPUS",
         "required_gpu_count": required_count,
-        "safe_gpu_count": len(safe),
+        "safe_gpu_count": len(all_safe),
+        "selected_gpu_count": len(safe),
+        "all_safe_gpus": all_safe,
         "safe_gpus": safe,
         "excluded_gpus": excluded,
         "protected_pids": sorted(protected),
@@ -309,7 +312,89 @@ def parent_output(root: Path, task: Mapping[str, Any]) -> Path:
     return attempt_dir(root, str(task["canonical_parent_key"]), int(task.get("attempt_count") or 1))
 
 
-def science_artifact_status(output_dir: Path, parent_key: str) -> dict[str, Any]:
+def _verify_parent_seal(root: Path) -> tuple[bool, str]:
+    sums = root / "SHA256SUMS"
+    sums_sha = root / "SHA256SUMS.sha256"
+    if not sums.is_file() or not sums_sha.is_file():
+        return False, "PARENT_SEAL_FILES_MISSING"
+    try:
+        expected = sums_sha.read_text(encoding="utf-8").strip().split()
+        if len(expected) < 2 or expected[1] != "SHA256SUMS" or expected[0] != sha256_file(sums):
+            return False, "PARENT_SEAL_SUMS_SHA_MISMATCH"
+        for line in sums.read_text(encoding="utf-8").splitlines():
+            parts = line.split(None, 1)
+            if len(parts) != 2:
+                return False, "PARENT_SEAL_ROW_INVALID"
+            digest, relative = parts
+            relative_path = Path(relative)
+            if relative_path.is_absolute() or ".." in relative_path.parts:
+                return False, "PARENT_SEAL_PATH_INVALID"
+            target = root / relative_path
+            if not target.is_file() or sha256_file(target) != digest:
+                return False, f"PARENT_SEAL_FILE_MISMATCH:{relative}"
+    except (OSError, ValueError):
+        return False, "PARENT_SEAL_READ_FAIL"
+    return True, "PASS"
+
+
+def _branch_rows(path: Path) -> tuple[list[dict[str, Any]], list[str]]:
+    rows: list[dict[str, Any]] = []
+    errors: list[str] = []
+    try:
+        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            value = json.loads(line)
+            if not isinstance(value, Mapping):
+                errors.append(f"BRANCH_ROW_NOT_OBJECT:{line_number}")
+            else:
+                rows.append(dict(value))
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(f"BRANCH_READ_FAIL:{type(exc).__name__}")
+    return rows, errors
+
+
+def _strict_branch_errors(branch_rows: list[dict[str, Any]], parent_key: str) -> list[str]:
+    errors: list[str] = []
+    identities = set()
+    expected_arms = {"OPEN_T3", "OPEN_T5", "OPEN_T10"}
+    arm_counts = {arm: 0 for arm in expected_arms}
+    for row in branch_rows:
+        identity = (row.get("canonical_parent_key"), row.get("probe_step"), row.get("arm"))
+        if identity in identities:
+            errors.append("DUPLICATE_BRANCH_IDENTITY")
+        identities.add(identity)
+        if row.get("canonical_parent_key") != parent_key:
+            errors.append("BRANCH_PARENT_IDENTITY_MISMATCH")
+        if row.get("arm") not in expected_arms:
+            errors.append("BRANCH_ARM_INVALID")
+        else:
+            arm_counts[str(row["arm"])] += 1
+        if row.get("control_arm") != "NOOP_T10_REPLAY":
+            errors.append("CONTROL_ARM_INVALID")
+        if row.get("prefix_replay_exact") is not True:
+            errors.append("PREFIX_REPLAY_NOT_EXACT")
+        for field in ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts", "attack_rollouts"):
+            if row.get(field, 0) != 0:
+                errors.append(f"BRANCH_BOUNDARY_VIOLATION:{field}")
+        comparison = row.get("comparison") if isinstance(row.get("comparison"), Mapping) else {}
+        if comparison.get("control_status") not in ("PASS", "DONE") or comparison.get("open_status") not in ("PASS", "DONE"):
+            errors.append("BRANCH_RUNTIME_INVALID")
+        if comparison.get("label_status") != "VALID":
+            errors.append("BRANCH_LABEL_INVALID")
+    if len(branch_rows) != 72:
+        errors.append(f"BRANCH_COUNT:{len(branch_rows)}/72")
+    if len(identities) != len(branch_rows):
+        errors.append("DUPLICATE_BRANCH_IDENTITIES")
+    if {row.get("arm") for row in branch_rows} != expected_arms:
+        errors.append("BRANCH_ARM_COVERAGE_INVALID")
+    if any(count != 24 for count in arm_counts.values()):
+        errors.append("BRANCH_ARM_BALANCE_INVALID")
+    return sorted(set(errors))
+
+
+def science_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
+                            expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None) -> dict[str, Any]:
     results = list(Path(output_dir).rglob("PARENT_RESULT.json"))
     if len(results) != 1:
         return {"valid": False, "reason": f"PARENT_RESULT_COUNT:{len(results)}", "result": None, "path": None}
@@ -323,6 +408,26 @@ def science_artifact_status(output_dir: Path, parent_key: str) -> dict[str, Any]
         return {"valid": False, "reason": "PARENT_IDENTITY_MISMATCH", "result": dict(result), "path": str(result_path)}
     if result.get("status") != "PASS" or result.get("clean_success") is not True or branch_count != 72 or len(branches) != 1:
         return {"valid": False, "reason": "SCIENCE_RESULT_INVALID", "result": dict(result), "path": str(result_path)}
+    strict_errors: list[str] = []
+    if expected_source_commit or expected_source_tree or expected_row is not None:
+        if expected_source_commit and result.get("current_source_commit") != expected_source_commit:
+            strict_errors.append("SCIENCE_SOURCE_COMMIT_MISMATCH")
+        if expected_source_tree and result.get("current_source_tree") != expected_source_tree:
+            strict_errors.append("SCIENCE_SOURCE_TREE_MISMATCH")
+        if result.get("current_source_status") not in ("", None):
+            strict_errors.append("SCIENCE_SOURCE_WORKTREE_DIRTY")
+        if expected_row is not None:
+            for result_field, row_field in (("suite", "suite"), ("task_idx", "task_index"), ("state_id", "state_index")):
+                if result.get(result_field) != expected_row.get(row_field):
+                    strict_errors.append(f"PARENT_{result_field.upper()}_MISMATCH")
+        branch_rows, branch_errors = _branch_rows(branches[0])
+        strict_errors.extend(branch_errors)
+        strict_errors.extend(_strict_branch_errors(branch_rows, parent_key))
+        seal_ok, seal_reason = _verify_parent_seal(result_path.parent)
+        if not seal_ok:
+            strict_errors.append(seal_reason)
+    if strict_errors:
+        return {"valid": False, "reason": ";".join(sorted(set(strict_errors))), "result": dict(result), "path": str(result_path)}
     return {
         "valid": True,
         "reason": "PASS",
@@ -330,4 +435,5 @@ def science_artifact_status(output_dir: Path, parent_key: str) -> dict[str, Any]
         "path": str(result_path),
         "artifact_sha256": sha256_file(result_path),
         "label_status": "VALID",
+        "parent_seal": "PASS" if expected_source_commit or expected_source_tree or expected_row is not None else "UNVERIFIED",
     }

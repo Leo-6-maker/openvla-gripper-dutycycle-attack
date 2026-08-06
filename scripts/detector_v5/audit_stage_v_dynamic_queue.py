@@ -8,9 +8,11 @@ import sys
 from typing import Any, Mapping
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, load_rows, read_json, science_artifact_status, sha256_file, utc_now
+    from .stage_v_dynamic_common import atomic_write_json, load_rows, normalize_parent, read_json, science_artifact_status, sha256_file, utc_now
+    from .stage_v_science_core_provenance import verify as verify_science_provenance
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import atomic_write_json, load_rows, read_json, science_artifact_status, sha256_file, utc_now
+    from stage_v_dynamic_common import atomic_write_json, load_rows, normalize_parent, read_json, science_artifact_status, sha256_file, utc_now
+    from stage_v_science_core_provenance import verify as verify_science_provenance
 
 try:
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
@@ -42,7 +44,8 @@ def _branch_rows(path: Path) -> tuple[list[dict[str, Any]], list[str]]:
 
 def audit(args: argparse.Namespace) -> dict[str, Any]:
     root = args.run_root.resolve()
-    manifest_rows = load_rows(args.parent_manifest)
+    manifest_rows = [normalize_parent(row) for row in load_rows(args.parent_manifest)]
+    manifest_by_key = {str(row["canonical_parent_key"]): row for row in manifest_rows}
     tasks = AtomicTaskQueue(str(args.queue_db), run_id=args.run_id).list_tasks()
     errors: list[str] = []
     if len(manifest_rows) != args.expected_parent_count:
@@ -50,6 +53,39 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     keys = [str(row.get("canonical_parent_key")) for row in manifest_rows]
     if len(set(keys)) != len(keys):
         errors.append("DUPLICATE_MANIFEST_IDENTITIES")
+    if args.science_provenance:
+        if not args.science_source_commit or not args.science_source_tree:
+            errors.append("SCIENCE_PROVENANCE_BINDING_MISSING")
+        else:
+            provenance_ok, provenance_errors = verify_science_provenance(
+                args.science_provenance, expected_commit=args.science_source_commit, expected_tree=args.science_source_tree,
+            )
+            if not provenance_ok:
+                errors.extend(f"SCIENCE_PROVENANCE:{item}" for item in provenance_errors)
+    run_manifest = read_json(root / "RUN_MANIFEST.json", {})
+    if not isinstance(run_manifest, Mapping):
+        errors.append("RUN_MANIFEST_MISSING_OR_INVALID")
+    else:
+        if run_manifest.get("source_commit") != args.expected_source_commit or run_manifest.get("source_tree") != args.expected_source_tree:
+            errors.append("RUN_MANIFEST_SOURCE_BINDING_FAIL")
+        if run_manifest.get("parent_manifest_sha256") != sha256_file(args.parent_manifest):
+            errors.append("RUN_MANIFEST_PARENT_MANIFEST_SHA_MISMATCH")
+        if run_manifest.get("planned_parents") != args.expected_parent_count:
+            errors.append("RUN_MANIFEST_PARENT_COUNT_MISMATCH")
+        if run_manifest.get("old_artifacts_reused") is not False:
+            errors.append("OLD_ARTIFACT_REUSE_BINDING_FAIL")
+        if run_manifest.get("dynamic_claims") is not True or run_manifest.get("one_project_worker_per_gpu") is not True:
+            errors.append("RUN_MANIFEST_DYNAMIC_WORKER_BINDING_FAIL")
+        if run_manifest.get("gpu5_used") is True:
+            errors.append("RUN_MANIFEST_GPU5_USED")
+        for field in ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts"):
+            if run_manifest.get(field, 0) != 0:
+                errors.append(f"RUN_MANIFEST_BOUNDARY_VIOLATION:{field}")
+        if args.science_source_commit and (
+            run_manifest.get("science_source_commit") != args.science_source_commit
+            or run_manifest.get("science_source_tree") != args.science_source_tree
+        ):
+            errors.append("RUN_MANIFEST_SCIENCE_BINDING_FAIL")
     if len(tasks) != args.expected_parent_count:
         errors.append(f"QUEUE_COUNT:{len(tasks)}/{args.expected_parent_count}")
     accepted: list[dict[str, Any]] = []
@@ -62,13 +98,21 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         if not output_dir.is_absolute():
             output_dir = root / output_dir
         validation = read_json(output_dir / "PARENT_VALIDATION.json", {})
-        result = science_artifact_status(output_dir, key)
+        result = science_artifact_status(
+            output_dir, key,
+            expected_source_commit=args.science_source_commit or None,
+            expected_source_tree=args.science_source_tree or None,
+            expected_row=manifest_by_key.get(key)
+            if (args.science_source_commit or args.science_source_tree) else None,
+        )
         if not result["valid"]:
             errors.append(f"SCIENCE_ARTIFACT_INVALID:{key}:{result.get('reason')}")
         if not isinstance(validation, Mapping) or validation.get("artifact_audit_verdict") != "PASS" or validation.get("label_status") != "VALID":
             errors.append(f"PARENT_VALIDATION_INVALID:{key}")
         if isinstance(validation, Mapping) and (validation.get("source_commit") != args.expected_source_commit or validation.get("source_tree") != args.expected_source_tree):
             errors.append(f"PROVENANCE_MISMATCH:{key}")
+        if isinstance(validation, Mapping) and args.science_source_commit and (validation.get("science_source_commit") != args.science_source_commit or validation.get("science_source_tree") != args.science_source_tree):
+            errors.append(f"SCIENCE_PROVENANCE_MISMATCH:{key}")
         parent_result = result.get("result") if isinstance(result.get("result"), Mapping) else {}
         if parent_result.get("eval160_reads", 0) != 0 or parent_result.get("protected_eval_reads", 0) != 0 or parent_result.get("attack_rollouts", 0) != 0:
             errors.append(f"BOUNDARY_VIOLATION:{key}")
@@ -82,7 +126,12 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             errors.extend(branch_errors)
         if len(branch_rows) != args.expected_branch_count:
             errors.append(f"BRANCH_COUNT:{key}:{len(branch_rows)}/{args.expected_branch_count}")
-        if any(row.get("status") not in ("PASS", "DONE") for row in branch_rows):
+        if args.science_source_commit:
+            # Strict branch validation is performed by science_artifact_status;
+            # keep the audit receipt explicit about the formal 72-row contract.
+            if len(branch_rows) != args.expected_branch_count:
+                errors.append(f"BRANCH_FAILURE:{key}")
+        elif any(row.get("status") not in ("PASS", "DONE") for row in branch_rows):
             errors.append(f"BRANCH_FAILURE:{key}")
         if len({(row.get("canonical_parent_key"), row.get("probe_step"), row.get("k"), row.get("arm")) for row in branch_rows}) != len(branch_rows):
             errors.append(f"DUPLICATE_BRANCH_IDENTITIES:{key}")
@@ -93,6 +142,14 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             "parent_result_sha256": result.get("artifact_sha256"),
             "branch_count": len(branch_rows),
         })
+    discovered_keys: set[str] = set()
+    for result_path in root.rglob("PARENT_RESULT.json"):
+        value = read_json(result_path, {})
+        if isinstance(value, Mapping) and value.get("canonical_parent_key"):
+            discovered_keys.add(str(value["canonical_parent_key"]))
+    orphan_keys = sorted(discovered_keys - set(keys))
+    if orphan_keys:
+        errors.append("ORPHAN_PARENT_ARTIFACT:" + ",".join(orphan_keys))
     accepted_count = sum(item["artifact_audit_verdict"] == "PASS" for item in accepted)
     status = "PASS" if not errors and len(accepted) == args.expected_parent_count and accepted_count == args.expected_parent_count else "FAIL"
     return {
@@ -131,6 +188,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--expected-branch-count", type=int, default=72)
     parser.add_argument("--expected-source-commit", required=True)
     parser.add_argument("--expected-source-tree", required=True)
+    parser.add_argument("--science-source-commit", default="")
+    parser.add_argument("--science-source-tree", default="")
+    parser.add_argument("--science-provenance", type=Path)
     return parser
 
 

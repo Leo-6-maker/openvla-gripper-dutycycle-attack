@@ -62,10 +62,13 @@ def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, mon
         "audit_status": "PASS", "remaining_policy_steps": 1,
     }]})
 
-    def fake_run_once(template: str, *, candidate_path: Path, output_dir: Path, replicate: str, source_commit: str, source_tree: str):
+    def fake_run_once(template: str, *, candidate_path: Path, output_dir: Path, replicate: str, source_commit: str, source_tree: str, gpu: int = 0):
         result = {
             "status": "PASS", "exit_code": 0, "clean_success": True, "snapshot_restore_valid": True,
-            "runtime_valid": True, "metrics_finite": True, "source_commit": source_commit,
+            "runtime_valid": True, "task_identity_valid": True, "metrics_finite": True,
+            "artifact_validation_pass": True, "old_artifacts_reused": False,
+            "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
+            "source_commit": source_commit,
             "source_tree": source_tree, "remaining_horizon_complete": True,
             "terminal_outcome": "SUCCESS", "terminal_state_sha256": "state",
             "key_state_identity_sha256": "identity", "canonical_parent_key": "libero_goal/task_00/state_48",
@@ -77,7 +80,7 @@ def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, mon
     args = SimpleNamespace(
         candidate_manifest=manifest, output_dir=tmp_path / "qualification",
         runner_command="clean-only", source_commit="commit", source_tree="tree",
-        salt="test", initial_per_suite=1, batch_size=1, target_per_suite=1, suites="libero_goal",
+        salt="test", initial_per_suite=1, batch_size=1, target_per_suite=1, suites="libero_goal", gpus="0,1",
     )
     report, rows, extras = control_qualification.qualify(args)
     assert report["status"] == "PASS"
@@ -110,6 +113,15 @@ def test_gpu_preflight_excludes_gpu5_and_waits_when_capacity_is_short(monkeypatc
     monkeypatch.setattr("scripts.detector_v5.stage_v_dynamic_common.gpu_snapshot", lambda command: ([{"gpu_id": gpu, "memory_free_mib": 100000} for gpu in range(8)], None))
     result = gpu_preflight(required_count=8, excluded_gpus=[5], canary_peak_mib=1000)
     assert result["status"] == "PRELAUNCH_WAITING_FOR_8_GPUS"
+    assert 5 not in result["safe_gpus"]
+
+
+def test_gpu_preflight_selects_exactly_eight_when_more_are_safe(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("scripts.detector_v5.stage_v_dynamic_common.gpu_snapshot", lambda command: ([{"gpu_id": gpu, "memory_free_mib": 100000} for gpu in range(9)], None))
+    result = gpu_preflight(required_count=8, excluded_gpus=[5], canary_peak_mib=1000)
+    assert result["status"] == "PASS"
+    assert len(result["all_safe_gpus"]) == 8
+    assert result["safe_gpus"] == result["all_safe_gpus"]
     assert 5 not in result["safe_gpus"]
 
 
@@ -247,6 +259,44 @@ def test_science_artifact_validation_requires_complete_parent(tmp_path: Path) ->
     assert not science_artifact_status(output, "libero_goal/task_00/state_48")["valid"]
 
 
+def test_strict_science_artifact_requires_lineage_branches_and_parent_seal(tmp_path: Path) -> None:
+    output = tmp_path / "attempt"
+    parent = output / "libero_goal" / "task_00" / "state_48"
+    parent.mkdir(parents=True)
+    key = "libero_goal/task_00/state_48"
+    branches = []
+    for arm in ("OPEN_T3", "OPEN_T5", "OPEN_T10"):
+        for probe_step in range(24):
+            branches.append({
+                "canonical_parent_key": key, "probe_step": probe_step, "arm": arm,
+                "control_arm": "NOOP_T10_REPLAY", "prefix_replay_exact": True,
+                "comparison": {"control_status": "PASS", "open_status": "PASS", "label_status": "VALID"},
+            })
+    (parent / "COUNTERFACTUAL_BRANCHES.jsonl").write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in branches), encoding="utf-8",
+    )
+    write_json(parent / "PARENT_RESULT.json", {
+        "status": "PASS", "clean_success": True, "branch_count": 72, "canonical_parent_key": key,
+        "current_source_commit": "science-commit", "current_source_tree": "science-tree", "current_source_status": "",
+        "suite": "libero_goal", "task_idx": 0, "state_id": 48,
+    })
+    sums = parent / "SHA256SUMS"
+    sums.write_text(
+        f"{sha256_file(parent / 'COUNTERFACTUAL_BRANCHES.jsonl')}  COUNTERFACTUAL_BRANCHES.jsonl\n"
+        f"{sha256_file(parent / 'PARENT_RESULT.json')}  PARENT_RESULT.json\n",
+        encoding="utf-8",
+    )
+    (parent / "SHA256SUMS.sha256").write_text(f"{sha256_file(sums)}  SHA256SUMS\n", encoding="utf-8")
+    row = {"canonical_parent_key": key, "suite": "libero_goal", "task_index": 0, "state_index": 48}
+    assert science_artifact_status(
+        output, key, expected_source_commit="science-commit", expected_source_tree="science-tree", expected_row=row,
+    )["valid"]
+    sums.unlink()
+    assert not science_artifact_status(
+        output, key, expected_source_commit="science-commit", expected_source_tree="science-tree", expected_row=row,
+    )["valid"]
+
+
 def test_postmortem_is_read_only_and_falls_back_timeout_policy(tmp_path: Path) -> None:
     old = tmp_path / "old"
     old.mkdir()
@@ -257,6 +307,16 @@ def test_postmortem_is_read_only_and_falls_back_timeout_policy(tmp_path: Path) -
     policy = build_timeout_policy(report)
     assert policy["source"] == "fallback_due_to_insufficient_timestamps"
     assert (old / "ABORTED_INCOMPLETE.json").read_bytes() == before
+
+
+def test_timeout_policy_uses_separate_branch_and_parent_p95() -> None:
+    policy = build_timeout_policy({"runtime_seconds": {
+        "branch": {"p95": 2 * 3600}, "parent": {"p95": 5 * 3600},
+    }})
+    assert policy["source"] == "old_root_branch_and_parent_runtime_p95"
+    assert policy["branch_soft_seconds"] == 4 * 3600
+    assert policy["parent_soft_seconds"] == 10 * 3600
+    assert policy["parent_hard_seconds"] == 16 * 3600
 
 
 def test_stage_v2_primary_unit_is_open_t10() -> None:

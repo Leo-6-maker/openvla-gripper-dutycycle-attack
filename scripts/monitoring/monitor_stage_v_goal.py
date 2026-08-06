@@ -1,8 +1,8 @@
 """Local fail-closed Goal Gatekeeper for the Stage V formal map.
 
 The gatekeeper is deliberately boring: it observes one existing Stage V root,
-never starts a second dispatcher, and only launches a pre-registered read-only
-Stage V2 command after an independent closure audit and a root seal pass.
+never starts a second dispatcher, and only launches pre-registered read-only
+Stage V2 then Stage O commands after their fail-closed gates pass.
 """
 from __future__ import annotations
 
@@ -59,6 +59,8 @@ from audit_stage_v_live_parents import (  # noqa: E402
 SCHEMA = "STAGE_V_GOAL_GATEKEEPER_V1"
 V2_COMMAND_SCHEMA = "STAGE_V2_COMMAND_V2"
 V2_COMMAND_PLAN_SCHEMA = "STAGE_V2_COMMAND_PLAN_V1"
+O_COMMAND_SCHEMA = "STAGE_O_COMMAND_V1"
+O_COMMAND_PLAN_SCHEMA = "STAGE_O_COMMAND_PLAN_V1"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 TERMINAL_EVENT_STATES = {
     "STAGE_V_HARD_STOP",
@@ -66,6 +68,9 @@ TERMINAL_EVENT_STATES = {
     "STAGE_V2_STARTED",
     "STAGE_V2_PASS",
     "STAGE_V2_FAIL",
+    "STAGE_O_STARTED",
+    "STAGE_O_PASS",
+    "STAGE_O_FAIL",
 }
 FORBIDDEN_V2 = re.compile(
     r"eval160|protected[_-]?eval|\bvis\b|\bpgd\b|attack[_-]?(?:rollout|matrix)|run[_-]?attack|final[_-]?detector|\bstudent\b|threshold|guard",
@@ -315,6 +320,8 @@ class Gatekeeper:
         self.expected_heartbeat_seconds, self.heartbeat_source = self._heartbeat_interval()
         self.stage_v2_process: subprocess.Popen[Any] | None = None
         self.stage_v2_root: Path | None = None
+        self.stage_o_process: subprocess.Popen[Any] | None = None
+        self.stage_o_root: Path | None = None
         self.lock = ExclusiveMonitorLock(
             Path(args.lock_path).resolve(),
             {
@@ -361,6 +368,10 @@ class Gatekeeper:
             "protected_pid_signal_sent": False,
             "ssh_is_hard_stop": False,
             "control_plane_mode": "LOCAL_AUTONOMOUS",
+            "stage_v2_command_file": str(getattr(self.args, "stage_v2_command_file", self.monitor_root / "STAGE_V2_COMMAND.json")),
+            "stage_o_command_file": str(getattr(self.args, "stage_o_command_file", self.monitor_root / "STAGE_O_COMMAND.json")),
+            "stage_v2_root": str(self.stage_v2_root) if self.stage_v2_root else None,
+            "stage_o_root": str(self.stage_o_root) if self.stage_o_root else None,
             "updated_utc": utc_now(),
         }
         payload.update(extra)
@@ -909,8 +920,10 @@ class Gatekeeper:
                 return "CONTINUE"
             complete = parse_json(self.monitor_root / "STAGE_V2_COMPLETE.json")
             if isinstance(complete, Mapping):
+                if complete.get("output_root"):
+                    self.stage_v2_root = Path(str(complete["output_root"]))
                 self._write_state(str(complete.get("status", "STAGE_V2_FAIL")), stage_v2_root=complete.get("output_root"))
-                return "STOP"
+                return "CONTINUE" if complete.get("status") == "STAGE_V2_PASS" else "STOP"
             self._write_state("STAGE_V2_FAIL", stage_v2_launch_error="previous_launch_not_completed")
             self._emit("STAGE_V2_FAIL", reason="previous_launch_not_completed")
             return "STOP"
@@ -958,7 +971,7 @@ class Gatekeeper:
             self._write_state("STAGE_V2_FAIL", stage_v2_launch_error="fresh_output_root_already_exists")
             self._emit("STAGE_V2_FAIL", reason="fresh_output_root_already_exists")
             return "STOP"
-        output_root.mkdir(parents=True)
+        output_root.parent.mkdir(parents=True, exist_ok=True)
         replacements = {
             "{stage_v_root}": str(self.stage_v_root),
             "{output_root}": str(output_root),
@@ -1050,7 +1063,7 @@ class Gatekeeper:
             pid = _read_int(marker.get("pid"))
             if pid and pid_alive(pid):
                 return "CONTINUE"
-            code = None
+            code = -1
         if code is None:
             return "CONTINUE"
         output_root = Path(str(marker.get("output_root")))
@@ -1075,7 +1088,238 @@ class Gatekeeper:
         atomic_write_json(self.monitor_root / "STAGE_V2_COMPLETE.json", complete)
         self._write_state(complete["status"], stage_v2_root=str(output_root), stage_v2_reason=reason)
         self._emit(complete["status"], reason=reason)
+        return "CONTINUE" if verdict == "PASS" else "STOP"
+
+    def _materialize_o_command(self) -> str | None:
+        command_path = Path(getattr(self.args, "stage_o_command_file", self.monitor_root / "STAGE_O_COMMAND.json")).resolve()
+        if command_path.is_file():
+            return None
+        plan = parse_json(self.monitor_root / "STAGE_O_COMMAND_PLAN.json")
+        if not isinstance(plan, Mapping) or plan.get("schema") != O_COMMAND_PLAN_SCHEMA:
+            return "STAGE_O_COMMAND_NOT_REGISTERED"
+        if plan.get("stage") != "O_OBSERVABILITY" or plan.get("read_only") is not True:
+            return "STAGE_O_COMMAND_NOT_READ_ONLY_OBSERVABILITY"
+        if plan.get("stage_v_root") != str(self.stage_v_root):
+            return "STAGE_O_COMMAND_ROOT_MISMATCH"
+        if plan.get("stage_v_source_commit") != self.args.expected_source_commit or plan.get("stage_v_source_tree") != self.args.expected_source_tree:
+            return "STAGE_O_COMMAND_SOURCE_MISMATCH"
+        v2_complete = parse_json(self.monitor_root / "STAGE_V2_COMPLETE.json")
+        if not isinstance(v2_complete, Mapping) or v2_complete.get("status") != "STAGE_V2_PASS":
+            return "STAGE_V2_PASS_NOT_READY"
+        v2_root = Path(str(v2_complete.get("output_root", ""))).resolve()
+        if not v2_root.is_dir():
+            return "STAGE_V2_OUTPUT_ROOT_MISSING"
+        start = parse_json(self.stage_v_root / "SUPERVISOR_START.json")
+        parent_manifest = Path(str(start.get("parent_manifest", ""))).resolve() if isinstance(start, Mapping) else None
+        if parent_manifest is None or not parent_manifest.is_file() or plan.get("parent_manifest") != str(parent_manifest):
+            return "STAGE_O_PARENT_MANIFEST_MISMATCH"
+        if plan.get("parent_manifest_sha256") != sha256_file(parent_manifest):
+            return "STAGE_O_PARENT_MANIFEST_SHA_MISMATCH"
+        if not self._hash_matches(Path(str(plan.get("stage_o_runner_path", ""))), plan.get("stage_o_runner_sha256")):
+            return "STAGE_O_RUNNER_SHA_MISMATCH"
+        command_template = plan.get("command_template")
+        if not isinstance(command_template, list) or not command_template or not all(isinstance(item, str) for item in command_template):
+            return "STAGE_O_COMMAND_ARGV_INVALID"
+        if FORBIDDEN_V2.search(" ".join(command_template)):
+            return "STAGE_O_COMMAND_FORBIDDEN_BOUNDARY"
+        final = dict(plan)
+        final.update({
+            "schema": O_COMMAND_SCHEMA,
+            "stage_v2_complete_sha256": sha256_file(self.monitor_root / "STAGE_V2_COMPLETE.json"),
+            "stage_v2_root": str(v2_root),
+            "command": [self._replace(item, {"{stage_v2_root}": str(v2_root), "{source_commit}": self.args.expected_source_commit, "{source_tree}": self.args.expected_source_tree}) for item in command_template],
+            "registered_utc": utc_now(),
+        })
+        final.pop("command_template", None)
+        atomic_write_json(command_path, final)
+        return None
+
+    def _load_o_spec(self) -> tuple[dict[str, Any] | None, str | None]:
+        path = Path(getattr(self.args, "stage_o_command_file", self.monitor_root / "STAGE_O_COMMAND.json")).resolve()
+        value = parse_json(path)
+        if not isinstance(value, Mapping) or value.get("schema") != O_COMMAND_SCHEMA:
+            return None, "STAGE_O_COMMAND_SCHEMA_INVALID"
+        if value.get("stage") != "O_OBSERVABILITY" or value.get("read_only") is not True:
+            return None, "STAGE_O_COMMAND_NOT_READ_ONLY_OBSERVABILITY"
+        if value.get("stage_v_root") != str(self.stage_v_root):
+            return None, "STAGE_O_COMMAND_ROOT_MISMATCH"
+        if value.get("stage_v_source_commit") != self.args.expected_source_commit or value.get("stage_v_source_tree") != self.args.expected_source_tree:
+            return None, "STAGE_O_COMMAND_SOURCE_MISMATCH"
+        complete_path = self.monitor_root / "STAGE_V2_COMPLETE.json"
+        if not self._hash_matches(complete_path, value.get("stage_v2_complete_sha256")):
+            return None, "STAGE_O_COMMAND_V2_BINDING_MISMATCH"
+        parent_manifest = Path(str(value.get("parent_manifest", "")))
+        if not self._hash_matches(parent_manifest, value.get("parent_manifest_sha256")):
+            return None, "STAGE_O_COMMAND_PARENT_MANIFEST_SHA_MISMATCH"
+        if not self._hash_matches(Path(str(value.get("stage_o_runner_path", ""))), value.get("stage_o_runner_sha256")):
+            return None, "STAGE_O_COMMAND_RUNNER_SHA_MISMATCH"
+        template = value.get("output_root_template")
+        if not isinstance(template, str) or "{commit8}" not in template or "{utc}" not in template:
+            return None, "STAGE_O_COMMAND_OUTPUT_TEMPLATE_INVALID"
+        lock_path = value.get("lock_path")
+        if not isinstance(lock_path, str) or not lock_path.endswith(".stage_o_observability.lock"):
+            return None, "STAGE_O_COMMAND_LOCK_PATH_INVALID"
+        env = value.get("env")
+        if not isinstance(env, Mapping) or any(env.get(key) != "1" for key in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS")):
+            return None, "STAGE_O_COMMAND_THREAD_ENV_INVALID"
+        try:
+            o_gpus = parse_csv_ints(str(value.get("gpus", "")))
+        except (TypeError, ValueError):
+            return None, "STAGE_O_COMMAND_GPU_LIST_INVALID"
+        if not o_gpus or any(gpu in self.reserved_gpus for gpu in o_gpus):
+            return None, "STAGE_O_COMMAND_GPU5_FORBIDDEN"
+        command = value.get("command")
+        if not isinstance(command, list) or not command or not all(isinstance(item, str) for item in command):
+            return None, "STAGE_O_COMMAND_MUST_BE_ARGV_LIST"
+        if FORBIDDEN_V2.search(" ".join(command)) or not _finite(value):
+            return None, "STAGE_O_COMMAND_FORBIDDEN_OR_NONFINITE"
+        return dict(value), None
+
+    def _maybe_start_stage_o(self, resource: Mapping[str, Any]) -> str:
+        marker_path = self.monitor_root / "STAGE_O_LAUNCH.json"
+        marker = parse_json(marker_path)
+        if isinstance(marker, Mapping):
+            pid = _read_int(marker.get("pid"))
+            if marker.get("status") == "RUNNING" and pid and pid_alive(pid):
+                self.stage_o_root = Path(str(marker.get("output_root")))
+                self._write_state("STAGE_O_RUNNING", stage_o_pid=pid, stage_o_root=str(self.stage_o_root))
+                return "CONTINUE"
+            complete = parse_json(self.monitor_root / "STAGE_O_COMPLETE.json")
+            if isinstance(complete, Mapping):
+                self.stage_o_root = Path(str(complete.get("output_root")))
+                self._write_state(str(complete.get("status", "STAGE_O_FAIL")), stage_o_root=str(self.stage_o_root))
+                return "STOP"
+            self._write_state("STAGE_O_FAIL", stage_o_launch_error="previous_launch_not_completed")
+            return "STOP"
+        materialize_error = self._materialize_o_command()
+        if materialize_error:
+            self._write_state("STAGE_O_WAITING_FOR_REGISTERED_COMMAND", next_transition=materialize_error)
+            self._emit("STAGE_O_NOT_REGISTERED", reason=materialize_error)
+            return "CONTINUE"
+        spec, error = self._load_o_spec()
+        if error:
+            self._write_state("STAGE_O_WAITING_FOR_REGISTERED_COMMAND", next_transition=error)
+            self._emit("STAGE_O_NOT_REGISTERED", reason=error)
+            return "CONTINUE"
+        assert spec is not None
+        if resource.get("hard_stop_errors"):
+            self._write_state("STAGE_O_WAITING_FOR_SAFE_RESOURCES", resource_errors=resource.get("hard_stop_errors"))
+            return "CONTINUE"
+        output_root = Path(self._replace(spec["output_root_template"], {
+            "{commit8}": self.args.expected_source_commit[:8],
+            "{utc}": time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()),
+        })).resolve()
+        try:
+            output_root.relative_to(self.goal_root.resolve())
+        except ValueError:
+            self._write_state("STAGE_O_FAIL", stage_o_launch_error="output_root_outside_goal_root")
+            return "STOP"
+        if output_root.exists():
+            self._write_state("STAGE_O_FAIL", stage_o_launch_error="fresh_output_root_already_exists")
+            return "STOP"
+        output_root.parent.mkdir(parents=True, exist_ok=True)
+        replacements = {"{output_root}": str(output_root), "{stage_v2_root}": str(spec.get("stage_v2_root", "")), "{source_commit}": self.args.expected_source_commit, "{source_tree}": self.args.expected_source_tree}
+        command = [self._replace(item, replacements) for item in spec["command"]]
+        cwd = Path(self._replace(str(spec.get("cwd", self.goal_root)), replacements)).resolve()
+        if not cwd.is_dir() or FORBIDDEN_V2.search(" ".join(command)):
+            self._write_state("STAGE_O_FAIL", stage_o_launch_error="cwd_or_command_invalid")
+            return "STOP"
+        environment = os.environ.copy()
+        for key, value in (spec.get("env") or {}).items():
+            if not isinstance(key, str) or not isinstance(value, str):
+                self._write_state("STAGE_O_FAIL", stage_o_launch_error="stage_o_env_invalid")
+                return "STOP"
+            environment[key] = self._replace(value, replacements)
+        stdout_path = self.monitor_root / "STAGE_O_STDOUT.log"
+        stderr_path = self.monitor_root / "STAGE_O_STDERR.log"
+        atomic_write_json(marker_path, {"schema": "STAGE_O_LAUNCH_V1", "status": "LAUNCHING", "command": command, "output_root": str(output_root), "started_utc": utc_now()})
+        try:
+            stdout = stdout_path.open("a", encoding="utf-8")
+            stderr = stderr_path.open("a", encoding="utf-8")
+            process = subprocess.Popen(command, cwd=str(cwd), env=environment, stdin=subprocess.DEVNULL, stdout=stdout, stderr=stderr, start_new_session=(os.name == "posix"))
+        except (OSError, ValueError) as exc:
+            atomic_write_json(self.monitor_root / "STAGE_O_LAUNCH_FAIL.json", {"schema": "STAGE_O_LAUNCH_FAIL_V1", "error": str(exc), "utc": utc_now()})
+            self._write_state("STAGE_O_FAIL", stage_o_launch_error=str(exc))
+            return "STOP"
+        atomic_write_json(marker_path, {"schema": "STAGE_O_LAUNCH_V1", "status": "RUNNING", "pid": process.pid, "command": command, "output_root": str(output_root), "started_utc": utc_now()})
+        self.stage_o_process = process
+        self.stage_o_root = output_root
+        self._write_state("STAGE_O_RUNNING", stage_o_pid=process.pid, stage_o_root=str(output_root))
+        self._emit("STAGE_O_STARTED", pid=process.pid, output_root=str(output_root))
+        return "CONTINUE"
+
+    def _terminate_stage_o(self) -> None:
+        pid = self.stage_o_process.pid if self.stage_o_process is not None else _read_int((parse_json(self.monitor_root / "STAGE_O_LAUNCH.json") or {}).get("pid"))
+        if not pid or pid == self.protected_pid or not pid_alive(pid):
+            return
+        if str(self.stage_v_root) not in process_command(pid):
+            return
+        try:
+            if os.name == "posix":
+                os.killpg(pid, signal.SIGTERM)
+            else:
+                os.kill(pid, signal.SIGTERM)
+        except (OSError, ProcessLookupError):
+            pass
+
+    def _check_stage_o(self) -> str:
+        marker = parse_json(self.monitor_root / "STAGE_O_LAUNCH.json")
+        if not isinstance(marker, Mapping) or marker.get("status") != "RUNNING":
+            return "CONTINUE"
+        resource = self._resource_snapshot()
+        if resource.get("hard_stop_errors"):
+            self._terminate_stage_o()
+            atomic_write_json(self.monitor_root / "STAGE_O_COMPLETE.json", {
+                "schema": "STAGE_O_COMPLETE_V1", "status": "STAGE_O_FAIL", "exit_code": 1,
+                "output_root": marker.get("output_root"), "reason": ";".join(resource["hard_stop_errors"]),
+                "resource_errors": resource["hard_stop_errors"], "eval160_reads": 0,
+                "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "completed_utc": utc_now(),
+            })
+            self._write_state("STAGE_O_FAIL", stage_o_reason="resource_hard_stop", resource_errors=resource["hard_stop_errors"])
+            return "STOP"
+        if self.stage_o_process is not None:
+            code = self.stage_o_process.poll()
+        else:
+            pid = _read_int(marker.get("pid"))
+            if pid and pid_alive(pid):
+                return "CONTINUE"
+            code = -1
+        if code is None:
+            return "CONTINUE"
+        output_root = Path(str(marker.get("output_root")))
+        report = parse_json(output_root / "STAGE_O_REPORT.json")
+        audit = parse_json(output_root / "STAGE_O_AUDIT.json")
+        verdict, reason = self._audit_o_report(report, audit, code, output_root)
+        complete = {
+            "schema": "STAGE_O_COMPLETE_V1", "status": "STAGE_O_PASS" if verdict == "PASS" else "STAGE_O_FAIL",
+            "exit_code": code, "output_root": str(output_root), "report": report, "audit": audit,
+            "reason": reason, "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
+            "completed_utc": utc_now(),
+        }
+        atomic_write_json(self.monitor_root / "STAGE_O_COMPLETE.json", complete)
+        self._write_state(complete["status"], stage_o_root=str(output_root), stage_o_reason=reason)
+        self._emit(complete["status"], reason=reason)
         return "STOP"
+
+    @staticmethod
+    def _audit_o_report(report: Any, audit: Any, exit_code: int, output_root: Path) -> tuple[str, str]:
+        if exit_code != 0:
+            return "FAIL", f"stage_o_exit_code:{exit_code}"
+        if not isinstance(report, Mapping) or report.get("status") != "PASS":
+            return "FAIL", "stage_o_report_not_pass"
+        if not isinstance(audit, Mapping) or audit.get("verdict") != "PASS":
+            return "FAIL", "stage_o_independent_audit_not_pass"
+        manifest = parse_json(output_root / "STAGE_O_MANIFEST.json")
+        if not isinstance(manifest, Mapping) or manifest.get("jobs") != 480:
+            return "FAIL", "stage_o_manifest_job_count_fail"
+        if report.get("completed_jobs") != 480 or report.get("failed_jobs") != 0 or audit.get("missing_job_count") != 0 or audit.get("duplicate_job_ids"):
+            return "FAIL", "stage_o_job_closure_fail"
+        for value in (report, audit, manifest):
+            if any(_read_int(value.get(key)) not in (None, 0) for key in ("eval160_reads", "protected_eval_reads", "attack_rollouts", "vis_pgd_attack_rollouts")):
+                return "FAIL", "stage_o_boundary_nonzero"
+        if not _finite(report) or not _finite(audit):
+            return "FAIL", "stage_o_non_finite"
+        return "PASS", "stage_o_closure_pass"
 
     @staticmethod
     def _audit_v2_report(report: Any, exit_code: int, output_root: Path) -> tuple[str, str]:
@@ -1117,9 +1361,16 @@ class Gatekeeper:
         return "PASS", "stage_v2_teacher_proposal_gate_pass"
 
     def tick(self) -> str:
+        if self.last_status in {"STAGE_O_RUNNING"}:
+            return self._check_stage_o()
+        if self.stage_o_root and self.last_status in {"STAGE_O_PASS", "STAGE_O_FAIL"}:
+            return "STOP"
         if self.last_status in {"STAGE_V2_RUNNING"}:
             return self._check_stage_v2()
         if self.stage_v2_root and self.last_status in {"STAGE_V2_PASS", "STAGE_V2_FAIL"}:
+            if self.last_status == "STAGE_V2_PASS":
+                resource = self._resource_snapshot()
+                return self._maybe_start_stage_o(resource)
             return "STOP"
         resource = self._resource_snapshot()
         progress = self._write_parent_progress()
@@ -1181,6 +1432,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--kill-grace-seconds", type=float, default=10.0)
     parser.add_argument("--lock-path", type=Path)
     parser.add_argument("--stage-v2-command-file", type=Path)
+    parser.add_argument("--stage-o-command-file", type=Path)
     parser.add_argument("--once", action="store_true", help="run one observation cycle")
     return parser
 
@@ -1191,6 +1443,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("poll-seconds and expected-parent-count must be positive")
     args.lock_path = args.lock_path or args.goal_root.resolve() / ".stage_v_goal_gatekeeper.lock"
     args.stage_v2_command_file = args.stage_v2_command_file or args.goal_root.resolve() / "MONITOR" / "STAGE_V2_COMMAND.json"
+    args.stage_o_command_file = args.stage_o_command_file or args.goal_root.resolve() / "MONITOR" / "STAGE_O_COMMAND.json"
     monitor = Gatekeeper(args)
     if args.once:
         monitor.lock.acquire(monitor.monitor_root)

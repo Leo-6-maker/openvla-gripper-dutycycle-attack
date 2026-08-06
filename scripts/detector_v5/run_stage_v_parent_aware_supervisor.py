@@ -17,7 +17,7 @@ from typing import Any, Mapping
 try:
     from .run_stage_v_local_supervisor import ExclusiveLock
     from .stage_v_dynamic_common import (
-        atomic_write_json, gpu_snapshot, pid_alive, project_queue, read_json,
+        atomic_write_json, gpu_preflight, gpu_snapshot, pid_alive, project_queue, read_json,
         sha256_file, terminate_process_group, utc_now,
     )
     from .stage_v_science_core_provenance import verify as verify_science_provenance
@@ -25,7 +25,7 @@ except ImportError:  # direct server execution
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     from scripts.detector_v5.run_stage_v_local_supervisor import ExclusiveLock
     from scripts.detector_v5.stage_v_dynamic_common import (
-        atomic_write_json, gpu_snapshot, pid_alive, project_queue, read_json,
+        atomic_write_json, gpu_preflight, gpu_snapshot, pid_alive, project_queue, read_json,
         sha256_file, terminate_process_group, utc_now,
     )
     from scripts.detector_v5.stage_v_science_core_provenance import verify as verify_science_provenance
@@ -113,14 +113,28 @@ class DynamicSupervisor:
         self.timeout_policy: dict[str, Any] = {}
 
     def _preflight(self) -> dict[str, Any]:
+        if not self.args.skip_resource_checks:
+            return gpu_preflight(
+                required_count=8,
+                excluded_gpus=self.args.excluded_gpus,
+                canary_peak_mib=self.args.canary_peak_mib,
+                protected_pids=self.args.protected_pids,
+                gpu_query_command=self.args.gpu_query_command,
+            )
         value = read_json(self.args.preflight_file, {})
         if not isinstance(value, Mapping):
             return {"status": "PRELAUNCH_WAITING_FOR_8_GPUS", "reason": "PREFLIGHT_NOT_OBJECT"}
         value = dict(value)
-        approved = sorted(int(gpu) for gpu in value.get("safe_gpus", []))
-        if value.get("status") != "PASS" or len(approved) != 8 or 5 in approved:
+        all_safe = sorted({int(gpu) for gpu in value.get("safe_gpus", value.get("all_safe_gpus", [])) if int(gpu) not in self.args.excluded_gpus})
+        approved = all_safe[:8]
+        if value.get("status") != "PASS" or len(all_safe) < 8 or 5 in approved:
             value["status"] = "PRELAUNCH_WAITING_FOR_8_GPUS"
             value.setdefault("reason", "LESS_THAN_8_APPROVED_GPUS_OR_GPU5_EXCLUDED")
+        else:
+            value["all_safe_gpus"] = all_safe
+            value["safe_gpus"] = approved
+            value["safe_gpu_count"] = len(all_safe)
+            value["selected_gpu_count"] = len(approved)
         return value
 
     def _source(self) -> dict[str, str]:
@@ -244,7 +258,11 @@ class DynamicSupervisor:
         started = float(row.get("parent_started_epoch") or 0)
         if not started or not row.get("current_parent"):
             return
-        progress = max(float(row.get("last_progress_epoch") or started), float(row.get("last_artifact_epoch") or started))
+        progress = max(
+            float(row.get("last_progress_epoch") or started),
+            float(row.get("last_artifact_epoch") or started),
+            float(row.get("last_cpu_progress_epoch") or started),
+        )
         hard = float(self.timeout_policy.get("parent_hard_seconds", 10 * 3600))
         gpu_util = row.get("gpu_utilization_percent")
         if time.time() - started > hard and time.time() - progress > hard and not (gpu_util and float(gpu_util) > 0):
@@ -326,9 +344,13 @@ class DynamicSupervisor:
         if self.dispatcher is not None:
             terminate_process_group(self.dispatcher, grace_seconds=grace_seconds)
         current_pgid = os.getpgid(0) if hasattr(os, "getpgid") else os.getpid()
+        terminated_pgids: set[int] = set()
         for row in self._worker_statuses():
-            pgid = int(row.get("worker_pgid") or 0)
-            if pgid > 0 and pgid != current_pgid and os.name == "posix":
+            for raw_pgid in (row.get("worker_pgid"), row.get("child_pgid")):
+                pgid = int(raw_pgid or 0)
+                if pgid <= 0 or pgid == current_pgid or pgid in terminated_pgids or os.name != "posix":
+                    continue
+                terminated_pgids.add(pgid)
                 try:
                     os.killpg(pgid, signal.SIGTERM)
                 except ProcessLookupError:
@@ -357,6 +379,12 @@ class DynamicSupervisor:
             "--run-id", self.args.run_id, "--expected-parent-count", str(self.args.expected_parent_count),
             "--expected-source-commit", self.args.expected_source_commit, "--expected-source-tree", self.args.expected_source_tree,
         ]
+        if self.args.science_source_commit:
+            command += ["--science-source-commit", self.args.science_source_commit]
+        if self.args.science_source_tree:
+            command += ["--science-source-tree", self.args.science_source_tree]
+        if self.args.science_provenance:
+            command += ["--science-provenance", str(self.args.science_provenance)]
         result = subprocess.run(command, cwd=str(self.args.repo_root), capture_output=True, text=True, check=False, timeout=self.args.audit_timeout)
         (self.root / "AUDITOR_STDOUT.txt").write_text(result.stdout + result.stderr, encoding="utf-8")
         return result.returncode
@@ -430,7 +458,11 @@ class DynamicSupervisor:
                        "--excluded-gpus", ",".join(map(str, self.args.excluded_gpus)), "--protected-pids", ",".join(map(str, self.args.protected_pids)),
                        "--canary-peak-mib", str(self.args.canary_peak_mib), "--preflight-file", str(self.args.preflight_file),
                        "--preflight-output", str(self.args.preflight_file), "--worker-heartbeat-seconds", str(self.args.worker_heartbeat_seconds),
-                       "--max-attempts", str(self.args.max_attempts), "--probe-limit", str(self.args.probe_limit)]
+                       "--max-attempts", str(self.args.max_attempts), "--probe-limit", str(self.args.probe_limit),
+                       "--science-source-commit", self.args.science_source_commit,
+                       "--science-source-tree", self.args.science_source_tree]
+            if self.args.science_provenance:
+                command += ["--science-provenance", str(self.args.science_provenance)]
             for value in (self.args.science_runner, self.args.science_repo_root, self.args.science_parent_manifest):
                 if value:
                     command += ["--science-runner" if value == self.args.science_runner else "--science-repo-root" if value == self.args.science_repo_root else "--science-parent-manifest", str(value)]

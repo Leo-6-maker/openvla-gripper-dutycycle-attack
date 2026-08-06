@@ -44,12 +44,19 @@ class Dispatcher:
     def _preflight(self) -> dict[str, Any]:
         if self.args.preflight_file:
             value = json.loads(self.args.preflight_file.read_text(encoding="utf-8"))
+            safe = sorted({int(gpu) for gpu in value.get("safe_gpus", []) if int(gpu) not in self.args.excluded_gpus})
             if value.get("status") != "PASS":
                 return value
-            if len(value.get("safe_gpus", [])) < self.args.required_workers:
+            if len(safe) < self.args.required_workers:
                 value = dict(value)
                 value["status"] = "PRELAUNCH_WAITING_FOR_8_GPUS"
-                return value
+            else:
+                value = dict(value)
+                value["all_safe_gpus"] = safe
+                value["safe_gpus"] = safe[:self.args.required_workers]
+                value["safe_gpu_count"] = len(safe)
+                value["selected_gpu_count"] = len(value["safe_gpus"])
+            return value
             return value
         return gpu_preflight(
             required_count=self.args.required_workers,
@@ -99,6 +106,9 @@ class Dispatcher:
             "run_id": self.run_id,
             "source_commit": self.args.source_commit,
             "source_tree": self.args.source_tree,
+            "science_source_commit": self.args.science_source_commit,
+            "science_source_tree": self.args.science_source_tree,
+            "science_provenance": str(self.args.science_provenance) if self.args.science_provenance else None,
             "parent_manifest": str(self.args.parent_manifest),
             "parent_manifest_sha256": manifest_sha,
             "planned_parents": len(rows),
@@ -135,7 +145,11 @@ class Dispatcher:
             "--gpu-id", str(gpu_id), "--worker-id", f"stage-v-r2-gpu{gpu_id}",
             "--heartbeat-seconds", str(self.args.worker_heartbeat_seconds),
             "--max-attempts", str(self.args.max_attempts), "--probe-limit", str(self.args.probe_limit),
+            "--science-source-commit", self.args.science_source_commit,
+            "--science-source-tree", self.args.science_source_tree,
         ]
+        if self.args.science_provenance:
+            command += ["--science-provenance", str(self.args.science_provenance)]
         if self.args.science_runner:
             command += ["--science-runner", str(self.args.science_runner)]
         if self.args.science_repo_root:
@@ -221,6 +235,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--science-runner", type=Path)
     parser.add_argument("--science-repo-root", type=Path)
     parser.add_argument("--science-parent-manifest", type=Path)
+    parser.add_argument("--science-provenance", type=Path)
+    parser.add_argument("--science-source-commit", default="")
+    parser.add_argument("--science-source-tree", default="")
     parser.add_argument("--worker-command", default="")
     parser.add_argument("--probe-limit", type=int, default=24)
     parser.add_argument("--worker-heartbeat-seconds", type=float, default=30)

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _datetime
+import json
 import math
 from pathlib import Path
 import statistics
@@ -54,6 +55,21 @@ def _load_parent_results(root: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _load_branch_rows(root: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in root.rglob("COUNTERFACTUAL_BRANCHES.jsonl"):
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                value = json.loads(line)
+                if isinstance(value, Mapping):
+                    rows.append(dict(value))
+        except (OSError, ValueError):
+            continue
+    return rows
+
+
 def _text_value(path: Path) -> str | None:
     try:
         return path.read_text(encoding="utf-8").strip() or None
@@ -94,11 +110,13 @@ def build_postmortem(old_root: Path, *, launcher: Path | None = None,
     heartbeat = read_json(old_root / "LOCAL_HEARTBEAT.json", {})
     abort = read_json(old_root / "ABORTED_INCOMPLETE.json", {})
     results = _load_parent_results(old_root)
+    branches = _load_branch_rows(old_root)
     keys = {str(row["canonical_parent_key"]) for row in results if row.get("canonical_parent_key")}
     expected = _manifest_keys(old_root)
     missing = sorted(expected - keys) if expected else []
     runtimes = [(row, _runtime(row)) for row in results]
     values = [value for _, value in runtimes if value is not None]
+    branch_values = [value for row in branches if (value := _runtime(row)) is not None]
     clean = [value for row, value in runtimes if row.get("clean_success") is True and value is not None]
     failed = [value for row, value in runtimes if row.get("clean_success") is False and value is not None]
     latest_time, latest_path = _latest_artifact(old_root)
@@ -147,6 +165,8 @@ def build_postmortem(old_root: Path, *, launcher: Path | None = None,
         },
         "runtime_seconds": {
             "all": {"count": len(values), "p50": _percentile(values, .50), "p95": _percentile(values, .95), "max": max(values) if values else None},
+            "parent": {"count": len(values), "p50": _percentile(values, .50), "p95": _percentile(values, .95), "max": max(values) if values else None},
+            "branch": {"count": len(branch_values), "p50": _percentile(branch_values, .50), "p95": _percentile(branch_values, .95), "max": max(branch_values) if branch_values else None},
             "clean_success_true": {"count": len(clean), "p50": _percentile(clean, .50), "p95": _percentile(clean, .95), "max": max(clean) if clean else None},
             "clean_success_false": {"count": len(failed), "p50": _percentile(failed, .50), "p95": _percentile(failed, .95), "max": max(failed) if failed else None},
             "source": "parent timestamps when present; otherwise insufficient",
@@ -169,22 +189,21 @@ def build_postmortem(old_root: Path, *, launcher: Path | None = None,
 
 
 def build_timeout_policy(postmortem: Mapping[str, Any]) -> dict[str, Any]:
-    all_runtime = postmortem.get("runtime_seconds", {}).get("all", {})
-    branch_p95 = all_runtime.get("p95")
-    parent_p95 = all_runtime.get("p95")
-    insufficient = not branch_p95 or not parent_p95
-    if insufficient:
-        branch_hard = 4 * 3600
-        parent_hard = 10 * 3600
-        branch_soft = 90 * 60
-        parent_soft = 3 * 3600
-        source = "fallback_due_to_insufficient_timestamps"
+    runtimes = postmortem.get("runtime_seconds", {})
+    branch_p95 = runtimes.get("branch", {}).get("p95")
+    parent_p95 = runtimes.get("parent", runtimes.get("all", {})).get("p95")
+    branch_observed = bool(branch_p95)
+    parent_observed = bool(parent_p95)
+    branch_soft = max(2 * float(branch_p95), 90 * 60) if branch_observed else 90 * 60
+    branch_hard = max(4 * float(branch_p95), 4 * 3600) if branch_observed else 4 * 3600
+    parent_soft = max(2 * float(parent_p95), 3 * 3600) if parent_observed else 3 * 3600
+    parent_hard = max(4 * float(parent_p95), 8 * 3600) if parent_observed else 10 * 3600
+    if branch_observed and parent_observed:
+        source = "old_root_branch_and_parent_runtime_p95"
+    elif branch_observed or parent_observed:
+        source = "mixed_old_root_runtime_p95_and_fallback"
     else:
-        branch_soft = max(2 * float(branch_p95), 90 * 60)
-        branch_hard = max(4 * float(branch_p95), 4 * 3600)
-        parent_soft = max(2 * float(parent_p95), 3 * 3600)
-        parent_hard = max(4 * float(parent_p95), 8 * 3600)
-        source = "old_root_runtime_p95"
+        source = "fallback_due_to_insufficient_timestamps"
     return {
         "schema": "STAGE_V_RERUN_TIMEOUT_POLICY_V1",
         "source": source,

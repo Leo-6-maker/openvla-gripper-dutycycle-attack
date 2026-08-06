@@ -50,6 +50,19 @@ def main(argv: list[str] | None = None) -> int:
     result = subprocess.run(command, cwd=str(args.repo_root), check=False, capture_output=True, text=True)
     heartbeat = read_json(root / "LOCAL_HEARTBEAT.json", {})
     audit = read_json(root / "STAGE_V_COUNTERFACTUAL_AUDIT.json", {})
+    worker_statuses = []
+    for status_path in sorted(root.glob("worker_gpu*/WORKER_STATUS.json")):
+        status = read_json(status_path, {})
+        if isinstance(status, dict):
+            worker_statuses.append(status)
+    worker_reap_pass = bool(worker_statuses) and all(
+        status.get("state") == "STOPPED"
+        and not _pid_alive(int(status.get("worker_pid") or 0))
+        and not _pid_alive(int(status.get("child_pid") or 0))
+        for status in worker_statuses
+    )
+    external_pid_present_after = bool(args.external_pid and _pid_alive(args.external_pid))
+    gpu5_touched = any(int(status.get("gpu_id") or -1) == 5 for status in worker_statuses)
     report = {
         "schema": "DYNAMIC8_CONTROL_CANARY_REPORT_V2",
         "verdict": "PASS" if result.returncode == 0 and audit.get("verdict") == "PASS" and not (root / "ABORTED_INCOMPLETE.json").exists() else "FAIL",
@@ -59,7 +72,11 @@ def main(argv: list[str] | None = None) -> int:
         "ssh_failure_count": heartbeat.get("ssh_probe_failure_count", 0),
         "ssh_failures_did_not_abort": result.returncode == 0,
         "external_pid_present_before": before_pid_alive,
+        "external_pid_present_after": external_pid_present_after,
+        "external_process_untouched": not before_pid_alive or external_pid_present_after,
         "external_process_terminated": False,
+        "worker_reap_pass": worker_reap_pass,
+        "gpu5_touched": gpu5_touched,
         "old_artifacts_reused": False,
         "eval160_reads": 0,
         "protected_eval_reads": 0,
@@ -68,14 +85,16 @@ def main(argv: list[str] | None = None) -> int:
         "stderr_tail": result.stderr[-2000:],
         "generated_utc": utc_now(),
     }
-    report["verdict"] = "PASS" if report["verdict"] == "PASS" and report["heartbeat_at_least_five"] and report["ssh_failures_did_not_abort"] and not report["external_process_terminated"] else "FAIL"
+    report["verdict"] = "PASS" if report["verdict"] == "PASS" and report["heartbeat_at_least_five"] and report["ssh_failures_did_not_abort"] and report["worker_reap_pass"] and report["external_process_untouched"] and not report["gpu5_touched"] and not report["external_process_terminated"] else "FAIL"
     atomic_write_json(root / "DYNAMIC8_CONTROL_CANARY_REPORT.json", report)
     atomic_write_json(root / "DYNAMIC8_CONTROL_CANARY_AUDIT.json", {
         "schema": "DYNAMIC8_CONTROL_CANARY_AUDIT_V2", "verdict": report["verdict"],
         "queue_audit_verdict": audit.get("verdict"), "worker_reap_required": True,
         "active_worker_pids": heartbeat.get("active_worker_pids", []),
         "gpu_assignments": heartbeat.get("gpu_assignments", []),
-        "gpu5_touched": any(isinstance(item, dict) and item.get("gpu_id") == 5 for item in heartbeat.get("gpu_assignments", [])),
+        "worker_reap_pass": report["worker_reap_pass"],
+        "gpu5_touched": report["gpu5_touched"],
+        "external_process_untouched": report["external_process_untouched"],
         "audited_utc": utc_now(),
     })
     return 0 if report["verdict"] == "PASS" else 1
