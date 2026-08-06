@@ -214,6 +214,9 @@ def discover_workers(root: Path, dispatcher_pid: int | None) -> tuple[list[dict[
         if pid is None:
             errors.append(f"invalid_worker_pid_file:{path.name}")
             continue
+        exitcode = root / f"worker_gpu{match.group(1)}.exitcode"
+        if exitcode.is_file() and exitcode.read_text(encoding="utf-8", errors="replace").strip() == "0":
+            continue
         workers.append({"pid": pid, "gpu": int(match.group(1))})
     manifest_workers, manifest_errors = _manifest_workers(root)
     errors.extend(manifest_errors)
@@ -396,8 +399,10 @@ def read_counters(root: Path, planned: int) -> dict[str, Any]:
     }
     candidates = [
         root / "STAGE_V_SUMMARY.json",
+        root / "STAGE_V_COUNTERFACTUAL_AUDIT.json",
         root / "STAGE_V_AUDIT.json",
         root / "RUN_SUMMARY.json",
+        root / "DISPATCHER_COMPLETE.json",
         root / "CONTROL_CANARY_SUMMARY.json",
         root / "RUN_MANIFEST.json",
         root / "JOB_MANIFEST.json",
@@ -407,10 +412,10 @@ def read_counters(root: Path, planned: int) -> dict[str, Any]:
         if not isinstance(value, Mapping):
             continue
         result["completed_parents"] = _first_int(
-            value, ("completed_parents", "parents_completed", "completed")
+            value, ("completed_parents", "parents_completed", "completed", "parent_count", "parents")
         ) or result["completed_parents"]
         result["accepted_parent_results"] = _first_int(
-            value, ("accepted_parent_results", "accepted_parents", "accepted")
+            value, ("accepted_parent_results", "accepted_parents", "accepted", "parent_count", "parents")
         ) or result["accepted_parent_results"]
         result["failed_parents"] = _first_int(
             value, ("failed_parents", "parents_failed", "failed")
@@ -422,6 +427,11 @@ def read_counters(root: Path, planned: int) -> dict[str, Any]:
         )
         if "accepted_parent_artifacts" in value:
             result["accepted_parent_artifacts"] = value["accepted_parent_artifacts"]
+        elif value.get("verdict") == "PASS" and isinstance(value.get("parents"), list):
+            result["accepted_parent_artifacts"] = [
+                {"artifact_audit_verdict": "PASS", "parent": item.get("path") if isinstance(item, Mapping) else None}
+                for item in value["parents"]
+            ]
         break
     return result
 

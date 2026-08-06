@@ -241,6 +241,25 @@ def test_each_gpu_has_at_most_one_worker_and_gpu5_is_forbidden() -> None:
     assert "GPU5_FORBIDDEN" in errors
 
 
+def test_successful_worker_exitcode_removes_stale_pid_from_active_set(tmp_path: Path) -> None:
+    (tmp_path / "worker_gpu0.pid").write_text("99999999\n", encoding="utf-8")
+    (tmp_path / "worker_gpu0.exitcode").write_text("0\n", encoding="utf-8")
+    workers, errors = supervisor.discover_workers(tmp_path, None)
+    assert workers == []
+    assert errors == []
+
+
+def test_stage_v_audit_parent_count_becomes_accepted_artifact_audit(tmp_path: Path) -> None:
+    _write(
+        tmp_path / "STAGE_V_COUNTERFACTUAL_AUDIT.json",
+        {"verdict": "PASS", "parent_count": 2, "parents": [{"path": "p0"}, {"path": "p1"}]},
+    )
+    counters = supervisor.read_counters(tmp_path, 2)
+    assert counters["completed_parents"] == 2
+    assert counters["accepted_parent_results"] == 2
+    assert len(counters["accepted_parent_artifacts"]) == 2
+
+
 @pytest.mark.skipif(os.name != "posix", reason="process-group semantics are production Linux behavior")
 def test_abort_reaps_dispatcher_process_group() -> None:
     child_code = "import subprocess,time; subprocess.Popen(['sleep','30']); time.sleep(30)"
