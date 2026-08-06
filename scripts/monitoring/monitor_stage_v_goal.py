@@ -47,11 +47,19 @@ from audit_stage_v_closure import (  # noqa: E402
     audit_closure,
     parent_progress,
     sha256_file,
+    verify_root_seal,
     write_root_seal,
+)
+from audit_stage_v_live_parents import (  # noqa: E402
+    markdown as live_parent_markdown,
+    triage as live_parent_triage,
 )
 
 
 SCHEMA = "STAGE_V_GOAL_GATEKEEPER_V1"
+V2_COMMAND_SCHEMA = "STAGE_V2_COMMAND_V2"
+V2_COMMAND_PLAN_SCHEMA = "STAGE_V2_COMMAND_PLAN_V1"
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 TERMINAL_EVENT_STATES = {
     "STAGE_V_HARD_STOP",
     "STAGE_V_FORMAL_MAP_CLOSED",
@@ -595,6 +603,23 @@ class Gatekeeper:
         atomic_write_json(self.monitor_root / "STAGE_V_PARENT_PROGRESS.json", progress)
         return progress
 
+    def _write_live_parent_triage(self) -> None:
+        start = parse_json(self.stage_v_root / "SUPERVISOR_START.json")
+        if not isinstance(start, Mapping) or not start.get("parent_manifest"):
+            return
+        try:
+            report = live_parent_triage(
+                self.stage_v_root,
+                Path(str(start["parent_manifest"])),
+                expected_source_commit=self.args.expected_source_commit,
+                expected_source_tree=self.args.expected_source_tree,
+                only_nonpass=True,
+            )
+            atomic_write_json(self.monitor_root / "STAGE_V_LIVE_PARENT_TRIAGE.json", report)
+            atomic_write_text(self.monitor_root / "STAGE_V_LIVE_PARENT_TRIAGE.md", live_parent_markdown(report))
+        except (OSError, ValueError, TypeError) as exc:
+            atomic_write_json(self.monitor_root / "STAGE_V_LIVE_PARENT_TRIAGE_ERROR.json", {"schema": "STAGE_V_LIVE_PARENT_TRIAGE_ERROR_V1", "error": str(exc), "utc": utc_now()})
+
     def _terminate_project(self, resource: Mapping[str, Any]) -> dict[str, Any]:
         killed: list[int] = []
         supervisor = _read_int(resource.get("supervisor_pid"))
@@ -751,17 +776,119 @@ class Gatekeeper:
         self._emit("STAGE_V_FORMAL_MAP_CLOSED", accepted_parents=final_report["accepted_parent_count"])
         return self._maybe_start_stage_v2(resource)
 
+    @staticmethod
+    def _hash_matches(path: Path, expected: Any) -> bool:
+        return isinstance(expected, str) and bool(SHA256_RE.fullmatch(expected.lower())) and path.is_file() and sha256_file(path) == expected.lower()
+
+    def _materialize_v2_command(self) -> str | None:
+        """Bind the future command to the actual post-closure receipt.
+
+        ponytail: keep the plan immutable until closure; the only dynamic value
+        is the receipt hash that cannot exist before the formal map closes.
+        """
+        command_path = Path(self.args.stage_v2_command_file).resolve()
+        if command_path.is_file():
+            return None
+        plan_path = self.monitor_root / "STAGE_V2_COMMAND_PLAN.json"
+        plan = parse_json(plan_path)
+        if plan is None:
+            return "STAGE_V2_COMMAND_NOT_REGISTERED"
+        if not isinstance(plan, Mapping) or plan.get("schema") != V2_COMMAND_PLAN_SCHEMA:
+            return "STAGE_V2_COMMAND_PLAN_SCHEMA_INVALID"
+        if plan.get("stage") != "V2_TEACHER_ENRICHMENT" or plan.get("read_only") is not True:
+            return "STAGE_V2_COMMAND_PLAN_NOT_READ_ONLY_ENRICHMENT"
+        if plan.get("stage_v_root") != str(self.stage_v_root):
+            return "STAGE_V2_COMMAND_PLAN_ROOT_MISMATCH"
+        if plan.get("stage_v_source_commit") != self.args.expected_source_commit or plan.get("stage_v_source_tree") != self.args.expected_source_tree:
+            return "STAGE_V2_COMMAND_PLAN_SOURCE_MISMATCH"
+        receipt_path = self.stage_v_root / "STAGE_V_CLOSURE_RECEIPT.json"
+        receipt = parse_json(receipt_path)
+        if not isinstance(receipt, Mapping) or receipt.get("status") != "STAGE_V_FORMAL_MAP_CLOSED":
+            return "STAGE_V_CLOSURE_RECEIPT_NOT_READY"
+        if not self._hash_matches(Path(plan.get("stage_v2_runner_path", "")), plan.get("stage_v2_runner_sha256")):
+            return "STAGE_V2_RUNNER_SHA_MISMATCH"
+        if not self._hash_matches(Path(plan.get("stage_v2_auditor_path", "")), plan.get("stage_v2_auditor_sha256")):
+            return "STAGE_V2_AUDITOR_SHA_MISMATCH"
+        if not self._hash_matches(Path(plan.get("stage_v2_config_path", "")), plan.get("stage_v2_config_sha256")):
+            return "STAGE_V2_CONFIG_SHA_MISMATCH"
+        run_manifest = self.stage_v_root / "RUN_MANIFEST.json"
+        start = parse_json(self.stage_v_root / "SUPERVISOR_START.json")
+        if not isinstance(start, Mapping) or not start.get("parent_manifest"):
+            return "STAGE_V_PARENT_MANIFEST_NOT_FOUND"
+        receipt_sha = sha256_file(receipt_path)
+        run_sha = sha256_file(run_manifest) if run_manifest.is_file() else ""
+        parent_sha = str(receipt.get("manifest_sha256", ""))
+        if plan.get("expected_parent_manifest_sha256") != parent_sha or plan.get("expected_run_manifest_sha256") != run_sha:
+            return "STAGE_V2_COMMAND_PLAN_MANIFEST_SHA_MISMATCH"
+        command_template = plan.get("command_template")
+        if not isinstance(command_template, list) or not command_template or not all(isinstance(item, str) for item in command_template):
+            return "STAGE_V2_COMMAND_PLAN_ARGV_INVALID"
+        command = [
+            self._replace(
+                item,
+                {
+                    "{stage_v_root}": str(self.stage_v_root),
+                    "{goal_root}": str(self.goal_root),
+                    "{source_commit}": self.args.expected_source_commit,
+                    "{source_tree}": self.args.expected_source_tree,
+                    "{expected_stage_v_closure_receipt_sha256}": receipt_sha,
+                    "{expected_parent_manifest_sha256}": parent_sha,
+                    "{expected_run_manifest_sha256}": run_sha,
+                },
+            )
+            for item in command_template
+        ]
+        final = dict(plan)
+        final.update(
+            {
+                "schema": V2_COMMAND_SCHEMA,
+                "stage_v_closure_receipt_sha256": receipt_sha,
+                "expected_stage_v_closure_receipt_sha256": receipt_sha,
+                "expected_parent_manifest_sha256": parent_sha,
+                "parent_manifest_sha256": parent_sha,
+                "expected_run_manifest_sha256": run_sha,
+                "command": command,
+                "registered_utc": utc_now(),
+            }
+        )
+        final.pop("command_template", None)
+        atomic_write_json(command_path, final)
+        return None
+
     def _load_v2_spec(self) -> tuple[dict[str, Any] | None, str | None]:
         path = Path(self.args.stage_v2_command_file).resolve()
         value = parse_json(path)
         if value is None:
             return None, "STAGE_V2_COMMAND_NOT_REGISTERED"
-        if not isinstance(value, Mapping) or value.get("schema") != "STAGE_V2_COMMAND_V1":
+        if not isinstance(value, Mapping) or value.get("schema") != V2_COMMAND_SCHEMA:
             return None, "STAGE_V2_COMMAND_SCHEMA_INVALID"
         if value.get("stage") != "V2_TEACHER_ENRICHMENT" or value.get("read_only") is not True:
             return None, "STAGE_V2_COMMAND_NOT_READ_ONLY_ENRICHMENT"
-        if value.get("source_commit") not in (None, self.args.expected_source_commit) or value.get("source_tree") not in (None, self.args.expected_source_tree):
+        if value.get("stage_v_root") != str(self.stage_v_root):
+            return None, "STAGE_V2_COMMAND_ROOT_MISMATCH"
+        if value.get("stage_v_source_commit") != self.args.expected_source_commit or value.get("stage_v_source_tree") != self.args.expected_source_tree:
             return None, "STAGE_V2_COMMAND_SOURCE_MISMATCH"
+        if not isinstance(value.get("stage_v2_source_commit"), str) or not isinstance(value.get("stage_v2_source_tree"), str):
+            return None, "STAGE_V2_COMMAND_PRODUCER_SOURCE_MISSING"
+        receipt_path = self.stage_v_root / "STAGE_V_CLOSURE_RECEIPT.json"
+        if not self._hash_matches(receipt_path, value.get("expected_stage_v_closure_receipt_sha256")):
+            return None, "STAGE_V2_COMMAND_CLOSURE_RECEIPT_SHA_MISMATCH"
+        if value.get("expected_parent_manifest_sha256") != value.get("parent_manifest_sha256"):
+            return None, "STAGE_V2_COMMAND_PARENT_MANIFEST_SHA_MISMATCH"
+        run_manifest = self.stage_v_root / "RUN_MANIFEST.json"
+        if not self._hash_matches(run_manifest, value.get("expected_run_manifest_sha256")):
+            return None, "STAGE_V2_COMMAND_RUN_MANIFEST_SHA_MISMATCH"
+        for field, path_field in (("stage_v2_runner_sha256", "stage_v2_runner_path"), ("stage_v2_auditor_sha256", "stage_v2_auditor_path"), ("stage_v2_config_sha256", "stage_v2_config_path")):
+            if not self._hash_matches(Path(str(value.get(path_field, ""))), value.get(field)):
+                return None, f"STAGE_V2_COMMAND_{field.upper()}_MISMATCH"
+        if not isinstance(value.get("output_root_template"), str) or "{commit8}" not in value["output_root_template"] or "{utc}" not in value["output_root_template"]:
+            return None, "STAGE_V2_COMMAND_OUTPUT_TEMPLATE_INVALID"
+        lock_path = value.get("lock_path")
+        if not isinstance(lock_path, str) or not lock_path.endswith(".stage_v2_teacher_enrichment.lock"):
+            return None, "STAGE_V2_COMMAND_LOCK_PATH_INVALID"
+        env = value.get("env")
+        if not isinstance(env, Mapping) or env.get("CUDA_VISIBLE_DEVICES") != "" or any(env.get(key) != "1" for key in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS")):
+            return None, "STAGE_V2_COMMAND_CPU_ONLY_ENV_INVALID"
         command = value.get("command")
         if not isinstance(command, list) or not command or not all(isinstance(item, str) for item in command):
             return None, "STAGE_V2_COMMAND_MUST_BE_ARGV_LIST"
@@ -787,6 +914,11 @@ class Gatekeeper:
             self._write_state("STAGE_V2_FAIL", stage_v2_launch_error="previous_launch_not_completed")
             self._emit("STAGE_V2_FAIL", reason="previous_launch_not_completed")
             return "STOP"
+        materialize_error = self._materialize_v2_command()
+        if materialize_error:
+            self._write_state("STAGE_V2_WAITING_FOR_REGISTERED_COMMAND", next_transition=materialize_error)
+            self._emit("STAGE_V2_NOT_REGISTERED", reason=materialize_error)
+            return "CONTINUE"
         spec, error = self._load_v2_spec()
         if error:
             self._write_state("STAGE_V2_WAITING_FOR_REGISTERED_COMMAND", next_transition=error)
@@ -795,7 +927,33 @@ class Gatekeeper:
         assert spec is not None
         if any(item.get("gpu") in self.reserved_gpus for item in resource.get("gpu_assignments", [])):
             return self._hard_stop(["GPU5_FORBIDDEN"], resource)
-        output_root = self.goal_root / f"STAGE_V2_TEACHER_ENRICHMENT_{self.args.expected_source_commit[:8]}_{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+        output_template = spec.get("output_root_template")
+        if not isinstance(output_template, str) or not output_template:
+            self._write_state("STAGE_V2_FAIL", stage_v2_launch_error="output_root_template_missing")
+            self._emit("STAGE_V2_FAIL", reason="output_root_template_missing")
+            return "STOP"
+        output_root = Path(
+            self._replace(
+                output_template,
+                {
+                    "{stage_v_root}": str(self.stage_v_root),
+                    "{goal_root}": str(self.goal_root),
+                    "{source_commit}": self.args.expected_source_commit,
+                    "{source_tree}": self.args.expected_source_tree,
+                    "{commit8}": self.args.expected_source_commit[:8],
+                    "{utc}": time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()),
+                },
+            )
+        )
+        if not output_root.is_absolute():
+            output_root = self.goal_root / output_root
+        output_root = output_root.resolve()
+        try:
+            output_root.relative_to(self.goal_root.resolve())
+        except ValueError:
+            self._write_state("STAGE_V2_FAIL", stage_v2_launch_error="output_root_outside_goal_root")
+            self._emit("STAGE_V2_FAIL", reason="output_root_outside_goal_root")
+            return "STOP"
         if output_root.exists():
             self._write_state("STAGE_V2_FAIL", stage_v2_launch_error="fresh_output_root_already_exists")
             self._emit("STAGE_V2_FAIL", reason="fresh_output_root_already_exists")
@@ -807,6 +965,8 @@ class Gatekeeper:
             "{goal_root}": str(self.goal_root),
             "{source_commit}": self.args.expected_source_commit,
             "{source_tree}": self.args.expected_source_tree,
+            "{commit8}": self.args.expected_source_commit[:8],
+            "{utc}": time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()),
         }
         command = [self._replace(item, replacements) for item in spec["command"]]
         cwd = Path(self._replace(str(spec.get("cwd", self.goal_root)), replacements)).resolve()
@@ -895,13 +1055,15 @@ class Gatekeeper:
             return "CONTINUE"
         output_root = Path(str(marker.get("output_root")))
         report = parse_json(output_root / "STAGE_V2_TEACHER_ENRICHMENT_REPORT.json") or parse_json(output_root / "STAGE_V2_REPORT.json")
-        verdict, reason = self._audit_v2_report(report, code)
+        verdict, reason = self._audit_v2_report(report, code, output_root)
+        independent = parse_json(output_root / "STAGE_V2_INDEPENDENT_AUDIT.json")
         complete = {
             "schema": "STAGE_V2_COMPLETE_V1",
             "status": "STAGE_V2_PASS" if verdict == "PASS" else "STAGE_V2_FAIL",
             "exit_code": code,
             "output_root": str(output_root),
             "report": report,
+            "independent_audit": independent,
             "reason": reason,
             "eval160_reads": 0,
             "protected_eval_reads": 0,
@@ -916,11 +1078,17 @@ class Gatekeeper:
         return "STOP"
 
     @staticmethod
-    def _audit_v2_report(report: Any, exit_code: int) -> tuple[str, str]:
+    def _audit_v2_report(report: Any, exit_code: int, output_root: Path) -> tuple[str, str]:
         if exit_code != 0:
             return "FAIL", f"stage_v2_exit_code:{exit_code}"
         if not isinstance(report, Mapping):
             return "FAIL", "stage_v2_report_missing"
+        independent = parse_json(output_root / "STAGE_V2_INDEPENDENT_AUDIT.json")
+        if not isinstance(independent, Mapping) or independent.get("verdict") != "PASS":
+            return "FAIL", "stage_v2_independent_audit_not_pass"
+        seal_ok, seal_errors, _ = verify_root_seal(output_root)
+        if not seal_ok:
+            return "FAIL", "stage_v2_root_seal_fail:" + ";".join(seal_errors)
         if not _finite(report):
             return "FAIL", "stage_v2_report_non_finite"
         counters = _boundary_counters(report)
@@ -929,6 +1097,8 @@ class Gatekeeper:
         local_enrichment = report.get("local_vulnerability_enrichment", report.get("local_enrichment_ratio"))
         local_recall = report.get("local_vulnerability_recall", report.get("local_recall"))
         suites = report.get("suite_breakdown", report.get("suites"))
+        if report.get("status") != "STAGE_V2_TEACHER_PROPOSAL_PASS":
+            return "FAIL", "stage_v2_teacher_proposal_gate_fail"
         try:
             if float(local_enrichment) < 3.0 or float(local_recall) < 0.60:
                 return "FAIL", "stage_v2_teacher_proposal_gate_fail"
@@ -953,6 +1123,7 @@ class Gatekeeper:
             return "STOP"
         resource = self._resource_snapshot()
         progress = self._write_parent_progress()
+        self._write_live_parent_triage()
         self._write_resource_sample(resource)
         self._write_monitor_heartbeat(resource, progress)
         errors = resource["hard_stop_errors"]
@@ -1019,7 +1190,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.poll_seconds <= 0 or args.expected_parent_count <= 0:
         raise SystemExit("poll-seconds and expected-parent-count must be positive")
     args.lock_path = args.lock_path or args.goal_root.resolve() / ".stage_v_goal_gatekeeper.lock"
-    args.stage_v2_command_file = args.stage_v2_command_file or args.goal_root.resolve() / "STAGE_V2_COMMAND.json"
+    args.stage_v2_command_file = args.stage_v2_command_file or args.goal_root.resolve() / "MONITOR" / "STAGE_V2_COMMAND.json"
     monitor = Gatekeeper(args)
     if args.once:
         monitor.lock.acquire(monitor.monitor_root)

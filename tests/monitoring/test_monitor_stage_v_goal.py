@@ -219,11 +219,88 @@ def test_oom_delta_is_a_hard_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 
 
 def test_v2_command_forbidden_boundary(tmp_path: Path) -> None:
-    root, _, _ = make_root(tmp_path)
+    root, manifest, _ = make_root(tmp_path)
     goal = tmp_path / "goal"
     goal.mkdir()
     command_file = goal / "STAGE_V2_COMMAND.json"
-    write_json(command_file, {"schema": "STAGE_V2_COMMAND_V1", "stage": "V2_TEACHER_ENRICHMENT", "read_only": True, "command": ["python", "run_attack.py"]})
+    closure = root / "STAGE_V_CLOSURE_RECEIPT.json"
+    write_json(closure, {"status": "STAGE_V_FORMAL_MAP_CLOSED"})
+    runner = tmp_path / "runner.py"
+    auditor = tmp_path / "auditor.py"
+    config = tmp_path / "config.json"
+    for path in (runner, auditor, config):
+        path.write_text(path.name, encoding="utf-8")
+    write_json(
+        command_file,
+        {
+            "schema": "STAGE_V2_COMMAND_V2",
+            "stage": "V2_TEACHER_ENRICHMENT",
+            "read_only": True,
+            "stage_v_root": str(root),
+            "stage_v_source_commit": COMMIT,
+            "stage_v_source_tree": TREE,
+            "stage_v2_source_commit": "stage-v2-test-commit",
+            "stage_v2_source_tree": "stage-v2-test-tree",
+            "expected_stage_v_closure_receipt_sha256": sha(closure),
+            "expected_parent_manifest_sha256": sha(manifest),
+            "parent_manifest_sha256": sha(manifest),
+            "expected_run_manifest_sha256": sha(root / "RUN_MANIFEST.json"),
+            "stage_v2_runner_path": str(runner),
+            "stage_v2_runner_sha256": sha(runner),
+            "stage_v2_auditor_path": str(auditor),
+            "stage_v2_auditor_sha256": sha(auditor),
+            "stage_v2_config_path": str(config),
+            "stage_v2_config_sha256": sha(config),
+            "output_root_template": str(goal / "STAGE_V2_TEACHER_ENRICHMENT_{commit8}_{utc}"),
+            "lock_path": str(goal / ".stage_v2_teacher_enrichment.lock"),
+            "env": {"CUDA_VISIBLE_DEVICES": "", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1"},
+            "command": ["python", "run_attack.py"],
+        },
+    )
     args = type("Args", (), {"stage_v_root": root, "goal_root": goal, "expected_source_commit": COMMIT, "expected_source_tree": TREE, "expected_parent_count": 1, "expected_gpus": [1], "reserved_gpus": [5], "protected_pid": 0, "lock_path": tmp_path / "lock", "kill_grace_seconds": 0.01, "stage_v2_command_file": command_file})()
     monitor = Gatekeeper(args)
     assert monitor._load_v2_spec()[1] == "STAGE_V2_COMMAND_FORBIDDEN_BOUNDARY"
+
+
+def test_v2_command_plan_waits_for_closure_then_materializes(tmp_path: Path) -> None:
+    root, manifest, _ = make_root(tmp_path)
+    goal = tmp_path / "goal"
+    goal.mkdir()
+    runner = tmp_path / "runner.py"
+    auditor = tmp_path / "auditor.py"
+    config = tmp_path / "config.json"
+    for path in (runner, auditor, config):
+        path.write_text(path.name, encoding="utf-8")
+    command_file = goal / "MONITOR" / "STAGE_V2_COMMAND.json"
+    args = type("Args", (), {"stage_v_root": root, "goal_root": goal, "expected_source_commit": COMMIT, "expected_source_tree": TREE, "expected_parent_count": 1, "expected_gpus": [1], "reserved_gpus": [5], "protected_pid": 0, "lock_path": tmp_path / "lock", "kill_grace_seconds": 0.01, "stage_v2_command_file": command_file})()
+    monitor = Gatekeeper(args)
+    plan = {
+        "schema": "STAGE_V2_COMMAND_PLAN_V1",
+        "stage": "V2_TEACHER_ENRICHMENT",
+        "read_only": True,
+        "stage_v_root": str(root),
+        "stage_v_source_commit": COMMIT,
+        "stage_v_source_tree": TREE,
+        "stage_v2_source_commit": "stage-v2-commit",
+        "stage_v2_source_tree": "stage-v2-tree",
+        "expected_parent_manifest_sha256": sha(manifest),
+        "expected_run_manifest_sha256": sha(root / "RUN_MANIFEST.json"),
+        "stage_v2_runner_path": str(runner),
+        "stage_v2_runner_sha256": sha(runner),
+        "stage_v2_auditor_path": str(auditor),
+        "stage_v2_auditor_sha256": sha(auditor),
+        "stage_v2_config_path": str(config),
+        "stage_v2_config_sha256": sha(config),
+        "output_root_template": str(goal / "STAGE_V2_TEACHER_ENRICHMENT_{commit8}_{utc}"),
+        "lock_path": str(goal / ".stage_v2_teacher_enrichment.lock"),
+        "env": {"CUDA_VISIBLE_DEVICES": "", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1"},
+        "command_template": ["python", "run_v2.py", "--stage-v-root", "{stage_v_root}", "--output-root", "{output_root}"],
+    }
+    write_json(monitor.monitor_root / "STAGE_V2_COMMAND_PLAN.json", plan)
+    assert monitor._materialize_v2_command() == "STAGE_V_CLOSURE_RECEIPT_NOT_READY"
+    write_json(root / "STAGE_V_CLOSURE_RECEIPT.json", {"status": "STAGE_V_FORMAL_MAP_CLOSED", "manifest_sha256": sha(manifest)})
+    assert monitor._materialize_v2_command() is None
+    final = json.loads(command_file.read_text())
+    assert final["schema"] == "STAGE_V2_COMMAND_V2"
+    assert final["expected_stage_v_closure_receipt_sha256"] == sha(root / "STAGE_V_CLOSURE_RECEIPT.json")
+    assert monitor._load_v2_spec()[1] is None
