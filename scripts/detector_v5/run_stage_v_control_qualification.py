@@ -483,7 +483,18 @@ def main(argv: list[str] | None = None) -> int:
         (args.output_dir / "STAGE_V_FORMAL_PARENT_MANIFEST_V2.sha256").write_text(
             sha256_file(manifest_path) + "  STAGE_V_FORMAL_PARENT_MANIFEST_V2.json\n", encoding="utf-8",
         )
+        write_manifest_a(args.output_dir, manifest_path)
     return 0 if report["status"] == "PASS" else 1
+
+
+def write_manifest_a(output_dir: Path, manifest_path: Path) -> Path:
+    """Write the frozen R2 qualification manifest under its plan-level name."""
+    alias = output_dir / "STAGE_V_R2_PARENT_MANIFEST_A.json"
+    alias.write_bytes(manifest_path.read_bytes())
+    (output_dir / "STAGE_V_R2_PARENT_MANIFEST_A.sha256").write_text(
+        sha256_file(alias) + "  STAGE_V_R2_PARENT_MANIFEST_A.json\n", encoding="utf-8",
+    )
+    return alias
 
 
 if __name__ == "__main__":

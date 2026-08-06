@@ -130,6 +130,14 @@ def test_load_rows_reads_selected_parents_manifest(tmp_path: Path) -> None:
     assert control_qualification.load_rows(path) == [{"suite": "libero_goal", "task_index": 0, "state_index": 48}]
 
 
+def test_control_qualification_manifest_a_sidecar_is_written(tmp_path: Path) -> None:
+    source = tmp_path / "STAGE_V_FORMAL_PARENT_MANIFEST_V2.json"
+    source.write_text('{"schema":"STAGE_V_FORMAL_PARENT_MANIFEST_V2"}\n', encoding="utf-8")
+    alias = control_qualification.write_manifest_a(tmp_path, source)
+    assert alias.read_bytes() == source.read_bytes()
+    assert (tmp_path / "STAGE_V_R2_PARENT_MANIFEST_A.sha256").read_text().startswith(sha256_file(alias))
+
+
 def test_qualification_command_render_preserves_shell_braces() -> None:
     rendered = control_qualification._render_command(
         "echo ${IFS} {candidate_path} {replicate}",
