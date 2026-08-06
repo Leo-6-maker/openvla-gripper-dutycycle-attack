@@ -329,8 +329,8 @@ def parent_progress(
                 "completed_branch_count": 0,
                 "failed_branch_count": 0,
                 "missing_branches": ["PARENT_RESULT.json"] if not paths else [],
-                "audit_status": "FAIL" if len(paths) != 1 else "PENDING",
-                "seal_status": "FAIL" if len(paths) != 1 else "PENDING",
+                "audit_status": "MISSING" if not paths else "FAIL",
+                "seal_status": "MISSING" if not paths else "FAIL",
                 "accepted": False,
                 "errors": ["missing_parent_result"] if not paths else ["duplicate_parent_identity"],
             }
@@ -379,7 +379,7 @@ def parent_progress(
             branch_complete += 1
             local_positive += int(item.get("local_positive_count", 0))
             task_positive += int(item.get("task_positive_count", 0))
-        elif item["audit_status"] == "PENDING":
+        elif item["audit_status"] in {"PENDING", "MISSING"}:
             if not item.get("missing_branches"):
                 branch_complete += 1
             missing_branch_count += len(item.get("missing_branches", []))
