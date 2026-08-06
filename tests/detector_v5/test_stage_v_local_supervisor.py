@@ -84,6 +84,7 @@ def _run_cli(tmp_path: Path, *, dispatcher_code: str, ssh_probe: str = "false") 
         "--approved-gpus", "0",
         "--planned-parents", "1",
         "--dispatcher-command", shlex.join([sys.executable]),
+        "--dispatcher-cwd", str(root),
         "--dispatcher-arg=-c",
         "--dispatcher-arg=" + dispatcher_code,
         "--audit-command", shlex.join([
