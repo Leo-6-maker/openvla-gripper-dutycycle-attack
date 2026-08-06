@@ -22,7 +22,7 @@
   },
   "zero_denominator": "UNAVAILABLE_ZERO_DENOMINATOR",
   "zero_background_raw_ratio": "INFINITE_ZERO_BASELINE",
-  "bootstrap": {"repetitions": 10000, "seed": 2026080601, "cluster": "canonical_parent_key"},
+  "bootstrap": {"repetitions": 10000, "seed": 2026080701, "cluster": "canonical_parent_key"},
   "boundary": {
     "eval160_reads": 0,
     "protected_eval_reads": 0,

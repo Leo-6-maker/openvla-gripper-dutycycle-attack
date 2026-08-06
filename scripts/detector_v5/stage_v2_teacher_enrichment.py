@@ -500,11 +500,11 @@ def compute_report(
         "bootstrap": {
             "local_vulnerability": _bootstrap_cluster(
                 analysis_rows, "local_vulnerability", int(config.get("bootstrap", {}).get("repetitions", 10000)),
-                int(config.get("bootstrap", {}).get("seed", 2026080601)),
+                int(config.get("bootstrap", {}).get("seed", 2026080701)),
             ),
             "task_vulnerability": _bootstrap_cluster(
                 analysis_rows, "task_vulnerability", int(config.get("bootstrap", {}).get("repetitions", 10000)),
-                int(config.get("bootstrap", {}).get("seed", 2026080601)),
+                int(config.get("bootstrap", {}).get("seed", 2026080701)),
             ),
         },
         "gate": {"status": "PASS" if gate_pass else "FAIL", "conditions": conditions, "thresholds": {"local_enrichment": 3.0, "local_recall": 0.60, "suite_enrichment": 1.0}},
