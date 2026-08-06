@@ -615,7 +615,12 @@ class Supervisor:
             actual = sha256_file(manifest)
             if self.args.parent_manifest_sha256 and actual != self.args.parent_manifest_sha256:
                 raise SupervisorError("parent manifest SHA256 mismatch")
-        if self.run_root.exists() and any(self.run_root.iterdir()):
+        existing_entries = []
+        if self.run_root.exists():
+            existing_entries = [
+                path for path in self.run_root.iterdir() if path.name != "STALE_LOCK_AUDIT.json"
+            ]
+        if existing_entries:
             raise SupervisorError(f"run root is not new/empty: {self.run_root}")
         self.run_root.mkdir(parents=True, exist_ok=True)
         parent_sha = None
