@@ -1101,6 +1101,8 @@ esac
 
 
 def _run_shell_launcher(tmp_path: Path, mode: str, *, timeout: int = 4):
+    if not BASH.is_file():
+        pytest.skip("requires Windows MSYS2 bash")
     fake_python = _fake_python_for_shell(tmp_path)
     cache = tmp_path / "cache"
     logs = tmp_path / "logs"
