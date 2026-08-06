@@ -25,8 +25,10 @@ def test_stage_o_uses_preregistered_seeds_and_dynamic_eight_workers(tmp_path: Pa
     def fake_run(argv, **kwargs):
         output_dir = Path(argv[argv.index("--output-dir") + 1])
         output_dir.mkdir(parents=True, exist_ok=True)
+        job = json.loads((output_dir / "JOB.json").read_text(encoding="utf-8"))
         (output_dir / "RESULT.json").write_text(
-            '{"status":"PASS","eval160_reads":0,"protected_eval_reads":0,"vis_pgd_attack_rollouts":0}\n',
+            json.dumps({**job, "status": "PASS", "source_commit": "commit", "source_tree": "tree",
+                        "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0}) + "\n",
             encoding="utf-8",
         )
         return SimpleNamespace(returncode=0, stdout="", stderr="")
@@ -46,6 +48,9 @@ def test_stage_o_uses_preregistered_seeds_and_dynamic_eight_workers(tmp_path: Pa
     assert manifest_value["split_counts"]["libero_goal"] == {"train": 6, "validation": 2, "untouched_test": 2}
     audit = json.loads((args.output_root / "STAGE_O_AUDIT.json").read_text(encoding="utf-8"))
     assert audit["verdict"] == "PASS"
+    complete = json.loads((args.output_root / "STAGE_O_COMPLETE.json").read_text(encoding="utf-8"))
+    assert complete["status"] == "STAGE_O_PASS"
+    assert (args.output_root / "SHA256SUMS.sha256").is_file()
 
 
 def test_stage_o_rejects_non_eight_gpu_formal_pool(tmp_path: Path) -> None:

@@ -559,7 +559,16 @@ def formal_binding(
     if closure.get("source_commit") != expected_source_commit or closure.get("source_tree") != expected_source_tree:
         raise StageV2PreconditionError("STAGE_V_SOURCE_BINDING_MISMATCH")
     accepted = closure.get("accepted_parents", closure.get("accepted_parent_results"))
-    if _int(closure.get("planned_parents")) != 40 or _int(closure.get("completed_parents")) != 40 or _int(accepted) != 40:
+    if (
+        _int(closure.get("planned_parents")) != 40
+        or _int(closure.get("started_parents")) != 40
+        or _int(closure.get("completed_parents")) != 40
+        or _int(closure.get("audited_parents")) != 40
+        or _int(accepted) != 40
+        or _int(closure.get("planned_branches")) != 2880
+        or _int(closure.get("completed_branches")) != 2880
+        or any(_int(closure.get(key)) != 0 for key in ("invalid_branches", "duplicate_identities", "missing_identities", "control_branch_failure"))
+    ):
         raise StageV2PreconditionError("STAGE_V_CLOSURE_PARENT_COUNT_FAIL")
     if _active_stage_v_process(stage_v_root):
         raise StageV2PreconditionError("STAGE_V_RESIDUAL_PROCESS")

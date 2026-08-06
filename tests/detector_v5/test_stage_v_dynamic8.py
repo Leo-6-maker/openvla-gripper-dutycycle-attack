@@ -455,3 +455,42 @@ def test_abort_receipt_zeroes_accepted_count(tmp_path: Path) -> None:
     assert worker._abort("TEST_ABORT") == 1
     receipt = json.loads((worker.root / "ABORTED_INCOMPLETE.json").read_text(encoding="utf-8"))
     assert receipt["accepted_parent_results"] == 0
+
+
+def test_r2b_preparation_is_hash_ordered_and_never_reuses_r2a(tmp_path: Path) -> None:
+    from scripts.detector_v5 import prepare_stage_v_r2b_manifest as r2b
+
+    r2a = tmp_path / "r2a"
+    for index in range(40):
+        suite = r2b.SUITES[index // 10]
+        key = f"{suite}/task_{index % 10:02d}/state_48"
+        parent = r2a / suite / f"task_{index % 10:02d}" / "state_48"
+        parent.mkdir(parents=True)
+        write_json(parent / "PARENT_RESULT.json", {"canonical_parent_key": key, "local_vulnerability": True})
+    write_json(r2a / "STAGE_V_CLOSURE_RECEIPT.json", {
+        "status": "STAGE_V_FORMAL_MAP_CLOSED", "accepted_parents": 40, "completed_branches": 2880,
+    })
+    write_json(r2a / "STAGE_V_COUNTERFACTUAL_AUDIT.json", {"verdict": "PASS"})
+    sums = r2a / "SHA256SUMS"
+    files = sorted(path for path in r2a.rglob("*") if path.is_file() and path.name not in {"SHA256SUMS", "SHA256SUMS.sha256"})
+    sums.write_text("".join(f"{sha256_file(path)}  {path.relative_to(r2a).as_posix()}\n" for path in files), encoding="utf-8")
+    (r2a / "SHA256SUMS.sha256").write_text(f"{sha256_file(sums)}  SHA256SUMS\n", encoding="utf-8")
+
+    candidates = []
+    for suite in r2b.SUITES:
+        for index in range(20):
+            candidates.append({"canonical_parent_key": f"{suite}/task_{index:02d}/state_48", "suite": suite, "task_index": index, "state_index": 48})
+    candidate_manifest = tmp_path / "candidates.json"
+    write_json(candidate_manifest, {"parents": candidates})
+    r2a_manifest = tmp_path / "r2a-manifest.json"
+    write_json(r2a_manifest, {"parents": [row for row in candidates if int(row["canonical_parent_key"].split("/")[1].removeprefix("task_")) < 10]})
+    args = SimpleNamespace(
+        r2a_root=r2a, r2a_manifest=r2a_manifest, candidate_manifest=candidate_manifest,
+        output_root=tmp_path / "r2b", source_commit="commit", source_tree="tree",
+        salt="test", parents_per_suite=10,
+    )
+    decision = r2b.prepare(args)
+    assert decision["status"] == "R2B_REQUIRED"
+    selected = decision["selected_parents"]
+    assert len(selected) == 40
+    assert not ({row["canonical_parent_key"] for row in selected} & {row["canonical_parent_key"] for row in json.loads(r2a_manifest.read_text(encoding="utf-8"))["parents"]})

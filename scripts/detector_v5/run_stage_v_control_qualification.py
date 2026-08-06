@@ -27,6 +27,7 @@ except ImportError:  # direct server execution
 
 FORBIDDEN = re.compile(r"(?<![A-Za-z0-9_])(?:OPEN(?:_T[0-9]+)?|VIS|PGD|ATTACK|EVAL160|PROTECTED|TEACHER)(?![A-Za-z0-9_])", re.IGNORECASE)
 EXPECTED_SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
+DEFAULT_SALT = "STAGE_V_CONTROL_QUALIFICATION_V2_20260806"
 
 
 def ranked(rows: list[dict[str, Any]], salt: str) -> list[dict[str, Any]]:
@@ -110,6 +111,29 @@ def qualifies(row: Mapping[str, Any], a: Mapping[str, Any], b: Mapping[str, Any]
     return not errors, sorted(set(errors))
 
 
+def audit_qualification_row(row: Mapping[str, Any], a: Mapping[str, Any], b: Mapping[str, Any], source_commit: str, source_tree: str) -> tuple[bool, list[str]]:
+    """Independent qualification decision; do not call the producer helper."""
+    errors: list[str] = []
+    for name, result in (("A", a), ("B", b)):
+        if result.get("exit_code") != 0 or result.get("status") not in {"PASS", "DONE", "QUALIFIED"}:
+            errors.append(f"{name}_NOT_COMPLETE")
+        required_true = ("clean_success", "task_identity_valid", "snapshot_restore_valid", "runtime_valid", "metrics_finite", "artifact_validation_pass", "remaining_horizon_complete")
+        errors.extend(f"{name}_{field.upper()}_FALSE" for field in required_true if result.get(field) is not True)
+        if result.get("old_artifacts_reused") is not False:
+            errors.append(f"{name}_OLD_ARTIFACT_REUSE")
+        for field in ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts", "attack_rollouts"):
+            if result.get(field, 0) != 0:
+                errors.append(f"{name}_BOUNDARY_VIOLATION:{field}")
+        if result.get("source_commit") != source_commit or result.get("source_tree") != source_tree:
+            errors.append(f"{name}_PROVENANCE_MISMATCH")
+        if result.get("canonical_parent_key") != row.get("canonical_parent_key"):
+            errors.append(f"{name}_PARENT_IDENTITY_MISMATCH")
+    for field in ("terminal_outcome", "terminal_state_sha256", "key_state_identity_sha256"):
+        if a.get(field) is None or b.get(field) is None or a.get(field) != b.get(field):
+            errors.append(f"AB_MISMATCH:{field}")
+    return not errors, sorted(set(errors))
+
+
 def _parse_gpus(value: str) -> list[int]:
     gpus = [int(part.strip()) for part in value.split(",") if part.strip()] if value else [0]
     if not gpus or len(gpus) != len(set(gpus)) or any(gpu < 0 for gpu in gpus):
@@ -141,7 +165,7 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
     selected: dict[str, list[dict[str, Any]]] = {suite: [] for suite in suites}
     gpus = _parse_gpus(args.gpus)
     queue_db = args.output_dir / "CONTROL_QUALIFICATION.sqlite"
-    queue = AtomicTaskQueue(str(queue_db), run_id="STAGE_V_R2_CONTROL_QUALIFICATION_20260807")
+    queue = AtomicTaskQueue(str(queue_db), run_id="STAGE_V_CONTROL_QUALIFICATION_V2_20260806")
     manifest_sha = sha256_file(args.candidate_manifest)
     source_sha = f"{args.source_commit}:{args.source_tree}"
     queue.init_run(
@@ -313,13 +337,13 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
     independent_errors: list[str] = []
     recomputed: dict[str, int] = {suite: 0 for suite in suites}
     for record in rows_out:
-        recomputed_ok, recomputed_errors = qualifies(
+        recomputed_ok, recomputed_errors = audit_qualification_row(
             record, record.get("replicates", {}).get("A", {}), record.get("replicates", {}).get("B", {}),
             args.source_commit, args.source_tree,
         )
         if recomputed_ok:
             recomputed[str(record["suite"])] += 1
-        if recomputed_ok != bool(record.get("qualified")) or recomputed_errors != list(record.get("errors", [])):
+        if recomputed_ok != bool(record.get("qualified")):
             independent_errors.append(f"ROW_RECOMPUTE_MISMATCH:{record.get('canonical_parent_key')}")
     selected_keys = [str(row["canonical_parent_key"]) for suite in suites for row in selected[suite][:args.target_per_suite]]
     if len(selected_keys) != len(set(selected_keys)):
@@ -351,7 +375,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--runner-command", required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
-    parser.add_argument("--salt", default="STAGE_V_R2_CONTROL_QUALIFICATION_20260807")
+    parser.add_argument("--salt", default=DEFAULT_SALT)
     parser.add_argument("--gpus", default="0")
     parser.add_argument("--initial-per-suite", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=10)

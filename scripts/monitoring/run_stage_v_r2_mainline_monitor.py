@@ -336,6 +336,14 @@ class MainlineMonitor:
                 return "DYNAMIC8_CANARY" if self.args.canary_root and Path(self.args.canary_root).exists() else "PREPARATION"
             if not _all_pass_receipts(Path(self.args.r2a_root) if self.args.r2a_root else None, ("STAGE_V_CLOSURE_RECEIPT.json", "STAGE_V_COUNTERFACTUAL_AUDIT.json")):
                 return "STAGE_V_R2A_AUDIT" if self.args.r2a_root and Path(self.args.r2a_root).exists() else "STAGE_V_R2A_RUNNING"
+            r2b_decision_root = getattr(self.args, "r2b_decision_root", None)
+            r2b_root = getattr(self.args, "r2b_root", None)
+            decision = parse_json(Path(r2b_decision_root) / "STAGE_V_R2B_DECISION.json") if r2b_decision_root else None
+            if isinstance(decision, Mapping) and decision.get("status") == "R2B_REQUIRED":
+                if not _all_pass_receipts(Path(r2b_root) if r2b_root else None, ("STAGE_V_CLOSURE_RECEIPT.json", "STAGE_V_COUNTERFACTUAL_AUDIT.json")):
+                    return "STAGE_V_R2B_RUNNING"
+            elif r2b_decision_root and not isinstance(decision, Mapping):
+                return "STAGE_V_R2B_RUNNING"
             if self.args.v2_root and not _all_pass_receipts(Path(self.args.v2_root), ("STAGE_V2_INDEPENDENT_AUDIT.json", "STAGE_V2_COMPLETE.json")):
                 return "STAGE_V2_RUNNING" if Path(self.args.v2_root).exists() else "STAGE_V_CLOSED"
             if self.args.stage_o_root and not _all_pass_receipts(Path(self.args.stage_o_root), ("STAGE_O_INDEPENDENT_AUDIT.json", "STAGE_O_COMPLETE.json")):
@@ -445,6 +453,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--qualification-root", type=Path)
     parser.add_argument("--canary-root", type=Path)
     parser.add_argument("--r2a-root", type=Path)
+    parser.add_argument("--r2b-decision-root", type=Path)
+    parser.add_argument("--r2b-root", type=Path)
     parser.add_argument("--v2-root", type=Path)
     parser.add_argument("--stage-o-root", type=Path)
     parser.add_argument("--required-gpus", type=int, default=8)

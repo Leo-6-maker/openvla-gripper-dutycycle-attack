@@ -476,6 +476,22 @@ class DynamicSupervisor:
         audit = read_json(self.root / "STAGE_V_COUNTERFACTUAL_AUDIT.json", {})
         if not isinstance(audit, Mapping) or audit.get("verdict") != "PASS":
             return self._abort("AUDIT_VERDICT_NOT_PASS")
+        if (
+            int(audit.get("planned_parents", -1)) != self.args.expected_parent_count
+            or int(audit.get("started_parents", -1)) != self.args.expected_parent_count
+            or int(audit.get("completed_parents", -1)) != self.args.expected_parent_count
+            or int(audit.get("audited_parents", -1)) != self.args.expected_parent_count
+            or int(audit.get("accepted_parent_results", -1)) != self.args.expected_parent_count
+            or int(audit.get("branch_rows", -1)) != self.args.expected_parent_count * 72
+            or int(audit.get("invalid_branches", -1)) != 0
+            or int(audit.get("duplicate_identities", -1)) != 0
+            or int(audit.get("missing_identities", -1)) != 0
+            or int(audit.get("control_branch_failure", -1)) != 0
+        ):
+            return self._abort("CLOSURE_COUNT_OR_IDENTITY_FAIL")
+        dispatcher_complete = read_json(self.root / "DISPATCHER_COMPLETE.json", {})
+        if not isinstance(dispatcher_complete, Mapping) or dispatcher_complete.get("status") != "PASS":
+            return self._abort("DISPATCHER_COMPLETE_NOT_PASS")
         tasks = self.queue.list_tasks() if self.queue else []
         atomic_write_json(self.root / "STAGE_V_CLOSURE_RECEIPT.json", {
             "schema": "STAGE_V_FORMAL_MAP_CLOSURE_RECEIPT_V2",
@@ -483,8 +499,12 @@ class DynamicSupervisor:
             "source_commit": self.args.expected_source_commit,
             "source_tree": self.args.expected_source_tree,
             "planned_parents": self.args.expected_parent_count,
+            "started_parents": int(audit.get("started_parents")),
             "completed_parents": sum(task.get("state") == "DONE_VALID" for task in tasks),
+            "audited_parents": int(audit.get("audited_parents")),
             "accepted_parents": sum(task.get("state") == "DONE_VALID" for task in tasks),
+            "planned_branches": self.args.expected_parent_count * 72,
+            "completed_branches": int(audit.get("branch_rows")),
             "manifest_sha256": sha256_file(self.args.parent_manifest),
             "dispatcher_complete": read_json(self.root / "DISPATCHER_COMPLETE.json", {}).get("status") == "PASS",
             "supervisor_complete": True,

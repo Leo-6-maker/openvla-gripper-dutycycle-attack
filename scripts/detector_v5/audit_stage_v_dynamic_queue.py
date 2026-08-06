@@ -46,7 +46,11 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     root = args.run_root.resolve()
     manifest_rows = [normalize_parent(row) for row in load_rows(args.parent_manifest)]
     manifest_by_key = {str(row["canonical_parent_key"]): row for row in manifest_rows}
-    tasks = AtomicTaskQueue(str(args.queue_db), run_id=args.run_id).list_tasks()
+    queue = AtomicTaskQueue(str(args.queue_db), run_id=args.run_id)
+    try:
+        tasks = queue.list_tasks()
+    finally:
+        queue.close()
     errors: list[str] = []
     if len(manifest_rows) != args.expected_parent_count:
         errors.append(f"MANIFEST_COUNT:{len(manifest_rows)}/{args.expected_parent_count}")
@@ -76,6 +80,9 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             errors.append("OLD_ARTIFACT_REUSE_BINDING_FAIL")
         if run_manifest.get("dynamic_claims") is not True or run_manifest.get("one_project_worker_per_gpu") is not True:
             errors.append("RUN_MANIFEST_DYNAMIC_WORKER_BINDING_FAIL")
+        approved_gpus = run_manifest.get("approved_gpus")
+        if not isinstance(approved_gpus, list) or len(approved_gpus) != 8 or len(set(approved_gpus)) != 8 or 5 in approved_gpus:
+            errors.append("RUN_MANIFEST_APPROVED_GPU_SET_FAIL")
         if run_manifest.get("gpu5_used") is True:
             errors.append("RUN_MANIFEST_GPU5_USED")
         for field in ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts"):
@@ -86,13 +93,21 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             or run_manifest.get("science_source_tree") != args.science_source_tree
         ):
             errors.append("RUN_MANIFEST_SCIENCE_BINDING_FAIL")
+    dispatcher_complete = read_json(root / "DISPATCHER_COMPLETE.json", {})
+    if not isinstance(dispatcher_complete, Mapping) or dispatcher_complete.get("status") != "PASS":
+        errors.append("DISPATCHER_COMPLETE_NOT_PASS")
     if len(tasks) != args.expected_parent_count:
         errors.append(f"QUEUE_COUNT:{len(tasks)}/{args.expected_parent_count}")
     accepted: list[dict[str, Any]] = []
+    started_count = sum(int(task.get("attempt_count") or 0) > 0 for task in tasks)
+    audited_count = 0
+    branch_rows_total = 0
     for task in tasks:
         key = str(task.get("cell_id"))
+        task_errors: list[str] = []
         if task.get("state") != "DONE_VALID" or not task.get("accepted_attempt_id"):
-            errors.append(f"TASK_NOT_ACCEPTED:{key}:{task.get('state')}")
+            task_errors.append(f"TASK_NOT_ACCEPTED:{key}:{task.get('state')}")
+            errors.extend(task_errors)
             continue
         output_dir = Path(task.get("accepted_output_dir") or "")
         if not output_dir.is_absolute():
@@ -106,38 +121,42 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             if (args.science_source_commit or args.science_source_tree) else None,
         )
         if not result["valid"]:
-            errors.append(f"SCIENCE_ARTIFACT_INVALID:{key}:{result.get('reason')}")
+            task_errors.append(f"SCIENCE_ARTIFACT_INVALID:{key}:{result.get('reason')}")
         if not isinstance(validation, Mapping) or validation.get("artifact_audit_verdict") != "PASS" or validation.get("label_status") != "VALID":
-            errors.append(f"PARENT_VALIDATION_INVALID:{key}")
+            task_errors.append(f"PARENT_VALIDATION_INVALID:{key}")
         if isinstance(validation, Mapping) and (validation.get("source_commit") != args.expected_source_commit or validation.get("source_tree") != args.expected_source_tree):
-            errors.append(f"PROVENANCE_MISMATCH:{key}")
+            task_errors.append(f"PROVENANCE_MISMATCH:{key}")
         if isinstance(validation, Mapping) and args.science_source_commit and (validation.get("science_source_commit") != args.science_source_commit or validation.get("science_source_tree") != args.science_source_tree):
-            errors.append(f"SCIENCE_PROVENANCE_MISMATCH:{key}")
+            task_errors.append(f"SCIENCE_PROVENANCE_MISMATCH:{key}")
         parent_result = result.get("result") if isinstance(result.get("result"), Mapping) else {}
         if parent_result.get("eval160_reads", 0) != 0 or parent_result.get("protected_eval_reads", 0) != 0 or parent_result.get("attack_rollouts", 0) != 0:
-            errors.append(f"BOUNDARY_VIOLATION:{key}")
+            task_errors.append(f"BOUNDARY_VIOLATION:{key}")
         branch_files = list(output_dir.rglob("COUNTERFACTUAL_BRANCHES.jsonl"))
         if len(branch_files) != 1:
-            errors.append(f"BRANCH_FILE_COUNT:{key}:{len(branch_files)}")
+            task_errors.append(f"BRANCH_FILE_COUNT:{key}:{len(branch_files)}")
         branch_rows: list[dict[str, Any]] = []
         for branch_file in branch_files:
             rows, branch_errors = _branch_rows(branch_file)
             branch_rows.extend(rows)
-            errors.extend(branch_errors)
+            task_errors.extend(branch_errors)
+        branch_rows_total += len(branch_rows)
         if len(branch_rows) != args.expected_branch_count:
-            errors.append(f"BRANCH_COUNT:{key}:{len(branch_rows)}/{args.expected_branch_count}")
+            task_errors.append(f"BRANCH_COUNT:{key}:{len(branch_rows)}/{args.expected_branch_count}")
         if args.science_source_commit:
             # Strict branch validation is performed by science_artifact_status;
             # keep the audit receipt explicit about the formal 72-row contract.
             if len(branch_rows) != args.expected_branch_count:
-                errors.append(f"BRANCH_FAILURE:{key}")
+                task_errors.append(f"BRANCH_FAILURE:{key}")
         elif any(row.get("status") not in ("PASS", "DONE") for row in branch_rows):
-            errors.append(f"BRANCH_FAILURE:{key}")
+            task_errors.append(f"BRANCH_FAILURE:{key}")
         if len({(row.get("canonical_parent_key"), row.get("probe_step"), row.get("k"), row.get("arm")) for row in branch_rows}) != len(branch_rows):
-            errors.append(f"DUPLICATE_BRANCH_IDENTITIES:{key}")
+            task_errors.append(f"DUPLICATE_BRANCH_IDENTITIES:{key}")
+        if not task_errors:
+            audited_count += 1
+        errors.extend(task_errors)
         accepted.append({
             "canonical_parent_key": key,
-            "artifact_audit_verdict": "PASS" if result["valid"] and not errors else "PENDING",
+            "artifact_audit_verdict": "PASS" if not task_errors else "FAIL",
             "output_dir": str(output_dir),
             "parent_result_sha256": result.get("artifact_sha256"),
             "branch_count": len(branch_rows),
@@ -151,21 +170,29 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     if orphan_keys:
         errors.append("ORPHAN_PARENT_ARTIFACT:" + ",".join(orphan_keys))
     accepted_count = sum(item["artifact_audit_verdict"] == "PASS" for item in accepted)
-    status = "PASS" if not errors and len(accepted) == args.expected_parent_count and accepted_count == args.expected_parent_count else "FAIL"
+    if len(tasks) == args.expected_parent_count and started_count != args.expected_parent_count:
+        errors.append(f"STARTED_PARENT_COUNT:{started_count}/{args.expected_parent_count}")
+    if branch_rows_total != args.expected_parent_count * args.expected_branch_count:
+        errors.append(f"BRANCH_TOTAL:{branch_rows_total}/{args.expected_parent_count * args.expected_branch_count}")
+    status = "PASS" if not errors and len(accepted) == args.expected_parent_count and audited_count == args.expected_parent_count and accepted_count == args.expected_parent_count else "FAIL"
     return {
         "schema": "STAGE_V_COUNTERFACTUAL_DYNAMIC_AUDIT_V2",
         "verdict": status,
         "run_root": str(root),
         "planned_parents": args.expected_parent_count,
+        "started_parents": started_count,
         "completed_parents": sum(task.get("state") == "DONE_VALID" for task in tasks),
+        "audited_parents": audited_count,
         "accepted_parent_results": accepted_count if status == "PASS" else 0,
         "accepted_parent_artifacts": accepted if status == "PASS" else [],
-        "branch_rows": sum(item.get("branch_count", 0) for item in accepted),
+        "branch_rows": branch_rows_total,
         "errors": sorted(set(errors)),
-        "duplicate_identities": [],
-        "missing_identities": sorted(set(keys) - {item["canonical_parent_key"] for item in accepted}),
-        "invalid_branches": 0 if status == "PASS" else None,
-        "control_branch_failure": 0 if status == "PASS" else None,
+        "duplicate_identities": len({key for key in keys if keys.count(key) > 1}),
+        "duplicate_identity_keys": sorted({key for key in keys if keys.count(key) > 1}),
+        "missing_identities": len(set(keys) - {item["canonical_parent_key"] for item in accepted}),
+        "missing_identity_keys": sorted(set(keys) - {item["canonical_parent_key"] for item in accepted}),
+        "invalid_branches": 0 if status == "PASS" else max(0, branch_rows_total - accepted_count * args.expected_branch_count),
+        "control_branch_failure": 0 if status == "PASS" else sum(1 for error in errors if "BRANCH_FAILURE" in error),
         "source_commit": args.expected_source_commit,
         "source_tree": args.expected_source_tree,
         "launcher_verdict": status,

@@ -5,6 +5,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -25,13 +26,32 @@ except ImportError:
 
 
 FORBIDDEN = re.compile(
-    r"(?<![A-Za-z0-9_])(?:VIS|PGD|ATTACK|EVAL160|STUDENT|SCHEDULER|FINAL[_-]?DETECTOR)(?![A-Za-z0-9_])",
+    r"(?<![A-Za-z0-9_])(?:VIS|PGD|ATTACK|EVAL160|STUDENT|SCHEDULER|FINAL[_-]?DETECTOR|GUARD)(?![A-Za-z0-9_])",
     re.IGNORECASE,
 )
 SUITES = ("libero_spatial", "libero_object", "libero_goal", "libero_10")
 MODES = ("O1_CAUSAL25D", "O2_NONCAUSAL25D_UPPER", "O3_PRIVILEGED_CLEAN_STATE_UPPER", "O4_RGB_CAUSAL25D")
 SEEDS = (2026080711, 2026080712, 2026080713)
 BOUNDARY_FIELDS = ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts")
+
+
+def _finite(value: Any) -> bool:
+    if isinstance(value, float):
+        return math.isfinite(value)
+    if isinstance(value, Mapping):
+        return all(_finite(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return all(_finite(item) for item in value)
+    return True
+
+
+def _job_identity_matches(result: Mapping[str, Any], job: Mapping[str, Any], source_commit: str, source_tree: str) -> bool:
+    if result.get("source_commit") != source_commit or result.get("source_tree") != source_tree:
+        return False
+    for field in ("cell_id", "suite", "split", "canonical_parent_key", "seed", "mode"):
+        if result.get(field) != job.get(field):
+            return False
+    return True
 
 
 def _select(rows: list[dict[str, Any]], suite: str, salt: str, count: int, offset: int = 0) -> list[dict[str, Any]]:
@@ -105,6 +125,7 @@ def _run_one(
     run_id: str,
     manifest_sha: str,
     source_commit: str,
+    source_tree: str,
     worker_id: str,
     gpu: int,
     task: Mapping[str, Any],
@@ -136,6 +157,10 @@ def _run_one(
         else:
             result["error"] = "STAGE_O_RESULT_MISSING_OR_INVALID"
         result["exit_code"] = completed.returncode
+        if not _finite(result):
+            result["error"] = "STAGE_O_RESULT_NONFINITE"
+        if not _job_identity_matches(result, job, source_commit, source_tree):
+            result["error"] = "STAGE_O_PROVENANCE_OR_JOB_IDENTITY_MISMATCH"
         if any(result.get(field) != 0 for field in BOUNDARY_FIELDS):
             result["error"] = "STAGE_O_BOUNDARY_NONZERO_OR_MISSING"
         result["status"] = "PASS" if completed.returncode == 0 and result.get("status") == "PASS" and not result.get("error") else "FAIL"
@@ -188,7 +213,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     queue_db = args.output_root / "QUEUE.sqlite"
     run_id = f"STAGE_O_{args.output_root.name}"
     queue = AtomicTaskQueue(str(queue_db), run_id=run_id)
-    queue.init_run(state="ACTIVE", manifest_sha=manifest_sha, source_sha=args.source_commit)
+    source_sha = f"{args.source_commit}:{args.source_tree}"
+    queue.init_run(state="ACTIVE", manifest_sha=manifest_sha, source_sha=source_sha)
     queue.register_tasks([
         {"cell_id": job["cell_id"], "parent_id": job["canonical_parent_key"], "suite": job["suite"], "task_index": job["task_index"], "state_index": job["state_index"], "arm": job["mode"], "task_kind": "STAGE_O_OBSERVABILITY"}
         for job in jobs
@@ -202,12 +228,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         results: list[dict[str, Any]] = []
         while True:
             queue_view = AtomicTaskQueue(str(queue_db), run_id=run_id)
-            task = queue_view.claim_task(worker_id, hostname=socket.gethostname(), pid=os.getpid(), gpu_id=gpu, expected_manifest_sha=manifest_sha, expected_source_sha=args.source_commit)
+            task = queue_view.claim_task(worker_id, hostname=socket.gethostname(), pid=os.getpid(), gpu_id=gpu, expected_manifest_sha=manifest_sha, expected_source_sha=source_sha)
             queue_view.close()
             if task is None:
                 return results
             result = _run_one(
-                queue_db=queue_db, run_id=run_id, manifest_sha=manifest_sha, source_commit=args.source_commit,
+                queue_db=queue_db, run_id=run_id, manifest_sha=manifest_sha, source_commit=args.source_commit, source_tree=args.source_tree,
                 worker_id=worker_id, gpu=gpu, task=task, job=jobs_by_id[task["cell_id"]],
                 job_dir=job_dirs[task["cell_id"]], runner_command=args.runner_command,
             )
@@ -260,7 +286,34 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "audited_utc": utc_now(),
     }
     atomic_write_json(args.output_root / "STAGE_O_AUDIT.json", audit)
+    atomic_write_json(args.output_root / "STAGE_O_INDEPENDENT_AUDIT.json", audit)
+    complete_status = "STAGE_O_PASS" if audit["verdict"] == "PASS" else "STAGE_O_FAIL"
+    atomic_write_json(args.output_root / "STAGE_O_COMPLETE.json", {
+        "schema": "STAGE_O_COMPLETE_V1",
+        "status": complete_status,
+        "source_commit": args.source_commit,
+        "source_tree": args.source_tree,
+        "planned_jobs": len(jobs),
+        "completed_jobs": len(result_ids),
+        "audit_sha256": sha256_file(args.output_root / "STAGE_O_INDEPENDENT_AUDIT.json"),
+        "report_sha256": sha256_file(args.output_root / "STAGE_O_REPORT.json"),
+        "eval160_reads": 0,
+        "protected_eval_reads": 0,
+        "vis_pgd_attack_rollouts": 0,
+        "completed_utc": utc_now(),
+    })
+    _write_root_seal(args.output_root)
     return report
+
+
+def _write_root_seal(root: Path) -> None:
+    excluded = {"SHA256SUMS", "SHA256SUMS.sha256"}
+    rows = []
+    for path in sorted(root.rglob("*")):
+        if path.is_file() and path.name not in excluded:
+            rows.append(f"{sha256_file(path)}  {path.relative_to(root).as_posix()}")
+    (root / "SHA256SUMS").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    (root / "SHA256SUMS.sha256").write_text(f"{sha256_file(root / 'SHA256SUMS')}  SHA256SUMS\n", encoding="utf-8")
 
 
 def build_parser() -> argparse.ArgumentParser:
