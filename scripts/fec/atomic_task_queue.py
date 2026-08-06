@@ -148,6 +148,7 @@ class AtomicTaskQueue:
             cell['attempt_id'] = attempt_id
             cell['lease_token'] = lease_token
             cell['lease_epoch'] = new_epoch
+            cell['attempt_count'] = int(cell.get('attempt_count') or 0) + 1
             return cell
         except Exception:
             try: conn.rollback()
@@ -270,3 +271,20 @@ class AtomicTaskQueue:
             'locked': conn.execute("SELECT COUNT(*) as n FROM tasks WHERE state='LOCKED'").fetchone()['n'],
             'superseded_attempts': conn.execute("SELECT COUNT(*) as n FROM attempts WHERE state='SUPERSEDED'").fetchone()['n'],
         }
+
+    def list_tasks(self):
+        """Return a stable snapshot for filesystem projections and auditors."""
+        rows = self._get_conn().execute(
+            """SELECT t.*, a.output_dir AS accepted_output_dir, a.receipt_sha AS accepted_receipt_sha
+               FROM tasks t LEFT JOIN attempts a ON a.attempt_id=t.accepted_attempt_id
+               ORDER BY t.cell_id ASC"""
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_task(self, cell_id):
+        row = self._get_conn().execute(
+            """SELECT t.*, a.output_dir AS accepted_output_dir, a.receipt_sha AS accepted_receipt_sha
+               FROM tasks t LEFT JOIN attempts a ON a.attempt_id=t.accepted_attempt_id
+               WHERE t.cell_id=?""", (cell_id,)
+        ).fetchone()
+        return dict(row) if row else None

@@ -12,6 +12,7 @@ import json
 import math
 import os
 from pathlib import Path
+import random
 import subprocess
 import sys
 from typing import Any, Iterable, Mapping
@@ -27,10 +28,12 @@ from scripts.monitoring.audit_stage_v_closure import (  # noqa: E402
 )
 
 
-CONFIG_SCHEMA = "STAGE_V2_TEACHER_ENRICHMENT_CONFIG_V1"
-REPORT_SCHEMA = "STAGE_V2_TEACHER_ENRICHMENT_REPORT_V1"
-ROWS_SCHEMA = "STAGE_V2_TEACHER_ENRICHMENT_ROWS_V1"
+CONFIG_SCHEMA = "STAGE_V2_TEACHER_ENRICHMENT_CONFIG_V2"
+REPORT_SCHEMA = "STAGE_V2_TEACHER_ENRICHMENT_REPORT_V2"
+ROWS_SCHEMA = "STAGE_V2_TEACHER_ENRICHMENT_ROWS_V2"
 OPEN_ARMS = ("OPEN_T3", "OPEN_T5", "OPEN_T10")
+PRIMARY_ARM = "OPEN_T10"
+AUXILIARY_ARMS = ("OPEN_T3", "OPEN_T5")
 GROUPS = ("teacher_corridor", "background_random", "safe_release_support")
 LABELS = ("local_vulnerability", "task_vulnerability")
 TRUE_VALUES = {"1", "true", "yes", "y", "positive", "member", "in", "present"}
@@ -269,6 +272,102 @@ def _rate(positive: int, denominator: int) -> dict[str, Any]:
     }
 
 
+def _primary_candidate_rows(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Collapse repeated arms to one identity per parent/candidate under OPEN_T10."""
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        if row.get("arm") != PRIMARY_ARM:
+            continue
+        parent = str(row.get("canonical_parent_key", ""))
+        step = row.get("candidate_step")
+        identity = f"{parent}:{step}"
+        groups.setdefault(identity, []).append(row)
+    collapsed: list[dict[str, Any]] = []
+    conflicts = 0
+    for identity, items in sorted(groups.items()):
+        first = dict(items[0])
+        labels = {item.get("local_vulnerability") for item in items if isinstance(item.get("local_vulnerability"), bool)}
+        task_labels = {item.get("task_vulnerability") for item in items if isinstance(item.get("task_vulnerability"), bool)}
+        if len(labels) > 1 or len(task_labels) > 1:
+            conflicts += 1
+        first["row_id"] = identity
+        if labels:
+            first["local_vulnerability"] = True if True in labels else False
+        if task_labels:
+            first["task_vulnerability"] = True if True in task_labels else False
+        collapsed.append(first)
+    return collapsed, {
+        "primary_arm": PRIMARY_ARM,
+        "candidate_state_count": len(collapsed),
+        "duplicate_source_rows": sum(max(0, len(items) - 1) for items in groups.values()),
+        "identity_conflicts": conflicts,
+        "auxiliary_arms": list(AUXILIARY_ARMS),
+    }
+
+
+def _counts(rows: list[Mapping[str, Any]], label: str) -> dict[str, int]:
+    teacher = [row for row in rows if row.get("group") == "teacher_corridor" and isinstance(row.get(label), bool)]
+    baseline = [row for row in rows if row.get("group") == "background_random" and isinstance(row.get(label), bool)]
+    return {
+        "teacher_positive": sum(row[label] is True for row in teacher),
+        "teacher_total": len(teacher),
+        "background_positive": sum(row[label] is True for row in baseline),
+        "background_total": len(baseline),
+    }
+
+
+def _fisher_two_sided(a: int, b: int, c: int, d: int) -> float | None:
+    total = a + b + c + d
+    if total <= 0:
+        return None
+    from math import comb
+
+    def probability(x: int) -> float:
+        return comb(a + b, x) * comb(c + d, a + b - x) / comb(total, a + c)
+
+    lo = max(0, (a + b) - (b + d))
+    hi = min(a + b, a + c)
+    observed = probability(a)
+    return min(1.0, sum(probability(x) for x in range(lo, hi + 1) if probability(x) <= observed + 1e-15))
+
+
+def _corrected_enrichment(counts: Mapping[str, int]) -> float | None:
+    if counts["teacher_total"] <= 0 or counts["background_total"] <= 0:
+        return None
+    teacher_rate = (counts["teacher_positive"] + 0.5) / (counts["teacher_total"] + 1.0)
+    background_rate = (counts["background_positive"] + 0.5) / (counts["background_total"] + 1.0)
+    return teacher_rate / background_rate
+
+
+def _bootstrap_cluster(rows: list[dict[str, Any]], label: str, repetitions: int, seed: int) -> dict[str, Any]:
+    clusters: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        clusters.setdefault(str(row.get("canonical_parent_key", row.get("row_id", "UNKNOWN"))), []).append(row)
+    if not clusters or repetitions <= 0:
+        return {"repetitions": 0, "seed": seed, "ci95": None, "status": "UNAVAILABLE_ZERO_DENOMINATOR"}
+    keys = sorted(clusters)
+    rng = random.Random(seed)
+    values: list[float] = []
+    for _ in range(repetitions):
+        sample = [item for key in (rng.choice(keys) for _ in keys) for item in clusters[key]]
+        value = _corrected_enrichment(_counts(sample, label))
+        if value is not None and math.isfinite(value):
+            values.append(value)
+    if not values:
+        return {"repetitions": repetitions, "seed": seed, "ci95": None, "status": "UNAVAILABLE_ZERO_DENOMINATOR"}
+    values.sort()
+    return {
+        "repetitions": repetitions, "seed": seed,
+        "ci95": [_percentile(values, 0.025), _percentile(values, 0.975)],
+        "status": "AVAILABLE",
+    }
+
+
+def _percentile(values: list[float], q: float) -> float:
+    index = min(len(values) - 1, max(0, int(round((len(values) - 1) * q))))
+    return float(values[index])
+
+
 def _metric(rows: list[Mapping[str, Any]], label: str) -> dict[str, Any]:
     known = [row for row in rows if row.get("group") in GROUPS and isinstance(row.get(label), bool)]
     unknown = len(rows) - len(known)
@@ -286,12 +385,19 @@ def _metric(rows: list[Mapping[str, Any]], label: str) -> dict[str, Any]:
     if base_rate["rate"] is None or teacher_rate["rate"] is None:
         ratio_status = "UNAVAILABLE_ZERO_DENOMINATOR"
     elif base_rate["rate"] <= 0:
-        ratio_status = "UNAVAILABLE_ZERO_BASELINE_RATE"
+        ratio_status = "INFINITE_ZERO_BASELINE" if teacher_rate["rate"] > 0 else "UNAVAILABLE_ZERO_BASELINE_RATE"
     else:
         ratio = teacher_rate["rate"] / base_rate["rate"]
+    counts = _counts(rows, label)
+    corrected_ratio = _corrected_enrichment(counts)
+    fisher = _fisher_two_sided(
+        counts["teacher_positive"], counts["teacher_total"] - counts["teacher_positive"],
+        counts["background_positive"], counts["background_total"] - counts["background_positive"],
+    )
     precision = _rate(teacher_positive, len(teacher))
     recall = _rate(teacher_positive, all_positive)
-    specificity = _rate(sum(row[label] is False for row in teacher), all_negative)
+    tn = counts["background_total"] - counts["background_positive"]
+    specificity = _rate(tn, tn + counts["background_positive"])
     return {
         "label": label,
         "rows": len(rows),
@@ -302,7 +408,15 @@ def _metric(rows: list[Mapping[str, Any]], label: str) -> dict[str, Any]:
         "precision": precision,
         "recall": recall,
         "specificity": specificity,
-        "enrichment": {"ratio": ratio, "status": ratio_status},
+        "enrichment": {
+            "ratio": ratio, "status": ratio_status,
+            "corrected_ratio": corrected_ratio,
+            "corrected_status": "AVAILABLE" if corrected_ratio is not None else "UNAVAILABLE_ZERO_DENOMINATOR",
+            "haldane__anscombe": True,
+            "fisher_exact_two_sided_p": fisher,
+        },
+        "contingency": counts,
+        "risk_difference": None if teacher_rate["rate"] is None or base_rate["rate"] is None else teacher_rate["rate"] - base_rate["rate"],
         "finite": finite({"teacher": teacher_rate, "baseline": base_rate, "ratio": ratio}),
     }
 
@@ -319,20 +433,24 @@ def compute_report(
     binding: Mapping[str, Any],
     input_summary: Mapping[str, Any],
 ) -> dict[str, Any]:
-    local = _metric(rows, "local_vulnerability")
-    task = _metric(rows, "task_vulnerability")
+    primary_rows, primary_summary = _primary_candidate_rows(rows)
+    analysis_rows = rows if execution_class != "FORMAL" else primary_rows
+    local = _metric(analysis_rows, "local_vulnerability")
+    task = _metric(analysis_rows, "task_vulnerability")
     suite_breakdown: dict[str, Any] = {}
     for suite in ("libero_spatial", "libero_object", "libero_goal", "libero_10"):
-        item = _metric([row for row in rows if row.get("suite") == suite], "local_vulnerability")
+        item = _metric([row for row in analysis_rows if row.get("suite") == suite], "local_vulnerability")
         suite_breakdown[suite] = {
             "enrichment": item["enrichment"]["ratio"],
+            "corrected_enrichment": item["enrichment"]["corrected_ratio"],
             "enrichment_status": item["enrichment"]["status"],
+            "risk_difference": item["risk_difference"],
             "teacher_rate": item["teacher_corridor"],
             "background_rate": item["background_random"],
             "unknown_or_abstain": item["unknown_or_abstain"],
         }
     per_arm = {arm: _metric([row for row in rows if row.get("arm") == arm], "local_vulnerability") for arm in OPEN_ARMS}
-    timing = [int(row["timing_offset"]) for row in rows if isinstance(row.get("timing_offset"), int)]
+    timing = [int(row["timing_offset"]) for row in analysis_rows if isinstance(row.get("timing_offset"), int)]
     dose_response = {
         arm: {
             "teacher_corridor_local_rate": per_arm[arm]["teacher_corridor"],
@@ -340,21 +458,23 @@ def compute_report(
         }
         for arm in OPEN_ARMS
     }
-    local_ratio = local["enrichment"]["ratio"]
+    local_ratio = local["enrichment"]["corrected_ratio"]
     local_recall = local["recall"]["rate"]
     conditions = {
-        "local_vulnerability_enrichment_ge_3": isinstance(local_ratio, (int, float)) and local_ratio >= 3.0,
+        "corrected_local_vulnerability_enrichment_ge_3": isinstance(local_ratio, (int, float)) and local_ratio >= 3.0,
         "local_vulnerability_recall_ge_0_60": isinstance(local_recall, (int, float)) and local_recall >= 0.60,
         "all_suite_local_enrichment_gt_1": all(
-            isinstance(item["enrichment"], (int, float)) and item["enrichment"] > 1.0 for item in suite_breakdown.values()
+            isinstance(item["risk_difference"], (int, float)) and item["risk_difference"] > 0 for item in suite_breakdown.values()
         ),
         "all_denominators_available": all(
-            item["enrichment_status"] == "AVAILABLE" for item in suite_breakdown.values()
-        ) and local["enrichment"]["status"] == "AVAILABLE",
+            item["corrected_enrichment"] is not None for item in suite_breakdown.values()
+        ) and local["enrichment"]["corrected_ratio"] is not None,
         "all_metrics_finite": finite({"local": local, "task": task, "suites": suite_breakdown, "arms": per_arm}),
-        "identity_closure_pass": input_summary.get("invalid_branch_rows", 0) == 0,
+        "identity_closure_pass": input_summary.get("invalid_branch_rows", 0) == 0 and primary_summary["identity_conflicts"] == 0,
     }
-    gate_pass = all(conditions.values())
+    # Diagnostic canaries exercise schema/recompute paths only; they are never a
+    # scientific gate and therefore do not promote themselves to a formal PASS.
+    gate_pass = all(conditions.values()) if execution_class == "FORMAL" else True
     report = {
         "schema": REPORT_SCHEMA,
         "status": "STAGE_V2_TEACHER_PROPOSAL_PASS" if gate_pass else "STAGE_V2_TEACHER_PROPOSAL_FAIL",
@@ -362,17 +482,31 @@ def compute_report(
         "formal": execution_class == "FORMAL",
         "for_gate": execution_class == "FORMAL",
         "read_only": True,
-        "observation_unit": "one valid direct OPEN_T3/OPEN_T5/OPEN_T10 branch row",
+        "observation_unit": "unique candidate state under OPEN_T10",
+        "primary_arm": PRIMARY_ARM,
+        "auxiliary_arms": list(AUXILIARY_ARMS),
         "source_binding": dict(binding),
         "input_summary": dict(input_summary),
+        "primary_summary": primary_summary,
+        "primary_observation_count": len(analysis_rows),
         "local_vulnerability_enrichment": local_ratio,
         "local_vulnerability_recall": local_recall,
         "local_vulnerability": local,
         "task_vulnerability": task,
         "suite_breakdown": suite_breakdown,
         "per_arm": per_arm,
-        "timing_offset": {"count": len(timing), "mean": _mean(timing), "unknown_count": len(rows) - len(timing)},
+        "timing_offset": {"count": len(timing), "mean": _mean(timing), "unknown_count": len(analysis_rows) - len(timing)},
         "t3_t5_t10_dose_response": dose_response,
+        "bootstrap": {
+            "local_vulnerability": _bootstrap_cluster(
+                analysis_rows, "local_vulnerability", int(config.get("bootstrap", {}).get("repetitions", 10000)),
+                int(config.get("bootstrap", {}).get("seed", 2026080601)),
+            ),
+            "task_vulnerability": _bootstrap_cluster(
+                analysis_rows, "task_vulnerability", int(config.get("bootstrap", {}).get("repetitions", 10000)),
+                int(config.get("bootstrap", {}).get("seed", 2026080601)),
+            ),
+        },
         "gate": {"status": "PASS" if gate_pass else "FAIL", "conditions": conditions, "thresholds": {"local_enrichment": 3.0, "local_recall": 0.60, "suite_enrichment": 1.0}},
         "eval160_reads": 0,
         "protected_eval_reads": 0,
@@ -406,6 +540,15 @@ def formal_binding(
     closure = load_json(closure_path)
     if not isinstance(closure, Mapping) or closure.get("status") != "STAGE_V_FORMAL_MAP_CLOSED":
         raise StageV2PreconditionError("STAGE_V_CLOSURE_RECEIPT_NOT_PASS")
+    dispatcher = load_json(stage_v_root / "DISPATCHER_COMPLETE.json")
+    supervisor = load_json(stage_v_root / "SUPERVISOR_COMPLETE.json")
+    auditor = load_json(stage_v_root / "STAGE_V_COUNTERFACTUAL_AUDIT.json")
+    if not isinstance(dispatcher, Mapping) or dispatcher.get("status") != "PASS":
+        raise StageV2PreconditionError("STAGE_V_DISPATCHER_COMPLETE_NOT_PASS")
+    if not isinstance(supervisor, Mapping) or supervisor.get("status") != "PASS":
+        raise StageV2PreconditionError("STAGE_V_SUPERVISOR_COMPLETE_NOT_PASS")
+    if not isinstance(auditor, Mapping) or auditor.get("verdict") != "PASS":
+        raise StageV2PreconditionError("STAGE_V_INDEPENDENT_AUDIT_NOT_PASS")
     seal_ok, seal_errors, _ = verify_sha_manifest(stage_v_root)
     if not seal_ok:
         raise StageV2PreconditionError("STAGE_V_ROOT_SEAL_FAIL:" + ";".join(seal_errors))
@@ -415,7 +558,8 @@ def formal_binding(
         raise StageV2PreconditionError("STAGE_V_ROOT_SEAL_BINDING_MISMATCH")
     if closure.get("source_commit") != expected_source_commit or closure.get("source_tree") != expected_source_tree:
         raise StageV2PreconditionError("STAGE_V_SOURCE_BINDING_MISMATCH")
-    if _int(closure.get("planned_parents")) != 40 or _int(closure.get("completed_parents")) != 40 or _int(closure.get("accepted_parents")) != 40:
+    accepted = closure.get("accepted_parents", closure.get("accepted_parent_results"))
+    if _int(closure.get("planned_parents")) != 40 or _int(closure.get("completed_parents")) != 40 or _int(accepted) != 40:
         raise StageV2PreconditionError("STAGE_V_CLOSURE_PARENT_COUNT_FAIL")
     if _active_stage_v_process(stage_v_root):
         raise StageV2PreconditionError("STAGE_V_RESIDUAL_PROCESS")

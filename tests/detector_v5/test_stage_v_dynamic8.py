@@ -1,0 +1,272 @@
+from __future__ import annotations
+
+import datetime as dt
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+from types import SimpleNamespace
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from scripts.detector_v5 import run_stage_v_parent_aware_supervisor as sup
+from scripts.detector_v5.audit_stage_v_abort_postmortem import build_postmortem, build_timeout_policy
+from scripts.detector_v5.run_stage_v_control_qualification import ranked
+from scripts.detector_v5.stage_v_dynamic_common import (
+    atomic_write_json, gpu_preflight, project_queue, science_artifact_status, sha256_file,
+)
+from scripts.detector_v5.stage_v_science_core_provenance import build as build_provenance, verify as verify_provenance
+from scripts.detector_v5.run_stage_v_local_supervisor import ExclusiveLock, SupervisorError, terminate_process_group
+from scripts.fec.atomic_task_queue import AtomicTaskQueue
+
+
+def write_json(path: Path, value: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def make_args(root: Path) -> SimpleNamespace:
+    return SimpleNamespace(
+        run_root=root, approved_gpus=[0, 1, 2, 3, 4, 6, 7, 8], excluded_gpus=[5],
+        expected_source_commit="commit", expected_source_tree="tree", skip_resource_checks=False,
+        gpu_query_command="fake", min_available_ram_gib=0, external_pid=0, heartbeat_stale_seconds=600,
+        ssh_probe_command="", ssh_probe_timeout=1, timeout_policy=None,
+    )
+
+
+def fake_resources(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sup, "_mem_snapshot", lambda: {"available_ram_bytes": 1024**4, "available_ram_gib": 1024, "swap_used_bytes": 0, "swap_in": 0, "swap_out": 0, "oom_kill": 0})
+    monkeypatch.setattr(sup, "gpu_snapshot", lambda command: ([{"gpu_id": gpu, "memory_used_mib": 0, "memory_free_mib": 100000, "utilization_gpu_percent": 0} for gpu in [0, 1, 2, 3, 4, 6, 7, 8]], None))
+    monkeypatch.setattr(sup, "_xid_status", lambda start: None)
+
+
+def test_atomic_queue_claim_is_single_owner(tmp_path: Path) -> None:
+    queue = AtomicTaskQueue(str(tmp_path / "q.sqlite"), run_id="r")
+    queue.init_run(state="ACTIVE", manifest_sha="m", source_sha="s")
+    queue.register_tasks([{"cell_id": "p", "parent_id": "p", "suite": "libero_goal", "task_index": 0, "state_index": 48, "arm": "PARENT"}])
+    first = queue.claim_task("w1", expected_manifest_sha="m", expected_source_sha="s")
+    second = queue.claim_task("w2", expected_manifest_sha="m", expected_source_sha="s")
+    assert first and second is None
+    queue.close()
+
+
+def test_queue_projection_has_pending_running_complete_failed(tmp_path: Path) -> None:
+    root = tmp_path / "run"
+    project_queue(root, [{"cell_id": "a", "state": "PENDING"}, {"cell_id": "b", "state": "RUNNING"}, {"cell_id": "c", "state": "DONE_VALID"}, {"cell_id": "d", "state": "FAILED_FATAL_POST_ACTION"}])
+    assert (root / "QUEUE_PENDING" / "a.json").is_file()
+    assert (root / "QUEUE_RUNNING" / "b.json").is_file()
+    assert (root / "QUEUE_COMPLETE" / "c.json").is_file()
+    assert (root / "QUEUE_FAILED" / "d.json").is_file()
+
+
+def test_science_core_provenance_detects_tamper(tmp_path: Path) -> None:
+    source = tmp_path / "runner.py"
+    source.write_text("pass\n", encoding="utf-8")
+    frozen = build_provenance([source], source_commit="b300", source_tree="968")
+    receipt = tmp_path / "PROVENANCE.json"
+    write_json(receipt, frozen)
+    assert verify_provenance(receipt, expected_commit="b300", expected_tree="968")[0]
+    source.write_text("tampered\n", encoding="utf-8")
+    assert not verify_provenance(receipt, expected_commit="b300", expected_tree="968")[0]
+
+
+def test_gpu_preflight_excludes_gpu5_and_waits_when_capacity_is_short(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("scripts.detector_v5.stage_v_dynamic_common.gpu_snapshot", lambda command: ([{"gpu_id": gpu, "memory_free_mib": 100000} for gpu in range(8)], None))
+    result = gpu_preflight(required_count=8, excluded_gpus=[5], canary_peak_mib=1000)
+    assert result["status"] == "PRELAUNCH_WAITING_FOR_8_GPUS"
+    assert 5 not in result["safe_gpus"]
+
+
+@pytest.mark.skipif(os.name == "nt", reason="fcntl process locking is Linux production behavior")
+def test_duplicate_launcher_lock_rejected(tmp_path: Path) -> None:
+    lock_path = tmp_path / "lock"
+    first = ExclusiveLock(lock_path, {"supervisor_pid": os.getpid()})
+    first.acquire(tmp_path / "run")
+    second = ExclusiveLock(lock_path, {"supervisor_pid": os.getpid()})
+    with pytest.raises(SupervisorError, match="DUPLICATE_SUPERVISOR"):
+        second.acquire(tmp_path / "run")
+    first.close()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="fcntl process locking is Linux production behavior")
+def test_stale_lock_is_audited(tmp_path: Path) -> None:
+    lock_path = tmp_path / "lock"
+    lock_path.write_text(json.dumps({"supervisor_pid": 999999}) + "\n", encoding="utf-8")
+    lock = ExclusiveLock(lock_path, {"supervisor_pid": os.getpid()})
+    lock.acquire(tmp_path / "run")
+    assert (tmp_path / "run" / "STALE_LOCK_AUDIT.json").is_file()
+    lock.close()
+
+
+def test_ssh_probe_failure_is_telemetry_only(tmp_path: Path) -> None:
+    args = make_args(tmp_path / "run")
+    args.ssh_probe_command = "false"
+    worker = sup.DynamicSupervisor(args)
+    worker._probe_ssh()
+    assert worker.ssh_failure_count == 1
+    assert not (args.run_root / "ABORTED_INCOMPLETE.json").exists()
+
+
+def test_local_heartbeat_is_atomic(tmp_path: Path) -> None:
+    path = tmp_path / "LOCAL_HEARTBEAT.json"
+    atomic_write_json(path, {"schema": "test", "heartbeat_count": 1})
+    assert json.loads(path.read_text(encoding="utf-8"))["heartbeat_count"] == 1
+
+
+def test_dead_worker_timeout_is_parent_bound(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    root = tmp_path / "run"
+    root.mkdir()
+    old = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=20)).isoformat()
+    write_json(root / "worker_gpu0" / "WORKER_STATUS.json", {
+        "state": "RUNNING", "worker_pid": 999999, "child_pid": 999998, "worker_pgid": 999999,
+        "gpu_id": 0, "current_parent": "libero_goal/task_00/state_48", "current_branch": "OPEN_T10",
+        "updated_utc": old, "parent_started_epoch": 1, "last_progress_epoch": 1, "last_artifact_epoch": 1,
+        "simulator_step": 0, "branch_progress": 0, "gpu_utilization_percent": 0,
+    })
+    worker = sup.DynamicSupervisor(make_args(root))
+    _, errors = worker._resource_snapshot()
+    assert "WORKER_HEARTBEAT_LOST_BOUND" in errors
+    assert list((root / "TIMEOUT_RECEIPTS").glob("*.json"))
+
+
+def test_healthy_worker_with_fresh_heartbeat_is_not_killed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    root = tmp_path / "run"
+    root.mkdir()
+    write_json(root / "worker_gpu0" / "WORKER_STATUS.json", {
+        "state": "RUNNING", "worker_pid": os.getpid(), "child_pid": os.getpid(), "worker_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
+        "gpu_id": 0, "current_parent": "libero_goal/task_00/state_48", "current_branch": "OPEN_T10",
+        "updated_utc": dt.datetime.now(dt.timezone.utc).isoformat(), "parent_started_epoch": time_now() - 60,
+        "last_progress_epoch": time_now() - 5, "last_artifact_epoch": time_now() - 5,
+        "simulator_step": 10, "branch_progress": 3, "gpu_utilization_percent": 50,
+    })
+    worker = sup.DynamicSupervisor(make_args(root))
+    _, errors = worker._resource_snapshot()
+    assert not any("TIMEOUT" in item or "HEARTBEAT_LOST" in item for item in errors)
+
+
+def time_now() -> float:
+    import time
+    return time.time()
+
+
+def test_oom_counter_delta_is_hard_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    monkeypatch.setattr(sup, "_mem_snapshot", lambda: {"available_ram_bytes": 1024**4, "available_ram_gib": 1024, "swap_used_bytes": 0, "swap_in": 0, "swap_out": 0, "oom_kill": 2})
+    worker = sup.DynamicSupervisor(make_args(tmp_path / "run"))
+    worker.baseline_oom = 1
+    _, errors = worker._resource_snapshot()
+    assert "OOM_KILL_COUNTER_INCREASED" in errors
+
+
+def test_swap_two_samples_is_hard_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    monkeypatch.setattr(sup, "_mem_snapshot", lambda: {"available_ram_bytes": 1024**4, "available_ram_gib": 1024, "swap_used_bytes": 1, "swap_in": 1, "swap_out": 1, "oom_kill": 0})
+    worker = sup.DynamicSupervisor(make_args(tmp_path / "run"))
+    worker.baseline_oom = 0
+    assert "SWAP_NONZERO_TWO_SAMPLES" not in worker._resource_snapshot()[1]
+    assert "SWAP_NONZERO_TWO_SAMPLES" in worker._resource_snapshot()[1]
+
+
+def test_xid_is_hard_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    monkeypatch.setattr(sup, "_xid_status", lambda start: "NVRM: Xid 31")
+    worker = sup.DynamicSupervisor(make_args(tmp_path / "run"))
+    _, errors = worker._resource_snapshot()
+    assert "NVIDIA_XID" in errors
+
+
+def test_gpu5_and_duplicate_worker_are_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    root = tmp_path / "run"
+    root.mkdir()
+    now = dt.datetime.now(dt.timezone.utc).isoformat()
+    for gpu in (0, 0, 5):
+        write_json(root / f"worker_gpu{gpu}_{len(list(root.glob('worker*')))}" / "WORKER_STATUS.json", {
+            "state": "RUNNING", "worker_pid": os.getpid(), "child_pid": os.getpid(), "gpu_id": gpu,
+            "updated_utc": now, "current_parent": None,
+        })
+    worker = sup.DynamicSupervisor(make_args(root))
+    _, errors = worker._resource_snapshot()
+    assert "MULTIPLE_PROJECT_WORKERS_PER_GPU" in errors
+    assert "UNAPPROVED_OR_GPU5_WORKER" in errors
+
+
+@pytest.mark.skipif(os.name != "posix", reason="process-group semantics are Linux production behavior")
+def test_abort_reaps_owned_process_group() -> None:
+    child = subprocess.Popen(["sleep", "60"], start_new_session=True)
+    terminate_process_group(child, grace_seconds=1)
+    assert child.poll() is not None
+
+
+def test_science_artifact_validation_requires_complete_parent(tmp_path: Path) -> None:
+    output = tmp_path / "attempt"
+    parent = output / "libero_goal" / "task_00" / "state_48"
+    parent.mkdir(parents=True)
+    write_json(parent / "PARENT_RESULT.json", {"status": "PASS", "clean_success": True, "branch_count": 72, "canonical_parent_key": "libero_goal/task_00/state_48"})
+    (parent / "COUNTERFACTUAL_BRANCHES.jsonl").write_text("{}\n", encoding="utf-8")
+    assert science_artifact_status(output, "libero_goal/task_00/state_48")["valid"]
+    (parent / "PARENT_RESULT.json").write_text("{}\n", encoding="utf-8")
+    assert not science_artifact_status(output, "libero_goal/task_00/state_48")["valid"]
+
+
+def test_postmortem_is_read_only_and_falls_back_timeout_policy(tmp_path: Path) -> None:
+    old = tmp_path / "old"
+    old.mkdir()
+    write_json(old / "ABORTED_INCOMPLETE.json", {"status": "ABORTED_INCOMPLETE", "reason": "PARENT_WATCHDOG_TIMEOUT"})
+    write_json(old / "LOCAL_HEARTBEAT.json", {"active_worker_pids": [1], "current_parent": None, "current_branch": None})
+    before = (old / "ABORTED_INCOMPLETE.json").read_bytes()
+    report = build_postmortem(old)
+    policy = build_timeout_policy(report)
+    assert policy["source"] == "fallback_due_to_insufficient_timestamps"
+    assert (old / "ABORTED_INCOMPLETE.json").read_bytes() == before
+
+
+def test_stage_v2_primary_unit_is_open_t10() -> None:
+    from scripts.detector_v5.stage_v2_teacher_enrichment import compute_report
+    report = compute_report(
+        [
+            {"canonical_parent_key": "p", "arm": "OPEN_T10", "candidate_step": 1, "group": "teacher_corridor", "local_vulnerability": True, "task_vulnerability": True},
+            {"canonical_parent_key": "p", "arm": "OPEN_T10", "candidate_step": 1, "group": "teacher_corridor", "local_vulnerability": True, "task_vulnerability": True},
+            {"canonical_parent_key": "q", "arm": "OPEN_T10", "candidate_step": 1, "group": "background_random", "local_vulnerability": False, "task_vulnerability": False},
+        ], config={"bootstrap": {"repetitions": 10, "seed": 1}}, execution_class="FORMAL", binding={}, input_summary={"invalid_branch_rows": 0},
+    )
+    assert report["primary_arm"] == "OPEN_T10"
+    assert report["primary_summary"]["candidate_state_count"] == 2
+    assert report["primary_summary"]["duplicate_source_rows"] == 1
+
+
+def test_dynamic8_end_to_end_accepts_all_parents(tmp_path: Path) -> None:
+    repo = Path(__file__).resolve().parents[2]
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+    tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=repo, text=True).strip()
+    manifest = tmp_path / "manifest.json"
+    rows = [{"canonical_parent_key": f"libero_goal/task_{index:02d}/state_48", "suite": "libero_goal", "task_index": index, "state_index": 48} for index in range(8)]
+    write_json(manifest, {"parents": rows})
+    preflight = tmp_path / "preflight.json"
+    write_json(preflight, {"status": "PASS", "safe_gpus": [0, 1, 2, 3, 4, 6, 7, 8]})
+    root = tmp_path / "run"
+    queue_db = root / "QUEUE.sqlite"
+    lock = tmp_path / "lock"
+    supervisor = repo / "scripts/detector_v5/run_stage_v_parent_aware_supervisor.py"
+    dispatcher = repo / "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py"
+    auditor = repo / "scripts/detector_v5/audit_stage_v_dynamic_queue.py"
+    canary_worker = repo / "scripts/detector_v5/stage_v_dynamic_canary_worker.py"
+    worker_command = f"{sys.executable} {canary_worker} --parent-key {{parent_key}} --output-dir {{output_dir}} --source-commit {commit} --source-tree {tree}"
+    command = [sys.executable, str(supervisor), "--run-root", str(root), "--repo-root", str(repo), "--parent-manifest", str(manifest), "--queue-db", str(queue_db), "--run-id", "e2e", "--expected-parent-count", "8", "--expected-source-commit", commit, "--expected-source-tree", tree, "--lock-path", str(lock), "--approved-gpus", "0,1,2,3,4,6,7,8", "--preflight-file", str(preflight), "--dispatcher-script", str(dispatcher), "--auditor-script", str(auditor), "--worker-command", worker_command, "--skip-resource-checks", "--poll-seconds", "0.1", "--worker-heartbeat-seconds", "0.1", "--heartbeat-stale-seconds", "5", "--min-available-ram-gib", "0"]
+    result = subprocess.run(command, cwd=repo, capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert json.loads((root / "SUPERVISOR_COMPLETE.json").read_text(encoding="utf-8"))["status"] == "PASS"
+    assert json.loads((root / "STAGE_V_COUNTERFACTUAL_AUDIT.json").read_text(encoding="utf-8"))["verdict"] == "PASS"
+
+
+def test_abort_receipt_zeroes_accepted_count(tmp_path: Path) -> None:
+    worker = sup.DynamicSupervisor(make_args(tmp_path / "run"))
+    worker.root.mkdir()
+    assert worker._abort("TEST_ABORT") == 1
+    receipt = json.loads((worker.root / "ABORTED_INCOMPLETE.json").read_text(encoding="utf-8"))
+    assert receipt["accepted_parent_results"] == 0

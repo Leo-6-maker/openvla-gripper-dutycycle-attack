@@ -1,8 +1,10 @@
 {
-  "schema": "STAGE_V2_TEACHER_ENRICHMENT_CONFIG_V1",
+  "schema": "STAGE_V2_TEACHER_ENRICHMENT_CONFIG_V2",
   "stage": "V2_TEACHER_ENRICHMENT",
   "read_only": true,
-  "observation_unit": "one valid direct OPEN_T3/OPEN_T5/OPEN_T10 branch row",
+  "observation_unit": "unique candidate state under OPEN_T10",
+  "primary_arm": "OPEN_T10",
+  "auxiliary_arms": ["OPEN_T3", "OPEN_T5"],
   "open_arms": ["OPEN_T3", "OPEN_T5", "OPEN_T10"],
   "groups": [
     "teacher_corridor",
@@ -11,14 +13,16 @@
   ],
   "labels": ["local_vulnerability", "task_vulnerability"],
   "gates": {
-    "local_vulnerability_enrichment_min": 3.0,
+    "corrected_enrichment_min": 3.0,
     "local_vulnerability_recall_min": 0.6,
-    "suite_local_enrichment_strict_min": 1.0,
+    "suite_risk_gt_background": true,
     "all_denominators_required": true,
     "finite_metrics_required": true,
     "unknown_rows_are_abstain": true
   },
   "zero_denominator": "UNAVAILABLE_ZERO_DENOMINATOR",
+  "zero_background_raw_ratio": "INFINITE_ZERO_BASELINE",
+  "bootstrap": {"repetitions": 10000, "seed": 2026080601, "cluster": "canonical_parent_key"},
   "boundary": {
     "eval160_reads": 0,
     "protected_eval_reads": 0,

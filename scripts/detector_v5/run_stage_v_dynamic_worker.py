@@ -1,0 +1,324 @@
+"""Claim and execute Stage V parents, one at a time, on one physical GPU."""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+import shlex
+import socket
+import subprocess
+import sys
+import threading
+import time
+from typing import Any
+
+try:
+    from .stage_v_dynamic_common import (
+        atomic_write_json, attempt_dir, canonical_parent_key, project_queue, read_json,
+        science_artifact_status, sha256_file, sha256_json, load_rows, utc_now,
+    )
+except ImportError:  # direct server execution
+    from stage_v_dynamic_common import (
+        atomic_write_json, attempt_dir, canonical_parent_key, project_queue, read_json,
+        science_artifact_status, sha256_file, sha256_json, load_rows, utc_now,
+    )
+
+try:
+    from scripts.fec.atomic_task_queue import AtomicTaskQueue
+except ModuleNotFoundError:  # direct server execution from scripts/detector_v5
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from scripts.fec.atomic_task_queue import AtomicTaskQueue
+
+
+def _gpu_row(gpu_id: int) -> dict[str, Any]:
+    try:
+        completed = subprocess.run(
+            ["nvidia-smi", f"--id={gpu_id}", "--query-gpu=utilization.gpu,memory.used,memory.free",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, check=False, timeout=10,
+        )
+        fields = [item.strip() for item in completed.stdout.strip().split(",")]
+        return {
+            "gpu_utilization_percent": float(fields[0]) if fields and fields[0] else None,
+            "gpu_memory_used_mib": float(fields[1]) if len(fields) > 1 and fields[1] else None,
+            "gpu_memory_free_mib": float(fields[2]) if len(fields) > 2 and fields[2] else None,
+        }
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return {"gpu_utilization_percent": None, "gpu_memory_used_mib": None, "gpu_memory_free_mib": None}
+
+
+class Worker:
+    def __init__(self, args: argparse.Namespace):
+        self.args = args
+        self.root = args.run_root.resolve()
+        self.worker_root = self.root / f"worker_gpu{args.gpu_id}"
+        self.worker_root.mkdir(parents=True, exist_ok=True)
+        self.status_path = self.worker_root / "WORKER_STATUS.json"
+        self.heartbeat_path = self.worker_root / "WORKER_HEARTBEAT.json"
+        self.queue = AtomicTaskQueue(str(args.queue_db), run_id=args.run_id)
+        self.manifest_rows = {
+            canonical_parent_key(row): row for row in load_rows(args.parent_manifest)
+        }
+        self.current: dict[str, Any] | None = None
+        self.child: subprocess.Popen[Any] | None = None
+        self.stop_event = threading.Event()
+        self.thread: threading.Thread | None = None
+        self.progress_lock = threading.Lock()
+        self.sequence = 0
+        self.last_progress_epoch = time.time()
+        self.last_artifact_epoch = time.time()
+        self.parent_started_epoch: float | None = None
+
+    def _status(self, state: str, *, child_pid: int | None = None, error: str | None = None) -> dict[str, Any]:
+        with self.progress_lock:
+            parent = self.current or {}
+            progress = self._progress_snapshot(parent.get("output_dir")) if parent else {}
+            gpu = _gpu_row(self.args.gpu_id)
+            payload = {
+                "schema": "STAGE_V_DYNAMIC_WORKER_STATUS_V2",
+                "worker_id": self.args.worker_id,
+                "worker_pid": os.getpid(),
+                "worker_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
+                "gpu_id": self.args.gpu_id,
+                "state": state,
+                "current_parent": parent.get("canonical_parent_key"),
+                "current_branch": progress.get("current_branch"),
+                "simulator_step": progress.get("simulator_step", 0),
+                "branch_progress": progress.get("branch_progress", 0),
+                "last_progress_utc": progress.get("last_progress_utc") or utc_now(),
+                "last_artifact_utc": progress.get("last_artifact_utc"),
+                "last_progress_epoch": self.last_progress_epoch,
+                "last_artifact_epoch": self.last_artifact_epoch,
+                "parent_started_epoch": self.parent_started_epoch,
+                "child_pid": child_pid,
+                "gpu_utilization_percent": gpu.get("gpu_utilization_percent"),
+                "gpu_memory_used_mib": gpu.get("gpu_memory_used_mib"),
+                "gpu_memory_free_mib": gpu.get("gpu_memory_free_mib"),
+                "heartbeat_sequence": self.sequence,
+                "error": error,
+                "updated_utc": utc_now(),
+            }
+            atomic_write_json(self.status_path, payload)
+            atomic_write_json(self.heartbeat_path, payload)
+            return payload
+
+    def _progress_snapshot(self, output_dir: str | None) -> dict[str, Any]:
+        if not output_dir:
+            return {}
+        root = Path(output_dir)
+        files = list(root.rglob("*")) if root.exists() else []
+        branch_files = [path for path in files if path.name == "COUNTERFACTUAL_BRANCHES.jsonl"]
+        branch_progress = 0
+        newest = None
+        for path in branch_files:
+            try:
+                branch_progress += sum(1 for _ in path.open("r", encoding="utf-8"))
+                newest = max(newest or 0.0, path.stat().st_mtime)
+            except OSError:
+                pass
+        progress_file = root / "PROGRESS.json"
+        progress = read_json(progress_file, {}) if progress_file.is_file() else {}
+        if not isinstance(progress, dict):
+            progress = {}
+        if newest and newest > self.last_artifact_epoch:
+            self.last_artifact_epoch = newest
+            self.last_progress_epoch = newest
+        return {
+            "branch_progress": branch_progress,
+            "simulator_step": int(progress.get("simulator_step", 0) or 0),
+            "current_branch": progress.get("current_branch"),
+            "last_progress_utc": progress.get("updated_utc"),
+            "last_artifact_utc": progress.get("last_artifact_utc"),
+        }
+
+    def _heartbeat_loop(self) -> None:
+        while not self.stop_event.wait(self.args.heartbeat_seconds):
+            self.sequence += 1
+            self._status("RUNNING", child_pid=self.child.pid if self.child else None)
+            if self.current:
+                task = self.current
+                self.queue.heartbeat(
+                    task["cell_id"], task["attempt_id"], self.args.worker_id,
+                    task["lease_token"], task["lease_epoch"],
+                )
+                project_queue(self.root, self.queue.list_tasks())
+
+    def _command(self, task: dict[str, Any], output_dir: Path) -> list[str]:
+        if self.args.worker_command:
+            text = self.args.worker_command.format(
+                parent_key=task["canonical_parent_key"], output_dir=str(output_dir),
+                gpu_id=self.args.gpu_id, attempt=task["attempt_count"],
+            )
+            tokens = shlex.split(text, posix=(os.name != "nt"))
+            if os.name == "nt":
+                tokens = [token.replace("\\\\", "\\") for token in tokens]
+            return tokens
+        if not self.args.science_runner or not self.args.science_parent_manifest or not self.args.science_repo_root:
+            raise RuntimeError("science runner configuration is incomplete")
+        return [
+            sys.executable, str(self.args.science_runner),
+            "--gpu-id", str(self.args.gpu_id),
+            "--repo-root", str(self.args.science_repo_root),
+            "--parent-manifest", str(self.args.science_parent_manifest),
+            "--output-root", str(output_dir),
+            "--parent-keys", task["canonical_parent_key"],
+            "--probe-limit", str(self.args.probe_limit),
+        ]
+
+    def _run_task(self, task: dict[str, Any]) -> bool:
+        self.current = task
+        self.parent_started_epoch = time.time()
+        output_dir = attempt_dir(self.root, task["canonical_parent_key"], int(task["attempt_count"]))
+        output_dir.mkdir(parents=True, exist_ok=False)
+        log_path = output_dir / "SCIENCE_RUNNER.log"
+        job = {
+            "schema": "STAGE_V_DYNAMIC_JOB_V2",
+            "canonical_parent_key": task["canonical_parent_key"],
+            "manifest_row_sha256": task.get("manifest_row_sha256"),
+            "attempt": task["attempt_count"],
+            "worker_pid": os.getpid(),
+            "worker_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
+            "gpu_id": self.args.gpu_id,
+            "claim_utc": utc_now(),
+            "start_utc": utc_now(),
+            "output_dir": str(output_dir),
+            "state": "RUNNING",
+        }
+        job["manifest_row_sha256"] = sha256_json(self.manifest_rows.get(task["canonical_parent_key"], {"canonical_parent_key": task["canonical_parent_key"]}))
+        atomic_write_json(output_dir / "JOB.json", job)
+        task["output_dir"] = str(output_dir)
+        self._status("RUNNING")
+        environment = os.environ.copy()
+        environment.update({
+            "CUDA_VISIBLE_DEVICES": str(self.args.gpu_id),
+            "OMP_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OPENBLAS_NUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1",
+        })
+        try:
+            command = self._command(task, output_dir)
+            with log_path.open("w", encoding="utf-8") as log:
+                self.child = subprocess.Popen(command, cwd=str(self.args.repo_root), env=environment,
+                                              stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
+                job["child_pid"] = self.child.pid
+                atomic_write_json(output_dir / "JOB.json", job)
+                code = self.child.wait()
+            self.child = None
+        except Exception as exc:
+            code = 127
+            atomic_write_json(output_dir / "WORKER_EXCEPTION.json", {"error": f"{type(exc).__name__}: {exc}", "utc": utc_now()})
+        artifact = science_artifact_status(output_dir, task["canonical_parent_key"])
+        validation = {
+            "schema": "STAGE_V_PARENT_VALIDATION_V2",
+            "canonical_parent_key": task["canonical_parent_key"],
+            "source_commit": self.args.source_commit,
+            "source_tree": self.args.source_tree,
+            "exit_code": code,
+            "artifact_audit_verdict": "PASS" if artifact["valid"] and code == 0 else "FAIL",
+            "label_status": artifact.get("label_status") if artifact["valid"] and code == 0 else "INVALID",
+            "artifact_path": artifact.get("path"),
+            "artifact_sha256": artifact.get("artifact_sha256"),
+            "reason": artifact.get("reason"),
+            "eval160_reads": 0,
+            "protected_eval_reads": 0,
+            "vis_pgd_attack_rollouts": 0,
+            "validated_utc": utc_now(),
+        }
+        atomic_write_json(output_dir / "PARENT_VALIDATION.json", validation)
+        if code == 0 and artifact["valid"]:
+            outcome = "DONE_VALID"
+            error_class = None
+        elif code != 0 and not artifact["result"] and int(task["attempt_count"]) < self.args.max_attempts:
+            outcome = "FAILED_RETRYABLE_INFRA"
+            error_class = "PRE_SIMULATOR_OR_TRANSIENT_EXIT"
+        else:
+            outcome = "FAILED_FATAL_POST_ACTION"
+            error_class = "INVALID_OR_PARTIAL_SCIENCE_RESULT"
+        receipt_sha = sha256_file(output_dir / "PARENT_VALIDATION.json")
+        committed = self.queue.commit_result(
+            task["cell_id"], task["attempt_id"], self.args.worker_id,
+            task["lease_token"], task["lease_epoch"], exit_code=code,
+            error_class=error_class, exposure_status="DIRECT_OPEN_COUNTERFACTUAL_ONLY",
+            task_outcome=outcome, output_dir=str(output_dir), receipt_sha=receipt_sha,
+        )
+        if not committed:
+            outcome = "FAILED_FATAL_POST_ACTION"
+        job.update({
+            "state": outcome,
+            "exit_code": code,
+            "complete_utc": utc_now(),
+            "artifact_sha256": validation.get("artifact_sha256"),
+            "validation": validation,
+        })
+        atomic_write_json(output_dir / "JOB.json", job)
+        project_queue(self.root, self.queue.list_tasks())
+        self.current = None
+        self.parent_started_epoch = None
+        return outcome in {"DONE_VALID", "FAILED_RETRYABLE_INFRA"}
+
+    def run(self) -> int:
+        self._status("STARTING")
+        self.thread = threading.Thread(target=self._heartbeat_loop, name="stage-v-heartbeat", daemon=True)
+        self.thread.start()
+        try:
+            while not self.stop_event.is_set():
+                task = self.queue.claim_task(
+                    self.args.worker_id, hostname=socket.gethostname(), pid=os.getpid(),
+                    gpu_id=self.args.gpu_id, expected_manifest_sha=self.args.manifest_sha,
+                    expected_source_sha=f"{self.args.source_commit}:{self.args.source_tree}",
+                )
+                project_queue(self.root, self.queue.list_tasks())
+                if task is None:
+                    self._status("IDLE")
+                    return 0 if not any(item["state"] in {"FAILED_FATAL_POST_ACTION", "HOLD"} for item in self.queue.list_tasks()) else 1
+                task["canonical_parent_key"] = task["parent_id"]
+                if not self._run_task(task):
+                    self._status("FAILED", error="FATAL_PARENT_RESULT")
+                    return 1
+            return 1
+        finally:
+            self.stop_event.set()
+            if self.child is not None and self.child.poll() is None:
+                try:
+                    self.child.terminate()
+                except OSError:
+                    pass
+            if self.thread:
+                self.thread.join(timeout=max(1.0, self.args.heartbeat_seconds + 1))
+            self._status("STOPPED" if self.stop_event.is_set() else "EXITED", child_pid=None)
+            self.queue.close()
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run-root", type=Path, required=True)
+    parser.add_argument("--repo-root", type=Path, required=True)
+    parser.add_argument("--queue-db", type=Path, required=True)
+    parser.add_argument("--run-id", required=True)
+    parser.add_argument("--manifest-sha", required=True)
+    parser.add_argument("--parent-manifest", type=Path, required=True)
+    parser.add_argument("--source-commit", required=True)
+    parser.add_argument("--source-tree", required=True)
+    parser.add_argument("--gpu-id", type=int, required=True)
+    parser.add_argument("--worker-id", required=True)
+    parser.add_argument("--heartbeat-seconds", type=float, default=30)
+    parser.add_argument("--max-attempts", type=int, default=2)
+    parser.add_argument("--probe-limit", type=int, default=24)
+    parser.add_argument("--science-runner", type=Path)
+    parser.add_argument("--science-repo-root", type=Path)
+    parser.add_argument("--science-parent-manifest", type=Path)
+    parser.add_argument("--worker-command", default="")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    if args.heartbeat_seconds <= 0 or args.max_attempts < 1:
+        raise SystemExit("invalid heartbeat/max-attempts")
+    return Worker(args).run()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
