@@ -75,6 +75,11 @@ def test_resource_gate_never_approves_gpu5_or_silently_downgrades() -> None:
     assert 5 not in result["safe_gpus"]
 
 
+def test_pid_alive_is_true_only_for_live_pid() -> None:
+    assert monitor.pid_alive(__import__("os").getpid()) is True
+    assert monitor.pid_alive(2**31 - 1) is False
+
+
 def test_monitor_waiting_does_not_create_formal_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repo = Path(__file__).resolve().parents[2]
     args = make_args(tmp_path, repo)

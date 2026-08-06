@@ -202,6 +202,21 @@ def _all_pass_receipts(root: Path | None, names: tuple[str, ...]) -> bool:
 def pid_alive(pid: int) -> bool:
     if pid <= 0:
         return False
+    if os.name == "nt":
+        try:
+            import ctypes
+            handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
+            if not handle:
+                return False
+            ctypes.windll.kernel32.CloseHandle(handle)
+            return True
+        except (AttributeError, OSError):
+            return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
 
 
 def _under(path: Path, parent: Path) -> bool:
@@ -209,11 +224,6 @@ def _under(path: Path, parent: Path) -> bool:
         path.resolve().relative_to(parent.resolve())
         return True
     except ValueError:
-        return False
-    try:
-        os.kill(pid, 0)
-        return True
-    except OSError:
         return False
 
 
