@@ -124,6 +124,12 @@ def test_science_manifest_is_fresh_v1_identity_binding(tmp_path: Path) -> None:
     assert all(row["old_artifacts_reused"] is False and row["source_artifact_read"] is False for row in manifest["selected_parents"])
 
 
+def test_load_rows_reads_selected_parents_manifest(tmp_path: Path) -> None:
+    path = tmp_path / "manifest.json"
+    write_json(path, {"schema": "STAGE_V_FORMAL_PARENT_MANIFEST_V1", "selected_parents": [{"suite": "libero_goal", "task_index": 0, "state_index": 48}]})
+    assert control_qualification.load_rows(path) == [{"suite": "libero_goal", "task_index": 0, "state_index": 48}]
+
+
 def test_queue_projection_has_pending_running_complete_failed(tmp_path: Path) -> None:
     root = tmp_path / "run"
     project_queue(root, [{"cell_id": "a", "state": "PENDING"}, {"cell_id": "b", "state": "RUNNING"}, {"cell_id": "c", "state": "DONE_VALID"}, {"cell_id": "d", "state": "FAILED_FATAL_POST_ACTION"}])

@@ -74,7 +74,7 @@ def canonical_parent_key(row: Mapping[str, Any]) -> str:
 def load_rows(path: Path) -> list[dict[str, Any]]:
     value = read_json(path)
     if isinstance(value, Mapping):
-        for key in ("parents", "qualified_parents", "rows", "candidates", "all_candidate_audits", "manifest"):
+        for key in ("parents", "qualified_parents", "selected_parents", "rows", "candidates", "all_candidate_audits", "manifest"):
             if isinstance(value.get(key), list):
                 return [dict(item) for item in value[key] if isinstance(item, Mapping)]
         return [dict(value)]
