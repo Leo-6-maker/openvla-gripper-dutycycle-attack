@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.detector_v5 import run_stage_v_parent_aware_supervisor as sup
 from scripts.detector_v5.audit_stage_v_abort_postmortem import build_postmortem, build_timeout_policy
+from scripts.detector_v5 import run_stage_v_control_qualification as control_qualification
 from scripts.detector_v5.run_stage_v_control_qualification import ranked
 from scripts.detector_v5.stage_v_dynamic_common import (
     atomic_write_json, gpu_preflight, project_queue, science_artifact_status, sha256_file,
@@ -51,6 +52,38 @@ def test_atomic_queue_claim_is_single_owner(tmp_path: Path) -> None:
     second = queue.claim_task("w2", expected_manifest_sha="m", expected_source_sha="s")
     assert first and second is None
     queue.close()
+
+
+def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    manifest = tmp_path / "candidates.json"
+    write_json(manifest, {"parents": [{
+        "canonical_parent_key": "libero_goal/task_00/state_48",
+        "suite": "libero_goal", "task_index": 0, "state_index": 48,
+        "audit_status": "PASS", "remaining_policy_steps": 1,
+    }]})
+
+    def fake_run_once(template: str, *, candidate_path: Path, output_dir: Path, replicate: str, source_commit: str, source_tree: str):
+        result = {
+            "status": "PASS", "exit_code": 0, "clean_success": True, "snapshot_restore_valid": True,
+            "runtime_valid": True, "metrics_finite": True, "source_commit": source_commit,
+            "source_tree": source_tree, "remaining_horizon_complete": True,
+            "terminal_outcome": "SUCCESS", "terminal_state_sha256": "state",
+            "key_state_identity_sha256": "identity", "canonical_parent_key": "libero_goal/task_00/state_48",
+        }
+        atomic_write_json(output_dir / "CONTROL_RESULT.json", result)
+        return 0, result
+
+    monkeypatch.setattr(control_qualification, "_run_once", fake_run_once)
+    args = SimpleNamespace(
+        candidate_manifest=manifest, output_dir=tmp_path / "qualification",
+        runner_command="clean-only", source_commit="commit", source_tree="tree",
+        salt="test", initial_per_suite=1, batch_size=1, target_per_suite=1, suites="libero_goal",
+    )
+    report, rows, extras = control_qualification.qualify(args)
+    assert report["status"] == "PASS"
+    assert report["queue_progress"]["done"] == 2
+    assert extras["audit"]["queue_states"] == {"DONE_VALID": 2}
+    assert rows[0]["qualified"] is True
 
 
 def test_queue_projection_has_pending_running_complete_failed(tmp_path: Path) -> None:

@@ -4,10 +4,19 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import socket
 import subprocess
 from typing import Any, Mapping
+
+try:
+    from scripts.fec.atomic_task_queue import AtomicTaskQueue
+except ImportError:  # direct server execution
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from scripts.fec.atomic_task_queue import AtomicTaskQueue
 
 try:
     from .stage_v_dynamic_common import atomic_write_json, canonical_parent_key, load_rows, normalize_parent, sha256_file, sha256_text, utc_now
@@ -91,6 +100,7 @@ def qualifies(row: Mapping[str, Any], a: Mapping[str, Any], b: Mapping[str, Any]
 
 
 def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
+    args.output_dir.mkdir(parents=True, exist_ok=True)
     raw_rows = load_rows(args.candidate_manifest)
     rows = ranked(
         [row for row in raw_rows if row.get("audit_status", "PASS") == "PASS" and int(row.get("remaining_policy_steps", 1) or 0) > 0],
@@ -104,6 +114,41 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
     by_suite = {suite: [row for row in rows if str(row["suite"]) == suite] for suite in suites}
     rows_out: list[dict[str, Any]] = []
     selected: dict[str, list[dict[str, Any]]] = {suite: [] for suite in suites}
+    queue_db = args.output_dir / "CONTROL_QUALIFICATION.sqlite"
+    queue = AtomicTaskQueue(str(queue_db), run_id="STAGE_V_CONTROL_QUALIFICATION_V2")
+    manifest_sha = sha256_file(args.candidate_manifest)
+    source_sha = f"{args.source_commit}:{args.source_tree}"
+    queue.init_run(
+        state="ACTIVE", manifest_sha=manifest_sha, source_sha=source_sha,
+        config_sha=sha256_text(args.runner_command),
+        capacity_policy={"mode": "atomic_serial_claim", "old_artifacts_reused": False},
+    )
+    worker_id = f"stage-v-control-qualifier-{os.getpid()}"
+
+    def run_replicate(candidate_path: Path, output: Path, row: Mapping[str, Any], replicate: str) -> tuple[int, dict[str, Any]]:
+        key = str(row["canonical_parent_key"])
+        task = queue.claim_task(
+            worker_id, hostname=socket.gethostname(), pid=os.getpid(),
+            loaded_suite=str(row["suite"]), expected_manifest_sha=manifest_sha,
+            expected_source_sha=source_sha,
+        )
+        if task is None or task.get("parent_id") != key or task.get("arm") != replicate:
+            raise RuntimeError(f"CONTROL_QUALIFICATION_QUEUE_CLAIM_MISMATCH:{key}:{replicate}")
+        code, result = _run_once(
+            args.runner_command, candidate_path=candidate_path, output_dir=output,
+            replicate=replicate, source_commit=args.source_commit, source_tree=args.source_tree,
+        )
+        outcome = "DONE_VALID" if code == 0 and result else "FAILED_FATAL_POST_ACTION"
+        receipt = output / "CONTROL_RESULT.json"
+        receipt_sha = sha256_file(receipt) if receipt.is_file() else None
+        if not queue.commit_result(
+            task["cell_id"], task["attempt_id"], worker_id, task["lease_token"], task["lease_epoch"],
+            exit_code=code, error_class=None if result else "MISSING_CONTROL_RESULT",
+            exposure_status="CLEAN_ONLY", task_outcome=outcome, output_dir=str(output), receipt_sha=receipt_sha,
+        ):
+            raise RuntimeError(f"CONTROL_QUALIFICATION_QUEUE_COMMIT_FAIL:{key}:{replicate}")
+        return code, result
+
     for suite in suites:
         suite_rows = by_suite[suite]
         next_index = 0
@@ -116,18 +161,20 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
                 base.mkdir(parents=True, exist_ok=False)
                 candidate_path = base / "CANDIDATE.json"
                 atomic_write_json(candidate_path, row)
+                queue.register_tasks([
+                    {
+                        "cell_id": f"CONTROL|{key.replace('/', '__')}|{replicate}",
+                        "parent_id": key, "suite": suite, "task_index": int(row["task_index"]),
+                        "state_index": int(row["state_index"]), "arm": replicate,
+                        "task_kind": "CONTROL_QUALIFICATION",
+                    }
+                    for replicate in ("A", "B")
+                ])
                 replicate_rows = {}
                 for replicate in ("A", "B"):
                     output = base / replicate
                     output.mkdir()
-                    code, result = _run_once(
-                        args.runner_command,
-                        candidate_path=candidate_path,
-                        output_dir=output,
-                        replicate=replicate,
-                        source_commit=args.source_commit,
-                        source_tree=args.source_tree,
-                    )
+                    code, result = run_replicate(candidate_path, output, row, replicate)
                     replicate_rows[replicate] = result
                     if code != 0:
                         result.setdefault("status", "FAIL")
@@ -167,6 +214,8 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         "protected_eval_reads": 0,
         "vis_pgd_attack_rollouts": 0,
         "generated_utc": utc_now(),
+        "queue_db": str(queue_db),
+        "queue_progress": queue.get_progress(),
     }
     manifest_rows = [row for suite in suites for row in selected[suite][:args.target_per_suite]]
     manifest = {
@@ -192,7 +241,10 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         "duplicate_parent_keys": sorted({key for key in [row["canonical_parent_key"] for row in manifest_rows] if [item["canonical_parent_key"] for item in manifest_rows].count(key) > 1}),
         "boundaries": {"eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0},
         "audited_utc": utc_now(),
+        "queue_states": {str(task["state"]): sum(1 for item in queue.list_tasks() if item["state"] == task["state"]) for task in queue.list_tasks()},
     }
+    queue.set_run_state("COMPLETE" if not any(item["state"] != "DONE_VALID" for item in queue.list_tasks()) else "HOLD")
+    queue.close()
     return report, rows_out, {"manifest": manifest, "audit": audit}
 
 
