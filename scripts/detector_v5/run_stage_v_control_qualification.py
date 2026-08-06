@@ -134,6 +134,59 @@ def audit_qualification_row(row: Mapping[str, Any], a: Mapping[str, Any], b: Map
     return not errors, sorted(set(errors))
 
 
+def build_science_parent_manifest(formal_manifest: Mapping[str, Any], *, source_clean_root: str) -> dict[str, Any]:
+    """Build a fresh V1 identity manifest for the frozen external science runner."""
+    if formal_manifest.get("schema") != "STAGE_V_FORMAL_PARENT_MANIFEST_V2" or formal_manifest.get("status") != "PASS":
+        raise ValueError("formal qualification manifest is not PASS")
+    rows = formal_manifest.get("selected_parents")
+    if not isinstance(rows, list) or len(rows) != 40:
+        raise ValueError("formal qualification manifest must contain 40 parents")
+    root = str(source_clean_root).rstrip("/")
+    if not root:
+        raise ValueError("source clean root is missing")
+    selected: list[dict[str, Any]] = []
+    keys: set[str] = set()
+    for raw in rows:
+        row = normalize_parent(raw)
+        key = str(row["canonical_parent_key"])
+        if key in keys or row.get("old_artifacts_reused") is not False or row.get("source_artifact_read") is not False:
+            raise ValueError(f"invalid qualified parent identity: {key}")
+        keys.add(key)
+        selected.append({
+            "canonical_parent_key": key,
+            "suite": row["suite"],
+            "task_index": row["task_index"],
+            "state_index": row["state_index"],
+            "source_artifact_root": str(row.get("source_artifact_root") or f"{root}/{key}"),
+            "artifact_recursive_sha256": str(row.get("artifact_recursive_sha256") or ""),
+            "selection_role": "qualified_clean_control_parent_only",
+            "qualification_mode": "FRESH_CLEAN_AB_REPLAY",
+            "source_artifact_read": False,
+            "old_artifacts_reused": False,
+        })
+    return {
+        "schema": "STAGE_V_FORMAL_PARENT_MANIFEST_V1",
+        "status": "FROZEN",
+        "source_clean_root": root,
+        "source_commit": formal_manifest.get("source_commit"),
+        "source_tree": formal_manifest.get("source_tree"),
+        "selected_parents": selected,
+        "selected_count": len(selected),
+        "parents_by_suite": {suite: sum(row["suite"] == suite for row in selected) for suite in EXPECTED_SUITES},
+        "candidate_manifest_sha256": formal_manifest.get("candidate_manifest_sha256"),
+        "control_qualification_report_sha256": formal_manifest.get("control_qualification_report_sha256"),
+        "control_qualification_rows_sha256": formal_manifest.get("control_qualification_rows_sha256"),
+        "control_qualification_audit_sha256": formal_manifest.get("control_qualification_audit_sha256"),
+        "old_artifacts_reused": False,
+        "source_artifacts_modified": False,
+        "eval160_reads": 0,
+        "protected_eval_reads": 0,
+        "vis_pgd_attack_rollouts": 0,
+        "attack_rollouts": 0,
+        "generated_utc": utc_now(),
+    }
+
+
 def _parse_gpus(value: str) -> list[int]:
     gpus = [int(part.strip()) for part in value.split(",") if part.strip()] if value else [0]
     if not gpus or len(gpus) != len(set(gpus)) or any(gpu < 0 for gpu in gpus):
@@ -143,6 +196,7 @@ def _parse_gpus(value: str) -> list[int]:
 
 def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    source_clean_root = str(Path(args.source_clean_root).resolve())
     raw_rows = load_rows(args.candidate_manifest)
     rows = ranked(
         [row for row in raw_rows if row.get("audit_status", "PASS") == "PASS" and int(row.get("remaining_policy_steps", 1) or 0) > 0],
@@ -301,6 +355,7 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         "source_commit": args.source_commit,
         "source_tree": args.source_tree,
         "candidate_manifest_sha256": manifest_sha,
+        "source_clean_root": source_clean_root,
         "gpus": gpus,
         "worker_count": len(gpus),
         "initial_per_suite": args.initial_per_suite,
@@ -326,6 +381,7 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         "source_commit": args.source_commit,
         "source_tree": args.source_tree,
         "candidate_manifest_sha256": manifest_sha,
+        "source_clean_root": source_clean_root,
         "parents": manifest_rows,
         "selected_parents": manifest_rows,
         "selected_count": len(manifest_rows),
@@ -375,6 +431,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--runner-command", required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
+    parser.add_argument("--source-clean-root", type=Path, required=True)
     parser.add_argument("--salt", default=DEFAULT_SALT)
     parser.add_argument("--gpus", default="0")
     parser.add_argument("--initial-per-suite", type=int, default=20)
@@ -401,6 +458,18 @@ def main(argv: list[str] | None = None) -> int:
             "control_qualification_rows_sha256": sha256_file(args.output_dir / "CONTROL_QUALIFICATION_ROWS.jsonl"),
             "control_qualification_audit_sha256": sha256_file(args.output_dir / "CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json"),
         })
+        atomic_write_json(manifest_path, extras["manifest"])
+        science_manifest = build_science_parent_manifest(
+            extras["manifest"], source_clean_root=str(args.source_clean_root.resolve()),
+        )
+        science_path = args.output_dir / "STAGE_V_FORMAL_PARENT_MANIFEST_V1.json"
+        atomic_write_json(science_path, science_manifest)
+        science_sha = sha256_file(science_path)
+        (args.output_dir / "STAGE_V_FORMAL_PARENT_MANIFEST_V1.sha256").write_text(
+            science_sha + "  STAGE_V_FORMAL_PARENT_MANIFEST_V1.json\n", encoding="utf-8",
+        )
+        extras["manifest"]["science_parent_manifest"] = str(science_path)
+        extras["manifest"]["science_parent_manifest_sha256"] = science_sha
         atomic_write_json(manifest_path, extras["manifest"])
         (args.output_dir / "STAGE_V_FORMAL_PARENT_MANIFEST_V2.sha256").write_text(
             sha256_file(manifest_path) + "  STAGE_V_FORMAL_PARENT_MANIFEST_V2.json\n", encoding="utf-8",

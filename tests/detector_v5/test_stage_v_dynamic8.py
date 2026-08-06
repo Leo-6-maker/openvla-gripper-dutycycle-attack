@@ -81,6 +81,7 @@ def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, mon
     args = SimpleNamespace(
         candidate_manifest=manifest, output_dir=tmp_path / "qualification",
         runner_command="clean-only", source_commit="commit", source_tree="tree",
+        source_clean_root=tmp_path / "clean",
         salt="test", initial_per_suite=1, batch_size=1, target_per_suite=1, suites="libero_goal", gpus="0,1",
     )
     report, rows, extras = control_qualification.qualify(args)
@@ -89,6 +90,38 @@ def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, mon
     assert extras["audit"]["queue_states"] == {"DONE_VALID": 2}
     assert rows[0]["qualified"] is True
     assert extras["manifest"]["schema"] == "STAGE_V_FORMAL_PARENT_MANIFEST_V2"
+
+
+def test_science_manifest_is_fresh_v1_identity_binding(tmp_path: Path) -> None:
+    rows = [
+        {
+            "canonical_parent_key": f"{suite}/task_{index:02d}/state_48",
+            "suite": suite,
+            "task_index": index,
+            "state_index": 48,
+            "source_artifact_root": f"/clean/{suite}/task_{index:02d}/state_48",
+            "old_artifacts_reused": False,
+            "source_artifact_read": False,
+        }
+        for suite in control_qualification.EXPECTED_SUITES
+        for index in range(10)
+    ]
+    manifest = control_qualification.build_science_parent_manifest(
+        {
+            "schema": "STAGE_V_FORMAL_PARENT_MANIFEST_V2",
+            "status": "PASS",
+            "source_commit": "control-commit",
+            "source_tree": "control-tree",
+            "selected_parents": rows,
+            "candidate_manifest_sha256": "candidate",
+        },
+        source_clean_root="/clean",
+    )
+    assert manifest["schema"] == "STAGE_V_FORMAL_PARENT_MANIFEST_V1"
+    assert manifest["selected_count"] == 40
+    assert manifest["source_commit"] == "control-commit"
+    assert manifest["source_tree"] == "control-tree"
+    assert all(row["old_artifacts_reused"] is False and row["source_artifact_read"] is False for row in manifest["selected_parents"])
 
 
 def test_queue_projection_has_pending_running_complete_failed(tmp_path: Path) -> None:

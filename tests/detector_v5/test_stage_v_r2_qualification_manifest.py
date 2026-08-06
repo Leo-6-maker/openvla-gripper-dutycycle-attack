@@ -24,7 +24,8 @@ def test_hash_ranked_manifest_is_20_per_suite_and_clean_only(tmp_path: Path) -> 
     }), encoding="utf-8")
     out = tmp_path / "out"
     manifest = prepare(pool, out, expected_sha256=sha256_file(pool), per_suite=20,
-                       salt="STAGE_V_R2_CONTROL_QUALIFICATION_20260807")
+                       salt="STAGE_V_R2_CONTROL_QUALIFICATION_20260807",
+                       source_clean_root="/clean")
     assert manifest["selected_count"] == 80
     assert manifest["selected_per_suite"] == {suite: 20 for suite in suites}
     assert json.loads((out / "STAGE_V_R2_QUALIFICATION_CANDIDATE_AUDIT.json").read_text())["verdict"] == "PASS"

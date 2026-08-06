@@ -57,6 +57,28 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     keys = [str(row.get("canonical_parent_key")) for row in manifest_rows]
     if len(set(keys)) != len(keys):
         errors.append("DUPLICATE_MANIFEST_IDENTITIES")
+    science_manifest_sha = None
+    if args.science_parent_manifest:
+        science_path = args.science_parent_manifest.resolve()
+        science_value = read_json(science_path, {})
+        science_rows = science_value.get("selected_parents") if isinstance(science_value, Mapping) else None
+        science_rows_are_objects = isinstance(science_rows, list) and all(isinstance(row, Mapping) for row in science_rows)
+        science_keys = [str(row.get("canonical_parent_key")) for row in science_rows] if science_rows_are_objects else []
+        if (
+            not isinstance(science_value, Mapping)
+            or science_value.get("schema") != "STAGE_V_FORMAL_PARENT_MANIFEST_V1"
+            or science_value.get("status") != "FROZEN"
+            or not science_rows_are_objects
+            or len(science_rows or []) != args.expected_parent_count
+            or len(set(science_keys)) != len(science_keys)
+            or any(row.get("old_artifacts_reused") is not False or row.get("source_artifact_read") is not False for row in (science_rows or []) if isinstance(row, Mapping))
+            or science_value.get("old_artifacts_reused") is not False
+            or science_value.get("source_artifacts_modified") is not False
+            or set(science_keys) != set(keys)
+        ):
+            errors.append("SCIENCE_PARENT_MANIFEST_BINDING_FAIL")
+        else:
+            science_manifest_sha = sha256_file(science_path)
     if args.science_provenance:
         if not args.science_source_commit or not args.science_source_tree:
             errors.append("SCIENCE_PROVENANCE_BINDING_MISSING")
@@ -93,6 +115,11 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             or run_manifest.get("science_source_tree") != args.science_source_tree
         ):
             errors.append("RUN_MANIFEST_SCIENCE_BINDING_FAIL")
+        if args.science_parent_manifest:
+            if run_manifest.get("science_parent_manifest") != str(args.science_parent_manifest.resolve()):
+                errors.append("RUN_MANIFEST_SCIENCE_PARENT_MANIFEST_PATH_FAIL")
+            if science_manifest_sha is None or run_manifest.get("science_parent_manifest_sha256") != science_manifest_sha:
+                errors.append("RUN_MANIFEST_SCIENCE_PARENT_MANIFEST_SHA_MISMATCH")
     dispatcher_complete = read_json(root / "DISPATCHER_COMPLETE.json", {})
     if not isinstance(dispatcher_complete, Mapping) or dispatcher_complete.get("status") != "PASS":
         errors.append("DISPATCHER_COMPLETE_NOT_PASS")
@@ -218,6 +245,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--science-source-commit", default="")
     parser.add_argument("--science-source-tree", default="")
     parser.add_argument("--science-provenance", type=Path)
+    parser.add_argument("--science-parent-manifest", type=Path)
     return parser
 
 

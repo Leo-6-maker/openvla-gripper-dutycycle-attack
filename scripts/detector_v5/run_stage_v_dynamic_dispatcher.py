@@ -76,6 +76,33 @@ class Dispatcher:
         keys = [row["canonical_parent_key"] for row in rows]
         if len(set(keys)) != len(keys):
             raise RuntimeError("DUPLICATE_PARENT_KEYS")
+        science_manifest_sha = None
+        if self.args.science_runner and not self.args.science_parent_manifest:
+            raise RuntimeError("SCIENCE_PARENT_MANIFEST_MISSING")
+        if self.args.science_parent_manifest:
+            science_path = self.args.science_parent_manifest.resolve()
+            try:
+                science_value = json.loads(science_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise RuntimeError(f"SCIENCE_PARENT_MANIFEST_INVALID:{exc}") from exc
+            science_rows = science_value.get("selected_parents") if isinstance(science_value, dict) else None
+            science_rows_are_objects = isinstance(science_rows, list) and all(isinstance(row, dict) for row in science_rows)
+            science_keys = [str(row.get("canonical_parent_key")) for row in science_rows] if science_rows_are_objects else []
+            if (
+                not isinstance(science_value, dict)
+                or science_value.get("schema") != "STAGE_V_FORMAL_PARENT_MANIFEST_V1"
+                or science_value.get("status") != "FROZEN"
+                or not science_rows_are_objects
+                or len(science_rows or []) != self.args.expected_parent_count
+                or len(set(science_keys)) != len(science_keys)
+                or any(row.get("old_artifacts_reused") is not False or row.get("source_artifact_read") is not False for row in (science_rows or []) if isinstance(row, dict))
+                or science_value.get("old_artifacts_reused") is not False
+                or science_value.get("source_artifacts_modified") is not False
+            ):
+                raise RuntimeError("SCIENCE_PARENT_MANIFEST_BINDING_FAIL")
+            if set(science_keys) != set(keys):
+                raise RuntimeError("SCIENCE_PARENT_MANIFEST_PARENT_SET_FAIL")
+            science_manifest_sha = sha256_file(science_path)
         if self.root.exists() and any(self.root.iterdir()):
             if any((self.root / name).exists() for name in ("DISPATCHER_COMPLETE.json", "ABORTED_INCOMPLETE.json")):
                 raise RuntimeError("COMPLETED_OR_ABORTED_ROOT_REUSE")
@@ -105,6 +132,8 @@ class Dispatcher:
             "science_source_commit": self.args.science_source_commit,
             "science_source_tree": self.args.science_source_tree,
             "science_provenance": str(self.args.science_provenance) if self.args.science_provenance else None,
+            "science_parent_manifest": str(self.args.science_parent_manifest.resolve()) if self.args.science_parent_manifest else None,
+            "science_parent_manifest_sha256": science_manifest_sha,
             "parent_manifest": str(self.args.parent_manifest),
             "parent_manifest_sha256": manifest_sha,
             "planned_parents": len(rows),

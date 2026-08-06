@@ -27,7 +27,8 @@ def atomic_write_json(path: Path, value: Mapping[str, Any]) -> None:
     temporary.replace(path)
 
 
-def prepare(pool_path: Path, output_dir: Path, *, expected_sha256: str, per_suite: int, salt: str) -> dict[str, Any]:
+def prepare(pool_path: Path, output_dir: Path, *, expected_sha256: str, per_suite: int, salt: str,
+            source_clean_root: str) -> dict[str, Any]:
     pool_path = pool_path.resolve()
     output_dir = output_dir.resolve()
     if not pool_path.is_file():
@@ -37,6 +38,9 @@ def prepare(pool_path: Path, output_dir: Path, *, expected_sha256: str, per_suit
         raise ValueError("candidate pool SHA256 mismatch")
     if output_dir.exists() and any(output_dir.iterdir()):
         raise ValueError(f"qualification manifest output must be new/empty: {output_dir}")
+    source_clean_root = source_clean_root.rstrip("/")
+    if not source_clean_root:
+        raise ValueError("source clean root is required")
     value = json.loads(pool_path.read_text(encoding="utf-8"))
     if not isinstance(value, Mapping) or value.get("schema") != "D8_STAGE_V_CLEAN_PROBE_CANDIDATE_POOL_V1":
         raise ValueError("unexpected candidate pool schema")
@@ -77,6 +81,7 @@ def prepare(pool_path: Path, output_dir: Path, *, expected_sha256: str, per_suit
         )
         selected.extend({
             **row,
+            "source_artifact_root": f"{source_clean_root}/{row['canonical_parent_key']}",
             "qualification_mode": "FRESH_CLEAN_AB_REPLAY",
             "old_artifacts_reused": False,
             "source_artifact_read": False,
@@ -94,6 +99,7 @@ def prepare(pool_path: Path, output_dir: Path, *, expected_sha256: str, per_suit
         "candidate_pool": str(pool_path),
         "candidate_pool_sha256": actual_sha256,
         "candidate_pool_schema": value["schema"],
+        "source_clean_root": source_clean_root,
         "candidate_role": "clean_control_only_legacy_g10_test_only",
         "old_artifacts_reused": False,
         "source_artifacts_modified": False,
@@ -135,10 +141,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expected-pool-sha256", required=True)
     parser.add_argument("--per-suite", type=int, default=20)
     parser.add_argument("--salt", default=SALT)
+    parser.add_argument("--source-clean-root", required=True)
     args = parser.parse_args(argv)
     if args.per_suite <= 0 or args.salt != SALT:
         raise SystemExit("invalid frozen qualification parameters")
-    prepare(args.candidate_pool, args.output_dir, expected_sha256=args.expected_pool_sha256, per_suite=args.per_suite, salt=args.salt)
+    prepare(
+        args.candidate_pool, args.output_dir, expected_sha256=args.expected_pool_sha256,
+        per_suite=args.per_suite, salt=args.salt, source_clean_root=args.source_clean_root,
+    )
     return 0
 
 
