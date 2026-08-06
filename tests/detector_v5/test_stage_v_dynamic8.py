@@ -87,6 +87,7 @@ def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, mon
     assert report["queue_progress"]["done"] == 2
     assert extras["audit"]["queue_states"] == {"DONE_VALID": 2}
     assert rows[0]["qualified"] is True
+    assert extras["manifest"]["schema"] == "STAGE_V_FORMAL_PARENT_MANIFEST_V2"
 
 
 def test_queue_projection_has_pending_running_complete_failed(tmp_path: Path) -> None:

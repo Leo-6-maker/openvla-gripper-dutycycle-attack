@@ -296,7 +296,7 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
     manifest = {
         # ponytail: retain the frozen science runner's manifest contract and
         # add the R2 qualification bindings around it.
-        "schema": "D8_STAGE_V_CLEAN_SUCCESS_PARENT_MANIFEST_V1",
+        "schema": "STAGE_V_FORMAL_PARENT_MANIFEST_V2",
         "status": report["status"],
         "salt": args.salt,
         "source_commit": args.source_commit,
@@ -370,7 +370,7 @@ def main(argv: list[str] | None = None) -> int:
         for row in rows:
             handle.write(json.dumps(row, sort_keys=True, allow_nan=False) + "\n")
     atomic_write_json(args.output_dir / "CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json", extras["audit"])
-    manifest_path = args.output_dir / "STAGE_V_R2_PARENT_MANIFEST_A.json"
+    manifest_path = args.output_dir / "STAGE_V_FORMAL_PARENT_MANIFEST_V2.json"
     if report["status"] == "PASS" and extras["audit"]["verdict"] == "PASS":
         extras["manifest"].update({
             "control_qualification_report_sha256": sha256_file(args.output_dir / "CONTROL_QUALIFICATION_REPORT.json"),
@@ -378,7 +378,9 @@ def main(argv: list[str] | None = None) -> int:
             "control_qualification_audit_sha256": sha256_file(args.output_dir / "CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json"),
         })
         atomic_write_json(manifest_path, extras["manifest"])
-        (args.output_dir / "STAGE_V_R2_PARENT_MANIFEST_A.sha256").write_text(sha256_file(manifest_path) + "  STAGE_V_R2_PARENT_MANIFEST_A.json\n", encoding="utf-8")
+        (args.output_dir / "STAGE_V_FORMAL_PARENT_MANIFEST_V2.sha256").write_text(
+            sha256_file(manifest_path) + "  STAGE_V_FORMAL_PARENT_MANIFEST_V2.json\n", encoding="utf-8",
+        )
     return 0 if report["status"] == "PASS" else 1
 
 
