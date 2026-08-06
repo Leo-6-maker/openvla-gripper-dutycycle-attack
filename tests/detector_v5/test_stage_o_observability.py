@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from scripts.detector_v5 import run_stage_o_observability as stage_o
+from scripts.detector_v5 import audit_stage_o_observability as stage_o_audit
 
 
 def _manifest(path: Path) -> None:
@@ -54,6 +55,14 @@ def test_stage_o_uses_preregistered_seeds_and_dynamic_eight_workers(tmp_path: Pa
     complete = json.loads((args.output_root / "STAGE_O_COMPLETE.json").read_text(encoding="utf-8"))
     assert complete["status"] == "STAGE_O_PASS"
     assert (args.output_root / "SHA256SUMS.sha256").is_file()
+
+    result_path = args.output_root / "jobs" / "00000" / "JOB_RESULT.json"
+    tampered = json.loads(result_path.read_text(encoding="utf-8"))
+    tampered["source_commit"] = "tampered"
+    result_path.write_text(json.dumps(tampered) + "\n", encoding="utf-8")
+    failed = stage_o_audit.audit(args.output_root, expected_source_commit="commit", expected_source_tree="tree")
+    assert failed["verdict"] == "FAIL"
+    assert "PROVENANCE_MISMATCH" in failed["reasons"]
 
 
 def test_stage_o_rejects_non_eight_gpu_formal_pool(tmp_path: Path) -> None:
