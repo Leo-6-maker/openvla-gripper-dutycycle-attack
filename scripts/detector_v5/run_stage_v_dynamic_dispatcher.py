@@ -12,9 +12,9 @@ import time
 from typing import Any
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, gpu_preflight, load_rows, normalize_parent, project_queue, sha256_file, utc_now
+    from .stage_v_dynamic_common import atomic_write_json, gpu_preflight, load_rows, normalize_parent, project_queue, sha256_file, terminate_process_group, utc_now
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import atomic_write_json, gpu_preflight, load_rows, normalize_parent, project_queue, sha256_file, utc_now
+    from stage_v_dynamic_common import atomic_write_json, gpu_preflight, load_rows, normalize_parent, project_queue, sha256_file, terminate_process_group, utc_now
 
 try:
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
@@ -36,10 +36,7 @@ class Dispatcher:
         self.stop_requested = True
         for process in self.processes:
             if process.poll() is None:
-                try:
-                    process.terminate()
-                except OSError:
-                    pass
+                terminate_process_group(process, grace_seconds=5)
 
     def _preflight(self) -> dict[str, Any]:
         if self.args.preflight_file:
@@ -56,7 +53,6 @@ class Dispatcher:
                 value["safe_gpus"] = safe[:self.args.required_workers]
                 value["safe_gpu_count"] = len(safe)
                 value["selected_gpu_count"] = len(value["safe_gpus"])
-            return value
             return value
         return gpu_preflight(
             required_count=self.args.required_workers,
@@ -115,6 +111,8 @@ class Dispatcher:
             "approved_gpus": approved,
             "gpu5_used": 5 in approved,
             "workers": len(approved),
+            "dispatcher_pid": os.getpid(),
+            "dispatcher_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
             "dynamic_claims": True,
             "one_project_worker_per_gpu": True,
             "old_artifacts_reused": False,
@@ -159,8 +157,11 @@ class Dispatcher:
         if self.args.worker_command:
             command += ["--worker-command", self.args.worker_command]
         log = (self.root / f"worker_gpu{gpu_id}.log").open("a", encoding="utf-8")
-        process = subprocess.Popen(command, cwd=str(self.args.repo_root), stdin=subprocess.DEVNULL,
-                                   stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+        try:
+            process = subprocess.Popen(command, cwd=str(self.args.repo_root), stdin=subprocess.DEVNULL,
+                                       stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+        finally:
+            log.close()
         self.processes.append(process)
         atomic_write_json(self.root / f"worker_gpu{gpu_id}.pid.json", {"pid": process.pid, "gpu_id": gpu_id, "started_utc": utc_now()})
 
@@ -202,16 +203,18 @@ class Dispatcher:
         except Exception as exc:
             for process in self.processes:
                 if process.poll() is None:
-                    try:
-                        process.terminate()
-                    except OSError:
-                        pass
+                    terminate_process_group(process, grace_seconds=5)
             atomic_write_json(self.root / "DISPATCHER_FAILURE.json", {
                 "schema": "STAGE_V_DYNAMIC_DISPATCHER_FAILURE_V2", "status": "FAIL",
                 "reason": f"{type(exc).__name__}:{exc}", "dispatcher_pid": os.getpid(), "updated_utc": utc_now(),
             })
             return 1
         finally:
+            for process in self.processes:
+                if process.poll() is None:
+                    terminate_process_group(process, grace_seconds=5)
+                else:
+                    process.wait()
             self.queue.close()
 
 

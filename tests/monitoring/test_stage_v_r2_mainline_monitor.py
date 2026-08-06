@@ -94,6 +94,22 @@ def test_monitor_waiting_does_not_create_formal_root(tmp_path: Path, monkeypatch
     assert state["eval160_reads"] == 0
 
 
+def test_monitor_writes_one_receipt_per_state_transition(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = Path(__file__).resolve().parents[2]
+    args = make_args(tmp_path, repo)
+    fake_system(monkeypatch, gpu_rows())
+    monkeypatch.setattr(monitor, "source_binding", lambda _: {"commit": args.expected_source_commit, "tree": args.expected_source_tree, "status_porcelain": ""})
+    instance = monitor.MainlineMonitor(args)
+    assert instance.tick() == monitor.WAITING
+    assert instance.tick() == monitor.WAITING
+    receipts = list((tmp_path / "monitor" / "TRANSITION_RECEIPTS").glob("*.json"))
+    assert len(receipts) == 1
+    value = json.loads(receipts[0].read_text(encoding="utf-8"))
+    assert value["from_status"] == "NONE"
+    assert value["to_status"] == monitor.WAITING
+    assert len(value["state_sha256"]) == 64
+
+
 def test_source_drift_is_hard_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repo = Path(__file__).resolve().parents[2]
     args = make_args(tmp_path, repo)

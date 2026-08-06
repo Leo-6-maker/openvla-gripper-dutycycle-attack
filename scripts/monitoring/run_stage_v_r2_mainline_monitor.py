@@ -214,9 +214,18 @@ def pid_alive(pid: int) -> bool:
             return False
     try:
         os.kill(pid, 0)
+    except PermissionError:
         return True
     except OSError:
         return False
+    proc_stat = Path(f"/proc/{pid}/stat")
+    if proc_stat.is_file():
+        try:
+            if proc_stat.read_text(encoding="utf-8", errors="replace").rsplit(")", 1)[1].split()[0] == "Z":
+                return False
+        except (OSError, IndexError):
+            pass
+    return True
 
 
 def _under(path: Path, parent: Path) -> bool:
@@ -340,6 +349,8 @@ class MainlineMonitor:
         if status not in STATES or phase not in STATES:
             raise ValueError(f"unknown mainline monitor state: {status}/{phase}")
         self.heartbeat_count += 1
+        state_path = self.monitor_root / "STAGE_V_R2_MAINLINE_STATE.json"
+        previous = parse_json(state_path)
         formal_roots = []
         parent = Path(self.args.formal_root_parent).resolve()
         if parent.is_dir():
@@ -360,8 +371,27 @@ class MainlineMonitor:
             "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
             "updated_utc": utc_now(),
         }
-        atomic_write_json(self.monitor_root / "STAGE_V_R2_MAINLINE_STATE.json", payload)
+        atomic_write_json(state_path, payload)
         atomic_write_json(self.monitor_root / "STAGE_V_R2_MAINLINE_HEARTBEAT.json", payload)
+        if not isinstance(previous, Mapping) or previous.get("status") != status or previous.get("phase") != phase:
+            transitions = self.monitor_root / "TRANSITION_RECEIPTS"
+            transitions.mkdir(parents=True, exist_ok=True)
+            old = str(previous.get("status", "NONE")) if isinstance(previous, Mapping) else "NONE"
+            receipt = transitions / f"{self.heartbeat_count:08d}_{old}_TO_{status}.json"
+            atomic_write_json(receipt, {
+                "schema": "STAGE_V_R2_MAINLINE_TRANSITION_RECEIPT_V1",
+                "from_status": old,
+                "from_phase": previous.get("phase") if isinstance(previous, Mapping) else None,
+                "to_status": status,
+                "to_phase": phase,
+                "source_commit": self.args.expected_source_commit,
+                "source_tree": self.args.expected_source_tree,
+                "state_sha256": sha256_file(state_path),
+                "resource_verdict": resource.get("verdict"),
+                "hard_stop_reasons": sorted(set(hard)),
+                "missing_preparation_inputs": sorted(set(missing)),
+                "transition_utc": utc_now(),
+            })
 
     def tick(self) -> str:
         hard, missing = self._verify_bindings()

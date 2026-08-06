@@ -82,6 +82,12 @@ class Worker:
         self.last_progress_epoch = time.time()
         self.last_artifact_epoch = time.time()
         self.last_cpu_progress_epoch = time.time()
+        self.last_simulator_progress_epoch = self.last_progress_epoch
+        self.last_branch_progress_epoch = self.last_progress_epoch
+        self.last_simulator_step: int | None = None
+        self.last_branch_progress: int | None = None
+        self.current_branch: str | None = None
+        self.branch_started_epoch: float | None = None
         self.last_child_cpu_seconds = 0.0
         self.parent_started_epoch: float | None = None
 
@@ -89,6 +95,11 @@ class Worker:
         with self.progress_lock:
             parent = self.current or {}
             progress = self._progress_snapshot(parent.get("output_dir")) if parent else {}
+            if parent:
+                branch = progress.get("current_branch")
+                if branch != self.current_branch:
+                    self.current_branch = str(branch) if branch else None
+                    self.branch_started_epoch = time.time() if self.current_branch else None
             gpu = _gpu_row(self.args.gpu_id)
             payload = {
                 "schema": "STAGE_V_DYNAMIC_WORKER_STATUS_V2",
@@ -98,6 +109,7 @@ class Worker:
                 "gpu_id": self.args.gpu_id,
                 "state": state,
                 "current_parent": parent.get("canonical_parent_key"),
+                "current_output_dir": parent.get("output_dir"),
                 "current_branch": progress.get("current_branch"),
                 "simulator_step": progress.get("simulator_step", 0),
                 "branch_progress": progress.get("branch_progress", 0),
@@ -105,6 +117,9 @@ class Worker:
                 "last_artifact_utc": progress.get("last_artifact_utc"),
                 "last_progress_epoch": self.last_progress_epoch,
                 "last_artifact_epoch": self.last_artifact_epoch,
+                "last_simulator_progress_epoch": self.last_simulator_progress_epoch,
+                "last_branch_progress_epoch": self.last_branch_progress_epoch,
+                "branch_started_epoch": self.branch_started_epoch,
                 "parent_started_epoch": self.parent_started_epoch,
                 "child_pid": child_pid,
                 "child_pgid": self.child_pgid,
@@ -139,10 +154,23 @@ class Worker:
         progress = read_json(progress_file, {}) if progress_file.is_file() else {}
         if not isinstance(progress, dict):
             progress = {}
+        now = time.time()
+        simulator_step = int(progress.get("simulator_step", 0) or 0)
+        branch_progress = int(progress.get("branch_progress", 0) or 0)
+        if self.last_simulator_step is None:
+            self.last_simulator_step = simulator_step
+        elif simulator_step != self.last_simulator_step:
+            self.last_simulator_step = simulator_step
+            self.last_simulator_progress_epoch = now
+        if self.last_branch_progress is None:
+            self.last_branch_progress = branch_progress
+        elif branch_progress != self.last_branch_progress:
+            self.last_branch_progress = branch_progress
+            self.last_branch_progress_epoch = now
         child_cpu_seconds = _proc_cpu_seconds(self.child.pid if self.child else None)
         if child_cpu_seconds is not None:
             if child_cpu_seconds > self.last_child_cpu_seconds:
-                self.last_cpu_progress_epoch = time.time()
+                self.last_cpu_progress_epoch = now
             self.last_child_cpu_seconds = max(self.last_child_cpu_seconds, child_cpu_seconds)
         progress_updated = progress.get("updated_epoch")
         if progress_updated is None and progress.get("updated_utc"):
@@ -155,9 +183,13 @@ class Worker:
         if newest and newest > self.last_artifact_epoch:
             self.last_artifact_epoch = newest
             self.last_progress_epoch = newest
+        self.last_progress_epoch = max(
+            self.last_progress_epoch, self.last_simulator_progress_epoch,
+            self.last_branch_progress_epoch,
+        )
         return {
             "branch_progress": branch_progress,
-            "simulator_step": int(progress.get("simulator_step", 0) or 0),
+            "simulator_step": simulator_step,
             "current_branch": progress.get("current_branch"),
             "last_progress_utc": progress.get("updated_utc"),
             "last_artifact_utc": progress.get("last_artifact_utc"),
@@ -175,6 +207,18 @@ class Worker:
                     task["lease_token"], task["lease_epoch"],
                 )
                 project_queue(self.root, self.queue.list_tasks())
+
+    def _write_exit(self, exit_code: int, reason: str) -> int:
+        atomic_write_json(self.worker_root / "WORKER_EXIT.json", {
+            "schema": "STAGE_V_DYNAMIC_WORKER_EXIT_V1",
+            "worker_id": self.args.worker_id,
+            "worker_pid": os.getpid(),
+            "gpu_id": self.args.gpu_id,
+            "exit_code": exit_code,
+            "reason": reason,
+            "updated_utc": utc_now(),
+        })
+        return exit_code
 
     def _command(self, task: dict[str, Any], output_dir: Path) -> list[str]:
         if self.args.worker_command:
@@ -201,6 +245,15 @@ class Worker:
     def _run_task(self, task: dict[str, Any]) -> bool:
         self.current = task
         self.parent_started_epoch = time.time()
+        self.last_progress_epoch = self.parent_started_epoch
+        self.last_artifact_epoch = self.parent_started_epoch
+        self.last_cpu_progress_epoch = self.parent_started_epoch
+        self.last_simulator_progress_epoch = self.parent_started_epoch
+        self.last_branch_progress_epoch = self.parent_started_epoch
+        self.last_simulator_step = None
+        self.last_branch_progress = None
+        self.current_branch = None
+        self.branch_started_epoch = None
         output_dir = attempt_dir(self.root, task["canonical_parent_key"], int(task["attempt_count"]))
         output_dir.mkdir(parents=True, exist_ok=False)
         log_path = output_dir / "SCIENCE_RUNNER.log"
@@ -239,6 +292,7 @@ class Worker:
                 self.child_pgid = os.getpgid(self.child.pid) if hasattr(os, "getpgid") else self.child.pid
                 job["child_pgid"] = self.child_pgid
                 atomic_write_json(output_dir / "JOB.json", job)
+                self._status("RUNNING", child_pid=self.child.pid)
                 code = self.child.wait()
             self.child = None
             self.child_pgid = None
@@ -290,6 +344,11 @@ class Worker:
         )
         if not committed:
             outcome = "FAILED_FATAL_POST_ACTION"
+        self.current = None
+        self.parent_started_epoch = None
+        self.current_branch = None
+        self.branch_started_epoch = None
+        self._status("IDLE")
         job.update({
             "state": outcome,
             "exit_code": code,
@@ -299,8 +358,6 @@ class Worker:
         })
         atomic_write_json(output_dir / "JOB.json", job)
         project_queue(self.root, self.queue.list_tasks())
-        self.current = None
-        self.parent_started_epoch = None
         return outcome in {"DONE_VALID", "FAILED_RETRYABLE_INFRA"}
 
     def run(self) -> int:
@@ -317,12 +374,13 @@ class Worker:
                 project_queue(self.root, self.queue.list_tasks())
                 if task is None:
                     self._status("IDLE")
-                    return 0 if not any(item["state"] in {"FAILED_FATAL_POST_ACTION", "HOLD"} for item in self.queue.list_tasks()) else 1
+                    fatal = any(item["state"] in {"FAILED_FATAL_POST_ACTION", "HOLD"} for item in self.queue.list_tasks())
+                    return self._write_exit(1 if fatal else 0, "FATAL_QUEUE_STATE" if fatal else "QUEUE_DRAINED")
                 task["canonical_parent_key"] = task["parent_id"]
                 if not self._run_task(task):
                     self._status("FAILED", error="FATAL_PARENT_RESULT")
-                    return 1
-            return 1
+                    return self._write_exit(1, "FATAL_PARENT_RESULT")
+            return self._write_exit(1, "STOP_REQUESTED")
         finally:
             self.stop_event.set()
             if self.child is not None and self.child.poll() is None:

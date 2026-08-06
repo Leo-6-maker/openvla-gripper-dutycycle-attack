@@ -18,7 +18,7 @@ try:
     from .run_stage_v_local_supervisor import ExclusiveLock
     from .stage_v_dynamic_common import (
         atomic_write_json, gpu_preflight, gpu_snapshot, pid_alive, project_queue, read_json,
-        sha256_file, terminate_process_group, utc_now,
+        sanitize_key, sha256_file, terminate_process_group, utc_now,
     )
     from .stage_v_science_core_provenance import verify as verify_science_provenance
 except ImportError:  # direct server execution
@@ -26,7 +26,7 @@ except ImportError:  # direct server execution
     from scripts.detector_v5.run_stage_v_local_supervisor import ExclusiveLock
     from scripts.detector_v5.stage_v_dynamic_common import (
         atomic_write_json, gpu_preflight, gpu_snapshot, pid_alive, project_queue, read_json,
-        sha256_file, terminate_process_group, utc_now,
+        sanitize_key, sha256_file, terminate_process_group, utc_now,
     )
     from scripts.detector_v5.stage_v_science_core_provenance import verify as verify_science_provenance
 
@@ -197,10 +197,15 @@ class DynamicSupervisor:
 
     def _worker_statuses(self) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
-        for path in sorted(self.root.glob("worker_gpu*/WORKER_STATUS.json")):
-            value = read_json(path, {})
+        for worker_root in sorted(path for path in self.root.glob("worker_gpu*") if path.is_dir()):
+            heartbeat_path = worker_root / "WORKER_HEARTBEAT.json"
+            status_path = worker_root / "WORKER_STATUS.json"
+            value = read_json(heartbeat_path, {}) if heartbeat_path.is_file() else read_json(status_path, {})
             if isinstance(value, Mapping):
-                rows.append(dict(value))
+                row = dict(value)
+                row["_worker_root"] = str(worker_root)
+                row["_heartbeat_file_present"] = heartbeat_path.is_file()
+                rows.append(row)
         return rows
 
     def _resource_snapshot(self) -> tuple[dict[str, Any], list[str]]:
@@ -232,9 +237,27 @@ class DynamicSupervisor:
             errors.append("ACTIVE_WORKERS_EXCEED_APPROVED_GPUS")
         if any(gpu not in self.args.approved_gpus or gpu == 5 for gpu in assigned):
             errors.append("UNAPPROVED_OR_GPU5_WORKER")
+        run_manifest = read_json(self.root / "RUN_MANIFEST.json", {})
+        registered_dispatcher = run_manifest.get("dispatcher_pid") if isinstance(run_manifest, Mapping) else None
+        if registered_dispatcher and self.dispatcher and int(registered_dispatcher) != self.dispatcher.pid:
+            errors.append("DISPATCHER_PID_MISMATCH")
+        tasks = self.queue.list_tasks() if self.queue else []
         for row in active:
             worker_pid = int(row.get("worker_pid") or 0)
             child_pid = int(row.get("child_pid") or 0)
+            if not row.get("_heartbeat_file_present"):
+                errors.append("WORKER_HEARTBEAT_MISSING")
+            worker_root = Path(str(row.get("_worker_root") or self.root))
+            pid_receipt = read_json(self.root / f"{worker_root.name}.pid.json", {})
+            expected_worker_pid = int(pid_receipt.get("pid") or 0) if isinstance(pid_receipt, Mapping) else 0
+            if expected_worker_pid and worker_pid and expected_worker_pid != worker_pid:
+                errors.append("WORKER_PID_MISMATCH")
+            parent = row.get("current_parent")
+            if parent:
+                matching = [task for task in tasks if task.get("parent_id") == parent and task.get("state") in {"LEASED", "RUNNING", "COMMITTING"}]
+                accepted_transition = any(task.get("parent_id") == parent and task.get("state") in {"DONE", "DONE_VALID", "DONE_CLASSIFIED_TC"} for task in tasks)
+                if (len(matching) != 1 or matching[0].get("lease_owner") != row.get("worker_id")) and not accepted_transition:
+                    errors.append("WORKER_PARENT_IDENTITY_MISMATCH")
             updated = row.get("updated_utc")
             age = time.time() - (_datetime.datetime.fromisoformat(str(updated).replace("Z", "+00:00")).timestamp() if updated else self.start_epoch)
             if age > self.args.heartbeat_stale_seconds and not pid_alive(worker_pid) and not pid_alive(child_pid):
@@ -258,21 +281,38 @@ class DynamicSupervisor:
         started = float(row.get("parent_started_epoch") or 0)
         if not started or not row.get("current_parent"):
             return
-        progress = max(
-            float(row.get("last_progress_epoch") or started),
-            float(row.get("last_artifact_epoch") or started),
-            float(row.get("last_cpu_progress_epoch") or started),
-        )
-        hard = float(self.timeout_policy.get("parent_hard_seconds", 10 * 3600))
-        gpu_util = row.get("gpu_utilization_percent")
-        if time.time() - started > hard and time.time() - progress > hard and not (gpu_util and float(gpu_util) > 0):
-            self._write_timeout_receipt(row, "PARENT_WATCHDOG_TIMEOUT_BOUND")
+        now = time.time()
+        parent_hard = float(self.timeout_policy.get("parent_hard_seconds", 10 * 3600))
+        branch_hard = float(self.timeout_policy.get("branch_hard_seconds", 4 * 3600))
+        progress_epochs = {
+            "simulator_step": float(row.get("last_simulator_progress_epoch") or row.get("last_progress_epoch") or started),
+            "branch_progress": float(row.get("last_branch_progress_epoch") or row.get("last_progress_epoch") or started),
+            "artifact": float(row.get("last_artifact_epoch") or started),
+        }
+
+        def stalled(since: float, threshold: float) -> bool:
+            return now - since > threshold and all(now - value > threshold for value in progress_epochs.values())
+
+        branch_started = float(row.get("branch_started_epoch") or started)
+        if row.get("current_branch") and stalled(branch_started, branch_hard):
+            self._write_timeout_receipt(row, "BRANCH_WATCHDOG_TIMEOUT_BOUND", branch_hard, progress_epochs)
+            errors.append("BRANCH_WATCHDOG_TIMEOUT_BOUND")
+        if stalled(started, parent_hard):
+            self._write_timeout_receipt(row, "PARENT_WATCHDOG_TIMEOUT_BOUND", parent_hard, progress_epochs)
             errors.append("PARENT_WATCHDOG_TIMEOUT_BOUND")
 
-    def _write_timeout_receipt(self, row: Mapping[str, Any], reason: str) -> None:
+    def _write_timeout_receipt(self, row: Mapping[str, Any], reason: str, threshold: float | None = None,
+                               progress_epochs: Mapping[str, float] | None = None) -> None:
+        if not row.get("current_parent"):
+            return
         directory = self.root / "TIMEOUT_RECEIPTS"
         directory.mkdir(parents=True, exist_ok=True)
-        atomic_write_json(directory / f"{int(time.time())}_{row.get('gpu_id')}.json", {
+        filename = "__".join((sanitize_key(str(row.get("current_parent"))), sanitize_key(str(row.get("current_branch") or "NO_BRANCH")),
+                              f"gpu{row.get('gpu_id')}", sanitize_key(reason))) + ".json"
+        target = directory / filename
+        if target.exists():
+            return
+        atomic_write_json(target, {
             "schema": "STAGE_V_PARENT_TIMEOUT_RECEIPT_V2",
             "reason": reason,
             "canonical_parent_key": row.get("current_parent"), "branch": row.get("current_branch"),
@@ -283,6 +323,10 @@ class DynamicSupervisor:
             "elapsed_seconds": time.time() - float(row.get("parent_started_epoch") or time.time()),
             "parent_hard_seconds": self.timeout_policy.get("parent_hard_seconds"),
             "branch_hard_seconds": self.timeout_policy.get("branch_hard_seconds"),
+            "threshold_seconds": threshold,
+            "timeout_basis": dict(progress_epochs or {}),
+            "last_simulator_progress_epoch": row.get("last_simulator_progress_epoch"),
+            "last_branch_progress_epoch": row.get("last_branch_progress_epoch"),
             "gpu_state": {"utilization_percent": row.get("gpu_utilization_percent"), "memory_used_mib": row.get("gpu_memory_used_mib")},
             "written_utc": utc_now(),
         })
@@ -339,34 +383,71 @@ class DynamicSupervisor:
         current = 0 if self.ssh_failed_since is None else time.monotonic() - self.ssh_failed_since
         return max(self.longest_ssh_outage, current)
 
-    def _terminate_owned(self) -> None:
+    def _terminate_owned(self) -> dict[str, Any]:
         grace_seconds = float(getattr(self.args, "kill_grace_seconds", 20))
         if self.dispatcher is not None:
             terminate_process_group(self.dispatcher, grace_seconds=grace_seconds)
+        rows = self._worker_statuses()
         current_pgid = os.getpgid(0) if hasattr(os, "getpgid") else os.getpid()
         terminated_pgids: set[int] = set()
-        for row in self._worker_statuses():
+        tracked_pids = [int(row.get(raw) or 0) for row in rows for raw in ("worker_pid", "child_pid") if int(row.get(raw) or 0) > 0]
+        for row in rows:
             for raw_pgid in (row.get("worker_pgid"), row.get("child_pgid")):
                 pgid = int(raw_pgid or 0)
                 if pgid <= 0 or pgid == current_pgid or pgid in terminated_pgids or os.name != "posix":
                     continue
+                members: list[int] = []
+                for pid in tracked_pids:
+                    if not pid_alive(pid):
+                        continue
+                    try:
+                        if os.getpgid(pid) == pgid:
+                            members.append(pid)
+                    except OSError:
+                        pass
+                if not members:
+                    continue
                 terminated_pgids.add(pgid)
                 try:
                     os.killpg(pgid, signal.SIGTERM)
-                except ProcessLookupError:
+                except (OSError, ProcessLookupError):
                     pass
         deadline = time.time() + grace_seconds
         while time.time() < deadline:
-            if not any(pid_alive(int(row.get("worker_pid") or 0)) for row in self._worker_statuses()):
+            if not any(pid_alive(pid) for pid in tracked_pids):
                 break
             time.sleep(0.2)
+        survivors = [pid for pid in tracked_pids if pid_alive(pid)]
+        for pgid in terminated_pgids:
+            group_survivor = False
+            for pid in survivors:
+                try:
+                    if os.getpgid(pid) == pgid:
+                        group_survivor = True
+                        break
+                except OSError:
+                    pass
+            if group_survivor:
+                try:
+                    os.killpg(pgid, signal.SIGKILL)
+                except (OSError, ProcessLookupError):
+                    pass
+        deadline = time.time() + min(5.0, grace_seconds)
+        while time.time() < deadline and any(pid_alive(pid) for pid in tracked_pids):
+            time.sleep(0.1)
+        remaining = [pid for pid in tracked_pids if pid_alive(pid)]
+        return {"owned_pids_before": tracked_pids, "owned_pids_after": remaining,
+                "process_reap_complete": not remaining}
 
     def _abort(self, reason: str) -> int:
-        self._terminate_owned()
+        reap = self._terminate_owned()
+        if not reap["process_reap_complete"]:
+            reason = f"{reason};PROCESS_REAP_INCOMPLETE"
         atomic_write_json(self.root / "ABORTED_INCOMPLETE.json", {
             "schema": "STAGE_V_PARENT_AWARE_ABORT_V2", "status": "ABORTED_INCOMPLETE",
             "reason": reason, "control_plane_mode": "LOCAL_AUTONOMOUS", "ssh_is_hard_stop": False,
             "accepted_parent_results": 0, "scientific_validity": 0,
+            **reap,
             "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
             "heartbeat_count": self.heartbeat_count, "aborted_utc": utc_now(),
         })

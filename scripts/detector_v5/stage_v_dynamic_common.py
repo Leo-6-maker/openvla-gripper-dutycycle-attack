@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import signal
 import subprocess
 import tempfile
 import time
@@ -146,20 +147,21 @@ def run_command(command: list[str], *, cwd: Path | None = None, env: Mapping[str
 
 def terminate_process_group(process: subprocess.Popen[Any], grace_seconds: float = 10.0) -> None:
     if process.poll() is not None:
+        process.wait()
         return
     if os.name == "posix":
         try:
-            os.killpg(process.pid, 15)
+            os.killpg(process.pid, signal.SIGTERM)
         except ProcessLookupError:
-            return
+            pass
         try:
             process.wait(timeout=grace_seconds)
             return
         except subprocess.TimeoutExpired:
             try:
-                os.killpg(process.pid, 9)
+                os.killpg(process.pid, signal.SIGKILL)
             except ProcessLookupError:
-                return
+                pass
     else:  # pragma: no cover - production is Linux
         process.terminate()
     try:
@@ -172,11 +174,31 @@ def terminate_process_group(process: subprocess.Popen[Any], grace_seconds: float
 def pid_alive(pid: int | None) -> bool:
     if not pid or pid <= 0:
         return False
+    if os.name == "nt":  # os.kill(pid, 0) is not a harmless probe on Windows.
+        try:
+            result = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                check=False, capture_output=True, text=True, timeout=2,
+            )
+            return result.returncode == 0 and f'"{pid}"' in result.stdout
+        except (OSError, subprocess.SubprocessError):
+            return False
     try:
         os.kill(pid, 0)
         return True
+    except PermissionError:
+        return True
     except OSError:
         return False
+    proc_stat = Path(f"/proc/{pid}/stat")
+    if proc_stat.is_file():
+        try:
+            state = proc_stat.read_text(encoding="utf-8", errors="replace").rsplit(")", 1)[1].split()[0]
+            if state == "Z":
+                return False
+        except (OSError, IndexError):
+            pass
+    return True
 
 
 def _number(value: str) -> float | int | None:

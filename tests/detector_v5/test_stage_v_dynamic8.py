@@ -162,6 +162,18 @@ def test_local_heartbeat_is_atomic(tmp_path: Path) -> None:
     assert json.loads(path.read_text(encoding="utf-8"))["heartbeat_count"] == 1
 
 
+def test_worker_heartbeat_file_is_preferred_over_legacy_status(tmp_path: Path) -> None:
+    root = tmp_path / "run"
+    worker_root = root / "worker_gpu0"
+    worker_root.mkdir(parents=True)
+    write_json(worker_root / "WORKER_STATUS.json", {"state": "RUNNING", "worker_pid": 1})
+    write_json(worker_root / "WORKER_HEARTBEAT.json", {"state": "IDLE", "worker_pid": 2})
+    worker = sup.DynamicSupervisor(make_args(root))
+    rows = worker._worker_statuses()
+    assert rows[0]["state"] == "IDLE"
+    assert rows[0]["_heartbeat_file_present"] is True
+
+
 def test_dead_worker_timeout_is_parent_bound(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_resources(monkeypatch)
     root = tmp_path / "run"
@@ -179,6 +191,33 @@ def test_dead_worker_timeout_is_parent_bound(tmp_path: Path, monkeypatch: pytest
     assert list((root / "TIMEOUT_RECEIPTS").glob("*.json"))
 
 
+def test_branch_timeout_receipt_is_parent_bound(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    root = tmp_path / "run"
+    root.mkdir()
+    now = time_now()
+    old = dt.datetime.now(dt.timezone.utc).isoformat()
+    write_json(root / "worker_gpu0" / "WORKER_HEARTBEAT.json", {
+        "state": "RUNNING", "worker_pid": 999999, "child_pid": 999998,
+        "worker_pgid": 999999, "gpu_id": 0,
+        "worker_id": "stage-v-r2-gpu0", "current_parent": "libero_goal/task_00/state_48",
+        "current_branch": "OPEN_T10", "updated_utc": old,
+        "parent_started_epoch": now - 7200, "branch_started_epoch": now - 7200,
+        "last_simulator_progress_epoch": now - 7200,
+        "last_branch_progress_epoch": now - 7200, "last_artifact_epoch": now - 7200,
+        "gpu_utilization_percent": 80,
+    })
+    worker = sup.DynamicSupervisor(make_args(root))
+    worker.timeout_policy = {"branch_hard_seconds": 1, "parent_hard_seconds": 999999}
+    _, errors = worker._resource_snapshot()
+    assert "BRANCH_WATCHDOG_TIMEOUT_BOUND" in errors
+    receipt = next((root / "TIMEOUT_RECEIPTS").glob("*.json"))
+    value = json.loads(receipt.read_text(encoding="utf-8"))
+    assert value["canonical_parent_key"] == "libero_goal/task_00/state_48"
+    assert value["branch"] == "OPEN_T10"
+    assert value["threshold_seconds"] == 1
+
+
 def test_healthy_worker_with_fresh_heartbeat_is_not_killed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_resources(monkeypatch)
     root = tmp_path / "run"
@@ -193,6 +232,36 @@ def test_healthy_worker_with_fresh_heartbeat_is_not_killed(tmp_path: Path, monke
     worker = sup.DynamicSupervisor(make_args(root))
     _, errors = worker._resource_snapshot()
     assert not any("TIMEOUT" in item or "HEARTBEAT_LOST" in item for item in errors)
+
+
+def test_stale_heartbeat_with_live_worker_is_not_heartbeat_abort(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    root = tmp_path / "run"
+    root.mkdir()
+    old = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=20)).isoformat()
+    now = time_now()
+    write_json(root / "worker_gpu0" / "WORKER_HEARTBEAT.json", {
+        "state": "RUNNING", "worker_pid": os.getpid(), "child_pid": os.getpid(),
+        "worker_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(), "gpu_id": 0,
+        "worker_id": "stage-v-r2-gpu0", "current_parent": "libero_goal/task_00/state_48",
+        "current_branch": "OPEN_T10", "updated_utc": old,
+        "parent_started_epoch": now - 60, "last_simulator_progress_epoch": now - 5,
+        "last_branch_progress_epoch": now - 5, "last_artifact_epoch": now - 5,
+    })
+    worker = sup.DynamicSupervisor(make_args(root))
+    _, errors = worker._resource_snapshot()
+    assert "WORKER_HEARTBEAT_LOST_BOUND" not in errors
+
+
+def test_dispatcher_pid_manifest_mismatch_is_hard_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    root = tmp_path / "run"
+    root.mkdir()
+    write_json(root / "RUN_MANIFEST.json", {"dispatcher_pid": 12345})
+    worker = sup.DynamicSupervisor(make_args(root))
+    worker.dispatcher = SimpleNamespace(pid=54321)
+    _, errors = worker._resource_snapshot()
+    assert "DISPATCHER_PID_MISMATCH" in errors
 
 
 def time_now() -> float:
