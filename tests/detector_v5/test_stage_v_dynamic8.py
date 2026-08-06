@@ -344,6 +344,19 @@ def test_xid_is_hard_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     assert "NVIDIA_XID" in errors
 
 
+@pytest.mark.parametrize("source", [
+    {"source_commit": "other", "source_tree": "tree", "source_status": ""},
+    {"source_commit": "commit", "source_tree": "tree", "source_status": " M tracked.py"},
+])
+def test_source_drift_or_dirty_worktree_is_hard_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, source: dict[str, str]) -> None:
+    fake_resources(monkeypatch)
+    args = make_args(tmp_path / "run")
+    args.repo_root = tmp_path
+    monkeypatch.setattr(sup.DynamicSupervisor, "_source", lambda self: source)
+    _, errors = sup.DynamicSupervisor(args)._resource_snapshot()
+    assert any(error in errors for error in ("SOURCE_OR_TREE_DRIFT", "SOURCE_WORKTREE_DIRTY"))
+
+
 def test_gpu5_and_duplicate_worker_are_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_resources(monkeypatch)
     root = tmp_path / "run"

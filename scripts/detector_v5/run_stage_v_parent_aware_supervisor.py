@@ -143,7 +143,11 @@ class DynamicSupervisor:
             if result.returncode != 0:
                 raise RuntimeError(f"GIT_QUERY_FAIL:{result.stderr[-200:]}")
             return result.stdout.strip()
-        return {"source_commit": git("rev-parse", "HEAD"), "source_tree": git("rev-parse", "HEAD^{tree}")}
+        return {
+            "source_commit": git("rev-parse", "HEAD"),
+            "source_tree": git("rev-parse", "HEAD^{tree}"),
+            "source_status": git("status", "--porcelain", "--untracked-files=all"),
+        }
 
     def _prepare(self) -> None:
         while True:
@@ -160,6 +164,8 @@ class DynamicSupervisor:
         source = self._source()
         if source["source_commit"] != self.args.expected_source_commit or source["source_tree"] != self.args.expected_source_tree:
             raise RuntimeError("SOURCE_OR_TREE_MISMATCH")
+        if source["source_status"]:
+            raise RuntimeError("SOURCE_WORKTREE_DIRTY")
         if self.args.science_provenance:
             provenance_ok, provenance_errors = verify_science_provenance(
                 self.args.science_provenance,
@@ -212,6 +218,16 @@ class DynamicSupervisor:
         memory = _mem_snapshot()
         gpu_rows, gpu_error = gpu_snapshot(self.args.gpu_query_command)
         errors: list[str] = []
+        source = None
+        if getattr(self.args, "repo_root", None):
+            try:
+                source = self._source()
+                if source["source_commit"] != self.args.expected_source_commit or source["source_tree"] != self.args.expected_source_tree:
+                    errors.append("SOURCE_OR_TREE_DRIFT")
+                if source["source_status"]:
+                    errors.append("SOURCE_WORKTREE_DIRTY")
+            except RuntimeError as exc:
+                errors.append(str(exc))
         if gpu_error and not self.args.skip_resource_checks:
             errors.append(gpu_error)
         if memory.get("available_ram_bytes") is not None and memory["available_ram_bytes"] < self.args.min_available_ram_gib * (1 << 30):
@@ -269,6 +285,9 @@ class DynamicSupervisor:
             self._check_parent_timeout(row, errors)
         metrics = {
             **memory,
+            "source_commit": source["source_commit"] if source else None,
+            "source_tree": source["source_tree"] if source else None,
+            "source_status": source["source_status"] if source else None,
             "gpu_memory": gpu_rows,
             "gpu_xid_status": xid,
             "active_worker_pids": [row.get("worker_pid") for row in active],
@@ -340,6 +359,7 @@ class DynamicSupervisor:
             "schema": "STAGE_V_PARENT_AWARE_LOCAL_HEARTBEAT_V2",
             "control_plane_mode": "LOCAL_AUTONOMOUS", "ssh_is_hard_stop": False,
             "run_root": str(self.root), "source_commit": self.args.expected_source_commit, "source_tree": self.args.expected_source_tree,
+            "source_worktree_clean": not bool(metrics.get("source_status")),
             "supervisor_pid": os.getpid(), "supervisor_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
             "dispatcher_pid": self.dispatcher.pid if self.dispatcher else None,
             "active_worker_pids": metrics.get("active_worker_pids", []), "gpu_assignments": metrics.get("gpu_assignments", []),
