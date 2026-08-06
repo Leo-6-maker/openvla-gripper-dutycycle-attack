@@ -20,6 +20,11 @@ except ImportError:
     from stage_v_dynamic_common import atomic_write_json, load_rows, sha256_file, utc_now
 
 try:
+    from .audit_stage_o_observability import audit as independent_audit
+except ImportError:
+    from audit_stage_o_observability import audit as independent_audit
+
+try:
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
 except ImportError:
     from ..fec.atomic_task_queue import AtomicTaskQueue
@@ -296,8 +301,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "audited_utc": utc_now(),
     }
     atomic_write_json(args.output_root / "STAGE_O_AUDIT.json", audit)
-    atomic_write_json(args.output_root / "STAGE_O_INDEPENDENT_AUDIT.json", audit)
-    complete_status = "STAGE_O_PASS" if audit["verdict"] == "PASS" else "STAGE_O_FAIL"
+    independent = independent_audit(
+        args.output_root,
+        expected_source_commit=args.source_commit,
+        expected_source_tree=args.source_tree,
+    )
+    atomic_write_json(args.output_root / "STAGE_O_INDEPENDENT_AUDIT.json", independent)
+    complete_status = "STAGE_O_PASS" if independent["verdict"] == "PASS" else "STAGE_O_FAIL"
     atomic_write_json(args.output_root / "STAGE_O_COMPLETE.json", {
         "schema": "STAGE_O_COMPLETE_V1",
         "status": complete_status,

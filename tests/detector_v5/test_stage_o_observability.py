@@ -48,6 +48,9 @@ def test_stage_o_uses_preregistered_seeds_and_dynamic_eight_workers(tmp_path: Pa
     assert manifest_value["split_counts"]["libero_goal"] == {"train": 6, "validation": 2, "untouched_test": 2}
     audit = json.loads((args.output_root / "STAGE_O_AUDIT.json").read_text(encoding="utf-8"))
     assert audit["verdict"] == "PASS"
+    independent = json.loads((args.output_root / "STAGE_O_INDEPENDENT_AUDIT.json").read_text(encoding="utf-8"))
+    assert independent["schema"] == "STAGE_O_INDEPENDENT_AUDIT_V3"
+    assert independent["verdict"] == "PASS"
     complete = json.loads((args.output_root / "STAGE_O_COMPLETE.json").read_text(encoding="utf-8"))
     assert complete["status"] == "STAGE_O_PASS"
     assert (args.output_root / "SHA256SUMS.sha256").is_file()
