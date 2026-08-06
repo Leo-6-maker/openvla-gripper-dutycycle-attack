@@ -91,7 +91,11 @@ def qualifies(row: Mapping[str, Any], a: Mapping[str, Any], b: Mapping[str, Any]
 
 
 def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
-    rows = ranked(load_rows(args.candidate_manifest), args.salt)
+    raw_rows = load_rows(args.candidate_manifest)
+    rows = ranked(
+        [row for row in raw_rows if row.get("audit_status", "PASS") == "PASS" and int(row.get("remaining_policy_steps", 1) or 0) > 0],
+        args.salt,
+    )
     if not rows:
         raise ValueError("candidate manifest is empty")
     suites = sorted({str(row["suite"]) for row in rows})
