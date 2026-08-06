@@ -132,11 +132,15 @@ class DynamicSupervisor:
         return {"source_commit": git("rev-parse", "HEAD"), "source_tree": git("rev-parse", "HEAD^{tree}")}
 
     def _prepare(self) -> None:
-        preflight = self._preflight()
-        atomic_write_json(self.args.preflight_file, preflight)
-        if preflight.get("status") != "PASS":
+        while True:
+            preflight = self._preflight()
+            atomic_write_json(self.args.preflight_file, preflight)
+            if preflight.get("status") == "PASS":
+                break
             atomic_write_json(self.args.preflight_file.with_name("PRELAUNCH_WAITING_FOR_8_GPUS.json"), preflight)
-            raise RuntimeError("PRELAUNCH_WAITING_FOR_8_GPUS")
+            if not getattr(self.args, "wait_for_gpus", False):
+                raise RuntimeError("PRELAUNCH_WAITING_FOR_8_GPUS")
+            time.sleep(max(1.0, float(getattr(self.args, "preflight_interval_seconds", 300.0))))
         if sorted(int(gpu) for gpu in preflight.get("safe_gpus", [])) != sorted(self.args.approved_gpus):
             raise RuntimeError("PREFLIGHT_APPROVED_GPU_SET_MISMATCH")
         source = self._source()
@@ -480,6 +484,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--protected-pids", type=lambda value: [int(item) for item in value.split(",") if item], default=[])
     parser.add_argument("--external-pid", type=int, default=0)
     parser.add_argument("--preflight-file", type=Path, required=True)
+    parser.add_argument("--wait-for-gpus", action="store_true")
+    parser.add_argument("--preflight-interval-seconds", type=float, default=300.0)
     parser.add_argument("--timeout-policy", type=Path)
     parser.add_argument("--dispatcher-script", type=Path, required=True)
     parser.add_argument("--auditor-script", type=Path, required=True)
