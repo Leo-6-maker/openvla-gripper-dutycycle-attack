@@ -153,6 +153,17 @@ def build_start_provenance(module: Mapping[str, Any], worker_script: Path, artif
     }
 
 
+def worker_identity_row(row: Mapping[str, Any], initial_state_sha256: str) -> dict[str, Any]:
+    """Bridge the qualification identity names to the frozen worker contract."""
+    return {
+        **row,
+        "task_idx": int(row["task_index"]),
+        "state_id": int(row["state_index"]),
+        "initial_state_sha256": initial_state_sha256,
+        "split": str(row.get("split") or row.get("source_split") or "STAGE_V_R2_QUALIFICATION"),
+    }
+
+
 def run(args: argparse.Namespace) -> int:
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -190,7 +201,7 @@ def run(args: argparse.Namespace) -> int:
         if supplied_state_sha256 and str(supplied_state_sha256) != initial_state_sha256:
             raise RuntimeError("CANDIDATE_INITIAL_STATE_SHA256_MISMATCH")
         write_worker_manifest(manifest_path, row, initial_state_sha256)
-        row = {**row, "initial_state_sha256": initial_state_sha256, "split": str(row.get("split") or row.get("source_split") or "STAGE_V_R2_QUALIFICATION")}
+        row = worker_identity_row(row, initial_state_sha256)
         artifact_provenance = module["load_artifact_provenance"]()
         model, processor, device, unnorm_key = module["load_policy"]()
         adapter = module["OfficialOpenVLAActionAdapter"](
