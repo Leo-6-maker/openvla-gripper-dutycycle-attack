@@ -92,6 +92,7 @@ def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, mon
     assert extras["manifest"]["schema"] == "STAGE_V_FORMAL_PARENT_MANIFEST_V2"
 
 
+
 def test_science_manifest_is_fresh_v1_identity_binding(tmp_path: Path) -> None:
     rows = [
         {
