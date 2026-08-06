@@ -590,6 +590,7 @@ class Supervisor:
         self.swap_bad_streak = 0
         self.last_artifact_mtime = self.started_epoch
         self.last_heartbeat: dict[str, Any] = {}
+        self.dispatcher_miss_streak = 0
 
     def _prepare(self) -> None:
         self.source = source_provenance(self.repo_root)
@@ -650,8 +651,13 @@ class Supervisor:
             self.run_root, self.process.pid if self.process else None
         )
         worker_errors.extend(validate_workers(workers, self.approved_gpus))
-        if self.process and self.process.poll() is None and not pid_alive(self.process.pid):
-            worker_errors.append("DISPATCHER_PID_LOST")
+        if self.process and self.process.poll() is None:
+            if pid_alive(self.process.pid):
+                self.dispatcher_miss_streak = 0
+            else:
+                self.dispatcher_miss_streak += 1
+                if self.dispatcher_miss_streak >= 2:
+                    worker_errors.append("DISPATCHER_PID_LOST")
         oom = vm.get("oom_kill")
         if swap_used > 0:
             self.swap_bad_streak += 1
