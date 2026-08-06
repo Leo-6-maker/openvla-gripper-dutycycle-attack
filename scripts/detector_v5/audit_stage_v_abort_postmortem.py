@@ -117,7 +117,7 @@ def _manifest_info(root: Path) -> tuple[set[str], dict[str, Any]]:
         if isinstance(value, list):
             candidates = value
         elif isinstance(value, Mapping):
-            candidates = next((value.get(k) for k in ("parents", "planned_parents", "rows") if isinstance(value.get(k), list)), [])
+            candidates = next((value.get(k) for k in ("selected_parents", "parents", "planned_parents", "rows", "all_candidate_audits") if isinstance(value.get(k), list)), [])
         for item in candidates:
             if isinstance(item, Mapping) and item.get("canonical_parent_key"):
                 keys.add(str(item["canonical_parent_key"]))
