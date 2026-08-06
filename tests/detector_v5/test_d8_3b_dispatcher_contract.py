@@ -486,10 +486,16 @@ def test_kill_switch_skips_pending_and_is_not_pass(tmp_path):
     assert not dispatcher.final_gate(_records()[:0])["pass"]
 
 
-def test_signal_terminates_inflight_and_records_nonzero(tmp_path):
+def test_signal_terminates_inflight_and_records_nonzero(tmp_path, monkeypatch):
     path, manifest = _dispatch_manifest(tmp_path, count=2)
     calls = 0
     processes = []
+
+    monkeypatch.setattr(
+        dispatcher,
+        "_signal_process",
+        lambda process, kill=False: process.kill() if kill else process.terminate(),
+    )
 
     def launch(job):
         process = _FakeProcess(finish_after=1000)
