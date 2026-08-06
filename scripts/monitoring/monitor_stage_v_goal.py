@@ -584,11 +584,13 @@ class Gatekeeper:
     def _write_parent_progress(self) -> dict[str, Any]:
         start = parse_json(self.stage_v_root / "SUPERVISOR_START.json")
         manifest_path = Path(start["parent_manifest"]) if isinstance(start, Mapping) and start.get("parent_manifest") else self.stage_v_root.parent / "STAGE_V_CLEAN_SUCCESS_PARENT_MANIFEST.json"
+        full_audit = (self.stage_v_root / "SUPERVISOR_COMPLETE.json").is_file()
         progress = parent_progress(
             self.stage_v_root,
             parent_manifest=manifest_path,
             expected_source_commit=self.args.expected_source_commit,
             expected_source_tree=self.args.expected_source_tree,
+            full_audit=full_audit,
         )
         atomic_write_json(self.monitor_root / "STAGE_V_PARENT_PROGRESS.json", progress)
         return progress

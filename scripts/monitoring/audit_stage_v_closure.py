@@ -298,6 +298,7 @@ def parent_progress(
     parent_manifest: Path,
     expected_source_commit: str,
     expected_source_tree: str,
+    full_audit: bool = True,
 ) -> dict[str, Any]:
     expected, manifest_errors = _expected_parents(load_json(parent_manifest))
     found: dict[str, list[Path]] = {}
@@ -327,30 +328,66 @@ def parent_progress(
                 "expected_branch_count": None,
                 "completed_branch_count": 0,
                 "failed_branch_count": 0,
-                "missing_branches": ["PARENT_RESULT.json"],
+                "missing_branches": ["PARENT_RESULT.json"] if not paths else [],
                 "audit_status": "FAIL" if len(paths) != 1 else "PENDING",
                 "seal_status": "FAIL" if len(paths) != 1 else "PENDING",
                 "accepted": False,
                 "errors": ["missing_parent_result"] if not paths else ["duplicate_parent_identity"],
             }
-            missing_branch_count += 1
-        else:
+        elif full_audit:
             item = verify_parent(
                 paths[0],
                 expected[key],
                 expected_source_commit=expected_source_commit,
                 expected_source_tree=expected_source_tree,
             )
-            if item["audit_status"] == "PASS":
-                audited += 1
+        else:
+            result = load_json(paths[0] / "PARENT_RESULT.json")
+            probe_count = _int(result.get("probe_count")) if isinstance(result, Mapping) else None
+            expected_branch_count = probe_count * 3 if probe_count and probe_count > 0 else None
+            branch_file = paths[0] / "COUNTERFACTUAL_BRANCHES.jsonl"
+            try:
+                completed_branch_count = sum(1 for line in branch_file.open(encoding="utf-8") if line.strip())
+            except OSError:
+                completed_branch_count = 0
+            missing = []
+            if expected_branch_count is None:
+                missing.append("PARENT_RESULT.probe_count")
+            elif completed_branch_count != expected_branch_count:
+                missing.append(f"COUNTERFACTUAL_BRANCHES.jsonl:{completed_branch_count}/{expected_branch_count}")
+            basic_errors = []
+            if not isinstance(result, Mapping):
+                basic_errors.append("parent_result_missing_or_invalid")
+            elif result.get("current_source_commit") != expected_source_commit or result.get("current_source_tree") != expected_source_tree:
+                basic_errors.append("parent_source_binding_mismatch")
+            elif result.get("status") != "PASS" or result.get("clean_success") is not True:
+                basic_errors.append("parent_producer_status_not_pass")
+            item = {
+                "canonical_parent_key": key,
+                "expected_branch_count": expected_branch_count,
+                "completed_branch_count": completed_branch_count,
+                "failed_branch_count": 0,
+                "missing_branches": missing,
+                "audit_status": "PENDING" if not basic_errors else "FAIL",
+                "seal_status": "PENDING",
+                "accepted": False,
+                "errors": basic_errors,
+            }
+        if item["audit_status"] == "PASS":
+            audited += 1
+            branch_complete += 1
+            local_positive += int(item.get("local_positive_count", 0))
+            task_positive += int(item.get("task_positive_count", 0))
+        elif item["audit_status"] == "PENDING":
+            if not item.get("missing_branches"):
                 branch_complete += 1
-                local_positive += int(item["local_positive_count"])
-                task_positive += int(item["task_positive_count"])
-            else:
-                invalid_parent_count += 1
+            missing_branch_count += len(item.get("missing_branches", []))
+        else:
+            if item.get("missing_branches"):
                 missing_branch_count += len(item.get("missing_branches", []))
-            if item.get("accepted"):
-                accepted += 1
+            invalid_parent_count += 1
+        if item.get("accepted"):
+            accepted += 1
         rows.append(item)
     progress = {
         "schema": "STAGE_V_PARENT_PROGRESS_V1",
