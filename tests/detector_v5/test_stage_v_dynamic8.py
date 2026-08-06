@@ -309,6 +309,28 @@ def test_postmortem_is_read_only_and_falls_back_timeout_policy(tmp_path: Path) -
     assert (old / "ABORTED_INCOMPLETE.json").read_bytes() == before
 
 
+def test_postmortem_reads_external_manifest_and_worker_summary(tmp_path: Path) -> None:
+    old = tmp_path / "old"
+    old.mkdir()
+    manifest = tmp_path / "parent_manifest.json"
+    write_json(manifest, {"parents": [
+        {"canonical_parent_key": "p0"}, {"canonical_parent_key": "p1"},
+    ]})
+    write_json(old / "RUN_MANIFEST.json", {
+        "parent_manifest": str(manifest), "parent_manifest_sha256": sha256_file(manifest),
+        "map_layout": "6", "gpus": [1, 2, 3, 4, 6, 7],
+    })
+    write_json(old / "WORKER_GPU1_SUMMARY.json", {
+        "parents": [{"canonical_parent_key": "p0", "clean_success": True, "branch_count": 72}],
+    })
+    report = build_postmortem(old, expected_parent_count=2)
+    assert report["parent_counts"]["manifest_discovered"] == 2
+    assert report["parent_counts"]["parent_results"] == 1
+    assert report["parent_counts"]["missing_parent_keys"] == ["p1"]
+    assert report["parent_counts"]["manifest"]["sha256_verified"] is True
+    assert report["failure_mode_assessment"]["static_layout6_gpu_idle_tail"] is True
+
+
 def test_timeout_policy_uses_separate_branch_and_parent_p95() -> None:
     policy = build_timeout_policy({"runtime_seconds": {
         "branch": {"p95": 2 * 3600}, "parent": {"p95": 5 * 3600},

@@ -46,12 +46,30 @@ def _runtime(row: Mapping[str, Any]) -> float | None:
 
 def _load_parent_results(root: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
     for path in root.rglob("PARENT_RESULT.json"):
         value = read_json(path, {})
         if isinstance(value, Mapping):
             row = dict(value)
             row["_path"] = str(path)
-            rows.append(row)
+            key = str(row.get("canonical_parent_key", ""))
+            if key and key not in seen:
+                seen.add(key)
+                rows.append(row)
+    for path in root.glob("WORKER_*_SUMMARY.json"):
+        value = read_json(path, {})
+        parents = value.get("parents") if isinstance(value, Mapping) else None
+        if not isinstance(parents, list):
+            continue
+        for index, item in enumerate(parents):
+            if not isinstance(item, Mapping):
+                continue
+            row = dict(item)
+            row["_path"] = f"{path}#parents[{index}]"
+            key = str(row.get("canonical_parent_key", ""))
+            if key and key not in seen:
+                seen.add(key)
+                rows.append(row)
     return rows
 
 
@@ -77,11 +95,23 @@ def _text_value(path: Path) -> str | None:
         return None
 
 
-def _manifest_keys(root: Path) -> set[str]:
+def _manifest_info(root: Path) -> tuple[set[str], dict[str, Any]]:
     keys: set[str] = set()
-    for path in root.rglob("*.json"):
-        if "manifest" not in path.name.lower():
-            continue
+    run_manifest = read_json(root / "RUN_MANIFEST.json", {})
+    referenced = run_manifest.get("parent_manifest") if isinstance(run_manifest, Mapping) else None
+    candidates_paths: list[Path] = []
+    if referenced:
+        path = Path(str(referenced))
+        candidates_paths.append(path if path.is_absolute() else root / path)
+    candidates_paths.extend(path for path in root.rglob("*.json") if "manifest" in path.name.lower())
+    unique_paths: list[Path] = []
+    seen_paths: set[str] = set()
+    for path in candidates_paths:
+        resolved = str(path.resolve())
+        if resolved not in seen_paths:
+            seen_paths.add(resolved)
+            unique_paths.append(path)
+    for path in unique_paths:
         value = read_json(path, {})
         candidates = []
         if isinstance(value, list):
@@ -91,7 +121,23 @@ def _manifest_keys(root: Path) -> set[str]:
         for item in candidates:
             if isinstance(item, Mapping) and item.get("canonical_parent_key"):
                 keys.add(str(item["canonical_parent_key"]))
-    return keys
+    manifest_sha = None
+    manifest_path = candidates_paths[0] if candidates_paths else None
+    if manifest_path and manifest_path.is_file():
+        import hashlib
+        manifest_sha = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    expected_sha = run_manifest.get("parent_manifest_sha256") if isinstance(run_manifest, Mapping) else None
+    return keys, {
+        "path": str(manifest_path) if manifest_path else None,
+        "expected_sha256": expected_sha,
+        "actual_sha256": manifest_sha,
+        "sha256_verified": bool(expected_sha and manifest_sha and expected_sha == manifest_sha),
+        "run_manifest_present": isinstance(run_manifest, Mapping),
+    }
+
+
+def _manifest_keys(root: Path) -> set[str]:
+    return _manifest_info(root)[0]
 
 
 def _latest_artifact(root: Path) -> tuple[str | None, str | None]:
@@ -112,7 +158,7 @@ def build_postmortem(old_root: Path, *, launcher: Path | None = None,
     results = _load_parent_results(old_root)
     branches = _load_branch_rows(old_root)
     keys = {str(row["canonical_parent_key"]) for row in results if row.get("canonical_parent_key")}
-    expected = _manifest_keys(old_root)
+    expected, manifest_info = _manifest_info(old_root)
     missing = sorted(expected - keys) if expected else []
     runtimes = [(row, _runtime(row)) for row in results]
     values = [value for _, value in runtimes if value is not None]
@@ -124,7 +170,13 @@ def build_postmortem(old_root: Path, *, launcher: Path | None = None,
     supervisor_text = supervisor_source.read_text(encoding="utf-8", errors="replace") if supervisor_source and supervisor_source.is_file() else ""
     root_wide_watchdog = "PARENT_WATCHDOG_TIMEOUT" in supervisor_text and "last_artifact_mtime" in supervisor_text
     launcher_text = launcher.read_text(encoding="utf-8", errors="replace") if launcher and launcher.is_file() else ""
-    layout6 = "MAP_LAYOUT=\"6\"" in launcher_text or "GPUS=(1 2 3 4 6 7)" in launcher_text
+    run_manifest = read_json(old_root / "RUN_MANIFEST.json", {})
+    layout6 = (
+        "MAP_LAYOUT=\"6\"" in launcher_text
+        or "GPUS=(1 2 3 4 6 7)" in launcher_text
+        or (isinstance(run_manifest, Mapping) and str(run_manifest.get("map_layout")) == "6")
+        or (isinstance(run_manifest, Mapping) and len(run_manifest.get("gpus", [])) == 6)
+    )
     return {
         "schema": "STAGE_V_ABORT_POSTMORTEM_V1",
         "old_root": str(old_root),
@@ -162,6 +214,7 @@ def build_postmortem(old_root: Path, *, launcher: Path | None = None,
             "clean_success_true": sum(row.get("clean_success") is True for row in results),
             "clean_success_false": sum(row.get("clean_success") is False for row in results),
             "missing_parent_keys": missing,
+            "manifest": manifest_info,
         },
         "runtime_seconds": {
             "all": {"count": len(values), "p50": _percentile(values, .50), "p95": _percentile(values, .95), "max": max(values) if values else None},
