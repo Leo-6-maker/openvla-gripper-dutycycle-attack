@@ -66,3 +66,21 @@ def test_stage_o_rejects_non_eight_gpu_formal_pool(tmp_path: Path) -> None:
         assert str(exc) == "STAGE_O_REQUIRES_EIGHT_UNIQUE_GPUS"
     else:
         raise AssertionError("Stage O accepted a non-eight GPU pool")
+
+
+def test_stage_o_expands_to_nine_sixty_jobs_for_eighty_parent_manifest(tmp_path: Path) -> None:
+    rows = []
+    for suite in stage_o.SUITES:
+        for index in range(20):
+            rows.append({
+                "canonical_parent_key": f"{suite}/task_{index:02d}/state_48",
+                "suite": suite, "task_index": index, "state_index": 48,
+            })
+    specs = stage_o._job_specs(rows, "test")
+    assert len(specs) == 960
+    counts = {}
+    for job in specs:
+        counts[(job["suite"], job["split"])] = counts.get((job["suite"], job["split"]), 0) + 1
+    assert counts[("libero_goal", "train")] == 144
+    assert counts[("libero_goal", "validation")] == 48
+    assert counts[("libero_goal", "untouched_test")] == 48

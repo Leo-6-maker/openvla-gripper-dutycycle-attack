@@ -74,14 +74,22 @@ def _job_specs(rows: list[dict[str, Any]], salt: str) -> list[dict[str, Any]]:
     selected: dict[str, dict[str, list[dict[str, Any]]]] = {}
     if set(str(row.get("suite")) for row in rows) != set(SUITES):
         raise RuntimeError("STAGE_O_REQUIRES_ALL_FOUR_SUITES")
+    parent_keys = [str(row.get("canonical_parent_key")) for row in rows]
+    if len(parent_keys) != len(set(parent_keys)):
+        raise RuntimeError("STAGE_O_DUPLICATE_PARENT_IDENTITIES")
+    if len(rows) not in (40, 80) or len(rows) % len(SUITES):
+        raise RuntimeError("STAGE_O_REQUIRES_40_OR_80_PARENTS")
+    per_suite = len(rows) // len(SUITES)
+    train_count = per_suite * 3 // 5
+    validation_count = per_suite // 5
     for suite in SUITES:
-        suite_rows = _select(rows, suite, salt, 10)
-        if len(suite_rows) != 10:
-            raise RuntimeError(f"INSUFFICIENT_SUITE_ROWS:{suite}:{len(suite_rows)}/10")
+        suite_rows = _select(rows, suite, salt, per_suite)
+        if len(suite_rows) != per_suite:
+            raise RuntimeError(f"INSUFFICIENT_SUITE_ROWS:{suite}:{len(suite_rows)}/{per_suite}")
         selected[suite] = {
-            "train": suite_rows[:6],
-            "validation": suite_rows[6:8],
-            "untouched_test": suite_rows[8:10],
+            "train": suite_rows[:train_count],
+            "validation": suite_rows[train_count:train_count + validation_count],
+            "untouched_test": suite_rows[train_count + validation_count:per_suite],
         }
     jobs: list[dict[str, Any]] = []
     for suite in SUITES:
@@ -101,7 +109,8 @@ def _job_specs(rows: list[dict[str, Any]], salt: str) -> list[dict[str, Any]]:
                             "seed": seed,
                             "mode": mode,
                         })
-    if len(jobs) != 480 or len({job["cell_id"] for job in jobs}) != len(jobs):
+    expected_jobs = len(rows) * len(SEEDS) * len(MODES)
+    if len(jobs) != expected_jobs or len({job["cell_id"] for job in jobs}) != len(jobs):
         raise RuntimeError("STAGE_O_JOB_IDENTITY_CLOSURE_FAIL")
     return jobs
 
@@ -201,6 +210,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "modes": list(MODES),
         "planned_jobs": len(jobs),
         "jobs": len(jobs),
+        "parent_count": len(rows),
         "job_specs": jobs,
         "split_counts": {suite: {split: sum(job["suite"] == suite and job["split"] == split for job in jobs) // (len(SEEDS) * len(MODES)) for split in ("train", "validation", "untouched_test")} for suite in SUITES},
         "gpus": list(args.gpus),
