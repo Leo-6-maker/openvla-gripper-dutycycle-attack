@@ -65,6 +65,12 @@ def test_stage_specific_boundary_allows_vis_but_not_r2a(tmp_path: Path) -> None:
 
     with pytest.raises(orchestrator.OrchestratorError, match="PLAN_STAGE_FORBIDDEN_COMMAND"):
         orchestrator.validate_plan(plan("R2A", ["python", "run_pgd.py"]), source={"commit": "c", "tree": "t"})
+    assert orchestrator.validate_plan(
+        plan("R2A", ["python", "/data/gripper_attack_detector_goal_v2.py"]),
+        source={"commit": "c", "tree": "t"},
+    )["stage"] == "R2A"
+    with pytest.raises(orchestrator.OrchestratorError, match="PLAN_STAGE_FORBIDDEN_COMMAND"):
+        orchestrator.validate_plan(plan("R2A", ["python", "run_attack.py"]), source={"commit": "c", "tree": "t"})
     assert orchestrator.validate_plan(plan("VIS_SMALL_MATRIX", ["python", "run_pgd.py"]), source={"commit": "c", "tree": "t"})["stage"] == "VIS_SMALL_MATRIX"
 
 

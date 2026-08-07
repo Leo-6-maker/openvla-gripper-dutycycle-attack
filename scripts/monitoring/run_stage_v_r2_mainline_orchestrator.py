@@ -43,7 +43,12 @@ STAGES = (
 )
 FORBIDDEN_BOUNDARY_FIELDS = ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts")
 UNIVERSAL_FORBIDDEN_COMMAND = re.compile(r"(?i)(?:eval160|protected[_-]?eval|full[_-]?confirmatory|final[_-]?detector|guard)")
-PRE_VIS_FORBIDDEN_COMMAND = re.compile(r"(?i)(?:vis|pgd|(?<!vla_)attack)")
+PRE_VIS_FORBIDDEN_COMMAND = re.compile(
+    r"(?i)(?:^|[\s/\\])(?:"
+    r"(?:(?:run|launch|start)[_-])?(?:vis|pgd)(?:[_-](?:attack|rollout|matrix|experiment))?"
+    r"|(?:(?:run|launch|start)[_-])?attack(?:[_-](?:rollout|matrix|experiment|runner))?"
+    r")(?:\.py)?(?=$|[\s/\\])"
+)
 
 
 class OrchestratorError(RuntimeError):
