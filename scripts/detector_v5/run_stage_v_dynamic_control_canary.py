@@ -61,8 +61,8 @@ def main(argv: list[str] | None = None) -> int:
             worker_statuses.append(status)
     worker_reap_pass = bool(worker_statuses) and all(
         status.get("state") == "STOPPED"
-        and not _pid_alive(int(status.get("worker_pid") or 0))
-        and not _pid_alive(int(status.get("child_pid") or 0))
+        and not pid_alive(int(status.get("worker_pid") or 0))
+        and not pid_alive(int(status.get("child_pid") or 0))
         for status in worker_statuses
     )
     external_pid_present_after = bool(args.external_pid and pid_alive(args.external_pid))
