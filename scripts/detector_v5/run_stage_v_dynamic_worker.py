@@ -313,7 +313,7 @@ class Worker:
             "source_tree": self.args.source_tree,
             "science_source_commit": self.args.science_source_commit,
             "science_source_tree": self.args.science_source_tree,
-            "science_provenance": self.args.science_provenance,
+            "science_provenance": str(self.args.science_provenance) if self.args.science_provenance else None,
             "exit_code": code,
             "artifact_audit_verdict": "PASS" if artifact["valid"] and code == 0 else "FAIL",
             "label_status": artifact.get("label_status") if artifact["valid"] and code == 0 else "INVALID",
