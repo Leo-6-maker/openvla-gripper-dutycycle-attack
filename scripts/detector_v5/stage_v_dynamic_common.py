@@ -14,6 +14,10 @@ import time
 from typing import Any, Iterable, Mapping
 
 
+# Q2 is frozen to seven GPUs; GPU5 is reserved for the post-Q2 eight-GPU path.
+Q2_APPROVED_GPUS = (0, 1, 2, 3, 4, 6, 7)
+
+
 def utc_now() -> str:
     return _datetime.datetime.now(_datetime.timezone.utc).isoformat()
 

@@ -8,9 +8,9 @@ import subprocess
 from typing import Any
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, sha256_file, utc_now
+    from .stage_v_dynamic_common import Q2_APPROVED_GPUS, atomic_write_json, sha256_file, utc_now
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import atomic_write_json, sha256_file, utc_now
+    from stage_v_dynamic_common import Q2_APPROVED_GPUS, atomic_write_json, sha256_file, utc_now
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -76,12 +76,14 @@ def freeze(args: argparse.Namespace) -> dict[str, Any]:
         "salt": "STAGE_V_R2_Q2_CONTROL_QUALIFICATION_20260807",
         "initial_per_suite": 20, "expansion_batch_size": 10, "target_per_suite": 10,
         "max_infrastructure_retries": 1, "retry_policy": "one_retry_only_when_no_valid_scientific_result",
+        "approved_gpus": list(Q2_APPROVED_GPUS), "worker_count": len(Q2_APPROVED_GPUS), "gpu5_authorized": False,
         "qualification_semantics": {
             "engineering_required": ["exit_code_zero", "clean_result_schema", "snapshot_restore_valid", "task_identity_valid", "runtime_valid", "metrics_finite", "artifact_validation_pass", "source_commit_tree_exact", "canonical_parent_exact", "initial_state_identity_present", "boundary_zero"],
             "parent_qualified": "A_and_B_engineering_valid_and_clean_success_and_canonical_parent_exact_and_A_B_initial_state_identity_exact",
             "terminal_state_sha256": "descriptive_only",
             "remaining_horizon_complete": "descriptive_only",
             "clean_success_false_with_valid_artifact": "CLEAN_REPEATABILITY_FAIL_no_retry",
+            "initial_state_identity_mismatch": "ENGINEERING_INVALID_hard_stop",
             "engineering_invalid_after_retry": "hard_stop",
         },
         "fresh_output_required": True, "q1_artifacts_reused": False,
@@ -104,6 +106,7 @@ def freeze(args: argparse.Namespace) -> dict[str, Any]:
         "- Initial sample: 20 per suite",
         "- Expansion: +10 only for underfilled suites, deterministic rank order",
         "- Quota: 10 qualified parents per suite",
+        f"- Approved GPUs: `{','.join(str(gpu) for gpu in Q2_APPROVED_GPUS)}` (GPU5 not authorized)",
         "- Qualification: both fresh A/B clean-success results with exact parent and initial-state identity",
         "- Terminal-state hash equality: descriptive only",
         "- Remaining-horizon predicate: descriptive only",

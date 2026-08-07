@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import Any, Mapping
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, normalize_parent, sha256_file, utc_now
+    from .stage_v_dynamic_common import Q2_APPROVED_GPUS, atomic_write_json, normalize_parent, sha256_file, utc_now
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import atomic_write_json, normalize_parent, sha256_file, utc_now
+    from stage_v_dynamic_common import Q2_APPROVED_GPUS, atomic_write_json, normalize_parent, sha256_file, utc_now
 
 
 SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
@@ -95,7 +95,7 @@ def _pair(row: Mapping[str, Any], results: Mapping[str, Mapping[str, Any]], vali
     if not a_identity or not b_identity or a_identity != b_identity:
         errors.append("AB_INITIAL_STATE_IDENTITY_MISMATCH")
     if errors:
-        return False, "CLEAN_REPEATABILITY_FAIL_IDENTITY", sorted(set(errors))
+        return False, "ENGINEERING_INVALID", sorted(set(errors))
     a_success = results["A"].get("clean_success") is True
     b_success = results["B"].get("clean_success") is True
     if a_success and b_success:
@@ -141,6 +141,10 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         errors.append("REPORT_CANDIDATE_SHA256_MISMATCH")
     if report.get("source_commit") != args.source_commit or report.get("source_tree") != args.source_tree:
         errors.append("REPORT_SOURCE_MISMATCH")
+    if protocol.get("approved_gpus") != list(Q2_APPROVED_GPUS) or protocol.get("worker_count") != len(Q2_APPROVED_GPUS) or protocol.get("gpu5_authorized") is not False:
+        errors.append("Q2_PROTOCOL_GPU_BINDING_MISMATCH")
+    if report.get("gpus") != list(Q2_APPROVED_GPUS) or report.get("worker_count") != len(Q2_APPROVED_GPUS):
+        errors.append("Q2_REPORT_GPU_BINDING_MISMATCH")
     candidates = universe.get("candidates")
     if not isinstance(candidates, list) or len(candidates) != int(universe.get("candidate_count", -1)):
         errors.append("CANDIDATE_UNIVERSE_SCHEMA_INVALID")
@@ -154,6 +158,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     terminal_equal = 0
     horizon_equal = 0
     engineering_invalid = 0
+    engineering_invalid_parents = 0
     for row in rows:
         key = str(row.get("canonical_parent_key"))
         if key in seen:
@@ -203,6 +208,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         pair_ok, classification, pair_errors = _pair(candidate, actual_results, valid)
         classifications[classification] = classifications.get(classification, 0) + 1
         if classification == "ENGINEERING_INVALID":
+            engineering_invalid_parents += 1
             errors.extend(f"{key}:{item}" for item in pair_errors)
         row_qualified = row.get("qualified") is True
         if row_qualified != pair_ok:
@@ -236,7 +242,8 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         "evaluated_rows": len(rows), "evaluated_by_suite": {suite: sum(row.get("suite") == suite for row in rows) for suite in SUITES},
         "qualified_by_suite": {suite: len(qualified[suite]) for suite in SUITES},
         "selected_by_suite": {suite: [row["canonical_parent_key"] for row in selected_by_suite[suite]] for suite in SUITES},
-        "engineering_invalid_result_count": engineering_invalid, "valid_ab_pair_count": valid_count,
+        "engineering_invalid_result_count": engineering_invalid, "engineering_invalid_parent_count": engineering_invalid_parents, "valid_ab_pair_count": valid_count,
+        "approved_gpus": list(Q2_APPROVED_GPUS), "worker_count": len(Q2_APPROVED_GPUS), "gpu5_authorized": False,
         "classifications": classifications, "terminal_state_sha256_equal_count_descriptive": terminal_equal,
         "remaining_horizon_complete_equal_count_descriptive": horizon_equal,
         "terminal_state_sha256_gate_used": False, "remaining_horizon_complete_gate_used": False,

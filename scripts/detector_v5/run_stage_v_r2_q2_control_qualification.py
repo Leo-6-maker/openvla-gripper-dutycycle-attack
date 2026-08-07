@@ -23,9 +23,9 @@ except ImportError:  # direct server execution
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, normalize_parent, sha256_file, sha256_text, utc_now
+    from .stage_v_dynamic_common import Q2_APPROVED_GPUS, atomic_write_json, normalize_parent, sha256_file, sha256_text, utc_now
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import atomic_write_json, normalize_parent, sha256_file, sha256_text, utc_now
+    from stage_v_dynamic_common import Q2_APPROVED_GPUS, atomic_write_json, normalize_parent, sha256_file, sha256_text, utc_now
 
 
 EXPECTED_SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
@@ -179,7 +179,7 @@ def qualify_pair(row: Mapping[str, Any], a: Mapping[str, Any], b: Mapping[str, A
     elif a.get("key_state_identity_sha256") != b.get("key_state_identity_sha256"):
         errors.append("AB_INITIAL_STATE_IDENTITY_MISMATCH")
     if errors:
-        return False, "CLEAN_REPEATABILITY_FAIL_IDENTITY", sorted(set(errors))
+        return False, "ENGINEERING_INVALID", sorted(set(errors))
     if a_success and b_success:
         return True, "QUALIFIED", []
     if a_success and not b_success:
@@ -321,8 +321,10 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         raise ValueError(f"Q2 output root must be new/empty: {args.output_dir}")
     source_sha = f"{args.source_commit}:{args.source_tree}"
     gpus = [int(item) for item in args.gpus.split(",") if item.strip()]
-    if not gpus or len(gpus) != len(set(gpus)) or 5 in gpus:
-        raise ValueError("Q2 GPU list is invalid or includes excluded GPU5")
+    if gpus != list(Q2_APPROVED_GPUS):
+        raise ValueError(f"Q2 GPU list must match frozen protocol: {list(Q2_APPROVED_GPUS)}")
+    if protocol.get("approved_gpus") != list(Q2_APPROVED_GPUS) or protocol.get("worker_count") != len(Q2_APPROVED_GPUS) or protocol.get("gpu5_authorized") is not False:
+        raise ValueError("Q2 protocol GPU binding mismatch")
     queue = AtomicTaskQueue(str(args.output_dir / "Q2_CONTROL_QUALIFICATION.sqlite"), run_id=args.salt)
     queue.init_run(
         state="ACTIVE", manifest_sha=manifest_sha, source_sha=source_sha,
@@ -400,7 +402,7 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         "salt": args.salt, "source_commit": args.source_commit, "source_tree": args.source_tree,
         "protocol_sha256": sha256_file(args.protocol), "candidate_universe_sha256": manifest_sha,
         "candidate_universe_count": len(rows), "candidate_universe_counts_by_suite": pool["counts_by_suite"],
-        "source_clean_root": args.source_clean_root, "gpus": gpus, "worker_count": len(gpus),
+        "source_clean_root": args.source_clean_root, "gpus": gpus, "worker_count": len(gpus), "gpu5_authorized": False,
         "initial_per_suite": args.initial_per_suite, "batch_size": args.batch_size, "target_per_suite": args.target_per_suite,
         "evaluated_by_suite": {suite: sum(record["suite"] == suite for record in rows_out) for suite in EXPECTED_SUITES},
         "qualified_by_suite": {suite: len(selected[suite]) for suite in EXPECTED_SUITES},

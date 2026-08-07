@@ -15,14 +15,14 @@ from typing import Any, Mapping
 try:
     from .run_stage_v_local_supervisor import ExclusiveLock, check_writable
     from .stage_v_dynamic_common import (
-        atomic_write_json, gpu_snapshot, pid_alive, read_json,
+        Q2_APPROVED_GPUS, atomic_write_json, gpu_snapshot, pid_alive, read_json,
         sha256_file, terminate_process_group, utc_now,
     )
 except ImportError:  # direct server execution
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     from scripts.detector_v5.run_stage_v_local_supervisor import ExclusiveLock, check_writable
     from scripts.detector_v5.stage_v_dynamic_common import (
-        atomic_write_json, gpu_snapshot, pid_alive, read_json,
+        Q2_APPROVED_GPUS, atomic_write_json, gpu_snapshot, pid_alive, read_json,
         sha256_file, terminate_process_group, utc_now,
     )
 
@@ -177,6 +177,8 @@ class Q2Supervisor:
             raise RuntimeError("Q2_PROTOCOL_NOT_FROZEN")
         if protocol.get("source_commit") != self.args.source_commit or protocol.get("source_tree") != self.args.source_tree:
             raise RuntimeError("Q2_PROTOCOL_SOURCE_MISMATCH")
+        if list(self.args.gpus) != list(Q2_APPROVED_GPUS) or protocol.get("approved_gpus") != list(Q2_APPROVED_GPUS) or protocol.get("worker_count") != len(Q2_APPROVED_GPUS) or protocol.get("gpu5_authorized") is not False:
+            raise RuntimeError("Q2_PROTOCOL_GPU_BINDING_MISMATCH")
         if protocol.get("candidate_universe_sha256") != sha256_file(self.candidate):
             raise RuntimeError("Q2_CANDIDATE_SHA_MISMATCH")
         if self.args.expected_candidate_sha256 and sha256_file(self.candidate) != self.args.expected_candidate_sha256:
@@ -473,8 +475,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if not args.gpus or len(args.gpus) != len(set(args.gpus)) or 5 in args.gpus:
-        raise SystemExit("Q2 GPU list must be non-empty, unique, and exclude GPU5")
+    if list(args.gpus) != list(Q2_APPROVED_GPUS):
+        raise SystemExit(f"Q2 GPU list must match frozen protocol: {list(Q2_APPROVED_GPUS)}")
     if args.poll_seconds <= 0:
         raise SystemExit("--poll-seconds must be positive")
     return Q2Supervisor(args).run()
