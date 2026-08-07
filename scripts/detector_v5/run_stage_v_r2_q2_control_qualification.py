@@ -280,8 +280,8 @@ def _build_parent_record(row: Mapping[str, Any], results: Mapping[str, Mapping[s
         else:
             reps[replicate] = dict(item.get("result") or {})
             reps[replicate]["process_exit_code"] = item.get("process_exit_code")
-    a_valid = bool(results.get("A", {}).get("engineering_valid"))
-    b_valid = bool(results.get("B", {}).get("engineering_valid"))
+    a_valid = bool((results.get("A") or {}).get("engineering_valid"))
+    b_valid = bool((results.get("B") or {}).get("engineering_valid"))
     qualified, classification, errors = qualify_pair(row, reps["A"], reps["B"], a_valid, b_valid, source_commit, source_tree)
     a_hash = reps["A"].get("terminal_state_sha256")
     b_hash = reps["B"].get("terminal_state_sha256")
@@ -293,8 +293,8 @@ def _build_parent_record(row: Mapping[str, Any], results: Mapping[str, Mapping[s
         "task_index": int(row["task_index"]), "state_index": int(row["state_index"]),
         "qualification_rank_sha256": row["qualification_rank_sha256"],
         "candidate": dict(row), "replicates": reps,
-        "replicate_output_dirs": {replicate: results.get(replicate, {}).get("output_dir") for replicate in ("A", "B")},
-        "replicate_attempts": {replicate: results.get(replicate, {}).get("attempts", []) for replicate in ("A", "B")},
+        "replicate_output_dirs": {replicate: (results.get(replicate) or {}).get("output_dir") for replicate in ("A", "B")},
+        "replicate_attempts": {replicate: (results.get(replicate) or {}).get("attempts", []) for replicate in ("A", "B")},
         "engineering_valid": {"A": a_valid, "B": b_valid},
         "terminal_state_sha256_equal": bool(a_hash and b_hash and a_hash == b_hash),
         "remaining_horizon_complete_equal": a_horizon == b_horizon,
@@ -383,12 +383,15 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
                 record = _build_parent_record(row, result_pair, args.source_commit, args.source_tree)
                 rows_out.append(record)
                 batch_rows_count += 1
+                if record["classification"] == "ENGINEERING_INVALID":
+                    engineering_hard_stop = True
                 if record["qualified"] and len(selected[str(row["suite"])]) < args.target_per_suite:
                     selected[str(row["suite"])].append(dict(row))
             else:
                 rows_out.append(_build_parent_record(row, {}, args.source_commit, args.source_tree))
         expansion_history.append({"evaluated_by_suite": batch_by_suite, "qualified_by_suite": {suite: len(selected[suite]) for suite in EXPECTED_SUITES}, "evaluated_rows": batch_rows_count, "updated_utc": utc_now()})
         if engineering_hard_stop:
+            queue.set_run_state("HOLD")
             break
     report = {
         "schema": "STAGE_Q2_CONTROL_QUALIFICATION_REPORT_V1",

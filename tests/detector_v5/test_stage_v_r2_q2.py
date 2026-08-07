@@ -48,7 +48,7 @@ def result(key: str, *, clean_success: bool = True, terminal: str = "a", horizon
 
 
 def test_q2_qualification_does_not_gate_on_terminal_hash_or_horizon() -> None:
-    row = candidate("libero_goal", 0)
+    row = q2._ranked([candidate("libero_goal", 0)], q2.DEFAULT_SALT)[0]
     a = result(row["canonical_parent_key"], terminal="a", horizon=False)
     b = result(row["canonical_parent_key"], terminal="b", horizon=True)
     ok, classification, errors = q2.qualify_pair(row, a, b, True, True, SOURCE_COMMIT, SOURCE_TREE)
@@ -63,6 +63,19 @@ def test_q2_clean_failure_is_not_infrastructure_retry() -> None:
     assert not ok
     assert classification == "CLEAN_REPEATABILITY_FAIL_A_SUCCESS_B_FAIL"
     assert "B_CLEAN_SUCCESS_FALSE" in errors
+
+
+def test_q2_missing_replicate_is_engineering_failure_not_producer_crash() -> None:
+    row = q2._ranked([candidate("libero_goal", 0)], q2.DEFAULT_SALT)[0]
+    key = row["canonical_parent_key"]
+    record = q2._build_parent_record(
+        row,
+        {"A": {"result": result(key), "process_exit_code": 0, "engineering_valid": True, "attempts": []}, "B": None},
+        SOURCE_COMMIT,
+        SOURCE_TREE,
+    )
+    assert record["qualified"] is False
+    assert record["classification"] == "ENGINEERING_INVALID"
 
 
 def test_q2_protocol_freeze_binds_candidate_and_q1_forensics(tmp_path: Path) -> None:
