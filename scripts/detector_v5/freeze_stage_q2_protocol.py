@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import subprocess
 from typing import Any
 
 try:
@@ -17,6 +18,25 @@ def _load(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"expected JSON object: {path}")
     return value
+
+
+def _git(repo: Path, *args: str) -> str | None:
+    try:
+        result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=True)
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return result.stdout.strip()
+
+
+def _tool_binding(path: Path) -> dict[str, Any]:
+    binding = {"path": str(path.resolve()), "sha256": sha256_file(path)}
+    repo = next((parent for parent in (path.resolve(), *path.resolve().parents) if (parent / ".git").exists()), path.resolve().parents[-1])
+    binding.update({
+        "git_commit": _git(repo, "rev-parse", "HEAD"),
+        "git_tree": _git(repo, "rev-parse", "HEAD^{tree}"),
+        "git_blob_sha256": binding["sha256"],
+    })
+    return binding
 
 
 def freeze(args: argparse.Namespace) -> dict[str, Any]:
@@ -36,6 +56,16 @@ def freeze(args: argparse.Namespace) -> dict[str, Any]:
     q1_hashes = {}
     for label, path in (("q1_matrix", args.q1_matrix), ("q1_semantic_audit", args.q1_semantic_audit)):
         q1_hashes[label] = {"path": str(path), "sha256": sha256_file(path)}
+    tools: dict[str, Any] = {}
+    for label, path in (
+        ("q2_producer", getattr(args, "q2_producer", None)), ("q2_independent_auditor", getattr(args, "q2_auditor", None)),
+        ("frozen_clean_wrapper", getattr(args, "frozen_clean_wrapper", None)), ("official_clean_worker", getattr(args, "official_clean_worker", None)),
+        ("upstream_provenance", getattr(args, "upstream_provenance", None)),
+    ):
+        if path:
+            if not path.is_file():
+                raise ValueError(f"tool binding missing: {path}")
+            tools[label] = _tool_binding(path) if path.suffix == ".py" else {"path": str(path.resolve()), "sha256": sha256_file(path)}
     protocol = {
         "schema": "STAGE_Q2_PROTOCOL_V1", "status": "FROZEN", "protocol_id": "STAGE_V_R2_Q2_20260807",
         "source_commit": args.source_commit, "source_tree": args.source_tree,
@@ -55,6 +85,7 @@ def freeze(args: argparse.Namespace) -> dict[str, Any]:
         },
         "fresh_output_required": True, "q1_artifacts_reused": False,
         "q1_forensic_bindings": q1_hashes,
+        "tool_bindings": tools,
         "boundaries": {"eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0},
         "scientific_scope": "clean_control_only; no OPEN/VIS/PGD/attack/vulnerability labels",
         "generated_utc": utc_now(),
@@ -94,6 +125,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
     parser.add_argument("--expected-candidate-sha256", default="")
+    parser.add_argument("--q2-producer", type=Path)
+    parser.add_argument("--q2-auditor", type=Path)
+    parser.add_argument("--frozen-clean-wrapper", type=Path)
+    parser.add_argument("--official-clean-worker", type=Path)
+    parser.add_argument("--upstream-provenance", type=Path)
     args = parser.parse_args(argv)
     freeze(args)
     return 0
