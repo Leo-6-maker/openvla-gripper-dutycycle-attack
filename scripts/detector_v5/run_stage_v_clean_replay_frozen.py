@@ -167,6 +167,13 @@ def worker_identity_row(row: Mapping[str, Any], initial_state_sha256: str) -> di
 def run(args: argparse.Namespace) -> int:
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
+    runtime_pythonpath_prefixes = []
+    for prefix in reversed(args.pythonpath_prefix):
+        resolved_prefix = prefix.resolve()
+        if not resolved_prefix.is_dir() or resolved_prefix.is_symlink():
+            raise ValueError(f"runtime pythonpath prefix missing or symlinked: {resolved_prefix}")
+        runtime_pythonpath_prefixes.append(str(resolved_prefix))
+        sys.path.insert(0, str(resolved_prefix))
     row = load_candidate(args.candidate_path)
     frozen = verify_frozen_worker(args.worker_script)
     upstream_provenance, provenance_source_sha256, provenance_copy_sha256 = copy_provenance(args.provenance_source, output_dir)
@@ -257,6 +264,7 @@ def run(args: argparse.Namespace) -> int:
             "vis_pgd_attack_rollouts": 0,
             "attack_rollouts": 0,
             "worker_gpu": int(args.gpu),
+            "runtime_pythonpath_prefixes": runtime_pythonpath_prefixes,
             "generated_utc": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
         }
     except Exception as exc:
@@ -269,6 +277,7 @@ def run(args: argparse.Namespace) -> int:
             "source_commit": args.source_commit, "source_tree": args.source_tree,
             "error": f"{type(exc).__name__}:{str(exc)[:1000]}", "old_artifacts_reused": False,
             "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
+            "runtime_pythonpath_prefixes": runtime_pythonpath_prefixes,
         }
     atomic_write_json(output_dir / "CONTROL_RESULT.json", control)
     return int(control["exit_code"])
@@ -287,6 +296,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model-path", type=Path)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--min-remaining-steps", type=int, default=10)
+    parser.add_argument("--pythonpath-prefix", type=Path, action="append", default=[])
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
     args = parser.parse_args(argv)
