@@ -30,8 +30,10 @@ except ImportError:  # direct server execution
 
 
 SCHEMA = "STAGE_V_R2_MAINLINE_ORCHESTRATOR_V1"
-REGISTRY_SCHEMA = "STAGE_V_R2_ORCHESTRATOR_PLAN_REGISTRY_V1"
-PLAN_SCHEMA = "STAGE_V_R2_ORCHESTRATOR_PLAN_V1"
+REGISTRY_SCHEMA = "STAGE_V_R2_ORCHESTRATOR_PLAN_REGISTRY_V2"
+LEGACY_REGISTRY_SCHEMA = "STAGE_V_R2_ORCHESTRATOR_PLAN_REGISTRY_V1"
+PLAN_SCHEMA = "STAGE_V_R2_ORCHESTRATOR_PLAN_V2"
+LEGACY_PLAN_SCHEMA = "STAGE_V_R2_ORCHESTRATOR_PLAN_V1"
 WAIT_QUALIFICATION = "WAIT_QUALIFICATION"
 WAIT_GPUS = "WAIT_8_SAFE_GPUS"
 HARD_STOP = "HARD_STOP"
@@ -39,7 +41,8 @@ STAGES = (
     "C0", "R2A", "R2B", "STAGE_V2", "STAGE_O", "DIRECT_OPEN_PILOT", "VIS_SMALL_MATRIX",
 )
 FORBIDDEN_BOUNDARY_FIELDS = ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts")
-FORBIDDEN_COMMAND = re.compile(r"(?i)(?:eval160|protected[_-]?eval|pgd|final[_-]?detector|guard)")
+UNIVERSAL_FORBIDDEN_COMMAND = re.compile(r"(?i)(?:eval160|protected[_-]?eval|full[_-]?confirmatory|final[_-]?detector|guard)")
+PRE_VIS_FORBIDDEN_COMMAND = re.compile(r"(?i)(?:vis|pgd|(?<!vla_)attack)")
 
 
 class OrchestratorError(RuntimeError):
@@ -207,6 +210,7 @@ def _gpu_rows(output: str) -> list[dict[str, Any]]:
                 "memory_total_mib": float(fields[3]),
                 "memory_used_mib": float(fields[4]),
                 "memory_free_mib": float(fields[5]),
+                "utilization_gpu_percent": float(fields[6]) if len(fields) > 6 else None,
             })
         except ValueError:
             continue
@@ -234,14 +238,17 @@ def gpu_preflight(
     protected_pids: Iterable[int],
     canary_peak_mib: float,
     project_root: Path,
-    gpu_query_command: str = "nvidia-smi --query-gpu=index,uuid,name,memory.total,memory.used,memory.free --format=csv,noheader,nounits",
+    gpu_query_command: str = "nvidia-smi --query-gpu=index,uuid,name,memory.total,memory.used,memory.free,utilization.gpu --format=csv,noheader,nounits",
     app_query_command: str = "nvidia-smi --query-compute-apps=gpu_uuid,pid,used_memory --format=csv,noheader,nounits",
+    xid_query_command: str = "journalctl -k --since=-10min --no-pager",
 ) -> dict[str, Any]:
     """Return a process-aware, strict-8 decision without touching processes."""
     excluded = {int(value) for value in excluded_gpus}
     protected = {int(value) for value in protected_pids if int(value) > 0}
     gpu_output, gpu_error = _query(gpu_query_command)
     app_output, app_error = _query(app_query_command)
+    xid_output, xid_error = _query(xid_query_command)
+    xid_present = bool(re.search(r"NVRM: Xid|GPU has fallen off|Xid \(", xid_output, re.IGNORECASE))
     rows = _gpu_rows(gpu_output)
     apps = _app_rows(app_output)
     by_uuid = {row["uuid"]: row for row in rows}
@@ -274,6 +281,12 @@ def gpu_preflight(
                 reasons.append("PROTECTED_PROCESS_PRESENT")
             elif project_owned:
                 reasons.append("PROJECT_PROCESS_PRESENT")
+            else:
+                reasons.append("FOREIGN_PROCESS_PRESENT")
+        if app_error:
+            reasons.append("PROCESS_QUERY_UNKNOWN")
+        if xid_present:
+            reasons.append("XID_PRESENT")
         if gpu in excluded:
             reasons.append("EXCLUDED_GPU")
         if float(row["memory_free_mib"]) < minimum_free:
@@ -283,7 +296,7 @@ def gpu_preflight(
         if decision["safe"]:
             safe.append(gpu)
     safe = sorted(set(safe))
-    status = "PASS" if not gpu_error and not app_error and len(safe) >= required_gpus else "PRELAUNCH_WAITING_FOR_8_GPUS"
+    status = "PASS" if not gpu_error and not app_error and not xid_error and not xid_present and len(safe) >= required_gpus else "PRELAUNCH_WAITING_FOR_8_GPUS"
     return {
         "schema": "STAGE_V_GPU_PREFLIGHT_PROCESS_AWARE_V1",
         "stage": stage,
@@ -291,6 +304,7 @@ def gpu_preflight(
         "required_gpu_count": required_gpus,
         "safe_gpu_count": len(safe),
         "safe_gpus": safe[:required_gpus],
+        "safe_gpu_uuids": [row["uuid"] for row in decisions if row["index"] in safe[:required_gpus]],
         "all_safe_gpus": safe,
         "excluded_gpus": sorted(excluded),
         "protected_pids": sorted(protected),
@@ -299,6 +313,8 @@ def gpu_preflight(
         "gpu_rows": decisions,
         "gpu_query_error": gpu_error,
         "compute_app_query_error": app_error,
+        "xid_query_error": xid_error,
+        "xid_present": xid_present,
         "gpu5_touched": 5 in safe,
         "updated_utc": utc_now(),
     }
@@ -318,9 +334,37 @@ def _verify_bound_file(path: Path, expected: Any, field: str) -> None:
         raise OrchestratorError(f"{field}_SHA256_MISMATCH:{path}")
 
 
+def _resource_policy(plan: Mapping[str, Any]) -> dict[str, Any]:
+    value = plan.get("resource_policy")
+    if isinstance(value, Mapping):
+        policy = dict(value)
+    else:
+        legacy = plan.get("gpu_policy")
+        if not isinstance(legacy, Mapping):
+            return {"resource_kind": "CPU_ONLY", "required_gpu_count": 0, "minimum_gpu_count": 0, "maximum_gpu_count": 0, "strict_gpu_count": False, "excluded_gpus": [], "protected_pids": [], "canary_peak_mib": 0}
+        policy = {"resource_kind": "GPU", "required_gpu_count": legacy.get("required_count", 0), "minimum_gpu_count": legacy.get("required_count", 0), "maximum_gpu_count": legacy.get("required_count", 0), "strict_gpu_count": True, **dict(legacy)}
+    policy.setdefault("resource_kind", "GPU")
+    policy.setdefault("required_gpu_count", policy.get("required_count", 0))
+    policy.setdefault("minimum_gpu_count", policy.get("required_gpu_count", 0))
+    policy.setdefault("maximum_gpu_count", policy.get("required_gpu_count", 0))
+    policy.setdefault("strict_gpu_count", bool(policy.get("required_gpu_count", 0)))
+    policy.setdefault("excluded_gpus", [])
+    policy.setdefault("protected_pids", [])
+    policy.setdefault("canary_peak_mib", 0)
+    return policy
+
+
+def _validate_command_boundary(stage: str, argv: list[str]) -> None:
+    rendered = " ".join(argv).lower()
+    if UNIVERSAL_FORBIDDEN_COMMAND.search(rendered):
+        raise OrchestratorError("PLAN_FORBIDDEN_BOUNDARY_COMMAND")
+    if stage != "VIS_SMALL_MATRIX" and PRE_VIS_FORBIDDEN_COMMAND.search(rendered):
+        raise OrchestratorError("PLAN_STAGE_FORBIDDEN_COMMAND")
+
+
 def validate_plan(path: Path, *, source: Mapping[str, str], expected_stage: str | None = None) -> dict[str, Any]:
     plan = dict(_load_object(path, "PLAN"))
-    if plan.get("schema") != PLAN_SCHEMA:
+    if plan.get("schema") not in {PLAN_SCHEMA, LEGACY_PLAN_SCHEMA}:
         raise OrchestratorError("PLAN_SCHEMA_INVALID")
     stage = str(plan.get("stage", ""))
     if stage not in STAGES or (expected_stage and stage != expected_stage):
@@ -353,25 +397,39 @@ def validate_plan(path: Path, *, source: Mapping[str, str], expected_stage: str 
         raise OrchestratorError("PLAN_COMMAND_MUST_BE_ARGV_LIST")
     if not isinstance(audit_command, list) or not audit_command or not all(isinstance(item, str) for item in audit_command):
         raise OrchestratorError("PLAN_AUDIT_COMMAND_MUST_BE_ARGV_LIST")
-    for argv in (command, audit_command):
-        rendered = " ".join(argv).lower()
-        if FORBIDDEN_COMMAND.search(rendered):
-            raise OrchestratorError("PLAN_FORBIDDEN_BOUNDARY_COMMAND")
+    _validate_command_boundary(stage, command)
+    _validate_command_boundary(stage, audit_command)
     for field in FORBIDDEN_BOUNDARY_FIELDS:
         if plan.get(field, 0) != 0:
             raise OrchestratorError(f"PLAN_BOUNDARY_NONZERO:{field}")
-    gpu_policy = plan.get("gpu_policy")
-    if not isinstance(gpu_policy, Mapping) or int(gpu_policy.get("required_count", 0)) != 8 or 5 not in {int(x) for x in gpu_policy.get("excluded_gpus", [])}:
+    policy = _resource_policy(plan)
+    if str(policy.get("resource_kind")) not in {"CPU_ONLY", "GPU"}:
+        raise OrchestratorError("PLAN_RESOURCE_KIND_INVALID")
+    required = int(policy.get("required_gpu_count", 0))
+    minimum = int(policy.get("minimum_gpu_count", required))
+    maximum = int(policy.get("maximum_gpu_count", required))
+    if required < 0 or minimum < 0 or maximum < minimum:
+        raise OrchestratorError("PLAN_RESOURCE_COUNT_INVALID")
+    if str(policy.get("resource_kind")) == "CPU_ONLY" and any((required, minimum, maximum)):
+        raise OrchestratorError("PLAN_CPU_ONLY_GPU_COUNT_NONZERO")
+    if stage in {"C0", "R2A", "R2B"} and (str(policy.get("resource_kind")) != "GPU" or required != 8 or not bool(policy.get("strict_gpu_count")) or 5 not in {int(x) for x in policy.get("excluded_gpus", [])}):
         raise OrchestratorError("PLAN_GPU_POLICY_NOT_STRICT_8")
     if not isinstance(plan.get("lock_path"), str) or not plan["lock_path"]:
         raise OrchestratorError("PLAN_LOCK_MISSING")
+    contract = plan.get("forbidden_boundary_contract")
+    if isinstance(contract, Mapping) and any(int(contract.get(field, 0)) != 0 for field in FORBIDDEN_BOUNDARY_FIELDS):
+        raise OrchestratorError("PLAN_FORBIDDEN_BOUNDARY_NONZERO")
     return plan
 
 
 def load_registry(path: Path, *, source: Mapping[str, str]) -> tuple[dict[str, dict[str, Any]], str]:
     registry = dict(_load_object(path, "PLAN_REGISTRY"))
-    if registry.get("schema") != REGISTRY_SCHEMA:
+    if registry.get("schema") not in {REGISTRY_SCHEMA, LEGACY_REGISTRY_SCHEMA}:
         raise OrchestratorError("PLAN_REGISTRY_SCHEMA_INVALID")
+    if registry.get("source_commit") is not None and registry.get("source_commit") != source["commit"]:
+        raise OrchestratorError("PLAN_REGISTRY_SOURCE_MISMATCH")
+    if registry.get("source_tree") is not None and registry.get("source_tree") != source["tree"]:
+        raise OrchestratorError("PLAN_REGISTRY_TREE_MISMATCH")
     entries = registry.get("plans")
     if not isinstance(entries, list):
         raise OrchestratorError("PLAN_REGISTRY_PLANS_INVALID")
@@ -389,6 +447,94 @@ def load_registry(path: Path, *, source: Mapping[str, str]) -> tuple[dict[str, d
         plans[stage]["_path"] = str(plan_path)
         plans[stage]["_sha256"] = sha256_file(plan_path)
     return plans, sha256_file(path)
+
+
+def _registry_candidate(path: Path) -> Path | None:
+    if path.is_file():
+        return path.resolve()
+    if not path.parent.is_dir():
+        return None
+    candidates: list[tuple[int, Path]] = []
+    for item in path.parent.glob("PLAN_REGISTRY_V*.json"):
+        match = re.fullmatch(r"PLAN_REGISTRY_V(\d+)\.json", item.name)
+        if match:
+            candidates.append((int(match.group(1)), item.resolve()))
+    return max(candidates, default=(0, None), key=lambda value: value[0])[1]
+
+
+def verify_registry_chain(latest_path: Path, *, source: Mapping[str, str]) -> tuple[dict[str, dict[str, Any]], int, str, Path]:
+    """Verify an append-only registry chain, newest version first."""
+    current = latest_path.resolve()
+    seen: set[Path] = set()
+    expected_version: int | None = None
+    newest_plans: dict[str, dict[str, Any]] | None = None
+    newest_sha = ""
+    newest_version = 0
+    while True:
+        if current in seen or not current.is_file():
+            raise OrchestratorError("PLAN_REGISTRY_CHAIN_INVALID")
+        seen.add(current)
+        registry = dict(_load_object(current, "PLAN_REGISTRY_CHAIN"))
+        try:
+            version = int(registry.get("version"))
+        except (TypeError, ValueError) as exc:
+            raise OrchestratorError("PLAN_REGISTRY_VERSION_MISSING") from exc
+        if version < 1 or (expected_version is not None and version != expected_version - 1):
+            raise OrchestratorError("PLAN_REGISTRY_VERSION_GAP")
+        if registry.get("schema") == REGISTRY_SCHEMA and current.name != f"PLAN_REGISTRY_V{version:04d}.json":
+            raise OrchestratorError("PLAN_REGISTRY_FILENAME_VERSION_MISMATCH")
+        if registry.get("schema") == REGISTRY_SCHEMA:
+            sidecar = current.with_suffix(current.suffix + ".sha256")
+            try:
+                sidecar_value = sidecar.read_text(encoding="utf-8").split()
+            except (OSError, UnicodeDecodeError) as exc:
+                raise OrchestratorError("PLAN_REGISTRY_SHA256_SIDECAR_MISSING") from exc
+            if not sidecar_value or sidecar_value[0] != sha256_file(current):
+                raise OrchestratorError("PLAN_REGISTRY_SHA256_SIDECAR_MISMATCH")
+        if expected_version is None:
+            newest_version = version
+            newest_sha = sha256_file(current)
+        expected_version = version
+        plans, _ = load_registry(current, source=source)
+        if newest_plans is None:
+            newest_plans = plans
+        entries = registry.get("plans")
+        if registry.get("schema") == REGISTRY_SCHEMA and not isinstance(entries, list):
+            raise OrchestratorError("PLAN_REGISTRY_PLANS_INVALID")
+        previous = registry.get("previous_registry_path")
+        previous_sha = registry.get("previous_registry_sha256")
+        if not previous:
+            if previous_sha is not None or version != 1 or (isinstance(entries, list) and len(entries) != 1):
+                raise OrchestratorError("PLAN_REGISTRY_ROOT_INVALID")
+        else:
+            previous_path = Path(str(previous)).resolve()
+            try:
+                previous_value = dict(_load_object(previous_path, "PLAN_REGISTRY_PREVIOUS"))
+                previous_entries = previous_value.get("plans")
+            except (OSError, OrchestratorError, TypeError, ValueError) as exc:
+                raise OrchestratorError("PLAN_REGISTRY_PREVIOUS_INVALID") from exc
+            if registry.get("schema") == REGISTRY_SCHEMA:
+                if not isinstance(previous_entries, list) or not isinstance(entries, list) or entries[:-1] != previous_entries:
+                    raise OrchestratorError("PLAN_REGISTRY_APPEND_PREFIX_MISMATCH")
+                newest = entries[-1] if entries else None
+                if not isinstance(newest, Mapping) or registry.get("newly_added_stage") != newest.get("stage") or registry.get("new_plan_path") != newest.get("path") or registry.get("new_plan_sha256") != newest.get("sha256"):
+                    raise OrchestratorError("PLAN_REGISTRY_APPEND_ENTRY_MISMATCH")
+            if not isinstance(previous_sha, str):
+                raise OrchestratorError("PLAN_REGISTRY_PREVIOUS_SHA_MISSING")
+            try:
+                previous_digest = sha256_file(previous_path)
+            except OSError as exc:
+                raise OrchestratorError("PLAN_REGISTRY_PREVIOUS_MISSING") from exc
+            if previous_digest != previous_sha:
+                raise OrchestratorError("PLAN_REGISTRY_PREVIOUS_SHA_MISMATCH")
+            current = previous_path
+            continue
+        if registry.get("schema") == REGISTRY_SCHEMA:
+            newest = entries[0] if isinstance(entries, list) and entries else None
+            if not isinstance(newest, Mapping) or registry.get("newly_added_stage") != newest.get("stage") or registry.get("new_plan_path") != newest.get("path") or registry.get("new_plan_sha256") != newest.get("sha256"):
+                raise OrchestratorError("PLAN_REGISTRY_ROOT_ENTRY_MISMATCH")
+        break
+    return newest_plans or {}, newest_version, newest_sha, latest_path.resolve()
 
 
 def _format_argv(template: list[str], values: Mapping[str, Any]) -> list[str]:
@@ -515,6 +661,9 @@ class Orchestrator:
         self.start_utc = utc_now()
         self.heartbeat_count = 0
         self.plan_sha = None
+        self.registry_version = None
+        self.registry_path = None
+        self.registry_chain_verified = False
         self.previous_plan_sha = None
         self.lock = FileLock(Path(args.lock_path), self.state_root, {
             "schema": "STAGE_V_R2_ORCHESTRATOR_LOCK_V1", "pid": os.getpid(),
@@ -528,28 +677,53 @@ class Orchestrator:
         if any((root / name).is_file() for name in failure_names):
             return False, "QUALIFICATION_FAILED"
         required = ("CONTROL_QUALIFICATION_REPORT.json", "CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json")
-        if all(_read(root / name, {}).get("verdict", _read(root / name, {}).get("status")) == "PASS" for name in required if isinstance(_read(root / name, {}), Mapping)) and all((root / name).is_file() for name in required):
+        if not all((root / name).is_file() for name in required):
+            return False, "QUALIFICATION_INCOMPLETE"
+        report = _read(root / required[0], {})
+        audit = _read(root / required[1], {})
+        if not isinstance(report, Mapping) or report.get("status") != "PASS":
+            return False, "QUALIFICATION_REPORT_FAIL"
+        if not isinstance(audit, Mapping) or audit.get("verdict") != "PASS":
+            return False, "QUALIFICATION_AUDIT_FAIL"
+        try:
+            evaluated_rows = int(report.get("evaluated_rows", 0))
+            boundary_counts = [int(report.get(field, -1)) for field in FORBIDDEN_BOUNDARY_FIELDS]
+        except (TypeError, ValueError):
+            return False, "QUALIFICATION_RECEIPT_INVALID"
+        if evaluated_rows >= 160 and not any(boundary_counts):
             return True, "PASS"
         dispatcher = _read(root / "DISPATCHER_START.json", {})
         if isinstance(dispatcher, Mapping) and dispatcher.get("dispatcher_pid") and not pid_alive(int(dispatcher["dispatcher_pid"])) and not (root / "DISPATCHER_COMPLETE.json").is_file():
             return False, "QUALIFICATION_DISPATCHER_DIED"
-        return False, "QUALIFICATION_INCOMPLETE"
+        return False, "QUALIFICATION_CLOSURE_COUNT_FAIL"
 
     def _observer_healthy(self) -> bool:
         observer_pid = int(getattr(self.args, "observer_pid", 0) or 0)
         return not observer_pid or pid_alive(observer_pid)
 
     def _load_plans(self) -> tuple[dict[str, dict[str, Any]], str | None, str | None]:
-        path = Path(self.args.plan_registry).resolve()
-        if not path.is_file():
+        path = _registry_candidate(Path(self.args.plan_registry))
+        if path is None:
             return {}, None, "PLAN_REGISTRY_MISSING"
         try:
-            plans, registry_sha = load_registry(path, source=self.source)
+            plans, version, registry_sha, registry_path = verify_registry_chain(path, source=self.source)
             previous = _read(self.state_path, {})
-            previous_sha = previous.get("plan_registry_sha256") if isinstance(previous, Mapping) else None
-            if previous_sha and previous_sha != registry_sha:
-                return {}, registry_sha, "PLAN_REGISTRY_SHA_CHANGED"
+            previous_sha = previous.get("last_accepted_registry_sha256") if isinstance(previous, Mapping) else None
+            previous_version = previous.get("last_accepted_registry_version") if isinstance(previous, Mapping) else None
+            previous_path = previous.get("last_accepted_registry_path") if isinstance(previous, Mapping) else None
+            registry = _load_object(registry_path, "PLAN_REGISTRY")
+            if previous_sha is not None:
+                try:
+                    same_version = version == int(previous_version) and registry_sha == previous_sha and str(registry_path) == str(Path(str(previous_path)).resolve())
+                    next_version = version == int(previous_version) + 1 and registry.get("previous_registry_sha256") == previous_sha and Path(str(registry.get("previous_registry_path"))).resolve() == Path(str(previous_path)).resolve()
+                except (TypeError, ValueError):
+                    same_version = next_version = False
+                if not same_version and not next_version:
+                    return {}, registry_sha, "PLAN_REGISTRY_CHAIN_APPEND_INVALID"
             self.previous_plan_sha = previous_sha
+            self.registry_version = version
+            self.registry_path = str(registry_path)
+            self.registry_chain_verified = True
             return plans, registry_sha, None
         except OrchestratorError as exc:
             return {}, None, str(exc)
@@ -568,6 +742,10 @@ class Orchestrator:
             "observer_alive": self._observer_healthy(),
             "approved_gpus": list((resource or {}).get("safe_gpus", [])), "gpu_preflight_status": (resource or {}).get("status"),
             "planned_stages": list(plans or {}), "plan_registry_sha256": self.plan_sha,
+            "last_accepted_registry_version": self.registry_version,
+            "last_accepted_registry_sha256": self.plan_sha,
+            "last_accepted_registry_path": self.registry_path,
+            "registry_chain_verified": self.registry_chain_verified,
             "heartbeat_count": self.heartbeat_count, "ssh_probe_success_count": 0, "ssh_probe_failure_count": 0,
             "longest_ssh_unavailable_interval_seconds": 0, "external_root_process_present": pid_alive(self.args.external_pid),
             "external_root_process_pid": self.args.external_pid, "external_root_process_terminated": False,
@@ -582,11 +760,14 @@ class Orchestrator:
         if dispatchers:
             raise OrchestratorError(f"DUPLICATE_DISPATCHER_PRESENT:{','.join(map(str, dispatchers))}")
         output_root = _output_root(plan, self.source["commit"])
+        policy = _resource_policy(plan)
+        safe_gpus = list(resource.get("safe_gpus", []))
         values = {
             "source_commit": self.source["commit"], "source_tree": self.source["tree"],
             "output_root": output_root, "parent_manifest": plan["parent_manifest"]["path"],
             "parent_manifest_sha256": plan["parent_manifest"]["sha256"],
-            "approved_gpus": ",".join(str(x) for x in resource["safe_gpus"]),
+            "approved_gpus": ",".join(str(x) for x in safe_gpus),
+            "approved_gpu_uuids": ",".join(str(x) for x in resource.get("safe_gpu_uuids", [])),
             "stage_root": output_root, "stage": stage,
         }
         command = _format_argv(plan["command_template"], values)
@@ -599,6 +780,7 @@ class Orchestrator:
             "source_commit": self.source["commit"], "source_tree": self.source["tree"],
             "command": command, "audit_command": audit_command, "output_root": str(output_root),
             "input_receipts": plan["input_receipts"], "parent_manifest": plan["parent_manifest"],
+            "registry_version": self.registry_version, "registry_sha256": self.plan_sha,
             "gpu_preflight": dict(resource), "created_utc": utc_now(),
         }
         atomic_write_json(command_path, command_payload)
@@ -610,13 +792,16 @@ class Orchestrator:
             "schema": "STAGE_V_R2_LAUNCH_V1", "stage": stage, "status": "LAUNCHING",
             "command_sha256": command_sha, "plan_sha256": plan["_sha256"],
             "input_receipts": plan["input_receipts"], "parent_manifest": plan["parent_manifest"],
-            "output_root": str(output_root), "gpu_assignments": list(resource["safe_gpus"]),
+            "output_root": str(output_root), "gpu_assignments": safe_gpus,
+            "gpu_assignment_uuids": list(resource.get("safe_gpu_uuids", [])),
+            "resource_kind": policy.get("resource_kind"), "registry_version": self.registry_version,
+            "registry_sha256": self.plan_sha,
             "cwd": str(Path(str(plan["cwd"])).resolve()), "started_utc": utc_now(),
         }
         atomic_write_json(launch_path, launch_payload)
         env = os.environ.copy()
         env.update({str(k): str(v) for k, v in dict(plan.get("env", {})).items()})
-        env["CUDA_VISIBLE_DEVICES"] = ",".join(str(x) for x in resource["safe_gpus"])
+        env["CUDA_VISIBLE_DEVICES"] = ",".join(str(x) for x in safe_gpus) if policy.get("resource_kind") == "GPU" else ""
         stdout_path = self.state_root / f"{stage}_STDOUT.log"
         stderr_path = self.state_root / f"{stage}_STDERR.log"
         with stdout_path.open("ab") as stdout, stderr_path.open("ab") as stderr:
@@ -693,6 +878,10 @@ class Orchestrator:
         return self._reattach_or_audit(stage, plan)
 
     def tick(self) -> str:
+        current_source = source_binding(self.repo_root)
+        if current_source != self.source:
+            self._write(HARD_STOP, phase=HARD_STOP, reason="SOURCE_BINDING_DRIFT")
+            return HARD_STOP
         if self.source["status_porcelain"]:
             self._write(HARD_STOP, phase=HARD_STOP, reason="SOURCE_WORKTREE_DIRTY")
             return HARD_STOP
@@ -737,16 +926,31 @@ class Orchestrator:
             self._write(WAIT_QUALIFICATION, phase=WAIT_QUALIFICATION, reason="NO_REGISTERED_PLAN", plans=plans)
             return WAIT_QUALIFICATION
         plan = plans[stage]
-        resource = gpu_preflight(
-            stage=stage, required_gpus=8, excluded_gpus=plan["gpu_policy"]["excluded_gpus"],
-            protected_pids=plan["gpu_policy"].get("protected_pids", []), canary_peak_mib=float(plan["gpu_policy"].get("canary_peak_mib", 0)),
-            project_root=self.repo_root,
-        )
-        atomic_write_json(self.state_root / f"GPU_PREFLIGHT_{stage}.json", resource)
-        _write_sha(self.state_root / f"GPU_PREFLIGHT_{stage}.json")
-        if resource["status"] != "PASS" or len(resource["safe_gpus"]) != 8:
-            self._write(WAIT_GPUS, phase=WAIT_GPUS, reason="SAFE_GPU_COUNT_BELOW_8", resource=resource, plans=plans)
-            return WAIT_GPUS
+        policy = _resource_policy(plan)
+        if policy["resource_kind"] == "CPU_ONLY":
+            resource = {
+                "schema": "STAGE_V_CPU_ONLY_PREFLIGHT_V1", "status": "CPU_ONLY", "stage": stage,
+                "required_gpu_count": 0, "safe_gpus": [], "safe_gpu_uuids": [], "updated_utc": utc_now(),
+            }
+        else:
+            required = int(policy.get("minimum_gpu_count", policy.get("required_gpu_count", 0)))
+            resource = gpu_preflight(
+                stage=stage, required_gpus=required, excluded_gpus=policy.get("excluded_gpus", []),
+                protected_pids=policy.get("protected_pids", []), canary_peak_mib=float(policy.get("canary_peak_mib", 0)),
+                project_root=self.repo_root,
+            )
+            if not bool(policy.get("strict_gpu_count", False)) and resource.get("status") == "PASS":
+                maximum = int(policy.get("maximum_gpu_count", required))
+                resource["safe_gpus"] = list(resource.get("all_safe_gpus", resource.get("safe_gpus", [])))[:maximum]
+                resource["safe_gpu_uuids"] = [row["uuid"] for row in resource.get("gpu_rows", []) if row.get("index") in resource["safe_gpus"]]
+        if policy["resource_kind"] == "GPU":
+            atomic_write_json(self.state_root / f"GPU_PREFLIGHT_{stage}.json", resource)
+            _write_sha(self.state_root / f"GPU_PREFLIGHT_{stage}.json")
+            minimum = int(policy.get("minimum_gpu_count", 0))
+            strict_fail = bool(policy.get("strict_gpu_count")) and len(resource.get("safe_gpus", [])) != int(policy.get("required_gpu_count", 0))
+            if resource.get("status") != "PASS" or len(resource.get("safe_gpus", [])) < minimum or strict_fail:
+                self._write(WAIT_GPUS, phase=WAIT_GPUS, reason="SAFE_GPU_COUNT_BELOW_POLICY", resource=resource, plans=plans)
+                return WAIT_GPUS
         try:
             state = self._reattach_or_audit(stage, plan)
             if state == "RUNNING":
