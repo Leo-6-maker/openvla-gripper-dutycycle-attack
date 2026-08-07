@@ -202,7 +202,8 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             valid_count += 1
         pair_ok, classification, pair_errors = _pair(candidate, actual_results, valid)
         classifications[classification] = classifications.get(classification, 0) + 1
-        errors.extend(f"{key}:{item}" for item in pair_errors if classification == "ENGINEERING_INVALID" or item != "")
+        if classification == "ENGINEERING_INVALID":
+            errors.extend(f"{key}:{item}" for item in pair_errors)
         row_qualified = row.get("qualified") is True
         if row_qualified != pair_ok:
             errors.append(f"ROW_DECISION_MISMATCH:{key}")

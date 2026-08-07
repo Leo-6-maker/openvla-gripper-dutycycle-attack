@@ -128,13 +128,14 @@ def test_independent_audit_accepts_descriptive_hash_and_horizon_mismatch(tmp_pat
     rows = []
     for raw in auditor._ranked(candidates):
         key = str(raw["canonical_parent_key"])
+        clean_ok = int(raw["task_index"]) != 0
         base = root / "qualification" / str(raw["suite"]) / key.replace("/", "__")
         dirs = {}
         reps = {}
         for replicate, terminal, horizon in (("A", "hash-a", False), ("B", "hash-b", True)):
             output = base / replicate / "attempt_01"
             output.mkdir(parents=True)
-            actual = result(key, terminal=terminal, horizon=horizon)
+            actual = result(key, clean_success=clean_ok, terminal=terminal, horizon=horizon)
             write_json(output / "CONTROL_RESULT.json", actual)
             dirs[replicate] = str(output)
             reps[replicate] = {**actual, "process_exit_code": 0}
@@ -142,7 +143,7 @@ def test_independent_audit_accepts_descriptive_hash_and_horizon_mismatch(tmp_pat
             "schema": "STAGE_Q2_CONTROL_QUALIFICATION_ROW_V1", **raw,
             "replicates": reps, "replicate_output_dirs": dirs,
             "replicate_attempts": {replicate: [{"attempt": 1, "output_dir": dirs[replicate]}] for replicate in ("A", "B")},
-            "qualified": True, "classification": "QUALIFIED",
+            "qualified": clean_ok, "classification": "QUALIFIED" if clean_ok else "CLEAN_REPEATABILITY_FAIL_BOTH_FAIL",
         })
     report = {
         "schema": "STAGE_Q2_CONTROL_QUALIFICATION_REPORT_V1", "status": "PASS",
@@ -161,6 +162,7 @@ def test_independent_audit_accepts_descriptive_hash_and_horizon_mismatch(tmp_pat
         source_commit=SOURCE_COMMIT, source_tree=SOURCE_TREE,
     ))
     assert audited["verdict"] == "PASS"
+    assert audited["classifications"]["CLEAN_REPEATABILITY_FAIL_BOTH_FAIL"] == 4
     assert audited["terminal_state_sha256_gate_used"] is False
     assert audited["remaining_horizon_complete_gate_used"] is False
     assert (root / "Q2_PARENT_MANIFEST_A.json").is_file()
