@@ -439,8 +439,13 @@ def science_artifact_status(output_dir: Path, parent_key: str, *, expected_sourc
         if result.get("current_source_status") not in ("", None):
             strict_errors.append("SCIENCE_SOURCE_WORKTREE_DIRTY")
         if expected_row is not None:
-            for result_field, row_field in (("suite", "suite"), ("task_idx", "task_index"), ("state_id", "state_index")):
-                if result.get(result_field) != expected_row.get(row_field):
+            for result_field, aliases, row_field in (
+                ("suite", (), "suite"),
+                ("task_idx", ("task_index",), "task_index"),
+                ("state_id", ("state_index",), "state_index"),
+            ):
+                values = [result[name] for name in (result_field, *aliases) if name in result]
+                if not values or any(value != values[0] for value in values[1:]) or values[0] != expected_row.get(row_field):
                     strict_errors.append(f"PARENT_{result_field.upper()}_MISMATCH")
         branch_rows, branch_errors = _branch_rows(branches[0])
         strict_errors.extend(branch_errors)

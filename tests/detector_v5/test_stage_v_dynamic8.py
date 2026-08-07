@@ -400,7 +400,13 @@ def test_science_artifact_validation_requires_complete_parent(tmp_path: Path) ->
     assert not science_artifact_status(output, "libero_goal/task_00/state_48")["valid"]
 
 
-def test_strict_science_artifact_requires_lineage_branches_and_parent_seal(tmp_path: Path) -> None:
+@pytest.mark.parametrize("result_identity", [
+    {"task_idx": 0, "state_id": 48},
+    {"task_index": 0, "state_index": 48},
+])
+def test_strict_science_artifact_requires_lineage_branches_and_parent_seal(
+    tmp_path: Path, result_identity: dict[str, int],
+) -> None:
     output = tmp_path / "attempt"
     parent = output / "libero_goal" / "task_00" / "state_48"
     parent.mkdir(parents=True)
@@ -419,7 +425,7 @@ def test_strict_science_artifact_requires_lineage_branches_and_parent_seal(tmp_p
     write_json(parent / "PARENT_RESULT.json", {
         "status": "PASS", "clean_success": True, "branch_count": 72, "canonical_parent_key": key,
         "current_source_commit": "science-commit", "current_source_tree": "science-tree", "current_source_status": "",
-        "suite": "libero_goal", "task_idx": 0, "state_id": 48,
+        "suite": "libero_goal", **result_identity,
     })
     sums = parent / "SHA256SUMS"
     sums.write_text(
