@@ -150,7 +150,10 @@ class DynamicSupervisor:
         }
 
     def _prepare(self) -> None:
-        if self.root.exists() and any(self.root.iterdir()):
+        state_entries = []
+        if self.root.exists():
+            state_entries = [path for path in self.root.iterdir() if path.name != "STALE_LOCK_AUDIT.json"]
+        if state_entries:
             raise RuntimeError("RUN_ROOT_NOT_NEW_OR_EMPTY")
         self.root.mkdir(parents=True, exist_ok=True)
         while True:
