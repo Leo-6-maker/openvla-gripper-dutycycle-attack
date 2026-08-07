@@ -918,7 +918,8 @@ class Orchestrator:
         root = Path(str(launch.get("output_root", "")))
         if launch.get("status") == "RUNNING":
             if pid_alive(int(launch.get("pid", 0) or 0)):
-                if not process_identity_matches(launch, expected_cwd=Path(str(plan["cwd"])), expected_root=root):
+                expected_cwd = Path(str(launch.get("cwd"))) if launch.get("reconciled_from_existing_root") and launch.get("cwd") else Path(str(plan["cwd"]))
+                if not process_identity_matches(launch, expected_cwd=expected_cwd, expected_root=root):
                     raise OrchestratorError("LAUNCH_RECEIPT_PROCESS_IDENTITY_MISMATCH")
                 return "RUNNING"
             if _completed(root, plan):
@@ -991,6 +992,7 @@ class Orchestrator:
         else:
             raise OrchestratorError(f"{stage}_EXISTING_ROOT_ORPHANED")
         assignments = heartbeat.get("gpu_assignments", []) if isinstance(heartbeat, Mapping) else []
+        actual_cwd = supervisor_identity.get("cwd") if supervisor_identity else None
         payload = {
             "schema": "STAGE_V_R2_LAUNCH_V1", "stage": stage, "status": status,
             "command_sha256": None, "plan_sha256": plan.get("_sha256"),
@@ -998,12 +1000,12 @@ class Orchestrator:
             "output_root": str(root.resolve()), "gpu_assignments": assignments,
             "resource_kind": _resource_policy(plan).get("resource_kind"),
             "registry_version": self.registry_version, "registry_sha256": self.plan_sha,
-            "cwd": str(plan.get("cwd", "")), "started_utc": start.get("started_utc", utc_now()),
+            "cwd": actual_cwd or str(plan.get("cwd", "")), "planned_cwd": str(plan.get("cwd", "")),
+            "started_utc": start.get("started_utc", utc_now()),
             "reconciled_from_existing_root": True,
             "pid": supervisor_pid, "pgid": int(start.get("supervisor_pgid", supervisor_pid) or supervisor_pid),
             "start_ticks": supervisor_identity.get("start_ticks") if supervisor_identity else None,
             "cmdline": supervisor_identity.get("cmdline", []) if supervisor_identity else [],
-            "cwd_actual": supervisor_identity.get("cwd") if supervisor_identity else None,
             "updated_utc": utc_now(),
         }
         atomic_write_json(launch_path, payload)
