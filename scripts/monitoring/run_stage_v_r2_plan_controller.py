@@ -154,8 +154,34 @@ class PlanController:
         if not paths:
             return {}
         latest = max(paths, key=lambda path: int(path.stem.removeprefix("PLAN_REGISTRY_V")))
-        plans, _, _, _ = verify_registry_chain(latest, source=self.source)
-        return plans
+        try:
+            plans, _, _, _ = verify_registry_chain(latest, source=self.source)
+            return plans
+        except OrchestratorError as exc:
+            if str(exc) not in {"PLAN_REGISTRY_SOURCE_MISMATCH", "PLAN_REGISTRY_TREE_MISMATCH"}:
+                raise
+            registry = read_json(latest, {})
+            if not isinstance(registry, Mapping):
+                raise
+            previous_source = {
+                "commit": str(registry.get("source_commit", "")),
+                "tree": str(registry.get("source_tree", "")),
+            }
+            if (
+                not previous_source["commit"]
+                or not previous_source["tree"]
+                or previous_source["commit"] == self.source["commit"]
+                or "C0" not in verify_registry_chain(latest, source=previous_source)[0]
+            ):
+                raise
+            ancestry = subprocess.run(
+                ["git", "-C", str(self.repo_root), "merge-base", "--is-ancestor", previous_source["commit"], self.source["commit"]],
+                capture_output=True,
+                check=False,
+            )
+            if ancestry.returncode != 0:
+                raise OrchestratorError("PLAN_REGISTRY_SOURCE_UPGRADE_NOT_DESCENDANT") from exc
+            return verify_registry_chain(latest, source=previous_source)[0]
 
     def _audit_status(self, stage: str) -> str | None:
         path = self.state_root / f"{stage}_AUDIT.json"
