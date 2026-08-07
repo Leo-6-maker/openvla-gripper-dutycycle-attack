@@ -762,6 +762,7 @@ class Orchestrator:
 
     def _write(self, status: str, *, phase: str, reason: str = "", resource: Mapping[str, Any] | None = None, plans: Mapping[str, Any] | None = None) -> None:
         self.heartbeat_count += 1
+        approved_gpus = list((resource or {}).get("safe_gpus", []))
         payload = {
             "schema": SCHEMA, "status": status, "phase": phase, "reason": reason,
             "control_plane_mode": "LOCAL_AUTONOMOUS", "ssh_is_hard_stop": False,
@@ -772,7 +773,7 @@ class Orchestrator:
             "qualification_dispatcher_alive": pid_alive(int(getattr(self.args, "qualification_dispatcher_pid", 0) or 0)),
             "observer_pid": int(getattr(self.args, "observer_pid", 0) or 0),
             "observer_alive": self._observer_healthy(),
-            "approved_gpus": list((resource or {}).get("safe_gpus", [])), "gpu_preflight_status": (resource or {}).get("status"),
+            "approved_gpus": approved_gpus, "gpu_preflight_status": (resource or {}).get("status"),
             "planned_stages": list(plans or {}), "plan_registry_sha256": self.plan_sha,
             "last_accepted_registry_version": self.registry_version,
             "last_accepted_registry_sha256": self.plan_sha,
@@ -781,7 +782,7 @@ class Orchestrator:
             "heartbeat_count": self.heartbeat_count, "ssh_probe_success_count": 0, "ssh_probe_failure_count": 0,
             "longest_ssh_unavailable_interval_seconds": 0, "external_root_process_present": pid_alive(self.args.external_pid),
             "external_root_process_pid": self.args.external_pid, "external_root_process_terminated": False,
-            "gpu5_touched": False, "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
+            "gpu5_touched": 5 in approved_gpus, "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
             "resource": dict(resource or {}), "updated_utc": utc_now(),
         }
         atomic_write_json(self.state_path, payload)
