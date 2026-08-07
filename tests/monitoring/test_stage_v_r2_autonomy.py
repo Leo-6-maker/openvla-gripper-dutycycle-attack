@@ -130,6 +130,50 @@ def test_append_only_registry_chain_rejects_rewrite(tmp_path: Path) -> None:
         orchestrator.verify_registry_chain(second, source={"commit": "c", "tree": "t"})
 
 
+def test_registry_allows_bound_source_upgrade_between_stages(tmp_path: Path) -> None:
+    runner = tmp_path / "runner.py"
+    auditor = tmp_path / "auditor.py"
+    config = tmp_path / "config.json"
+    receipt = tmp_path / "receipt.json"
+    parent = tmp_path / "parent.json"
+    for path in (runner, auditor, config, receipt, parent):
+        path.write_text("{}\n", encoding="utf-8")
+
+    def make_plan(path: Path, stage: str, commit: str, tree: str) -> None:
+        write_json(path, {
+            "schema": orchestrator.PLAN_SCHEMA, "stage": stage, "source_commit": commit, "source_tree": tree,
+            "cwd": str(tmp_path), "runner_path": str(runner), "runner_sha256": orchestrator.sha256_file(runner),
+            "auditor_path": str(auditor), "auditor_sha256": orchestrator.sha256_file(auditor),
+            "config_path": str(config), "config_sha256": orchestrator.sha256_file(config),
+            "input_receipts": [{"path": str(receipt), "sha256": orchestrator.sha256_file(receipt)}],
+            "parent_manifest": {"path": str(parent), "sha256": orchestrator.sha256_file(parent)},
+            "output_root_template": str(tmp_path / f"{stage}_{{commit8}}_{{utc}}"),
+            "command_template": ["python", "run.py"], "audit_command_template": ["python", "audit.py"],
+            "completion_receipts": ["DONE.json"], "resource_policy": {"resource_kind": "CPU_ONLY", "required_gpu_count": 0, "minimum_gpu_count": 0, "maximum_gpu_count": 0, "strict_gpu_count": False},
+            "lock_path": str(tmp_path / f"{stage}.lock"), "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
+        })
+
+    first_plan = tmp_path / "C0.json"
+    make_plan(first_plan, "STAGE_V2", "old-commit", "old-tree")
+    first = materializer.append_registry(
+        state_root=tmp_path, source_commit="old-commit", source_tree="old-tree", stage="STAGE_V2",
+        plan_path=first_plan, upstream_receipts=[],
+    )
+    second_plan = tmp_path / "R2A.json"
+    make_plan(second_plan, "STAGE_O", "new-commit", "new-tree")
+    second = materializer.append_registry(
+        state_root=tmp_path, source_commit="new-commit", source_tree="new-tree", stage="STAGE_O",
+        plan_path=second_plan, upstream_receipts=[],
+    )
+
+    plans, version, _, _ = orchestrator.verify_registry_chain(
+        second, source={"commit": "new-commit", "tree": "new-tree"},
+    )
+    assert version == 2
+    assert plans["STAGE_V2"]["source_commit"] == "old-commit"
+    assert plans["STAGE_O"]["source_commit"] == "new-commit"
+
+
 def test_q_pass_materializes_fresh_c0_plan(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repo = Path(__file__).resolve().parents[2]
     source = {"commit": "new-source", "tree": "new-tree", "status_porcelain": ""}

@@ -454,7 +454,14 @@ def load_registry(path: Path, *, source: Mapping[str, str]) -> tuple[dict[str, d
             raise OrchestratorError(f"PLAN_REGISTRY_STAGE_INVALID:{stage}")
         expected_sha = entry.get("sha256")
         _verify_bound_file(plan_path, expected_sha, f"plan_{stage}")
-        plans[stage] = validate_plan(plan_path, source=source, expected_stage=stage)
+        plan_value = _load_object(plan_path, "PLAN")
+        plan_source = source
+        if plan_value.get("source_commit") is not None or plan_value.get("source_tree") is not None:
+            plan_source = {
+                "commit": str(plan_value.get("source_commit", "")),
+                "tree": str(plan_value.get("source_tree", "")),
+            }
+        plans[stage] = validate_plan(plan_path, source=plan_source, expected_stage=stage)
         plans[stage]["_path"] = str(plan_path)
         plans[stage]["_sha256"] = sha256_file(plan_path)
     return plans, sha256_file(path)
@@ -506,12 +513,28 @@ def verify_registry_chain(latest_path: Path, *, source: Mapping[str, str]) -> tu
             newest_version = version
             newest_sha = sha256_file(current)
         expected_version = version
-        plans, _ = load_registry(current, source=source)
+        registry_source = source
+        if expected_version is not None:
+            registry_source = {
+                "commit": str(registry.get("source_commit", source["commit"])),
+                "tree": str(registry.get("source_tree", source["tree"])),
+            }
+        plans, _ = load_registry(current, source=registry_source)
         if newest_plans is None:
             newest_plans = plans
         entries = registry.get("plans")
         if registry.get("schema") == REGISTRY_SCHEMA and not isinstance(entries, list):
             raise OrchestratorError("PLAN_REGISTRY_PLANS_INVALID")
+        if entries:
+            newest = entries[-1]
+            if not isinstance(newest, Mapping):
+                raise OrchestratorError("PLAN_REGISTRY_NEWEST_ENTRY_INVALID")
+            newest_plan = _load_object(Path(str(newest.get("path", ""))).resolve(), "PLAN_REGISTRY_NEWEST_PLAN")
+            if (
+                newest_plan.get("source_commit") != registry_source["commit"]
+                or newest_plan.get("source_tree") != registry_source["tree"]
+            ):
+                raise OrchestratorError("PLAN_REGISTRY_NEWEST_SOURCE_MISMATCH")
         previous = registry.get("previous_registry_path")
         previous_sha = registry.get("previous_registry_sha256")
         if not previous:
