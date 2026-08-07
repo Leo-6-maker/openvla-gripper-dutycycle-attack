@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import sqlite3
+import subprocess
 from types import SimpleNamespace
 
 import sys
@@ -348,6 +349,32 @@ def test_q2_supervisor_heartbeat_is_local_and_keeps_external_process_untouched(t
     assert heartbeat["ssh_is_hard_stop"] is False
     assert heartbeat["external_root_process_terminated"] is False
     assert heartbeat["eval160_reads"] == 0
+
+
+def test_q2_supervisor_accepts_stale_lock_audit_only(tmp_path: Path) -> None:
+    repo = Path(__file__).resolve().parents[2]
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+    tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=repo, text=True).strip()
+    candidate = tmp_path / "candidate.json"
+    write_json(candidate, {"schema": "candidate"})
+    protocol = tmp_path / "protocol.json"
+    write_json(protocol, {
+        "schema": "STAGE_Q2_PROTOCOL_V1", "status": "FROZEN", "source_commit": commit, "source_tree": tree,
+        "candidate_universe_sha256": q2_supervisor.sha256_file(candidate),
+        "approved_gpus": [0, 1, 2, 3, 4, 6, 7], "worker_count": 7, "gpu5_authorized": False,
+    })
+    state = tmp_path / "state"
+    state.mkdir()
+    write_json(state / "STALE_LOCK_AUDIT.json", {"schema": "STAGE_V_STALE_LOCK_AUDIT_V1"})
+    supervisor = q2_supervisor.Q2Supervisor(SimpleNamespace(
+        state_root=state, run_root=tmp_path / "run", repo_root=repo, protocol=protocol,
+        candidate_universe=candidate, source_commit=commit, source_tree=tree,
+        expected_candidate_sha256=q2_supervisor.sha256_file(candidate),
+        gpus=[0, 1, 2, 3, 4, 6, 7],
+    ))
+    supervisor._prepare()
+    assert (state / "STALE_LOCK_AUDIT.json").is_file()
+    assert (state / "SUPERVISOR_START.json").is_file()
 
 
 def test_q2_supervisor_queue_reports_duplicate_gpu_assignments(tmp_path: Path) -> None:

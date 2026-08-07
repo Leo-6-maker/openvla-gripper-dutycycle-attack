@@ -185,7 +185,10 @@ class Q2Supervisor:
             raise RuntimeError("Q2_CANDIDATE_EXPECTED_SHA_MISMATCH")
         if self.run_root.exists() and any(self.run_root.iterdir()):
             raise RuntimeError("Q2_RUN_ROOT_NOT_NEW_OR_EMPTY")
-        if self.state_root.exists() and any(self.state_root.iterdir()):
+        state_entries = []
+        if self.state_root.exists():
+            state_entries = [path for path in self.state_root.iterdir() if path.name != "STALE_LOCK_AUDIT.json"]
+        if state_entries:
             raise RuntimeError("Q2_STATE_ROOT_NOT_NEW_OR_EMPTY")
         self.state_root.mkdir(parents=True, exist_ok=True)
         self.run_root.mkdir(parents=True, exist_ok=True)
