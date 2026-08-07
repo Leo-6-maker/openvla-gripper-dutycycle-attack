@@ -265,6 +265,21 @@ def build_c0_plan(
         ("candidate_manifest", candidate_manifest),
         ("science_provenance", science_provenance),
     )]
+    command_template = [
+        python_executable, str(runner), "--run-root", "{output_root}", "--repo-root", str(repo_root.resolve()),
+        "--parent-manifest", "{parent_manifest}", "--queue-db", str(queue_db), "--run-id", "stage-v-r2-c0-{source_commit}",
+        "--source-commit", "{source_commit}", "--source-tree", "{source_tree}", "--preflight-file", str(preflight),
+        "--lock-path", str(project_lock), "--approved-gpus", "{approved_gpus}", "--external-pid", str(external_pid),
+        "--canary-peak-mib", "0",
+    ]
+    audit_command_template = [
+        python_executable, str(auditor), "--run-root", "{output_root}", "--parent-manifest", "{parent_manifest}",
+        "--queue-db", str(queue_db), "--run-id", "stage-v-r2-c0-{source_commit}", "--expected-parent-count", "8",
+        "--expected-source-commit", "{source_commit}", "--expected-source-tree", "{source_tree}",
+    ]
+    if allow_gpu5:
+        command_template.append("--allow-gpu5")
+        audit_command_template.append("--allow-gpu5")
     plan = {
         "schema": PLAN_SCHEMA,
         "stage": "C0",
@@ -282,18 +297,8 @@ def build_c0_plan(
         "input_receipts": receipts,
         "parent_manifest": {"path": str(manifest_path), "sha256": manifest_sha},
         "output_root_template": str(root.parent / "DYNAMIC8_CONTROL_CANARY_{commit8}_{utc}"),
-        "command_template": [
-            python_executable, str(runner), "--run-root", "{output_root}", "--repo-root", str(repo_root.resolve()),
-            "--parent-manifest", "{parent_manifest}", "--queue-db", str(queue_db), "--run-id", "stage-v-r2-c0-{source_commit}",
-            "--source-commit", "{source_commit}", "--source-tree", "{source_tree}", "--preflight-file", str(preflight),
-            "--lock-path", str(project_lock), "--approved-gpus", "{approved_gpus}", "--external-pid", str(external_pid),
-            "--canary-peak-mib", "0",
-        ],
-        "audit_command_template": [
-            python_executable, str(auditor), "--run-root", "{output_root}", "--parent-manifest", "{parent_manifest}",
-            "--queue-db", str(queue_db), "--run-id", "stage-v-r2-c0-{source_commit}", "--expected-parent-count", "8",
-            "--expected-source-commit", "{source_commit}", "--expected-source-tree", "{source_tree}",
-        ],
+        "command_template": command_template,
+        "audit_command_template": audit_command_template,
         "env": {"OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1"},
         "resource_policy": {
             "resource_kind": "GPU", "required_gpu_count": 8, "minimum_gpu_count": 8, "maximum_gpu_count": 8,

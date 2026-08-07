@@ -321,10 +321,14 @@ def test_q2_pass_materializes_c0_from_full_universe(tmp_path: Path) -> None:
         repo_root=Path(__file__).resolve().parents[2], state_root=tmp_path / "state",
         qualification_root=qualification, candidate_manifest=candidate_path, science_provenance=science,
         source_commit=SOURCE_COMMIT, source_tree=SOURCE_TREE, python_executable="python", external_pid=0,
+        allow_gpu5=True,
     )
     assert plan["stage"] == "C0"
     assert len(json.loads(diagnostic_path.read_text(encoding="utf-8"))["selected_parents"]) == 8
     assert plan_path.is_file()
+    assert plan["resource_policy"]["gpu5_authorized"] is True
+    assert "--allow-gpu5" in plan["command_template"]
+    assert "--allow-gpu5" in plan["audit_command_template"]
 
 
 def test_q2_supervisor_heartbeat_is_local_and_keeps_external_process_untouched(tmp_path: Path) -> None:

@@ -28,6 +28,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--external-pid", type=int, default=0)
     parser.add_argument("--canary-peak-mib", type=float, default=0)
     parser.add_argument("--skip-resource-checks", action="store_true")
+    parser.add_argument("--allow-gpu5", action="store_true", help="Authorize GPU5 for this fresh eight-GPU canary")
     args = parser.parse_args(argv)
     root = args.run_root.resolve()
     worker_script = Path(__file__).with_name("stage_v_dynamic_canary_worker.py")
@@ -39,11 +40,14 @@ def main(argv: list[str] | None = None) -> int:
         sys.executable, str(supervisor), "--run-root", str(root), "--repo-root", str(args.repo_root),
         "--parent-manifest", str(args.parent_manifest), "--queue-db", str(args.queue_db), "--run-id", args.run_id,
         "--expected-parent-count", "8", "--expected-source-commit", args.source_commit, "--expected-source-tree", args.source_tree,
-        "--lock-path", str(args.lock_path), "--approved-gpus", args.approved_gpus, "--excluded-gpus", "5",
+        "--lock-path", str(args.lock_path), "--approved-gpus", args.approved_gpus,
+        "--excluded-gpus", "" if args.allow_gpu5 else "5",
         "--preflight-file", str(args.preflight_file), "--dispatcher-script", str(dispatcher), "--auditor-script", str(auditor),
         "--worker-command", worker_command, "--canary-peak-mib", str(args.canary_peak_mib),
         "--external-pid", str(args.external_pid), "--ssh-probe-command", "false", "--poll-seconds", "1",
     ]
+    if args.allow_gpu5:
+        command.append("--allow-gpu5")
     if args.skip_resource_checks:
         command.append("--skip-resource-checks")
     before_pid_alive = bool(args.external_pid and _pid_alive(args.external_pid))
@@ -77,6 +81,8 @@ def main(argv: list[str] | None = None) -> int:
         "external_process_terminated": False,
         "worker_reap_pass": worker_reap_pass,
         "gpu5_touched": gpu5_touched,
+        "gpu5_authorized": bool(args.allow_gpu5),
+        "gpu5_policy_pass": gpu5_touched == bool(args.allow_gpu5),
         "old_artifacts_reused": False,
         "eval160_reads": 0,
         "protected_eval_reads": 0,
@@ -85,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
         "stderr_tail": result.stderr[-2000:],
         "generated_utc": utc_now(),
     }
-    report["verdict"] = "PASS" if report["verdict"] == "PASS" and report["heartbeat_at_least_five"] and report["ssh_failures_did_not_abort"] and report["worker_reap_pass"] and report["external_process_untouched"] and not report["gpu5_touched"] and not report["external_process_terminated"] else "FAIL"
+    report["verdict"] = "PASS" if report["verdict"] == "PASS" and report["heartbeat_at_least_five"] and report["ssh_failures_did_not_abort"] and report["worker_reap_pass"] and report["external_process_untouched"] and report["gpu5_policy_pass"] and not report["external_process_terminated"] else "FAIL"
     atomic_write_json(root / "DYNAMIC8_CONTROL_CANARY_REPORT.json", report)
     atomic_write_json(root / "DYNAMIC8_CONTROL_CANARY_AUDIT.json", {
         "schema": "DYNAMIC8_CONTROL_CANARY_AUDIT_V2", "verdict": report["verdict"],
@@ -94,6 +100,8 @@ def main(argv: list[str] | None = None) -> int:
         "gpu_assignments": heartbeat.get("gpu_assignments", []),
         "worker_reap_pass": report["worker_reap_pass"],
         "gpu5_touched": report["gpu5_touched"],
+        "gpu5_authorized": report["gpu5_authorized"],
+        "gpu5_policy_pass": report["gpu5_policy_pass"],
         "external_process_untouched": report["external_process_untouched"],
         "audited_utc": utc_now(),
     })
