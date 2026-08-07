@@ -59,6 +59,7 @@ def freeze(args: argparse.Namespace) -> dict[str, Any]:
     tools: dict[str, Any] = {}
     for label, path in (
         ("q2_producer", getattr(args, "q2_producer", None)), ("q2_independent_auditor", getattr(args, "q2_auditor", None)),
+        ("q2_supervisor", getattr(args, "q2_supervisor", None)),
         ("frozen_clean_wrapper", getattr(args, "frozen_clean_wrapper", None)), ("official_clean_worker", getattr(args, "official_clean_worker", None)),
         ("upstream_provenance", getattr(args, "upstream_provenance", None)),
     ):
@@ -127,6 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expected-candidate-sha256", default="")
     parser.add_argument("--q2-producer", type=Path)
     parser.add_argument("--q2-auditor", type=Path)
+    parser.add_argument("--q2-supervisor", type=Path)
     parser.add_argument("--frozen-clean-wrapper", type=Path)
     parser.add_argument("--official-clean-worker", type=Path)
     parser.add_argument("--upstream-provenance", type=Path)

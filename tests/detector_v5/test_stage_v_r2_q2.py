@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import sqlite3
 from types import SimpleNamespace
 
 import sys
@@ -11,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from scripts.detector_v5 import audit_stage_v_r2_control_qualification_v2 as auditor
 from scripts.detector_v5 import freeze_stage_q2_protocol as freezer
 from scripts.detector_v5 import run_stage_v_r2_q2_control_qualification as q2
+from scripts.detector_v5 import run_stage_v_r2_q2_supervisor as q2_supervisor
 from scripts.monitoring import materialize_stage_v_r2_next_plan as materializer
 
 
@@ -227,3 +229,47 @@ def test_q2_pass_materializes_c0_from_full_universe(tmp_path: Path) -> None:
     assert plan["stage"] == "C0"
     assert len(json.loads(diagnostic_path.read_text(encoding="utf-8"))["selected_parents"]) == 8
     assert plan_path.is_file()
+
+
+def test_q2_supervisor_heartbeat_is_local_and_keeps_external_process_untouched(tmp_path: Path) -> None:
+    protocol = tmp_path / "protocol.json"
+    write_json(protocol, {"candidate_universe_count": 120})
+    state = tmp_path / "state"
+    run = tmp_path / "run"
+    state.mkdir()
+    run.mkdir()
+    supervisor = q2_supervisor.Q2Supervisor(SimpleNamespace(
+        state_root=state, run_root=run, repo_root=tmp_path, protocol=protocol,
+        candidate_universe=tmp_path / "candidate.json", source_commit=SOURCE_COMMIT,
+        source_tree=SOURCE_TREE, gpus=[0], external_pid=99999999, min_available_ram_gib=0,
+        min_free_memory_mib=0, gpu_query_command="false", python_executable="python",
+        producer_script=tmp_path / "producer.py", producer_args=[], auditor_script=tmp_path / "audit.py",
+        lock_path=tmp_path / "lock", expected_candidate_sha256="", poll_seconds=1, audit_timeout=1,
+    ))
+    supervisor.last_resource = {"queue": {"active_workers": [], "progress": {}}, "resource_errors": [], "gpu_memory": [], "gpu_xid_status": "NOT_CHECKED"}
+    supervisor._heartbeat(supervisor.last_resource)
+    heartbeat = json.loads((state / "Q2_LOCAL_HEARTBEAT.json").read_text(encoding="utf-8"))
+    assert heartbeat["control_plane_mode"] == "LOCAL_AUTONOMOUS"
+    assert heartbeat["ssh_is_hard_stop"] is False
+    assert heartbeat["external_root_process_terminated"] is False
+    assert heartbeat["eval160_reads"] == 0
+
+
+def test_q2_supervisor_queue_reports_duplicate_gpu_assignments(tmp_path: Path) -> None:
+    db = tmp_path / "queue.sqlite"
+    connection = sqlite3.connect(db)
+    connection.executescript("""
+        CREATE TABLE run_meta (state TEXT, updated_at TEXT);
+        CREATE TABLE tasks (cell_id TEXT, parent_id TEXT, suite TEXT, arm TEXT, state TEXT, attempt_count INTEGER);
+        CREATE TABLE attempts (attempt_id TEXT, cell_id TEXT, pid INTEGER, gpu_id INTEGER, worker_id TEXT, heartbeat_at TEXT, output_dir TEXT);
+        INSERT INTO run_meta VALUES ('ACTIVE', '2026-08-07T00:00:00+00:00');
+        INSERT INTO tasks VALUES ('a', 'p1', 'libero_goal', 'A', 'RUNNING', 1);
+        INSERT INTO tasks VALUES ('b', 'p2', 'libero_goal', 'B', 'RUNNING', 1);
+        INSERT INTO attempts VALUES ('aa', 'a', 10, 0, 'w0', 'now', 'a');
+        INSERT INTO attempts VALUES ('bb', 'b', 11, 0, 'w1', 'now', 'b');
+    """)
+    connection.commit()
+    connection.close()
+    snapshot = q2_supervisor._queue_snapshot(db)
+    assert len(snapshot["active_workers"]) == 2
+    assert [row["gpu_id"] for row in snapshot["active_workers"]] == [0, 0]
