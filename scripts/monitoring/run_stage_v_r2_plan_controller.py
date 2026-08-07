@@ -270,6 +270,260 @@ class PlanController:
         self._write(f"{stage}_PLAN_READY", f"{stage}_PLAN_MATERIALIZED", q_reason=q_reason, next_stage=stage)
         return f"{stage}_PLAN_READY"
 
+    def _materialize_inline_spec(self, stage: str, spec: Mapping[str, Any], *, q_reason: str) -> str:
+        """Write one deterministic preregistered spec, then use the normal path."""
+        spec_path = self.state_root / f"{stage}_SPEC.json"
+        if spec_path.is_file():
+            if read_json(spec_path, {}) != dict(spec):
+                self._write(HARD_STOP, f"{stage}_SPEC_ALREADY_EXISTS_DIFFERENT", q_reason=q_reason, next_stage=stage)
+                return HARD_STOP
+        else:
+            atomic_write_json(spec_path, dict(spec))
+        return self._materialize_spec_stage(stage, q_reason=q_reason)
+
+    def _formal_stage(self, plans: Mapping[str, Any]) -> tuple[str, Mapping[str, Any], Path] | None:
+        for stage in ("R2B", "R2A"):
+            plan = plans.get(stage)
+            root = self._launch_root(stage)
+            if isinstance(plan, Mapping) and root is not None:
+                return stage, plan, root
+        return None
+
+    def _ensure_r2b_decision_spec(self, plans: Mapping[str, Any], *, q_reason: str) -> str:
+        """Bind the support rule to the completed R2A root; no decision is inferred here."""
+        formal = self._formal_stage(plans)
+        if formal is None or formal[0] != "R2A":
+            self._write(WAIT_INPUT, "R2A_ROOT_REQUIRED_FOR_R2B_DECISION", q_reason=q_reason, next_stage="R2B_DECISION")
+            return WAIT_INPUT
+        _, r2a_plan, r2a_root = formal
+        parent = r2a_plan.get("parent_manifest")
+        if not isinstance(parent, Mapping):
+            self._write(HARD_STOP, "R2A_PARENT_MANIFEST_BINDING_INVALID", q_reason=q_reason, next_stage="R2B_DECISION")
+            return HARD_STOP
+        parent_manifest = Path(str(parent.get("path", ""))).resolve()
+        runner = self.repo_root / "scripts/detector_v5/prepare_stage_v_r2b_manifest.py"
+        auditor = self.repo_root / "scripts/detector_v5/audit_stage_v_r2b_decision.py"
+        for path in (runner, auditor, parent_manifest, self.candidate_manifest):
+            if not path.is_file():
+                self._write(WAIT_INPUT, f"R2B_DECISION_INPUT_MISSING:{path.name}", q_reason=q_reason, next_stage="R2B_DECISION")
+                return WAIT_INPUT
+        config_path = self.state_root / "R2B_DECISION_CONFIG.json"
+        config = {
+            "schema": "STAGE_V_R2B_DECISION_CONFIG_V1",
+            "source_commit": self.source["commit"], "source_tree": self.source["tree"],
+            "r2a_root": str(r2a_root), "r2a_manifest": str(parent_manifest),
+            "candidate_manifest": str(self.candidate_manifest),
+            "salt": "STAGE_V_R2B_NEXT_BATCH_20260808", "parents_per_suite": 10,
+            "read_only": True, "eval160_reads": 0, "protected_eval_reads": 0,
+            "vis_pgd_attack_rollouts": 0,
+        }
+        if config_path.is_file() and read_json(config_path, {}) != config:
+            self._write(HARD_STOP, "R2B_DECISION_CONFIG_ALREADY_EXISTS_DIFFERENT", q_reason=q_reason, next_stage="R2B_DECISION")
+            return HARD_STOP
+        if not config_path.is_file():
+            atomic_write_json(config_path, config)
+        output_template = str(self.state_root.parent / "STAGE_V_R2B_DECISION_{commit8}_{utc}")
+        spec = {
+            "schema": "STAGE_V_R2_STAGE_SPEC_V1", "stage": "R2B_DECISION",
+            "source_commit": self.source["commit"], "source_tree": self.source["tree"],
+            "runner_path": str(runner), "runner_path_sha256": sha256_file(runner),
+            "auditor_path": str(auditor), "auditor_path_sha256": sha256_file(auditor),
+            "config_path": str(config_path), "config_path_sha256": sha256_file(config_path),
+            "cwd": str(self.repo_root), "python_executable": str(self.args.python_executable),
+            "parent_manifest": {"path": str(parent_manifest), "sha256": sha256_file(parent_manifest)},
+            "input_receipts": [
+                _receipt("r2a_closure", r2a_root / "STAGE_V_CLOSURE_RECEIPT.json"),
+                _receipt("r2a_audit", r2a_root / "STAGE_V_COUNTERFACTUAL_AUDIT.json"),
+                _receipt("r2a_root_seal", r2a_root / "SHA256SUMS.sha256"),
+                _receipt("r2a_manifest", parent_manifest),
+                _receipt("candidate_manifest", self.candidate_manifest),
+            ],
+            "output_root_template": output_template,
+            "command_template": [
+                str(self.args.python_executable), str(runner), "--r2a-root", str(r2a_root),
+                "--r2a-manifest", "{parent_manifest}", "--candidate-manifest", str(self.candidate_manifest),
+                "--output-root", "{output_root}", "--source-commit", "{source_commit}",
+                "--source-tree", "{source_tree}", "--salt", config["salt"],
+                "--parents-per-suite", str(config["parents_per_suite"]),
+            ],
+            "audit_command_template": [
+                str(self.args.python_executable), str(auditor), "--root", "{output_root}",
+                "--r2a-root", str(r2a_root), "--r2a-manifest", "{parent_manifest}",
+                "--candidate-manifest", str(self.candidate_manifest),
+                "--expected-source-commit", "{source_commit}", "--expected-source-tree", "{source_tree}",
+            ],
+            "completion_receipts": ["STAGE_V_R2B_DECISION.json", "STAGE_V_R2B_DECISION_AUDIT.json"],
+            "decision_receipt_names": ["STAGE_V_R2B_DECISION.json"],
+            "resource_policy": {"resource_kind": "CPU_ONLY", "required_gpu_count": 0, "minimum_gpu_count": 0, "maximum_gpu_count": 0, "strict_gpu_count": False, "excluded_gpus": [], "protected_pids": [int(self.args.external_pid)]},
+            "lock_path": str(self.state_root.parent / ".stage_v_r2b_decision.lock"),
+            "env": {"CUDA_VISIBLE_DEVICES": "", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1"},
+            "forbidden_boundary_contract": {"eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0},
+            "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
+            "created_utc": utc_now(),
+        }
+        return self._materialize_inline_spec("R2B_DECISION", spec, q_reason=q_reason)
+
+    def _ensure_r2b_spec(self, plans: Mapping[str, Any], *, q_reason: str) -> str:
+        """Bind one fresh R2B map to the decision-selected reserve manifest."""
+        decision = self._stage_receipt("R2B_DECISION", plans["R2B_DECISION"])
+        if not isinstance(decision, Mapping) or decision.get("status") != "R2B_REQUIRED":
+            self._write(HARD_STOP, "R2B_REQUIRED_DECISION_MISSING", q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        decision_root = self._launch_root("R2B_DECISION")
+        if decision_root is None:
+            self._write(WAIT_INPUT, "R2B_DECISION_ROOT_REQUIRED", q_reason=q_reason, next_stage="R2B")
+            return WAIT_INPUT
+        parent_manifest = decision_root / "STAGE_V_R2B_PARENT_MANIFEST.json"
+        if not parent_manifest.is_file():
+            self._write(HARD_STOP, "R2B_PARENT_MANIFEST_MISSING", q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        required = (
+            "r2a_science_runner", "r2a_science_auditor", "r2a_science_repo_root",
+            "r2a_science_source_commit", "r2a_science_source_tree", "r2a_timeout_policy",
+            "r2a_science_runner_sha256", "r2a_science_auditor_sha256",
+        )
+        if any(not str(getattr(self.args, name, "")) for name in required):
+            self._write(WAIT_INPUT, "R2B_SCIENCE_BINDING_REQUIRED", q_reason=q_reason, next_stage="R2B")
+            return WAIT_INPUT
+        runner = Path(str(self.args.r2a_science_runner)).resolve()
+        science_auditor = Path(str(self.args.r2a_science_auditor)).resolve()
+        science_repo = Path(str(self.args.r2a_science_repo_root)).resolve()
+        timeout_policy = Path(str(self.args.r2a_timeout_policy)).resolve()
+        if not all(path.is_file() for path in (runner, science_auditor, timeout_policy)) or not science_repo.is_dir():
+            self._write(HARD_STOP, "R2B_SCIENCE_BINDING_PATH_INVALID", q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        if sha256_file(runner) != str(self.args.r2a_science_runner_sha256) or sha256_file(science_auditor) != str(self.args.r2a_science_auditor_sha256):
+            self._write(HARD_STOP, "R2B_SCIENCE_SNAPSHOT_SHA256_MISMATCH", q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        try:
+            science_source = _git_binding(science_repo)
+        except ValueError as exc:
+            self._write(HARD_STOP, str(exc), q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        if science_source["commit"] != str(self.args.r2a_science_source_commit) or science_source["tree"] != str(self.args.r2a_science_source_tree) or science_source["status"]:
+            self._write(HARD_STOP, "R2B_SCIENCE_SOURCE_BINDING_INVALID", q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        science_manifest = self.state_root / "D8_STAGE_V_R2B_CLEAN_SUCCESS_PARENT_MANIFEST_V1.json"
+        reserve = read_json(parent_manifest, {})
+        if not isinstance(reserve, Mapping) or int(reserve.get("selected_count", -1)) != 40 or not isinstance(reserve.get("selected_parents"), list):
+            self._write(HARD_STOP, "R2B_PARENT_MANIFEST_INVALID", q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        derived = dict(reserve)
+        derived["schema"] = "D8_STAGE_V_CLEAN_SUCCESS_PARENT_MANIFEST_V1"
+        derived["adapter_source_manifest_sha256"] = sha256_file(parent_manifest)
+        if science_manifest.is_file() and read_json(science_manifest, {}) != derived:
+            self._write(HARD_STOP, "R2B_SCIENCE_PARENT_MANIFEST_ALREADY_EXISTS_DIFFERENT", q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        if not science_manifest.is_file():
+            atomic_write_json(science_manifest, derived)
+        science_manifest_sidecar = science_manifest.with_suffix(science_manifest.suffix + ".sha256")
+        expected_sidecar = f"{sha256_file(science_manifest)}  {science_manifest.name}\n"
+        if science_manifest_sidecar.is_file() and science_manifest_sidecar.read_text(encoding="utf-8") != expected_sidecar:
+            self._write(HARD_STOP, "R2B_SCIENCE_PARENT_MANIFEST_SHA256_SIDECAR_MISMATCH", q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        if not science_manifest_sidecar.is_file():
+            science_manifest_sidecar.write_text(expected_sidecar, encoding="utf-8")
+        provenance_path = self.state_root / "R2B_SCIENCE_CORE_PROVENANCE.json"
+        if not provenance_path.is_file():
+            atomic_write_json(provenance_path, build_science_provenance([runner, science_auditor], source_commit=str(self.args.r2a_science_source_commit), source_tree=str(self.args.r2a_science_source_tree)))
+        supervisor = self.repo_root / "scripts/detector_v5/run_stage_v_parent_aware_supervisor.py"
+        dispatcher = self.repo_root / "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py"
+        auditor = self.repo_root / "scripts/detector_v5/audit_stage_v_dynamic_queue.py"
+        if not all(path.is_file() for path in (supervisor, dispatcher, auditor)):
+            self._write(HARD_STOP, "R2B_CONTROL_TOOL_MISSING", q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        config_path = self.state_root / "R2B_CONFIG.json"
+        config = {
+            "schema": "STAGE_V_R2B_CONFIG_V1", "stage": "R2B", "status": "FROZEN",
+            "control_source_commit": self.source["commit"], "control_source_tree": self.source["tree"],
+            "science_source_commit": str(self.args.r2a_science_source_commit), "science_source_tree": str(self.args.r2a_science_source_tree),
+            "science_repo_root": str(science_repo), "science_runner": str(runner), "science_runner_sha256": sha256_file(runner),
+            "science_auditor": str(science_auditor), "science_auditor_sha256": sha256_file(science_auditor),
+            "science_parent_manifest": _receipt("science_parent_manifest", science_manifest),
+            "timeout_policy": _receipt("timeout_policy", timeout_policy), "probe_limit": 24, "expected_branch_count": 72,
+            "planned_parents": 40, "approved_gpus": list(range(8)), "gpu5_authorized": True,
+            "old_artifacts_reused": False, "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
+        }
+        if config_path.is_file() and read_json(config_path, {}) != config:
+            self._write(HARD_STOP, "R2B_CONFIG_ALREADY_EXISTS_DIFFERENT", q_reason=q_reason, next_stage="R2B")
+            return HARD_STOP
+        if not config_path.is_file():
+            atomic_write_json(config_path, config)
+        manifest_binding = _receipt("r2b_parent_manifest", parent_manifest)
+        science_binding = _receipt("r2b_science_parent_manifest", science_manifest)
+        command = [
+            str(self.args.python_executable), str(supervisor), "--run-root", "{output_root}", "--repo-root", str(self.repo_root),
+            "--parent-manifest", str(parent_manifest), "--parent-manifest-sha256", manifest_binding["sha256"],
+            "--queue-db", "{output_root}/STAGE_V_R2B.sqlite", "--run-id", "stage-v-r2b-{source_commit}",
+            "--expected-parent-count", "40", "--expected-source-commit", "{source_commit}", "--expected-source-tree", "{source_tree}",
+            "--lock-path", str(self.state_root.parent / ".stage_v_r2b.lock"), "--approved-gpus", "{approved_gpus}",
+            "--external-pid", str(self.args.external_pid), "--preflight-file", "{output_root}/GPU_PREFLIGHT.json",
+            "--timeout-policy", str(timeout_policy), "--dispatcher-script", str(dispatcher), "--auditor-script", str(auditor),
+            "--science-runner", str(runner), "--science-provenance", str(provenance_path),
+            "--science-source-commit", str(self.args.r2a_science_source_commit), "--science-source-tree", str(self.args.r2a_science_source_tree),
+            "--science-repo-root", str(science_repo), "--science-parent-manifest", str(science_manifest),
+            "--probe-limit", "24", "--max-attempts", "1", "--allow-gpu5",
+        ]
+        audit_command = [
+            str(self.args.python_executable), str(auditor), "--run-root", "{output_root}", "--parent-manifest", str(parent_manifest),
+            "--queue-db", "{output_root}/STAGE_V_R2B.sqlite", "--run-id", "stage-v-r2b-{source_commit}",
+            "--expected-parent-count", "40", "--expected-branch-count", "72", "--expected-source-commit", "{source_commit}",
+            "--expected-source-tree", "{source_tree}", "--science-source-commit", str(self.args.r2a_science_source_commit),
+            "--science-source-tree", str(self.args.r2a_science_source_tree), "--science-provenance", str(provenance_path),
+            "--science-parent-manifest", str(science_manifest), "--allow-gpu5",
+        ]
+        spec = {
+            "schema": "STAGE_V_R2_STAGE_SPEC_V1", "stage": "R2B", "source_commit": self.source["commit"], "source_tree": self.source["tree"],
+            "runner_path": str(supervisor), "runner_path_sha256": sha256_file(supervisor), "auditor_path": str(auditor), "auditor_path_sha256": sha256_file(auditor),
+            "config_path": str(config_path), "config_path_sha256": sha256_file(config_path), "cwd": str(self.repo_root),
+            "python_executable": str(self.args.python_executable), "parent_manifest": manifest_binding,
+            "input_receipts": [_receipt("r2b_decision", decision_root / "STAGE_V_R2B_DECISION.json"), _receipt("r2b_decision_audit", decision_root / "STAGE_V_R2B_DECISION_AUDIT.json"), manifest_binding, science_binding, _receipt("r2b_provenance", provenance_path), _receipt("r2b_config", config_path)],
+            "output_root_template": str(self.state_root.parent / "STAGE_V_R2B_COUNTERFACTUAL_MAP_{commit8}_{utc}"),
+            "command_template": command, "audit_command_template": audit_command,
+            "completion_receipts": ["SUPERVISOR_COMPLETE.json", "STAGE_V_CLOSURE_RECEIPT.json"],
+            "resource_policy": {"resource_kind": "GPU", "required_gpu_count": 8, "minimum_gpu_count": 8, "maximum_gpu_count": 8, "strict_gpu_count": True, "excluded_gpus": [], "gpu5_authorized": True, "protected_pids": [int(self.args.external_pid)], "canary_peak_mib": 0},
+            "gpu_policy": {"required_count": 8, "excluded_gpus": [], "gpu5_authorized": True, "protected_pids": [int(self.args.external_pid)]},
+            "lock_path": str(self.state_root.parent / ".stage_v_r2b.lock"),
+            "forbidden_boundary_contract": {"eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0},
+            "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "created_utc": utc_now(),
+        }
+        return self._materialize_inline_spec("R2B", spec, q_reason=q_reason)
+
+    def _ensure_stage_v2_spec(self, plans: Mapping[str, Any], *, q_reason: str) -> str:
+        formal = self._formal_stage(plans)
+        if formal is None:
+            self._write(WAIT_INPUT, "FORMAL_STAGE_ROOT_REQUIRED_FOR_V2", q_reason=q_reason, next_stage="STAGE_V2")
+            return WAIT_INPUT
+        _, formal_plan, stage_v_root = formal
+        parent = formal_plan.get("parent_manifest")
+        if not isinstance(parent, Mapping):
+            self._write(HARD_STOP, "FORMAL_PARENT_MANIFEST_BINDING_INVALID", q_reason=q_reason, next_stage="STAGE_V2")
+            return HARD_STOP
+        runner = self.repo_root / "scripts/detector_v5/run_stage_v2_teacher_enrichment.py"
+        auditor = self.repo_root / "scripts/detector_v5/audit_stage_v2_teacher_enrichment.py"
+        config = self.repo_root / "configs/stage_v2_teacher_enrichment_v1.json"
+        required = (stage_v_root / "STAGE_V_CLOSURE_RECEIPT.json", stage_v_root / "RUN_MANIFEST.json", stage_v_root / "SHA256SUMS.sha256", Path(str(parent["path"])))
+        if not all(path.is_file() for path in (runner, auditor, config, *required)):
+            self._write(WAIT_INPUT, "STAGE_V2_FORMAL_BINDING_INCOMPLETE", q_reason=q_reason, next_stage="STAGE_V2")
+            return WAIT_INPUT
+        spec = {
+            "schema": "STAGE_V_R2_STAGE_SPEC_V1", "stage": "STAGE_V2", "source_commit": self.source["commit"], "source_tree": self.source["tree"],
+            "runner_path": str(runner), "runner_path_sha256": sha256_file(runner), "auditor_path": str(auditor), "auditor_path_sha256": sha256_file(auditor),
+            "config_path": str(config), "config_path_sha256": sha256_file(config), "cwd": str(self.repo_root), "python_executable": str(self.args.python_executable),
+            "parent_manifest": {"path": str(Path(str(parent["path"])).resolve()), "sha256": str(parent["sha256"])},
+            "input_receipts": [_receipt("stage_v_closure", stage_v_root / "STAGE_V_CLOSURE_RECEIPT.json"), _receipt("stage_v_run_manifest", stage_v_root / "RUN_MANIFEST.json"), _receipt("stage_v_seal", stage_v_root / "SHA256SUMS.sha256"), _receipt("stage_v_audit", stage_v_root / "STAGE_V_COUNTERFACTUAL_AUDIT.json"), _receipt("parent_manifest", Path(str(parent["path"]))), _receipt("stage_v2_runner", runner), _receipt("stage_v2_auditor", auditor), _receipt("stage_v2_config", config)],
+            "output_root_template": str(self.state_root.parent / "STAGE_V2_TEACHER_ENRICHMENT_{commit8}_{utc}"),
+            "command_template": [str(self.args.python_executable), str(runner), "--stage-v-root", str(stage_v_root), "--output-root", "{output_root}", "--config", str(config), "--expected-source-commit", "{source_commit}", "--expected-source-tree", "{source_tree}", "--expected-parent-manifest-sha256", str(parent["sha256"]), "--expected-run-manifest-sha256", sha256_file(stage_v_root / "RUN_MANIFEST.json"), "--run-independent-audit"],
+            "audit_command_template": [str(self.args.python_executable), str(auditor), "--stage-v-root", str(stage_v_root), "--v2-root", "{output_root}", "--config", str(config), "--expected-source-commit", "{source_commit}", "--expected-source-tree", "{source_tree}"],
+            "completion_receipts": ["STAGE_V2_PRODUCER_COMPLETE.json", "STAGE_V2_INDEPENDENT_AUDIT.json"],
+            "resource_policy": {"resource_kind": "CPU_ONLY", "required_gpu_count": 0, "minimum_gpu_count": 0, "maximum_gpu_count": 0, "strict_gpu_count": False, "excluded_gpus": [], "protected_pids": [int(self.args.external_pid)]},
+            "lock_path": str(self.state_root.parent / ".stage_v2_teacher_enrichment.lock"),
+            "env": {"CUDA_VISIBLE_DEVICES": "", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1", "STAGE_V2_RUNNER_PATH": str(runner)},
+            "forbidden_boundary_contract": {"eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0},
+            "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "created_utc": utc_now(),
+        }
+        return self._materialize_inline_spec("STAGE_V2", spec, q_reason=q_reason)
+
     def _ensure_r2a_spec(self, *, q_reason: str) -> str:
         """JIT-bind the fresh Q2 manifest to the frozen external R2A core."""
         spec_path = self.state_root / "R2A_SPEC.json"
@@ -414,7 +668,16 @@ class PlanController:
 
     def _ensure_stage(self, stage: str, plans: Mapping[str, Any], *, q_reason: str) -> tuple[str | None, dict[str, dict[str, Any]]]:
         if stage not in plans:
-            status = self._ensure_r2a_spec(q_reason=q_reason) if stage == "R2A" else self._materialize_spec_stage(stage, q_reason=q_reason)
+            if stage == "R2A":
+                status = self._ensure_r2a_spec(q_reason=q_reason)
+            elif stage == "R2B_DECISION":
+                status = self._materialize_spec_stage(stage, q_reason=q_reason) if (self.state_root / f"{stage}_SPEC.json").is_file() else self._ensure_r2b_decision_spec(plans, q_reason=q_reason)
+            elif stage == "R2B":
+                status = self._materialize_spec_stage(stage, q_reason=q_reason) if (self.state_root / f"{stage}_SPEC.json").is_file() else self._ensure_r2b_spec(plans, q_reason=q_reason)
+            elif stage == "STAGE_V2":
+                status = self._materialize_spec_stage(stage, q_reason=q_reason) if (self.state_root / f"{stage}_SPEC.json").is_file() else self._ensure_stage_v2_spec(plans, q_reason=q_reason)
+            else:
+                status = self._materialize_spec_stage(stage, q_reason=q_reason)
             if status == HARD_STOP:
                 return HARD_STOP, dict(plans)
             return status, self._load_registered()

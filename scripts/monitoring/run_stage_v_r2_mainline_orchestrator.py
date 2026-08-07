@@ -935,6 +935,82 @@ class Orchestrator:
             return "AUDITED"
         return "COMPLETE" if _completed(root, plan) else None
 
+    def _reconcile_existing_root(self, stage: str, plan: Mapping[str, Any]) -> str | None:
+        """Adopt one already-running local supervisor without launching a duplicate."""
+        launch_path = self.state_root / f"{stage}_LAUNCH.json"
+        if launch_path.is_file() or stage not in {"R2A", "R2B"}:
+            return None
+        bound_source_commit = str(plan.get("source_commit", self.source["commit"]))
+        bound_source_tree = str(plan.get("source_tree", self.source["tree"]))
+        template = str(plan.get("output_root_template", ""))
+        if "{commit8}" not in template or "{utc}" not in template:
+            return None
+        template_path = Path(template.replace("{commit8}", bound_source_commit[:8]).replace("{utc}", "*"))
+        candidates: list[tuple[Path, Mapping[str, Any], Mapping[str, Any], Mapping[str, Any]]] = []
+        if template_path.parent.is_dir():
+            for root in sorted(template_path.parent.glob(template_path.name)):
+                if not root.is_dir() or (root / "ABORTED_INCOMPLETE.json").is_file():
+                    continue
+                start = _read(root / "SUPERVISOR_START.json", {})
+                run_manifest = _read(root / "RUN_MANIFEST.json", {})
+                heartbeat = _read(root / "LOCAL_HEARTBEAT.json", {})
+                if not all(isinstance(value, Mapping) for value in (start, run_manifest, heartbeat)):
+                    continue
+                parent = plan.get("parent_manifest")
+                if not isinstance(parent, Mapping):
+                    raise OrchestratorError(f"{stage}_PARENT_MANIFEST_INVALID")
+                if (
+                    start.get("run_root") != str(root.resolve())
+                    or start.get("source_commit") != bound_source_commit
+                    or start.get("source_tree") != bound_source_tree
+                    or start.get("parent_manifest") != parent.get("path")
+                    or start.get("parent_manifest_sha256") != parent.get("sha256")
+                    or run_manifest.get("source_commit") not in {None, bound_source_commit}
+                    or run_manifest.get("source_tree") not in {None, bound_source_tree}
+                ):
+                    continue
+                candidates.append((root, start, run_manifest, heartbeat))
+        if len(candidates) > 1:
+            raise OrchestratorError(f"{stage}_EXISTING_ROOT_AMBIGUOUS")
+        if not candidates:
+            return None
+        root, start, run_manifest, heartbeat = candidates[0]
+        supervisor_pid = int(heartbeat.get("supervisor_pid", start.get("supervisor_pid", 0)) or 0)
+        dispatcher_pid = int(heartbeat.get("dispatcher_pid", 0) or 0)
+        supervisor_identity = _proc_identity(supervisor_pid)
+        dispatcher_alive = pid_alive(dispatcher_pid)
+        complete = _completed(root, plan)
+        if supervisor_identity:
+            if not dispatcher_alive:
+                raise OrchestratorError(f"{stage}_EXISTING_DISPATCHER_MISSING")
+            if str(root.resolve()) not in " ".join(supervisor_identity.get("cmdline") or []):
+                raise OrchestratorError(f"{stage}_EXISTING_SUPERVISOR_IDENTITY_MISMATCH")
+            status = "RUNNING"
+        elif complete:
+            status = "COMPLETE"
+        else:
+            raise OrchestratorError(f"{stage}_EXISTING_ROOT_ORPHANED")
+        assignments = heartbeat.get("gpu_assignments", []) if isinstance(heartbeat, Mapping) else []
+        payload = {
+            "schema": "STAGE_V_R2_LAUNCH_V1", "stage": stage, "status": status,
+            "command_sha256": None, "plan_sha256": plan.get("_sha256"),
+            "input_receipts": plan.get("input_receipts", []), "parent_manifest": plan.get("parent_manifest"),
+            "output_root": str(root.resolve()), "gpu_assignments": assignments,
+            "resource_kind": _resource_policy(plan).get("resource_kind"),
+            "registry_version": self.registry_version, "registry_sha256": self.plan_sha,
+            "cwd": str(plan.get("cwd", "")), "started_utc": start.get("started_utc", utc_now()),
+            "reconciled_from_existing_root": True,
+            "pid": supervisor_pid, "pgid": int(start.get("supervisor_pgid", supervisor_pid) or supervisor_pid),
+            "start_ticks": supervisor_identity.get("start_ticks") if supervisor_identity else None,
+            "cmdline": supervisor_identity.get("cmdline", []) if supervisor_identity else [],
+            "cwd_actual": supervisor_identity.get("cwd") if supervisor_identity else None,
+            "updated_utc": utc_now(),
+        }
+        atomic_write_json(launch_path, payload)
+        _write_sha(launch_path)
+        _event(self.events_path, "STAGE_RECONCILED", stage=stage, pid=supervisor_pid, output_root=str(root.resolve()))
+        return status
+
     def _stage_status(self, stage: str, plan: Mapping[str, Any]) -> str | None:
         return self._reattach_or_audit(stage, plan)
 
@@ -970,6 +1046,7 @@ class Orchestrator:
                 if candidate not in plans:
                     continue
                 plan = plans[candidate]
+                self._reconcile_existing_root(candidate, plan)
                 status = self._stage_status(candidate, plan)
                 if status == "AUDITED":
                     continue

@@ -210,3 +210,37 @@ def test_exactly_once_materialization(tmp_path: Path, monkeypatch: pytest.Monkey
             os.kill(int(launch["pid"]), signal.SIGTERM)
         except OSError:
             pass
+
+
+def test_reconcile_existing_formal_root_writes_reattach_receipt(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    plan, _ = make_plan(tmp_path)
+    plan["stage"] = "R2A"
+    plan["output_root_template"] = str(tmp_path / "STAGE_V_R2A_COUNTERFACTUAL_MAP_{commit8}_{utc}")
+    plan["gpu_policy"] = {"required_count": 8, "excluded_gpus": [], "gpu5_authorized": True, "protected_pids": []}
+    root = tmp_path / "STAGE_V_R2A_COUNTERFACTUAL_MAP_commit_20260808T000000Z"
+    root.mkdir()
+    write_json(root / "SUPERVISOR_START.json", {
+        "run_root": str(root), "source_commit": "commit", "source_tree": "tree",
+        "parent_manifest": plan["parent_manifest"]["path"], "parent_manifest_sha256": plan["parent_manifest"]["sha256"],
+        "supervisor_pid": 123, "supervisor_pgid": 123, "started_utc": "now",
+    })
+    write_json(root / "RUN_MANIFEST.json", {"source_commit": "commit", "source_tree": "tree"})
+    write_json(root / "LOCAL_HEARTBEAT.json", {"supervisor_pid": 123, "dispatcher_pid": 124, "gpu_assignments": []})
+    monkeypatch.setattr(orch, "source_binding", source)
+    monkeypatch.setattr(orch, "pid_alive", lambda pid: pid in {123, 124})
+    monkeypatch.setattr(orch, "_proc_identity", lambda pid: {
+        "pid": pid, "start_ticks": 9, "cwd": str(tmp_path),
+        "cmdline": ["python", "supervisor", str(root)],
+    })
+    args = type("Args", (), {
+        "repo_root": tmp_path, "state_root": tmp_path / "state", "lock_path": tmp_path / "lock",
+        "qualification_root": tmp_path, "plan_registry": tmp_path / "missing", "external_pid": 0,
+        "poll_seconds": 1, "once": True,
+    })()
+    instance = orch.Orchestrator(args)
+    instance.registry_version = 2
+    instance.plan_sha = "registry-sha"
+    assert instance._reconcile_existing_root("R2A", plan) == "RUNNING"
+    launch = json.loads((tmp_path / "state" / "R2A_LAUNCH.json").read_text(encoding="utf-8"))
+    assert launch["reconciled_from_existing_root"] is True
+    assert launch["output_root"] == str(root.resolve())
