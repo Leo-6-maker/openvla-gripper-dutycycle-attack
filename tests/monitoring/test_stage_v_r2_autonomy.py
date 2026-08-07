@@ -34,10 +34,26 @@ def test_r2a_science_manifest_adapter_preserves_frozen_parent_set(tmp_path: Path
         "selected_count": 40, "selected_parents": rows,
         "old_artifacts_reused": False, "source_artifacts_modified": False,
     })
-    derived = controller._ensure_science_parent_manifest(formal, tmp_path / "state")
+    source_manifest = tmp_path / "STAGE_V_CLEAN_SUCCESS_PARENT_MANIFEST.json"
+    write_json(source_manifest, {
+        "schema": "STAGE_V_CLEAN_SUCCESS_PARENT_MANIFEST_V1",
+        "all_candidate_audits": [
+            {
+                "canonical_parent_key": row["canonical_parent_key"],
+                "source_artifact_root": str(tmp_path / "frozen_source" / str(index)),
+                "artifact_recursive_sha256": f"{index:064x}",
+                "artifact_manifest_sha256": f"{index + 1:064x}",
+            }
+            for index, row in enumerate(rows)
+        ],
+    })
+    derived = controller._ensure_science_parent_manifest(formal, tmp_path / "state", source_manifest)
     value = json.loads(derived.read_text(encoding="utf-8"))
     assert value["schema"] == "D8_STAGE_V_CLEAN_SUCCESS_PARENT_MANIFEST_V1"
-    assert value["selected_parents"] == rows
+    assert [row["canonical_parent_key"] for row in value["selected_parents"]] == [row["canonical_parent_key"] for row in rows]
+    assert all(row["source_artifact_root"] for row in value["selected_parents"])
+    assert value["q1_q2_replay_artifacts_reused"] is False
+    assert value["source_clean_parent_manifest_sha256"] == controller.sha256_file(source_manifest)
     assert value["adapter_source_manifest_sha256"] == controller.sha256_file(formal)
     assert (derived.with_suffix(derived.suffix + ".sha256")).is_file()
 

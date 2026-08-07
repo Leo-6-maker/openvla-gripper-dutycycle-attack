@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Any, Mapping
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, load_rows, normalize_parent, sha256_file, utc_now
+    from .stage_v_dynamic_common import atomic_write_json, bind_source_artifact_rows, load_rows, normalize_parent, sha256_file, utc_now
     from scripts.monitoring.audit_stage_v_closure import verify_sha_manifest
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import atomic_write_json, load_rows, normalize_parent, sha256_file, utc_now
+    from stage_v_dynamic_common import atomic_write_json, bind_source_artifact_rows, load_rows, normalize_parent, sha256_file, utc_now
     from scripts.monitoring.audit_stage_v_closure import verify_sha_manifest
 
 
@@ -133,6 +133,10 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
     candidate_rows = [normalize_parent(row) for row in load_rows(args.candidate_manifest)]
     candidate_by_key = {str(row["canonical_parent_key"]): row for row in candidate_rows}
     suites = {key: str(row.get("suite")) for key, row in candidate_by_key.items()}
+    source_manifest = Path(args.source_clean_parent_manifest).resolve()
+    source_manifest_sha256 = sha256_file(source_manifest) if source_manifest.is_file() else None
+    if not source_manifest.is_file():
+        errors.append("SOURCE_CLEAN_PARENT_MANIFEST_MISSING")
     support = _support(classes, suites)
     support_pass = all(support["gate"].values()) and not errors
     selected: list[dict[str, Any]] = []
@@ -143,6 +147,11 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
             selected.extend(candidates[:args.parents_per_suite])
         if len(selected) != len(SUITES) * args.parents_per_suite:
             errors.append(f"R2B_NEXT_BATCH_INSUFFICIENT:{len(selected)}/{len(SUITES) * args.parents_per_suite}")
+    if selected and source_manifest.is_file() and not errors:
+        try:
+            selected = bind_source_artifact_rows(selected, source_manifest)
+        except ValueError as exc:
+            errors.append(str(exc))
     status = "R2B_NOT_REQUIRED" if support_pass else "R2B_REQUIRED" if not errors else "R2B_PREPARATION_FAIL"
     decision = {
         "schema": "STAGE_V_R2B_PRE_REGISTERED_DECISION_V1",
@@ -151,6 +160,10 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
         "r2a_audit_sha256": sha256_file(root / "STAGE_V_COUNTERFACTUAL_AUDIT.json") if (root / "STAGE_V_COUNTERFACTUAL_AUDIT.json").is_file() else None,
         "r2a_manifest_sha256": sha256_file(args.r2a_manifest),
         "candidate_manifest_sha256": sha256_file(args.candidate_manifest),
+        "source_clean_parent_manifest": str(source_manifest),
+        "source_clean_parent_manifest_sha256": source_manifest_sha256,
+        "source_artifact_binding_mode": "FROZEN_CANDIDATE_METADATA_ONLY",
+        "q1_q2_replay_artifacts_reused": False,
         "salt": args.salt,
         "support": support,
         "selected_count": len(selected),
@@ -171,6 +184,10 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
             "r2a_root": str(root),
             "r2a_manifest_sha256": sha256_file(args.r2a_manifest),
             "candidate_manifest_sha256": sha256_file(args.candidate_manifest),
+            "source_clean_parent_manifest": str(source_manifest),
+            "source_clean_parent_manifest_sha256": source_manifest_sha256,
+            "source_artifact_binding_mode": "FROZEN_CANDIDATE_METADATA_ONLY",
+            "q1_q2_replay_artifacts_reused": False,
             "salt": args.salt,
             "parents": selected,
             "selected_parents": selected,
@@ -192,6 +209,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
+    parser.add_argument("--source-clean-parent-manifest", type=Path, required=True)
     parser.add_argument("--salt", default="STAGE_V_R2B_NEXT_BATCH_20260807")
     parser.add_argument("--parents-per-suite", type=int, default=10)
     args = parser.parse_args(argv)

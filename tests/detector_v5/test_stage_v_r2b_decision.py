@@ -38,18 +38,25 @@ def test_r2b_not_required_decision_audit_is_independent_and_bound(tmp_path: Path
     seal(r2a)
     manifest = tmp_path / "r2a_manifest.json"
     candidate = tmp_path / "candidate.json"
+    source_manifest = tmp_path / "source_manifest.json"
     write_json(manifest, {"parents": []})
     write_json(candidate, {"parents": []})
+    write_json(source_manifest, {"all_candidate_audits": []})
     decision_root = tmp_path / "decision"
     write_json(decision_root / "STAGE_V_R2B_DECISION.json", {
         "schema": "STAGE_V_R2B_PRE_REGISTERED_DECISION_V1",
         "status": "R2B_NOT_REQUIRED", "r2a_root": str(r2a.resolve()),
         "r2a_manifest_sha256": sha(manifest), "candidate_manifest_sha256": sha(candidate),
+        "source_clean_parent_manifest": str(source_manifest.resolve()),
+        "source_clean_parent_manifest_sha256": sha(source_manifest),
+        "source_artifact_binding_mode": "FROZEN_CANDIDATE_METADATA_ONLY",
+        "q1_q2_replay_artifacts_reused": False,
         "selected_count": 0, "selected_parents": [], "errors": [],
         "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
     })
     result = audit(
         decision_root, r2a_root=r2a, r2a_manifest=manifest, candidate_manifest=candidate,
+        source_clean_parent_manifest=source_manifest,
         expected_source_commit="commit", expected_source_tree="tree",
     )
     assert result["verdict"] == "PASS"

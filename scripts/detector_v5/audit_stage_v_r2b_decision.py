@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import Any, Mapping
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, sha256_file, utc_now
+    from .stage_v_dynamic_common import atomic_write_json, bind_source_artifact_rows, sha256_file, utc_now
     from scripts.monitoring.audit_stage_v_closure import verify_sha_manifest
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import atomic_write_json, sha256_file, utc_now
+    from stage_v_dynamic_common import atomic_write_json, bind_source_artifact_rows, sha256_file, utc_now
     from scripts.monitoring.audit_stage_v_closure import verify_sha_manifest
 
 
@@ -28,6 +28,7 @@ def audit(
     r2a_root: Path,
     r2a_manifest: Path,
     candidate_manifest: Path,
+    source_clean_parent_manifest: Path,
     expected_source_commit: str,
     expected_source_tree: str,
 ) -> dict[str, Any]:
@@ -70,6 +71,14 @@ def audit(
         errors.append("R2A_MANIFEST_BINDING_MISMATCH")
     if decision.get("candidate_manifest_sha256") != sha256_file(candidate_manifest):
         errors.append("CANDIDATE_MANIFEST_BINDING_MISMATCH")
+    if decision.get("source_clean_parent_manifest") != str(source_clean_parent_manifest.resolve()):
+        errors.append("SOURCE_CLEAN_PARENT_MANIFEST_PATH_MISMATCH")
+    if decision.get("source_clean_parent_manifest_sha256") != sha256_file(source_clean_parent_manifest):
+        errors.append("SOURCE_CLEAN_PARENT_MANIFEST_SHA256_MISMATCH")
+    if decision.get("source_artifact_binding_mode") != "FROZEN_CANDIDATE_METADATA_ONLY":
+        errors.append("SOURCE_ARTIFACT_BINDING_MODE_INVALID")
+    if decision.get("q1_q2_replay_artifacts_reused") is not False:
+        errors.append("Q1_Q2_REPLAY_ARTIFACT_REUSE_FLAG_INVALID")
     if decision.get("source_commit") not in (None, expected_source_commit):
         errors.append("SOURCE_COMMIT_MISMATCH")
     if decision.get("source_tree") not in (None, expected_source_tree):
@@ -88,6 +97,11 @@ def audit(
     keys = [str(row.get("canonical_parent_key", "")) for row in selected if isinstance(row, Mapping)]
     if len(keys) != len(selected) or not all(keys) or len(keys) != len(set(keys)):
         errors.append("SELECTED_PARENT_IDENTITIES_INVALID")
+    try:
+        if bind_source_artifact_rows(selected, source_clean_parent_manifest) != selected:
+            errors.append("SELECTED_SOURCE_ARTIFACT_BINDING_MISMATCH")
+    except (OSError, TypeError, ValueError):
+        errors.append("SOURCE_CLEAN_PARENT_MANIFEST_INVALID")
     if status == "R2B_NOT_REQUIRED":
         if int(decision.get("selected_count", -1)) != 0 or selected:
             errors.append("NOT_REQUIRED_SELECTION_NONEMPTY")
@@ -108,6 +122,10 @@ def audit(
             errors.append("R2B_MANIFEST_COUNT_INVALID")
         if isinstance(manifest, Mapping) and manifest.get("selected_parents") != selected:
             errors.append("R2B_MANIFEST_SELECTION_MISMATCH")
+        if isinstance(manifest, Mapping):
+            for field in ("source_clean_parent_manifest", "source_clean_parent_manifest_sha256", "source_artifact_binding_mode"):
+                if manifest.get(field) != decision.get(field):
+                    errors.append(f"R2B_MANIFEST_{field.upper()}_MISMATCH")
         if manifest_path.is_file():
             sidecar = root / "STAGE_V_R2B_PARENT_MANIFEST.sha256"
             if not sidecar.is_file() or sidecar.read_text(encoding="utf-8") != f"{sha256_file(manifest_path)}  {manifest_path.name}\n":
@@ -137,6 +155,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--r2a-root", type=Path, required=True)
     parser.add_argument("--r2a-manifest", type=Path, required=True)
     parser.add_argument("--candidate-manifest", type=Path, required=True)
+    parser.add_argument("--source-clean-parent-manifest", type=Path, required=True)
     parser.add_argument("--expected-source-commit", required=True)
     parser.add_argument("--expected-source-tree", required=True)
     args = parser.parse_args(argv)
@@ -145,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
         r2a_root=args.r2a_root.resolve(),
         r2a_manifest=args.r2a_manifest.resolve(),
         candidate_manifest=args.candidate_manifest.resolve(),
+        source_clean_parent_manifest=args.source_clean_parent_manifest.resolve(),
         expected_source_commit=args.expected_source_commit,
         expected_source_tree=args.expected_source_tree,
     )

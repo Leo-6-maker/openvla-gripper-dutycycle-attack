@@ -131,6 +131,20 @@ def test_process_identity_rejects_pid_reuse(tmp_path: Path, monkeypatch: pytest.
     assert not orch.process_identity_matches(receipt, expected_cwd=tmp_path, expected_root=tmp_path)
 
 
+def test_reattached_supervisor_allows_runtime_argv_drift_with_strong_binding(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(orch, "_proc_identity", lambda pid: {
+        "pid": pid, "start_ticks": 22, "cwd": str(tmp_path),
+        "cmdline": ["python", "run_stage_v_parent_aware_supervisor.py", "--run-root", str(tmp_path)],
+    })
+    receipt = {
+        "pid": 7, "start_ticks": 22, "cwd": str(tmp_path),
+        "cmdline": ["stale-receipt-argv"], "output_root": str(tmp_path),
+    }
+    assert orch.process_identity_matches(
+        receipt, expected_cwd=tmp_path, expected_root=tmp_path, strict_cmdline=False,
+    )
+
+
 def test_gpu_preflight_strict_eight_and_gpu5_exclusion(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     rows = "\n".join(f"{gpu}, GPU-{gpu}, A800, 80000, 1000, 79000" for gpu in range(9))
     monkeypatch.setattr(orch, "_query", lambda command: (rows if "query-gpu" in command else "", None))

@@ -559,10 +559,18 @@ def test_r2b_preparation_is_hash_ordered_and_never_reuses_r2a(tmp_path: Path) ->
             candidates.append({"canonical_parent_key": f"{suite}/task_{index:02d}/state_48", "suite": suite, "task_index": index, "state_index": 48})
     candidate_manifest = tmp_path / "candidates.json"
     write_json(candidate_manifest, {"parents": candidates})
+    source_manifest = tmp_path / "source-candidates.json"
+    write_json(source_manifest, {
+        "all_candidate_audits": [
+            {"canonical_parent_key": row["canonical_parent_key"], "source_artifact_root": f"/frozen/{index}"}
+            for index, row in enumerate(candidates)
+        ]
+    })
     r2a_manifest = tmp_path / "r2a-manifest.json"
     write_json(r2a_manifest, {"parents": [row for row in candidates if int(row["canonical_parent_key"].split("/")[1].removeprefix("task_")) < 10]})
     args = SimpleNamespace(
         r2a_root=r2a, r2a_manifest=r2a_manifest, candidate_manifest=candidate_manifest,
+        source_clean_parent_manifest=source_manifest,
         output_root=tmp_path / "r2b", source_commit="commit", source_tree="tree",
         salt="test", parents_per_suite=10,
     )

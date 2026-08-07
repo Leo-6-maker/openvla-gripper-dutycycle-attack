@@ -654,7 +654,9 @@ class FileLock:
         self.handle = None
 
 
-def process_identity_matches(receipt: Mapping[str, Any], *, expected_cwd: Path, expected_root: Path) -> bool:
+def process_identity_matches(
+    receipt: Mapping[str, Any], *, expected_cwd: Path, expected_root: Path, strict_cmdline: bool = True,
+) -> bool:
     pid = int(receipt.get("pid", 0) or 0)
     identity = _proc_identity(pid)
     if not identity:
@@ -665,10 +667,15 @@ def process_identity_matches(receipt: Mapping[str, Any], *, expected_cwd: Path, 
         return False
     if not _same_path(identity.get("cwd"), expected_cwd):
         return False
+    actual_cmdline = [str(item) for item in identity.get("cmdline", [])]
     expected_cmdline = [str(item) for item in receipt.get("cmdline", [])]
-    if expected_cmdline and identity.get("cmdline") != expected_cmdline:
-        return False
-    return str(expected_root) in " ".join(identity.get("cmdline") or []) or receipt.get("output_root") == str(expected_root)
+    if strict_cmdline:
+        if expected_cmdline and actual_cmdline != expected_cmdline:
+            return False
+    else:
+        if not any("run_stage_v_parent_aware_supervisor.py" in item for item in actual_cmdline):
+            return False
+    return str(expected_root) in " ".join(actual_cmdline)
 
 
 def _completed(root: Path, plan: Mapping[str, Any]) -> bool:
@@ -922,7 +929,10 @@ class Orchestrator:
                 if launch.get("reconciled_from_existing_root"):
                     identity_receipt["cwd"] = launch.get("cwd_actual") or launch.get("cwd")
                 expected_cwd = Path(str(identity_receipt.get("cwd"))) if identity_receipt.get("cwd") else Path(str(plan["cwd"]))
-                if not process_identity_matches(identity_receipt, expected_cwd=expected_cwd, expected_root=root):
+                if not process_identity_matches(
+                    identity_receipt, expected_cwd=expected_cwd, expected_root=root,
+                    strict_cmdline=not bool(launch.get("reconciled_from_existing_root")),
+                ):
                     raise OrchestratorError("LAUNCH_RECEIPT_PROCESS_IDENTITY_MISMATCH")
                 return "RUNNING"
             if _completed(root, plan):

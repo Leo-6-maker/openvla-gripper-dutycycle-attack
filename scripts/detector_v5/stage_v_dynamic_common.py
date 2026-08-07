@@ -75,6 +75,38 @@ def canonical_parent_key(row: Mapping[str, Any]) -> str:
     return f"{row['suite']}/task_{int(row['task_index']):02d}/state_{int(row['state_index']):02d}"
 
 
+def bind_source_artifact_rows(rows: Iterable[Mapping[str, Any]], source_manifest: Path) -> list[dict[str, Any]]:
+    """Bind provenance-only source metadata; never reads the referenced artifacts."""
+    source = read_json(source_manifest, {})
+    audits = source.get("all_candidate_audits") if isinstance(source, Mapping) else None
+    if not isinstance(audits, list):
+        raise ValueError("SOURCE_CLEAN_PARENT_MANIFEST_INVALID")
+    by_key: dict[str, Mapping[str, Any]] = {}
+    for item in audits:
+        if not isinstance(item, Mapping):
+            raise ValueError("SOURCE_CLEAN_PARENT_ROW_INVALID")
+        key = str(item.get("canonical_parent_key", ""))
+        if not key or key in by_key:
+            raise ValueError("SOURCE_CLEAN_PARENT_IDENTITY_INVALID")
+        if not str(item.get("source_artifact_root", "")):
+            raise ValueError(f"SOURCE_ARTIFACT_ROOT_MISSING:{key}")
+        by_key[key] = item
+    bound_rows: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, Mapping):
+            raise ValueError("PARENT_ROW_INVALID")
+        key = canonical_parent_key(row)
+        source_row = by_key.get(key)
+        if source_row is None:
+            raise ValueError(f"SOURCE_CLEAN_PARENT_MISSING:{key}")
+        bound = dict(row)
+        bound["source_artifact_root"] = str(source_row["source_artifact_root"])
+        bound["artifact_recursive_sha256"] = str(source_row.get("artifact_recursive_sha256", ""))
+        bound["source_artifact_manifest_sha256"] = str(source_row.get("artifact_manifest_sha256", ""))
+        bound_rows.append(bound)
+    return bound_rows
+
+
 def load_rows(path: Path) -> list[dict[str, Any]]:
     value = read_json(path)
     if isinstance(value, Mapping):
