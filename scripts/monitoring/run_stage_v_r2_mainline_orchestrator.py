@@ -673,6 +673,29 @@ class Orchestrator:
 
     def _qualification(self) -> tuple[bool, str]:
         root = Path(self.args.qualification_root).resolve()
+        q2_report_path = root / "Q2_CONTROL_QUALIFICATION_REPORT.json"
+        if q2_report_path.is_file():
+            audit_path = root / "Q2_CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json"
+            manifest_path = root / "Q2_PARENT_MANIFEST_A.json"
+            if not audit_path.is_file() or not manifest_path.is_file():
+                return False, "Q2_QUALIFICATION_INCOMPLETE"
+            report = _read(q2_report_path, {})
+            audit = _read(audit_path, {})
+            manifest = _read(manifest_path, {})
+            if not isinstance(report, Mapping) or report.get("status") != "PASS":
+                return False, "Q2_QUALIFICATION_REPORT_FAIL"
+            if not isinstance(audit, Mapping) or audit.get("verdict") != "PASS":
+                return False, "Q2_QUALIFICATION_AUDIT_FAIL"
+            if not isinstance(manifest, Mapping) or manifest.get("status") != "PASS" or int(manifest.get("selected_count", -1)) != 40:
+                return False, "Q2_QUALIFICATION_MANIFEST_FAIL"
+            try:
+                qualified = {suite: int((report.get("qualified_by_suite") or {}).get(suite, -1)) for suite in ("libero_10", "libero_goal", "libero_object", "libero_spatial")}
+                boundary_counts = [int(report.get(field, -1)) for field in ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts", "attack_rollouts")]
+            except (TypeError, ValueError):
+                return False, "Q2_QUALIFICATION_RECEIPT_INVALID"
+            if qualified != {suite: 10 for suite in qualified} or any(boundary_counts):
+                return False, "Q2_QUALIFICATION_CLOSURE_COUNT_FAIL"
+            return True, "PASS"
         failure_names = ("CONTROL_QUALIFICATION_FAILURE.json", "ABORTED_INCOMPLETE.json", "QUALIFICATION_FAILURE.json")
         if any((root / name).is_file() for name in failure_names):
             return False, "QUALIFICATION_FAILED"

@@ -1,0 +1,229 @@
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+from types import SimpleNamespace
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from scripts.detector_v5 import audit_stage_v_r2_control_qualification_v2 as auditor
+from scripts.detector_v5 import freeze_stage_q2_protocol as freezer
+from scripts.detector_v5 import run_stage_v_r2_q2_control_qualification as q2
+from scripts.monitoring import materialize_stage_v_r2_next_plan as materializer
+
+
+SUITES = q2.EXPECTED_SUITES
+SOURCE_COMMIT = "c" * 40
+SOURCE_TREE = "t" * 40
+
+
+def write_json(path: Path, value: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def candidate(suite: str, index: int) -> dict[str, object]:
+    return {
+        "canonical_parent_key": f"{suite}/task_{index:02d}/state_48",
+        "suite": suite, "task_index": index, "state_index": 48,
+        "legacy_g10_test_only": True, "source_artifact_read": False, "old_artifacts_reused": False,
+    }
+
+
+def result(key: str, *, clean_success: bool = True, terminal: str = "a", horizon: bool = True) -> dict[str, object]:
+    return {
+        "schema": "STAGE_Q2_CLEAN_CONTROL_RESULT_V1", "status": "PASS" if clean_success else "TASK_FAILURE",
+        "exit_code": 0, "process_exit_code": 0, "clean_success": clean_success,
+        "snapshot_restore_valid": True, "task_identity_valid": True, "runtime_valid": True,
+        "metrics_finite": True, "artifact_validation_pass": True, "old_artifacts_reused": False,
+        "source_commit": SOURCE_COMMIT, "source_tree": SOURCE_TREE, "canonical_parent_key": key,
+        "key_state_identity_sha256": "identity", "terminal_state_sha256": terminal,
+        "remaining_horizon_complete": horizon, "eval160_reads": 0, "protected_eval_reads": 0,
+        "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
+    }
+
+
+def test_q2_qualification_does_not_gate_on_terminal_hash_or_horizon() -> None:
+    row = candidate("libero_goal", 0)
+    a = result(row["canonical_parent_key"], terminal="a", horizon=False)
+    b = result(row["canonical_parent_key"], terminal="b", horizon=True)
+    ok, classification, errors = q2.qualify_pair(row, a, b, True, True, SOURCE_COMMIT, SOURCE_TREE)
+    assert (ok, classification, errors) == (True, "QUALIFIED", [])
+
+
+def test_q2_clean_failure_is_not_infrastructure_retry() -> None:
+    row = candidate("libero_goal", 0)
+    a = result(row["canonical_parent_key"], clean_success=True)
+    b = result(row["canonical_parent_key"], clean_success=False)
+    ok, classification, errors = q2.qualify_pair(row, a, b, True, True, SOURCE_COMMIT, SOURCE_TREE)
+    assert not ok
+    assert classification == "CLEAN_REPEATABILITY_FAIL_A_SUCCESS_B_FAIL"
+    assert "B_CLEAN_SUCCESS_FALSE" in errors
+
+
+def test_q2_protocol_freeze_binds_candidate_and_q1_forensics(tmp_path: Path) -> None:
+    candidates = [candidate(suite, 0) for suite in SUITES]
+    universe = {
+        "schema": "D8_STAGE_V_CLEAN_PROBE_CANDIDATE_POOL_V1", "candidate_count": len(candidates),
+        "candidates": candidates, "candidates_per_suite": 1,
+        "selection_frozen_before_new_rollouts": True,
+        "gates": {"eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0},
+    }
+    universe_path = tmp_path / "universe.json"
+    q1_matrix = tmp_path / "q1.json"
+    q1_semantic = tmp_path / "q1_semantic.json"
+    write_json(universe_path, universe)
+    write_json(q1_matrix, {"schema": "Q1"})
+    write_json(q1_semantic, {"schema": "Q1_SEMANTIC"})
+    protocol = freezer.freeze(SimpleNamespace(
+        output_dir=tmp_path / "protocol", candidate_universe=universe_path,
+        q1_matrix=q1_matrix, q1_semantic_audit=q1_semantic,
+        source_commit=SOURCE_COMMIT, source_tree=SOURCE_TREE,
+        expected_candidate_sha256=hashlib.sha256(universe_path.read_bytes()).hexdigest(),
+    ))
+    assert protocol["status"] == "FROZEN"
+    assert (tmp_path / "protocol" / "STAGE_Q2_PROTOCOL.sha256").is_file()
+
+
+def test_independent_audit_accepts_descriptive_hash_and_horizon_mismatch(tmp_path: Path) -> None:
+    candidates = [candidate(suite, index) for suite in SUITES for index in range(20)]
+    universe = {
+        "schema": "D8_STAGE_V_CLEAN_PROBE_CANDIDATE_POOL_V1", "candidate_count": len(candidates),
+        "candidates": candidates, "candidates_per_suite": 20,
+        "selection_frozen_before_new_rollouts": True,
+        "gates": {"eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0},
+    }
+    universe_path = tmp_path / "universe.json"
+    write_json(universe_path, universe)
+    protocol_dir = tmp_path / "protocol"
+    q1_matrix = tmp_path / "q1.json"
+    q1_semantic = tmp_path / "q1_semantic.json"
+    write_json(q1_matrix, {"schema": "Q1"})
+    write_json(q1_semantic, {"schema": "Q1_SEMANTIC"})
+    freezer.freeze(SimpleNamespace(
+        output_dir=protocol_dir, candidate_universe=universe_path,
+        q1_matrix=q1_matrix, q1_semantic_audit=q1_semantic,
+        source_commit=SOURCE_COMMIT, source_tree=SOURCE_TREE,
+        expected_candidate_sha256=hashlib.sha256(universe_path.read_bytes()).hexdigest(),
+    ))
+    root = tmp_path / "q2"
+    root.mkdir()
+    rows = []
+    for raw in auditor._ranked(candidates):
+        key = str(raw["canonical_parent_key"])
+        base = root / "qualification" / str(raw["suite"]) / key.replace("/", "__")
+        dirs = {}
+        reps = {}
+        for replicate, terminal, horizon in (("A", "hash-a", False), ("B", "hash-b", True)):
+            output = base / replicate / "attempt_01"
+            output.mkdir(parents=True)
+            actual = result(key, terminal=terminal, horizon=horizon)
+            write_json(output / "CONTROL_RESULT.json", actual)
+            dirs[replicate] = str(output)
+            reps[replicate] = {**actual, "process_exit_code": 0}
+        rows.append({
+            "schema": "STAGE_Q2_CONTROL_QUALIFICATION_ROW_V1", **raw,
+            "replicates": reps, "replicate_output_dirs": dirs,
+            "replicate_attempts": {replicate: [{"attempt": 1, "output_dir": dirs[replicate]}] for replicate in ("A", "B")},
+            "qualified": True, "classification": "QUALIFIED",
+        })
+    report = {
+        "schema": "STAGE_Q2_CONTROL_QUALIFICATION_REPORT_V1", "status": "PASS",
+        "protocol_sha256": hashlib.sha256((protocol_dir / "STAGE_Q2_PROTOCOL.json").read_bytes()).hexdigest(),
+        "candidate_universe_sha256": hashlib.sha256(universe_path.read_bytes()).hexdigest(),
+        "source_commit": SOURCE_COMMIT, "source_tree": SOURCE_TREE,
+        "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
+    }
+    report_path = root / "Q2_CONTROL_QUALIFICATION_REPORT.json"
+    rows_path = root / "Q2_CONTROL_QUALIFICATION_ROWS.jsonl"
+    write_json(report_path, report)
+    rows_path.write_text("\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n", encoding="utf-8")
+    audited = auditor.audit(SimpleNamespace(
+        output_dir=root, protocol=protocol_dir / "STAGE_Q2_PROTOCOL.json",
+        candidate_universe=universe_path, report=report_path, rows=rows_path,
+        source_commit=SOURCE_COMMIT, source_tree=SOURCE_TREE,
+    ))
+    assert audited["verdict"] == "PASS"
+    assert audited["terminal_state_sha256_gate_used"] is False
+    assert audited["remaining_horizon_complete_gate_used"] is False
+    assert (root / "Q2_PARENT_MANIFEST_A.json").is_file()
+    assert (root / "STAGE_V_FORMAL_PARENT_MANIFEST_V1.json").is_file()
+
+
+def test_q2_producer_uses_fresh_queue_and_reaches_quota(tmp_path: Path, monkeypatch) -> None:
+    candidates = [candidate(suite, 0) for suite in SUITES]
+    universe = {
+        "schema": "D8_STAGE_V_CLEAN_PROBE_CANDIDATE_POOL_V1", "candidate_count": len(candidates),
+        "candidates": candidates, "candidates_per_suite": 1,
+        "selection_frozen_before_new_rollouts": True,
+        "gates": {"eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0},
+    }
+    universe_path = tmp_path / "universe.json"
+    write_json(universe_path, universe)
+    protocol_dir = tmp_path / "protocol"
+    q1_matrix = tmp_path / "q1.json"
+    q1_semantic = tmp_path / "q1_semantic.json"
+    write_json(q1_matrix, {"schema": "Q1"})
+    write_json(q1_semantic, {"schema": "Q1_SEMANTIC"})
+    freezer.freeze(SimpleNamespace(
+        output_dir=protocol_dir, candidate_universe=universe_path,
+        q1_matrix=q1_matrix, q1_semantic_audit=q1_semantic,
+        source_commit=SOURCE_COMMIT, source_tree=SOURCE_TREE,
+        expected_candidate_sha256=hashlib.sha256(universe_path.read_bytes()).hexdigest(),
+    ))
+
+    def fake_run_once(template: str, *, candidate_path: Path, output_dir: Path, replicate: str,
+                      source_commit: str, source_tree: str, gpu: int):
+        key = json.loads(candidate_path.read_text(encoding="utf-8"))["canonical_parent_key"]
+        payload = result(key)
+        write_json(output_dir / "CONTROL_RESULT.json", payload)
+        return 0, payload
+
+    monkeypatch.setattr(q2, "_run_once", fake_run_once)
+    args = SimpleNamespace(
+        protocol=protocol_dir / "STAGE_Q2_PROTOCOL.json", candidate_universe=universe_path,
+        output_dir=tmp_path / "run", runner_command="clean", source_commit=SOURCE_COMMIT,
+        source_tree=SOURCE_TREE, source_clean_root=str(tmp_path / "clean"), salt=q2.DEFAULT_SALT,
+        gpus="0,1", initial_per_suite=1, batch_size=1, target_per_suite=1,
+        max_infrastructure_retries=1,
+    )
+    report, rows = q2.qualify(args)
+    assert report["status"] == "PASS"
+    assert report["evaluated_rows"] == 4
+    assert all(row["qualified"] is True for row in rows)
+
+
+def test_q2_pass_materializes_c0_from_full_universe(tmp_path: Path) -> None:
+    candidates = [candidate(suite, index) for suite in SUITES for index in range(12)]
+    universe = {
+        "schema": "D8_STAGE_V_CLEAN_PROBE_CANDIDATE_POOL_V1", "candidate_count": len(candidates),
+        "candidates": candidates, "candidates_per_suite": 12,
+        "gates": {"eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0},
+    }
+    candidate_path = tmp_path / "candidate.json"
+    write_json(candidate_path, universe)
+    qualification = tmp_path / "qualification"
+    qualification.mkdir()
+    write_json(qualification / "Q2_CONTROL_QUALIFICATION_REPORT.json", {
+        "status": "PASS", "source_commit": SOURCE_COMMIT, "source_tree": SOURCE_TREE,
+        "qualified_by_suite": {suite: 10 for suite in SUITES},
+        "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
+    })
+    write_json(qualification / "Q2_CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json", {"verdict": "PASS"})
+    formal_rows = candidates[:10] + candidates[12:22] + candidates[24:34] + candidates[36:46]
+    write_json(qualification / "Q2_PARENT_MANIFEST_A.json", {
+        "schema": "STAGE_Q2_PARENT_MANIFEST_A_V1", "status": "PASS", "source_commit": SOURCE_COMMIT,
+        "source_tree": SOURCE_TREE, "selected_count": 40, "selected_parents": formal_rows,
+    })
+    science = tmp_path / "science.json"
+    write_json(science, {"status": "PASS"})
+    plan, plan_path, diagnostic_path = materializer.build_c0_plan(
+        repo_root=Path(__file__).resolve().parents[2], state_root=tmp_path / "state",
+        qualification_root=qualification, candidate_manifest=candidate_path, science_provenance=science,
+        source_commit=SOURCE_COMMIT, source_tree=SOURCE_TREE, python_executable="python", external_pid=0,
+    )
+    assert plan["stage"] == "C0"
+    assert len(json.loads(diagnostic_path.read_text(encoding="utf-8"))["selected_parents"]) == 8
+    assert plan_path.is_file()

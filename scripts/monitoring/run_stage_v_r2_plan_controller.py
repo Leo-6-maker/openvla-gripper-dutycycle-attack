@@ -62,6 +62,29 @@ class PlanController:
         })
 
     def _q_status(self) -> tuple[bool, str]:
+        q2_report_path = self.qualification_root / "Q2_CONTROL_QUALIFICATION_REPORT.json"
+        if q2_report_path.is_file():
+            audit_path = self.qualification_root / "Q2_CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json"
+            manifest_path = self.qualification_root / "Q2_PARENT_MANIFEST_A.json"
+            if not audit_path.is_file() or not manifest_path.is_file():
+                return False, "Q2_QUALIFICATION_INCOMPLETE"
+            report = read_json(q2_report_path, {})
+            audit = read_json(audit_path, {})
+            manifest = read_json(manifest_path, {})
+            if not isinstance(report, Mapping) or report.get("status") != "PASS":
+                return False, "Q2_QUALIFICATION_REPORT_FAIL"
+            if not isinstance(audit, Mapping) or audit.get("verdict") != "PASS":
+                return False, "Q2_QUALIFICATION_AUDIT_FAIL"
+            if not isinstance(manifest, Mapping) or manifest.get("status") != "PASS" or int(manifest.get("selected_count", -1)) != 40:
+                return False, "Q2_QUALIFICATION_MANIFEST_FAIL"
+            try:
+                counts = {suite: int((report.get("qualified_by_suite") or {}).get(suite, -1)) for suite in ("libero_10", "libero_goal", "libero_object", "libero_spatial")}
+                boundary_counts = [int(report.get(field, -1)) for field in ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts", "attack_rollouts")]
+            except (TypeError, ValueError):
+                return False, "Q2_QUALIFICATION_RECEIPT_INVALID"
+            if counts != {suite: 10 for suite in counts} or any(count != 0 for count in boundary_counts):
+                return False, "Q2_QUALIFICATION_CLOSURE_COUNT_FAIL"
+            return True, "PASS"
         failure_names = ("CONTROL_QUALIFICATION_FAILURE.json", "ABORTED_INCOMPLETE.json", "QUALIFICATION_FAILURE.json")
         if any((self.qualification_root / name).is_file() for name in failure_names):
             return False, "QUALIFICATION_FAILED"
@@ -92,14 +115,17 @@ class PlanController:
             "pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
             "repo_root": str(self.repo_root), "source_commit": self.source["commit"], "source_tree": self.source["tree"],
             "source_status_porcelain": self.source["status_porcelain"], "qualification_root": str(self.qualification_root),
-            "qualification_reason": q_reason, "qualification_progress": _q_progress(self.qualification_root / "CONTROL_QUALIFICATION.sqlite"),
-            "registry_chain_mode": "APPEND_ONLY_VERSIONED", "server_pipeline_autonomy_ready": False,
+            "qualification_reason": q_reason, "qualification_progress": _q_progress(self.qualification_root / ("Q2_CONTROL_QUALIFICATION.sqlite" if (self.qualification_root / "Q2_CONTROL_QUALIFICATION.sqlite").is_file() else "CONTROL_QUALIFICATION.sqlite")),
+            "registry_chain_mode": "APPEND_ONLY_VERSIONED", "server_pipeline_autonomy_ready": self._q2_ready(),
             "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
             "external_root_process_present": pid_alive(int(self.args.external_pid or 0)), "external_root_process_terminated": False,
             "gpu5_touched": False, "updated_utc": utc_now(),
         }
         atomic_write_json(self.state_path, payload)
         atomic_write_json(self.heartbeat_path, payload)
+
+    def _q2_ready(self) -> bool:
+        return (self.qualification_root / "Q2_PARENT_MANIFEST_A.json").is_file() and (self.qualification_root / "Q2_CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json").is_file()
 
     def tick(self) -> str:
         current = source_binding(self.repo_root)
@@ -110,7 +136,7 @@ class PlanController:
             self._write(HARD_STOP, "SOURCE_WORKTREE_DIRTY")
             return HARD_STOP
         ok, reason = self._q_status()
-        if reason == "QUALIFICATION_FAILED" or reason.endswith("_FAIL") or reason == "QUALIFICATION_RECEIPT_INVALID":
+        if reason == "QUALIFICATION_FAILED" or reason.endswith("_FAIL") or reason.endswith("_FAILURE") or reason.endswith("_INVALID"):
             self._write(HARD_STOP, reason, q_reason=reason)
             return HARD_STOP
         if not ok:

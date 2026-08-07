@@ -122,6 +122,8 @@ def append_registry(
 def _candidate_rows(candidate_manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
     rows = candidate_manifest.get("selected_parents")
     if not isinstance(rows, list):
+        rows = candidate_manifest.get("candidates")
+    if not isinstance(rows, list):
         raise ValueError("CANDIDATE_ROWS_MISSING")
     result = [dict(row) for row in rows if isinstance(row, Mapping)]
     if len(result) != len(rows) or len({str(row.get("canonical_parent_key")) for row in result}) != len(result):
@@ -143,9 +145,10 @@ def build_c0_plan(
 ) -> tuple[dict[str, Any], Path, Path]:
     """Build the C0 plan and its fresh diagnostic parent manifest."""
     qualification_root = qualification_root.resolve()
-    report_path = qualification_root / "CONTROL_QUALIFICATION_REPORT.json"
-    audit_path = qualification_root / "CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json"
-    formal_path = qualification_root / "STAGE_V_R2_PARENT_MANIFEST_A.json"
+    q2_mode = (qualification_root / "Q2_CONTROL_QUALIFICATION_REPORT.json").is_file()
+    report_path = qualification_root / ("Q2_CONTROL_QUALIFICATION_REPORT.json" if q2_mode else "CONTROL_QUALIFICATION_REPORT.json")
+    audit_path = qualification_root / ("Q2_CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json" if q2_mode else "CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json")
+    formal_path = qualification_root / ("Q2_PARENT_MANIFEST_A.json" if q2_mode else "STAGE_V_R2_PARENT_MANIFEST_A.json")
     for path in (report_path, audit_path, formal_path, candidate_manifest, science_provenance):
         if not path.is_file():
             raise ValueError(f"C0_INPUT_MISSING:{path}")
@@ -159,9 +162,16 @@ def build_c0_plan(
         raise ValueError("QUALIFICATION_SOURCE_MISMATCH")
     if formal.get("status") != "PASS" or int(formal.get("selected_count", -1)) != 40:
         raise ValueError("QUALIFICATION_MANIFEST_NOT_40")
-    if candidate.get("old_artifacts_reused") is not False or candidate.get("source_artifacts_modified") is not False:
+    candidate_boundary_fail = (
+        candidate.get("old_artifacts_reused") is not False or candidate.get("source_artifacts_modified") is not False
+    ) if not q2_mode else (
+        candidate.get("schema") != "D8_STAGE_V_CLEAN_PROBE_CANDIDATE_POOL_V1"
+        or any(candidate.get("gates", {}).get(field, 1) != 0 for field in ("eval160_reads", "protected_eval_reads", "attack_rollouts"))
+    )
+    if candidate_boundary_fail:
         raise ValueError("CANDIDATE_OLD_ARTIFACT_BOUNDARY_FAIL")
-    if any(int(report.get(field, -1)) != 0 for field in ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts")):
+    boundary_fields = ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts", "attack_rollouts") if q2_mode else ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts")
+    if any(int(report.get(field, -1)) != 0 for field in boundary_fields):
         raise ValueError("QUALIFICATION_BOUNDARY_FAIL")
     candidates = _candidate_rows(candidate)
     formal_rows = formal.get("selected_parents")
@@ -170,9 +180,15 @@ def build_c0_plan(
     formal_keys = {str(row.get("canonical_parent_key")) for row in formal_rows if isinstance(row, Mapping)}
     if len(formal_keys) != 40:
         raise ValueError("FORMAL_PARENT_KEYS_INVALID")
+    def diagnostic_rank(row: Mapping[str, Any]) -> tuple[str, str]:
+        rank = str(row.get("qualification_rank_sha256", ""))
+        if q2_mode and not rank:
+            rank = hashlib.sha256(f"STAGE_V_R2_Q2_CONTROL_QUALIFICATION_20260807::{row.get('canonical_parent_key')}".encode()).hexdigest()
+        return rank, str(row.get("canonical_parent_key", ""))
+
     diagnostic = sorted(
         (row for row in candidates if str(row.get("canonical_parent_key")) not in formal_keys),
-        key=lambda row: (str(row.get("qualification_rank_sha256", "")), str(row.get("canonical_parent_key", ""))),
+        key=diagnostic_rank,
     )[:8]
     if len(diagnostic) != 8:
         raise ValueError("C0_DIAGNOSTIC_POOL_UNDERFLOW")
