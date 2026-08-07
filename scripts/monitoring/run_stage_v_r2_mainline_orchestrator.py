@@ -1046,6 +1046,7 @@ class Orchestrator:
             self._write(WAIT_QUALIFICATION, phase=WAIT_QUALIFICATION, reason="C0_PLAN_NOT_REGISTERED", plans=plans)
             return WAIT_QUALIFICATION
         stage = None
+        stage_status = None
         try:
             for candidate in STAGES:
                 if candidate not in plans:
@@ -1060,6 +1061,7 @@ class Orchestrator:
                     self._run_audit(candidate, plan, Path(str(launch["output_root"])))
                     continue
                 stage = candidate
+                stage_status = status
                 break
         except OrchestratorError as exc:
             self._write(HARD_STOP, phase=HARD_STOP, reason=str(exc), plans=plans)
@@ -1069,6 +1071,11 @@ class Orchestrator:
             self._write(WAIT_QUALIFICATION, phase=WAIT_QUALIFICATION, reason="NO_REGISTERED_PLAN", plans=plans)
             return WAIT_QUALIFICATION
         plan = plans[stage]
+        if stage_status == "RUNNING":
+            # ponytail: a live reattached run already passed its own resource gate;
+            # re-running preflight would classify its workers as foreign and mask health.
+            self._write(f"RUN_{stage}", phase=f"RUN_{stage}", plans=plans)
+            return f"RUN_{stage}"
         policy = _resource_policy(plan)
         if policy["resource_kind"] == "CPU_ONLY":
             resource = {

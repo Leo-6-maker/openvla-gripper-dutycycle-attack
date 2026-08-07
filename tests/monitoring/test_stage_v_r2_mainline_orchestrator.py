@@ -244,3 +244,23 @@ def test_reconcile_existing_formal_root_writes_reattach_receipt(tmp_path: Path, 
     launch = json.loads((tmp_path / "state" / "R2A_LAUNCH.json").read_text(encoding="utf-8"))
     assert launch["reconciled_from_existing_root"] is True
     assert launch["output_root"] == str(root.resolve())
+
+
+def test_running_reattached_stage_skips_second_gpu_preflight(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    qualification = tmp_path / "qualification"
+    qualification.mkdir()
+    monkeypatch.setattr(orch, "source_binding", source)
+    args = type("Args", (), {
+        "repo_root": tmp_path, "state_root": tmp_path / "state", "lock_path": tmp_path / "lock",
+        "qualification_root": qualification, "plan_registry": tmp_path / "registry", "external_pid": 0,
+        "poll_seconds": 1, "once": True,
+    })()
+    instance = orch.Orchestrator(args)
+    plan = {"stage": "R2A"}
+    c0_plan = {"stage": "C0"}
+    monkeypatch.setattr(instance, "_qualification", lambda: (True, "PASS"))
+    monkeypatch.setattr(instance, "_load_plans", lambda: ({"C0": c0_plan, "R2A": plan}, "registry-sha", None))
+    monkeypatch.setattr(instance, "_reconcile_existing_root", lambda stage, value: None)
+    monkeypatch.setattr(instance, "_stage_status", lambda stage, value: "AUDITED" if stage == "C0" else "RUNNING")
+    monkeypatch.setattr(orch, "gpu_preflight", lambda **_: pytest.fail("running stage was preflighted again"))
+    assert instance.tick() == "RUN_R2A"
