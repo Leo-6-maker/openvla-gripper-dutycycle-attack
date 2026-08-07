@@ -159,3 +159,102 @@ def test_q_pass_materializes_fresh_c0_plan(tmp_path: Path, monkeypatch: pytest.M
     assert (state / "C0_DIAGNOSTIC_PARENT_MANIFEST.json").is_file()
     plans, version, _, _ = orchestrator.verify_registry_chain(registry, source=source)
     assert version == 1 and set(plans) == {"C0"}
+
+
+def test_controller_materializes_full_chain_and_stops_after_direct_open_no_go(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = Path(__file__).resolve().parents[2]
+    source = {"commit": "chain-source", "tree": "chain-tree", "status_porcelain": ""}
+    monkeypatch.setattr(controller, "source_binding", lambda _: dict(source))
+    qualification = tmp_path / "qualification"
+    qualification.mkdir()
+    rows = [{
+        "canonical_parent_key": f"libero_{('10' if i < 20 else 'goal' if i < 40 else 'object' if i < 60 else 'spatial')}/task_{i % 10:02d}/state_48",
+        "suite": "libero_10" if i < 20 else "libero_goal" if i < 40 else "libero_object" if i < 60 else "libero_spatial",
+        "task_index": i % 10, "state_index": 48, "qualification_rank_sha256": f"{i:064x}",
+    } for i in range(80)]
+    candidate = tmp_path / "candidate.json"
+    write_json(candidate, {
+        "schema": "D8_STAGE_V_CLEAN_PROBE_CANDIDATE_POOL_V1", "candidates": rows,
+        "gates": {"eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0},
+    })
+    formal = qualification / "Q2_PARENT_MANIFEST_A.json"
+    write_json(formal, {
+        "schema": "STAGE_Q2_PARENT_MANIFEST_A_V1", "status": "PASS", "source_commit": source["commit"],
+        "source_tree": source["tree"], "selected_count": 40, "selected_parents": rows[:40],
+    })
+    write_json(qualification / "Q2_CONTROL_QUALIFICATION_REPORT.json", {
+        "status": "PASS", "source_commit": source["commit"], "source_tree": source["tree"],
+        "qualified_by_suite": {suite: 10 for suite in ("libero_10", "libero_goal", "libero_object", "libero_spatial")},
+        "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
+    })
+    write_json(qualification / "Q2_CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json", {"verdict": "PASS"})
+    science = tmp_path / "science.json"
+    write_json(science, {"schema": "SCIENCE_RECEIPT", "status": "PASS"})
+    state = tmp_path / "state"
+    args = SimpleNamespace(
+        repo_root=repo, state_root=state, qualification_root=qualification, candidate_manifest=candidate,
+        science_provenance=science, lock_path=tmp_path / "controller.lock", python_executable="python",
+        external_pid=1895889, poll_seconds=0.01, once=True, allow_gpu5=True,
+    )
+    instance = controller.PlanController(args)
+    assert instance.tick() == "C0_PLAN_READY"
+    write_json(state / "C0_AUDIT.json", {"status": "PASS"})
+
+    def add_spec(stage: str, *, gpu: bool = False, decision: str | None = None) -> None:
+        binding_dir = tmp_path / "bindings" / stage
+        binding_dir.mkdir(parents=True, exist_ok=True)
+        runner = binding_dir / "runner.py"
+        auditor = binding_dir / "auditor.py"
+        config = binding_dir / "config.json"
+        parent = binding_dir / "parent.json"
+        receipt = binding_dir / "receipt.json"
+        for path in (runner, auditor, config, parent, receipt):
+            path.write_text("{}\n", encoding="utf-8")
+        policy = {
+            "resource_kind": "GPU" if gpu else "CPU_ONLY", "required_gpu_count": 8 if gpu else 0,
+            "minimum_gpu_count": 8 if gpu else 0, "maximum_gpu_count": 8 if gpu else 0,
+            "strict_gpu_count": gpu, "excluded_gpus": [] if gpu else [], "gpu5_authorized": gpu,
+            "protected_pids": [1895889], "canary_peak_mib": 0,
+        }
+        spec = {
+            "schema": materializer.STAGE_SPEC_SCHEMA, "stage": stage,
+            "source_commit": source["commit"], "source_tree": source["tree"],
+            "runner_path": str(runner), "runner_path_sha256": materializer.sha256_file(runner),
+            "auditor_path": str(auditor), "auditor_path_sha256": materializer.sha256_file(auditor),
+            "config_path": str(config), "config_path_sha256": materializer.sha256_file(config),
+            "parent_manifest": {"path": str(parent), "sha256": materializer.sha256_file(parent)},
+            "input_receipts": [{"name": "receipt", "path": str(receipt), "sha256": materializer.sha256_file(receipt)}],
+            "cwd": str(tmp_path), "python_executable": "python",
+            "output_root_template": str(tmp_path / f"{stage}_{{commit8}}_{{utc}}"),
+            "command_template": ["python", str(runner), "--output-root", "{output_root}"],
+            "audit_command_template": ["python", str(auditor), "--output-root", "{output_root}"],
+            "completion_receipts": ["DONE.json"], "resource_policy": policy,
+            "lock_path": str(tmp_path / f".{stage}.lock"),
+            "decision_receipt_names": ["STAGE_V_R2B_DECISION.json"] if decision else (["DIRECT_OPEN_TIMING_REPORT.json"] if stage == "DIRECT_OPEN_PILOT" else []),
+        }
+        write_json(state / f"{stage}_SPEC.json", spec)
+
+    def complete(stage: str, receipt_name: str | None = None, status: str | None = None) -> None:
+        write_json(state / f"{stage}_AUDIT.json", {"status": "PASS"})
+        if receipt_name:
+            root = state / f"{stage}_output"
+            root.mkdir(parents=True, exist_ok=True)
+            write_json(root / receipt_name, {"status": status})
+            write_json(state / f"{stage}_LAUNCH.json", {"output_root": str(root)})
+
+    add_spec("R2A", gpu=True)
+    assert instance.tick() == "R2A_PLAN_READY"
+    complete("R2A")
+    add_spec("R2B_DECISION", decision="R2B_NOT_REQUIRED")
+    assert instance.tick() == "R2B_DECISION_PLAN_READY"
+    complete("R2B_DECISION", "STAGE_V_R2B_DECISION.json", "R2B_NOT_REQUIRED")
+    for stage in ("STAGE_V2", "STAGE_O", "STUDENT_FREEZE", "PILOT_QUALIFICATION"):
+        add_spec(stage)
+        assert instance.tick() == f"{stage}_PLAN_READY"
+        complete(stage)
+    add_spec("DIRECT_OPEN_PILOT")
+    assert instance.tick() == "DIRECT_OPEN_PILOT_PLAN_READY"
+    complete("DIRECT_OPEN_PILOT", "DIRECT_OPEN_TIMING_REPORT.json", "NO_GO")
+    assert instance.tick() == controller.PIPELINE_COMPLETE_NO_VIS

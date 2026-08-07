@@ -38,7 +38,8 @@ WAIT_QUALIFICATION = "WAIT_QUALIFICATION"
 WAIT_GPUS = "WAIT_8_SAFE_GPUS"
 HARD_STOP = "HARD_STOP"
 STAGES = (
-    "C0", "R2A", "R2B", "STAGE_V2", "STAGE_O", "DIRECT_OPEN_PILOT", "VIS_SMALL_MATRIX",
+    "C0", "R2A", "R2B_DECISION", "R2B", "STAGE_V2", "STAGE_O", "STUDENT_FREEZE",
+    "PILOT_QUALIFICATION", "DIRECT_OPEN_PILOT", "VIS_SMALL_MATRIX",
 )
 FORBIDDEN_BOUNDARY_FIELDS = ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts")
 UNIVERSAL_FORBIDDEN_COMMAND = re.compile(r"(?i)(?:eval160|protected[_-]?eval|full[_-]?confirmatory|final[_-]?detector|guard)")
@@ -412,8 +413,13 @@ def validate_plan(path: Path, *, source: Mapping[str, str], expected_stage: str 
         raise OrchestratorError("PLAN_RESOURCE_COUNT_INVALID")
     if str(policy.get("resource_kind")) == "CPU_ONLY" and any((required, minimum, maximum)):
         raise OrchestratorError("PLAN_CPU_ONLY_GPU_COUNT_NONZERO")
-    if stage in {"C0", "R2A", "R2B"} and (str(policy.get("resource_kind")) != "GPU" or required != 8 or not bool(policy.get("strict_gpu_count")) or 5 not in {int(x) for x in policy.get("excluded_gpus", [])}):
-        raise OrchestratorError("PLAN_GPU_POLICY_NOT_STRICT_8")
+    if stage in {"C0", "R2A", "R2B"}:
+        excluded = {int(x) for x in policy.get("excluded_gpus", [])}
+        gpu5_authorized = bool(policy.get("gpu5_authorized"))
+        if (str(policy.get("resource_kind")) != "GPU" or required != 8
+                or not bool(policy.get("strict_gpu_count"))
+                or (5 not in excluded and not gpu5_authorized)):
+            raise OrchestratorError("PLAN_GPU_POLICY_NOT_STRICT_8")
     if not isinstance(plan.get("lock_path"), str) or not plan["lock_path"]:
         raise OrchestratorError("PLAN_LOCK_MISSING")
     contract = plan.get("forbidden_boundary_contract")
@@ -644,7 +650,10 @@ def _completed(root: Path, plan: Mapping[str, Any]) -> bool:
     for item in receipts:
         path = root / str(item) if not Path(str(item)).is_absolute() else Path(str(item))
         value = _read(path)
-        if not isinstance(value, Mapping) or value.get("verdict", value.get("status")) not in {"PASS", "DONE", "STAGE_V_FORMAL_MAP_CLOSED", "STAGE_V2_PASS", "STAGE_O_PASS"}:
+        if not isinstance(value, Mapping) or value.get("verdict", value.get("status")) not in {
+            "PASS", "DONE", "GO", "NO_GO", "R2B_REQUIRED", "R2B_NOT_REQUIRED",
+            "STAGE_V_FORMAL_MAP_CLOSED", "STAGE_V2_PASS", "STAGE_O_PASS",
+        }:
             return False
     return True
 

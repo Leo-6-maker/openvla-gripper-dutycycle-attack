@@ -9,13 +9,13 @@ import time
 from typing import Any, Mapping
 
 try:
-    from .materialize_stage_v_r2_next_plan import append_registry, build_c0_plan
+    from .materialize_stage_v_r2_next_plan import append_registry, build_c0_plan, build_stage_plan_from_spec
     from .run_stage_v_r2_mainline_orchestrator import FileLock, OrchestratorError, pid_alive, source_binding, verify_registry_chain
     from ..detector_v5.stage_v_dynamic_common import atomic_write_json, read_json, sha256_file, utc_now
 except ImportError:  # direct server execution
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-    from scripts.monitoring.materialize_stage_v_r2_next_plan import append_registry, build_c0_plan
+    from scripts.monitoring.materialize_stage_v_r2_next_plan import append_registry, build_c0_plan, build_stage_plan_from_spec
     from scripts.monitoring.run_stage_v_r2_mainline_orchestrator import FileLock, OrchestratorError, pid_alive, source_binding, verify_registry_chain
     from scripts.detector_v5.stage_v_dynamic_common import atomic_write_json, read_json, sha256_file, utc_now
 
@@ -23,6 +23,9 @@ except ImportError:  # direct server execution
 WAIT_Q = "WAIT_QUALIFICATION"
 WAIT_INPUT = "WAIT_NEXT_STAGE_INPUT"
 HARD_STOP = "HARD_STOP"
+PIPELINE_COMPLETE_VIS = "GPU_PIPELINE_COMPLETE_VIS"
+PIPELINE_COMPLETE_NO_VIS = "GPU_PIPELINE_COMPLETE_NO_VIS"
+STAGE_CHAIN = ("R2A", "R2B_DECISION", "R2B", "STAGE_V2", "STAGE_O", "STUDENT_FREEZE", "PILOT_QUALIFICATION", "DIRECT_OPEN_PILOT")
 
 
 class ControllerError(RuntimeError):
@@ -127,6 +130,91 @@ class PlanController:
     def _q2_ready(self) -> bool:
         return (self.qualification_root / "Q2_PARENT_MANIFEST_A.json").is_file() and (self.qualification_root / "Q2_CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json").is_file()
 
+    def _load_registered(self) -> dict[str, dict[str, Any]]:
+        paths = sorted(self.state_root.glob("PLAN_REGISTRY_V*.json"))
+        if not paths:
+            return {}
+        latest = max(paths, key=lambda path: int(path.stem.removeprefix("PLAN_REGISTRY_V")))
+        plans, _, _, _ = verify_registry_chain(latest, source=self.source)
+        return plans
+
+    def _audit_status(self, stage: str) -> str | None:
+        path = self.state_root / f"{stage}_AUDIT.json"
+        if not path.is_file():
+            return None
+        value = read_json(path, {})
+        return str(value.get("status")) if isinstance(value, Mapping) else "INVALID"
+
+    def _launch_root(self, stage: str) -> Path | None:
+        value = read_json(self.state_root / f"{stage}_LAUNCH.json", {})
+        if not isinstance(value, Mapping) or not value.get("output_root"):
+            return None
+        root = Path(str(value["output_root"])).resolve()
+        return root if root.is_dir() else None
+
+    def _stage_receipt(self, stage: str, plan: Mapping[str, Any]) -> Mapping[str, Any] | None:
+        root = self._launch_root(stage)
+        if root is None:
+            return None
+        names = list(plan.get("decision_receipt_names") or [])
+        if not names:
+            names = {
+                "R2B_DECISION": ["STAGE_V_R2B_DECISION.json", "R2B_DECISION.json"],
+                "DIRECT_OPEN_PILOT": ["DIRECT_OPEN_TIMING_REPORT.json"],
+            }.get(stage, [])
+        for name in names:
+            path = Path(str(name))
+            if not path.is_absolute():
+                path = root / path
+            value = read_json(path, {})
+            if isinstance(value, Mapping):
+                return value
+        return None
+
+    def _materialize_spec_stage(self, stage: str, *, q_reason: str) -> str:
+        spec_path = self.state_root / f"{stage}_SPEC.json"
+        if not spec_path.is_file():
+            self._write(WAIT_INPUT, f"{stage}_SPEC_REQUIRED", q_reason=q_reason, next_stage=stage)
+            return WAIT_INPUT
+        try:
+            plan, plan_path = build_stage_plan_from_spec(
+                stage=stage, spec_path=spec_path, state_root=self.state_root,
+                source_commit=self.source["commit"], source_tree=self.source["tree"],
+            )
+            registry_path = append_registry(
+                state_root=self.state_root, source_commit=self.source["commit"], source_tree=self.source["tree"],
+                stage=stage, plan_path=plan_path, upstream_receipts=list(plan.get("input_receipts", [])),
+            )
+            atomic_write_json(self.state_root / f"{stage}_PLAN_MATERIALIZED.json", {
+                "schema": "STAGE_V_R2_PLAN_MATERIALIZED_V1", "stage": stage,
+                "plan_path": str(plan_path), "plan_sha256": sha256_file(plan_path),
+                "registry_path": str(registry_path), "registry_sha256": sha256_file(registry_path),
+                "updated_utc": utc_now(),
+            })
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            self._write(HARD_STOP, f"{stage}_PLAN_MATERIALIZATION_FAIL:{type(exc).__name__}:{exc}", q_reason=q_reason, next_stage=stage)
+            return HARD_STOP
+        self._write(f"{stage}_PLAN_READY", f"{stage}_PLAN_MATERIALIZED", q_reason=q_reason, next_stage=stage)
+        return f"{stage}_PLAN_READY"
+
+    def _require_audit(self, stage: str, *, q_reason: str) -> str | None:
+        status = self._audit_status(stage)
+        if status is None:
+            self._write(f"WAITING_FOR_ORCHESTRATOR_{stage}", f"{stage}_AUDIT_PENDING", q_reason=q_reason, next_stage=stage)
+            return f"WAITING_FOR_ORCHESTRATOR_{stage}"
+        if status != "PASS":
+            self._write(HARD_STOP, f"{stage}_AUDIT_FAIL", q_reason=q_reason, next_stage=stage)
+            return HARD_STOP
+        return None
+
+    def _ensure_stage(self, stage: str, plans: Mapping[str, Any], *, q_reason: str) -> tuple[str | None, dict[str, dict[str, Any]]]:
+        if stage not in plans:
+            status = self._materialize_spec_stage(stage, q_reason=q_reason)
+            if status == HARD_STOP:
+                return HARD_STOP, dict(plans)
+            return status, self._load_registered()
+        return None, dict(plans)
+
     def tick(self) -> str:
         current = source_binding(self.repo_root)
         if current != self.source:
@@ -142,24 +230,19 @@ class PlanController:
         if not ok:
             self._write(WAIT_Q, reason, q_reason=reason, next_stage="C0")
             return WAIT_Q
-        registry_paths = sorted(self.state_root.glob("PLAN_REGISTRY_V*.json"))
-        registered_stages: set[str] = set()
-        if registry_paths:
-            latest = max(registry_paths, key=lambda path: int(path.stem.removeprefix("PLAN_REGISTRY_V")))
-            try:
-                registered_plans, _, _, _ = verify_registry_chain(latest, source=self.source)
-            except (OSError, OrchestratorError) as exc:
-                self._write(HARD_STOP, f"PLAN_REGISTRY_INVALID:{type(exc).__name__}:{exc}", q_reason=reason)
-                return HARD_STOP
-            registered_stages = set(registered_plans)
-        if "C0" not in registered_stages:
+        try:
+            registered_plans = self._load_registered()
+        except (OSError, OrchestratorError, ValueError, TypeError) as exc:
+            self._write(HARD_STOP, f"PLAN_REGISTRY_INVALID:{type(exc).__name__}:{exc}", q_reason=reason)
+            return HARD_STOP
+        if "C0" not in registered_plans:
             try:
                 plan, plan_path, _ = build_c0_plan(
                     repo_root=self.repo_root, state_root=self.state_root,
                     qualification_root=self.qualification_root, candidate_manifest=self.candidate_manifest,
                     science_provenance=self.science_provenance, source_commit=self.source["commit"],
                     source_tree=self.source["tree"], python_executable=self.args.python_executable,
-                    external_pid=self.args.external_pid,
+                    external_pid=self.args.external_pid, allow_gpu5=bool(getattr(self.args, "allow_gpu5", False)),
                 )
                 receipts = list(plan.get("input_receipts", []))
                 registry_path = append_registry(
@@ -174,16 +257,73 @@ class PlanController:
             except (OSError, ValueError, TypeError, KeyError) as exc:
                 self._write(HARD_STOP, f"C0_PLAN_MATERIALIZATION_FAIL:{type(exc).__name__}:{exc}", q_reason=reason)
                 return HARD_STOP
-        c0_audit_path = self.state_root / "C0_AUDIT.json"
-        if c0_audit_path.is_file():
-            c0_audit = read_json(c0_audit_path, {})
-            if not isinstance(c0_audit, Mapping) or c0_audit.get("status") != "PASS":
-                self._write(HARD_STOP, "C0_AUDIT_FAIL", q_reason=reason, next_stage="R2A")
-                return HARD_STOP
-            self._write(WAIT_INPUT, "R2A_RUNNER_SPEC_REQUIRED", q_reason=reason, next_stage="R2A")
+            self._write("C0_PLAN_READY", "C0_PLAN_MATERIALIZED", q_reason=reason, next_stage="C0")
+            return "C0_PLAN_READY"
+        wait = self._require_audit("C0", q_reason=reason)
+        if wait:
+            return wait
+
+        wait, registered_plans = self._ensure_stage("R2A", registered_plans, q_reason=reason)
+        if wait:
+            return wait
+        wait = self._require_audit("R2A", q_reason=reason)
+        if wait:
+            return wait
+
+        wait, registered_plans = self._ensure_stage("R2B_DECISION", registered_plans, q_reason=reason)
+        if wait:
+            return wait
+        wait = self._require_audit("R2B_DECISION", q_reason=reason)
+        if wait:
+            return wait
+        decision = self._stage_receipt("R2B_DECISION", registered_plans["R2B_DECISION"])
+        if decision is None:
+            self._write(WAIT_INPUT, "R2B_DECISION_RECEIPT_REQUIRED", q_reason=reason, next_stage="R2B_DECISION")
             return WAIT_INPUT
-        self._write("C0_PLAN_READY", "WAITING_FOR_ORCHESTRATOR_C0", q_reason=reason, next_stage="C0")
-        return "C0_PLAN_READY"
+        decision_status = str(decision.get("status", decision.get("verdict", "")))
+        if decision_status not in {"R2B_REQUIRED", "R2B_NOT_REQUIRED"}:
+            self._write(HARD_STOP, "R2B_DECISION_INVALID", q_reason=reason, next_stage="R2B_DECISION")
+            return HARD_STOP
+
+        if decision_status == "R2B_REQUIRED":
+            wait, registered_plans = self._ensure_stage("R2B", registered_plans, q_reason=reason)
+            if wait:
+                return wait
+            wait = self._require_audit("R2B", q_reason=reason)
+            if wait:
+                return wait
+        elif "R2B" in registered_plans:
+            self._write(HARD_STOP, "R2B_PLAN_PRESENT_WHEN_NOT_REQUIRED", q_reason=reason, next_stage="R2B_DECISION")
+            return HARD_STOP
+
+        for stage in ("STAGE_V2", "STAGE_O", "STUDENT_FREEZE", "PILOT_QUALIFICATION", "DIRECT_OPEN_PILOT"):
+            wait, registered_plans = self._ensure_stage(stage, registered_plans, q_reason=reason)
+            if wait:
+                return wait
+            wait = self._require_audit(stage, q_reason=reason)
+            if wait:
+                return wait
+
+        direct = self._stage_receipt("DIRECT_OPEN_PILOT", registered_plans["DIRECT_OPEN_PILOT"])
+        if direct is None:
+            self._write(WAIT_INPUT, "DIRECT_OPEN_DECISION_RECEIPT_REQUIRED", q_reason=reason, next_stage="DIRECT_OPEN_PILOT")
+            return WAIT_INPUT
+        direct_status = str(direct.get("status", direct.get("verdict", "")))
+        if direct_status == "NO_GO":
+            self._write(PIPELINE_COMPLETE_NO_VIS, "DIRECT_OPEN_NO_GO", q_reason=reason, next_stage=None)
+            return PIPELINE_COMPLETE_NO_VIS
+        if direct_status != "GO":
+            self._write(HARD_STOP, "DIRECT_OPEN_DECISION_INVALID", q_reason=reason, next_stage="DIRECT_OPEN_PILOT")
+            return HARD_STOP
+
+        wait, registered_plans = self._ensure_stage("VIS_SMALL_MATRIX", registered_plans, q_reason=reason)
+        if wait:
+            return wait
+        wait = self._require_audit("VIS_SMALL_MATRIX", q_reason=reason)
+        if wait:
+            return wait
+        self._write(PIPELINE_COMPLETE_VIS, "VIS_SMALL_MATRIX_PASS", q_reason=reason, next_stage=None)
+        return PIPELINE_COMPLETE_VIS
 
     def run(self) -> int:
         self.lock.acquire()
@@ -207,6 +347,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lock-path", type=Path, required=True)
     parser.add_argument("--python-executable", required=True)
     parser.add_argument("--external-pid", type=int, default=1895889)
+    parser.add_argument("--allow-gpu5", action="store_true", help="Authorize GPU5 for fresh downstream plans; never hot-adds it to an existing run")
     parser.add_argument("--poll-seconds", type=float, default=30)
     parser.add_argument("--once", action="store_true")
     return parser

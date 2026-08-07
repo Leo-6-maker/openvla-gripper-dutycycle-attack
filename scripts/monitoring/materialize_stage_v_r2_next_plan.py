@@ -17,6 +17,7 @@ except ImportError:  # direct server execution
 
 REGISTRY_SCHEMA = "STAGE_V_R2_ORCHESTRATOR_PLAN_REGISTRY_V2"
 PLAN_SCHEMA = "STAGE_V_R2_ORCHESTRATOR_PLAN_V2"
+STAGE_SPEC_SCHEMA = "STAGE_V_R2_STAGE_SPEC_V1"
 
 
 def _write_sha(path: Path) -> str:
@@ -142,6 +143,7 @@ def build_c0_plan(
     source_tree: str,
     python_executable: str,
     external_pid: int,
+    allow_gpu5: bool = False,
 ) -> tuple[dict[str, Any], Path, Path]:
     """Build the C0 plan and its fresh diagnostic parent manifest."""
     qualification_root = qualification_root.resolve()
@@ -160,7 +162,7 @@ def build_c0_plan(
         raise ValueError("QUALIFICATION_NOT_PASS")
     if report.get("source_commit") != formal.get("source_commit") or report.get("source_tree") != formal.get("source_tree"):
         raise ValueError("QUALIFICATION_SOURCE_MISMATCH")
-    if formal.get("status") != "PASS" or int(formal.get("selected_count", -1)) != 40:
+    if formal.get("status") not in {"PASS", "FROZEN"} or int(formal.get("selected_count", -1)) != 40:
         raise ValueError("QUALIFICATION_MANIFEST_NOT_40")
     candidate_boundary_fail = (
         candidate.get("old_artifacts_reused") is not False or candidate.get("source_artifacts_modified") is not False
@@ -240,7 +242,10 @@ def build_c0_plan(
         "qualification_report": _binding("qualification_report", report_path),
         "qualification_audit": _binding("qualification_audit", audit_path),
         "boundaries": {"eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0},
-        "resource_policy": {"resource_kind": "GPU", "required_gpu_count": 8, "strict_gpu_count": True, "excluded_gpus": [5]},
+        "resource_policy": {
+            "resource_kind": "GPU", "required_gpu_count": 8, "strict_gpu_count": True,
+            "excluded_gpus": [] if allow_gpu5 else [5], "gpu5_authorized": bool(allow_gpu5),
+        },
     }
     if not config_path.exists():
         atomic_write_json(config_path, config)
@@ -292,9 +297,13 @@ def build_c0_plan(
         "env": {"OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1"},
         "resource_policy": {
             "resource_kind": "GPU", "required_gpu_count": 8, "minimum_gpu_count": 8, "maximum_gpu_count": 8,
-            "strict_gpu_count": True, "excluded_gpus": [5], "protected_pids": [external_pid], "canary_peak_mib": 0,
+            "strict_gpu_count": True, "excluded_gpus": [] if allow_gpu5 else [5],
+            "gpu5_authorized": bool(allow_gpu5), "protected_pids": [external_pid], "canary_peak_mib": 0,
         },
-        "gpu_policy": {"required_count": 8, "excluded_gpus": [5], "protected_pids": [external_pid], "canary_peak_mib": 0},
+        "gpu_policy": {
+            "required_count": 8, "excluded_gpus": [] if allow_gpu5 else [5],
+            "gpu5_authorized": bool(allow_gpu5), "protected_pids": [external_pid], "canary_peak_mib": 0,
+        },
         "completion_receipts": ["DYNAMIC8_CONTROL_CANARY_REPORT.json", "DYNAMIC8_CONTROL_CANARY_AUDIT.json"],
         "lock_path": str(project_lock),
         "forbidden_boundary_contract": {"eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0},
@@ -310,6 +319,110 @@ def build_c0_plan(
         atomic_write_json(plan_path, plan)
         _write_sha(plan_path)
     return plan, plan_path, manifest_path
+
+
+def build_stage_plan_from_spec(
+    *,
+    stage: str,
+    spec_path: Path,
+    state_root: Path,
+    source_commit: str,
+    source_tree: str,
+) -> tuple[dict[str, Any], Path]:
+    """Materialize a later-stage plan from a SHA-bound deployment spec."""
+    spec_path = spec_path.resolve()
+    spec = _load(spec_path, f"{stage}_SPEC")
+    if spec.get("schema") != STAGE_SPEC_SCHEMA or spec.get("stage") != stage:
+        raise ValueError(f"{stage}_SPEC_SCHEMA_INVALID")
+    if spec.get("source_commit") != source_commit or spec.get("source_tree") != source_tree:
+        raise ValueError(f"{stage}_SPEC_SOURCE_MISMATCH")
+    for field in ("runner_path", "auditor_path", "config_path"):
+        value = spec.get(field)
+        expected = spec.get(f"{field}_sha256")
+        path = Path(str(value)).resolve() if value else Path("")
+        if not path.is_file() or not isinstance(expected, str) or sha256_file(path) != expected:
+            raise ValueError(f"{stage}_{field.upper()}_BINDING_INVALID")
+    parent = spec.get("parent_manifest")
+    if not isinstance(parent, Mapping):
+        raise ValueError(f"{stage}_PARENT_MANIFEST_MISSING")
+    parent_path = Path(str(parent.get("path", ""))).resolve()
+    if not parent_path.is_file() or sha256_file(parent_path) != parent.get("sha256"):
+        raise ValueError(f"{stage}_PARENT_MANIFEST_BINDING_INVALID")
+    receipts = spec.get("input_receipts")
+    if not isinstance(receipts, list) or not receipts:
+        raise ValueError(f"{stage}_INPUT_RECEIPTS_MISSING")
+    normalized_receipts: list[dict[str, Any]] = [{
+        "name": "stage_spec", "path": str(spec_path), "sha256": sha256_file(spec_path),
+    }]
+    for index, receipt in enumerate(receipts):
+        if not isinstance(receipt, Mapping):
+            raise ValueError(f"{stage}_INPUT_RECEIPT_INVALID:{index}")
+        receipt_path = Path(str(receipt.get("path", ""))).resolve()
+        if not receipt_path.is_file() or sha256_file(receipt_path) != receipt.get("sha256"):
+            raise ValueError(f"{stage}_INPUT_RECEIPT_BINDING_INVALID:{index}")
+        normalized_receipts.append(dict(receipt))
+    for field in ("command_template", "audit_command_template", "completion_receipts"):
+        if not isinstance(spec.get(field), list) or not spec[field]:
+            raise ValueError(f"{stage}_{field.upper()}_MISSING")
+        if field != "completion_receipts" and not all(isinstance(item, str) and item for item in spec[field]):
+            raise ValueError(f"{stage}_{field.upper()}_INVALID")
+    cwd = Path(str(spec.get("cwd", ""))).resolve()
+    output_template = str(spec.get("output_root_template", ""))
+    if not cwd.is_dir() or not output_template:
+        raise ValueError(f"{stage}_PATH_BINDING_INVALID")
+    policy = dict(spec.get("resource_policy") or {})
+    policy.setdefault("resource_kind", "CPU_ONLY")
+    policy.setdefault("required_gpu_count", 0)
+    policy.setdefault("minimum_gpu_count", policy["required_gpu_count"])
+    policy.setdefault("maximum_gpu_count", policy["required_gpu_count"])
+    policy.setdefault("strict_gpu_count", bool(policy["required_gpu_count"]))
+    policy.setdefault("excluded_gpus", [])
+    policy.setdefault("protected_pids", [])
+    policy.setdefault("canary_peak_mib", 0)
+    plan = {
+        "schema": PLAN_SCHEMA,
+        "stage": stage,
+        "plan_version": 1,
+        "source_commit": source_commit,
+        "source_tree": source_tree,
+        "runner_path": str(Path(str(spec["runner_path"])).resolve()),
+        "runner_sha256": spec["runner_path_sha256"],
+        "auditor_path": str(Path(str(spec["auditor_path"])).resolve()),
+        "auditor_sha256": spec["auditor_path_sha256"],
+        "config_path": str(Path(str(spec["config_path"])).resolve()),
+        "config_sha256": spec["config_path_sha256"],
+        "cwd": str(cwd),
+        "python_executable": spec.get("python_executable"),
+        "input_receipts": normalized_receipts,
+        "parent_manifest": {"path": str(parent_path), "sha256": parent["sha256"]},
+        "output_root_template": output_template,
+        "command_template": list(spec["command_template"]),
+        "audit_command_template": list(spec["audit_command_template"]),
+        "completion_receipts": list(spec["completion_receipts"]),
+        "decision_receipt_names": list(spec.get("decision_receipt_names", [])),
+        "env": dict(spec.get("env") or {}),
+        "resource_policy": policy,
+        "gpu_policy": dict(spec.get("gpu_policy") or policy),
+        "lock_path": str(Path(str(spec.get("lock_path", state_root / f".{stage.lower()}.lock"))).resolve()),
+        "forbidden_boundary_contract": dict(spec.get("forbidden_boundary_contract") or {
+            "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
+        }),
+        "eval160_reads": 0,
+        "protected_eval_reads": 0,
+        "vis_pgd_attack_rollouts": 0,
+        "created_utc": spec.get("created_utc") or _datetime.datetime.now(_datetime.timezone.utc).isoformat(),
+    }
+    plan_dir = state_root.resolve() / "plans"
+    plan_dir.mkdir(parents=True, exist_ok=True)
+    plan_path = plan_dir / f"{stage}_PLAN_V0001.json"
+    if plan_path.exists():
+        existing = _load(plan_path, f"{stage}_PLAN")
+        if _json_sha(existing) != _json_sha(plan):
+            raise ValueError(f"{stage}_PLAN_ALREADY_EXISTS_DIFFERENT")
+    else:
+        atomic_write_json(plan_path, plan)
+        _write_sha(plan_path)
+    return plan, plan_path
 
 
 if __name__ == "__main__":
