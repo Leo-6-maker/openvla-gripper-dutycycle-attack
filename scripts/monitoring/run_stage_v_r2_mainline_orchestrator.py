@@ -918,8 +918,11 @@ class Orchestrator:
         root = Path(str(launch.get("output_root", "")))
         if launch.get("status") == "RUNNING":
             if pid_alive(int(launch.get("pid", 0) or 0)):
-                expected_cwd = Path(str(launch.get("cwd"))) if launch.get("reconciled_from_existing_root") and launch.get("cwd") else Path(str(plan["cwd"]))
-                if not process_identity_matches(launch, expected_cwd=expected_cwd, expected_root=root):
+                identity_receipt = dict(launch)
+                if launch.get("reconciled_from_existing_root"):
+                    identity_receipt["cwd"] = launch.get("cwd_actual") or launch.get("cwd")
+                expected_cwd = Path(str(identity_receipt.get("cwd"))) if identity_receipt.get("cwd") else Path(str(plan["cwd"]))
+                if not process_identity_matches(identity_receipt, expected_cwd=expected_cwd, expected_root=root):
                     raise OrchestratorError("LAUNCH_RECEIPT_PROCESS_IDENTITY_MISMATCH")
                 return "RUNNING"
             if _completed(root, plan):
