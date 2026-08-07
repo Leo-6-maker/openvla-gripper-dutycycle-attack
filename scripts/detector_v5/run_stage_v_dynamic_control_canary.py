@@ -8,9 +8,9 @@ import subprocess
 import sys
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, read_json, utc_now
+    from .stage_v_dynamic_common import atomic_write_json, pid_alive, read_json, utc_now
 except ImportError:
-    from stage_v_dynamic_common import atomic_write_json, read_json, utc_now
+    from stage_v_dynamic_common import atomic_write_json, pid_alive, read_json, utc_now
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -50,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
         command.append("--allow-gpu5")
     if args.skip_resource_checks:
         command.append("--skip-resource-checks")
-    before_pid_alive = bool(args.external_pid and _pid_alive(args.external_pid))
+    before_pid_alive = bool(args.external_pid and pid_alive(args.external_pid))
     result = subprocess.run(command, cwd=str(args.repo_root), check=False, capture_output=True, text=True)
     heartbeat = read_json(root / "LOCAL_HEARTBEAT.json", {})
     audit = read_json(root / "STAGE_V_COUNTERFACTUAL_AUDIT.json", {})
@@ -65,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
         and not _pid_alive(int(status.get("child_pid") or 0))
         for status in worker_statuses
     )
-    external_pid_present_after = bool(args.external_pid and _pid_alive(args.external_pid))
+    external_pid_present_after = bool(args.external_pid and pid_alive(args.external_pid))
     gpu5_touched = any(int(status.get("gpu_id") or -1) == 5 for status in worker_statuses)
     report = {
         "schema": "DYNAMIC8_CONTROL_CANARY_REPORT_V2",
@@ -106,16 +106,6 @@ def main(argv: list[str] | None = None) -> int:
         "audited_utc": utc_now(),
     })
     return 0 if report["verdict"] == "PASS" else 1
-
-
-def _pid_alive(pid: int) -> bool:
-    try:
-        import os
-        os.kill(pid, 0)
-        return True
-    except OSError:
-        return False
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
