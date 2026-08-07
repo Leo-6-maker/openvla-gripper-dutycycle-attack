@@ -63,8 +63,12 @@ def _memory_snapshot() -> dict[str, Any]:
 
 def _xid_status(start_utc: str) -> tuple[str, str | None]:
     try:
+        query_since = _datetime.datetime.fromisoformat(start_utc).strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        query_since = start_utc
+    try:
         result = subprocess.run(
-            ["journalctl", "-k", "--since", start_utc, "--no-pager"],
+            ["journalctl", "-k", "--since", query_since, "--no-pager", "-q"],
             check=False, capture_output=True, text=True, timeout=20,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
