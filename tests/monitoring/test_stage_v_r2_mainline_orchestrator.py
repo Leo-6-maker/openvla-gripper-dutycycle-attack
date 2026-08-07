@@ -167,6 +167,22 @@ def test_gpu_preflight_protected_process_is_local_exclusion(monkeypatch: pytest.
     assert 1895889 not in result["safe_gpus"]
 
 
+def test_gpu_preflight_allows_foreign_sharing_with_memory_margin(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    rows = "\n".join(f"{gpu}, GPU-{gpu}, A800, 80000, 1000, 79000" for gpu in range(9))
+    apps = "GPU-2, 1234, 1000"
+    monkeypatch.setattr(orch, "_query", lambda command: (rows if "query-gpu" in command else apps, None))
+    monkeypatch.setattr(orch, "_process_info", lambda pid: {"pid": pid, "cmdline": [], "cwd": None, "start_ticks": 1, "uid": 1000})
+    result = orch.gpu_preflight(
+        stage="C0", required_gpus=8, excluded_gpus=[5], protected_pids=[], canary_peak_mib=1000,
+        project_root=tmp_path, allow_foreign_gpu_sharing=True,
+    )
+    assert result["status"] == "PASS"
+    assert 2 in result["safe_gpus"]
+    gpu2 = next(row for row in result["gpu_rows"] if row["index"] == 2)
+    assert gpu2["shared_foreign_process"] is True
+    assert gpu2["reasons"] == []
+
+
 def test_dependency_blocks_until_receipt_passes(tmp_path: Path) -> None:
     plan, _ = make_plan(tmp_path)
     root = tmp_path / "formal"

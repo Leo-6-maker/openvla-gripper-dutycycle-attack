@@ -244,6 +244,7 @@ def gpu_preflight(
     protected_pids: Iterable[int],
     canary_peak_mib: float,
     project_root: Path,
+    allow_foreign_gpu_sharing: bool = False,
     gpu_query_command: str = "nvidia-smi --query-gpu=index,uuid,name,memory.total,memory.used,memory.free,utilization.gpu --format=csv,noheader,nounits",
     app_query_command: str = "nvidia-smi --query-compute-apps=gpu_uuid,pid,used_memory --format=csv,noheader,nounits",
     xid_query_command: str = "journalctl -k --since=-10min --no-pager",
@@ -287,7 +288,7 @@ def gpu_preflight(
                 reasons.append("PROTECTED_PROCESS_PRESENT")
             elif project_owned:
                 reasons.append("PROJECT_PROCESS_PRESENT")
-            else:
+            elif not allow_foreign_gpu_sharing:
                 reasons.append("FOREIGN_PROCESS_PRESENT")
         if app_error:
             reasons.append("PROCESS_QUERY_UNKNOWN")
@@ -297,7 +298,11 @@ def gpu_preflight(
             reasons.append("EXCLUDED_GPU")
         if float(row["memory_free_mib"]) < minimum_free:
             reasons.append("INSUFFICIENT_FREE_MEMORY")
-        decision = {**row, "processes": process_view, "safe": not reasons, "reasons": sorted(set(reasons))}
+        decision = {
+            **row, "processes": process_view, "safe": not reasons,
+            "shared_foreign_process": bool(allow_foreign_gpu_sharing and any(item["foreign"] for item in process_view)),
+            "reasons": sorted(set(reasons)),
+        }
         decisions.append(decision)
         if decision["safe"]:
             safe.append(gpu)
@@ -321,6 +326,7 @@ def gpu_preflight(
         "compute_app_query_error": app_error,
         "xid_query_error": xid_error,
         "xid_present": xid_present,
+        "allow_foreign_gpu_sharing": bool(allow_foreign_gpu_sharing),
         "gpu5_touched": 5 in safe,
         "updated_utc": utc_now(),
     }
@@ -357,6 +363,7 @@ def _resource_policy(plan: Mapping[str, Any]) -> dict[str, Any]:
     policy.setdefault("excluded_gpus", [])
     policy.setdefault("protected_pids", [])
     policy.setdefault("canary_peak_mib", 0)
+    policy.setdefault("allow_foreign_gpu_sharing", False)
     return policy
 
 
@@ -1097,7 +1104,7 @@ class Orchestrator:
             resource = gpu_preflight(
                 stage=stage, required_gpus=required, excluded_gpus=policy.get("excluded_gpus", []),
                 protected_pids=policy.get("protected_pids", []), canary_peak_mib=float(policy.get("canary_peak_mib", 0)),
-                project_root=self.repo_root,
+                project_root=self.repo_root, allow_foreign_gpu_sharing=bool(policy.get("allow_foreign_gpu_sharing", False)),
             )
             if not bool(policy.get("strict_gpu_count", False)) and resource.get("status") == "PASS":
                 maximum = int(policy.get("maximum_gpu_count", required))

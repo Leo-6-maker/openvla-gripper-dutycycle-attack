@@ -304,10 +304,12 @@ def build_c0_plan(
             "resource_kind": "GPU", "required_gpu_count": 8, "minimum_gpu_count": 8, "maximum_gpu_count": 8,
             "strict_gpu_count": True, "excluded_gpus": [] if allow_gpu5 else [5],
             "gpu5_authorized": bool(allow_gpu5), "protected_pids": [external_pid], "canary_peak_mib": 0,
+            "allow_foreign_gpu_sharing": True,
         },
         "gpu_policy": {
             "required_count": 8, "excluded_gpus": [] if allow_gpu5 else [5],
             "gpu5_authorized": bool(allow_gpu5), "protected_pids": [external_pid], "canary_peak_mib": 0,
+            "allow_foreign_gpu_sharing": True,
         },
         "completion_receipts": ["DYNAMIC8_CONTROL_CANARY_REPORT.json", "DYNAMIC8_CONTROL_CANARY_AUDIT.json"],
         "lock_path": str(project_lock),
@@ -384,6 +386,7 @@ def build_stage_plan_from_spec(
     policy.setdefault("excluded_gpus", [])
     policy.setdefault("protected_pids", [])
     policy.setdefault("canary_peak_mib", 0)
+    policy.setdefault("allow_foreign_gpu_sharing", False)
     plan = {
         "schema": PLAN_SCHEMA,
         "stage": stage,
