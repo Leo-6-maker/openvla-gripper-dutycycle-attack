@@ -42,6 +42,34 @@ def _receipt(name: str, path: Path) -> dict[str, str]:
     return {"name": name, "path": str(path), "sha256": sha256_file(path)}
 
 
+def _ensure_science_parent_manifest(formal_manifest: Path, state_root: Path) -> Path:
+    value = read_json(formal_manifest, {})
+    if (
+        not isinstance(value, Mapping)
+        or value.get("schema") != "STAGE_V_FORMAL_PARENT_MANIFEST_V1"
+        or value.get("status") != "FROZEN"
+        or int(value.get("selected_count", -1)) != 40
+        or not isinstance(value.get("selected_parents"), list)
+    ):
+        raise ValueError("R2A_FORMAL_PARENT_MANIFEST_INVALID")
+    derived = dict(value)
+    derived["schema"] = "D8_STAGE_V_CLEAN_SUCCESS_PARENT_MANIFEST_V1"
+    derived["adapter_source_manifest_sha256"] = sha256_file(formal_manifest)
+    destination = state_root / "D8_STAGE_V_CLEAN_SUCCESS_PARENT_MANIFEST_V1.json"
+    if destination.is_file():
+        if read_json(destination, {}) != derived:
+            raise ValueError("R2A_SCIENCE_PARENT_MANIFEST_ALREADY_EXISTS_DIFFERENT")
+    else:
+        atomic_write_json(destination, derived)
+    sidecar = destination.with_suffix(destination.suffix + ".sha256")
+    expected_sidecar = f"{sha256_file(destination)}  {destination.name}\n"
+    if sidecar.is_file() and sidecar.read_text(encoding="utf-8") != expected_sidecar:
+        raise ValueError("R2A_SCIENCE_PARENT_MANIFEST_SHA256_SIDECAR_MISMATCH")
+    if not sidecar.is_file():
+        sidecar.write_text(expected_sidecar, encoding="utf-8")
+    return destination
+
+
 def _git_binding(repo_root: Path) -> dict[str, str]:
     def git(*parts: str) -> str:
         result = subprocess.run(["git", "-C", str(repo_root), *parts], capture_output=True, text=True, check=False)
@@ -280,11 +308,16 @@ class PlanController:
         q2_report = self.qualification_root / "Q2_CONTROL_QUALIFICATION_REPORT.json"
         q2_audit = self.qualification_root / "Q2_CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json"
         q2_manifest = self.qualification_root / "Q2_PARENT_MANIFEST_A.json"
-        science_manifest = self.qualification_root / "STAGE_V_FORMAL_PARENT_MANIFEST_V1.json"
-        for path in (q2_report, q2_audit, q2_manifest, science_manifest, self.candidate_manifest, self.science_provenance):
+        formal_manifest = self.qualification_root / "STAGE_V_FORMAL_PARENT_MANIFEST_V1.json"
+        for path in (q2_report, q2_audit, q2_manifest, formal_manifest, self.candidate_manifest, self.science_provenance):
             if not path.is_file():
                 self._write(WAIT_INPUT, f"R2A_INPUT_MISSING:{path.name}", q_reason=q_reason, next_stage="R2A")
                 return WAIT_INPUT
+        try:
+            science_manifest = _ensure_science_parent_manifest(formal_manifest, self.state_root)
+        except (OSError, TypeError, ValueError) as exc:
+            self._write(HARD_STOP, f"R2A_SCIENCE_PARENT_MANIFEST_FAIL:{type(exc).__name__}:{exc}", q_reason=q_reason, next_stage="R2A")
+            return HARD_STOP
         provenance_path = self.state_root / "R2A_SCIENCE_CORE_PROVENANCE.json"
         if provenance_path.is_file():
             provenance_ok, provenance_errors = verify_science_provenance(
@@ -314,6 +347,7 @@ class PlanController:
             "science_repo_root": str(science_repo), "science_runner": str(runner), "science_runner_sha256": sha256_file(runner),
             "science_runner_git_blob_sha1": runner_provenance["git_blob_sha1"], "science_auditor": str(science_auditor),
             "science_auditor_sha256": sha256_file(science_auditor), "science_auditor_git_blob_sha1": auditor_provenance["git_blob_sha1"],
+            "science_parent_manifest": _receipt("science_parent_manifest", science_manifest),
             "timeout_policy": _receipt("timeout_policy", timeout_policy), "probe_limit": 24, "expected_branch_count": 72,
             "planned_parents": 40, "approved_gpus": list(range(8)), "gpu5_authorized": True,
             "old_artifacts_reused": False, "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
@@ -324,10 +358,11 @@ class PlanController:
                 return HARD_STOP
         else:
             atomic_write_json(config_path, config)
+        formal_manifest_binding = _receipt("formal_parent_manifest", formal_manifest)
         science_manifest_binding = _receipt("science_parent_manifest", science_manifest)
         command = [
             str(self.args.python_executable), str(supervisor), "--run-root", "{output_root}", "--repo-root", str(self.repo_root),
-            "--parent-manifest", str(science_manifest), "--parent-manifest-sha256", science_manifest_binding["sha256"],
+            "--parent-manifest", str(formal_manifest), "--parent-manifest-sha256", formal_manifest_binding["sha256"],
             "--queue-db", "{output_root}/STAGE_V_R2A.sqlite", "--run-id", "stage-v-r2a-{source_commit}",
             "--expected-parent-count", "40", "--expected-source-commit", "{source_commit}", "--expected-source-tree", "{source_tree}",
             "--lock-path", str(self.state_root.parent / ".stage_v_r2a.lock"), "--approved-gpus", "{approved_gpus}",
@@ -339,7 +374,7 @@ class PlanController:
             "--probe-limit", "24", "--max-attempts", "1", "--allow-gpu5",
         ]
         audit_command = [
-            str(self.args.python_executable), str(auditor), "--run-root", "{output_root}", "--parent-manifest", str(science_manifest),
+            str(self.args.python_executable), str(auditor), "--run-root", "{output_root}", "--parent-manifest", str(formal_manifest),
             "--queue-db", "{output_root}/STAGE_V_R2A.sqlite", "--run-id", "stage-v-r2a-{source_commit}",
             "--expected-parent-count", "40", "--expected-branch-count", "72", "--expected-source-commit", "{source_commit}",
             "--expected-source-tree", "{source_tree}", "--science-source-commit", str(self.args.r2a_science_source_commit),
@@ -350,9 +385,9 @@ class PlanController:
             "schema": "STAGE_V_R2_STAGE_SPEC_V1", "stage": "R2A", "source_commit": self.source["commit"], "source_tree": self.source["tree"],
             "runner_path": str(supervisor), "runner_path_sha256": sha256_file(supervisor), "auditor_path": str(auditor), "auditor_path_sha256": sha256_file(auditor),
             "config_path": str(config_path), "config_path_sha256": sha256_file(config_path), "cwd": str(self.repo_root),
-            "python_executable": str(self.args.python_executable), "parent_manifest": science_manifest_binding,
+            "python_executable": str(self.args.python_executable), "parent_manifest": formal_manifest_binding,
             "input_receipts": [_receipt("q2_report", q2_report), _receipt("q2_audit", q2_audit), _receipt("q2_parent_manifest", q2_manifest),
-                               science_manifest_binding, _receipt("candidate_manifest", self.candidate_manifest), _receipt("science_provenance", provenance_path),
+                               formal_manifest_binding, science_manifest_binding, _receipt("candidate_manifest", self.candidate_manifest), _receipt("science_provenance", provenance_path),
                                _receipt("science_runner", runner), _receipt("science_auditor", science_auditor), _receipt("timeout_policy", timeout_policy), _receipt("r2a_config", config_path)],
             "output_root_template": str(self.state_root.parent / "STAGE_V_R2A_COUNTERFACTUAL_MAP_{commit8}_{utc}"),
             "command_template": command, "audit_command_template": audit_command,

@@ -92,7 +92,7 @@ class Dispatcher:
             science_keys = [str(row.get("canonical_parent_key")) for row in science_rows] if science_rows_are_objects else []
             if (
                 not isinstance(science_value, dict)
-                or science_value.get("schema") != "STAGE_V_FORMAL_PARENT_MANIFEST_V1"
+                or science_value.get("schema") not in {"STAGE_V_FORMAL_PARENT_MANIFEST_V1", "D8_STAGE_V_CLEAN_SUCCESS_PARENT_MANIFEST_V1"}
                 or science_value.get("status") != "FROZEN"
                 or not science_rows_are_objects
                 or len(science_rows or []) != self.args.expected_parent_count

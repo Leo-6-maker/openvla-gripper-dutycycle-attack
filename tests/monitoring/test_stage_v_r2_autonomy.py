@@ -19,6 +19,29 @@ def write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def test_r2a_science_manifest_adapter_preserves_frozen_parent_set(tmp_path: Path) -> None:
+    rows = [
+        {
+            "canonical_parent_key": f"libero_goal/task_{index:02d}/state_48",
+            "suite": "libero_goal", "task_index": index, "state_index": 48,
+            "old_artifacts_reused": False, "source_artifact_read": False,
+        }
+        for index in range(40)
+    ]
+    formal = tmp_path / "STAGE_V_FORMAL_PARENT_MANIFEST_V1.json"
+    write_json(formal, {
+        "schema": "STAGE_V_FORMAL_PARENT_MANIFEST_V1", "status": "FROZEN",
+        "selected_count": 40, "selected_parents": rows,
+        "old_artifacts_reused": False, "source_artifacts_modified": False,
+    })
+    derived = controller._ensure_science_parent_manifest(formal, tmp_path / "state")
+    value = json.loads(derived.read_text(encoding="utf-8"))
+    assert value["schema"] == "D8_STAGE_V_CLEAN_SUCCESS_PARENT_MANIFEST_V1"
+    assert value["selected_parents"] == rows
+    assert value["adapter_source_manifest_sha256"] == controller.sha256_file(formal)
+    assert (derived.with_suffix(derived.suffix + ".sha256")).is_file()
+
+
 def test_foreign_compute_process_blocks_only_its_gpu(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     gpu_rows = "\n".join(f"{i}, GPU-{i}, A800, 80000, 1000, 79000, 0" for i in range(8))
     apps = "GPU-2, 1234, 1000"
