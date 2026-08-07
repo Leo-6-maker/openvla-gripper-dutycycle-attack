@@ -170,9 +170,9 @@ def test_controller_materializes_full_chain_and_stops_after_direct_open_no_go(
     qualification = tmp_path / "qualification"
     qualification.mkdir()
     rows = [{
-        "canonical_parent_key": f"libero_{('10' if i < 20 else 'goal' if i < 40 else 'object' if i < 60 else 'spatial')}/task_{i % 10:02d}/state_48",
+        "canonical_parent_key": f"libero_{('10' if i < 20 else 'goal' if i < 40 else 'object' if i < 60 else 'spatial')}/task_{i:02d}/state_48",
         "suite": "libero_10" if i < 20 else "libero_goal" if i < 40 else "libero_object" if i < 60 else "libero_spatial",
-        "task_index": i % 10, "state_index": 48, "qualification_rank_sha256": f"{i:064x}",
+        "task_index": i, "state_index": 48, "qualification_rank_sha256": f"{i:064x}",
     } for i in range(80)]
     candidate = tmp_path / "candidate.json"
     write_json(candidate, {
