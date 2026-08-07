@@ -475,16 +475,17 @@ def load_registry(path: Path, *, source: Mapping[str, str]) -> tuple[dict[str, d
 
 
 def _registry_candidate(path: Path) -> Path | None:
-    if path.is_file():
-        return path.resolve()
+    path = path.resolve()
     if not path.parent.is_dir():
-        return None
+        return path if path.is_file() else None
     candidates: list[tuple[int, Path]] = []
     for item in path.parent.glob("PLAN_REGISTRY_V*.json"):
         match = re.fullmatch(r"PLAN_REGISTRY_V(\d+)\.json", item.name)
         if match:
             candidates.append((int(match.group(1)), item.resolve()))
-    return max(candidates, default=(0, None), key=lambda value: value[0])[1]
+    if candidates:
+        return max(candidates, key=lambda value: value[0])[1]
+    return path if path.is_file() else None
 
 
 def verify_registry_chain(latest_path: Path, *, source: Mapping[str, str]) -> tuple[dict[str, dict[str, Any]], int, str, Path]:

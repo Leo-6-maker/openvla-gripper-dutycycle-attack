@@ -110,6 +110,14 @@ def test_registry_requires_exact_source_and_registered_stage(tmp_path: Path) -> 
     assert registry_sha == sha(registry)
 
 
+def test_registry_candidate_tracks_latest_append(tmp_path: Path) -> None:
+    first = tmp_path / "PLAN_REGISTRY_V0001.json"
+    second = tmp_path / "PLAN_REGISTRY_V0002.json"
+    first.write_text("{}\n", encoding="utf-8")
+    second.write_text("{}\n", encoding="utf-8")
+    assert orch._registry_candidate(first) == second.resolve()
+
+
 def test_duplicate_lock_is_rejected_and_stale_is_audited(tmp_path: Path) -> None:
     lock_path = tmp_path / "orchestrator.lock"
     first = orch.FileLock(lock_path, tmp_path, {"pid": os.getpid()})
