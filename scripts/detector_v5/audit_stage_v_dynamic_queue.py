@@ -103,10 +103,13 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         if run_manifest.get("dynamic_claims") is not True or run_manifest.get("one_project_worker_per_gpu") is not True:
             errors.append("RUN_MANIFEST_DYNAMIC_WORKER_BINDING_FAIL")
         approved_gpus = run_manifest.get("approved_gpus")
-        if not isinstance(approved_gpus, list) or len(approved_gpus) != 8 or len(set(approved_gpus)) != 8 or 5 in approved_gpus:
+        if (not isinstance(approved_gpus, list) or len(approved_gpus) != 8 or len(set(approved_gpus)) != 8
+                or (5 in approved_gpus and not getattr(args, "allow_gpu5", False))):
             errors.append("RUN_MANIFEST_APPROVED_GPU_SET_FAIL")
-        if run_manifest.get("gpu5_used") is True:
+        if run_manifest.get("gpu5_used") is True and not getattr(args, "allow_gpu5", False):
             errors.append("RUN_MANIFEST_GPU5_USED")
+        if bool(run_manifest.get("gpu5_authorized")) != bool(getattr(args, "allow_gpu5", False)):
+            errors.append("RUN_MANIFEST_GPU5_AUTHORIZATION_FAIL")
         for field in ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts"):
             if run_manifest.get(field, 0) != 0:
                 errors.append(f"RUN_MANIFEST_BOUNDARY_VIOLATION:{field}")
@@ -225,6 +228,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         "launcher_verdict": status,
         "independent_auditor_verdict": status,
         "auditor_agreement": status == "PASS",
+        "gpu5_authorized": bool(getattr(args, "allow_gpu5", False)),
         "eval160_reads": 0,
         "protected_eval_reads": 0,
         "vis_pgd_attack_rollouts": 0,
@@ -246,6 +250,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--science-source-tree", default="")
     parser.add_argument("--science-provenance", type=Path)
     parser.add_argument("--science-parent-manifest", type=Path)
+    parser.add_argument("--allow-gpu5", action="store_true", help="Authorize GPU5 for this fresh run")
     return parser
 
 

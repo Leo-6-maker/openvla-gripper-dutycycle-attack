@@ -150,6 +150,9 @@ class DynamicSupervisor:
         }
 
     def _prepare(self) -> None:
+        if self.root.exists() and any(self.root.iterdir()):
+            raise RuntimeError("RUN_ROOT_NOT_NEW_OR_EMPTY")
+        self.root.mkdir(parents=True, exist_ok=True)
         while True:
             preflight = self._preflight()
             atomic_write_json(self.args.preflight_file, preflight)
@@ -185,9 +188,6 @@ class DynamicSupervisor:
             self.timeout_policy = dict(read_json(self.args.timeout_policy, {}))
         else:
             self.timeout_policy = {"parent_hard_seconds": 10 * 3600, "branch_hard_seconds": 4 * 3600}
-        if self.root.exists() and any(self.root.iterdir()):
-            raise RuntimeError("RUN_ROOT_NOT_NEW_OR_EMPTY")
-        self.root.mkdir(parents=True, exist_ok=True)
         self.queue = AtomicTaskQueue(str(self.args.queue_db), run_id=self.args.run_id)
         self.baseline_oom = _mem_snapshot().get("oom_kill")
         atomic_write_json(self.root / "SUPERVISOR_START.json", {
@@ -197,6 +197,7 @@ class DynamicSupervisor:
             "run_root": str(self.root), "source_commit": source["source_commit"], "source_tree": source["source_tree"],
             "parent_manifest": str(self.args.parent_manifest), "parent_manifest_sha256": manifest_sha,
             "approved_gpus": sorted(self.args.approved_gpus), "planned_parents": self.args.expected_parent_count,
+            "gpu5_authorized": bool(getattr(self.args, "allow_gpu5", False)),
             "supervisor_pid": os.getpid(), "supervisor_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
             "started_utc": self.start_utc,
         })
@@ -251,7 +252,7 @@ class DynamicSupervisor:
             errors.append("MULTIPLE_PROJECT_WORKERS_PER_GPU")
         if len(active) > len(self.args.approved_gpus):
             errors.append("ACTIVE_WORKERS_EXCEED_APPROVED_GPUS")
-        if any(gpu not in self.args.approved_gpus or gpu == 5 for gpu in assigned):
+        if any(gpu not in self.args.approved_gpus or (gpu == 5 and not getattr(self.args, "allow_gpu5", False)) for gpu in assigned):
             errors.append("UNAPPROVED_OR_GPU5_WORKER")
         run_manifest = read_json(self.root / "RUN_MANIFEST.json", {})
         registered_dispatcher = run_manifest.get("dispatcher_pid") if isinstance(run_manifest, Mapping) else None
@@ -374,7 +375,8 @@ class DynamicSupervisor:
             "ssh_probe_success_count": self.ssh_success_count, "ssh_probe_failure_count": self.ssh_failure_count,
             "longest_ssh_unavailable_interval_seconds": self._ssh_outage_seconds(),
             "external_root_process_present": pid_alive(self.args.external_pid), "external_root_process_pid": self.args.external_pid,
-            "external_root_process_terminated": False, "heartbeat_count": self.heartbeat_count, "updated_utc": utc_now(),
+            "external_root_process_terminated": False, "gpu5_authorized": bool(getattr(self.args, "allow_gpu5", False)),
+            "heartbeat_count": self.heartbeat_count, "updated_utc": utc_now(),
         }
         atomic_write_json(self.root / "LOCAL_HEARTBEAT.json", payload)
         atomic_write_json(self.root / "QUEUE_STATE.json", {"schema": "STAGE_V_QUEUE_STATE_V2", "tasks": tasks, "updated_utc": utc_now()})
@@ -484,8 +486,12 @@ class DynamicSupervisor:
             command += ["--science-source-commit", self.args.science_source_commit]
         if self.args.science_source_tree:
             command += ["--science-source-tree", self.args.science_source_tree]
+        if getattr(self.args, "allow_gpu5", False):
+            command += ["--allow-gpu5"]
         if self.args.science_provenance:
             command += ["--science-provenance", str(self.args.science_provenance)]
+        if self.args.science_parent_manifest:
+            command += ["--science-parent-manifest", str(self.args.science_parent_manifest)]
         result = subprocess.run(command, cwd=str(self.args.repo_root), capture_output=True, text=True, check=False, timeout=self.args.audit_timeout)
         (self.root / "AUDITOR_STDOUT.txt").write_text(result.stdout + result.stderr, encoding="utf-8")
         return result.returncode
@@ -582,6 +588,8 @@ class DynamicSupervisor:
                        "--max-attempts", str(self.args.max_attempts), "--probe-limit", str(self.args.probe_limit),
                        "--science-source-commit", self.args.science_source_commit,
                        "--science-source-tree", self.args.science_source_tree]
+            if getattr(self.args, "allow_gpu5", False):
+                command += ["--allow-gpu5"]
             if self.args.science_provenance:
                 command += ["--science-provenance", str(self.args.science_provenance)]
             for value in (self.args.science_runner, self.args.science_repo_root, self.args.science_parent_manifest):
@@ -663,13 +671,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--kill-grace-seconds", type=float, default=20)
     parser.add_argument("--max-attempts", type=int, default=2)
     parser.add_argument("--skip-resource-checks", action="store_true")
+    parser.add_argument("--allow-gpu5", action="store_true", help="Authorize GPU5 for this fresh run")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if len(args.approved_gpus) != 8 or 5 in args.approved_gpus:
-        raise SystemExit("exactly eight approved GPUs are required and GPU5 is excluded")
+    if args.allow_gpu5:
+        args.excluded_gpus = [gpu for gpu in args.excluded_gpus if gpu != 5]
+    if len(args.approved_gpus) != 8 or (5 in args.approved_gpus and not args.allow_gpu5):
+        raise SystemExit("exactly eight approved GPUs are required; GPU5 requires --allow-gpu5")
     return DynamicSupervisor(args).run()
 
 

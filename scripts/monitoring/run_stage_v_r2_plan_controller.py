@@ -5,6 +5,7 @@ import argparse
 import os
 from pathlib import Path
 import sqlite3
+import subprocess
 import time
 from typing import Any, Mapping
 
@@ -12,12 +13,14 @@ try:
     from .materialize_stage_v_r2_next_plan import append_registry, build_c0_plan, build_stage_plan_from_spec
     from .run_stage_v_r2_mainline_orchestrator import FileLock, OrchestratorError, pid_alive, source_binding, verify_registry_chain
     from ..detector_v5.stage_v_dynamic_common import atomic_write_json, read_json, sha256_file, utc_now
+    from ..detector_v5.stage_v_science_core_provenance import build as build_science_provenance, verify as verify_science_provenance
 except ImportError:  # direct server execution
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     from scripts.monitoring.materialize_stage_v_r2_next_plan import append_registry, build_c0_plan, build_stage_plan_from_spec
     from scripts.monitoring.run_stage_v_r2_mainline_orchestrator import FileLock, OrchestratorError, pid_alive, source_binding, verify_registry_chain
     from scripts.detector_v5.stage_v_dynamic_common import atomic_write_json, read_json, sha256_file, utc_now
+    from scripts.detector_v5.stage_v_science_core_provenance import build as build_science_provenance, verify as verify_science_provenance
 
 
 WAIT_Q = "WAIT_QUALIFICATION"
@@ -30,6 +33,22 @@ STAGE_CHAIN = ("R2A", "R2B_DECISION", "R2B", "STAGE_V2", "STAGE_O", "STUDENT_FRE
 
 class ControllerError(RuntimeError):
     pass
+
+
+def _receipt(name: str, path: Path) -> dict[str, str]:
+    path = path.resolve()
+    if not path.is_file():
+        raise ValueError(f"{name}_MISSING:{path}")
+    return {"name": name, "path": str(path), "sha256": sha256_file(path)}
+
+
+def _git_binding(repo_root: Path) -> dict[str, str]:
+    def git(*parts: str) -> str:
+        result = subprocess.run(["git", "-C", str(repo_root), *parts], capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            raise ValueError(f"SCIENCE_GIT_QUERY_FAIL:{result.stderr[-200:]}")
+        return result.stdout.strip()
+    return {"commit": git("rev-parse", "HEAD"), "tree": git("rev-parse", "HEAD^{tree}"), "status": git("status", "--porcelain")}
 
 
 def _q_progress(path: Path) -> dict[str, Any]:
@@ -197,6 +216,131 @@ class PlanController:
         self._write(f"{stage}_PLAN_READY", f"{stage}_PLAN_MATERIALIZED", q_reason=q_reason, next_stage=stage)
         return f"{stage}_PLAN_READY"
 
+    def _ensure_r2a_spec(self, *, q_reason: str) -> str:
+        """JIT-bind the fresh Q2 manifest to the frozen external R2A core."""
+        spec_path = self.state_root / "R2A_SPEC.json"
+        if spec_path.is_file():
+            return self._materialize_spec_stage("R2A", q_reason=q_reason)
+        required = (
+            "r2a_science_runner", "r2a_science_auditor", "r2a_science_repo_root",
+            "r2a_science_source_commit", "r2a_science_source_tree", "r2a_timeout_policy",
+            "r2a_science_runner_sha256", "r2a_science_auditor_sha256",
+        )
+        if any(not str(getattr(self.args, name, "")) for name in required):
+            self._write(WAIT_INPUT, "R2A_SCIENCE_BINDING_REQUIRED", q_reason=q_reason, next_stage="R2A")
+            return WAIT_INPUT
+        runner = Path(str(self.args.r2a_science_runner)).resolve()
+        science_auditor = Path(str(self.args.r2a_science_auditor)).resolve()
+        science_repo = Path(str(self.args.r2a_science_repo_root)).resolve()
+        timeout_policy = Path(str(self.args.r2a_timeout_policy)).resolve()
+        if not all(path.is_file() for path in (runner, science_auditor, timeout_policy)) or not science_repo.is_dir():
+            self._write(HARD_STOP, "R2A_SCIENCE_BINDING_PATH_INVALID", q_reason=q_reason, next_stage="R2A")
+            return HARD_STOP
+        if sha256_file(runner) != str(self.args.r2a_science_runner_sha256) or sha256_file(science_auditor) != str(self.args.r2a_science_auditor_sha256):
+            self._write(HARD_STOP, "R2A_SCIENCE_SNAPSHOT_SHA256_MISMATCH", q_reason=q_reason, next_stage="R2A")
+            return HARD_STOP
+        try:
+            science_source = _git_binding(science_repo)
+        except ValueError as exc:
+            self._write(HARD_STOP, str(exc), q_reason=q_reason, next_stage="R2A")
+            return HARD_STOP
+        if (
+            science_source["commit"] != str(self.args.r2a_science_source_commit)
+            or science_source["tree"] != str(self.args.r2a_science_source_tree)
+            or science_source["status"]
+        ):
+            self._write(HARD_STOP, "R2A_SCIENCE_SOURCE_BINDING_INVALID", q_reason=q_reason, next_stage="R2A")
+            return HARD_STOP
+        q2_report = self.qualification_root / "Q2_CONTROL_QUALIFICATION_REPORT.json"
+        q2_audit = self.qualification_root / "Q2_CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json"
+        q2_manifest = self.qualification_root / "Q2_PARENT_MANIFEST_A.json"
+        science_manifest = self.qualification_root / "STAGE_V_FORMAL_PARENT_MANIFEST_V1.json"
+        for path in (q2_report, q2_audit, q2_manifest, science_manifest, self.candidate_manifest, self.science_provenance):
+            if not path.is_file():
+                self._write(WAIT_INPUT, f"R2A_INPUT_MISSING:{path.name}", q_reason=q_reason, next_stage="R2A")
+                return WAIT_INPUT
+        provenance_path = self.state_root / "R2A_SCIENCE_CORE_PROVENANCE.json"
+        if provenance_path.is_file():
+            provenance_ok, provenance_errors = verify_science_provenance(
+                provenance_path, expected_commit=str(self.args.r2a_science_source_commit), expected_tree=str(self.args.r2a_science_source_tree),
+            )
+            if not provenance_ok:
+                self._write(HARD_STOP, "R2A_SCIENCE_CORE_PROVENANCE_FAIL:" + ";".join(provenance_errors), q_reason=q_reason, next_stage="R2A")
+                return HARD_STOP
+        else:
+            atomic_write_json(provenance_path, build_science_provenance(
+                [runner, science_auditor], source_commit=str(self.args.r2a_science_source_commit), source_tree=str(self.args.r2a_science_source_tree),
+            ))
+        supervisor = self.repo_root / "scripts/detector_v5/run_stage_v_parent_aware_supervisor.py"
+        dispatcher = self.repo_root / "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py"
+        auditor = self.repo_root / "scripts/detector_v5/audit_stage_v_dynamic_queue.py"
+        for path in (supervisor, dispatcher, auditor):
+            if not path.is_file():
+                self._write(HARD_STOP, f"R2A_CONTROL_TOOL_MISSING:{path.name}", q_reason=q_reason, next_stage="R2A")
+                return HARD_STOP
+        config_path = self.state_root / "R2A_CONFIG.json"
+        runner_provenance = build_science_provenance([runner], source_commit="x", source_tree="y")["files"][0]
+        auditor_provenance = build_science_provenance([science_auditor], source_commit="x", source_tree="y")["files"][0]
+        config = {
+            "schema": "STAGE_V_R2A_CONFIG_V1", "stage": "R2A", "status": "FROZEN",
+            "control_source_commit": self.source["commit"], "control_source_tree": self.source["tree"],
+            "science_source_commit": str(self.args.r2a_science_source_commit), "science_source_tree": str(self.args.r2a_science_source_tree),
+            "science_repo_root": str(science_repo), "science_runner": str(runner), "science_runner_sha256": sha256_file(runner),
+            "science_runner_git_blob_sha1": runner_provenance["git_blob_sha1"], "science_auditor": str(science_auditor),
+            "science_auditor_sha256": sha256_file(science_auditor), "science_auditor_git_blob_sha1": auditor_provenance["git_blob_sha1"],
+            "timeout_policy": _receipt("timeout_policy", timeout_policy), "probe_limit": 24, "expected_branch_count": 72,
+            "planned_parents": 40, "approved_gpus": list(range(8)), "gpu5_authorized": True,
+            "old_artifacts_reused": False, "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
+        }
+        if config_path.is_file():
+            if read_json(config_path, {}) != config:
+                self._write(HARD_STOP, "R2A_CONFIG_ALREADY_EXISTS_DIFFERENT", q_reason=q_reason, next_stage="R2A")
+                return HARD_STOP
+        else:
+            atomic_write_json(config_path, config)
+        science_manifest_binding = _receipt("science_parent_manifest", science_manifest)
+        command = [
+            str(self.args.python_executable), str(supervisor), "--run-root", "{output_root}", "--repo-root", str(self.repo_root),
+            "--parent-manifest", str(science_manifest), "--parent-manifest-sha256", science_manifest_binding["sha256"],
+            "--queue-db", "{output_root}/STAGE_V_R2A.sqlite", "--run-id", "stage-v-r2a-{source_commit}",
+            "--expected-parent-count", "40", "--expected-source-commit", "{source_commit}", "--expected-source-tree", "{source_tree}",
+            "--lock-path", str(self.state_root.parent / ".stage_v_r2a.lock"), "--approved-gpus", "{approved_gpus}",
+            "--external-pid", str(self.args.external_pid), "--preflight-file", "{output_root}/GPU_PREFLIGHT.json",
+            "--timeout-policy", str(timeout_policy), "--dispatcher-script", str(dispatcher), "--auditor-script", str(auditor),
+            "--science-runner", str(runner), "--science-provenance", str(provenance_path),
+            "--science-source-commit", str(self.args.r2a_science_source_commit), "--science-source-tree", str(self.args.r2a_science_source_tree),
+            "--science-repo-root", str(science_repo), "--science-parent-manifest", str(science_manifest),
+            "--probe-limit", "24", "--max-attempts", "1", "--allow-gpu5",
+        ]
+        audit_command = [
+            str(self.args.python_executable), str(auditor), "--run-root", "{output_root}", "--parent-manifest", str(science_manifest),
+            "--queue-db", "{output_root}/STAGE_V_R2A.sqlite", "--run-id", "stage-v-r2a-{source_commit}",
+            "--expected-parent-count", "40", "--expected-branch-count", "72", "--expected-source-commit", "{source_commit}",
+            "--expected-source-tree", "{source_tree}", "--science-source-commit", str(self.args.r2a_science_source_commit),
+            "--science-source-tree", str(self.args.r2a_science_source_tree), "--science-provenance", str(provenance_path),
+            "--science-parent-manifest", str(science_manifest), "--allow-gpu5",
+        ]
+        spec = {
+            "schema": "STAGE_V_R2_STAGE_SPEC_V1", "stage": "R2A", "source_commit": self.source["commit"], "source_tree": self.source["tree"],
+            "runner_path": str(supervisor), "runner_path_sha256": sha256_file(supervisor), "auditor_path": str(auditor), "auditor_path_sha256": sha256_file(auditor),
+            "config_path": str(config_path), "config_path_sha256": sha256_file(config_path), "cwd": str(self.repo_root),
+            "python_executable": str(self.args.python_executable), "parent_manifest": science_manifest_binding,
+            "input_receipts": [_receipt("q2_report", q2_report), _receipt("q2_audit", q2_audit), _receipt("q2_parent_manifest", q2_manifest),
+                               science_manifest_binding, _receipt("candidate_manifest", self.candidate_manifest), _receipt("science_provenance", provenance_path),
+                               _receipt("science_runner", runner), _receipt("science_auditor", science_auditor), _receipt("timeout_policy", timeout_policy), _receipt("r2a_config", config_path)],
+            "output_root_template": str(self.state_root.parent / "STAGE_V_R2A_COUNTERFACTUAL_MAP_{commit8}_{utc}"),
+            "command_template": command, "audit_command_template": audit_command,
+            "completion_receipts": ["SUPERVISOR_COMPLETE.json", "STAGE_V_CLOSURE_RECEIPT.json"],
+            "resource_policy": {"resource_kind": "GPU", "required_gpu_count": 8, "minimum_gpu_count": 8, "maximum_gpu_count": 8, "strict_gpu_count": True,
+                                 "excluded_gpus": [], "gpu5_authorized": True, "protected_pids": [int(self.args.external_pid)], "canary_peak_mib": 0},
+            "gpu_policy": {"required_count": 8, "excluded_gpus": [], "gpu5_authorized": True, "protected_pids": [int(self.args.external_pid)]},
+            "lock_path": str(self.state_root.parent / ".stage_v_r2a.lock"),
+            "forbidden_boundary_contract": {"eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0},
+            "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "created_utc": utc_now(),
+        }
+        atomic_write_json(spec_path, spec)
+        return self._materialize_spec_stage("R2A", q_reason=q_reason)
+
     def _require_audit(self, stage: str, *, q_reason: str) -> str | None:
         status = self._audit_status(stage)
         if status is None:
@@ -209,7 +353,7 @@ class PlanController:
 
     def _ensure_stage(self, stage: str, plans: Mapping[str, Any], *, q_reason: str) -> tuple[str | None, dict[str, dict[str, Any]]]:
         if stage not in plans:
-            status = self._materialize_spec_stage(stage, q_reason=q_reason)
+            status = self._ensure_r2a_spec(q_reason=q_reason) if stage == "R2A" else self._materialize_spec_stage(stage, q_reason=q_reason)
             if status == HARD_STOP:
                 return HARD_STOP, dict(plans)
             return status, self._load_registered()
@@ -347,6 +491,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lock-path", type=Path, required=True)
     parser.add_argument("--python-executable", required=True)
     parser.add_argument("--external-pid", type=int, default=1895889)
+    parser.add_argument("--r2a-science-runner", type=Path)
+    parser.add_argument("--r2a-science-auditor", type=Path)
+    parser.add_argument("--r2a-science-repo-root", type=Path)
+    parser.add_argument("--r2a-science-source-commit", default="")
+    parser.add_argument("--r2a-science-source-tree", default="")
+    parser.add_argument("--r2a-science-runner-sha256", default="")
+    parser.add_argument("--r2a-science-auditor-sha256", default="")
+    parser.add_argument("--r2a-timeout-policy", type=Path)
     parser.add_argument("--allow-gpu5", action="store_true", help="Authorize GPU5 for fresh downstream plans; never hot-adds it to an existing run")
     parser.add_argument("--poll-seconds", type=float, default=30)
     parser.add_argument("--once", action="store_true")

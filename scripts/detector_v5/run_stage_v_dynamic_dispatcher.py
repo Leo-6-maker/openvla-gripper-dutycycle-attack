@@ -70,6 +70,8 @@ class Dispatcher:
         approved = sorted(int(gpu) for gpu in preflight.get("safe_gpus", []))
         if len(approved) != self.args.required_workers or any(gpu in self.args.excluded_gpus for gpu in approved):
             raise RuntimeError("GPU_PREFLIGHT_POLICY_FAIL")
+        if 5 in approved and not getattr(self.args, "allow_gpu5", False):
+            raise RuntimeError("GPU5_REQUIRES_EXPLICIT_AUTHORIZATION")
         rows = [normalize_parent(row) for row in load_rows(self.args.parent_manifest)]
         if len(rows) != self.args.expected_parent_count:
             raise RuntimeError(f"PARENT_MANIFEST_COUNT:{len(rows)}/{self.args.expected_parent_count}")
@@ -113,7 +115,8 @@ class Dispatcher:
         self.queue.init_run(
             state="ACTIVE", manifest_sha=manifest_sha, source_sha=source_sha,
             config_sha=self.args.config_sha256,
-            capacity_policy={"required_workers": self.args.required_workers, "approved_gpus": approved, "gpu5_excluded": 5 in self.args.excluded_gpus},
+            capacity_policy={"required_workers": self.args.required_workers, "approved_gpus": approved,
+                             "gpu5_excluded": 5 in self.args.excluded_gpus, "gpu5_authorized": bool(getattr(self.args, "allow_gpu5", False))},
         )
         self.queue.register_tasks([
             {
@@ -139,6 +142,7 @@ class Dispatcher:
             "planned_parents": len(rows),
             "approved_gpus": approved,
             "gpu5_used": 5 in approved,
+            "gpu5_authorized": bool(getattr(self.args, "allow_gpu5", False)),
             "workers": len(approved),
             "dispatcher_pid": os.getpid(),
             "dispatcher_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
@@ -276,6 +280,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-attempts", type=int, default=2)
     parser.add_argument("--poll-seconds", type=float, default=5)
     parser.add_argument("--config-sha256", default="")
+    parser.add_argument("--allow-gpu5", action="store_true", help="Authorize GPU5 for this fresh run")
     return parser
 
 
