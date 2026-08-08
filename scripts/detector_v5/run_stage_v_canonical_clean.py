@@ -18,7 +18,10 @@ from typing import Any, Mapping
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
-CANONICAL_ACTION_DECODE_CONTRACT = "OfficialOpenVLAActionAdapter.predict_action_with_scores_single_generation;attention_implementation=eager"
+CANONICAL_ACTION_DECODE_CONTRACT = (
+    "OfficialOpenVLAActionAdapter.predict_action_with_scores_single_generation;"
+    "attention_implementation=eager;predict_action_attention_mask_append=one_if_input_ids_appended"
+)
 
 from gripper_attack.stage_v_canonical_execution_core import (  # noqa: E402
     CANONICAL_INIT_STATE_HASH_ALGORITHM,
@@ -102,6 +105,25 @@ def _load_policy(args: argparse.Namespace, get_processor: Any, get_model: Any, a
     model = model.to(device)
     processor = get_processor(cfg)
     model.eval()
+
+    # The pinned Prismatic predict_action appends the empty action token to input_ids
+    # but leaves attention_mask unchanged; eager attention rejects that one-token
+    # mismatch, while the legacy FlashAttention path did not expose it.
+    original_predict_action = model.predict_action
+
+    def predict_action_with_consistent_mask(*call_args: Any, **call_kwargs: Any) -> Any:
+        input_ids = call_kwargs.get("input_ids")
+        if input_ids is None and call_args:
+            input_ids = call_args[0]
+        attention_mask = call_kwargs.get("attention_mask")
+        if input_ids is not None and attention_mask is not None:
+            if int(input_ids.shape[1]) == int(attention_mask.shape[1]) and not torch.all(input_ids[:, -1] == 29871):
+                call_kwargs["attention_mask"] = torch.cat(
+                    [attention_mask, torch.ones_like(attention_mask[:, :1])], dim=1
+                )
+        return original_predict_action(*call_args, **call_kwargs)
+
+    model.predict_action = predict_action_with_consistent_mask
     stats = getattr(model, "norm_stats", {})
     key = args.suite
     if key not in stats and f"{key}_no_noops" in stats:
