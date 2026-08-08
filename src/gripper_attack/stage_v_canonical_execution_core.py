@@ -215,6 +215,8 @@ class CanonicalExecutionCore:
         observation_getter: Callable[[Any, Any, int], Any] | None = None,
         physical_state_getter: Callable[[Any, Any, int], Any] | None = None,
         diagnostic_getter: Callable[[Any, Any, int, PolicyStep], Any] | None = None,
+        raw_capture_getter: Callable[[Any, Any, int, PolicyStep], Any] | None = None,
+        raw_capture_steps: Sequence[int] | None = None,
         success_predicate: Callable[[Any, Any, Mapping[str, Any], bool, int], bool] | None = None,
         termination_predicate: Callable[[Any, Any, Mapping[str, Any], bool, int], bool] | None = None,
         restore_initial_state: Callable[[Any, Any], Any] | None = None,
@@ -233,6 +235,8 @@ class CanonicalExecutionCore:
         self.observation_getter = observation_getter or (lambda _env, obs, _step: obs)
         self.physical_state_getter = physical_state_getter
         self.diagnostic_getter = diagnostic_getter
+        self.raw_capture_getter = raw_capture_getter
+        self.raw_capture_steps = frozenset(int(step) for step in (raw_capture_steps or ()))
         self.success_predicate = success_predicate or (lambda _env, _obs, _info, done, _step: bool(done))
         self.termination_predicate = termination_predicate or (lambda _env, _obs, _info, done, _step: bool(done))
         self.restore_initial_state = restore_initial_state
@@ -277,6 +281,9 @@ class CanonicalExecutionCore:
         diagnostics = None
         if self.diagnostic_getter is not None:
             diagnostics = canonical_value(self.diagnostic_getter(env, obs, step, policy_step))
+        raw_capture = None
+        if self.raw_capture_getter is not None and step in self.raw_capture_steps:
+            raw_capture = copy.deepcopy(self.raw_capture_getter(env, obs, step, policy_step))
         raw_action = canonical_value(policy_step.raw_action)
         executed_action = self.action_postprocess(policy_step.raw_action)
         try:
@@ -302,6 +309,8 @@ class CanonicalExecutionCore:
         }
         if diagnostics is not None:
             row["diagnostics"] = diagnostics
+        if raw_capture is not None:
+            row["raw_capture"] = raw_capture
         return next_obs, row, copy.deepcopy(executed_action), success, bool(self.termination_predicate(env, next_obs, info, done, step))
 
     def run_clean_episode(self, *, mode: str) -> EpisodeTrace:
@@ -562,3 +571,87 @@ def write_diagnostic_trace_artifacts(root: Path, trace: EpisodeTrace) -> tuple[d
         artifacts[name] = {"path": path.name, "sha256": digest}
         hashes[field_names[name]] = digest
     return artifacts, hashes
+
+
+def _raw_bytes(value: Any) -> tuple[str, list[int], bytes] | None:
+    if hasattr(value, "detach"):
+        value = value.detach().cpu().contiguous()
+        dtype = str(getattr(value, "dtype", ""))
+        shape = [int(item) for item in getattr(value, "shape", ())]
+        try:
+            raw = value.numpy().tobytes()
+        except Exception:
+            import torch
+            raw = value.view(torch.uint8).numpy().tobytes()
+        return dtype, shape, raw
+    if hasattr(value, "tobytes") and hasattr(value, "shape") and hasattr(value, "dtype"):
+        try:
+            raw = value.tobytes(order="C")
+        except TypeError:
+            raw = value.tobytes()
+        return str(value.dtype), [int(item) for item in value.shape], raw
+    return None
+
+
+def _raw_array_fields(value: Any, prefix: str = "") -> list[tuple[str, Any]]:
+    if isinstance(value, Mapping):
+        fields: list[tuple[str, Any]] = []
+        for key, item in sorted(value.items(), key=lambda pair: str(pair[0])):
+            child = f"{prefix}.{key}" if prefix else str(key)
+            fields.extend(_raw_array_fields(item, child))
+        return fields
+    if isinstance(value, (list, tuple)):
+        fields: list[tuple[str, Any]] = []
+        for index, item in enumerate(value):
+            fields.extend(_raw_array_fields(item, f"{prefix}[{index}]"))
+        return fields
+    if _raw_bytes(value) is not None:
+        return [(prefix, value)]
+    return []
+
+
+def write_raw_capture_artifacts(root: Path, trace: EpisodeTrace) -> dict[str, Any]:
+    """Write prospective raw-byte sidecars; never enters V1 common traces."""
+    captures = [row for row in trace.steps if "raw_capture" in row]
+    if not captures:
+        raise CanonicalExecutionError("RAW_CAPTURE_NOT_CAPTURED")
+    root.mkdir(parents=True, exist_ok=False)
+    entries: list[dict[str, Any]] = []
+    for row in captures:
+        step = int(row["step"])
+        step_root = root / f"step_{step:06d}"
+        step_root.mkdir()
+        raw_capture = row["raw_capture"]
+        groups = {
+            "raw_observation": {key: value for key, value in _raw_array_fields(raw_capture.get("raw_observation", {})) if len(getattr(value, "shape", ())) == 3},
+            "policy_rgb_224": {"policy_rgb_224": raw_capture.get("policy_rgb_224")},
+            "model_inputs": dict(_raw_array_fields(raw_capture.get("model_inputs", {}))),
+        }
+        for group, fields in groups.items():
+            for field, value in sorted(fields.items()):
+                if value is None:
+                    continue
+                payload = _raw_bytes(value)
+                if payload is None:
+                    raise CanonicalExecutionError(f"RAW_CAPTURE_VALUE_NOT_ARRAY:{group}:{field}")
+                dtype, shape, raw = payload
+                safe = field.replace(".", "__").replace("[", "_").replace("]", "")
+                relative = Path(f"step_{step:06d}") / f"{group}__{safe}.bin"
+                binary_path = root / relative
+                binary_path.write_bytes(raw)
+                descriptor = {
+                    "schema": "STAGE_V_M1_RAW_ARRAY_DESCRIPTOR_V1",
+                    "field": field,
+                    "group": group,
+                    "dtype": dtype,
+                    "shape": shape,
+                    "byte_order": "native",
+                    "contiguous_order": "C",
+                    "byte_length": len(raw),
+                    "raw_sha256": hashlib.sha256(raw).hexdigest(),
+                    "binary_path": relative.as_posix(),
+                }
+                descriptor_path = binary_path.with_suffix(".json")
+                descriptor_path.write_bytes(_json(descriptor) + b"\n")
+                entries.append({"step": step, **descriptor, "descriptor_path": descriptor_path.relative_to(root).as_posix()})
+    return {"schema": "STAGE_V_M1_RAW_CAPTURE_MANIFEST_V1", "steps": sorted({int(row["step"]) for row in captures}), "entries": entries}

@@ -43,6 +43,20 @@ def _load(path: Path) -> dict[str, Any]:
     return dict(value)
 
 
+def _load_raw_capture_plan(path: Path, identity: Mapping[str, Any], horizon: int) -> tuple[dict[str, Any], frozenset[int]]:
+    plan = _load(path)
+    if plan.get("schema") != "STAGE_V_M1_RAW_CAPTURE_PLAN_V1":
+        raise CanonicalExecutionError("RAW_CAPTURE_PLAN_SCHEMA_INVALID")
+    if plan.get("status") != "FROZEN_BEFORE_RAW_CAPTURE_RUN":
+        raise CanonicalExecutionError("RAW_CAPTURE_PLAN_NOT_FROZEN")
+    if plan.get("identity") != identity.get("canonical_parent_key"):
+        raise CanonicalExecutionError("RAW_CAPTURE_PLAN_IDENTITY_MISMATCH")
+    steps = frozenset(int(step) for step in plan.get("capture_steps", []))
+    if not steps or min(steps) < 0 or max(steps) >= horizon:
+        raise CanonicalExecutionError("RAW_CAPTURE_PLAN_STEP_INVALID")
+    return plan, steps
+
+
 def _write(path: Path, value: Mapping[str, Any]) -> None:
     temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
     temporary.write_text(json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n", encoding="utf-8")
@@ -241,10 +255,21 @@ def run(args: argparse.Namespace) -> int:
         return state
 
     policy_capture: dict[str, Any] = {}
+    raw_capture_plan: dict[str, Any] | None = None
+    raw_capture_steps: frozenset[int] = frozenset()
+    if args.raw_capture_plan is not None:
+        raw_capture_plan, raw_capture_steps = _load_raw_capture_plan(args.raw_capture_plan.resolve(), identity, horizon)
 
     def diagnostic(env: Any, _obs: Any, _step: int, _policy_step: PolicyStep) -> dict[str, Any]:
         return {
             "full_sim_state": full_sim_state(env),
+            "policy_rgb_224": policy_capture["policy_rgb_224"],
+            "model_inputs": policy_capture["model_inputs"],
+        }
+
+    def raw_capture(_env: Any, obs: Any, _step: int, _policy_step: PolicyStep) -> dict[str, Any]:
+        return {
+            "raw_observation": obs,
             "policy_rgb_224": policy_capture["policy_rgb_224"],
             "model_inputs": policy_capture["model_inputs"],
         }
@@ -267,6 +292,8 @@ def run(args: argparse.Namespace) -> int:
         observation_getter=lambda _env, obs, _step: obs,
         physical_state_getter=physical_state,
         diagnostic_getter=diagnostic,
+        raw_capture_getter=raw_capture if raw_capture_plan is not None else None,
+        raw_capture_steps=raw_capture_steps,
         success_predicate=success,
         termination_predicate=lambda _env, _obs, _info, done, _step: bool(done),
     )
@@ -279,6 +306,16 @@ def run(args: argparse.Namespace) -> int:
     trace_root = output_dir / "trace"
     artifacts, hashes = write_trace_artifacts(trace_root, trace)
     diagnostic_artifacts, diagnostic_hashes = write_diagnostic_trace_artifacts(trace_root, trace)
+    if raw_capture_plan is not None:
+        from gripper_attack.stage_v_canonical_execution_core import write_raw_capture_artifacts
+        raw_manifest = write_raw_capture_artifacts(trace_root / "raw_capture", trace)
+        raw_manifest.update({
+            "plan_sha256": sha256_file(args.raw_capture_plan.resolve()),
+            "source_commit": str(args.source_commit),
+            "source_tree": str(args.source_tree),
+            "identity": str(candidate["canonical_parent_key"]),
+        })
+        _write(output_dir / "M1_RAW_CAPTURE_MANIFEST.json", raw_manifest)
     receipt = core.build_receipt(
         trace=trace,
         mode=args.mode,
@@ -311,6 +348,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
     parser.add_argument("--enable-runtime", action="store_true")
+    parser.add_argument("--raw-capture-plan", type=Path)
     args = parser.parse_args(argv)
     try:
         return run(args)
