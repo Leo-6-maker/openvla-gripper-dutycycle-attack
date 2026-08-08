@@ -3,8 +3,10 @@
   "status": "HOLD_UNRESOLVED_BASELINE_FAILURE",
   "baseline_commit": "bd382c7971d1653e944102707e3f257796eab98b",
   "baseline_tree": "c8eb77f8ffda069fff159ec62e196fba54a5fbe0",
-  "v2_commit": "e721db9b7b4ee3c6b82f395495e6f8112a63107c",
-  "v2_tree": "7a7fb6ed2e329f49d4bff1a577558ad54fdb682f",
+  "v2_commit": "b0aa333d127055029b6e5e7b82b41be51111e42a",
+  "v2_tree": "16560fd80a6f31861f877ed20bbdadd9c114b914",
+  "baseline_attribution_v2_commit": "e721db9b7b4ee3c6b82f395495e6f8112a63107c",
+  "baseline_attribution_note": "The binding-receipt static fix after the attribution run does not touch either attributed test; both affected tests were rerun on the final V2 commit after the fix.",
   "comparison": {
     "python": "D:/Users/anaconda/python.exe",
     "pytest": "D:/Users/anaconda/Scripts/pytest.exe",
