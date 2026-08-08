@@ -1,12 +1,21 @@
 {
   "schema": "STAGE_V_M1_V2_FAILURE_BASELINE_ATTRIBUTION_V1",
-  "status": "HOLD_UNRESOLVED_BASELINE_FAILURE",
+  "status": "BASELINE_ATTRIBUTION_COMPLETE_RUNTIME_HOLD",
   "baseline_commit": "bd382c7971d1653e944102707e3f257796eab98b",
   "baseline_tree": "c8eb77f8ffda069fff159ec62e196fba54a5fbe0",
-  "v2_commit": "b2f67c18cb142aba04f2a0c66f5c969902fcf040",
-  "v2_tree": "fe2dadfcb40eb47dd538a704965087670a4dbd56",
-  "baseline_attribution_v2_commit": "e721db9b7b4ee3c6b82f395495e6f8112a63107c",
-  "baseline_attribution_note": "The binding-receipt static fix after the attribution run does not touch either attributed test; both affected tests were rerun on the final V2 commit after the fix.",
+  "v2_commit": "6fc32c976ece08f233a6be5e3b8981badbf797f1",
+  "v2_tree": "bffc12258538fa508fd761a95b2aacbd47ea86d0",
+  "baseline_attribution_v2_commit": "6fc32c976ece08f233a6be5e3b8981badbf797f1",
+  "baseline_attribution_note": "The latest full detector_v5 run on the final V2 HEAD has two failures; both were rerun with the same isolated command on parent and V2. Runtime remains on HOLD pending owner review.",
+  "latest_full_detector_v5": {
+    "passed": 213,
+    "skipped": 6,
+    "failed": 2,
+    "failures": [
+      "tests/detector_v5/test_stage_v1_m1_visual_determinism.py::test_m1_v1_protocol_blob_is_frozen",
+      "tests/detector_v5/test_stage_v_local_supervisor.py::test_ssh_probe_failure_is_telemetry_only_and_heartbeat_repeats"
+    ]
+  },
   "comparison": {
     "python": "D:/Users/anaconda/python.exe",
     "pytest": "D:/Users/anaconda/Scripts/pytest.exe",
@@ -22,12 +31,11 @@
       "stack_trace": "tests\\detector_v5\\test_stage_v1_m1_visual_determinism.py:37 in test_m1_v1_protocol_blob_is_frozen",
       "v2_result": "failed"
     },
-    "dynamic8_end_to_end": {
-      "test_name": "test_dynamic8_end_to_end_accepts_all_parents",
-      "test_file": "tests/detector_v5/test_stage_v_dynamic8.py",
-      "failure_message": "AssertionError: assert result.returncode == 0",
-      "stack_trace": "tests\\detector_v5\\test_stage_v_dynamic8.py:524 in test_dynamic8_end_to_end_accepts_all_parents",
-      "underlying_abort_receipt_reason": "WORKER_HEARTBEAT_MISSING",
+    "local_supervisor_ssh_probe": {
+      "test_name": "test_ssh_probe_failure_is_telemetry_only_and_heartbeat_repeats",
+      "test_file": "tests/detector_v5/test_stage_v_local_supervisor.py",
+      "failure_message": "AssertionError: assert heartbeat[\"ssh_probe_failure_count\"] > 0; assert 0 > 0",
+      "stack_trace": "tests\\detector_v5\\test_stage_v_local_supervisor.py:134 in test_ssh_probe_failure_is_telemetry_only_and_heartbeat_repeats",
       "v2_result": "failed"
     }
   },
@@ -43,6 +51,16 @@
       "classification": "PRE_EXISTING_FAILURE"
     },
     {
+      "test_name": "tests/detector_v5/test_stage_v_local_supervisor.py::test_ssh_probe_failure_is_telemetry_only_and_heartbeat_repeats",
+      "fails_on_parent": true,
+      "fails_on_v2": true,
+      "parent_failure_signature": "AssertionError: heartbeat[\"ssh_probe_failure_count\"] > 0; observed 0 > 0 at tests/detector_v5/test_stage_v_local_supervisor.py:134",
+      "v2_failure_signature": "AssertionError: heartbeat[\"ssh_probe_failure_count\"] > 0; observed 0 > 0 at tests/detector_v5/test_stage_v_local_supervisor.py:134",
+      "signature_equivalent": true,
+      "introduced_by_v2": false,
+      "classification": "PRE_EXISTING_FAILURE"
+    },
+    {
       "test_name": "tests/detector_v5/test_stage_v_dynamic8.py::test_dynamic8_end_to_end_accepts_all_parents",
       "fails_on_parent": false,
       "fails_on_v2": false,
@@ -50,8 +68,8 @@
       "v2_failure_signature": "PASS in isolated V2 invocation",
       "signature_equivalent": false,
       "introduced_by_v2": null,
-      "classification": "UNRESOLVED_BASELINE_FAILURE",
-      "note": "The full detector_v5 run observed WORKER_HEARTBEAT_MISSING, but the exact test passed on both parent and V2 in the required isolated comparison. No regression attribution is proven."
+      "classification": "HISTORICAL_NON_REPRODUCED_OBSERVATION",
+      "note": "A prior full-suite run observed WORKER_HEARTBEAT_MISSING; the latest full-suite run and isolated parent/V2 invocations passed it. It is not one of the latest two failures."
     }
   ]
 }
