@@ -115,16 +115,44 @@ def test_nonzero_intervention_boundary_fails_closed() -> None:
 
 def test_artifact_bytes_are_independently_verified(tmp_path: Path) -> None:
     receipt = _receipt("CLEAN_QUALIFICATION")
-    for item in receipt["trace_artifacts"].values():
+    trace_fields = {
+        "policy_token_trace": "policy_token_trace_sha256",
+        "postprocessed_action_trace": "postprocessed_action_trace_sha256",
+        "observation_trace": "observation_trace_sha256",
+        "physical_state_trace": "physical_state_trace_sha256",
+    }
+    for name, item in receipt["trace_artifacts"].items():
         path = tmp_path / item["path"]
-        path.write_bytes(b"trace")
-        item["sha256"] = hashlib.sha256(b"trace").hexdigest()
+        data = json.dumps({"initial_state_sha256": receipt["initial_state_sha256"], "identity": {field: receipt[field] for field in ("canonical_parent_key", "suite", "task_index", "state_index")}}).encode() if name == "initial_state" else b"trace"
+        path.write_bytes(data)
+        item["sha256"] = hashlib.sha256(data).hexdigest()
+        if name in trace_fields:
+            receipt["trace_hashes"][trace_fields[name]] = item["sha256"]
     verify_artifact_files(receipt, tmp_path, PROTOCOL)
+
+
+def test_trace_hash_manifest_drift_fails_closed(tmp_path: Path) -> None:
+    receipt = _receipt("CLEAN_QUALIFICATION")
+    for name, item in receipt["trace_artifacts"].items():
+        data = json.dumps({"initial_state_sha256": receipt["initial_state_sha256"], "identity": {field: receipt[field] for field in ("canonical_parent_key", "suite", "task_index", "state_index")}}).encode() if name == "initial_state" else b"trace"
+        (tmp_path / item["path"]).write_bytes(data)
+        item["sha256"] = hashlib.sha256(b"trace").hexdigest()
+    with pytest.raises(RuntimeEquivalenceError, match="TRACE_HASH_MANIFEST_MISMATCH"):
+        verify_artifact_files(receipt, tmp_path, PROTOCOL)
 
 
 def test_artifact_hash_drift_fails_closed(tmp_path: Path) -> None:
     receipt = _receipt("CLEAN_QUALIFICATION")
-    for item in receipt["trace_artifacts"].values():
-        (tmp_path / item["path"]).write_bytes(b"trace")
+    trace_fields = {
+        "policy_token_trace": "policy_token_trace_sha256",
+        "postprocessed_action_trace": "postprocessed_action_trace_sha256",
+        "observation_trace": "observation_trace_sha256",
+        "physical_state_trace": "physical_state_trace_sha256",
+    }
+    for name, item in receipt["trace_artifacts"].items():
+        data = json.dumps({"initial_state_sha256": receipt["initial_state_sha256"], "identity": {field: receipt[field] for field in ("canonical_parent_key", "suite", "task_index", "state_index")}}).encode() if name == "initial_state" else b"trace"
+        (tmp_path / item["path"]).write_bytes(data)
+        if name in trace_fields:
+            item["sha256"] = receipt["trace_hashes"][trace_fields[name]]
     with pytest.raises(RuntimeEquivalenceError, match="SHA256_MISMATCH"):
         verify_artifact_files(receipt, tmp_path, PROTOCOL)

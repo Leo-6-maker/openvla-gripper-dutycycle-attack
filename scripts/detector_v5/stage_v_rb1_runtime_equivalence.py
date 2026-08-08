@@ -136,7 +136,12 @@ def _validate_artifact_manifest(receipt: Mapping[str, Any], scope: str) -> dict[
     return artifacts
 
 
-def validate_receipt(receipt: Mapping[str, Any], protocol: Mapping[str, Any]) -> dict[str, Any]:
+def validate_receipt(
+    receipt: Mapping[str, Any],
+    protocol: Mapping[str, Any],
+    *,
+    require_independent_recompute: bool = True,
+) -> dict[str, Any]:
     protocol = validate_protocol(protocol)
     receipt = _object(receipt, "receipt")
     if receipt.get("schema") != RECEIPT_SCHEMA:
@@ -161,7 +166,8 @@ def validate_receipt(receipt: Mapping[str, Any], protocol: Mapping[str, Any]) ->
         raise RuntimeEquivalenceError("RB1_TERMINAL_OUTCOME_MISSING")
     _validate_trace_hashes(receipt, str(scope))
     _validate_artifact_manifest(receipt, str(scope))
-    _validate_recompute(receipt)
+    if require_independent_recompute:
+        _validate_recompute(receipt)
     for field in BOUNDARY_FIELDS:
         if receipt.get(field, 0) != 0:
             raise RuntimeEquivalenceError("RB1_PROTECTED_BOUNDARY:" + field)
@@ -174,9 +180,26 @@ def validate_receipt(receipt: Mapping[str, Any], protocol: Mapping[str, Any]) ->
     return receipt
 
 
-def verify_artifact_files(receipt: Mapping[str, Any], artifact_root: Path, protocol: Mapping[str, Any]) -> None:
-    receipt = validate_receipt(receipt, protocol)
+def verify_artifact_files(
+    receipt: Mapping[str, Any],
+    artifact_root: Path,
+    protocol: Mapping[str, Any],
+    *,
+    require_independent_recompute: bool = True,
+) -> None:
+    receipt = validate_receipt(receipt, protocol, require_independent_recompute=require_independent_recompute)
     root = artifact_root.resolve()
+    trace_to_artifact = {
+        "policy_token_trace_sha256": "policy_token_trace",
+        "postprocessed_action_trace_sha256": "postprocessed_action_trace",
+        "observation_trace_sha256": "observation_trace",
+        "physical_state_trace_sha256": "physical_state_trace",
+        "snapshot_restore_trace_sha256": "snapshot_restore_trace",
+        "noop_action_trace_sha256": "noop_action_trace",
+    }
+    for trace_field, artifact_name in trace_to_artifact.items():
+        if trace_field in receipt["trace_hashes"] and receipt["trace_hashes"][trace_field] != receipt["trace_artifacts"][artifact_name]["sha256"]:
+            raise RuntimeEquivalenceError("RB1_TRACE_HASH_MANIFEST_MISMATCH:" + trace_field)
     for name, item in receipt["trace_artifacts"].items():
         path = (root / str(item["path"])).resolve()
         if not path.is_relative_to(root) or not path.is_file():
@@ -184,6 +207,18 @@ def verify_artifact_files(receipt: Mapping[str, Any], artifact_root: Path, proto
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         if digest != item["sha256"]:
             raise RuntimeEquivalenceError("RB1_TRACE_ARTIFACT_SHA256_MISMATCH:" + name)
+        if name == "initial_state":
+            try:
+                initial = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise RuntimeEquivalenceError("RB1_INITIAL_STATE_ARTIFACT_INVALID") from exc
+            if initial.get("initial_state_sha256") != receipt.get("initial_state_sha256"):
+                raise RuntimeEquivalenceError("RB1_INITIAL_STATE_ARTIFACT_IDENTITY_MISMATCH")
+            initial_identity = initial.get("identity")
+            if not isinstance(initial_identity, Mapping):
+                raise RuntimeEquivalenceError("RB1_INITIAL_STATE_ARTIFACT_IDENTITY_MISSING")
+            if any(initial_identity.get(field) != receipt.get(field) for field in IDENTITY_FIELDS):
+                raise RuntimeEquivalenceError("RB1_INITIAL_STATE_ARTIFACT_PARENT_IDENTITY_MISMATCH")
 
 
 def validate_pair(left: Mapping[str, Any], right: Mapping[str, Any], protocol: Mapping[str, Any], pair_kind: str) -> dict[str, Any]:
