@@ -258,6 +258,11 @@ def _verify_source_binding(manifest: Mapping[str, Any]) -> None:
         raise V2Error("V2_SOURCE_BINDING_MISMATCH")
 
 
+def _reject_v1_root(root: Path) -> None:
+    if "M1_VISUAL_DETERMINISM" in root.name or (root / "M1_MANIFEST.json").exists():
+        raise V2Error("V2_MUST_NOT_TOUCH_V1_ROOT")
+
+
 def prepare_root(root: Path, protocol: Mapping[str, Any], *, source_commit: str, source_tree: str, model_path: str) -> None:
     if root.exists():
         raise V2Error("V2_ROOT_MUST_BE_NEW")
@@ -487,14 +492,13 @@ def main(argv: list[str] | None = None) -> int:
         if sys.prefix != PYTHON_PREFIX:
             raise V2Error(f"V2_PYTHON_PREFIX_MISMATCH:{sys.prefix}")
         root = args.root.resolve()
+        _reject_v1_root(root)
         if args.prepare_root:
             if not args.source_commit or not args.source_tree or not args.model_path:
                 raise V2Error("PREPARE_ROOT_BINDING_ARGUMENTS_REQUIRED")
             prepare_root(root, protocol, source_commit=args.source_commit, source_tree=args.source_tree, model_path=args.model_path)
             return 0
         if args.preflight_only:
-            if "M1_VISUAL_DETERMINISM" in root.name or (root / "M1_MANIFEST.json").exists():
-                raise V2Error("V2_MUST_NOT_TOUCH_V1_ROOT")
             root.mkdir(parents=True, exist_ok=True)
             _write(root / "M1_V2_GPU_PREFLIGHT.json", gpu_preflight(idle_memory_max_mib=int(protocol["idle_memory_max_mib"])))
             return 0

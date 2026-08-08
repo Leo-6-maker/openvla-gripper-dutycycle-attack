@@ -268,3 +268,8 @@ def test_binding_receipt_contract_is_fail_closed() -> None:
     supervisor.validate_binding_receipt(valid, 3)
     with pytest.raises(supervisor.V2Error, match="GPU_BINDING_RECEIPT_GPU_UUID_MISSING"):
         supervisor.validate_binding_receipt({**valid, "gpu_uuid": ""}, 3)
+
+
+def test_v2_modes_reject_v1_root_names(tmp_path: Path) -> None:
+    with pytest.raises(supervisor.V2Error, match="V2_MUST_NOT_TOUCH_V1_ROOT"):
+        supervisor._reject_v1_root(tmp_path / "M1_VISUAL_DETERMINISM_DIAGNOSTIC_8bd74ff6_20260808T051639Z")
