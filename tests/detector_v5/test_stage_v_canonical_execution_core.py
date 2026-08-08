@@ -10,6 +10,7 @@ from gripper_attack.stage_v_canonical_execution_core import (
     CanonicalExecutionCore,
     PolicyStep,
     sha256_file,
+    write_diagnostic_trace_artifacts,
     write_trace_artifacts,
 )
 from scripts.detector_v5.stage_v_rb1_runtime_equivalence import CONTRACT_FIELDS as VALIDATOR_CONTRACT_FIELDS, validate_receipt, verify_artifact_files
@@ -113,6 +114,21 @@ def test_trace_artifacts_are_deterministic(tmp_path: Path) -> None:
     assert set(artifacts) == {"initial_state", "policy_token_trace", "postprocessed_action_trace", "observation_trace", "physical_state_trace"}
     assert hashes["postprocessed_action_trace_sha256"] == sha256_file(tmp_path / "trace" / "postprocessed_action_trace.jsonl")
     assert len(CONTRACT_FIELDS) == 20
+
+
+def test_diagnostic_trace_artifacts_are_separate_from_v1_traces(tmp_path: Path) -> None:
+    core = _core()
+    core.diagnostic_getter = lambda env, _obs, step, _policy: {
+        "full_sim_state": {"state": env.state},
+        "policy_rgb_224": [[step]],
+        "model_inputs": {"input_ids": [step], "attention_mask": [1]},
+    }
+    trace = core.run_clean_episode(mode="CLEAN_QUALIFICATION")
+    common_artifacts, common_hashes = write_trace_artifacts(tmp_path / "trace", trace)
+    diagnostic_artifacts, diagnostic_hashes = write_diagnostic_trace_artifacts(tmp_path / "trace", trace)
+    assert set(common_artifacts) == {"initial_state", "policy_token_trace", "postprocessed_action_trace", "observation_trace", "physical_state_trace"}
+    assert set(diagnostic_artifacts) == {"full_sim_state_trace", "policy_rgb_224_trace", "model_input_trace"}
+    assert set(diagnostic_hashes) == {"full_sim_state_trace_sha256", "policy_rgb_224_trace_sha256", "model_input_trace_sha256"}
 
 
 def test_producer_receipt_requires_independent_audit(tmp_path: Path) -> None:

@@ -103,7 +103,7 @@ def run(args: argparse.Namespace) -> int:
     if manifest.get("protocol_sha256") != _sha256(protocol):
         raise RuntimeError("RB1A_PROTOCOL_SHA256_MISMATCH")
     env = dict(os.environ)
-    env.update({"OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1"})
+    env.update({"OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1", "PYTHONHASHSEED": "7"})
     status_path = root / "RB1A_STATUS.json"
     status: dict[str, Any] = {
         "schema": "STAGE_V_RB1A_DIAGNOSTIC_STATUS_V1", "status": "RUNNING", "started_utc": _now(),

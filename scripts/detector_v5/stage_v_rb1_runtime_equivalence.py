@@ -22,6 +22,11 @@ COMMON_TRACE_HASH_FIELDS = (
     "observation_trace_sha256",
     "physical_state_trace_sha256",
 )
+DIAGNOSTIC_TRACE_HASH_FIELDS = (
+    "full_sim_state_trace_sha256",
+    "policy_rgb_224_trace_sha256",
+    "model_input_trace_sha256",
+)
 NOOP_TRACE_HASH_FIELDS = ("snapshot_restore_trace_sha256", "noop_action_trace_sha256")
 BOUNDARY_FIELDS = (
     "eval160_reads",
@@ -136,6 +141,28 @@ def _validate_artifact_manifest(receipt: Mapping[str, Any], scope: str) -> dict[
     return artifacts
 
 
+def _validate_diagnostic_artifacts(receipt: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    hashes_value = receipt.get("diagnostic_trace_hashes")
+    artifacts_value = receipt.get("diagnostic_trace_artifacts")
+    if hashes_value is None and artifacts_value is None:
+        return None
+    hashes = _object(hashes_value, "diagnostic_trace_hashes")
+    artifacts = _object(artifacts_value, "diagnostic_trace_artifacts")
+    if set(hashes) != set(DIAGNOSTIC_TRACE_HASH_FIELDS):
+        raise RuntimeEquivalenceError("RB1_DIAGNOSTIC_TRACE_HASH_FIELD_SET_MISMATCH")
+    if set(artifacts) != {field.removesuffix("_sha256") for field in DIAGNOSTIC_TRACE_HASH_FIELDS}:
+        raise RuntimeEquivalenceError("RB1_DIAGNOSTIC_TRACE_ARTIFACT_FIELD_SET_MISMATCH")
+    for field in DIAGNOSTIC_TRACE_HASH_FIELDS:
+        _hex64(hashes.get(field), "diagnostic_trace_hashes." + field)
+    for name in artifacts:
+        item = _object(artifacts[name], "diagnostic_trace_artifacts." + name)
+        path = Path(str(item.get("path", "")))
+        if not item.get("path") or path.is_absolute() or ".." in path.parts:
+            raise RuntimeEquivalenceError("RB1_DIAGNOSTIC_TRACE_ARTIFACT_PATH_NOT_RELATIVE:" + name)
+        _hex64(item.get("sha256"), "diagnostic_trace_artifacts." + name + ".sha256")
+    return hashes, artifacts
+
+
 def validate_receipt(
     receipt: Mapping[str, Any],
     protocol: Mapping[str, Any],
@@ -166,6 +193,7 @@ def validate_receipt(
         raise RuntimeEquivalenceError("RB1_TERMINAL_OUTCOME_MISSING")
     _validate_trace_hashes(receipt, str(scope))
     _validate_artifact_manifest(receipt, str(scope))
+    _validate_diagnostic_artifacts(receipt)
     if require_independent_recompute:
         _validate_recompute(receipt)
     for field in BOUNDARY_FIELDS:
@@ -219,6 +247,19 @@ def verify_artifact_files(
                 raise RuntimeEquivalenceError("RB1_INITIAL_STATE_ARTIFACT_IDENTITY_MISSING")
             if any(initial_identity.get(field) != receipt.get(field) for field in IDENTITY_FIELDS):
                 raise RuntimeEquivalenceError("RB1_INITIAL_STATE_ARTIFACT_PARENT_IDENTITY_MISMATCH")
+    diagnostic = _validate_diagnostic_artifacts(receipt)
+    if diagnostic is not None:
+        diagnostic_hashes, diagnostic_artifacts = diagnostic
+        for field in DIAGNOSTIC_TRACE_HASH_FIELDS:
+            name = field.removesuffix("_sha256")
+            if diagnostic_hashes[field] != diagnostic_artifacts[name]["sha256"]:
+                raise RuntimeEquivalenceError("RB1_DIAGNOSTIC_TRACE_HASH_MANIFEST_MISMATCH:" + field)
+        for name, item in diagnostic_artifacts.items():
+            path = (root / str(item["path"])).resolve()
+            if not path.is_relative_to(root) or not path.is_file():
+                raise RuntimeEquivalenceError("RB1_DIAGNOSTIC_TRACE_ARTIFACT_MISSING_OR_OUTSIDE_ROOT:" + name)
+            if hashlib.sha256(path.read_bytes()).hexdigest() != item["sha256"]:
+                raise RuntimeEquivalenceError("RB1_DIAGNOSTIC_TRACE_ARTIFACT_SHA256_MISMATCH:" + name)
 
 
 def validate_pair(left: Mapping[str, Any], right: Mapping[str, Any], protocol: Mapping[str, Any], pair_kind: str) -> dict[str, Any]:
@@ -236,8 +277,13 @@ def validate_pair(left: Mapping[str, Any], right: Mapping[str, Any], protocol: M
         "trace_step_count", "termination_step", "terminal_outcome",
     ]
     mismatches = [field for field in compare_fields if left.get(field) != right.get(field)]
-    if left["trace_hashes"] != right["trace_hashes"]:
+    trace_mismatch_fields = [
+        field for field in COMMON_TRACE_HASH_FIELDS
+        if left["trace_hashes"].get(field) != right["trace_hashes"].get(field)
+    ]
+    if trace_mismatch_fields:
         mismatches.append("trace_hashes")
+        mismatches.extend(trace_mismatch_fields)
     if pair_kind == "RB1B_NOOP_CONTINUATION":
         for field in ("probe_step", "probe_state_sha256"):
             if left.get(field) != right.get(field):
@@ -251,6 +297,7 @@ def validate_pair(left: Mapping[str, Any], right: Mapping[str, Any], protocol: M
         "contract_identity": "PASS",
         "initial_state_identity": "PASS",
         "runtime_trace_equivalence": "PASS",
+        "trace_mismatch_fields": [],
         "noop_restore_equivalence": "PASS" if pair_kind == "RB1B_NOOP_CONTINUATION" else "NOT_APPLICABLE",
     }
 

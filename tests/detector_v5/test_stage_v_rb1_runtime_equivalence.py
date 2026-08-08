@@ -98,6 +98,14 @@ def test_action_trace_mismatch_fails_closed() -> None:
         validate_pair(left, right, PROTOCOL, "RB1A_CLEAN_PATH")
 
 
+def test_trace_mismatch_reports_exact_field() -> None:
+    left = _receipt("CLEAN_QUALIFICATION")
+    right = _receipt("COUNTERFACTUAL_CLEAN_PREFIX")
+    right["trace_hashes"]["observation_trace_sha256"] = "f" * 64
+    with pytest.raises(RuntimeEquivalenceError, match="observation_trace_sha256"):
+        validate_pair(left, right, PROTOCOL, "RB1A_CLEAN_PATH")
+
+
 def test_rb1b_requires_restore_trace_and_probe_identity() -> None:
     left = _receipt("UNINTERRUPTED_CLEAN", "NOOP_CONTINUATION")
     right = _receipt("SNAPSHOT_RESTORE_NOOP", "NOOP_CONTINUATION")

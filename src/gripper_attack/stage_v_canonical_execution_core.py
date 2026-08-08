@@ -38,6 +38,13 @@ class CanonicalExecutionError(RuntimeError):
     """Raised when the shared clean path cannot produce exact evidence."""
 
 
+DIAGNOSTIC_TRACE_FIELDS = (
+    "full_sim_state_trace_sha256",
+    "policy_rgb_224_trace_sha256",
+    "model_input_trace_sha256",
+)
+
+
 def _json(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
 
@@ -203,6 +210,7 @@ class CanonicalExecutionCore:
         suite_horizon: int,
         observation_getter: Callable[[Any, Any, int], Any] | None = None,
         physical_state_getter: Callable[[Any, Any, int], Any] | None = None,
+        diagnostic_getter: Callable[[Any, Any, int, PolicyStep], Any] | None = None,
         success_predicate: Callable[[Any, Any, Mapping[str, Any], bool, int], bool] | None = None,
         termination_predicate: Callable[[Any, Any, Mapping[str, Any], bool, int], bool] | None = None,
         restore_initial_state: Callable[[Any, Any], Any] | None = None,
@@ -220,6 +228,7 @@ class CanonicalExecutionCore:
         self.suite_horizon = int(suite_horizon)
         self.observation_getter = observation_getter or (lambda _env, obs, _step: obs)
         self.physical_state_getter = physical_state_getter
+        self.diagnostic_getter = diagnostic_getter
         self.success_predicate = success_predicate or (lambda _env, _obs, _info, done, _step: bool(done))
         self.termination_predicate = termination_predicate or (lambda _env, _obs, _info, done, _step: bool(done))
         self.restore_initial_state = restore_initial_state
@@ -261,6 +270,9 @@ class CanonicalExecutionCore:
     def _clean_step(self, env: Any, obs: Any, step: int) -> tuple[Any, dict[str, Any], Any, bool, bool]:
         observed = canonical_value(self.observation_getter(env, obs, step))
         policy_step = PolicyStep.from_value(self.policy(step, obs, self.task_label))
+        diagnostics = None
+        if self.diagnostic_getter is not None:
+            diagnostics = canonical_value(self.diagnostic_getter(env, obs, step, policy_step))
         raw_action = canonical_value(policy_step.raw_action)
         executed_action = self.action_postprocess(policy_step.raw_action)
         try:
@@ -284,6 +296,8 @@ class CanonicalExecutionCore:
             "info": canonical_value(info),
             "physical_state": physical,
         }
+        if diagnostics is not None:
+            row["diagnostics"] = diagnostics
         return next_obs, row, copy.deepcopy(executed_action), success, bool(self.termination_predicate(env, next_obs, info, done, step))
 
     def run_clean_episode(self, *, mode: str) -> EpisodeTrace:
@@ -424,6 +438,8 @@ class CanonicalExecutionCore:
         contract: Mapping[str, Any],
         trace_artifacts: Mapping[str, Mapping[str, Any]],
         trace_hashes: Mapping[str, str],
+        diagnostic_trace_artifacts: Mapping[str, Mapping[str, Any]] | None = None,
+        diagnostic_trace_hashes: Mapping[str, str] | None = None,
         probe_step: int | None = None,
         probe_state_sha256: str | None = None,
     ) -> dict[str, Any]:
@@ -466,6 +482,13 @@ class CanonicalExecutionCore:
             if probe_step is None or probe_state_sha256 is None:
                 raise CanonicalExecutionError("NOOP_PROBE_IDENTITY_REQUIRED")
             receipt.update({"probe_step": int(probe_step), "probe_state_sha256": str(probe_state_sha256)})
+        if diagnostic_trace_artifacts is not None or diagnostic_trace_hashes is not None:
+            receipt["diagnostic_trace_artifacts"] = dict(diagnostic_trace_artifacts or {})
+            receipt["diagnostic_trace_hashes"] = dict(diagnostic_trace_hashes or {})
+            receipt["diagnostic_instrumentation"] = {
+                "schema": "STAGE_V_RB1_DIAGNOSTIC_INPUT_TRACE_V1",
+                "comparison_gate": "NOT_A_STAGE_V_RB1_V1_PASS_GATE",
+            }
         return receipt
 
 
@@ -493,6 +516,41 @@ def write_trace_artifacts(root: Path, trace: EpisodeTrace, *, noop: Mapping[str,
         "snapshot_restore_trace": "snapshot_restore_trace_sha256",
         "noop_action_trace": "noop_action_trace_sha256",
     }
+    for name, values in rows.items():
+        path = root / f"{name}.jsonl"
+        path.write_bytes(b"".join(_json(canonical_value(row)) + b"\n" for row in values))
+        digest = sha256_file(path)
+        artifacts[name] = {"path": path.name, "sha256": digest}
+        hashes[field_names[name]] = digest
+    return artifacts, hashes
+
+
+def write_diagnostic_trace_artifacts(root: Path, trace: EpisodeTrace) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
+    """Write non-gating simulator and model-input diagnostics when supplied."""
+    if not any("diagnostics" in row for row in trace.steps):
+        raise CanonicalExecutionError("DIAGNOSTIC_TRACE_NOT_CAPTURED")
+    rows = {
+        "full_sim_state_trace": [
+            {"step": row["step"], "full_sim_state": row["diagnostics"]["full_sim_state"]}
+            for row in trace.steps
+        ],
+        "policy_rgb_224_trace": [
+            {"step": row["step"], "policy_rgb_224": row["diagnostics"]["policy_rgb_224"]}
+            for row in trace.steps
+        ],
+        "model_input_trace": [
+            {"step": row["step"], "model_inputs": row["diagnostics"]["model_inputs"]}
+            for row in trace.steps
+        ],
+    }
+    field_names = {
+        "full_sim_state_trace": "full_sim_state_trace_sha256",
+        "policy_rgb_224_trace": "policy_rgb_224_trace_sha256",
+        "model_input_trace": "model_input_trace_sha256",
+    }
+    artifacts: dict[str, dict[str, Any]] = {}
+    hashes: dict[str, str] = {}
+    root.mkdir(parents=True, exist_ok=True)
     for name, values in rows.items():
         path = root / f"{name}.jsonl"
         path.write_bytes(b"".join(_json(canonical_value(row)) + b"\n" for row in values))

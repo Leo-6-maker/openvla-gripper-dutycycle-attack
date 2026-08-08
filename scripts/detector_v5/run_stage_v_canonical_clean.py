@@ -31,6 +31,7 @@ from gripper_attack.stage_v_canonical_execution_core import (  # noqa: E402
     CanonicalExecutionError,
     PolicyStep,
     sha256_file,
+    write_diagnostic_trace_artifacts,
     write_trace_artifacts,
 )
 
@@ -110,17 +111,31 @@ def _load_policy(args: argparse.Namespace, get_processor: Any, get_model: Any, a
     # but leaves attention_mask unchanged; eager attention rejects that one-token
     # mismatch, while the legacy FlashAttention path did not expose it.
     original_predict_action = model.predict_action
+    model._stage_v_last_model_inputs = None
 
     def predict_action_with_consistent_mask(*call_args: Any, **call_kwargs: Any) -> Any:
         input_ids = call_kwargs.get("input_ids")
         if input_ids is None and call_args:
             input_ids = call_args[0]
         attention_mask = call_kwargs.get("attention_mask")
+        recorded_input_ids = input_ids
+        recorded_attention_mask = attention_mask
         if input_ids is not None and attention_mask is not None:
             if int(input_ids.shape[1]) == int(attention_mask.shape[1]) and not torch.all(input_ids[:, -1] == 29871):
+                recorded_input_ids = torch.cat([input_ids, torch.full_like(input_ids[:, :1], 29871)], dim=1)
                 call_kwargs["attention_mask"] = torch.cat(
                     [attention_mask, torch.ones_like(attention_mask[:, :1])], dim=1
                 )
+                recorded_attention_mask = call_kwargs["attention_mask"]
+        model._stage_v_last_model_inputs = {
+            key: value.detach().cpu()
+            for key, value in {
+                "pixel_values": call_kwargs.get("pixel_values"),
+                "input_ids": recorded_input_ids,
+                "attention_mask": recorded_attention_mask,
+            }.items()
+            if value is not None
+        }
         return original_predict_action(*call_args, **call_kwargs)
 
     model.predict_action = predict_action_with_consistent_mask
@@ -176,7 +191,7 @@ def run(args: argparse.Namespace) -> int:
         "state_index": state_index,
     }
 
-    adapter, _model, _processor, _unnorm_key = _load_policy(args, get_processor, get_model, adapter_type)
+    adapter, model, _processor, _unnorm_key = _load_policy(args, get_processor, get_model, adapter_type)
     bddl = os.path.join(get_libero_path("bddl_files"), task.problem_folder, task.bddl_file)
     horizon = int(contract["suite_horizon"])
     num_steps_wait = int(contract["num_steps_wait"])
@@ -190,6 +205,10 @@ def run(args: argparse.Namespace) -> int:
         tokens = tuple(int(item) for item in meta["captured_action_token_ids"])
         if len(tokens) != 7 or int(meta["captured_score_count"]) != 7 or meta.get("single_generation_parity_pass") is not True:
             raise CanonicalExecutionError("OFFICIAL_SINGLE_GENERATION_CONTRACT_FAIL")
+        policy_capture["policy_rgb_224"] = image.copy()
+        policy_capture["model_inputs"] = getattr(model, "_stage_v_last_model_inputs", None)
+        if policy_capture["model_inputs"] is None:
+            raise CanonicalExecutionError("MODEL_INPUT_DIAGNOSTIC_CAPTURE_MISSING")
         return PolicyStep(raw_action=action, token_ids=tokens, metadata=meta)
 
     def physical_state(env: Any, _obs: Any, _step: int) -> dict[str, Any]:
@@ -198,6 +217,36 @@ def run(args: argparse.Namespace) -> int:
             "qpos": data.qpos.copy(),
             "qvel": data.qvel.copy(),
             "time": float(data.time),
+        }
+
+    def full_sim_state(env: Any) -> dict[str, Any]:
+        sim = env.sim
+        data = sim.data
+        state: dict[str, Any] = {"schema": "STAGE_V_FULL_SIM_STATE_DIAGNOSTIC_V1", "data": {}}
+        state_fields = (
+            "qpos", "qvel", "qacc", "qacc_warmstart", "act", "ctrl",
+            "qfrc_applied", "xfrc_applied", "mocap_pos", "mocap_quat",
+        )
+        for field in state_fields:
+            if hasattr(data, field):
+                value = getattr(data, field)
+                state["data"][field] = value.copy() if hasattr(value, "copy") else value
+        if hasattr(sim, "get_state"):
+            sim_state = sim.get_state()
+            state["sim_state"] = {
+                field: getattr(sim_state, field)
+                for field in ("time", "qpos", "qvel", "act", "udd_state")
+                if hasattr(sim_state, field)
+            }
+        return state
+
+    policy_capture: dict[str, Any] = {}
+
+    def diagnostic(env: Any, _obs: Any, _step: int, _policy_step: PolicyStep) -> dict[str, Any]:
+        return {
+            "full_sim_state": full_sim_state(env),
+            "policy_rgb_224": policy_capture["policy_rgb_224"],
+            "model_inputs": policy_capture["model_inputs"],
         }
 
     def success(env: Any, _obs: Any, _info: Mapping[str, Any], done: bool, step: int) -> bool:
@@ -217,6 +266,7 @@ def run(args: argparse.Namespace) -> int:
         suite_horizon=horizon,
         observation_getter=lambda _env, obs, _step: obs,
         physical_state_getter=physical_state,
+        diagnostic_getter=diagnostic,
         success_predicate=success,
         termination_predicate=lambda _env, _obs, _info, done, _step: bool(done),
     )
@@ -228,6 +278,7 @@ def run(args: argparse.Namespace) -> int:
     trace = core.run_clean_episode(mode=args.mode)
     trace_root = output_dir / "trace"
     artifacts, hashes = write_trace_artifacts(trace_root, trace)
+    diagnostic_artifacts, diagnostic_hashes = write_diagnostic_trace_artifacts(trace_root, trace)
     receipt = core.build_receipt(
         trace=trace,
         mode=args.mode,
@@ -235,6 +286,8 @@ def run(args: argparse.Namespace) -> int:
         contract=contract,
         trace_artifacts=artifacts,
         trace_hashes=hashes,
+        diagnostic_trace_artifacts=diagnostic_artifacts,
+        diagnostic_trace_hashes=diagnostic_hashes,
     )
     receipt["source_commit"] = args.source_commit
     receipt["source_tree"] = args.source_tree
