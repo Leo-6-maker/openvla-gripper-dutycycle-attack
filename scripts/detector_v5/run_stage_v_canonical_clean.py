@@ -45,13 +45,13 @@ def _load(path: Path) -> dict[str, Any]:
 
 def _load_raw_capture_plan(path: Path, identity: Mapping[str, Any], horizon: int, gpu: int | None = None) -> tuple[dict[str, Any], frozenset[int]]:
     plan = _load(path)
-    if plan.get("schema") not in {"STAGE_V_M1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1"}:
+    if plan.get("schema") not in {"STAGE_V_M1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1"}:
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_SCHEMA_INVALID")
     if plan.get("status") != "FROZEN_BEFORE_RAW_CAPTURE_RUN":
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_NOT_FROZEN")
     if plan.get("identity") != identity.get("canonical_parent_key"):
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_IDENTITY_MISMATCH")
-    if plan.get("schema") == "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1":
+    if plan.get("schema") in {"STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1"}:
         if gpu is None or str(gpu) not in plan.get("capture_steps_by_gpu", {}):
             raise CanonicalExecutionError("RAW_CAPTURE_PLAN_GPU_MISSING")
         source_steps = plan["capture_steps_by_gpu"][str(gpu)]
@@ -169,6 +169,77 @@ def _load_policy(args: argparse.Namespace, get_processor: Any, get_model: Any, a
     return adapter, model, processor, key
 
 
+def _render_binding_ids(env: Any) -> tuple[int | None, int | None]:
+    observed: int | None = None
+    context_observed: int | None = None
+    context = getattr(getattr(env, "sim", None), "render_context", None)
+    for obj in (env, getattr(env, "sim", None), context):
+        for name in ("render_gpu_device_id", "gpu_device_id", "device_id"):
+            value = getattr(obj, name, None) if obj is not None else None
+            if value is None:
+                continue
+            try:
+                value = int(value)
+            except (TypeError, ValueError):
+                continue
+            if observed is None:
+                observed = value
+            if obj is context and context_observed is None:
+                context_observed = value
+    return observed, context_observed
+
+
+def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path) -> None:
+    import torch
+
+    observed, context_observed = _render_binding_ids(env)
+    env_device_attribute = getattr(env, "render_gpu_device_id", None)
+    env_device = env_device_attribute
+    try:
+        env_device = int(env_device)
+    except (TypeError, ValueError):
+        env_device = observed
+    if observed != int(args.gpu) or env_device != int(args.gpu):
+        raise CanonicalExecutionError("RUNTIME_EGL_DEVICE_BINDING_UNVERIFIED")
+    if not torch.cuda.is_available() or int(torch.cuda.current_device()) != 0:
+        raise CanonicalExecutionError("RUNTIME_CUDA_LOGICAL_DEVICE_UNVERIFIED")
+    properties = torch.cuda.get_device_properties(0)
+    device_uuid = str(getattr(properties, "uuid", "")).strip()
+    if not device_uuid:
+        raise CanonicalExecutionError("RUNTIME_GPU_UUID_UNAVAILABLE")
+    receipt = {
+        "schema": "STAGE_V_M1_V2_1_RUNTIME_BINDING_RECEIPT_V1",
+        "status": "PASS",
+        "logical_worker_id": f"worker_{int(args.gpu)}",
+        "requested_physical_gpu": int(args.gpu),
+        "physical_gpu_index": int(args.gpu),
+        "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+        "torch_current_device": int(torch.cuda.current_device()),
+        "torch_device_uuid": device_uuid,
+        "torch_device_name": torch.cuda.get_device_name(0),
+        "mujoco_gl": os.environ.get("MUJOCO_GL"),
+        "mujoco_egl_device_id": os.environ.get("MUJOCO_EGL_DEVICE_ID"),
+        "env_render_gpu_device_id": env_device,
+        "env_render_gpu_device_id_attribute_present": env_device_attribute is not None,
+        "egl_binding_source": "env.render_gpu_device_id" if env_device_attribute is not None else "renderer_device_observation",
+        "render_context_observed_device_id": context_observed,
+        "renderer_device_information": {
+            "env_class": type(env).__name__,
+            "sim_class": type(getattr(env, "sim", None)).__name__,
+            "render_context_class": type(getattr(getattr(env, "sim", None), "render_context", None)).__name__,
+            "observed_device_id": observed,
+        },
+        "source_commit": str(args.source_commit),
+        "source_tree": str(args.source_tree),
+        "run_label": str(args.run_label or "UNSPECIFIED"),
+        "run_set": str(args.run_set or "UNSPECIFIED"),
+        "pid": os.getpid(),
+        "episode_started": False,
+        "receipt_written_before_step_0": True,
+    }
+    _write(output_dir / "M1_V2_RUNTIME_BINDING_RECEIPT.json", receipt)
+
+
 def run(args: argparse.Namespace) -> int:
     if not args.enable_runtime:
         raise CanonicalExecutionError("RUNTIME_DISABLED_UNTIL_EXPLICIT_RB1_CANARY_AUTHORIZATION")
@@ -198,7 +269,8 @@ def run(args: argparse.Namespace) -> int:
     task_index = int(candidate["task_index"])
     state_index = int(candidate["state_index"])
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
-    os.environ.setdefault("MUJOCO_GL", "egl")
+    os.environ["MUJOCO_GL"] = "egl"
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(args.gpu)
     get_libero_image, get_processor, get_model, adapter_type, benchmark, libero_runtime = _load_external_modules(args.official_snapshot_root, args.upstream_root)
     get_libero_path, OffScreenRenderEnv = libero_runtime
     suite_instance = benchmark.get_benchmark_dict()[suite]()
@@ -215,9 +287,22 @@ def run(args: argparse.Namespace) -> int:
     bddl = os.path.join(get_libero_path("bddl_files"), task.problem_folder, task.bddl_file)
     horizon = int(contract["suite_horizon"])
     num_steps_wait = int(contract["num_steps_wait"])
+    output_dir = args.output_dir.resolve()
+    output_dir.mkdir(parents=True, exist_ok=False)
 
     def env_factory() -> Any:
-        return OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=256, camera_widths=256)
+        env = OffScreenRenderEnv(
+            bddl_file_name=bddl,
+            camera_heights=256,
+            camera_widths=256,
+            render_gpu_device_id=int(args.gpu),
+        )
+        try:
+            _write_runtime_binding_receipt(args, env, output_dir)
+        except BaseException:
+            env.close()
+            raise
+        return env
 
     def policy(step: int, obs: Any, task_label: str) -> PolicyStep:
         image = get_libero_image(obs, 224)
@@ -306,8 +391,6 @@ def run(args: argparse.Namespace) -> int:
     supplied = candidate.get("initial_state_sha256")
     if supplied and str(supplied) != core.initial_state_sha256:
         raise CanonicalExecutionError("CANDIDATE_CANONICAL_INITIAL_STATE_SHA256_MISMATCH")
-    output_dir = args.output_dir.resolve()
-    output_dir.mkdir(parents=True, exist_ok=False)
     trace = core.run_clean_episode(mode=args.mode)
     trace_root = output_dir / "trace"
     artifacts, hashes = write_trace_artifacts(trace_root, trace)
@@ -353,6 +436,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mode", required=True, choices=["CLEAN_QUALIFICATION", "COUNTERFACTUAL_CLEAN_PREFIX"])
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
+    parser.add_argument("--run-label")
+    parser.add_argument("--run-set")
     parser.add_argument("--enable-runtime", action="store_true")
     parser.add_argument("--raw-capture-plan", type=Path)
     args = parser.parse_args(argv)

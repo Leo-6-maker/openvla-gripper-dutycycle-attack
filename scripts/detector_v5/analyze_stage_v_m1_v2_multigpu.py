@@ -83,36 +83,86 @@ def _all_local_pairs(local: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     return [pair for gpu in local["gpus"].values() for pair in gpu["pairs"].values()]
 
 
-def classify_v2(local: Mapping[str, Any], cross: Mapping[str, Any]) -> str:
-    local_all = _all_local_pairs(local)
-    if any(not _full_sim_exact(pair) for pair in local_all):
-        return "SIMULATOR_RUNTIME_NONDETERMINISM"
+def _trace_equal(pair: Mapping[str, Any], field: str) -> bool:
+    return pair.get("traces", {}).get(field, {}).get("equal") is True
+
+
+def evidence_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> dict[str, Any]:
     same_q = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_Q_GPU{gpu}"] for gpu in GPU_IDS]
     same_c = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_C_GPU{gpu}"] for gpu in GPU_IDS]
-    cross_mode = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][name] for gpu in GPU_IDS for name in (f"CROSS_MODE_R1_GPU{gpu}", f"CROSS_MODE_R2_GPU{gpu}")]
-    same_mode_pairs = same_q + same_c
-    if any(not pair["traces"]["raw_observation"]["equal"] and pair["traces"]["policy_rgb"]["equal"] and pair["traces"]["model_input"]["equal"] for pair in same_mode_pairs):
-        return "RAW_OBSERVATION_NON_POLICY_DIFFERENCE"
-    if any(pair["traces"]["raw_observation"]["equal"] and pair["traces"]["policy_rgb"]["equal"] and not pair["traces"]["model_input"]["equal"] for pair in same_mode_pairs):
-        return "PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM"
-    if any((not _pair_exact(pair)) and _visual_diff(pair) and pair.get("traces", {}).get("token", {}).get("equal") and pair.get("traces", {}).get("postprocessed_action", {}).get("equal") for pair in same_q + same_c):
-        return "POLICY_VISUAL_INPUT_NONDETERMINISM_ACTION_STABLE"
+    cross_mode_by_gpu = {
+        gpu: [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"CROSS_MODE_R1_GPU{gpu}"], local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"CROSS_MODE_R2_GPU{gpu}"]]
+        for gpu in GPU_IDS
+    }
+    same_mode = [(f"SAME_MODE_Q_GPU{gpu}", pair) for gpu, pair in zip(GPU_IDS, same_q)] + [(f"SAME_MODE_C_GPU{gpu}", pair) for gpu, pair in zip(GPU_IDS, same_c)]
+    cross_mode = [(f"CROSS_MODE_R{rep}_GPU{gpu}", pair) for gpu, pairs in cross_mode_by_gpu.items() for rep, pair in ((1, pairs[0]), (2, pairs[1]))]
+    cross_gpu = [(f"CROSS_GPU_{label}_{name}", pair) for label, pairs in cross["labels"].items() for name, pair in pairs.items()]
+    raw_only = [name for name, pair in same_mode if not _trace_equal(pair, "raw_observation") and _trace_equal(pair, "policy_rgb") and _trace_equal(pair, "model_input") and _full_sim_exact(pair)]
+    processor_only = [name for name, pair in same_mode if _trace_equal(pair, "raw_observation") and _trace_equal(pair, "policy_rgb") and not _trace_equal(pair, "model_input") and _full_sim_exact(pair)]
+    same_mode_visual = [name for name, pair in same_mode if _visual_diff(pair) and _full_sim_exact(pair)]
+    mode_specific = [name for name, pair in cross_mode if not _pair_exact(pair) and _full_sim_exact(pair)]
+    cross_gpu_visual = [name for name, pair in cross_gpu if _visual_diff(pair) and _full_sim_exact(pair)]
+    simulator = [name for name, pair in same_mode + cross_mode + cross_gpu if not _full_sim_exact(pair)]
+    visual_pairs = [pair for _name, pair in same_mode + cross_mode + cross_gpu if _visual_diff(pair) and _full_sim_exact(pair)]
+    action_divergent = [name for name, pair in same_mode + cross_mode + cross_gpu if _visual_diff(pair) and _full_sim_exact(pair) and (not _trace_equal(pair, "token") or not _trace_equal(pair, "postprocessed_action"))]
+    action_stable = bool(visual_pairs) and all(_trace_equal(pair, "token") and _trace_equal(pair, "postprocessed_action") for pair in visual_pairs)
+    mechanisms: set[str] = set()
+    if raw_only:
+        mechanisms.add("RAW_OBSERVATION_NON_POLICY_DIFFERENCE")
+    if processor_only:
+        mechanisms.add("PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM")
+    if same_mode_visual:
+        mechanisms.add("SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM")
+    if mode_specific:
+        mechanisms.add("MODE_PATH_SPECIFIC_VISUAL_DIVERGENCE")
+    if cross_gpu_visual:
+        mechanisms.add("GPU_CONTEXT_DEPENDENT_VISUAL_DIVERGENCE")
+    if simulator:
+        mechanisms.add("SIMULATOR_RUNTIME_NONDETERMINISM")
+    return {
+        "raw_only_pairs": raw_only,
+        "processor_only_pairs": processor_only,
+        "same_mode_visual_pairs": same_mode_visual,
+        "mode_specific_pairs": mode_specific,
+        "cross_gpu_visual_pairs": cross_gpu_visual,
+        "simulator_pairs": simulator,
+        "action_divergent_pairs": action_divergent,
+        "same_mode_visual_mismatch_gpus": sorted({int(name.rsplit("GPU", 1)[1]) for name in same_mode_visual}),
+        "mode_specific_mismatch_gpus": sorted({int(name.rsplit("GPU", 1)[1]) for name in mode_specific}),
+        "action_stable": action_stable,
+        "mechanisms": sorted(mechanisms),
+        "mixed_mechanisms": len(mechanisms) > 1,
+    }
+
+
+def classify_v2_with_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> tuple[str, dict[str, Any]]:
+    profile = evidence_profile(local, cross)
+    same_q = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_Q_GPU{gpu}"] for gpu in GPU_IDS]
+    same_c = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_C_GPU{gpu}"] for gpu in GPU_IDS]
+    cross_mode = [pair for gpu in GPU_IDS for pair in (local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"CROSS_MODE_R1_GPU{gpu}"], local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"CROSS_MODE_R2_GPU{gpu}"])]
     same_mode_exact = all(_pair_exact(pair) for pair in same_q + same_c)
-    cross_gpu_visual = [pair for pairs in cross["labels"].values() for pair in pairs.values() if _visual_diff(pair) and _full_sim_exact(pair)]
-    if same_mode_exact and cross_gpu_visual:
-        return "GPU_CONTEXT_DEPENDENT_VISUAL_DIVERGENCE"
-    same_mode_mismatch_gpus = {gpu for gpu in GPU_IDS if any(_visual_diff(pair) for pair in (same_q[gpu], same_c[gpu]))}
-    mode_mismatch_gpus = {gpu for gpu in GPU_IDS if any(not _pair_exact(pair) for pair in (cross_mode[gpu * 2], cross_mode[gpu * 2 + 1]))}
-    if same_mode_mismatch_gpus and mode_mismatch_gpus:
-        return "HETEROGENEOUS_MULTI_GPU_DIVERGENCE"
-    if not same_mode_exact and any(_visual_diff(pair) for pair in same_q + same_c):
-        return "SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM"
-    mode_diff_count = sum(not _pair_exact(pair) for pair in cross_mode)
-    if same_mode_exact and mode_diff_count >= 8:
-        return "MODE_PATH_SPECIFIC_VISUAL_DIVERGENCE"
-    if any(not _pair_exact(pair) for pair in local_all) or cross_gpu_visual:
-        return "HETEROGENEOUS_MULTI_GPU_DIVERGENCE"
-    return "UNCLASSIFIED"
+    if profile["simulator_pairs"]:
+        return "SIMULATOR_RUNTIME_NONDETERMINISM", profile
+    if profile["mixed_mechanisms"]:
+        return "HETEROGENEOUS_MULTI_GPU_DIVERGENCE", profile
+    if same_mode_exact and profile["cross_gpu_visual_pairs"]:
+        return "GPU_CONTEXT_DEPENDENT_VISUAL_DIVERGENCE", profile
+    if profile["raw_only_pairs"]:
+        return "RAW_OBSERVATION_NON_POLICY_DIFFERENCE", profile
+    if profile["processor_only_pairs"]:
+        return "PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM", profile
+    if profile["same_mode_visual_pairs"]:
+        return "SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM", profile
+    if same_mode_exact and len(profile["mode_specific_pairs"]) >= 8:
+        return "MODE_PATH_SPECIFIC_VISUAL_DIVERGENCE", profile
+    if profile["mode_specific_pairs"] or profile["cross_gpu_visual_pairs"]:
+        return "HETEROGENEOUS_MULTI_GPU_DIVERGENCE", profile
+    return "UNCLASSIFIED", profile
+
+
+def classify_v2(local: Mapping[str, Any], cross: Mapping[str, Any]) -> str:
+    classification, _profile = classify_v2_with_profile(local, cross)
+    return classification
 
 
 def _first_steps(pairs: Mapping[str, Mapping[str, Any]]) -> dict[str, int | None]:
@@ -125,7 +175,7 @@ def _first_steps(pairs: Mapping[str, Mapping[str, Any]]) -> dict[str, int | None
     return {"t_star": min(values) if values else None}
 
 
-def make_r2_plan(root: Path, identity: str, local: Mapping[str, Any], cross: Mapping[str, Any], local_sha: str, cross_sha: str) -> dict[str, Any]:
+def make_r2_plan(root: Path, identity: str, local: Mapping[str, Any], cross: Mapping[str, Any], local_sha: str, cross_sha: str, *, schema: str = "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1") -> dict[str, Any]:
     local_t: dict[str, int | None] = {}
     for gpu in GPU_IDS:
         local_t[f"gpu_{gpu:02d}"] = _first_steps(local["gpus"][f"gpu_{gpu:02d}"]["pairs"])["t_star"]
@@ -138,7 +188,7 @@ def make_r2_plan(root: Path, identity: str, local: Mapping[str, Any], cross: Map
 
     by_gpu = {str(gpu): sorted({0, *n2(global_t), *n2(local_t[f"gpu_{gpu:02d}"])}) for gpu in GPU_IDS}
     return {
-        "schema": "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1",
+        "schema": schema,
         "status": "FROZEN_BEFORE_RAW_CAPTURE_RUN",
         "identity": identity,
         "global_t_star": global_t,
@@ -202,22 +252,24 @@ def analyze_root(root: Path, *, final: bool = False) -> dict[str, Any]:
     cross_path = root / "M1_V2_R1_CROSS_GPU_PAIR_MATRIX.json"
     _write(local_path, local)
     _write(cross_path, cross)
-    classification = classify_v2(local, cross)
+    classification, profile = classify_v2_with_profile(local, cross)
     aggregate = {
         "schema": "STAGE_V_M1_V2_R1_AGGREGATE_REPORT_V1", "identity": identity,
         "gpu_local_pair_count": 32, "cross_gpu_pair_count": 112,
         "classification": classification,
-        "same_mode_q_visual_mismatch_gpus": sum(not _pair_exact(local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_Q_GPU{gpu}"]) for gpu in GPU_IDS),
-        "same_mode_c_visual_mismatch_gpus": sum(not _pair_exact(local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_C_GPU{gpu}"]) for gpu in GPU_IDS),
+        "same_mode_q_visual_mismatch_gpus": sum(_visual_diff(local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_Q_GPU{gpu}"]) for gpu in GPU_IDS),
+        "same_mode_c_visual_mismatch_gpus": sum(_visual_diff(local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_C_GPU{gpu}"]) for gpu in GPU_IDS),
         "full_sim_exact_pairs": sum(_full_sim_exact(pair) for pair in _all_local_pairs(local)),
         "token_action_exact_pairs": sum(pair.get("traces", {}).get("token", {}).get("equal") and pair.get("traces", {}).get("postprocessed_action", {}).get("equal") for pair in _all_local_pairs(local)),
+        "evidence_profile": profile,
     }
     aggregate_path = root / "M1_V2_R1_AGGREGATE_REPORT.json"
     _write(aggregate_path, aggregate)
     (root / "M1_V2_R1_AGGREGATE_REPORT.md").write_text("# M1-V2 R1 aggregate report\n\n" + "\n".join(f"- {key}: {value}" for key, value in aggregate.items() if key != "schema") + "\n", encoding="utf-8")
-    plan = make_r2_plan(root, identity, local, cross, _sha256(local_path), _sha256(cross_path))
+    plan_schema = "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1" if manifest.get("protocol_schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU" else "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1"
+    plan = make_r2_plan(root, identity, local, cross, _sha256(local_path), _sha256(cross_path), schema=plan_schema)
     _write(root / "M1_V2_RAW_CAPTURE_PLAN.json", plan)
-    _write(root / "M1_V2_CLASSIFICATION_RECEIPT.json", {"schema": "STAGE_V_M1_V2_CLASSIFICATION_RECEIPT_V1", "status": "PASS_CLASSIFIED" if final else "PENDING_R2_RAW_CAPTURE", "classification": classification, "rb1a_status": "HOLD", "identity": identity, "source_commit": manifest.get("source_commit"), "source_tree": manifest.get("source_tree")})
+    _write(root / "M1_V2_CLASSIFICATION_RECEIPT.json", {"schema": "STAGE_V_M1_V2_CLASSIFICATION_RECEIPT_V1", "status": "PASS_CLASSIFIED" if final else "PENDING_R2_RAW_CAPTURE", "classification": classification, "evidence_profile": profile, "rb1a_status": "HOLD", "identity": identity, "source_commit": manifest.get("source_commit"), "source_tree": manifest.get("source_tree")})
     if final:
         raw_audits = {f"gpu_{gpu:02d}/{label}": _raw_audit(_run(root, gpu, label, "raw_runs")) for gpu in GPU_IDS for label in LABELS}
         if any(value["verdict"] != "PASS" for value in raw_audits.values()):
@@ -228,8 +280,8 @@ def analyze_root(root: Path, *, final: bool = False) -> dict[str, Any]:
         clusters = hash_clusters(root)
         _write(root / "M1_V2_NUMERIC_VISUAL_FORENSIC.json", numeric)
         _write(root / "M1_V2_VISUAL_HASH_CLUSTER_REPORT.json", clusters)
-        _write(root / "M1_V2_INDEPENDENT_AUDIT.json", {"schema": "STAGE_V_M1_V2_INDEPENDENT_AUDIT_V1", "verdict": "PASS", "r1_run_count": 32, "gpu_local_pair_count": 32, "cross_gpu_pair_count": 112, "raw_audits": raw_audits, "classification": classification})
-        _write(root / "M1_V2_COMPLETE.json", {"schema": "STAGE_V_M1_V2_COMPLETE_V1", "status": "PASS_CLASSIFIED", "classification": classification, "rb1a_status": "HOLD"})
+        _write(root / "M1_V2_PRODUCER_ANALYSIS.json", {"schema": "STAGE_V_M1_V2_PRODUCER_ANALYSIS_V1", "verdict": "PASS", "r1_run_count": 32, "gpu_local_pair_count": 32, "cross_gpu_pair_count": 112, "raw_audits": raw_audits, "classification": classification, "evidence_profile": profile})
+        _write(root / "M1_V2_COMPLETE.json", {"schema": "STAGE_V_M1_V2_COMPLETE_V1", "status": "PASS_CLASSIFIED", "classification": classification, "evidence_profile": profile, "rb1a_status": "HOLD"})
     return {"classification": classification, "local": local, "cross": cross, "plan": plan, "aggregate": aggregate}
 
 
