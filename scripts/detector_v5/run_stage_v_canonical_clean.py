@@ -18,6 +18,7 @@ from typing import Any, Mapping
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
+CANONICAL_ACTION_DECODE_CONTRACT = "OfficialOpenVLAActionAdapter.predict_action_with_scores_single_generation;attention_implementation=eager"
 
 from gripper_attack.stage_v_canonical_execution_core import (  # noqa: E402
     CANONICAL_INIT_STATE_HASH_ALGORITHM,
@@ -67,16 +68,40 @@ def _load_external_modules(snapshot_root: Path, upstream_root: Path) -> tuple[An
 
 
 def _load_policy(args: argparse.Namespace, get_processor: Any, get_model: Any, adapter_type: Any) -> tuple[Any, Any, Any, str]:
+    """Load the pinned model without inheriting an unavailable FlashAttention dependency."""
+    import torch
+    from transformers import AutoConfig, AutoImageProcessor, AutoModelForVision2Seq, AutoProcessor
+    from prismatic.extern.hf.configuration_prismatic import OpenVLAConfig
+    from prismatic.extern.hf.modeling_prismatic import OpenVLAForActionPrediction
+    from prismatic.extern.hf.processing_prismatic import PrismaticImageProcessor, PrismaticProcessor
+
+    try:
+        AutoConfig.register("openvla", OpenVLAConfig)
+        AutoImageProcessor.register(OpenVLAConfig, PrismaticImageProcessor)
+        AutoProcessor.register(OpenVLAConfig, PrismaticProcessor)
+        AutoModelForVision2Seq.register(OpenVLAConfig, OpenVLAForActionPrediction)
+    except ValueError:
+        # The upstream imports may already have registered the same classes.
+        pass
     cfg = SimpleNamespace(
         model_family="openvla",
         pretrained_checkpoint=str(args.model_path),
         load_in_8bit=False,
         load_in_4bit=False,
     )
-    model = get_model(cfg)
+    model = AutoModelForVision2Seq.from_pretrained(
+        cfg.pretrained_checkpoint,
+        attn_implementation="eager",
+        torch_dtype=torch.bfloat16,
+        load_in_8bit=False,
+        load_in_4bit=False,
+        low_cpu_mem_usage=True,
+        trust_remote_code=True,
+    )
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
     processor = get_processor(cfg)
     model.eval()
-    device = next(model.parameters()).device
     stats = getattr(model, "norm_stats", {})
     key = args.suite
     if key not in stats and f"{key}_no_noops" in stats:
@@ -104,6 +129,8 @@ def run(args: argparse.Namespace) -> int:
         raise CanonicalExecutionError("RUNNER_SHA256_MISMATCH")
     if contract["initial_state_hash_algorithm"] != CANONICAL_INIT_STATE_HASH_ALGORITHM or contract["initial_state_identity_schema"] != CANONICAL_INIT_STATE_SCHEMA:
         raise CanonicalExecutionError("INITIAL_STATE_CONTRACT_MISMATCH")
+    if contract["action_decode_contract"] != CANONICAL_ACTION_DECODE_CONTRACT:
+        raise CanonicalExecutionError("ACTION_DECODE_CONTRACT_MISMATCH")
     if str(contract["source_commit"]) != str(args.source_commit) or str(contract["source_tree"]) != str(args.source_tree):
         raise CanonicalExecutionError("SOURCE_BINDING_MISMATCH")
     if int(contract["seed"]) != int(args.seed) or int(contract["num_steps_wait"]) < 0:
