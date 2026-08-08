@@ -1,0 +1,55 @@
+{
+  "schema": "STAGE_V_M1_V2_FAILURE_BASELINE_ATTRIBUTION_V1",
+  "status": "HOLD_UNRESOLVED_BASELINE_FAILURE",
+  "baseline_commit": "bd382c7971d1653e944102707e3f257796eab98b",
+  "baseline_tree": "c8eb77f8ffda069fff159ec62e196fba54a5fbe0",
+  "v2_commit": "e721db9b7b4ee3c6b82f395495e6f8112a63107c",
+  "v2_tree": "7a7fb6ed2e329f49d4bff1a577558ad54fdb682f",
+  "comparison": {
+    "python": "D:/Users/anaconda/python.exe",
+    "pytest": "D:/Users/anaconda/Scripts/pytest.exe",
+    "pytest_args": "-q --tb=long",
+    "working_directory": "each checkout root",
+    "environment": "PYTHONPATH=(Get-Location).Path"
+  },
+  "full_detector_v5_v2_observations": {
+    "v1_protocol_blob_test": {
+      "test_name": "test_m1_v1_protocol_blob_is_frozen",
+      "test_file": "tests/detector_v5/test_stage_v1_m1_visual_determinism.py",
+      "failure_message": "AssertionError: assert '3f53adfb8973a55ed60f1b9fa061f444a3145278b219643b820dcac82a2e97b8' == '18d2421b172cef881b8de70c4bccf0c65174dd66a8402b75f0696d1878f96a69'",
+      "stack_trace": "tests\\detector_v5\\test_stage_v1_m1_visual_determinism.py:37 in test_m1_v1_protocol_blob_is_frozen",
+      "v2_result": "failed"
+    },
+    "dynamic8_end_to_end": {
+      "test_name": "test_dynamic8_end_to_end_accepts_all_parents",
+      "test_file": "tests/detector_v5/test_stage_v_dynamic8.py",
+      "failure_message": "AssertionError: assert result.returncode == 0",
+      "stack_trace": "tests\\detector_v5\\test_stage_v_dynamic8.py:524 in test_dynamic8_end_to_end_accepts_all_parents",
+      "underlying_abort_receipt_reason": "WORKER_HEARTBEAT_MISSING",
+      "v2_result": "failed"
+    }
+  },
+  "tests": [
+    {
+      "test_name": "tests/detector_v5/test_stage_v1_m1_visual_determinism.py::test_m1_v1_protocol_blob_is_frozen",
+      "fails_on_parent": true,
+      "fails_on_v2": true,
+      "parent_failure_signature": "AssertionError: worktree bytes SHA256 3f53adfb8973a55ed60f1b9fa061f444a3145278b219643b820dcac82a2e97b8 != frozen expected 18d2421b172cef881b8de70c4bccf0c65174dd66a8402b75f0696d1878f96a69",
+      "v2_failure_signature": "AssertionError: worktree bytes SHA256 3f53adfb8973a55ed60f1b9fa061f444a3145278b219643b820dcac82a2e97b8 != frozen expected 18d2421b172cef881b8de70c4bccf0c65174dd66a8402b75f0696d1878f96a69",
+      "signature_equivalent": true,
+      "introduced_by_v2": false,
+      "classification": "PRE_EXISTING_FAILURE"
+    },
+    {
+      "test_name": "tests/detector_v5/test_stage_v_dynamic8.py::test_dynamic8_end_to_end_accepts_all_parents",
+      "fails_on_parent": false,
+      "fails_on_v2": false,
+      "parent_failure_signature": "PASS in isolated parent-baseline invocation",
+      "v2_failure_signature": "PASS in isolated V2 invocation",
+      "signature_equivalent": false,
+      "introduced_by_v2": null,
+      "classification": "UNRESOLVED_BASELINE_FAILURE",
+      "note": "The full detector_v5 run observed WORKER_HEARTBEAT_MISSING, but the exact test passed on both parent and V2 in the required isolated comparison. No regression attribution is proven."
+    }
+  ]
+}
