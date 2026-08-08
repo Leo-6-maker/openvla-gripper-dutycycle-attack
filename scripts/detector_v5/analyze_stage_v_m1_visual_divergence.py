@@ -182,7 +182,7 @@ def _raw_entries(run_root: Path) -> dict[tuple[int, str, str], dict[str, Any]]:
     if not manifest_path.is_file():
         return {}
     manifest = _load(manifest_path)
-    return {(int(item["step"]), str(item["group"]), str(item["field"])): item for item in manifest.get("entries", [])}
+    return {(int(item.get("step", 0)), str(item["group"]), str(item["field"])): item for item in manifest.get("entries", [])}
 
 
 def _numeric_array(run_root: Path, entry: Mapping[str, Any]):
