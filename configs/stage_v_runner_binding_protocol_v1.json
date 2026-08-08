@@ -1,0 +1,40 @@
+{
+  "schema": "STAGE_V_RUNNER_BINDING_PROTOCOL_V1",
+  "protocol_id": "STAGE_V_RB1_RUNNER_BOUND_CLEAN_CORE_20260808",
+  "status": "FROZEN_PROTOCOL_SCHEMA_SHARED_CORE_BINDING_PENDING_RB1",
+  "equality_mode": "EXACT_CANONICAL_JSON",
+  "shared_clean_core_required": true,
+  "contract_fields": [
+    "clean_core_sha256",
+    "source_commit",
+    "source_tree",
+    "runner_sha256",
+    "model_tree_sha256",
+    "processor_sha256",
+    "tokenizer_sha256",
+    "prompt_template",
+    "unnorm_key",
+    "seed",
+    "num_steps_wait",
+    "suite_horizon",
+    "termination_predicate",
+    "success_predicate",
+    "reset_restore_contract",
+    "action_decode_contract",
+    "action_postprocess_contract",
+    "gripper_semantics",
+    "initial_state_hash_algorithm",
+    "initial_state_identity_schema"
+  ],
+  "protected_boundaries": [
+    "eval160_reads",
+    "protected_eval_reads",
+    "vis_pgd_attack_rollouts"
+  ],
+  "modes": [
+    "CLEAN_QUALIFICATION",
+    "COUNTERFACTUAL"
+  ],
+  "counterfactual_clean_prefix": "MUST_CALL_THE_SAME_CANONICAL_EXECUTION_CORE_AS_CLEAN_QUALIFICATION",
+  "new_science_rollouts_authorized": false
+}
