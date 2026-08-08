@@ -69,8 +69,12 @@ def _array_descriptor(value: Any) -> dict[str, Any] | None:
         shape = [int(item) for item in getattr(value, "shape", ())]
         try:
             raw = value.numpy().tobytes()
-        except Exception as exc:  # pragma: no cover - runtime-only device edge
-            raise CanonicalExecutionError("ARRAY_BYTES_UNAVAILABLE") from exc
+        except Exception:
+            try:
+                import torch
+                raw = value.view(torch.uint8).numpy().tobytes()
+            except Exception as exc:  # pragma: no cover - runtime-only device edge
+                raise CanonicalExecutionError("ARRAY_BYTES_UNAVAILABLE") from exc
         return {"kind": "array", "dtype": dtype, "shape": shape, "raw_sha256": hashlib.sha256(raw).hexdigest()}
     if hasattr(value, "tobytes") and hasattr(value, "shape") and hasattr(value, "dtype"):
         try:

@@ -3,12 +3,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from gripper_attack.stage_v_canonical_execution_core import (
     CANONICAL_INIT_STATE_HASH_ALGORITHM,
     CANONICAL_INIT_STATE_SCHEMA,
     CONTRACT_FIELDS,
     CanonicalExecutionCore,
     PolicyStep,
+    canonical_value,
     sha256_file,
     write_diagnostic_trace_artifacts,
     write_trace_artifacts,
@@ -129,6 +132,14 @@ def test_diagnostic_trace_artifacts_are_separate_from_v1_traces(tmp_path: Path) 
     assert set(common_artifacts) == {"initial_state", "policy_token_trace", "postprocessed_action_trace", "observation_trace", "physical_state_trace"}
     assert set(diagnostic_artifacts) == {"full_sim_state_trace", "policy_rgb_224_trace", "model_input_trace"}
     assert set(diagnostic_hashes) == {"full_sim_state_trace_sha256", "policy_rgb_224_trace_sha256", "model_input_trace_sha256"}
+
+
+def test_bfloat16_tensor_has_canonical_bytes() -> None:
+    torch = pytest.importorskip("torch")
+    descriptor = canonical_value(torch.tensor([1.0, 2.0], dtype=torch.bfloat16))
+    assert descriptor["dtype"] == "torch.bfloat16"
+    assert descriptor["shape"] == [2]
+    assert len(descriptor["raw_sha256"]) == 64
 
 
 def test_producer_receipt_requires_independent_audit(tmp_path: Path) -> None:
