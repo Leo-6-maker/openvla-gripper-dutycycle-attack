@@ -12,10 +12,10 @@ from typing import Any, Mapping
 
 try:
     from .analyze_stage_v_m1_v2_multigpu import analyze_root
-    from .run_stage_v_m1_v2_8gpu import BOUNDARIES, GPU_IDS, LABELS, REPO_ROOT, V2Error, _load, _write, sha256_file, validate_protocol
+    from .run_stage_v_m1_v2_8gpu import BOUNDARIES, GPU_IDS, IDENTITY, LABELS, REPO_ROOT, V2Error, _load, _write, sha256_file, validate_binding_receipt, validate_protocol
 except ImportError:  # direct script execution
     from analyze_stage_v_m1_v2_multigpu import analyze_root
-    from run_stage_v_m1_v2_8gpu import BOUNDARIES, GPU_IDS, LABELS, REPO_ROOT, V2Error, _load, _write, sha256_file, validate_protocol
+    from run_stage_v_m1_v2_8gpu import BOUNDARIES, GPU_IDS, IDENTITY, LABELS, REPO_ROOT, V2Error, _load, _write, sha256_file, validate_binding_receipt, validate_protocol
 
 
 def _git(*args: str) -> str:
@@ -31,10 +31,14 @@ def _verify_runs(root: Path, run_set: str) -> None:
             if not receipt_path.is_file():
                 raise V2Error(f"V2_RECEIPT_MISSING:{run_set}:gpu_{gpu:02d}:{label}")
             receipt = _load(receipt_path)
-            if receipt.get("canonical_parent_key") != "libero_10/task_08/state_47":
+            if receipt.get("canonical_parent_key") != IDENTITY:
                 raise V2Error(f"V2_IDENTITY_MISMATCH:{run_set}:gpu_{gpu:02d}:{label}")
             if any(receipt.get(field, 0) != 0 for field in BOUNDARIES):
                 raise V2Error(f"V2_PROTECTED_BOUNDARY_NONZERO:{run_set}:gpu_{gpu:02d}:{label}")
+            binding = _load(run / "M1_V2_WORKER_BINDING_RECEIPT.json")
+            validate_binding_receipt(binding, gpu)
+            if binding.get("run_set") != run_set or binding.get("phase") != label:
+                raise V2Error(f"V2_BINDING_CONTEXT_MISMATCH:{run_set}:gpu_{gpu:02d}:{label}")
 
 
 def _seal(root: Path, name: str) -> None:
@@ -52,6 +56,13 @@ def audit_root(root: Path, *, final: bool) -> dict[str, Any]:
     manifest = _load(root / "M1_V2_MANIFEST.json")
     if manifest.get("status") != "PREPARED_NO_RUNTIME_STARTED":
         raise V2Error("V2_ROOT_ALREADY_CONSUMED")
+    if manifest.get("diagnostic_identity") != IDENTITY:
+        raise V2Error("V2_IDENTITY_MISMATCH")
+    for field in ("new_science_rollouts_authorized", "formal_parent_promotion_authorized", "vulnerability_label_generation_authorized", "student_training_authorized", "protected_evaluation_authorized", "eval160_authorized", "vis_pgd_authorized"):
+        if manifest.get(field) is not False:
+            raise V2Error(f"V2_AUTHORIZATION_BOUNDARY_INVALID:{field}")
+    if any(manifest.get(field, 0) != 0 for field in BOUNDARIES):
+        raise V2Error("V2_PROTECTED_BOUNDARY_NONZERO")
     if manifest.get("source_commit") != _git("rev-parse", "HEAD") or manifest.get("source_tree") != _git("rev-parse", "HEAD^{tree}"):
         raise V2Error("V2_SOURCE_BINDING_MISMATCH")
     if _git("status", "--porcelain"):
@@ -60,6 +71,10 @@ def audit_root(root: Path, *, final: bool) -> dict[str, Any]:
         raise V2Error("V2_PROTOCOL_SHA256_MISMATCH")
     _verify_runs(root, "runs")
     result = analyze_root(root, final=final)
+    local_count = sum(len(value["pairs"]) for value in result["local"]["gpus"].values())
+    cross_count = sum(len(value) for value in result["cross"]["labels"].values())
+    if local_count != 32 or cross_count != 112:
+        raise V2Error(f"V2_PAIR_COUNT_MISMATCH:{local_count}:{cross_count}")
     receipt = {
         "schema": "STAGE_V_M1_V2_INDEPENDENT_AUDIT_V1",
         "verdict": "PASS",

@@ -256,3 +256,15 @@ def test_unmapped_process_telemetry_fails_closed(monkeypatch) -> None:
     assert result["status"] == "HOLD_WAIT_FOR_8GPU_SAFE"
     assert result["unmapped_processes"][0]["gpu_uuid"] == "GPU-UNKNOWN"
     assert all("UNMAPPED_PROCESS_TELEMETRY" in row["reasons"] for row in result["gpu_rows"])
+
+
+def test_binding_receipt_contract_is_fail_closed() -> None:
+    valid = {
+        "logical_worker_id": "worker_3", "requested_physical_gpu": 3,
+        "gpu_uuid": "GPU-3", "cuda_visible_devices": "3", "torch_current_device": 0,
+        "mujoco_gl": "egl", "egl_device_identifier": 3,
+        "renderer_device_information": {"observed_device_id": 3},
+    }
+    supervisor.validate_binding_receipt(valid, 3)
+    with pytest.raises(supervisor.V2Error, match="GPU_BINDING_RECEIPT_GPU_UUID_MISSING"):
+        supervisor.validate_binding_receipt({**valid, "gpu_uuid": ""}, 3)

@@ -138,6 +138,24 @@ def _pmon_processes(text: str) -> list[dict[str, Any]]:
     return result
 
 
+def validate_binding_receipt(receipt: Mapping[str, Any], gpu: int) -> None:
+    expected = {
+        "logical_worker_id": f"worker_{gpu}",
+        "requested_physical_gpu": gpu,
+        "cuda_visible_devices": str(gpu),
+        "torch_current_device": 0,
+        "mujoco_gl": "egl",
+        "egl_device_identifier": gpu,
+    }
+    for key, value in expected.items():
+        if receipt.get(key) != value:
+            raise V2Error(f"GPU_BINDING_RECEIPT_INVALID:{key}:gpu_{gpu:02d}")
+    if not str(receipt.get("gpu_uuid", "")).strip():
+        raise V2Error(f"GPU_BINDING_RECEIPT_GPU_UUID_MISSING:gpu_{gpu:02d}")
+    if not isinstance(receipt.get("renderer_device_information"), Mapping):
+        raise V2Error(f"GPU_BINDING_RECEIPT_RENDERER_INFO_MISSING:gpu_{gpu:02d}")
+
+
 def gpu_preflight(*, gpu_ids: tuple[int, ...] = GPU_IDS, idle_memory_max_mib: int = 1024) -> dict[str, Any]:
     """Take one conservative all-GPU snapshot; any telemetry gap is unsafe."""
     gpu_text = _query_nvidia_smi(
@@ -314,13 +332,29 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
                 break
         if observed != int(args.gpu):
             raise V2Error("EGL_DEVICE_BINDING_MISMATCH")
+        properties = torch.cuda.get_device_properties(0)
+        gpu_uuid = str(getattr(properties, "uuid", "")).strip()
+        if not gpu_uuid:
+            raise V2Error("CANARY_GPU_UUID_UNAVAILABLE")
+        renderer_device_information = {
+            "env_class": type(env).__name__,
+            "sim_class": type(getattr(env, "sim", None)).__name__,
+            "render_context_class": type(getattr(getattr(env, "sim", None), "render_context", None)).__name__,
+            "observed_device_id": observed,
+        }
         result = {
             "schema": "STAGE_V_M1_V2_RENDERER_BINDING_CANARY_V1", "status": "PASS",
-            "physical_gpu_index": int(args.gpu), "cuda_visible_devices": os.environ["CUDA_VISIBLE_DEVICES"],
-            "cuda_logical_device": 0, "cuda_device_name": torch.cuda.get_device_name(0),
-            "egl_device_id": observed, "egl_binding_source": "OffScreenRenderEnv.render_gpu_device_id",
+            "logical_worker_id": f"worker_{int(args.gpu)}", "requested_physical_gpu": int(args.gpu),
+            "physical_gpu_index": int(args.gpu), "gpu_uuid": gpu_uuid,
+            "cuda_visible_devices": os.environ["CUDA_VISIBLE_DEVICES"],
+            "torch_current_device": int(torch.cuda.current_device()), "cuda_logical_device": 0,
+            "cuda_device_name": torch.cuda.get_device_name(0), "mujoco_gl": os.environ["MUJOCO_GL"],
+            "egl_device_identifier": observed, "egl_device_id": observed,
+            "egl_binding_source": "OffScreenRenderEnv.render_gpu_device_id",
+            "renderer_device_information": renderer_device_information,
             "episode_started": False,
         }
+        validate_binding_receipt(result, int(args.gpu))
     finally:
         env.close()
     _write(args.canary_output, result)
@@ -344,6 +378,8 @@ def run_renderer_canary(root: Path, args: argparse.Namespace) -> None:
     if any(item["returncode"] != 0 or not Path(item["output"]).is_file() or _load(Path(item["output"])).get("status") != "PASS" for item in results):
         _write(root / "M1_V2_RENDERER_CANARY.json", {"schema": "STAGE_V_M1_V2_RENDERER_CANARY_AGGREGATE_V1", "status": "HOLD_RENDER_DEVICE_BINDING_MISMATCH", "results": results})
         raise V2Error("HOLD_RENDER_DEVICE_BINDING_MISMATCH")
+    for gpu in GPU_IDS:
+        validate_binding_receipt(_load(output_root / f"gpu_{gpu:02d}.json"), gpu)
     _write(root / "M1_V2_RENDERER_CANARY.json", {"schema": "STAGE_V_M1_V2_RENDERER_CANARY_AGGREGATE_V1", "status": "PASS", "gpu_ids": list(GPU_IDS), "results": results})
 
 
@@ -368,6 +404,21 @@ def _run_one(root: Path, args: argparse.Namespace, gpu: int, label: str, run_set
     audit = subprocess.run([str(sys.executable), str(REPO_ROOT / "scripts/detector_v5/audit_stage_v_rb1_receipt.py"), "--protocol", str(REPO_ROOT / "configs/stage_v_rb1_runtime_equivalence_protocol_v1.json"), "--receipt", str(producer), "--artifact-root", str(output / "trace"), "--core", str(REPO_ROOT / "src/gripper_attack/stage_v_canonical_execution_core.py"), "--output", str(independent), "--repo", str(REPO_ROOT)], cwd=str(REPO_ROOT), env=env, capture_output=True, text=True, check=False)
     if audit.returncode != 0 or not independent.is_file():
         return {"gpu": gpu, "label": label, "status": "FAIL_AUDIT", "returncode": audit.returncode, "stderr": audit.stderr[-1000:]}
+    try:
+        canary = _load(root / "renderer_canary" / f"gpu_{gpu:02d}.json")
+        validate_binding_receipt(canary, gpu)
+        _write(output / "M1_V2_WORKER_BINDING_RECEIPT.json", {
+            "schema": "STAGE_V_M1_V2_WORKER_BINDING_RECEIPT_V1", "status": "PASS",
+            "logical_worker_id": canary["logical_worker_id"], "requested_physical_gpu": gpu,
+            "gpu_uuid": canary["gpu_uuid"], "cuda_visible_devices": canary["cuda_visible_devices"],
+            "torch_current_device": canary["torch_current_device"], "mujoco_gl": canary["mujoco_gl"],
+            "egl_device_identifier": canary["egl_device_identifier"],
+            "renderer_device_information": canary["renderer_device_information"],
+            "run_set": run_set, "phase": label,
+            "renderer_canary_receipt": f"renderer_canary/gpu_{gpu:02d}.json",
+        })
+    except (OSError, ValueError, KeyError, V2Error) as exc:
+        return {"gpu": gpu, "label": label, "status": "FAIL_BINDING_RECEIPT", "reason": str(exc)}
     return {"gpu": gpu, "label": label, "status": "PASS", "output": str(output), "mode": mode, "replicate": replicate}
 
 
