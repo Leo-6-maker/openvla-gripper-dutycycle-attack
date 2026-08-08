@@ -43,15 +43,21 @@ def _load(path: Path) -> dict[str, Any]:
     return dict(value)
 
 
-def _load_raw_capture_plan(path: Path, identity: Mapping[str, Any], horizon: int) -> tuple[dict[str, Any], frozenset[int]]:
+def _load_raw_capture_plan(path: Path, identity: Mapping[str, Any], horizon: int, gpu: int | None = None) -> tuple[dict[str, Any], frozenset[int]]:
     plan = _load(path)
-    if plan.get("schema") != "STAGE_V_M1_RAW_CAPTURE_PLAN_V1":
+    if plan.get("schema") not in {"STAGE_V_M1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1"}:
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_SCHEMA_INVALID")
     if plan.get("status") != "FROZEN_BEFORE_RAW_CAPTURE_RUN":
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_NOT_FROZEN")
     if plan.get("identity") != identity.get("canonical_parent_key"):
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_IDENTITY_MISMATCH")
-    steps = frozenset(int(step) for step in plan.get("capture_steps", []))
+    if plan.get("schema") == "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1":
+        if gpu is None or str(gpu) not in plan.get("capture_steps_by_gpu", {}):
+            raise CanonicalExecutionError("RAW_CAPTURE_PLAN_GPU_MISSING")
+        source_steps = plan["capture_steps_by_gpu"][str(gpu)]
+    else:
+        source_steps = plan.get("capture_steps", [])
+    steps = frozenset(int(step) for step in source_steps)
     if not steps or min(steps) < 0 or max(steps) >= horizon:
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_STEP_INVALID")
     return plan, steps
@@ -258,7 +264,7 @@ def run(args: argparse.Namespace) -> int:
     raw_capture_plan: dict[str, Any] | None = None
     raw_capture_steps: frozenset[int] = frozenset()
     if args.raw_capture_plan is not None:
-        raw_capture_plan, raw_capture_steps = _load_raw_capture_plan(args.raw_capture_plan.resolve(), identity, horizon)
+        raw_capture_plan, raw_capture_steps = _load_raw_capture_plan(args.raw_capture_plan.resolve(), identity, horizon, args.gpu)
 
     def diagnostic(env: Any, _obs: Any, _step: int, _policy_step: PolicyStep) -> dict[str, Any]:
         return {
