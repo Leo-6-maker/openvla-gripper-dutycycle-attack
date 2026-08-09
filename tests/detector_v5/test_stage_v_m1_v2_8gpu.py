@@ -21,7 +21,7 @@ from scripts.detector_v5.analyze_stage_v_m1_v2_multigpu import (
     make_r2_plan,
 )
 from scripts.detector_v5 import audit_stage_v_m1_v2_8gpu as auditor
-from scripts.detector_v5.run_stage_v_canonical_clean import _load_raw_capture_plan
+from scripts.detector_v5.run_stage_v_canonical_clean import _load_raw_capture_plan, _render_binding_ids
 from scripts.detector_v5 import analyze_stage_v_m1_v2_multigpu as producer
 
 
@@ -444,6 +444,20 @@ def test_runtime_binding_receipt_is_actual_child_contract() -> None:
         "receipt_written_before_step_0": True, "pid": 12345, "renderer_device_information": {"observed_device_id": 0},
     }
     supervisor.validate_runtime_binding_receipt(receipt, 3, run_set="r1", phase="Q1", source_commit="commit", source_tree="tree")
+
+
+def test_render_binding_ids_falls_back_to_offscreen_context() -> None:
+    class Context:
+        device_id = 0
+
+    class Sim:
+        render_context = None
+        _render_context_offscreen = Context()
+
+    class Env:
+        sim = Sim()
+
+    assert _render_binding_ids(Env()) == (0, 0)
 
 
 def test_binding_receipt_contract_is_fail_closed() -> None:

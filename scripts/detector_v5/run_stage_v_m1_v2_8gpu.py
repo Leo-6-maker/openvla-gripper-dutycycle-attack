@@ -689,7 +689,9 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
     env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=8, camera_widths=8, has_renderer=False, has_offscreen_renderer=True, use_camera_obs=False, render_gpu_device_id=logical_gpu, horizon=1)
     try:
         observed = None
-        for obj in (env, getattr(env, "sim", None), getattr(getattr(env, "sim", None), "render_context", None)):
+        sim = getattr(env, "sim", None)
+        render_context = getattr(sim, "render_context", None) or getattr(sim, "_render_context_offscreen", None)
+        for obj in (env, sim, render_context):
             for name in ("render_gpu_device_id", "gpu_device_id", "device_id"):
                 value = getattr(obj, name, None) if obj is not None else None
                 if value is not None:
@@ -706,7 +708,7 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
         renderer_device_information = {
             "env_class": type(env).__name__,
             "sim_class": type(getattr(env, "sim", None)).__name__,
-            "render_context_class": type(getattr(getattr(env, "sim", None), "render_context", None)).__name__,
+            "render_context_class": type(render_context).__name__,
             "observed_device_id": observed,
         }
         result = {

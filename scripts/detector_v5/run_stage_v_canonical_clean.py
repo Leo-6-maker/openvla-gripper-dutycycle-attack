@@ -174,8 +174,9 @@ def _load_policy(args: argparse.Namespace, get_processor: Any, get_model: Any, a
 def _render_binding_ids(env: Any) -> tuple[int | None, int | None]:
     observed: int | None = None
     context_observed: int | None = None
-    context = getattr(getattr(env, "sim", None), "render_context", None)
-    for obj in (env, getattr(env, "sim", None), context):
+    sim = getattr(env, "sim", None)
+    context = getattr(sim, "render_context", None) or getattr(sim, "_render_context_offscreen", None)
+    for obj in (env, sim, context):
         for name in ("render_gpu_device_id", "gpu_device_id", "device_id"):
             value = getattr(obj, name, None) if obj is not None else None
             if value is None:
@@ -195,6 +196,8 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
     import torch
 
     observed, context_observed = _render_binding_ids(env)
+    sim = getattr(env, "sim", None)
+    context = getattr(sim, "render_context", None) or getattr(sim, "_render_context_offscreen", None)
     env_device_attribute = getattr(env, "render_gpu_device_id", None)
     env_device = env_device_attribute
     try:
@@ -231,7 +234,7 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
         "renderer_device_information": {
             "env_class": type(env).__name__,
             "sim_class": type(getattr(env, "sim", None)).__name__,
-            "render_context_class": type(getattr(getattr(env, "sim", None), "render_context", None)).__name__,
+            "render_context_class": type(context).__name__,
             "observed_device_id": observed,
         },
         "source_commit": str(args.source_commit),
