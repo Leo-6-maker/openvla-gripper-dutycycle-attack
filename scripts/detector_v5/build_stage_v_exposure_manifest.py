@@ -45,7 +45,13 @@ def _attempted_keys(root: Path) -> set[str]:
     return keys
 
 
-def build(base_manifest: Path, attempted_roots: list[Path], output: Path) -> dict[str, Any]:
+def build(
+    base_manifest: Path,
+    attempted_roots: list[Path],
+    output: Path,
+    source_commit: str | None = None,
+    source_tree: str | None = None,
+) -> dict[str, Any]:
     if output.exists():
         raise FileExistsError(f"refusing to overwrite exposure manifest: {output}")
     base_keys, base_value = _load_base(base_manifest)
@@ -71,6 +77,8 @@ def build(base_manifest: Path, attempted_roots: list[Path], output: Path) -> dic
         "newly_added_parent_count": len(attempted - base_keys),
         "excluded_parent_keys": union,
         "excluded_parent_count": len(union),
+        "builder_source_commit": source_commit,
+        "builder_source_tree": source_tree,
     }
     atomic_write_json(output, report)
     return report
@@ -81,8 +89,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base-manifest", type=Path, required=True)
     parser.add_argument("--attempted-root", type=Path, action="append", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--source-commit")
+    parser.add_argument("--source-tree")
     args = parser.parse_args(argv)
-    report = build(args.base_manifest, args.attempted_root, args.output)
+    report = build(args.base_manifest, args.attempted_root, args.output, args.source_commit, args.source_tree)
     print(json.dumps({"status": report["status"], "excluded_parent_count": report["excluded_parent_count"], "output": str(args.output.resolve())}, sort_keys=True))
     return 0
 
