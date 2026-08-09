@@ -88,8 +88,8 @@ def audit(m1_root: Path, protocol_path: Path, repo: Path, run_sets: list[str]) -
                 right_path = right_dir / "RB1_INDEPENDENT_RECEIPT.json"
                 left = _load(left_path)
                 right = _load(right_path)
-                verify_artifact_files(left, left_dir, protocol)
-                verify_artifact_files(right, right_dir, protocol)
+                verify_artifact_files(left, left_dir / "trace", protocol)
+                verify_artifact_files(right, right_dir / "trace", protocol)
                 result = validate_pair(left, right, protocol, "RB1A_CLEAN_PATH")
                 for receipt in (left, right):
                     receipt_paths.append(left_path if receipt is left else right_path)
