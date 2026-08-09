@@ -54,6 +54,22 @@ def test_atomic_queue_claim_is_single_owner(tmp_path: Path) -> None:
     queue.close()
 
 
+def test_atomic_queue_parent_affinity_filters_claims(tmp_path: Path) -> None:
+    queue = AtomicTaskQueue(str(tmp_path / "q.sqlite"), run_id="r")
+    queue.init_run(state="ACTIVE", manifest_sha="m", source_sha="s")
+    queue.register_tasks([
+        {"cell_id": "p0a", "parent_id": "p0", "suite": "libero_goal", "task_index": 0, "state_index": 48, "arm": "A"},
+        {"cell_id": "p1a", "parent_id": "p1", "suite": "libero_goal", "task_index": 1, "state_index": 48, "arm": "A"},
+    ])
+    first = queue.claim_task("w0", gpu_id=0, allowed_parent_ids={"p0"}, expected_manifest_sha="m", expected_source_sha="s")
+    second = queue.claim_task("w0", gpu_id=0, allowed_parent_ids={"p0"}, expected_manifest_sha="m", expected_source_sha="s")
+    third = queue.claim_task("w1", gpu_id=1, allowed_parent_ids={"p1"}, expected_manifest_sha="m", expected_source_sha="s")
+    assert first and first["parent_id"] == "p0"
+    assert second is None
+    assert third and third["parent_id"] == "p1"
+    queue.close()
+
+
 def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert control_qualification.DEFAULT_SALT == "STAGE_V_R2_CONTROL_QUALIFICATION_20260807"
     manifest = tmp_path / "candidates.json"

@@ -104,7 +104,8 @@ class AtomicTaskQueue:
 
     # ── Atomic claim ──
     def claim_task(self, worker_id, hostname=None, pid=None, gpu_id=None, slot_id=None,
-                   loaded_suite=None, expected_manifest_sha=None, expected_source_sha=None):
+                   loaded_suite=None, expected_manifest_sha=None, expected_source_sha=None,
+                   allowed_parent_ids=None):
         conn = self._get_conn()
         try:
             conn.execute("BEGIN IMMEDIATE")
@@ -117,9 +118,19 @@ class AtomicTaskQueue:
             if expected_source_sha and run['source_sha'] != expected_source_sha:
                 conn.rollback(); return None
 
-            row = conn.execute("""SELECT * FROM tasks WHERE state IN ('PENDING','RETRY_READY')
-                ORDER BY CASE WHEN suite=? THEN 0 ELSE 1 END, estimated_cost DESC, cell_id ASC LIMIT 1""",
-                               (loaded_suite or '',)).fetchone()
+            query = "SELECT * FROM tasks WHERE state IN ('PENDING','RETRY_READY')"
+            query_params = []
+            if allowed_parent_ids is not None:
+                parent_ids = sorted({str(parent_id) for parent_id in allowed_parent_ids})
+                if not parent_ids:
+                    conn.rollback()
+                    return None
+                placeholders = ",".join("?" for _ in parent_ids)
+                query += f" AND parent_id IN ({placeholders})"
+                query_params.extend(parent_ids)
+            query += " ORDER BY CASE WHEN suite=? THEN 0 ELSE 1 END, estimated_cost DESC, cell_id ASC LIMIT 1"
+            query_params.append(loaded_suite or '')
+            row = conn.execute(query, tuple(query_params)).fetchone()
             if not row:
                 conn.rollback(); return None
 
