@@ -81,6 +81,7 @@ def _run_clean(args: argparse.Namespace, row: Mapping[str, Any], parent_root: Pa
         "CUDA_VISIBLE_DEVICES": str(gpu),
         "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1",
     })
+    env.update(args.runtime_environment)
     log = (parent_root / f"{replicate}.log").open("w", encoding="utf-8")
     try:
         process = subprocess.Popen(command, cwd=str(args.repo_root), env=env, stdin=subprocess.DEVNULL,
@@ -265,6 +266,9 @@ def run(args: argparse.Namespace) -> int:
     manifest, rows = _load_manifest(args.candidate_manifest, protocol["salt"])
     if args.target_per_suite != int(protocol["target_per_suite"]):
         raise ValueError("target per suite is not frozen")
+    args.runtime_environment = {str(key): str(value) for key, value in protocol.get("runtime_environment", {}).items()}
+    if args.runtime_environment != {"OPENVLA_ATTN_IMPLEMENTATION": "eager"}:
+        raise ValueError("fresh qualification runtime environment is not frozen")
     if args.run_root.exists() and any(args.run_root.iterdir()):
         raise ValueError("fresh qualification root must be new/empty")
     args.run_root.mkdir(parents=True, exist_ok=True)
@@ -278,14 +282,15 @@ def run(args: argparse.Namespace) -> int:
         "schema": "STAGE_V_FRESH_QUALIFICATION_PRE_RESOURCE_V2", "status": "PASS" if eligible else "HOLD_NO_ELIGIBLE_GPU",
         "mode": MODE_B, "minimum_free_memory_mib": args.minimum_free_mib, "eligible_gpu_ids": eligible,
         "maximum_project_workers": args.maximum_project_workers, "maximum_project_workers_per_gpu": 1,
-        "partial_fleet_allowed": True, "foreign_workload_allowed": True, "gpu_decisions": admission["gpu_decisions"], "captured_utc": utc_now(),
+        "partial_fleet_allowed": True, "foreign_workload_allowed": True, "runtime_environment": args.runtime_environment,
+        "gpu_decisions": admission["gpu_decisions"], "captured_utc": utc_now(),
     })
     if not eligible:
         return 2
     manifest_sha = sha256_file(args.candidate_manifest)
     source_sha = f"{args.source_commit}:{args.source_tree}"
     queue = __import__("scripts.fec.atomic_task_queue", fromlist=["AtomicTaskQueue"]).AtomicTaskQueue(str(args.run_root / "FRESH_QUALIFICATION.sqlite"), run_id=args.run_id)
-    queue.init_run(state="ACTIVE", manifest_sha=manifest_sha, source_sha=source_sha, config_sha=sha256_file(args.protocol), capacity_policy={"mode": MODE_B, "eligible_gpu_ids": eligible, "maximum_project_workers_per_gpu": 1, "partial_fleet_allowed": True, "parent_atomic": True})
+    queue.init_run(state="ACTIVE", manifest_sha=manifest_sha, source_sha=source_sha, config_sha=sha256_file(args.protocol), capacity_policy={"mode": MODE_B, "eligible_gpu_ids": eligible, "maximum_project_workers_per_gpu": 1, "partial_fleet_allowed": True, "parent_atomic": True, "runtime_environment": args.runtime_environment})
     queue.register_tasks([{"cell_id": row["canonical_parent_key"], "parent_id": row["canonical_parent_key"], "suite": row["suite"], "task_index": row["task_index"], "state_index": row["state_index"], "arm": "PARENT_AB", "task_kind": "FRESH_CLEAN_AB_PARENT", "priority": index} for index, row in enumerate(rows)])
     store = GpuLeaseStore(args.run_root / "GPU_LEASES.sqlite")
     rows_by_key = {str(row["canonical_parent_key"]): row for row in rows}
@@ -301,7 +306,7 @@ def run(args: argparse.Namespace) -> int:
         "producer_verdict": "PASS" if queue.get_run_state() != "HOLD" else "FAIL", "source_commit": args.source_commit, "source_tree": args.source_tree,
         "protocol_sha256": sha256_file(args.protocol), "candidate_manifest_sha256": manifest_sha, "candidate_manifest": str(args.candidate_manifest.resolve()),
         "gpus": eligible, "worker_count": len(eligible), "eligible_gpu_ids": eligible, "maximum_project_workers_per_gpu": 1,
-        "parent_atomic": True, "old_artifacts_reused": False, "evaluated_rows": len(report_rows),
+        "parent_atomic": True, "runtime_environment": args.runtime_environment, "old_artifacts_reused": False, "evaluated_rows": len(report_rows),
         "evaluated_by_suite": {suite: sum(item["suite"] == suite for item in report_rows) for suite in SUITES},
         "qualified_by_suite": {suite: sum(item["qualified"] and item["suite"] == suite for item in report_rows) for suite in SUITES},
         **{field: 0 for field in BOUNDARIES}, "queue_state": queue.get_run_state(), "generated_utc": utc_now(),

@@ -5,6 +5,9 @@
   "scientific_scope": "fresh_clean_control_only",
   "qualification_mode": "FRESH_CLEAN_AB_REPLAY",
   "salt": "STAGE_V_R2_CONTROL_QUALIFICATION_20260807",
+  "runtime_environment": {
+    "OPENVLA_ATTN_IMPLEMENTATION": "eager"
+  },
   "target_per_suite": 10,
   "suites": [
     "libero_10",

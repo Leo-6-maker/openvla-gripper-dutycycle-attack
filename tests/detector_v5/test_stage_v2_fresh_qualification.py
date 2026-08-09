@@ -17,6 +17,7 @@ def test_fresh_qualification_protocol_is_parent_atomic_and_partial_fleet() -> No
     assert policy["minimum_free_memory_mib"] == 20480
     assert policy["excluded_gpus"] == []
     assert policy["partial_fleet_allowed"] is True
+    assert PROTOCOL["runtime_environment"] == {"OPENVLA_ATTN_IMPLEMENTATION": "eager"}
     assert atomicity["same_physical_gpu_required"] is True
     assert atomicity["parallelize_across_parents_only"] is True
 

@@ -264,6 +264,7 @@ def run(args: argparse.Namespace) -> int:
             "vis_pgd_attack_rollouts": 0,
             "attack_rollouts": 0,
             "worker_gpu": int(args.gpu),
+            "runtime_environment": {"OPENVLA_ATTN_IMPLEMENTATION": os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "")},
             "runtime_pythonpath_prefixes": runtime_pythonpath_prefixes,
             "generated_utc": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
         }
@@ -277,6 +278,7 @@ def run(args: argparse.Namespace) -> int:
             "source_commit": args.source_commit, "source_tree": args.source_tree,
             "error": f"{type(exc).__name__}:{str(exc)[:1000]}", "old_artifacts_reused": False,
             "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
+            "runtime_environment": {"OPENVLA_ATTN_IMPLEMENTATION": os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "")},
             "runtime_pythonpath_prefixes": runtime_pythonpath_prefixes,
         }
     atomic_write_json(output_dir / "CONTROL_RESULT.json", control)

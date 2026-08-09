@@ -42,6 +42,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     rows_value = _json((root / "Q2_CONTROL_QUALIFICATION_ROWS.json"))
     rows = [normalize_parent(row) for row in rows_value.get("rows", []) if isinstance(row, Mapping)]
     errors: list[str] = []
+    expected_runtime_environment = {str(key): str(value) for key, value in protocol.get("runtime_environment", {}).items()}
     if protocol.get("schema") != "STAGE_V_R2_FRESH_QUALIFICATION_PROTOCOL_V2" or protocol.get("status") != "FROZEN_THROUGHPUT_PARENT_ATOMIC":
         errors.append("PROTOCOL_NOT_FROZEN")
     if manifest.get("schema") != "STAGE_V_R2_QUALIFICATION_CANDIDATE_MANIFEST_V1" or manifest.get("status") != "FROZEN":
@@ -86,6 +87,8 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
                 errors.append(f"OUTPUT_OUTSIDE_ROOT:{key}:{replicate}")
             control = output / "CONTROL_RESULT.json"
             actual[replicate] = _json(control) if control.is_file() else {"status": "FAIL", "exit_code": 1}
+            if actual[replicate].get("runtime_environment") != expected_runtime_environment:
+                errors.append(f"{key}:{replicate}:RUNTIME_ENVIRONMENT_MISMATCH")
             stored = (row.get("replicates") or {}).get(replicate) if isinstance(row.get("replicates"), Mapping) else {}
             process_exit = (row.get("replicate_exit_codes") or {}).get(replicate) if isinstance(row.get("replicate_exit_codes"), Mapping) else stored.get("process_exit_code") if isinstance(stored, Mapping) else 1
             valid[replicate], hard_errors = engineering_valid(candidate, actual[replicate], process_exit, args.source_commit, args.source_tree)
@@ -123,6 +126,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         "schema": "STAGE_V_R2_FRESH_QUALIFICATION_INDEPENDENT_AUDIT_V2",
         "verdict": verdict, "status": "PASS_CLASSIFIED" if verdict == "PASS" else "FAIL_CLOSED",
         "source_commit": args.source_commit, "source_tree": args.source_tree,
+        "runtime_environment": expected_runtime_environment,
         "protocol_sha256": sha256_file(args.protocol), "candidate_manifest_sha256": sha256_file(args.candidate_manifest),
         "evaluated_rows": len(rows), "qualified_rows": valid_count,
         "qualified_by_suite": {suite: len(qualified_by_suite[suite]) for suite in SUITES},
