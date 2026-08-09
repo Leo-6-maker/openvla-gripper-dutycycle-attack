@@ -127,6 +127,11 @@ def test_independent_audit_accepts_descriptive_hash_and_horizon_mismatch(tmp_pat
     }
     universe_path = tmp_path / "universe.json"
     write_json(universe_path, universe)
+    exposure_path = tmp_path / "exposure.json"
+    write_json(exposure_path, {
+        "schema": "COUNTERFACTUAL_EXPOSURE_EXCLUSION_V1",
+        "excluded_parent_keys": [f"{suite}/task_01/state_48" for suite in SUITES],
+    })
     protocol_dir = tmp_path / "protocol"
     q1_matrix = tmp_path / "q1.json"
     q1_semantic = tmp_path / "q1_semantic.json"
@@ -175,12 +180,14 @@ def test_independent_audit_accepts_descriptive_hash_and_horizon_mismatch(tmp_pat
     audited = auditor.audit(SimpleNamespace(
         output_dir=root, protocol=protocol_dir / "STAGE_Q2_PROTOCOL.json",
         candidate_universe=universe_path, report=report_path, rows=rows_path,
-        source_commit=SOURCE_COMMIT, source_tree=SOURCE_TREE,
+        source_commit=SOURCE_COMMIT, source_tree=SOURCE_TREE, exposure_manifest=exposure_path,
     ))
     assert audited["verdict"] == "PASS"
     assert audited["classifications"]["CLEAN_REPEATABILITY_FAIL_BOTH_FAIL"] == 4
     assert audited["terminal_state_sha256_gate_used"] is False
     assert audited["remaining_horizon_complete_gate_used"] is False
+    assert audited["selected_exposure_binding"]["status"] == "PASS"
+    assert all("task_01/state_48" not in key for key in sum(audited["selected_by_suite"].values(), []))
     assert (root / "Q2_PARENT_MANIFEST_A.json").is_file()
     assert (root / "STAGE_V_FORMAL_PARENT_MANIFEST_V1.json").is_file()
 
