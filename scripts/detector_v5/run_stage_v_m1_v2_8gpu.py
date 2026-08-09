@@ -209,8 +209,9 @@ def validate_runtime_binding_receipt(receipt: Mapping[str, Any], gpu: int, *, ru
         "cuda_visible_devices": str(gpu),
         "torch_current_device": 0,
         "mujoco_gl": "egl",
-        # Each child exposes exactly one physical GPU, so MuJoCo sees logical 0.
-        "mujoco_egl_device_id": "0",
+        # The installed robosuite binding validates this selector against the
+        # physical id in CUDA_VISIBLE_DEVICES; renderer/context ids remain logical 0.
+        "mujoco_egl_device_id": str(gpu),
         "env_render_gpu_device_id": 0,
         "run_set": run_set,
         "run_label": phase,
@@ -668,7 +669,9 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
     os.environ["MUJOCO_GL"] = "egl"
     logical_gpu = 0
-    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(logical_gpu)
+    # robosuite's installed binding checks this physical selector against
+    # CUDA_VISIBLE_DEVICES before importing; the renderer itself stays logical 0.
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(args.gpu)
     sys.path.insert(0, str(REPO_ROOT / "src"))
     import torch
     if not torch.cuda.is_available():
@@ -735,7 +738,7 @@ def run_renderer_canary(root: Path, args: argparse.Namespace, protocol: Mapping[
     def one(gpu: int) -> dict[str, Any]:
         output = output_root / f"gpu_{gpu:02d}.json"
         command = [str(sys.executable), str(Path(__file__).resolve()), "--renderer-canary", "--protocol", str(args.protocol), "--root", str(root), "--gpu", str(gpu), "--canary-output", str(output), "--candidate", str(args.candidate), "--suite", args.suite, "--official-snapshot-root", str(args.official_snapshot_root), "--upstream-root", str(args.upstream_root)]
-        result = subprocess.run(command, check=False, env={**os.environ, "CUDA_VISIBLE_DEVICES": str(gpu), "MUJOCO_GL": "egl", "MUJOCO_EGL_DEVICE_ID": "0"}, capture_output=True, text=True)
+        result = subprocess.run(command, check=False, env={**os.environ, "CUDA_VISIBLE_DEVICES": str(gpu), "MUJOCO_GL": "egl", "MUJOCO_EGL_DEVICE_ID": str(gpu)}, capture_output=True, text=True)
         return {"gpu": gpu, "returncode": result.returncode, "stderr": result.stderr[-1000:], "output": str(output)}
 
     with ThreadPoolExecutor(max_workers=len(cohort)) as pool:
@@ -775,7 +778,7 @@ def _run_one(root: Path, args: argparse.Namespace, gpu: int, label: str, run_set
         return {"gpu": gpu, "label": label, "status": "HOLD_PARTIAL_R1_ARTIFACT", "reason": "OUTPUT_ALREADY_EXISTS"}
     log_root = root / "logs" / f"gpu_{gpu:02d}"
     log_root.mkdir(parents=True, exist_ok=True)
-    env = {**os.environ, "CUDA_VISIBLE_DEVICES": str(gpu), "MUJOCO_GL": "egl", "MUJOCO_EGL_DEVICE_ID": "0", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1", "PYTHONHASHSEED": "7", "PYTHONUNBUFFERED": "1"}
+    env = {**os.environ, "CUDA_VISIBLE_DEVICES": str(gpu), "MUJOCO_GL": "egl", "MUJOCO_EGL_DEVICE_ID": str(gpu), "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1", "PYTHONHASHSEED": "7", "PYTHONUNBUFFERED": "1"}
     command = [str(sys.executable), str(REPO_ROOT / "scripts/detector_v5/run_stage_v_canonical_clean.py"), "--candidate", str(args.candidate), "--contract", str(args.contract), "--output-dir", str(output), "--official-snapshot-root", str(args.official_snapshot_root), "--upstream-root", str(args.upstream_root), "--model-path", str(args.model_path), "--suite", args.suite, "--gpu", str(gpu), "--seed", "7", "--mode", mode, "--source-commit", str(args.source_commit), "--source-tree", str(args.source_tree), "--run-label", label, "--run-set", run_set, "--enable-runtime"]
     if run_set == "r2":
         command.extend(["--raw-capture-plan", str(args.raw_capture_plan)])

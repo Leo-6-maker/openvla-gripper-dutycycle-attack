@@ -201,7 +201,9 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
         env_device = int(env_device)
     except (TypeError, ValueError):
         env_device = observed
-    if observed != int(args.gpu) or env_device != int(args.gpu):
+    # CUDA_VISIBLE_DEVICES remaps the worker to logical 0.  The environment
+    # and renderer receipts therefore close on logical 0, not the physical id.
+    if observed != 0 or env_device != 0:
         raise CanonicalExecutionError("RUNTIME_EGL_DEVICE_BINDING_UNVERIFIED")
     if not torch.cuda.is_available() or int(torch.cuda.current_device()) != 0:
         raise CanonicalExecutionError("RUNTIME_CUDA_LOGICAL_DEVICE_UNVERIFIED")
@@ -273,9 +275,11 @@ def run(args: argparse.Namespace) -> int:
     state_index = int(candidate["state_index"])
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
     os.environ["MUJOCO_GL"] = "egl"
-    # CUDA_VISIBLE_DEVICES exposes the selected physical GPU as logical EGL 0.
+    # CUDA_VISIBLE_DEVICES exposes the selected physical GPU as logical 0.
     logical_gpu = 0
-    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(logical_gpu)
+    # robosuite's installed binding requires the physical selector to appear
+    # in CUDA_VISIBLE_DEVICES before import; renderer ids remain logical 0.
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(args.gpu)
     get_libero_image, get_processor, get_model, adapter_type, benchmark, libero_runtime = _load_external_modules(args.official_snapshot_root, args.upstream_root)
     get_libero_path, OffScreenRenderEnv = libero_runtime
     suite_instance = benchmark.get_benchmark_dict()[suite]()

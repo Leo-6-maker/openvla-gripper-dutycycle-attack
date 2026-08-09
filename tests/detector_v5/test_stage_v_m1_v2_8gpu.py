@@ -438,7 +438,7 @@ def test_runtime_binding_receipt_is_actual_child_contract() -> None:
         "logical_worker_id": "worker_3", "requested_physical_gpu": 3, "physical_gpu_index": 3,
         "cuda_visible_devices": "3", "torch_current_device": 0, "torch_device_uuid": "GPU-3",
         "torch_device_uuid_canonical": "3",
-        "mujoco_gl": "egl", "mujoco_egl_device_id": "0", "env_render_gpu_device_id": 0,
+        "mujoco_gl": "egl", "mujoco_egl_device_id": "3", "env_render_gpu_device_id": 0,
         "render_context_observed_device_id": 0, "run_set": "r1", "run_label": "Q1",
         "source_commit": "commit", "source_tree": "tree", "episode_started": False,
         "receipt_written_before_step_0": True, "pid": 12345, "renderer_device_information": {"observed_device_id": 0},
