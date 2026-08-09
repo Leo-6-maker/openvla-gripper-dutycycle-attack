@@ -137,25 +137,25 @@ def _independent_classification(local: Mapping[str, Any], cross: Mapping[str, An
     return classification, profile
 
 
-def _verify_runs(root: Path, run_set: str, manifest: Mapping[str, Any]) -> None:
-    base = root / run_set
+def _verify_runs(root: Path, run_dir: str, expected_run_set: str, manifest: Mapping[str, Any]) -> None:
+    base = root / run_dir
     for gpu in GPU_IDS:
         for label in LABELS:
             run = base / f"gpu_{gpu:02d}" / label
             receipt_path = run / "RB1_INDEPENDENT_RECEIPT.json"
             if not receipt_path.is_file():
-                raise V2Error(f"V2_RECEIPT_MISSING:{run_set}:gpu_{gpu:02d}:{label}")
+                raise V2Error(f"V2_RECEIPT_MISSING:{expected_run_set}:gpu_{gpu:02d}:{label}")
             receipt = _load(receipt_path)
             if receipt.get("canonical_parent_key") != IDENTITY:
-                raise V2Error(f"V2_IDENTITY_MISMATCH:{run_set}:gpu_{gpu:02d}:{label}")
+                raise V2Error(f"V2_IDENTITY_MISMATCH:{expected_run_set}:gpu_{gpu:02d}:{label}")
             if any(receipt.get(field, 0) != 0 for field in BOUNDARIES):
-                raise V2Error(f"V2_PROTECTED_BOUNDARY_NONZERO:{run_set}:gpu_{gpu:02d}:{label}")
+                raise V2Error(f"V2_PROTECTED_BOUNDARY_NONZERO:{expected_run_set}:gpu_{gpu:02d}:{label}")
             runtime = _load(run / "M1_V2_RUNTIME_BINDING_RECEIPT.json")
             validate_runtime_binding_receipt(
-                runtime, gpu, run_set=run_set, phase=label,
+                runtime, gpu, run_set=expected_run_set, phase=label,
                 source_commit=str(manifest["source_commit"]), source_tree=str(manifest["source_tree"]),
             )
-            gate = f"PRE_{run_set.upper()}_{label}"
+            gate = f"PRE_{expected_run_set.upper()}_{label}"
             preflight = _load(root / f"M1_V2_1_GPU_PREFLIGHT_{gate}.json")
             canary = _load(root / "M1_V2_RENDERER_CANARY.json")
             validate_uuid_binding(
@@ -163,7 +163,7 @@ def _verify_runs(root: Path, run_set: str, manifest: Mapping[str, Any]) -> None:
                 preflight_uuid=preflight.get("uuid_by_gpu", {}).get(str(gpu)),
                 canary_uuid=canary.get("uuid_by_gpu", {}).get(str(gpu)),
                 runtime_uuid=runtime.get("torch_device_uuid_canonical", runtime.get("torch_device_uuid")),
-                phase=f"{run_set.upper()}_{label}",
+                phase=f"{expected_run_set.upper()}_{label}",
             )
 
 
@@ -255,7 +255,7 @@ def audit_root(root: Path, *, final: bool) -> dict[str, Any]:
     _verify_canary(root)
     protocol_sha256 = sha256_file(protocol_path)
     _verify_preflight_bindings(root, "r1", manifest, protocol_sha256, protocol["system_graphics_baseline"])
-    _verify_runs(root, "runs", manifest)
+    _verify_runs(root, "runs", "r1", manifest)
     local = _load(root / "M1_V2_R1_GPU_LOCAL_PAIR_MATRIX.json")
     cross = _load(root / "M1_V2_R1_CROSS_GPU_PAIR_MATRIX.json")
     aggregate = _load(root / "M1_V2_R1_AGGREGATE_REPORT.json")
@@ -290,7 +290,7 @@ def audit_root(root: Path, *, final: bool) -> dict[str, Any]:
     }
     if final:
         _verify_preflight_bindings(root, "r2", manifest, protocol_sha256, protocol["system_graphics_baseline"])
-        _verify_runs(root, "raw_runs", manifest)
+        _verify_runs(root, "raw_runs", "r2", manifest)
         plan_path = root / "M1_V2_RAW_CAPTURE_PLAN.json"
         if not plan_path.is_file():
             raise V2Error("V2_RAW_CAPTURE_PLAN_MISSING")
