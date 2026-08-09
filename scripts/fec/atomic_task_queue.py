@@ -196,7 +196,7 @@ class AtomicTaskQueue:
             now = self._now()
             # ── V4: Strict state enum ──
             ACCEPTED = {'DONE_VALID', 'DONE_CLASSIFIED_TC', 'DONE'}
-            HOLD_STATES = {'HOLD_ORACLE_CONTRACT', 'HOLD_HASH_MISMATCH', 'HOLD_SCHEMA_MISMATCH'}
+            HOLD_STATES = {'HOLD_ORACLE_CONTRACT', 'HOLD_HASH_MISMATCH', 'HOLD_SCHEMA_MISMATCH', 'HOLD_RESOURCE_CONTRACT'}
             RETRY_STATES = {'FAILED_RETRYABLE_INFRA', 'FAILED'}
             FATAL_STATES = {'FAILED_FATAL_POST_ACTION'}
 

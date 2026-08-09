@@ -31,6 +31,17 @@ except ModuleNotFoundError:  # direct server execution from scripts/detector_v5
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
 
+try:
+    from .stage_v_gpu_resource_contract import (
+        GpuLeaseStore, ResourceContractError, admit_mode_b_or_c, query_inventory,
+        verify_recheck, write_resource_receipt,
+    )
+except ImportError:  # direct server execution
+    from stage_v_gpu_resource_contract import (
+        GpuLeaseStore, ResourceContractError, admit_mode_b_or_c, query_inventory,
+        verify_recheck, write_resource_receipt,
+    )
+
 
 def _gpu_row(gpu_id: int) -> dict[str, Any]:
     try:
@@ -90,6 +101,75 @@ class Worker:
         self.branch_started_epoch: float | None = None
         self.last_child_cpu_seconds = 0.0
         self.parent_started_epoch: float | None = None
+        self.resource_lease: dict[str, Any] | None = None
+        self.resource_store: GpuLeaseStore | None = None
+        if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+            self.resource_store = GpuLeaseStore(self.args.lease_db or (self.root / "GPU_LEASES.sqlite"))
+
+    @property
+    def resource_enabled(self) -> bool:
+        return self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}
+
+    def _resource_row(self) -> dict[str, Any]:
+        inventory, error = query_inventory()
+        if error:
+            raise ResourceContractError(error)
+        for row in inventory:
+            if int(row.get("gpu_id", -1)) == self.args.gpu_id:
+                return row
+        raise ResourceContractError(f"GPU_NOT_IN_INVENTORY:{self.args.gpu_id}")
+
+    def _acquire_resource_lease(self) -> None:
+        if not self.resource_enabled:
+            return
+        assert self.resource_store is not None
+        inventory, error = query_inventory()
+        if error:
+            raise ResourceContractError(error)
+        active = self.resource_store.active()
+        admission = admit_mode_b_or_c(
+            inventory,
+            mode=self.args.resource_mode,
+            leased_gpu_ids=[row["gpu_id"] for row in active],
+            project_pids=[row["worker_pid"] for row in active],
+            project_process_tokens=(str(self.root), "run_stage_v_dynamic_worker.py"),
+            minimum_free_mib=self.args.minimum_free_mib,
+        )
+        atomic_write_json(self.worker_root / "RESOURCE_ADMISSION.json", admission)
+        decision = next((row for row in admission["gpu_decisions"] if int(row["gpu_id"]) == self.args.gpu_id), None)
+        if not decision or not decision["safe"]:
+            raise ResourceContractError(f"GPU_NOT_ELIGIBLE:{self.args.gpu_id}:{decision and decision['reasons']}")
+        lease = self.resource_store.acquire(
+            gpu_id=self.args.gpu_id,
+            gpu_uuid=decision["gpu_uuid"],
+            worker_id=self.args.worker_id,
+            worker_pid=os.getpid(),
+            stage=self.args.stage,
+            atomic_job_id=self.args.run_id,
+            source_commit=self.args.source_commit,
+            source_tree=self.args.source_tree,
+            runtime_root=self.root,
+            launch_snapshot=decision,
+        )
+        try:
+            rechecked = self._resource_row()
+            verify_recheck(rechecked, expected_gpu_id=self.args.gpu_id,
+                           expected_gpu_uuid=decision["gpu_uuid"],
+                           minimum_free_mib=self.args.minimum_free_mib)
+        except Exception:
+            self.resource_store.release(lease, reason="RECHECK_FAILED")
+            raise
+        self.resource_lease = lease
+        write_resource_receipt(self.worker_root / "RESOURCE_LEASE.json", phase="LEASE_ACQUIRED",
+                               gpu_snapshot=rechecked, lease=lease, atomic_job_id=self.args.run_id)
+
+    def _write_job_resource_receipt(self, output_dir: Path, phase: str, atomic_job_id: str) -> None:
+        if not self.resource_enabled or self.resource_lease is None:
+            return
+        snapshot = self._resource_row()
+        write_resource_receipt(output_dir / f"RESOURCE_{phase}.json", phase=phase,
+                               gpu_snapshot=snapshot, lease=self.resource_lease,
+                               atomic_job_id=atomic_job_id)
 
     def _status(self, state: str, *, child_pid: int | None = None, error: str | None = None) -> dict[str, Any]:
         with self.progress_lock:
@@ -282,7 +362,10 @@ class Worker:
             "OPENBLAS_NUM_THREADS": "1",
             "NUMEXPR_NUM_THREADS": "1",
         })
+        code = 127
+        resource_error: str | None = None
         try:
+            self._write_job_resource_receipt(output_dir, "PRE", task["attempt_id"])
             command = self._command(task, output_dir)
             with log_path.open("w", encoding="utf-8") as log:
                 self.child = subprocess.Popen(command, cwd=str(self.args.repo_root), env=environment,
@@ -297,8 +380,18 @@ class Worker:
             self.child = None
             self.child_pgid = None
         except Exception as exc:
-            code = 127
+            if isinstance(exc, ResourceContractError):
+                resource_error = str(exc)
             atomic_write_json(output_dir / "WORKER_EXCEPTION.json", {"error": f"{type(exc).__name__}: {exc}", "utc": utc_now()})
+        finally:
+            if self.resource_enabled:
+                try:
+                    self._write_job_resource_receipt(output_dir, "POST", task["attempt_id"])
+                except Exception as exc:
+                    resource_error = resource_error or f"RESOURCE_POST_RECEIPT:{type(exc).__name__}:{exc}"
+        resource_receipts = all((output_dir / name).is_file() for name in ("RESOURCE_PRE.json", "RESOURCE_POST.json")) if self.resource_enabled else True
+        if self.resource_enabled and not resource_receipts:
+            resource_error = resource_error or "RESOURCE_RECEIPT_MISSING"
         artifact = science_artifact_status(
             output_dir, task["canonical_parent_key"],
             expected_source_commit=self.args.science_source_commit or None,
@@ -320,13 +413,19 @@ class Worker:
             "artifact_path": artifact.get("path"),
             "artifact_sha256": artifact.get("artifact_sha256"),
             "reason": artifact.get("reason"),
+            "resource_contract_mode": self.args.resource_mode,
+            "resource_receipts": resource_receipts,
+            "resource_error": resource_error,
             "eval160_reads": 0,
             "protected_eval_reads": 0,
             "vis_pgd_attack_rollouts": 0,
             "validated_utc": utc_now(),
         }
         atomic_write_json(output_dir / "PARENT_VALIDATION.json", validation)
-        if code == 0 and artifact["valid"]:
+        if resource_error:
+            outcome = "HOLD_RESOURCE_CONTRACT"
+            error_class = resource_error
+        elif code == 0 and artifact["valid"]:
             outcome = "DONE_VALID"
             error_class = None
         elif code != 0 and not artifact["result"] and int(task["attempt_count"]) < self.args.max_attempts:
@@ -361,6 +460,11 @@ class Worker:
         return outcome in {"DONE_VALID", "FAILED_RETRYABLE_INFRA"}
 
     def run(self) -> int:
+        try:
+            self._acquire_resource_lease()
+        except ResourceContractError as exc:
+            self._status("HOLD", error=str(exc))
+            return self._write_exit(1, f"RESOURCE_CONTRACT_HOLD:{exc}")
         self._status("STARTING")
         self.thread = threading.Thread(target=self._heartbeat_loop, name="stage-v-heartbeat", daemon=True)
         self.thread.start()
@@ -388,6 +492,8 @@ class Worker:
             if self.thread:
                 self.thread.join(timeout=max(1.0, self.args.heartbeat_seconds + 1))
             self._status("STOPPED" if self.stop_event.is_set() else "EXITED", child_pid=None)
+            if self.resource_lease is not None and self.resource_store is not None:
+                self.resource_store.release(self.resource_lease)
             self.queue.close()
 
 
@@ -413,6 +519,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--science-source-tree", default="")
     parser.add_argument("--science-provenance", type=Path)
     parser.add_argument("--worker-command", default="")
+    parser.add_argument("--resource-mode", default="LEGACY")
+    parser.add_argument("--lease-db", type=Path)
+    parser.add_argument("--stage", default="STAGE_V")
+    parser.add_argument("--minimum-free-mib", type=int, default=20_480)
     return parser
 
 

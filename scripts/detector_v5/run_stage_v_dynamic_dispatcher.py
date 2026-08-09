@@ -22,6 +22,11 @@ except ModuleNotFoundError:  # direct server execution
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
 
+try:
+    from .stage_v_gpu_resource_contract import GpuLeaseStore, admit_mode_b_or_c, query_inventory
+except ImportError:  # direct server execution
+    from stage_v_gpu_resource_contract import GpuLeaseStore, admit_mode_b_or_c, query_inventory
+
 
 class Dispatcher:
     def __init__(self, args: argparse.Namespace):
@@ -31,6 +36,7 @@ class Dispatcher:
         self.stop_requested = False
         self.run_id = args.run_id
         self.queue = AtomicTaskQueue(str(args.queue_db), run_id=self.run_id)
+        self.lease_db = args.lease_db or (self.root / "GPU_LEASES.sqlite")
 
     def _signal(self, *_args: Any) -> None:
         self.stop_requested = True
@@ -39,6 +45,20 @@ class Dispatcher:
                 terminate_process_group(process, grace_seconds=5)
 
     def _preflight(self) -> dict[str, Any]:
+        if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+            inventory, error = query_inventory()
+            if error:
+                return {"schema": "STAGE_V_GPU_RESOURCE_ADMISSION_V1", "status": "HOLD_QUERY_ERROR", "query_error": error}
+            leases = GpuLeaseStore(self.lease_db).active()
+            return admit_mode_b_or_c(
+                inventory,
+                mode=self.args.resource_mode,
+                leased_gpu_ids=[row["gpu_id"] for row in leases],
+                project_pids=[row["worker_pid"] for row in leases],
+                project_process_tokens=(str(self.root), "run_stage_v_dynamic_worker.py"),
+                excluded_gpu_ids=self.args.excluded_gpus,
+                minimum_free_mib=self.args.minimum_free_mib,
+            )
         if self.args.preflight_file:
             value = json.loads(self.args.preflight_file.read_text(encoding="utf-8"))
             safe = sorted({int(gpu) for gpu in value.get("safe_gpus", []) if int(gpu) not in self.args.excluded_gpus})
@@ -67,8 +87,13 @@ class Dispatcher:
         atomic_write_json(self.args.preflight_output, preflight)
         if preflight.get("status") != "PASS":
             raise RuntimeError("PRELAUNCH_WAITING_FOR_8_GPUS")
-        approved = sorted(int(gpu) for gpu in preflight.get("safe_gpus", []))
-        if len(approved) != self.args.required_workers or any(gpu in self.args.excluded_gpus for gpu in approved):
+        eligible_key = "eligible_gpu_ids" if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"} else "safe_gpus"
+        approved = sorted(int(gpu) for gpu in preflight.get(eligible_key, []))
+        if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+            approved = approved[:self.args.required_workers]
+            if not approved or any(gpu in self.args.excluded_gpus for gpu in approved):
+                raise RuntimeError("GPU_PREFLIGHT_POLICY_FAIL")
+        elif len(approved) != self.args.required_workers or any(gpu in self.args.excluded_gpus for gpu in approved):
             raise RuntimeError("GPU_PREFLIGHT_POLICY_FAIL")
         if 5 in approved and not getattr(self.args, "allow_gpu5", False):
             raise RuntimeError("GPU5_REQUIRES_EXPLICIT_AUTHORIZATION")
@@ -143,6 +168,9 @@ class Dispatcher:
             "approved_gpus": approved,
             "gpu5_used": 5 in approved,
             "gpu5_authorized": bool(getattr(self.args, "allow_gpu5", False)),
+            "resource_mode": self.args.resource_mode,
+            "minimum_free_memory_mib": self.args.minimum_free_mib,
+            "resource_lease_db": str(self.lease_db),
             "workers": len(approved),
             "dispatcher_pid": os.getpid(),
             "dispatcher_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
@@ -162,6 +190,7 @@ class Dispatcher:
             "approved_gpus": approved,
             "planned_parents": len(rows),
             "started_utc": utc_now(),
+            "resource_mode": self.args.resource_mode,
         })
 
     def _spawn(self, gpu_id: int) -> None:
@@ -178,6 +207,10 @@ class Dispatcher:
             "--max-attempts", str(self.args.max_attempts), "--probe-limit", str(self.args.probe_limit),
             "--science-source-commit", self.args.science_source_commit,
             "--science-source-tree", self.args.science_source_tree,
+            "--resource-mode", self.args.resource_mode,
+            "--lease-db", str(self.lease_db),
+            "--stage", self.args.stage,
+            "--minimum-free-mib", str(self.args.minimum_free_mib),
         ]
         if self.args.science_provenance:
             command += ["--science-provenance", str(self.args.science_provenance)]
@@ -205,7 +238,8 @@ class Dispatcher:
         try:
             self._prepare()
             preflight = json.loads(self.args.preflight_output.read_text(encoding="utf-8"))
-            for gpu_id in sorted(preflight["safe_gpus"]):
+            eligible_key = "eligible_gpu_ids" if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"} else "safe_gpus"
+            for gpu_id in sorted(preflight[eligible_key])[:self.args.required_workers]:
                 self._spawn(int(gpu_id))
             while True:
                 if self.stop_requested:
@@ -227,6 +261,7 @@ class Dispatcher:
                     atomic_write_json(self.root / "DISPATCHER_COMPLETE.json", {
                         "schema": "STAGE_V_DYNAMIC_DISPATCHER_COMPLETE_V2", "status": "PASS",
                         "dispatcher_pid": os.getpid(), "run_id": self.run_id,
+                        "resource_mode": self.args.resource_mode,
                         "planned_parents": len(tasks), "completed_parents": sum(task["state"] == "DONE_VALID" for task in tasks),
                         "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
                         "completed_utc": utc_now(),
@@ -281,6 +316,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--poll-seconds", type=float, default=5)
     parser.add_argument("--config-sha256", default="")
     parser.add_argument("--allow-gpu5", action="store_true", help="Authorize GPU5 for this fresh run")
+    parser.add_argument("--resource-mode", default="LEGACY")
+    parser.add_argument("--lease-db", type=Path)
+    parser.add_argument("--stage", default="STAGE_V")
+    parser.add_argument("--minimum-free-mib", type=int, default=20_480)
     return parser
 
 

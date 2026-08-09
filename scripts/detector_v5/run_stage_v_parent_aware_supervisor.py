@@ -31,6 +31,11 @@ except ImportError:  # direct server execution
     from scripts.detector_v5.stage_v_science_core_provenance import verify as verify_science_provenance
 
 try:
+    from .stage_v_gpu_resource_contract import GpuLeaseStore, admit_mode_b_or_c, query_inventory
+except ImportError:  # direct server execution
+    from stage_v_gpu_resource_contract import GpuLeaseStore, admit_mode_b_or_c, query_inventory
+
+try:
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
 except ModuleNotFoundError:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -114,6 +119,20 @@ class DynamicSupervisor:
 
     def _preflight(self) -> dict[str, Any]:
         if not self.args.skip_resource_checks:
+            if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+                inventory, error = query_inventory()
+                if error:
+                    return {"schema": "STAGE_V_GPU_RESOURCE_ADMISSION_V1", "status": "HOLD_QUERY_ERROR", "query_error": error}
+                leases = GpuLeaseStore(self.args.lease_db or (self.root / "GPU_LEASES.sqlite")).active()
+                return admit_mode_b_or_c(
+                    inventory,
+                    mode=self.args.resource_mode,
+                    leased_gpu_ids=[row["gpu_id"] for row in leases],
+                    project_pids=[row["worker_pid"] for row in leases],
+                    project_process_tokens=(str(self.root), "run_stage_v_dynamic_worker.py"),
+                    excluded_gpu_ids=self.args.excluded_gpus,
+                    minimum_free_mib=self.args.minimum_free_mib,
+                )
             return gpu_preflight(
                 required_count=8,
                 excluded_gpus=self.args.excluded_gpus,
@@ -125,14 +144,17 @@ class DynamicSupervisor:
         if not isinstance(value, Mapping):
             return {"status": "PRELAUNCH_WAITING_FOR_8_GPUS", "reason": "PREFLIGHT_NOT_OBJECT"}
         value = dict(value)
-        all_safe = sorted({int(gpu) for gpu in value.get("safe_gpus", value.get("all_safe_gpus", [])) if int(gpu) not in self.args.excluded_gpus})
+        safe_key = "eligible_gpu_ids" if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"} else "safe_gpus"
+        all_safe = sorted({int(gpu) for gpu in value.get(safe_key, value.get("all_safe_gpus", [])) if int(gpu) not in self.args.excluded_gpus})
         approved = all_safe[:8]
-        if value.get("status") != "PASS" or len(all_safe) < 8 or 5 in approved:
+        needs_eight = self.args.resource_mode not in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}
+        if value.get("status") != "PASS" or not all_safe or (needs_eight and len(all_safe) < 8) or 5 in approved:
             value["status"] = "PRELAUNCH_WAITING_FOR_8_GPUS"
-            value.setdefault("reason", "LESS_THAN_8_APPROVED_GPUS_OR_GPU5_EXCLUDED")
+            value.setdefault("reason", "NO_ELIGIBLE_GPU_OR_GPU5_EXCLUDED")
         else:
             value["all_safe_gpus"] = all_safe
             value["safe_gpus"] = approved
+            value["eligible_gpu_ids"] = all_safe
             value["safe_gpu_count"] = len(all_safe)
             value["selected_gpu_count"] = len(approved)
         return value
@@ -165,7 +187,13 @@ class DynamicSupervisor:
             if not getattr(self.args, "wait_for_gpus", False):
                 raise RuntimeError("PRELAUNCH_WAITING_FOR_8_GPUS")
             time.sleep(max(1.0, float(getattr(self.args, "preflight_interval_seconds", 300.0))))
-        if sorted(int(gpu) for gpu in preflight.get("safe_gpus", [])) != sorted(self.args.approved_gpus):
+        actual_gpus = sorted(int(gpu) for gpu in preflight.get(
+            "eligible_gpu_ids" if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"} else "safe_gpus", []))
+        if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+            if not actual_gpus or not set(actual_gpus).issubset(set(self.args.approved_gpus)):
+                raise RuntimeError("PREFLIGHT_APPROVED_GPU_SET_MISMATCH")
+            self.args.approved_gpus = actual_gpus
+        elif actual_gpus != sorted(self.args.approved_gpus):
             raise RuntimeError("PREFLIGHT_APPROVED_GPU_SET_MISMATCH")
         source = self._source()
         if source["source_commit"] != self.args.expected_source_commit or source["source_tree"] != self.args.expected_source_tree:
@@ -200,6 +228,8 @@ class DynamicSupervisor:
             "run_root": str(self.root), "source_commit": source["source_commit"], "source_tree": source["source_tree"],
             "parent_manifest": str(self.args.parent_manifest), "parent_manifest_sha256": manifest_sha,
             "approved_gpus": sorted(self.args.approved_gpus), "planned_parents": self.args.expected_parent_count,
+            "resource_mode": self.args.resource_mode, "minimum_free_memory_mib": self.args.minimum_free_mib,
+            "resource_lease_db": str(self.args.lease_db or (self.root / "GPU_LEASES.sqlite")),
             "gpu5_authorized": bool(getattr(self.args, "allow_gpu5", False)),
             "supervisor_pid": os.getpid(), "supervisor_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
             "started_utc": self.start_utc,
@@ -590,7 +620,11 @@ class DynamicSupervisor:
                        "--preflight-output", str(self.args.preflight_file), "--worker-heartbeat-seconds", str(self.args.worker_heartbeat_seconds),
                        "--max-attempts", str(self.args.max_attempts), "--probe-limit", str(self.args.probe_limit),
                        "--science-source-commit", self.args.science_source_commit,
-                       "--science-source-tree", self.args.science_source_tree]
+                       "--science-source-tree", self.args.science_source_tree,
+                       "--resource-mode", self.args.resource_mode,
+                       "--lease-db", str(self.args.lease_db or (self.root / "GPU_LEASES.sqlite")),
+                       "--stage", self.args.stage,
+                       "--minimum-free-mib", str(self.args.minimum_free_mib)]
             if getattr(self.args, "allow_gpu5", False):
                 command += ["--allow-gpu5"]
             if self.args.science_provenance:
@@ -675,6 +709,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-attempts", type=int, default=2)
     parser.add_argument("--skip-resource-checks", action="store_true")
     parser.add_argument("--allow-gpu5", action="store_true", help="Authorize GPU5 for this fresh run")
+    parser.add_argument("--resource-mode", default="LEGACY")
+    parser.add_argument("--lease-db", type=Path)
+    parser.add_argument("--stage", default="STAGE_V")
+    parser.add_argument("--minimum-free-mib", type=int, default=20_480)
     return parser
 
 
@@ -682,7 +720,10 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.allow_gpu5:
         args.excluded_gpus = [gpu for gpu in args.excluded_gpus if gpu != 5]
-    if len(args.approved_gpus) != 8 or (5 in args.approved_gpus and not args.allow_gpu5):
+    if args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+        if not args.approved_gpus or len(set(args.approved_gpus)) != len(args.approved_gpus):
+            raise SystemExit("at least one unique approved GPU is required")
+    elif len(args.approved_gpus) != 8 or (5 in args.approved_gpus and not args.allow_gpu5):
         raise SystemExit("exactly eight approved GPUs are required; GPU5 requires --allow-gpu5")
     return DynamicSupervisor(args).run()
 
