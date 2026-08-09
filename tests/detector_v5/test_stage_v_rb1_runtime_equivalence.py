@@ -19,6 +19,7 @@ from scripts.detector_v5.stage_v_rb1_runtime_equivalence import (
 
 ROOT = Path(__file__).resolve().parents[2]
 PROTOCOL = json.loads((ROOT / "configs/stage_v_rb1_runtime_equivalence_protocol_v1.json").read_text())
+V2_PROTOCOL = json.loads((ROOT / "configs/stage_v_rb1_runtime_equivalence_protocol_v2.json").read_text())
 
 
 def _receipt(mode: str, scope: str = "CLEAN_PATH", root: Path | None = None) -> dict:
@@ -68,8 +69,46 @@ def _receipt(mode: str, scope: str = "CLEAN_PATH", root: Path | None = None) -> 
     }
 
 
+def _v2_receipt(mode: str) -> dict:
+    receipt = _receipt(mode)
+    receipt["diagnostic_trace_hashes"] = {
+        "full_sim_state_trace_sha256": "d" * 64,
+        "policy_rgb_224_trace_sha256": "e" * 64,
+        "model_input_trace_sha256": "f" * 64,
+    }
+    receipt["diagnostic_trace_artifacts"] = {
+        name: {"path": name + ".jsonl", "sha256": digest}
+        for name, digest in (
+            ("full_sim_state_trace", "d" * 64),
+            ("policy_rgb_224_trace", "e" * 64),
+            ("model_input_trace", "f" * 64),
+        )
+    }
+    return receipt
+
+
 def test_rb1_protocol_is_frozen_and_exact() -> None:
     assert validate_protocol(PROTOCOL)["tolerance_allowed"] is False
+
+
+def test_rb1_v2_protocol_allows_only_declared_visual_input_differences() -> None:
+    assert validate_protocol(V2_PROTOCOL)["schema"] == "STAGE_V_RB1_RUNTIME_EQUIVALENCE_PROTOCOL_V2"
+    left = _v2_receipt("CLEAN_QUALIFICATION")
+    right = _v2_receipt("COUNTERFACTUAL_CLEAN_PREFIX")
+    right["trace_hashes"]["observation_trace_sha256"] = "a" * 64
+    right["diagnostic_trace_hashes"]["policy_rgb_224_trace_sha256"] = "b" * 64
+    right["diagnostic_trace_hashes"]["model_input_trace_sha256"] = "c" * 64
+    result = validate_pair(left, right, V2_PROTOCOL, "RB1A_CLEAN_PATH")
+    assert result["causal_execution_equivalence"] == "PASS"
+    assert result["visual_input_difference_allowed"] is True
+
+
+def test_rb1_v2_action_trace_mismatch_still_fails_closed() -> None:
+    left = _v2_receipt("CLEAN_QUALIFICATION")
+    right = _v2_receipt("COUNTERFACTUAL_CLEAN_PREFIX")
+    right["trace_hashes"]["postprocessed_action_trace_sha256"] = "a" * 64
+    with pytest.raises(RuntimeEquivalenceError, match="CAUSAL_TRACE_MISMATCH"):
+        validate_pair(left, right, V2_PROTOCOL, "RB1A_CLEAN_PATH")
 
 
 def test_rb1a_matching_trace_receipts_pass() -> None:
