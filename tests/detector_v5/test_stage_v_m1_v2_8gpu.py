@@ -438,10 +438,10 @@ def test_runtime_binding_receipt_is_actual_child_contract() -> None:
         "logical_worker_id": "worker_3", "requested_physical_gpu": 3, "physical_gpu_index": 3,
         "cuda_visible_devices": "3", "torch_current_device": 0, "torch_device_uuid": "GPU-3",
         "torch_device_uuid_canonical": "3",
-        "mujoco_gl": "egl", "mujoco_egl_device_id": "3", "env_render_gpu_device_id": 3,
-        "render_context_observed_device_id": 3, "run_set": "r1", "run_label": "Q1",
+        "mujoco_gl": "egl", "mujoco_egl_device_id": "0", "env_render_gpu_device_id": 0,
+        "render_context_observed_device_id": 0, "run_set": "r1", "run_label": "Q1",
         "source_commit": "commit", "source_tree": "tree", "episode_started": False,
-        "receipt_written_before_step_0": True, "pid": 12345, "renderer_device_information": {"observed_device_id": 3},
+        "receipt_written_before_step_0": True, "pid": 12345, "renderer_device_information": {"observed_device_id": 0},
     }
     supervisor.validate_runtime_binding_receipt(receipt, 3, run_set="r1", phase="Q1", source_commit="commit", source_tree="tree")
 
@@ -450,8 +450,8 @@ def test_binding_receipt_contract_is_fail_closed() -> None:
     valid = {
         "logical_worker_id": "worker_3", "requested_physical_gpu": 3,
         "gpu_uuid": "GPU-3", "cuda_visible_devices": "3", "torch_current_device": 0,
-        "mujoco_gl": "egl", "egl_device_identifier": 3,
-        "renderer_device_information": {"observed_device_id": 3},
+        "mujoco_gl": "egl", "egl_device_identifier": 0,
+        "renderer_device_information": {"observed_device_id": 0},
     }
     supervisor.validate_binding_receipt(valid, 3)
     with pytest.raises(supervisor.V2Error, match="GPU_BINDING_RECEIPT_GPU_UUID_MISSING"):
