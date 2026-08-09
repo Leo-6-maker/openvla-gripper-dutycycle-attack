@@ -41,6 +41,22 @@ class V2Error(RuntimeError):
     pass
 
 
+def canonical_gpu_uuid(value: Any) -> str:
+    token = str(value or "").strip().lower()
+    return token[4:] if token.startswith("gpu-") else token
+
+
+def validate_uuid_binding(*, gpu: int, preflight_uuid: Any, canary_uuid: Any,
+                          runtime_uuid: Any | None = None, phase: str = "") -> str:
+    values = [canonical_gpu_uuid(preflight_uuid), canonical_gpu_uuid(canary_uuid)]
+    if runtime_uuid is not None:
+        values.append(canonical_gpu_uuid(runtime_uuid))
+    if not values[0] or not all(value == values[0] for value in values):
+        suffix = f":{phase}" if phase else ""
+        raise V2Error(f"HOLD_GPU_UUID_BINDING_MISMATCH:gpu_{gpu:02d}{suffix}")
+    return values[0]
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -117,10 +133,12 @@ def _compute_processes(text: str, uuid_to_gpu: Mapping[str, int]) -> list[dict[s
         if len(fields) < 4 or not fields[1].strip().isdigit():
             continue
         pid = int(fields[1].strip())
+        gpu_uuid = fields[0].strip()
         result.append({
             **_pid_detail(pid),
-            "gpu_id": uuid_to_gpu.get(fields[0].strip()),
-            "gpu_uuid": fields[0].strip(),
+            "gpu_id": uuid_to_gpu.get(canonical_gpu_uuid(gpu_uuid)),
+            "gpu_uuid": gpu_uuid,
+            "gpu_uuid_canonical": canonical_gpu_uuid(gpu_uuid),
             "process_name": fields[2].strip(),
             "used_memory_mib": _number(fields[3]),
             "kind": "COMPUTE",
@@ -143,7 +161,7 @@ def _pmon_processes(text: str) -> list[dict[str, Any]]:
     return result
 
 
-def validate_binding_receipt(receipt: Mapping[str, Any], gpu: int) -> None:
+def validate_binding_receipt(receipt: Mapping[str, Any], gpu: int, *, require_canonical_uuid: bool = False) -> None:
     expected = {
         "logical_worker_id": f"worker_{gpu}",
         "requested_physical_gpu": gpu,
@@ -155,15 +173,18 @@ def validate_binding_receipt(receipt: Mapping[str, Any], gpu: int) -> None:
     for key, value in expected.items():
         if receipt.get(key) != value:
             raise V2Error(f"GPU_BINDING_RECEIPT_INVALID:{key}:gpu_{gpu:02d}")
-    if not str(receipt.get("gpu_uuid", "")).strip():
+    gpu_uuid = str(receipt.get("gpu_uuid", "")).strip()
+    if not gpu_uuid:
         raise V2Error(f"GPU_BINDING_RECEIPT_GPU_UUID_MISSING:gpu_{gpu:02d}")
+    if require_canonical_uuid and receipt.get("gpu_uuid_canonical") != canonical_gpu_uuid(gpu_uuid):
+        raise V2Error(f"GPU_BINDING_RECEIPT_GPU_UUID_CANONICAL_INVALID:gpu_{gpu:02d}")
     if not isinstance(receipt.get("renderer_device_information"), Mapping):
         raise V2Error(f"GPU_BINDING_RECEIPT_RENDERER_INFO_MISSING:gpu_{gpu:02d}")
 
 
 def validate_runtime_binding_receipt(receipt: Mapping[str, Any], gpu: int, *, run_set: str, phase: str, source_commit: str, source_tree: str) -> None:
     expected = {
-        "schema": "STAGE_V_M1_V2_1_RUNTIME_BINDING_RECEIPT_V1",
+        "schema": receipt.get("schema"),
         "status": "PASS",
         "logical_worker_id": f"worker_{gpu}",
         "requested_physical_gpu": gpu,
@@ -180,13 +201,20 @@ def validate_runtime_binding_receipt(receipt: Mapping[str, Any], gpu: int, *, ru
         "episode_started": False,
         "receipt_written_before_step_0": True,
     }
+    if receipt.get("schema") != "STAGE_V_M1_V2_1_1_RUNTIME_BINDING_RECEIPT_V1":
+        raise V2Error(f"RUNTIME_BINDING_RECEIPT_INVALID:schema:gpu_{gpu:02d}:{phase}")
     for key, value in expected.items():
+        if key == "schema":
+            continue
         if receipt.get(key) != value:
             raise V2Error(f"RUNTIME_BINDING_RECEIPT_INVALID:{key}:gpu_{gpu:02d}:{phase}")
     if not isinstance(receipt.get("pid"), int) or int(receipt["pid"]) <= 0:
         raise V2Error(f"RUNTIME_BINDING_RECEIPT_PID_INVALID:gpu_{gpu:02d}:{phase}")
-    if not str(receipt.get("torch_device_uuid", "")).strip():
+    torch_uuid = str(receipt.get("torch_device_uuid", "")).strip()
+    if not torch_uuid:
         raise V2Error(f"RUNTIME_BINDING_RECEIPT_GPU_UUID_MISSING:gpu_{gpu:02d}:{phase}")
+    if receipt.get("torch_device_uuid_canonical") != canonical_gpu_uuid(torch_uuid):
+        raise V2Error(f"RUNTIME_BINDING_RECEIPT_GPU_UUID_CANONICAL_INVALID:gpu_{gpu:02d}:{phase}")
     if receipt.get("render_context_observed_device_id") != gpu:
         raise V2Error(f"RUNTIME_BINDING_RECEIPT_RENDER_CONTEXT_MISMATCH:gpu_{gpu:02d}:{phase}")
     if not isinstance(receipt.get("renderer_device_information"), Mapping):
@@ -220,14 +248,15 @@ def gpu_preflight(*, gpu_ids: tuple[int, ...] = GPU_IDS, idle_memory_max_mib: in
     for fields in csv.reader(gpu_text.splitlines()):
         if len(fields) < 7 or not fields[0].strip().isdigit():
             continue
+        gpu_uuid = fields[1].strip()
         gpu_rows.append({
-            "index": int(fields[0]), "uuid": fields[1].strip(), "name": fields[2].strip(),
+            "index": int(fields[0]), "uuid": gpu_uuid, "uuid_canonical": canonical_gpu_uuid(gpu_uuid), "name": fields[2].strip(),
             "memory_total_mib": _number(fields[3]), "memory_used_mib": _number(fields[4]),
             "memory_free_mib": _number(fields[5]), "utilization_gpu_percent": _number(fields[6]),
         })
     if {row["index"] for row in gpu_rows} != set(gpu_ids):
         raise V2Error("GPU_INVENTORY_MISMATCH")
-    uuid_to_gpu = {str(row["uuid"]): int(row["index"]) for row in gpu_rows}
+    uuid_to_gpu = {str(row["uuid_canonical"]): int(row["index"]) for row in gpu_rows}
     compute = _compute_processes(_query_nvidia_smi(
         "--query-compute-apps=gpu_uuid,pid,process_name,used_memory",
         "--format=csv,noheader,nounits",
@@ -301,6 +330,7 @@ def gpu_preflight(*, gpu_ids: tuple[int, ...] = GPU_IDS, idle_memory_max_mib: in
         "schema": "STAGE_V_M1_V2_1_GPU_PREFLIGHT_V1" if system_graphics_baseline is not None else "STAGE_V_M1_V2_GPU_PREFLIGHT_V1",
         "status": "PASS" if all_safe else "HOLD_WAIT_FOR_8GPU_SAFE",
         "gpu_ids": list(gpu_ids), "all_8_safe": all_safe,
+        "uuid_by_gpu": {str(row["index"]): row["uuid_canonical"] for row in gpu_rows},
         "idle_memory_max_mib": idle_memory_max_mib, "graphics_memory_max_mib": memory_limit, "gpu_rows": decisions,
         "unmapped_processes": unmapped, "baseline_system_graphics": baseline_system_graphics,
         "foreign_user_workloads": foreign_user_workloads, "graphics_contract": dict(graphics_contract),
@@ -311,7 +341,11 @@ def gpu_preflight(*, gpu_ids: tuple[int, ...] = GPU_IDS, idle_memory_max_mib: in
 def validate_protocol(path: Path) -> dict[str, Any]:
     protocol = _load(path)
     schema = protocol.get("schema")
-    if schema not in {"STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_8GPU", "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU"}:
+    if schema not in {
+        "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_8GPU",
+        "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU",
+        "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU",
+    }:
         raise V2Error("V2_PROTOCOL_SCHEMA_INVALID")
     required = {
         "schema": schema,
@@ -328,7 +362,10 @@ def validate_protocol(path: Path) -> dict[str, Any]:
             raise V2Error(f"V2_PROTOCOL_INVALID:{key}")
     if protocol.get("phase_order") != list(PHASES):
         raise V2Error("V2_PHASE_ORDER_INVALID")
-    if schema == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU":
+    if schema in {
+        "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU",
+        "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU",
+    }:
         for key, expected in {
             "actual_runtime_binding_receipt_required": True,
             "fresh_preflight_per_gate": True,
@@ -340,6 +377,16 @@ def validate_protocol(path: Path) -> dict[str, Any]:
                 raise V2Error(f"V2_1_PROTOCOL_INVALID:{key}")
         if _git_blob_sha("configs/stage_v_m1_visual_determinism_protocol_v2_8gpu.json") != protocol.get("base_v2_protocol_sha256"):
             raise V2Error("V2_BASE_PROTOCOL_CHANGED")
+        if schema == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU":
+            if _git_blob_sha("configs/stage_v_m1_visual_determinism_protocol_v2_1_8gpu.json") != protocol.get("base_v2_1_protocol_sha256"):
+                raise V2Error("V2_1_BASE_PROTOCOL_CHANGED")
+            for key, expected in {
+                "uuid_three_way_closure_required": True,
+                "uuid_canonicalization": "LOWERCASE_STRIP_GPU_PREFIX_EXACT",
+                "producer_complete_owned_by_auditor": True,
+            }.items():
+                if protocol.get(key) != expected:
+                    raise V2Error(f"V2_1_1_PROTOCOL_INVALID:{key}")
         graphics = protocol.get("system_graphics_baseline")
         if not isinstance(graphics, Mapping) or graphics != {
             "enabled": True, "kind": "G", "process_name": "Xorg", "owner": "gdm",
@@ -401,10 +448,15 @@ def prepare_root(root: Path, protocol: Mapping[str, Any], *, source_commit: str,
     if _git("rev-parse", "HEAD") != source_commit or _git("rev-parse", "HEAD^{tree}") != source_tree:
         raise V2Error("V2_SOURCE_BINDING_MISMATCH")
     root.mkdir(parents=True)
-    protocol_path = (protocol_path or REPO_ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_8gpu.json").resolve()
+    protocol_path = (protocol_path or REPO_ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json").resolve()
+    manifest_schema = (
+        "STAGE_V_M1_V2_1_1_8GPU_MANIFEST_V1"
+        if protocol.get("schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU"
+        else "STAGE_V_M1_V2_1_8GPU_MANIFEST_V1"
+    )
     manifest = {
-        "schema": "STAGE_V_M1_V2_1_8GPU_MANIFEST_V1", "status": "PREPARED_NO_RUNTIME_STARTED",
-        "created_utc": _now(), "protocol": protocol.get("protocol_id", "M1_V2_1_8GPU"), "protocol_schema": protocol.get("schema"), "protocol_sha256": sha256_file(protocol_path),
+        "schema": manifest_schema, "status": "PREPARED_NO_RUNTIME_STARTED",
+        "created_utc": _now(), "protocol": protocol.get("protocol_id", "M1_V2_1_1_8GPU"), "protocol_schema": protocol.get("schema"), "protocol_sha256": sha256_file(protocol_path),
         "diagnostic_identity": IDENTITY, "source_commit": source_commit, "source_tree": source_tree,
         "gpu_ids": list(GPU_IDS), "workers": 8, "runs_per_gpu": 4, "total_r1_runs": 32,
         "phase_order": list(PHASES), "seed": 7, "model_path": model_path,
@@ -442,7 +494,7 @@ def _fresh_preflight(root: Path, protocol: Mapping[str, Any], gate: str, *, run_
     )
     value.update({
         "protocol_id": protocol["protocol_id"],
-        "protocol_sha256": sha256_file((protocol_path or REPO_ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_8gpu.json").resolve()),
+        "protocol_sha256": sha256_file((protocol_path or REPO_ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json").resolve()),
         "source_commit": manifest["source_commit"],
         "source_tree": manifest["source_tree"],
         "gate": gate,
@@ -521,6 +573,7 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
             "schema": "STAGE_V_M1_V2_RENDERER_BINDING_CANARY_V1", "status": "PASS",
             "logical_worker_id": f"worker_{int(args.gpu)}", "requested_physical_gpu": int(args.gpu),
             "physical_gpu_index": int(args.gpu), "gpu_uuid": gpu_uuid,
+            "gpu_uuid_canonical": canonical_gpu_uuid(gpu_uuid),
             "cuda_visible_devices": os.environ["CUDA_VISIBLE_DEVICES"],
             "torch_current_device": int(torch.cuda.current_device()), "cuda_logical_device": 0,
             "cuda_device_name": torch.cuda.get_device_name(0), "mujoco_gl": os.environ["MUJOCO_GL"],
@@ -529,7 +582,7 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
             "renderer_device_information": renderer_device_information,
             "episode_started": False,
         }
-        validate_binding_receipt(result, int(args.gpu))
+        validate_binding_receipt(result, int(args.gpu), require_canonical_uuid=True)
     finally:
         env.close()
     _write(args.canary_output, result)
@@ -554,10 +607,25 @@ def run_renderer_canary(root: Path, args: argparse.Namespace, protocol: Mapping[
         _write(canary_path, {"schema": "STAGE_V_M1_V2_1_RENDERER_CANARY_AGGREGATE_V1", "status": "HOLD_RENDER_DEVICE_BINDING_MISMATCH", "results": results})
         _bind_preflight(root, "PRE_CANARY", canary_path)
         raise V2Error("HOLD_RENDER_DEVICE_BINDING_MISMATCH")
-    for gpu in GPU_IDS:
-        validate_binding_receipt(_load(output_root / f"gpu_{gpu:02d}.json"), gpu)
+    preflight = _require_preflight(root, "PRE_CANARY")
+    uuid_by_gpu: dict[str, str] = {}
+    try:
+        for gpu in GPU_IDS:
+            canary = _load(output_root / f"gpu_{gpu:02d}.json")
+            validate_binding_receipt(canary, gpu, require_canonical_uuid=True)
+            uuid_by_gpu[str(gpu)] = validate_uuid_binding(
+                gpu=gpu,
+                preflight_uuid=preflight["uuid_by_gpu"].get(str(gpu)),
+                canary_uuid=canary.get("gpu_uuid_canonical"),
+                phase="PRE_CANARY",
+            )
+    except V2Error as exc:
+        canary_path = root / "M1_V2_RENDERER_CANARY.json"
+        _write(canary_path, {"schema": "STAGE_V_M1_V2_1_RENDERER_CANARY_AGGREGATE_V1", "status": str(exc).split(":", 1)[0], "uuid_by_gpu": uuid_by_gpu, "results": results})
+        _bind_preflight(root, "PRE_CANARY", canary_path)
+        raise
     canary_path = root / "M1_V2_RENDERER_CANARY.json"
-    _write(canary_path, {"schema": "STAGE_V_M1_V2_1_RENDERER_CANARY_AGGREGATE_V1", "status": "PASS", "gpu_ids": list(GPU_IDS), "results": results})
+    _write(canary_path, {"schema": "STAGE_V_M1_V2_1_RENDERER_CANARY_AGGREGATE_V1", "status": "PASS", "gpu_ids": list(GPU_IDS), "uuid_by_gpu": uuid_by_gpu, "results": results})
     _bind_preflight(root, "PRE_CANARY", canary_path)
 
 
@@ -585,7 +653,18 @@ def _run_one(root: Path, args: argparse.Namespace, gpu: int, label: str, run_set
     try:
         runtime_receipt = _load(output / "M1_V2_RUNTIME_BINDING_RECEIPT.json")
         validate_runtime_binding_receipt(runtime_receipt, gpu, run_set=run_set, phase=label, source_commit=str(args.source_commit), source_tree=str(args.source_tree))
+        preflight = _load(_preflight_path(root, f"PRE_{run_set.upper()}_{label}"))
+        canary = _load(root / "M1_V2_RENDERER_CANARY.json")
+        validate_uuid_binding(
+            gpu=gpu,
+            preflight_uuid=preflight["uuid_by_gpu"].get(str(gpu)),
+            canary_uuid=canary.get("uuid_by_gpu", {}).get(str(gpu)),
+            runtime_uuid=runtime_receipt.get("torch_device_uuid_canonical", runtime_receipt.get("torch_device_uuid")),
+            phase=f"{run_set.upper()}_{label}",
+        )
     except (OSError, ValueError, KeyError, V2Error) as exc:
+        if str(exc).startswith("HOLD_GPU_UUID_BINDING_MISMATCH"):
+            return {"gpu": gpu, "label": label, "status": "HOLD_GPU_UUID_BINDING_MISMATCH", "reason": str(exc)}
         return {"gpu": gpu, "label": label, "status": "FAIL_RUNTIME_BINDING_RECEIPT", "reason": str(exc)}
     return {"gpu": gpu, "label": label, "status": "PASS", "output": str(output), "mode": mode, "replicate": replicate}
 
@@ -612,8 +691,10 @@ def run_matrix(root: Path, args: argparse.Namespace, run_set: str, protocol: Map
         _write(receipt_path, {"schema": "STAGE_V_M1_V2_1_PHASE_RECEIPTS_V1", "phase": label, "run_set": run_set, "results": results})
         _bind_preflight(root, gate, receipt_path)
         if any(item.get("status") != "PASS" for item in results):
-            status.update({"status": "HOLD_PARTIAL_R1", "failed_phase": label, "results": results})
+            status.update({"status": "HOLD_GPU_UUID_BINDING_MISMATCH" if any(item.get("status") == "HOLD_GPU_UUID_BINDING_MISMATCH" for item in results) else "HOLD_PARTIAL_R1", "failed_phase": label, "results": results})
             _write(status_path, status)
+            if status["status"] == "HOLD_GPU_UUID_BINDING_MISMATCH":
+                raise V2Error(f"HOLD_GPU_UUID_BINDING_MISMATCH:{label}")
             raise V2Error(f"HOLD_PARTIAL_R1:{label}")
     status.update({"status": "R1_COMPLETE_PENDING_AUDIT" if run_set == "r1" else "R2_COMPLETE_PENDING_AUDIT", "completed_run_set": run_set})
     _write(status_path, status)
@@ -644,7 +725,7 @@ def main(argv: list[str] | None = None) -> int:
     modes.add_argument("--run-r1", action="store_true")
     modes.add_argument("--run-r2", action="store_true")
     modes.add_argument("--renderer-canary", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--protocol", type=Path, default=REPO_ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_8gpu.json")
+    parser.add_argument("--protocol", type=Path, default=REPO_ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json")
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--source-commit")
     parser.add_argument("--source-tree")
@@ -661,8 +742,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         protocol = validate_protocol(args.protocol.resolve())
-        if protocol.get("schema") != "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU":
-            raise V2Error("V2_1_PROTOCOL_REQUIRED")
+        if protocol.get("schema") != "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU":
+            raise V2Error("V2_1_1_PROTOCOL_REQUIRED")
         if args.renderer_canary:
             if args.gpu not in GPU_IDS or not args.canary_output or not args.candidate or not args.official_snapshot_root or not args.upstream_root:
                 raise V2Error("CANARY_ARGUMENTS_REQUIRED")

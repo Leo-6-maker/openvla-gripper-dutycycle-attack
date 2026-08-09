@@ -12,14 +12,16 @@ from typing import Any, Mapping
 try:
     from .run_stage_v_m1_v2_8gpu import (
         BOUNDARIES, GPU_IDS, IDENTITY, LABELS, REPO_ROOT, V2Error,
-        _load, _write, sha256_file, validate_binding_receipt, validate_manifest_authorization,
-        validate_protocol, validate_runtime_binding_receipt,
+        _load, _write, canonical_gpu_uuid, sha256_file, validate_binding_receipt,
+        validate_manifest_authorization, validate_protocol, validate_runtime_binding_receipt,
+        validate_uuid_binding,
     )
 except ImportError:  # direct script execution
     from run_stage_v_m1_v2_8gpu import (
         BOUNDARIES, GPU_IDS, IDENTITY, LABELS, REPO_ROOT, V2Error,
-        _load, _write, sha256_file, validate_binding_receipt, validate_manifest_authorization,
-        validate_protocol, validate_runtime_binding_receipt,
+        _load, _write, canonical_gpu_uuid, sha256_file, validate_binding_receipt,
+        validate_manifest_authorization, validate_protocol, validate_runtime_binding_receipt,
+        validate_uuid_binding,
     )
 
 
@@ -35,9 +37,18 @@ def _trace_equal(pair: Mapping[str, Any], field: str) -> bool:
     return pair.get("traces", {}).get(field, {}).get("equal") is True
 
 
-def _visual_diff(pair: Mapping[str, Any]) -> bool:
+def _render_visual_diff(pair: Mapping[str, Any]) -> bool:
     traces = pair.get("traces", {})
-    return traces.get("policy_rgb", {}).get("equal") is False or traces.get("model_input", {}).get("equal") is False
+    return traces.get("policy_rgb", {}).get("equal") is False
+
+
+def _pipeline_visual_diff(pair: Mapping[str, Any]) -> bool:
+    traces = pair.get("traces", {})
+    return _render_visual_diff(pair) or traces.get("model_input", {}).get("equal") is False
+
+
+def _visual_diff(pair: Mapping[str, Any]) -> bool:
+    return _render_visual_diff(pair)
 
 
 def _full_sim_exact(pair: Mapping[str, Any]) -> bool:
@@ -57,12 +68,13 @@ def _independent_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> 
     cross_gpu = [(f"CROSS_GPU_{label}_{name}", pair) for label, pairs in cross["labels"].items() for name, pair in pairs.items()]
     raw_only = [name for name, pair in same_mode if not _trace_equal(pair, "raw_observation") and _trace_equal(pair, "policy_rgb") and _trace_equal(pair, "model_input") and _full_sim_exact(pair)]
     processor_only = [name for name, pair in same_mode if _trace_equal(pair, "raw_observation") and _trace_equal(pair, "policy_rgb") and not _trace_equal(pair, "model_input") and _full_sim_exact(pair)]
-    same_visual = [name for name, pair in same_mode if _visual_diff(pair) and _full_sim_exact(pair)]
-    mode_specific = [name for name, pair in cross_mode if not _pair_exact(pair) and _full_sim_exact(pair)]
-    gpu_visual = [name for name, pair in cross_gpu if _visual_diff(pair) and _full_sim_exact(pair)]
+    same_visual = [name for name, pair in same_mode if _render_visual_diff(pair) and _full_sim_exact(pair)]
+    mode_specific_visual = [name for name, pair in cross_mode if not _pair_exact(pair) and _render_visual_diff(pair) and _full_sim_exact(pair)]
+    mode_specific_nonvisual = [name for name, pair in cross_mode if not _pair_exact(pair) and not _pipeline_visual_diff(pair) and _full_sim_exact(pair)]
+    gpu_visual = [name for name, pair in cross_gpu if _render_visual_diff(pair) and _full_sim_exact(pair)]
     simulator = [name for name, pair in same_mode + cross_mode + cross_gpu if not _full_sim_exact(pair)]
-    visual_pairs = [pair for _name, pair in same_mode + cross_mode + cross_gpu if _visual_diff(pair) and _full_sim_exact(pair)]
-    action_divergent = [name for name, pair in same_mode + cross_mode + cross_gpu if _visual_diff(pair) and _full_sim_exact(pair) and (not _trace_equal(pair, "token") or not _trace_equal(pair, "postprocessed_action"))]
+    visual_pairs = [pair for _name, pair in same_mode + cross_mode + cross_gpu if _pipeline_visual_diff(pair) and _full_sim_exact(pair)]
+    action_divergent = [name for name, pair in same_mode + cross_mode + cross_gpu if _full_sim_exact(pair) and (not _trace_equal(pair, "token") or not _trace_equal(pair, "postprocessed_action"))]
     mechanisms = set()
     if raw_only:
         mechanisms.add("RAW_OBSERVATION_NON_POLICY_DIFFERENCE")
@@ -70,8 +82,10 @@ def _independent_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> 
         mechanisms.add("PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM")
     if same_visual:
         mechanisms.add("SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM")
-    if mode_specific:
+    if mode_specific_visual:
         mechanisms.add("MODE_PATH_SPECIFIC_VISUAL_DIVERGENCE")
+    if mode_specific_nonvisual:
+        mechanisms.add("MODE_SPECIFIC_NONVISUAL")
     if gpu_visual:
         mechanisms.add("GPU_CONTEXT_DEPENDENT_VISUAL_DIVERGENCE")
     if simulator:
@@ -80,12 +94,15 @@ def _independent_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> 
         "raw_only_pairs": raw_only,
         "processor_only_pairs": processor_only,
         "same_mode_visual_pairs": same_visual,
-        "mode_specific_pairs": mode_specific,
+        "mode_specific_pairs": mode_specific_visual,
+        "mode_specific_visual_pairs": mode_specific_visual,
+        "mode_specific_nonvisual_pairs": mode_specific_nonvisual,
         "cross_gpu_visual_pairs": gpu_visual,
         "simulator_pairs": simulator,
         "action_divergent_pairs": action_divergent,
         "same_mode_visual_mismatch_gpus": sorted({int(name.rsplit("GPU", 1)[1]) for name in same_visual}),
-        "mode_specific_mismatch_gpus": sorted({int(name.rsplit("GPU", 1)[1]) for name in mode_specific}),
+        "mode_specific_mismatch_gpus": sorted({int(name.rsplit("GPU", 1)[1]) for name in mode_specific_visual}),
+        "mode_specific_nonvisual_mismatch_gpus": sorted({int(name.rsplit("GPU", 1)[1]) for name in mode_specific_nonvisual}),
         "action_stable": bool(visual_pairs) and all(_trace_equal(pair, "token") and _trace_equal(pair, "postprocessed_action") for pair in visual_pairs),
         "mechanisms": sorted(mechanisms),
         "mixed_mechanisms": len(mechanisms) > 1,
@@ -111,9 +128,9 @@ def _independent_classification(local: Mapping[str, Any], cross: Mapping[str, An
         classification = "PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM"
     elif profile["same_mode_visual_pairs"]:
         classification = "SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM"
-    elif same_mode_exact and len(profile["mode_specific_pairs"]) >= 8:
+    elif same_mode_exact and len(profile["mode_specific_visual_pairs"]) >= 8:
         classification = "MODE_PATH_SPECIFIC_VISUAL_DIVERGENCE"
-    elif profile["mode_specific_pairs"] or profile["cross_gpu_visual_pairs"]:
+    elif profile["mode_specific_visual_pairs"] or profile["cross_gpu_visual_pairs"]:
         classification = "HETEROGENEOUS_MULTI_GPU_DIVERGENCE"
     else:
         classification = "UNCLASSIFIED"
@@ -138,14 +155,34 @@ def _verify_runs(root: Path, run_set: str, manifest: Mapping[str, Any]) -> None:
                 runtime, gpu, run_set=run_set, phase=label,
                 source_commit=str(manifest["source_commit"]), source_tree=str(manifest["source_tree"]),
             )
+            gate = f"PRE_{run_set.upper()}_{label}"
+            preflight = _load(root / f"M1_V2_1_GPU_PREFLIGHT_{gate}.json")
+            canary = _load(root / "M1_V2_RENDERER_CANARY.json")
+            validate_uuid_binding(
+                gpu=gpu,
+                preflight_uuid=preflight.get("uuid_by_gpu", {}).get(str(gpu)),
+                canary_uuid=canary.get("uuid_by_gpu", {}).get(str(gpu)),
+                runtime_uuid=runtime.get("torch_device_uuid_canonical", runtime.get("torch_device_uuid")),
+                phase=f"{run_set.upper()}_{label}",
+            )
 
 
 def _verify_canary(root: Path) -> None:
     aggregate = _load(root / "M1_V2_RENDERER_CANARY.json")
     if aggregate.get("status") != "PASS" or aggregate.get("gpu_ids") != list(GPU_IDS):
         raise V2Error("V2_CANARY_NOT_PASS")
+    preflight = _load(root / "M1_V2_1_GPU_PREFLIGHT_PRE_CANARY.json")
     for gpu in GPU_IDS:
-        validate_binding_receipt(_load(root / "renderer_canary" / f"gpu_{gpu:02d}.json"), gpu)
+        canary = _load(root / "renderer_canary" / f"gpu_{gpu:02d}.json")
+        validate_binding_receipt(canary, gpu, require_canonical_uuid=True)
+        validate_uuid_binding(
+            gpu=gpu,
+            preflight_uuid=preflight.get("uuid_by_gpu", {}).get(str(gpu)),
+            canary_uuid=canary.get("gpu_uuid_canonical"),
+            phase="PRE_CANARY",
+        )
+        if aggregate.get("uuid_by_gpu", {}).get(str(gpu)) != canary.get("gpu_uuid_canonical"):
+            raise V2Error(f"HOLD_GPU_UUID_BINDING_MISMATCH:gpu_{gpu:02d}:CANARY_AGGREGATE")
 
 
 def _verify_preflight_bindings(root: Path, run_set: str, manifest: Mapping[str, Any], protocol_sha256: str, graphics_contract: Mapping[str, Any]) -> None:
@@ -161,6 +198,11 @@ def _verify_preflight_bindings(root: Path, run_set: str, manifest: Mapping[str, 
             raise V2Error(f"V2_PREFLIGHT_FOREIGN_WORKLOAD_PRESENT:{gate}")
         if any(process.get("classification") != "SYSTEM_GRAPHICS_BASELINE" for process in value.get("baseline_system_graphics", [])):
             raise V2Error(f"V2_PREFLIGHT_GRAPHICS_BASELINE_INVALID:{gate}")
+        rows = {int(row.get("index")): row for row in value.get("gpu_rows", [])}
+        for gpu in GPU_IDS:
+            row = rows.get(gpu)
+            if row is None or value.get("uuid_by_gpu", {}).get(str(gpu)) != canonical_gpu_uuid(row.get("uuid")):
+                raise V2Error(f"HOLD_GPU_UUID_BINDING_MISMATCH:gpu_{gpu:02d}:{gate}")
         receipt_path = value.get("phase_receipt_path")
         receipt_sha = value.get("phase_receipt_sha256")
         if not receipt_path or not receipt_sha:
@@ -180,10 +222,10 @@ def _seal(root: Path, name: str) -> None:
 
 
 def audit_root(root: Path, *, final: bool) -> dict[str, Any]:
-    protocol_path = REPO_ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_8gpu.json"
+    protocol_path = REPO_ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json"
     protocol = validate_protocol(protocol_path)
     manifest = _load(root / "M1_V2_MANIFEST.json")
-    if manifest.get("schema") != "STAGE_V_M1_V2_1_8GPU_MANIFEST_V1":
+    if manifest.get("schema") != "STAGE_V_M1_V2_1_1_8GPU_MANIFEST_V1":
         raise V2Error("V2_MANIFEST_SCHEMA_INVALID")
     if manifest.get("status") != "PREPARED_NO_RUNTIME_STARTED":
         raise V2Error("V2_ROOT_ALREADY_CONSUMED")
@@ -233,13 +275,15 @@ def audit_root(root: Path, *, final: bool) -> dict[str, Any]:
         plan_path = root / "M1_V2_RAW_CAPTURE_PLAN.json"
         if not plan_path.is_file():
             raise V2Error("V2_RAW_CAPTURE_PLAN_MISSING")
-        if _load(plan_path).get("schema") != "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1":
+        if _load(plan_path).get("schema") != "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1":
             raise V2Error("V2_1_RAW_CAPTURE_PLAN_SCHEMA_INVALID")
         producer = _load(root / "M1_V2_PRODUCER_ANALYSIS.json")
+        if producer.get("status") != "PASS_PENDING_INDEPENDENT_AUDIT":
+            raise V2Error("V2_PRODUCER_COMPLETION_OWNERSHIP_INVALID")
         if producer.get("classification") != classification or producer.get("evidence_profile") != profile:
             raise V2Error("V2_PRODUCER_ANALYSIS_DISAGREEMENT")
         receipt["raw_capture_plan_sha256"] = sha256_file(plan_path)
-        _write(root / "M1_V2_COMPLETE.json", {"schema": "STAGE_V_M1_V2_COMPLETE_V1", "status": "PASS_CLASSIFIED", "classification": classification, "evidence_profile": profile, "rb1a_status": "HOLD"})
+        _write(root / "M1_V2_COMPLETE.json", {"schema": "STAGE_V_M1_V2_COMPLETE_V1", "status": "PASS_CLASSIFIED", "completion_owner": "INDEPENDENT_AUDITOR", "classification": classification, "evidence_profile": profile, "rb1a_status": "HOLD"})
     status = _load(root / "M1_V2_STATUS.json")
     status.update({"status": "PASS_CLASSIFIED" if final else "R1_AUDITED", "classification": classification, "evidence_profile": profile, "independent_audit": "PASS", "protected_boundaries": {field: 0 for field in BOUNDARIES}})
     _write(root / "M1_V2_STATUS.json", status)

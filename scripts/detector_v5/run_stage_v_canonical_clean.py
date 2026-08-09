@@ -18,6 +18,8 @@ from typing import Any, Mapping
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
+sys.path.insert(0, str(REPO_ROOT))
+from scripts.detector_v5.run_stage_v_m1_v2_8gpu import canonical_gpu_uuid  # noqa: E402
 CANONICAL_ACTION_DECODE_CONTRACT = (
     "OfficialOpenVLAActionAdapter.predict_action_with_scores_single_generation;"
     "attention_implementation=eager;predict_action_attention_mask_append=one_if_input_ids_appended"
@@ -45,13 +47,13 @@ def _load(path: Path) -> dict[str, Any]:
 
 def _load_raw_capture_plan(path: Path, identity: Mapping[str, Any], horizon: int, gpu: int | None = None) -> tuple[dict[str, Any], frozenset[int]]:
     plan = _load(path)
-    if plan.get("schema") not in {"STAGE_V_M1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1"}:
+    if plan.get("schema") not in {"STAGE_V_M1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1"}:
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_SCHEMA_INVALID")
     if plan.get("status") != "FROZEN_BEFORE_RAW_CAPTURE_RUN":
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_NOT_FROZEN")
     if plan.get("identity") != identity.get("canonical_parent_key"):
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_IDENTITY_MISMATCH")
-    if plan.get("schema") in {"STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1"}:
+    if plan.get("schema") in {"STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1"}:
         if gpu is None or str(gpu) not in plan.get("capture_steps_by_gpu", {}):
             raise CanonicalExecutionError("RAW_CAPTURE_PLAN_GPU_MISSING")
         source_steps = plan["capture_steps_by_gpu"][str(gpu)]
@@ -208,7 +210,7 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
     if not device_uuid:
         raise CanonicalExecutionError("RUNTIME_GPU_UUID_UNAVAILABLE")
     receipt = {
-        "schema": "STAGE_V_M1_V2_1_RUNTIME_BINDING_RECEIPT_V1",
+        "schema": "STAGE_V_M1_V2_1_1_RUNTIME_BINDING_RECEIPT_V1",
         "status": "PASS",
         "logical_worker_id": f"worker_{int(args.gpu)}",
         "requested_physical_gpu": int(args.gpu),
@@ -216,6 +218,7 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
         "torch_current_device": int(torch.cuda.current_device()),
         "torch_device_uuid": device_uuid,
+        "torch_device_uuid_canonical": canonical_gpu_uuid(device_uuid),
         "torch_device_name": torch.cuda.get_device_name(0),
         "mujoco_gl": os.environ.get("MUJOCO_GL"),
         "mujoco_egl_device_id": os.environ.get("MUJOCO_EGL_DEVICE_ID"),

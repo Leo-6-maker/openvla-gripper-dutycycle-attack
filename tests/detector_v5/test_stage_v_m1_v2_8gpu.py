@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 from pathlib import Path
 import subprocess
@@ -14,17 +15,20 @@ from scripts.detector_v5.analyze_stage_v_m1_v2_multigpu import (
     classify_v2,
     classify_v2_with_profile,
     cross_gpu_pairs,
+    analyze_root,
     evidence_profile,
     local_pairs,
     make_r2_plan,
 )
 from scripts.detector_v5 import audit_stage_v_m1_v2_8gpu as auditor
 from scripts.detector_v5.run_stage_v_canonical_clean import _load_raw_capture_plan
+from scripts.detector_v5 import analyze_stage_v_m1_v2_multigpu as producer
 
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_8gpu.json"
 V2_1 = ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_8gpu.json"
+V2_1_1 = ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json"
 V1 = ROOT / "configs/stage_v_m1_visual_determinism_protocol_v1.json"
 
 
@@ -96,6 +100,21 @@ def test_v2_1_protocol_validates_graphics_and_fresh_gate_contract() -> None:
     assert value["fresh_preflight_per_gate"] is True
     assert value["system_graphics_baseline"]["process_name"] == "Xorg"
     assert value["system_graphics_baseline"]["owner"] == "gdm"
+
+
+def test_v2_1_1_protocol_freezes_uuid_and_completion_contract() -> None:
+    value = supervisor.validate_protocol(V2_1_1)
+    assert value["schema"] == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU"
+    assert value["uuid_three_way_closure_required"] is True
+    assert value["producer_complete_owned_by_auditor"] is True
+    assert value["base_v2_1_protocol_sha256"] == hashlib.sha256(V2_1.read_bytes()).hexdigest()
+
+
+def test_uuid_three_way_closure_accepts_canonical_equivalents_and_rejects_mismatch() -> None:
+    assert supervisor.canonical_gpu_uuid(" GPU-AbC ") == "abc"
+    assert supervisor.validate_uuid_binding(gpu=3, preflight_uuid="GPU-AbC", canary_uuid="abc", runtime_uuid="gpu-ABC", phase="Q1") == "abc"
+    with pytest.raises(supervisor.V2Error, match="HOLD_GPU_UUID_BINDING_MISMATCH"):
+        supervisor.validate_uuid_binding(gpu=3, preflight_uuid="GPU-AbC", canary_uuid="GPU-AbC", runtime_uuid="GPU-Def", phase="Q1")
 
 
 def test_exact_gpu_inventory() -> None:
@@ -208,6 +227,48 @@ def test_evidence_profile_keeps_action_divergence_separate() -> None:
     assert classification == "SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM"
     assert profile["action_stable"] is False
     assert set(profile["action_divergent_pairs"]) == {"SAME_MODE_Q_GPU0", "SAME_MODE_C_GPU0"}
+
+
+def test_pure_processor_only_is_not_render_visual() -> None:
+    local, cross = _matrices()
+    pair = local["gpus"]["gpu_00"]["pairs"]["SAME_MODE_Q_GPU0"]
+    pair["traces"]["model_input"]["equal"] = False
+    classification, profile = classify_v2_with_profile(local, cross)
+    assert classification == "PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM"
+    assert profile["processor_only_pairs"] == ["SAME_MODE_Q_GPU0"]
+    assert profile["same_mode_visual_pairs"] == []
+
+
+def test_cross_mode_nonvisual_mismatch_is_not_mode_path_visual() -> None:
+    local, cross = _matrices()
+    for gpu in GPU_IDS:
+        for label in (f"CROSS_MODE_R1_GPU{gpu}", f"CROSS_MODE_R2_GPU{gpu}"):
+            pair = local["gpus"][f"gpu_{gpu:02d}"]["pairs"][label]
+            pair["traces"]["token"]["equal"] = False
+    classification, profile = classify_v2_with_profile(local, cross)
+    assert classification == "UNCLASSIFIED"
+    assert profile["mode_specific_visual_pairs"] == []
+    assert len(profile["mode_specific_nonvisual_pairs"]) == 16
+    assert len(profile["action_divergent_pairs"]) == 16
+
+
+def test_mixed_processor_and_render_mechanisms_are_heterogeneous() -> None:
+    local, cross = _matrices()
+    processor_pair = local["gpus"]["gpu_00"]["pairs"]["SAME_MODE_Q_GPU0"]
+    processor_pair["traces"]["model_input"]["equal"] = False
+    render_pair = local["gpus"]["gpu_01"]["pairs"]["SAME_MODE_Q_GPU1"]
+    render_pair["traces"]["policy_rgb"]["equal"] = False
+    classification, profile = classify_v2_with_profile(local, cross)
+    assert classification == "HETEROGENEOUS_MULTI_GPU_DIVERGENCE"
+    assert profile["processor_only_pairs"] == ["SAME_MODE_Q_GPU0"]
+    assert profile["same_mode_visual_pairs"] == ["SAME_MODE_Q_GPU1"]
+
+
+def test_completion_is_owned_by_independent_auditor() -> None:
+    producer_source = inspect.getsource(producer.analyze_root)
+    auditor_source = inspect.getsource(auditor.audit_root)
+    assert "M1_V2_COMPLETE.json" not in producer_source
+    assert '"completion_owner": "INDEPENDENT_AUDITOR"' in auditor_source
 
 
 def test_independent_auditor_profile_matches_producer_profile_without_shared_classifier() -> None:
@@ -373,9 +434,10 @@ def test_preflight_requires_prepared_manifest(tmp_path: Path) -> None:
 
 def test_runtime_binding_receipt_is_actual_child_contract() -> None:
     receipt = {
-        "schema": "STAGE_V_M1_V2_1_RUNTIME_BINDING_RECEIPT_V1", "status": "PASS",
+        "schema": "STAGE_V_M1_V2_1_1_RUNTIME_BINDING_RECEIPT_V1", "status": "PASS",
         "logical_worker_id": "worker_3", "requested_physical_gpu": 3, "physical_gpu_index": 3,
         "cuda_visible_devices": "3", "torch_current_device": 0, "torch_device_uuid": "GPU-3",
+        "torch_device_uuid_canonical": "3",
         "mujoco_gl": "egl", "mujoco_egl_device_id": "3", "env_render_gpu_device_id": 3,
         "render_context_observed_device_id": 3, "run_set": "r1", "run_label": "Q1",
         "source_commit": "commit", "source_tree": "tree", "episode_started": False,

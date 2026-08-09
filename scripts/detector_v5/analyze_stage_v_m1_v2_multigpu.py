@@ -42,9 +42,19 @@ def _pair_exact(pair: Mapping[str, Any]) -> bool:
     return bool(pair.get("initial_state_exact") and pair.get("terminal_step_exact") and pair.get("terminal_outcome_exact") and all(item.get("equal") for item in pair.get("traces", {}).values()))
 
 
-def _visual_diff(pair: Mapping[str, Any]) -> bool:
+def _render_visual_diff(pair: Mapping[str, Any]) -> bool:
     traces = pair.get("traces", {})
-    return traces.get("policy_rgb", {}).get("equal") is False or traces.get("model_input", {}).get("equal") is False
+    return traces.get("policy_rgb", {}).get("equal") is False
+
+
+def _pipeline_visual_diff(pair: Mapping[str, Any]) -> bool:
+    traces = pair.get("traces", {})
+    return _render_visual_diff(pair) or traces.get("model_input", {}).get("equal") is False
+
+
+def _visual_diff(pair: Mapping[str, Any]) -> bool:
+    """Render-visible mismatch; model-input-only mismatch is processor-only."""
+    return _render_visual_diff(pair)
 
 
 def _full_sim_exact(pair: Mapping[str, Any]) -> bool:
@@ -99,12 +109,13 @@ def evidence_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> dict
     cross_gpu = [(f"CROSS_GPU_{label}_{name}", pair) for label, pairs in cross["labels"].items() for name, pair in pairs.items()]
     raw_only = [name for name, pair in same_mode if not _trace_equal(pair, "raw_observation") and _trace_equal(pair, "policy_rgb") and _trace_equal(pair, "model_input") and _full_sim_exact(pair)]
     processor_only = [name for name, pair in same_mode if _trace_equal(pair, "raw_observation") and _trace_equal(pair, "policy_rgb") and not _trace_equal(pair, "model_input") and _full_sim_exact(pair)]
-    same_mode_visual = [name for name, pair in same_mode if _visual_diff(pair) and _full_sim_exact(pair)]
-    mode_specific = [name for name, pair in cross_mode if not _pair_exact(pair) and _full_sim_exact(pair)]
-    cross_gpu_visual = [name for name, pair in cross_gpu if _visual_diff(pair) and _full_sim_exact(pair)]
+    same_mode_visual = [name for name, pair in same_mode if _render_visual_diff(pair) and _full_sim_exact(pair)]
+    mode_specific_visual = [name for name, pair in cross_mode if not _pair_exact(pair) and _render_visual_diff(pair) and _full_sim_exact(pair)]
+    mode_specific_nonvisual = [name for name, pair in cross_mode if not _pair_exact(pair) and not _pipeline_visual_diff(pair) and _full_sim_exact(pair)]
+    cross_gpu_visual = [name for name, pair in cross_gpu if _render_visual_diff(pair) and _full_sim_exact(pair)]
     simulator = [name for name, pair in same_mode + cross_mode + cross_gpu if not _full_sim_exact(pair)]
-    visual_pairs = [pair for _name, pair in same_mode + cross_mode + cross_gpu if _visual_diff(pair) and _full_sim_exact(pair)]
-    action_divergent = [name for name, pair in same_mode + cross_mode + cross_gpu if _visual_diff(pair) and _full_sim_exact(pair) and (not _trace_equal(pair, "token") or not _trace_equal(pair, "postprocessed_action"))]
+    visual_pairs = [pair for _name, pair in same_mode + cross_mode + cross_gpu if _pipeline_visual_diff(pair) and _full_sim_exact(pair)]
+    action_divergent = [name for name, pair in same_mode + cross_mode + cross_gpu if _full_sim_exact(pair) and (not _trace_equal(pair, "token") or not _trace_equal(pair, "postprocessed_action"))]
     action_stable = bool(visual_pairs) and all(_trace_equal(pair, "token") and _trace_equal(pair, "postprocessed_action") for pair in visual_pairs)
     mechanisms: set[str] = set()
     if raw_only:
@@ -113,8 +124,10 @@ def evidence_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> dict
         mechanisms.add("PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM")
     if same_mode_visual:
         mechanisms.add("SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM")
-    if mode_specific:
+    if mode_specific_visual:
         mechanisms.add("MODE_PATH_SPECIFIC_VISUAL_DIVERGENCE")
+    if mode_specific_nonvisual:
+        mechanisms.add("MODE_SPECIFIC_NONVISUAL")
     if cross_gpu_visual:
         mechanisms.add("GPU_CONTEXT_DEPENDENT_VISUAL_DIVERGENCE")
     if simulator:
@@ -123,12 +136,15 @@ def evidence_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> dict
         "raw_only_pairs": raw_only,
         "processor_only_pairs": processor_only,
         "same_mode_visual_pairs": same_mode_visual,
-        "mode_specific_pairs": mode_specific,
+        "mode_specific_pairs": mode_specific_visual,
+        "mode_specific_visual_pairs": mode_specific_visual,
+        "mode_specific_nonvisual_pairs": mode_specific_nonvisual,
         "cross_gpu_visual_pairs": cross_gpu_visual,
         "simulator_pairs": simulator,
         "action_divergent_pairs": action_divergent,
         "same_mode_visual_mismatch_gpus": sorted({int(name.rsplit("GPU", 1)[1]) for name in same_mode_visual}),
-        "mode_specific_mismatch_gpus": sorted({int(name.rsplit("GPU", 1)[1]) for name in mode_specific}),
+        "mode_specific_mismatch_gpus": sorted({int(name.rsplit("GPU", 1)[1]) for name in mode_specific_visual}),
+        "mode_specific_nonvisual_mismatch_gpus": sorted({int(name.rsplit("GPU", 1)[1]) for name in mode_specific_nonvisual}),
         "action_stable": action_stable,
         "mechanisms": sorted(mechanisms),
         "mixed_mechanisms": len(mechanisms) > 1,
@@ -153,9 +169,9 @@ def classify_v2_with_profile(local: Mapping[str, Any], cross: Mapping[str, Any])
         return "PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM", profile
     if profile["same_mode_visual_pairs"]:
         return "SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM", profile
-    if same_mode_exact and len(profile["mode_specific_pairs"]) >= 8:
+    if same_mode_exact and len(profile["mode_specific_visual_pairs"]) >= 8:
         return "MODE_PATH_SPECIFIC_VISUAL_DIVERGENCE", profile
-    if profile["mode_specific_pairs"] or profile["cross_gpu_visual_pairs"]:
+    if profile["mode_specific_visual_pairs"] or profile["cross_gpu_visual_pairs"]:
         return "HETEROGENEOUS_MULTI_GPU_DIVERGENCE", profile
     return "UNCLASSIFIED", profile
 
@@ -266,10 +282,10 @@ def analyze_root(root: Path, *, final: bool = False) -> dict[str, Any]:
     aggregate_path = root / "M1_V2_R1_AGGREGATE_REPORT.json"
     _write(aggregate_path, aggregate)
     (root / "M1_V2_R1_AGGREGATE_REPORT.md").write_text("# M1-V2 R1 aggregate report\n\n" + "\n".join(f"- {key}: {value}" for key, value in aggregate.items() if key != "schema") + "\n", encoding="utf-8")
-    plan_schema = "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1" if manifest.get("protocol_schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU" else "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1"
+    plan_schema = "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1" if manifest.get("protocol_schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU" else ("STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1" if manifest.get("protocol_schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU" else "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1")
     plan = make_r2_plan(root, identity, local, cross, _sha256(local_path), _sha256(cross_path), schema=plan_schema)
     _write(root / "M1_V2_RAW_CAPTURE_PLAN.json", plan)
-    _write(root / "M1_V2_CLASSIFICATION_RECEIPT.json", {"schema": "STAGE_V_M1_V2_CLASSIFICATION_RECEIPT_V1", "status": "PASS_CLASSIFIED" if final else "PENDING_R2_RAW_CAPTURE", "classification": classification, "evidence_profile": profile, "rb1a_status": "HOLD", "identity": identity, "source_commit": manifest.get("source_commit"), "source_tree": manifest.get("source_tree")})
+    _write(root / "M1_V2_CLASSIFICATION_RECEIPT.json", {"schema": "STAGE_V_M1_V2_CLASSIFICATION_RECEIPT_V1", "status": "PENDING_INDEPENDENT_AUDIT" if final else "PENDING_R2_RAW_CAPTURE", "classification": classification, "evidence_profile": profile, "rb1a_status": "HOLD", "identity": identity, "source_commit": manifest.get("source_commit"), "source_tree": manifest.get("source_tree")})
     if final:
         raw_audits = {f"gpu_{gpu:02d}/{label}": _raw_audit(_run(root, gpu, label, "raw_runs")) for gpu in GPU_IDS for label in LABELS}
         if any(value["verdict"] != "PASS" for value in raw_audits.values()):
@@ -280,8 +296,7 @@ def analyze_root(root: Path, *, final: bool = False) -> dict[str, Any]:
         clusters = hash_clusters(root)
         _write(root / "M1_V2_NUMERIC_VISUAL_FORENSIC.json", numeric)
         _write(root / "M1_V2_VISUAL_HASH_CLUSTER_REPORT.json", clusters)
-        _write(root / "M1_V2_PRODUCER_ANALYSIS.json", {"schema": "STAGE_V_M1_V2_PRODUCER_ANALYSIS_V1", "verdict": "PASS", "r1_run_count": 32, "gpu_local_pair_count": 32, "cross_gpu_pair_count": 112, "raw_audits": raw_audits, "classification": classification, "evidence_profile": profile})
-        _write(root / "M1_V2_COMPLETE.json", {"schema": "STAGE_V_M1_V2_COMPLETE_V1", "status": "PASS_CLASSIFIED", "classification": classification, "evidence_profile": profile, "rb1a_status": "HOLD"})
+        _write(root / "M1_V2_PRODUCER_ANALYSIS.json", {"schema": "STAGE_V_M1_V2_PRODUCER_ANALYSIS_V1", "status": "PASS_PENDING_INDEPENDENT_AUDIT", "verdict": "PASS", "r1_run_count": 32, "gpu_local_pair_count": 32, "cross_gpu_pair_count": 112, "raw_audits": raw_audits, "classification": classification, "evidence_profile": profile})
     return {"classification": classification, "local": local, "cross": cross, "plan": plan, "aggregate": aggregate}
 
 
