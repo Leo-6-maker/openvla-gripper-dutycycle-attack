@@ -1,0 +1,56 @@
+{
+  "amendment": "PROTOCOL_AMENDMENT_V4_PROVENANCE_CORRECTION",
+  "status": "HOLD_REVIEW",
+  "created_at": "2026-07-26T17:30:00+08:00",
+  "source_commit": "00c54f93c1dbd00b2ea42e34de7cdfbbad9d3756",
+  "preserves": "reports/PROTOCOL_AMENDMENT_V3.json (immutable historical record)",
+  "purpose": "Correct provenance claims without changing the V3 allocation or split semantics.",
+  "observed_chronology": {
+    "v3_first_committed": {
+      "commit": "09faff3a954693acfdf077cbd37b8b78646db99f",
+      "time": "2026-07-26T13:26:45+08:00"
+    },
+    "v3_binding_sha_fix": {
+      "commit": "205eaf95d3fc7e2dcb54f3ec7ffa4cb5fd290226",
+      "time": "2026-07-26T14:02:24+08:00"
+    },
+    "h0_receipt_committed": {
+      "commit": "00c54f93c1dbd00b2ea42e34de7cdfbbad9d3756",
+      "time": "2026-07-26T16:57:18+08:00"
+    }
+  },
+  "corrections": {
+    "pre_training_allocation": {
+      "claim_in_v3": true,
+      "repository_independent_proof": false,
+      "reason": "V3 records the claim as a boolean but does not bind a pre-training allocation receipt, source commit, and immutable parent manifest in the chronology before the relevant training gate."
+    },
+    "split_semantics": {
+      "preserved": true,
+      "note": "This amendment does not alter the stated 800/640/80/80 split or identity selection."
+    },
+    "g10_manifest_freeze": {
+      "valid_only_if": "The manifest SHA is independently checked against the exact source used by the training and later evaluation gates.",
+      "current_status": "NOT_INDEPENDENTLY_PROVEN"
+    }
+  },
+  "state_machine_correction": {
+    "plan_current_gate": "H0_EVIDENCE_BASELINE",
+    "h0_receipt_status": "PASS",
+    "h0_receipt_next_gate": "C3-S2_STATIC_DYNAMIC_TARGET_SEAL_V2",
+    "required_interpretation": "These are separate historical observations, not an automatic transition. H0.1 must validate the receipt and bindings before any next gate is unlocked.",
+    "h0_1_verdict": "HOLD_REVIEW",
+    "c3_s2_authorized": false,
+    "c3_g_freeze_authorized": false,
+    "t2r_d_reveal_authorized": false
+  },
+  "required_follow_up": [
+    "Re-issue a self-hashed H0.1 receipt with the explicit canonical hash algorithm.",
+    "Rebind each historical receipt to the exact committed file SHA or mark it historical and non-consumable.",
+    "Resolve C1 server source provenance with source-file SHA and clean source checkout binding.",
+    "Record a separate immutable plan-transition receipt before C3-S2."
+  ],
+  "training_authorized": false,
+  "inference_authorized": false,
+  "attack_authorized": false
+}

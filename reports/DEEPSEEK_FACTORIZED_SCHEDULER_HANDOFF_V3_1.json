@@ -1,0 +1,133 @@
+{
+  "schema": "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1",
+  "interface_revision": "V3.1",
+  "status": "READY_FOR_DEEPSEEK_STATIC_INTEGRATION",
+  "branch": "codex/factorized-v2-scheduler-inputs-20260722",
+  "base_branch": "codex/v2b-exact-w32-recommended-canary-20260721",
+  "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
+  "code_snapshot_commit": "ad1f8940b888d06cbfae2f650e52bcbaad1cb7ce",
+  "handoff_metadata_parent_commit": "ad1f8940b888d06cbfae2f650e52bcbaad1cb7ce",
+  "metadata_commit_consumption_rule": "DeepSeek checks out code_snapshot_commit for implementation. It reads this V3.1 handoff and the receipt from the later metadata commit containing them. The observed PR head is informational only and never substitutes for code_snapshot_commit.",
+  "external_pr_head_observation": {
+    "pr": 99,
+    "observed_head_before_v3_1": "221befd785e78f3b854e5c711aeff2aca7cf92c8",
+    "observation_source": "gh pr view 99",
+    "consumption_rule": "Do not infer implementation from this observation; use code_snapshot_commit. Re-read the actual PR head after the metadata commit is pushed."
+  },
+  "expected_split_keys": ["o0_i0", "o0_i1", "o0_i2", "o1_i0", "o1_i1", "o1_i2", "o2_i0", "o2_i1", "o2_i2", "o3_i0", "o3_i1", "o3_i2"],
+  "scheduler_api": {
+    "contract": {"path": "schemas/factorized_v2_scheduler_api_contract.schema.json", "sha256": "323289fe94b80b89efc8dccdc9f4a970f624724dff3407cff16b8992e07cd327"},
+    "config": {"path": "configs/FACTORIZED_V2_SCHEDULER_API_V3_1.json", "sha256": "d8c6714f7fb35174aa076b74c3e53c736be2e4cf70e33654a3def53f57be03ce"},
+    "fixture": {"path": "tests/fixtures/factorized_scheduler_api_v3_1_trace.json", "sha256": "69c9da5fb2bfce57d0568fd14999c06ac2d439f3b38330536e260140b7925e39"},
+    "module": "gripper_attack.factorized_scheduler",
+    "scheduler_class": "FactorizedV2OneShotScheduler",
+    "config_class": "FactorizedSchedulerConfig",
+    "config_factory": "from_mapping",
+    "step_call": "scheduler.step(runtime_record_mapping)",
+    "trace_emit_field": "emit",
+    "first_emit_rule": "first trace where emit=true",
+    "no_emit_sentinel": null,
+    "attack_enabled": false
+  },
+  "runtime_adapter": {
+    "source": {"path": "src/gripper_attack/factorized_scheduler_adapter.py", "sha256": "ab4f7b47c3b17c1bde52d2cfbbf8cc710bd89828e07bd9ed3bd1c584f5b8e4ca"},
+    "class": "FactorizedV2SchedulerAdapter",
+    "constructor": "FactorizedV2SchedulerAdapter(structure, calibration_contract, require_l3_eligible=False)",
+    "step": "adapter.step(runtime_record_mapping)",
+    "episode_api": "adapter.run_episode(runtime_rows)",
+    "episode_result": ["per_step_trace", "ever_emitted", "first_emit_step", "first_emit_trace", "final_state", "reason_histogram"],
+    "calibration_application": "probability=sigmoid(a*raw_logit+b)",
+    "runtime_binding_fields": ["checkpoint_sha256", "source_commit", "feature_order_sha256", "split", "scheduler_source_sha256", "structural_config_sha256"],
+    "forbidden": ["fit calibration", "select threshold", "Teacher labels", "offline labels", "action mutation", "attack"]
+  },
+  "runtime_bundle": {
+    "schema_name": "FACTORIZED_V2_RUNTIME_SCHEDULER_INPUT_BUNDLE_V2",
+    "split_directory_name": "{split}",
+    "data_filename": "runtime_scheduler_inputs.jsonl",
+    "manifest_filename": "manifest.json",
+    "split_seal_filename": "SHA256SUMS",
+    "split_seal_sidecar_filename": "SHA256SUMS.sha256",
+    "top_level_files": ["manifest.json", "split_bindings.json", "SHA256SUMS", "SHA256SUMS.sha256"],
+    "episode_field": "episode",
+    "step_field": "step",
+    "split_field": "split",
+    "checkpoint_field": "checkpoint_sha256",
+    "required_split_binding_fields": ["split", "checkpoint_sha256", "source_commit", "feature_order_sha256", "scheduler_source_sha256", "structural_config_sha256", "prediction_seal", "student_input_seal", "runtime_action_seal", "identity_count", "record_count"],
+    "schema_file": {"path": "schemas/factorized_v2_runtime_scheduler_input.schema.json", "sha256": "0e6c98ab714ba7dbd5380966f3b001040d3922984bf904c81fd1fd0b9900ca40"},
+    "rematerializer": {"path": "scripts/detector_v5/rematerialize_factorized_v2_runtime_inputs.py", "sha256": "0200b322a60b5887a0578a19cee69fa9d2b86749673f85921a9676d579c3ac08"},
+    "status": "BLOCKED_ROOTS_NOT_MOUNTED"
+  },
+  "offline_bundles": {
+    "calibration": {
+      "schema": {"path": "schemas/factorized_v2_offline_calibration_bundle.schema.json", "sha256": "a67cf67d60efa3c12c6c658646c288c990eed10153ec59caa270d8c9342c1189"},
+      "label_schema": {"path": "schemas/factorized_v2_offline_calibration_labels.schema.json", "sha256": "ed3842867fe783dc3a14588eb35de31da9e4b30665d85fda26314520e9c34c16"},
+      "data_filename": "calibration_records.jsonl",
+      "manifest_filename": "manifest.json",
+      "episode_field": "episode",
+      "step_field": "step",
+      "target_fields": ["grasp_target", "manipulation_target", "release_target"],
+      "known_mask_fields": ["grasp_known_mask", "manipulation_known_mask", "release_known_mask"],
+      "physical_separation": "never written into runtime bundle"
+    },
+    "evaluation": {
+      "schema": {"path": "schemas/factorized_v2_offline_evaluation_bundle.schema.json", "sha256": "03986e5812bb8336818874265593f39117fa5767c332886be8abbbc028e62232"},
+      "label_schema": {"path": "schemas/factorized_v2_offline_evaluation_labels.schema.json", "sha256": "8f712abc195c24ba37887ea6b68b6eaeb40e2534862b4cdd503dfae79f5825e8"},
+      "data_filename": "evaluation_records.jsonl",
+      "manifest_filename": "manifest.json",
+      "episode_field": "episode",
+      "step_field": "step",
+      "strict_k10_feasible_field": "strict_k10_feasible",
+      "strict_k10_known_field": "strict_k10_known_mask",
+      "eligible_start_semantics": "offline Teacher/evaluation label only; never a runtime gate",
+      "materializer": {"path": "scripts/detector_v5/materialize_factorized_v2_offline_evaluation_bundle.py", "sha256": "8347586f4edc37f2183e3ada4d9df4dc4df1e950067683b59b0a845d660fb116"},
+      "physical_separation": "never written into runtime bundle"
+    }
+  },
+  "calibration_contract": {
+    "schema": {"path": "schemas/factorized_v2_calibration_and_threshold_contract_v3.schema.json", "sha256": "af907575478450abf68988ba4f06f8a6e8783a22521a12cd36944ddc256a3c91"},
+    "schema_name": "FACTORIZED_V2_CALIBRATION_AND_THRESHOLD_CONTRACT_V3",
+    "head_names": ["grasp", "manipulation", "release"],
+    "methods": ["RAW", "INTERCEPT_ONLY", "PLATT"],
+    "transform": "probability=sigmoid(a*raw_logit+b)",
+    "threshold_owner": "DeepSeek; Codex does not fit or select",
+    "authoritative_requirements": ["calibration_fit_authoritative=true", "threshold_selection_authoritative=true", "l3_evaluation_eligible=true", "all three provenance_class=INDEPENDENT_CALIBRATION", "all three fit_data_valid=true"],
+    "diagnostic_semantics": "diagnostic_only=true and l3_evaluation_eligible=false",
+    "training_authorized": false,
+    "full_fit_authorized": false,
+    "attack_authorized": false
+  },
+  "structural_config": {"path": "configs/FACTORIZED_V2_SCHEDULER_PROTOCOL_V1.json", "sha256": "98c5fd257ad5b34f04286818698d6d678012bd84ac9a360419c3927412c80390"},
+  "handoff_validator": {
+    "source": {"path": "scripts/detector_v5/validate_factorized_v2_handoff.py", "sha256": "71e3400af09f8e7fac334a2f840a4780dbb041da1b9a364c7bcff9b36fe09433"},
+    "pass_status": "STATIC_INTEGRATION_PASS",
+    "execution_ready_status_forbidden": true,
+    "rules": ["canonical hash", "nested reference SHA", "repo-relative regular files", "absolute/.. paths rejected", "symlinks rejected", "exact 12 split keys", "Teacher/offline fields excluded from runtime contract"]
+  },
+  "identity_manifest_audit": {
+    "json": {"path": "reports/FACTORIZED_CALIBRATION_IDENTITY_FEASIBILITY_AUDIT.json", "sha256": "82c7764a02007ba461f0521ae52425adeb612b0e50f8758762939b7d12810227"},
+    "csv": {"path": "reports/FACTORIZED_CALIBRATION_IDENTITY_FEASIBILITY_AUDIT.csv", "sha256": "2995370587e911636df1f6da5a7dbf0c8e4692fec9f459213825ec78b554b30c"},
+    "verdict": "BLOCKED_ROOTS_NOT_MOUNTED",
+    "model_inference": false,
+    "training": false
+  },
+  "production_receipt_requirements": {
+    "handoff_receipt": {"path": "reports/FACTORIZED_V3_1_HANDOFF_RECEIPT.json", "sha256": "1ebab6dfc6d26ad9c75cbbc34d208007051e3ae0095c9c73685a894c5884792b"},
+    "handoff_receipt_reference_sha_definition": "SHA256(canonical receipt JSON with handoff_blob_sha256 omitted)",
+    "read_only_receipt_root": {"path": "reports/FACTORIZED_V3_1_RUNTIME_PRODUCTION_AUDIT_RECEIPT/audit_summary.json", "sha256": "22795a6b78367b0cc601bdefa140f1cb3812de8e70c1a8967ae32927a278ff47"},
+    "receipt_seal": {"path": "reports/FACTORIZED_V3_1_RUNTIME_PRODUCTION_AUDIT_RECEIPT/SHA256SUMS", "sha256": "e83a2b40802ea43b61bbdbb72980a0631f2210bf04232de9ac9717af9d4cc23c"},
+    "receipt_status": "BLOCKED_ROOTS_NOT_MOUNTED",
+    "required_before_rematerialization": ["exact 12 split closure", "all source roots sealed", "checkpoint/source/feature binding", "runtime action certification", "exact episode/step join"],
+    "model_inference": false
+  },
+  "remaining_blockers": [
+    "12 sealed prediction/student/runtime roots and checkpoint manifests are not mounted in this Windows worktree",
+    "identity feasibility is BLOCKED_ROOTS_NOT_MOUNTED; no OOF assignment was invented",
+    "runtime rematerialization and offline evaluation bundle materialization were not executed",
+    "DeepSeek must provide independent calibration contracts and thresholds",
+    "authoritative L3 remains HOLD"
+  ],
+  "forbidden_runtime_fields": ["event_id", "known_mask", "teacher_phase", "teacher_label", "strict_k10_feasible", "strict_k10_known_mask", "utility_probability", "regrasp_probability", "future_fields", "attack_outcome", "object_state", "contact", "action", "clean_action", "executed_action", "mutated_action"],
+  "forbidden_substitutions": ["grasp_probability -> utility_probability", "manipulation_probability -> regrasp_probability", "Teacher/event_id -> candidate_close", "zero/default fill for missing heads", "temperature-only formal calibration", "arbitrary subprocess commands", "CAL/CHECK reads", "model inference without separate authorization", "action mutation", "attack"],
+  "execution_boundary": {"static_interface": true, "identity_audit": true, "sealed_artifact_audit": true, "runtime_rematerialization": false, "offline_evaluation_bundle": false, "model_inference": false, "training": false, "full_fit": false, "cal_check": false, "rollout": false, "shadow": false, "attack": false},
+  "handoff_blob_sha256": "057f277b0e957794a51ea0d7d6255d1677dfd8eeee0cf6eac5c2b2524f2cc543"
+}

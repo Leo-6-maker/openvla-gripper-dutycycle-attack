@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openvla.example/schemas/factorized_v2_calibration_and_threshold_contract_v2.schema.json",
+  "title": "Factorized V2 calibration and threshold contract V2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "checkpoint_sha256", "split", "scheduler_source_sha256",
+    "structural_config_sha256", "student_source_commit", "feature_order_sha256",
+    "grasp", "manipulation", "release", "formal_selection_eligible",
+    "training_authorized", "attack_authorized"
+  ],
+  "properties": {
+    "schema": {"const": "FACTORIZED_V2_CALIBRATION_AND_THRESHOLD_CONTRACT_V2"},
+    "checkpoint_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+    "split": {"type": "string", "pattern": "^o[0-3]_i[0-2]$"},
+    "scheduler_source_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+    "structural_config_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+    "student_source_commit": {"type": "string", "pattern": "^[0-9a-fA-F]{40}$"},
+    "feature_order_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+    "formal_selection_eligible": {"const": false},
+    "training_authorized": {"const": false},
+    "attack_authorized": {"const": false},
+    "grasp": {"$ref": "#/$defs/head"},
+    "manipulation": {"$ref": "#/$defs/head"},
+    "release": {"$ref": "#/$defs/head"}
+  },
+  "$defs": {
+    "head": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method", "a", "b", "threshold", "transform", "method_valid",
+        "transform_valid", "fit_data_valid", "provenance", "fit_manifest_sha256",
+        "policy_selection_manifest_sha256"
+      ],
+      "properties": {
+        "method": {"enum": ["RAW", "INTERCEPT_ONLY", "PLATT"]},
+        "a": {"type": "number"},
+        "b": {"type": "number"},
+        "threshold": {"type": "number", "minimum": 0, "maximum": 1},
+        "transform": {"const": "probability=sigmoid(a*raw_logit+b)"},
+        "method_valid": {"const": true},
+        "transform_valid": {"const": true},
+        "fit_data_valid": {"type": "boolean"},
+        "provenance": {"oneOf": [{"type": "string"}, {"type": "object"}]},
+        "fit_manifest_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+        "policy_selection_manifest_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"}
+      }
+    }
+  }
+}

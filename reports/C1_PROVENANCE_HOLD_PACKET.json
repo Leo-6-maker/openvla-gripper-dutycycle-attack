@@ -1,0 +1,52 @@
+{
+  "packet": "C1_PROVENANCE_HOLD_PACKET",
+  "status": "C1_PROVENANCE_UNRESOLVED",
+  "created_at": "2026-07-26T17:30:00+08:00",
+  "server": {
+    "host": "pm-364c0001",
+    "user": "dty_user",
+    "repo": "/mnt/sdc/dty_user/openvla_attack",
+    "repo_head_observed": "68a8af0dc73ddb54c31fef57fa49597200b09533",
+    "repo_worktree": "DIRTY",
+    "artifact": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/t2rc1_full_registry/ENTITY_REGISTRY_SUMMARY.json",
+    "artifact_sha256": "c1ebad4cfc9dc44db84a2f89423c39540edb70bc2ba711d427bf0148bfcbad77",
+    "source_copy": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/t2rc1_full_registry.py",
+    "source_copy_sha256": "b0567f3d6fc2eee2af116a8b587471d05a65c634e6ab08a6d50832b04a2af603"
+  },
+  "observed_content": {
+    "n_tasks": 40,
+    "n_ok": 40,
+    "n_env_errors": 0,
+    "n_blocked_resolutions": 0,
+    "n_unresolved_supported": 0,
+    "n_supported_placement": 38,
+    "n_articulated_unsupported": 2,
+    "top_level_status": "FAIL",
+    "failure_expression": "n_ok + n_articulated == 40",
+    "observed_values": "40 + 2 == 40 is false",
+    "interpretation": "The output contains 40 per-task OK records and no blocked/unresolved/env-error counts, but the producer status predicate is wrong for the articulated subset."
+  },
+  "provenance_gap": {
+    "receipt_claimed_source_commit": "b5c9634",
+    "source_commit_resolvable_in_server_repo": false,
+    "server_source_sha_matches_claimed_commit": false,
+    "local_b5c9634_source_sha256": "1d9218afc6f8f223a3129934fddaacf0634337936bf92c0d487ae35570322b1c",
+    "decision": "Do not promote the C1 result from a content-valid diagnostic to an exact reproducible gate result."
+  },
+  "minimal_resolution": {
+    "rerun_required": true,
+    "rerun_type": "CPU-only C1 registry reproduction on a clean checkout",
+    "must_bind": [
+      "source repository HEAD",
+      "source worktree clean status",
+      "source script full-file SHA256",
+      "C1 input root SHA",
+      "output artifact SHA256",
+      "the corrected status predicate"
+    ],
+    "no_identity_or_threshold_changes": true
+  },
+  "training_authorized": false,
+  "inference_authorized": false,
+  "attack_authorized": false
+}

@@ -1,0 +1,123 @@
+{
+  "gate": "H0_EVIDENCE_BASELINE",
+  "plan": "N5_LONGRUN_PLAN_V4",
+  "timestamp": "2026-07-26T10:00:00Z",
+  "status": "PASS",
+  "self_sha256": "fc3206f240e29fbaeb1e5acd77be907993ac4041b3c73cfbf95ae09d685d0a2b",
+
+  "upstream_artifacts": {
+    "N5_LONGRUN_PLAN_V4": {
+      "path": "N5_LONGRUN_PLAN_V4.json",
+      "sha256": "745b1bf9e258a8effddcc15911f5e7d025cb012359ccca6da4d82a8790f89ef0",
+      "note": "V3 preserved unmodified at N5_LONGRUN_PLAN_V3.json"
+    },
+    "C1_RECEIPT": {
+      "path": "n5/phase3_student/h0_evidence_baseline/C1_RECEIPT.json",
+      "sha256": "1d9183b3dc2f33cb6f90de1dd5c4aa7f980b3dbc09d07007a7f82dc6fc17fee4",
+      "binds_server_artifact": "ENTITY_REGISTRY_SUMMARY.json",
+      "server_sha256": "c1ebad4cfc9dc44db84a2f89423c39540edb70bc2ba711d427bf0148bfcbad77"
+    },
+    "C2_FINAL_RECEIPT": {
+      "path": "n5/phase3_student/h0_evidence_baseline/C2_FINAL_RECEIPT.json",
+      "sha256": "b6ab97488766cbc0d7e388dbf4f035995b5650c241cd6a2c5a31cefbb0953236",
+      "binds_server_artifacts": ["C2R0_REPORT.json", "C2R02_REPORT.json"],
+      "server_shas": {
+        "C2R0_REPORT.json": "f7de7c4413a2f5a92d5374938b4a0ec7da2982540294c6ea234c295547a93c76",
+        "C2R02_REPORT.json": "4de9c3edf5c069faccbd46f7e4336f2c69c3b48a3633532e53d889d5d28fd166"
+      }
+    },
+    "C2_TASK09_FORENSIC_RECEIPT": {
+      "path": "n5/phase3_student/h0_evidence_baseline/C2_TASK09_FORENSIC_RECEIPT.json",
+      "sha256": "d63f247f9b5af53fdc6412cb6c4017dcab2b57319f9cd453acc38ed616c79c36"
+    },
+    "C3_S_V1_RECEIPT": {
+      "path": "n5/phase3_student/h0_evidence_baseline/C3_S_V1_RECEIPT.json",
+      "sha256": "4199f5f98cf620d0d5456fccdf9ebf7e08a4a73cecfdeb42578fc604b39af88e",
+      "binds_server_artifact": "STATIC_FIXTURE_SEAL.json",
+      "server_sha256": "01474c45604d6c0195f5c9aaded4fbd80b143da2d150fa5a6f6a71673cde0182"
+    },
+    "T2RD_CONFIRM_MANIFEST": {
+      "server_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/t2rd_confirmation_cohort/T2RD_CONFIRM_MANIFEST_V1.json",
+      "server_sha256": "a126be308e932597e74247f260a219e9ee48c87b5b9716c1bc5750e118f749cc",
+      "note": "130 episodes, SHA 9432ca41, frozen before any Teacher modifications"
+    }
+  },
+
+  "historical_gates_marked_superseded": {
+    "G6_SEAL_V2": {
+      "server_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G6_SEAL_V2.json",
+      "self_sha256": "fbdfc4b4c0307fcfae3ca5968efd9e97eb7becce0a93d3fc03a34359c2112db1",
+      "status": "HISTORICAL_SUPERSEDED_PENDING_V23",
+      "reason": "Training data built with V22 Teacher labels. Will be superseded when V23 labels replace V22 in T4."
+    },
+    "G7_MLP_TRAINING": {
+      "status": "HISTORICAL_SUPERSEDED_PENDING_V23",
+      "reason": "MLP baseline trained with V22 labels. No G7 directory found on server — training artifacts embedded in G8 directory."
+    },
+    "G8_N5_TRAINING": {
+      "server_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g8_n5_training/G8_RECEIPT.json",
+      "server_sha256": "4016dc4ed53ffed9d2aa1eee03b8338af79698c266eace2c0c6af742ff545dfd",
+      "self_sha256_in_receipt": null,
+      "status_in_receipt": null,
+      "status": "HISTORICAL_SUPERSEDED_PENDING_V23",
+      "reason": "N5 Dual TCN trained with V22 labels. Receipt never finalized (self_sha256=null, status=null). Will be superseded by S1 retraining."
+    },
+    "G9_SCORING_MANIFEST": {
+      "server_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g9_scoring/SCORING_MANIFEST.json",
+      "server_sha256": "e67e6f427a859dfe649994e1b88b4e6fd78fd291c102b8396fa3fd5368ebe601",
+      "self_sha256_in_manifest": "639181bc287960cbd7262d86e379ec3d65e00ed0e2a9413d49361c1b9bacb2af",
+      "gate_in_manifest": null,
+      "status_in_manifest": null,
+      "status": "HISTORICAL_SUPERSEDED_PENDING_V23",
+      "reason": "Scorer built with V22 labels. Manifest never finalized (gate=null, status=null). SCORE_ONLY mode, never used for threshold selection."
+    }
+  },
+
+  "c2_report_language_fix": {
+    "before": "V3 plan described C2R0 results without distinguishing sampled vs general non-fixture parity",
+    "after": "C2_FINAL_RECEIPT.json explicitly distinguishes: (a) sampled non-fixture parity = 3/3 episodes exact; (b) this does NOT generalize to all non-fixture tasks; (c) task_09 divergence is systematic and understood",
+    "corrected_statements": [
+      "Sampled non-fixture numerical parity: 3/3 episodes (libero_10/task_00, libero_object/task_00, libero_spatial/task_00) — 0 EEF, 0 qpos, 0 object issues across all steps",
+      "General non-fixture exact parity: NOT CLAIMED — sample size (3 episodes, 3 suites) is insufficient to generalize",
+      "Fixture task (task_09): SYSTEMATIC divergence at step 136, confirmed by 3/3 identical C2R0.2 runs"
+    ]
+  },
+
+  "ci_tests": {
+    "path": "n5/phase3_student/tests/test_h0_contracts.py",
+    "tests": [
+      "Python import/compile of all Teacher, model, dataset, env_factory modules",
+      "JSON schema validation and self-hash consistency for all receipts",
+      "C1 strict-resolution unit test: EXACT_SITE/EXACT_BODY/EXACT_GEOM only, no fallback",
+      "C2 pre-action alignment test: state recorded BEFORE env.step()",
+      "Teacher no-success/terminal test: compute functions reject task_success and env_done as inputs",
+      "N5 causal-prefix test: full-sequence vs growing-prefix vs streaming-buffer logits match within 1e-5"
+    ]
+  },
+
+  "removed_from_repo": {
+    "tmp_debug_obj.py": "REMOVED — ad-hoc debug script for libero_object/task_02/state_07, not part of any gate"
+  },
+
+  "source_commit": "d820953",
+  "branch": "deepseek/integration-final-detector-20260724",
+
+  "pass_checklist": {
+    "N5_LONGRUN_PLAN_V4_created_V3_preserved": true,
+    "tmp_debug_obj_removed": true,
+    "C1_receipt_written": true,
+    "C2_final_receipt_written_with_corrected_language": true,
+    "C2_task09_forensic_receipt_written": true,
+    "C3_S_V1_receipt_written_with_defects_documented": true,
+    "server_artifact_shas_all_recorded": true,
+    "no_placeholder_values": true,
+    "G6_marked_historical_superseded_pending_v23": true,
+    "G7_marked_historical_superseded_pending_v23": true,
+    "G8_marked_historical_superseded_pending_v23": true,
+    "G9_marked_historical_superseded_pending_v23": true,
+    "ci_tests_created": true,
+    "branch_commit_source_data_sha_recorded": true
+  },
+
+  "next_gate": "C3-S2_STATIC_DYNAMIC_TARGET_SEAL_V2"
+}

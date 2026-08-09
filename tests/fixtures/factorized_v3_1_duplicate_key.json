@@ -1,0 +1,10 @@
+{
+  "schema": "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1",
+  "runtime_bundle": {
+    "schema": "FACTORIZED_V2_RUNTIME_SCHEDULER_INPUT_BUNDLE_V2",
+    "schema": {
+      "path": "schemas/factorized_v2_runtime_scheduler_input.schema.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  }
+}

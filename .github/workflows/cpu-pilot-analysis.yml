@@ -1,0 +1,40 @@
+name: cpu-pilot-analysis
+
+on:
+  pull_request:
+    paths:
+      - "analysis/pilot_attack/**"
+      - "tests/analysis/pilot_attack/**"
+      - ".github/workflows/cpu-pilot-analysis.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "analysis/pilot_attack/**"
+      - "tests/analysis/pilot_attack/**"
+      - ".github/workflows/cpu-pilot-analysis.yml"
+
+jobs:
+  pilot-analysis-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+      - name: Compile pilot analysis scripts
+        run: |
+          python -m py_compile \
+            analysis/pilot_attack/pilot_integrity.py \
+            analysis/pilot_attack/validate_factorized_pilot_parent_manifest.py \
+            analysis/pilot_attack/validate_factorized_attack_pilot_execution.py \
+            analysis/pilot_attack/analyze_factorized_attack_pilot.py \
+            analysis/pilot_attack/build_factorized_pilot_blind_review.py
+      - name: Run pilot tests
+        run: pytest -q tests/analysis/pilot_attack
+      - name: Check patch whitespace
+        run: git diff --check

@@ -1,0 +1,33 @@
+{
+  "schema": "FACTORIZED_V2_SCHEDULER_API_TRACE_FIXTURE_V1",
+  "config": {
+    "schema": "FACTORIZED_V2_SCHEDULER_STRUCTURE_V1",
+    "candidate_dwell": 10,
+    "candidate_dwell_counts_before_grasp": true,
+    "persistence_window": 5,
+    "persistence_required": 3,
+    "warmup_steps": 0,
+    "invalid_step_policy": "reset",
+    "attack_enabled": false,
+    "formal_selection_eligible": false,
+    "training_authorized": false,
+    "attack_authorized": false
+  },
+  "steps": [
+    {"step": 0, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "grasp_probability": 0.9, "manipulation_probability": 0.9, "release_probability": 0.0},
+    {"step": 1, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "grasp_probability": 0.9, "manipulation_probability": 0.9, "release_probability": 0.0},
+    {"step": 2, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "grasp_probability": 0.9, "manipulation_probability": 0.9, "release_probability": 0.0},
+    {"step": 3, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "grasp_probability": 0.9, "manipulation_probability": 0.9, "release_probability": 0.0},
+    {"step": 4, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "grasp_probability": 0.9, "manipulation_probability": 0.9, "release_probability": 0.0},
+    {"step": 5, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "grasp_probability": 0.9, "manipulation_probability": 0.9, "release_probability": 0.0},
+    {"step": 6, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "grasp_probability": 0.9, "manipulation_probability": 0.9, "release_probability": 0.0},
+    {"step": 7, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "grasp_probability": 0.9, "manipulation_probability": 0.9, "release_probability": 0.0},
+    {"step": 8, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "grasp_probability": 0.9, "manipulation_probability": 0.9, "release_probability": 0.0},
+    {"step": 9, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "grasp_probability": 0.9, "manipulation_probability": 0.9, "release_probability": 0.0}
+  ],
+  "expected": {
+    "emit_steps": [9],
+    "no_emit_sentinel": null,
+    "one_shot_compliance": true
+  }
+}

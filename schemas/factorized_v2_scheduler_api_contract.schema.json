@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openvla.example/schemas/factorized_v2_scheduler_api_contract.schema.json",
+  "title": "Factorized V2 scheduler API contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "module", "source_path", "scheduler_class", "config_class", "config_factory", "step_method", "episode_reset", "emit_field", "emit_step", "no_emit_sentinel", "attack_enabled"],
+  "properties": {
+    "schema": {"const": "FACTORIZED_V2_SCHEDULER_API_V1"},
+    "module": {"const": "gripper_attack.factorized_scheduler"},
+    "source_path": {"const": "src/gripper_attack/factorized_scheduler.py"},
+    "scheduler_class": {"const": "FactorizedV2OneShotScheduler"},
+    "config_class": {"const": "FactorizedSchedulerConfig"},
+    "config_factory": {"const": "from_mapping"},
+    "step_method": {"const": "step"},
+    "episode_reset": {"enum": ["new scheduler instance", "explicit reset"]},
+    "emit_field": {"const": "emit"},
+    "emit_step": {"const": "trace.step on first trace where emit=true"},
+    "no_emit_sentinel": {"const": null},
+    "attack_enabled": {"const": false}
+  }
+}

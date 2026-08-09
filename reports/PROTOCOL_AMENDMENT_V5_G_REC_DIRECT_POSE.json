@@ -1,0 +1,65 @@
+{
+  "amendment": "PROTOCOL_AMENDMENT_V5_G_REC_DIRECT_POSE",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "created_at": "2026-07-27T08:00:00+08:00",
+  "source_commit": "95ac49a3e7ffeaf0c901bb0cb72c0e3b06d9c635",
+  "parent_amendment": "PROTOCOL_AMENDMENT_V4_PROVENANCE_CORRECTION",
+  "purpose": "Define the canonical forward-before-capture per-step sequence for G-REC direct-pose geometry collection. This amendment is required because R5-B investigation (commit 95ac49a) conclusively demonstrated that body_xpos buffers may be stale after env.step(), causing up to 6.4mm position drift. Explicit sim.forward() before entity capture eliminates this drift and makes derived pose buffers deterministically consistent with qpos/qvel source state.",
+  "r5b_evidence": {
+    "commit": "95ac49a3e7ffeaf0c901bb0cb72c0e3b06d9c635",
+    "test": "A/B/C triple-read on libero_10/task_00/state_15, 20 steps, 10 bodies",
+    "result": "A→B: 24/200 body-step cases mismatch (stale read). B→C: 0/200 mismatch (forward is deterministic).",
+    "verdict": "STALE_READ — env.step() does not refresh all body_xpos buffers. Fix: sim.forward() before pose recording."
+  },
+  "per_step_sequence": {
+    "step_0_initial_entry": "After collector init contract (set_official_seed → env.seed → env.reset → set_init_state → 10×DUMMY_ACTION wait), the simulator is live and qpos/qvel are at the canonical initial state. body_xpos buffers MAY be stale from the final dummy env.step().",
+    "for_each_step": [
+      "1. sim.forward() — refresh ALL derived pose buffers (body_xpos, site_xpos, geom_xpos, body_xquat, site_xmat, geom_xmat) from current qpos/qvel source state",
+      "2. verify_source_state_stability — save qpos/qvel/act/time BEFORE forward, compare AFTER forward, fail if any mutation detected",
+      "3. capture_source_state — record qpos, qvel, act, sim.time from sim.data (these are the authoritative source state)",
+      "4. capture_entity_poses — read body_xpos/body_xquat (body_origin), site_xpos/site_xmat (site), geom_xpos/geom_xmat (geom_center) from sim.data for all relation-bound entities",
+      "5. optional_verification_forward — second sim.forward(), verify no source-state mutation and no entity pose change beyond machine epsilon (1e-15)",
+      "6. serialize_telemetry — write all captured data to episode record",
+      "7. get_action — run model inference to obtain next action (NOT part of capture, does not mutate sim state)",
+      "8. env.step(action) — advance simulator to next timestep"
+    ],
+    "note": "Step 5 (verification forward) is optional for production collection but MANDATORY for same-live gate evidence. Steps 1-4 and 7-8 are mandatory for all G-REC direct-pose collection."
+  },
+  "quaternion_convention": {
+    "format": "wxyz",
+    "source": "collector mat_to_quat() produces wxyz from 3×3 rotation matrix",
+    "comparison": "q/-q-equivalent geodesic distance: 2*atan2(sqrt(max(0,1-dot^2)), |dot|)",
+    "rationale": "q and -q represent the same rotation. Using absolute dot product makes comparison sign-invariant."
+  },
+  "thresholds": {
+    "body_origin_position": "1e-8 m (Linf)",
+    "body_origin_rotation": "1e-7 rad (geodesic)",
+    "site_position": "1e-8 m (Linf)",
+    "site_rotation": "1e-7 rad (xmat max abs diff)",
+    "geom_center_position": "1e-6 m (Linf)",
+    "geom_center_rotation": "1e-6 rad (geodesic)",
+    "source_state_mutation": "0 (exact equality required for qpos/qvel/act/time)",
+    "verification_forward_drift": "1e-15 m (machine epsilon for B→C comparison)"
+  },
+  "validation_rules": {
+    "nan_inf_rejection": "Any NaN or Inf in position, quaternion, qpos, qvel, act, or time → immediate HOLD, episode rejected.",
+    "unknown_remains_unknown": "Articulated/unsupported entities (e.g. white_cabinet_1_bottom_region, wooden_cabinet_1_top_region) must remain UNKNOWN. Never convert to negative, never guess body/geom fallback.",
+    "body_origin_vs_geometry_center": "body_origin (body_xpos) and geometry_center (geom_xpos) are separate semantic kinds with separate thresholds. Never conflate.",
+    "relation_bound_entities_only": "Only entities resolved via C1-V2 relation registry may be captured. No heuristic string-scan enumeration (e.g., 'all non-robot bodies').",
+    "fail_closed": "Any threshold violation → non-zero exit code. No silent skip, no downgrade."
+  },
+  "non_consumable_artifacts": {
+    "pre_forward_poses": "Any entity pose recorded WITHOUT explicit sim.forward() before capture is NON_CONSUMABLE for G-REC geometry purposes. This includes the entire fresh40 fallback canary batch at b5c7853.",
+    "stale_read_episodes": "Episodes where body_xpos was read without prior sim.forward() may contain position errors up to 6.4mm. These must never be used for Teacher label geometry or Student training.",
+    "replacement_required": "All G-REC consumable geometry must come from a corrected collector (this amendment, R5-C1) producing a new sealed root (R5-F)."
+  },
+  "chronology_requirement": {
+    "rule": "This amendment MUST be committed and pushed BEFORE any corrected collector execution.",
+    "evidence_chain": "commit(amendment) → commit(corrected collector) → execute(collector) → seal(evidence). The amendment commit SHA appears in the collector's runtime provenance record.",
+    "no_post_hoc": "Thresholds frozen here. No threshold adjustment after seeing results."
+  },
+  "training_authorized": false,
+  "inference_authorized": false,
+  "attack_authorized": false,
+  "consumer_eligible": false
+}

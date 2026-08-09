@@ -1,0 +1,111 @@
+{
+  "schema": "STAGE_V_MILESTONE_HANDOFF_V1",
+  "created_utc": "2026-08-09T16:30:00Z",
+  "milestone": "M1_RUNTIME_DETERMINISM",
+  "status": "HOLD",
+  "milestone_ledger": {
+    "M0_V2_1_1_STATIC": "PASS",
+    "M1_RUNTIME_DETERMINISM": "HOLD",
+    "M2_EXECUTION_EQUIVALENCE": "NOT_STARTED",
+    "M3_FRESH_QUALIFICATION": "NOT_STARTED",
+    "M4_COUNTERFACTUAL_V_MAP": "NOT_STARTED",
+    "M5_V_TEACHER": "NOT_STARTED",
+    "M6_V_STUDENT": "NOT_STARTED",
+    "M7_EVENT_SCHEDULER": "NOT_STARTED",
+    "M8_STUDENT_TIME_CAUSAL": "NOT_STARTED",
+    "M9_VIS_SELECTIVITY": "NOT_STARTED",
+    "M10_FINAL_FREEZE": "NOT_STARTED",
+    "M11_READY_FOR_PROTECTED_EVAL": "NOT_STARTED"
+  },
+  "repository": {
+    "full_name": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/m1-v2-eight-gpu-diagnostic-20260808",
+    "runtime_source_commit": "d2f4c25096b443ff989dc5462520091cd7ca41b4",
+    "runtime_source_tree": "cbeac9311cf55123a7cef5890127ff60fdcde08b",
+    "worktree": "D:/vla_attack/repo_work/openvla-gripper-dutycycle-attack-m1-v2-8gpu-20260808",
+    "worktree_status": "CLEAN"
+  },
+  "protocol": {
+    "id": "STAGE_V_M1_VISUAL_DETERMINISM_V2_1_1_8GPU_20260809",
+    "path": "configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json",
+    "sha256": "b7de17bd7bf7a50bc7682491a8e7ee0d6ec19ddc1e201e4866abb042425962ee"
+  },
+  "runtime": {
+    "server_alias": "dty-server",
+    "hostname": "pm-364c0001",
+    "worktree": "/mnt/sdc/dty_user/stage-v-m1-v2-1-1-d2f4c250",
+    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/M1_V2_1_1_8GPU_d2f4c250_20260810T0015Z",
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "torch": "2.2.2+cu118",
+    "gpu_model": "NVIDIA A800-SXM4-80GB",
+    "gpu_ids": [0, 1, 2, 3, 4, 5, 6, 7],
+    "worker_binding": "worker_i -> physical GPU_i",
+    "preflight_gate": "PRE_CANARY",
+    "preflight_captured_utc": "2026-08-09T16:19:03.691123Z",
+    "preflight_status": "HOLD_WAIT_FOR_8GPU_SAFE",
+    "root_status": "HOLD_RESOURCE_DRIFT_PRE_CANARY",
+    "classification": "UNCLASSIFIED",
+    "uuid_closure": "NOT_STARTED"
+  },
+  "resource_hold": {
+    "unsafe_gpu": 3,
+    "gpu_uuid_canonical": "41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
+    "foreign_pid": 964381,
+    "owner": "huanzze",
+    "process": "/home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3",
+    "workload": "Isaac GR00T timed server",
+    "memory_used_mib": 6715,
+    "compute_memory_mib": 6696,
+    "reasons": ["MEMORY_NOT_IDLE", "FOREIGN_PROCESS_PRESENT"],
+    "system_graphics_baseline": "Xorg PID 7846, gdm, all 8 GPUs, 10 MiB/GPU",
+    "foreign_processes_touched": false
+  },
+  "evidence": {
+    "manifest": {
+      "path": "M1_V2_MANIFEST.json",
+      "sha256": "d5acb9bb4462029dbe86b26b1eb9a9b686b8e30fac41c61509b5cd50ea446e19"
+    },
+    "status": {
+      "path": "M1_V2_STATUS.json",
+      "sha256": "0f351483dbf1d1696e24cf544806ea446b40e7de888cafbd2dee1f613fb70a07"
+    },
+    "preflight": {
+      "path": "M1_V2_1_GPU_PREFLIGHT_PRE_CANARY.json",
+      "sha256": "75334461b27fa70fee5a8b94042b11e4acca775856f1dacef74c6dd24c57486c"
+    },
+    "runtime_files_present": [
+      "M1_V2_MANIFEST.json",
+      "M1_V2_STATUS.json",
+      "M1_V2_1_GPU_PREFLIGHT_PRE_CANARY.json"
+    ],
+    "canary_started": false,
+    "r1_started": false,
+    "r2_started": false
+  },
+  "counters": {
+    "eval160_reads": 0,
+    "protected_eval_reads": 0,
+    "attack_rollouts": 0,
+    "counterfactual_open_steps": 0,
+    "intervention_applied_steps": 0,
+    "vis_pgd_attack_rollouts": 0,
+    "training_launched": false,
+    "new_science_rollouts": 0,
+    "foreign_processes_touched": false
+  },
+  "interpretation": {
+    "claim": "No M1 runtime evidence exists; the 8-GPU diagnostic is blocked before canary by resource drift.",
+    "rb1a": "HOLD",
+    "execution_equivalence": "NOT_ASSESSED",
+    "vulnerability_labels": "NOT_GENERATED"
+  },
+  "allowed_next_action": "Wait for PID 964381 to exit or for the owner to release GPU3, then run a fresh PRE_CANARY preflight against the same frozen source binding.",
+  "forbidden_next_actions": [
+    "run renderer canary",
+    "run R1 or R2",
+    "touch or terminate foreign PID 964381",
+    "use partial 7-GPU results",
+    "promote M1 or RB1A",
+    "read Eval160 or protected evaluation"
+  ]
+}

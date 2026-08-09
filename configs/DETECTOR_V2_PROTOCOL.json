@@ -1,0 +1,103 @@
+{
+  "schema": "DETECTOR_V2_PROTOCOL_V1",
+  "status": "FROZEN_BEFORE_G6",
+  "original_v5_status": "FAIL_ORIGINAL_PROTOCOL",
+  "protocol_revision": "DETECTOR-V2-R1",
+  "frozen_date": "2026-07-30",
+  "learned_heads": [
+    "physical_criticality"
+  ],
+  "causal_gates": [
+    "deterministic_gripper_closing",
+    "candidate_close",
+    "persistence",
+    "cooldown_one_shot"
+  ],
+  "teacher_only_heads": [
+    "k10_feasibility",
+    "instability",
+    "safe_release"
+  ],
+  "student_input": {
+    "dim": 25,
+    "schema": "SC5StreamingFeatureAdapterV2_25D",
+    "teacher_privileged_fields": false,
+    "future_frames": 0,
+    "normalization": "train_only_zscore"
+  },
+  "model": {
+    "architecture": "N5MultiHeadStudent",
+    "active_heads": ["physical_criticality"],
+    "hidden": 64,
+    "short_rf": 32,
+    "long_rf": 128,
+    "dropout": 0.0,
+    "random_initialization_required": true,
+    "all_670_checkpoint_forbidden": true
+  },
+  "scheduler": {
+    "form": "emit_t = physical_probability_t >= theta_physical AND deterministic_gripper_gate_t AND candidate_close_t AND persistence_condition AND cooldown_condition",
+    "theta_physical_candidates": [0.15, 0.20, 0.25, 0.30, 0.35, 0.40],
+    "persistence_candidates": [1, 2, 3, 5],
+    "cooldown_semantics": "one_shot_per_candidate_span",
+    "false_emission_definition": "event_level_emission_without_teacher_true_in_candidate_span",
+    "event_definition": "contiguous_known_TRUE_span_v1",
+    "selection_split": "validation_only",
+    "selection_objective": "maximize end_to_end_event_recall subject to guardrails",
+    "guardrails": {
+      "candidate_conditioned_physical_recall_min": 0.70,
+      "end_to_end_physical_recall_min": 0.55,
+      "mcc_min": 0.60,
+      "false_trigger_not_worse_than_close_only": true
+    }
+  },
+  "deterministic_gripper_gate": {
+    "definition": "gripper_command_source == raw_action_7d[6]; gate_active = gripper_command >= 0.9 AND persistence_gripper >= 2",
+    "input_fields": ["gripper_command", "gripper_qpos"],
+    "teacher_labels_used": false,
+    "future_state_used": false,
+    "threshold_selection": "validation_only"
+  },
+  "g6_multi_seed": {
+    "seeds": [20260717, 20260731, 20260814],
+    "existing_root_reuse": "20260717 root if seal and source audit pass",
+    "configs_allowed": ["physical_only"],
+    "configs_forbidden": ["shared_four_head", "three_head", "gripper_only"],
+    "pass_median": {
+      "auroc": 0.90,
+      "mcc": 0.65,
+      "event_recall": 0.75,
+      "candidate_conditioned_recall": 0.70
+    },
+    "pass_worst_seed": {
+      "auroc": 0.85,
+      "mcc": 0.50,
+      "event_recall": 0.65
+    },
+    "checkpoint_selection": "median_validation_mcc"
+  },
+  "g7_test": {
+    "read_once": true,
+    "threshold_frozen": true,
+    "model_frozen": true,
+    "minimum_gate": {
+      "auroc": 0.85,
+      "mcc": 0.50,
+      "teacher_event_recall": 0.65,
+      "candidate_conditioned_recall": 0.60,
+      "end_to_end_recall": 0.50,
+      "balanced_accuracy": 0.70
+    }
+  },
+  "permissions": {
+    "teacher_labels_read": true,
+    "fit_development_features_read": true,
+    "student_training": true,
+    "development_inference": true,
+    "test_payload_read": false,
+    "protected_reads": 0,
+    "shadow_offline": false,
+    "shadow_live": false,
+    "attack_authorized": false
+  }
+}

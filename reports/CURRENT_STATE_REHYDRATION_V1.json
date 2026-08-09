@@ -1,0 +1,133 @@
+{
+  "schema": "CURRENT_STATE_REHYDRATION_V1",
+  "generated_at": "2026-07-25T13:45:00Z",
+  "generator": "claude-code-fec-supervisor",
+
+  "source_code": {
+    "local_git_sha": "249b6c2c40dae72841e48a0b3359b1e982f832bb",
+    "local_branch": "deepseek/integration-final-detector-20260724",
+    "local_worktree_clean": false,
+    "local_untracked_files": 142,
+    "server_git_sha": "68a8af0dc73ddb54c31fef57fa49597200b09533",
+    "server_branch": "codex/fec-smoke-runner-p0-fix-20260725",
+    "server_worktree_clean": false,
+    "server_untracked": ["add_gpu45.sh", "add_gpu67.sh", "envs/", "flash_attn*.whl"],
+    "sha_divergence_note": "Local has style commit 249b6c2 on top of server 68a8af0. Server is the live execution environment."
+  },
+
+  "live_gpu_state": {
+    "timestamp": "2026-07-25T13:30:00Z",
+    "gpus": {
+      "0": {"util_pct": 13, "memory_used_mb": 67704, "owner": "ysc2", "available": false},
+      "1": {"util_pct": 12, "memory_used_mb": 48582, "owner": "ysc2/huanzze", "available": false},
+      "2": {"util_pct": 0, "memory_used_mb": 18, "owner": "none", "available": true},
+      "3": {"util_pct": 0, "memory_used_mb": 14, "owner": "none", "available": true},
+      "4": {"util_pct": 0, "memory_used_mb": 46191, "owner": "python3.11", "available": false},
+      "5": {"util_pct": 0, "memory_used_mb": 46189, "owner": "python3.11", "available": false},
+      "6": {"util_pct": 0, "memory_used_mb": 11, "owner": "none", "available": true},
+      "7": {"util_pct": 0, "memory_used_mb": 12, "owner": "none", "available": true}
+    },
+    "available_gpus": [2, 3, 6, 7],
+    "active_fec_processes": [],
+    "all_fec_processes_exited": true,
+    "stale_bash_waiters": [442365, 1233155, 1635107, 2161250]
+  },
+
+  "key_artifacts": {
+    "C1_capacity_canary": {
+      "status": "COMPLETE",
+      "engineering_status": "PASS",
+      "valid": true,
+      "fatal_error": null,
+      "output_dir": "/tmp/capacity_canary/run",
+      "results": {
+        "CLEAN": {"attack_executed_frames": 0, "emit_policy_step": null, "status": "PASS"},
+        "TRUE_T10": {"attack_executed_frames": 0, "emit_policy_step": null, "status": "PASS"},
+        "RAND_T10": {"attack_executed_frames": 0, "emit_policy_step": null, "status": "PASS"},
+        "COMMAND_OPEN_ORACLE": {"attack_executed_frames": 0, "emit_policy_step": null, "status": "PASS"},
+        "RANDOM_TIME_T10": {"attack_executed_frames": 10, "emit_policy_step": null, "status": "PASS"}
+      },
+      "detector_emission": "NONE (state 36 on libero_10 does not trigger detector)",
+      "pgd_capacity_measured": true,
+      "pgd_frames_executed": 10,
+      "capacity_gate": "C1_CAPACITY_MEASURED_NOT_FULLY_VALIDATED",
+      "needs_capacity_receipt": true
+    },
+
+    "C2_capacity": {
+      "status": "NOT_STARTED",
+      "output_dir": null
+    },
+
+    "smoke_v2_hardened": {
+      "status": "COMPLETE",
+      "total_workers": 16,
+      "pass": 12,
+      "fail": 4,
+      "results": {
+        "gpu2/w00": "PASS atk=[RANDOM_TIME_T10=10]",
+        "gpu2/w01": "PASS atk=[TRUE_T10=10,RAND_T10=10,ORACLE=10,RANDOM_TIME=10] FULL_EMIT",
+        "gpu2/w02": "PASS atk=[RANDOM_TIME_T10=10]",
+        "gpu2/w03": "FAIL atk=[none]",
+        "gpu3/w04": "PASS atk=[RANDOM_TIME_T10=10]",
+        "gpu3/w05": "PASS atk=[none]",
+        "gpu3/w06": "PASS atk=[RANDOM_TIME_T10=10]",
+        "gpu3/w07": "PASS atk=[RANDOM_TIME_T10=10]",
+        "gpu6/w08": "FAIL atk=[RANDOM_TIME_T10=5] partial_K10",
+        "gpu6/w09": "PASS atk=[RANDOM_TIME_T10=10]",
+        "gpu6/w10": "PASS atk=[TRUE_T10=10,RAND_T10=10,ORACLE=10,RANDOM_TIME=10] FULL_EMIT",
+        "gpu6/w11": "PASS atk=[TRUE_T10=10,RAND_T10=10,ORACLE=10]",
+        "gpu7/w12": "PASS atk=[RANDOM_TIME_T10=10]",
+        "gpu7/w13": "FAIL atk=[TRUE_T10=8] partial_K10",
+        "gpu7/w14": "FAIL atk=[TRUE_T10=4] partial_K10",
+        "gpu7/w15": "PASS atk=[none]"
+      },
+      "classification": "CURRENT_16W_DIAGNOSTIC = FAIL_FINAL_DIAGNOSTIC",
+      "counts_toward_smoke": false,
+      "counts_toward_formal_go": false,
+      "key_finding": "2 workers achieved full 4-arm emission (w01, w10)"
+    },
+
+    "smoke_v1_diagnostic": {
+      "status": "NO_RESULTS_FOUND",
+      "smoke_summaries_count": 0
+    },
+
+    "formal_cells_detected": 0,
+    "CS200_access_detected": 0,
+    "formal_outputs_exist": false
+  },
+
+  "protocol_findings": {
+    "token_31744_semantics": {
+      "status": "FLAGGED_FOR_AUDIT",
+      "finding": "Token 31744 is OUTSIDE action token range [31745, 31999] on ALL four suites",
+      "raw_vocab_size": 32064,
+      "pad_to_multiple_of": 64,
+      "effective_vocab_size": 32000,
+      "num_bins": 255,
+      "action_range": [31745, 31999],
+      "token_31744_position": "IMMEDIATELY_PRECEDES_ACTION_RANGE",
+      "suites_checked": ["libero_10", "libero_goal", "libero_object", "libero_spatial"],
+      "all_consistent": true,
+      "all_inside_action_range": false,
+      "open_semantic_confirmed": false,
+      "action_required": "Verify what token 31744 represents and whether attack objective is correct"
+    },
+    "provider_parity": "PASS_FINAL (20/20 parents, 3474 frames, max_diff=0.0)",
+    "eef_provider": "PASS",
+    "response_proxy": "PASS_AS_FROZEN_DEGENERATE_FEATURE",
+    "4_workers_per_gpu": "REJECTED (CUDA OOM)"
+  },
+
+  "key_sha256": {
+    "attacker_adapter": "26cfb9f5... (to be confirmed live)",
+    "n4_detector_adapter_tmp": "to be confirmed",
+    "run_gpu_smoke_py": "to be confirmed",
+    "n4_norms": "to be confirmed",
+    "detector_checkpoint": "to be confirmed",
+    "source_contract": "to be confirmed"
+  },
+
+  "safe_next_action": "Complete C1 capacity receipt, run C2 dual-worker test on GPU3, verify token 31744 semantics, do NOT launch formal cells"
+}

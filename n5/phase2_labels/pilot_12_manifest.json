@@ -1,0 +1,39 @@
+{
+  "manifest": "N5_PILOT_12_MANIFEST_V1",
+  "frozen_at": "2026-07-25T23:45:00Z",
+  "selection_rule": "Fixed state_35 for all tasks. State 35 is in factorized teacher range (35-49) and CS200 clean data (0-49). Goal tasks cover negative controls (t00, t07) and known critical tasks (t01, t06, t08, t09 from K10 audit). Other suites: one known positive + one negative from K10 audit.",
+  "n_episodes": 12,
+  "cs200_root": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/clean",
+
+  "episodes": [
+    {"suite": "libero_goal", "task": "task_00", "state": "state_35", "purpose": "Goal negative control — K10 audit shows zero cc, zero critical"},
+    {"suite": "libero_goal", "task": "task_01", "state": "state_35", "purpose": "Goal critical window — K10 audit shows 855 cc steps, 44 critical"},
+    {"suite": "libero_goal", "task": "task_06", "state": "state_35", "purpose": "Goal feasible — K10 audit shows 2 feasible episodes, 510 critical, 265 starts"},
+    {"suite": "libero_goal", "task": "task_07", "state": "state_35", "purpose": "Goal negative control — zero cc, zero critical"},
+    {"suite": "libero_goal", "task": "task_08", "state": "state_35", "purpose": "Goal feasible — 2 feasible, 196 critical"},
+    {"suite": "libero_goal", "task": "task_09", "state": "state_35", "purpose": "Goal feasible — 5 feasible, 448 critical, 86 starts"},
+    {"suite": "libero_10", "task": "task_00", "state": "state_35", "purpose": "libero_10 positive control — known critical windows"},
+    {"suite": "libero_10", "task": "task_02", "state": "state_35", "purpose": "libero_10 negative — K10 audit: 0 feasible, 22 critical only"},
+    {"suite": "libero_object", "task": "task_05", "state": "state_35", "purpose": "Object feasible — 2 feasible, 181 critical, 29 starts"},
+    {"suite": "libero_object", "task": "task_00", "state": "state_35", "purpose": "Object negative — 0 feasible, 119 critical"},
+    {"suite": "libero_spatial", "task": "task_06", "state": "state_35", "purpose": "Spatial feasible — 2 feasible, 65 critical"},
+    {"suite": "libero_spatial", "task": "task_00", "state": "state_35", "purpose": "Spatial negative — 0 feasible, 7 critical"}
+  ],
+
+  "pipeline": {
+    "step1_sidecar": "parse privileged_teacher_sidecar.jsonl → per-step records",
+    "step2_v22": "compute V22 factors (grasp, contact, comotion, lift, instability, terminal)",
+    "step3_label_v2": "V22 factors → Label Contract V2 five-head tri-state labels via evidence lattice",
+    "step4_k10": "recompute K10 from V22 criticality sequence (NOT from old labels)",
+    "step5_output": "atomic JSONL per episode + pilot receipt",
+    "k10_formula": "K10_t = AND_{i=t}^{t+9} (critical_i AND known_i AND NOT safe_release_i)"
+  },
+
+  "hard_gates": {
+    "candidate_close_not_in_physics": true,
+    "old_k10_labels_not_reused": true,
+    "unknown_not_converted_to_negative": true,
+    "goal_no_blanket_no_target": true,
+    "deterministic_rerun": "required"
+  }
+}

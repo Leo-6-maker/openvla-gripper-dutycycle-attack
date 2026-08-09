@@ -1,0 +1,13 @@
+{
+  "production": "G4_LABEL_PRODUCTION_800",
+  "timestamp": "2026-07-26T04:37:03Z",
+  "n_shards": 16,
+  "n_episodes": 800,
+  "identity_source": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/FACTORIZED_PHASE_B2_DETERMINISTIC_ALLOCATION_V3_804113EE_20260723/checkpoint_training_identity_manifest.json",
+  "gates": {
+    "ok": 800,
+    "missing": 0,
+    "unk2neg": 0,
+    "steps": 176336
+  }
+}

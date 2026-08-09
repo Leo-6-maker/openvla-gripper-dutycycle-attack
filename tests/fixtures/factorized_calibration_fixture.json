@@ -1,0 +1,12 @@
+{
+  "schema": "FACTORIZED_V2_CALIBRATION_CONTRACT_V1",
+  "status": "TEST_ONLY_NOT_SELECTION_ELIGIBLE",
+  "checkpoint_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "fit_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "grasp": {"temperature": 1.0, "threshold": 0.5},
+  "manipulation": {"temperature": 1.0, "threshold": 0.5},
+  "release": {"temperature": 1.0, "threshold": 0.5},
+  "formal_selection_eligible": false,
+  "training_authorized": false,
+  "attack_authorized": false
+}

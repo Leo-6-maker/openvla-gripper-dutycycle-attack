@@ -1,0 +1,36 @@
+{
+  "schema": "C3_T1_V23_RUNNER_GATE_DECISION_V1",
+  "code_snapshot_commit": "c8632e9af3ab79803cd6a663b8d6d7cec8780076",
+  "status": "HOLD_T1B_GEOMETRY_INPUTS",
+  "t1a_contract": {
+    "status": "PASS",
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "critical_skips": 0,
+    "official_environment": "PASS"
+  },
+  "d0_r2p": {
+    "status": "PASS",
+    "pilot_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/v23_dev_pilot_v1_20260727_0315",
+    "sha256sums_sha256": "2133ff9475ab8a0b0c425f1a2d56c984633aba3c6c81c8f084fc04dd1d970b8c",
+    "episodes": 40,
+    "one_per_task": true,
+    "protected_payload_read": false,
+    "source_payload_mutation": false
+  },
+  "t1b_runner": {
+    "status": "HOLD",
+    "reason": "No allowlisted geometry root binds the exact 40 frozen pilot identities",
+    "synthetic_geometry_substitution": false,
+    "preflight_exit": 2
+  },
+  "t1c_smoke": "NOT_RUN",
+  "t1d_pilot": "NOT_RUN",
+  "protected_reads": 0,
+  "model_inference": false,
+  "student_training": false,
+  "openvla": false,
+  "rollout": false,
+  "attack": false
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "FACTORIZED_V2_HANDOFF_RECEIPT_V1",
+  "branch": "codex/factorized-v2-scheduler-inputs-20260722",
+  "observed_branch_head": "281e6953567135516a063c9413c854ab4fae595d",
+  "code_snapshot_commit": "281e6953567135516a063c9413c854ab4fae595d",
+  "metadata_parent_commit": "281e6953567135516a063c9413c854ab4fae595d",
+  "branch_head_verified_externally": false,
+  "handoff_blob_sha256_definition": "SHA256(canonical JSON with handoff_blob_sha256 omitted)",
+  "handoff_blob_sha256": "95d29d14a560aca77d758b0c2869bd12d865bb717a805cb8fd6b811ab39ff4a1",
+  "schema_hashes": {
+    "runtime_scheduler_input": "287f96f19224e1bd35e75673fa8f47568c6f170f50e8ab6eb96b5178af1e333d",
+    "calibration_contract": "70a90db36d7d1650d9d2761b1a04ee5e6b43f061edc73911062d29c420cf7402",
+    "offline_calibration_labels": "ed3842867fe783dc3a14588eb35de31da9e4b30665d85fda26314520e9c34c16",
+    "offline_evaluation_labels": "8f712abc195c24ba37887ea6b68b6eaeb40e2534862b4cdd503dfae79f5825e8"
+  },
+  "scheduler_source_sha256": "dee763e40859b24c3aadc5738cc1b4c5dab9e8604c6235b157ed886bb9e0cd9a"
+}

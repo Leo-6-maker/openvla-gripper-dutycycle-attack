@@ -1,0 +1,54 @@
+{
+  "schema": "FIT670_25D_SOURCE_MAPPING_V1",
+  "status": "FROZEN",
+  "frozen_date": "2026-07-31",
+  "source_root": "fresh670_v5_v2_formal/episodes",
+  "episode_count": 670,
+  "per_episode_file": "episode.json",
+  "field_mapping": {
+    "raw_action_7d": {
+      "json_path": "steps[*].raw_action_7d",
+      "shape": [7],
+      "dtype": "float64",
+      "range": "[0,1] for gripper[6]",
+      "maps_to_features": ["gripper_command (index 0)", "action_dx (index 9)", "action_dy (index 10)", "action_dz (index 11)"],
+      "alias_fields": ["action_raw_7d"],
+      "notes": "OpenVLA native raw action. action_raw_7d must match byte-for-byte if present."
+    },
+    "action_env_7d": {
+      "json_path": "steps[*].action_env_7d",
+      "shape": [7],
+      "dtype": "float64",
+      "range": "[-1,1] for gripper[6]",
+      "maps_to_features": ["action_gripper (index 12)"],
+      "notes": "LIBERO postprocessed env action. Confirmed executed_action_7d[6] == action_env_7d[6] universally."
+    },
+    "robot0_eef_pos": {
+      "json_path": "telemetry[*].robot0_eef_pos",
+      "shape": [3],
+      "dtype": "float64",
+      "range": "meters",
+      "maps_to_features": ["eef_x (index 3)", "eef_y (index 4)", "eef_z (index 5)"],
+      "notes": "Velocity (features 6-8) computed as eef[t] - eef[t-1]."
+    },
+    "robot0_gripper_qpos": {
+      "json_path": "telemetry[*].robot0_gripper_qpos",
+      "shape": [2],
+      "dtype": "float64",
+      "range": "radians",
+      "maps_to_features": [
+        "gripper_qpos (index 1) = qpos[0] + qpos[1] (SIGNED sum)",
+        "gripper_opening_proxy (index 2) = |qpos[0]| + |qpos[1]| (ABSOLUTE sum)"
+      ],
+      "notes": "H1-R2: Feature 1 uses SIGNED sum, Feature 2 uses ABSOLUTE sum. They are semantically distinct."
+    }
+  },
+  "privileged_fields_not_consumed": [
+    "telemetry[*].object_state",
+    "telemetry[*].entities",
+    "telemetry[*].contact_pairs",
+    "steps[*].scored_action_7d",
+    "steps[*].score_action_7d",
+    "SNAPSHOT_model_geometry.json"
+  ]
+}

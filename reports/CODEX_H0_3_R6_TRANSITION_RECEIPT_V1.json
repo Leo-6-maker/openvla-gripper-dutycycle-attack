@@ -1,0 +1,118 @@
+{
+  "receipt": "CODEX_H0_3_R6_TRANSITION_RECEIPT_V1",
+  "gate": "H0.3-R6-T",
+  "verdict": "PASS",
+  "reviewed_at_utc": "2026-07-26T12:33:30Z",
+  "reviewer": {
+    "identity": "Codex subagent 019f9e59-2919-74f0-b357-e657a36856a1",
+    "role": "independent provenance transition reviewer",
+    "independent_review": true,
+    "read_only": true
+  },
+  "code_snapshot": {
+    "commit": "beb0721d36bd27412cde7d60623b8cb2f671a4bf",
+    "tree": "bb7ef11fd8329ae2e8bb71a0bb4c6c4caaf2f7c3",
+    "server_worktree": "/mnt/sdc/dty_user/openvla_attack_worktrees/codex-detector-completion-0b723",
+    "server_worktree_clean": true
+  },
+  "git_bindings": {
+    "execution_receipt_commit": "69bae546c67f7596273d842bcf4e03790ce04d47",
+    "execution_receipt_tree": "313aecae27cc3095384b2758a41db5e5ade55806",
+    "runtime_state_commit_before_transition": "658ee2274c0e2b353d9bfd685d1ff00f84bdab8d",
+    "runtime_state_tree_before_transition": "591a8999914824793934450e14dc97a81d0d340d",
+    "supersession_ledger_commit": "62aed6c1c9f93c04994d730526a5b742238bd6e8",
+    "supersession_ledger_tree": "66e811e9ba39d18a9dbc79e712444fef75d9464c"
+  },
+  "receipt_artifacts": {
+    "execution_receipt": {
+      "path": "reports/CODEX_H0_3_R6_EXECUTION_RECEIPT.json",
+      "git_blob": "27478b39ae4f82fb3b5e14ee00bb25a675823124",
+      "file_sha256": "ef62a5f3065e3c057851d39be276f47e311d9d19aa431c98cdc8f0c989e6ed27",
+      "self_sha256": "3dd7a16a289980b3ed007d85edfe662385d1eabb74720bcaf16d7a2aefffa2d4"
+    },
+    "runtime_state_before_transition": {
+      "path": "n5/codex_execution/CODEX_RUNTIME_STATE_V2.json",
+      "git_blob": "1a23d804b511ffea43a378fb9bd884aed47cd262",
+      "file_sha256": "08b17f9d54752f51525a11581f4b49bd9db227135e06405c095c3255bc1e1bda",
+      "self_sha256": "01342d2dc049811e5ecceee68455b5fc3e2db6cb79e8b20036bcdba3c47de692"
+    },
+    "supersession_ledger": {
+      "path": "reports/CODEX_H0_3_R6_SUPERSESSION_LEDGER.json",
+      "git_blob": "38fe128ee561ea7b0b42bde51ab8c1262c7cc477",
+      "file_sha256": "c105428fe069dcc715798a623e7f1053e6a748502ae93bf775bf2ded67f70250",
+      "self_sha256": "7275e551fd4daed0c4894fa58d6fa1784bef9f1806b9c87478839e10cb8feeb6"
+    }
+  },
+  "server_evidence": {
+    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/h0_3/codex_r6_finalize_beb0721_20260726_1330",
+    "file_count": 90,
+    "manifest_entries": 84,
+    "manifest_sha256": "8f1b6d890b21a54206e1dd4f6606901e2441b5c537e9ff6c3ba4a89d0bcea2b0",
+    "sha256sums_sha256": "14c6b728ae2c142a5dbd860384152e4665de1013ab491d2a61afe54e5576532f",
+    "sha256sums_sidecar_sha256": "d1d9f244d0f485eaab5956e61b50d4df071b7d0e745d322d6e62eedf0d4e1d67",
+    "sha256sum_check": "PASS",
+    "sidecar_check": "PASS",
+    "run_a_run_b_canonical_payload_sha256": "c1a10837c9f597a4ffa163dc31dd0ffba4b78a831582881385588e9fac1a2087",
+    "canonical_payload_equal": true,
+    "canonical_alias_ledger_sha256": "fa2b38ac6db37cdc19c6b3b5123dc0c277ef6d671f9ac0a52ee134b580a5eeca",
+    "canonical_alias_ledger_equal": true,
+    "source_snapshots": {
+      "n5/phase3_student/t2rc1_v2_registry.py": "f3b0d990726833da4055653abe38bdedd41c2506bdcf337348f42729711e92e5",
+      "n5/phase3_student/tests/test_c1_v2_resolver.py": "37c40e75fb579e6b9a94b8acf21c67b4274ed0e47f956408a17bfde307cebf2e",
+      "n5/phase3_student/h0_3/finalize_h03_r6.py": "7dddf9db55a976bf941090f305fd81374427dcd064869c244836d5ed8b3f283f"
+    }
+  },
+  "test_evidence": {
+    "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "log_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/h0_3/codex_r6_transition_logs_beb_20260726_1233",
+    "log_root_sha256s": "ce9f34b34217f165f1c12ed0361a6a7601686dd1d8b1a67ac4c89601078788f9",
+    "log_root_sidecar_sha256": "53d2edbb42d5afd92fe620d243a89b6bfa16893225ebfd6616415d3e91e49fe2",
+    "resolver": {
+      "command": "python -m pytest -q n5/phase3_student/tests/test_c1_v2_resolver.py",
+      "passed": 20,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "stdout_sha256": "26ca6812d0ab770786368b6f0d55349a5cbf0c995e0041de3f37831f3f0f9cdb",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0
+    },
+    "full_contract": {
+      "command": "python -m pytest -q n5/phase3_student/tests/test_c1_v2_resolver.py n5/phase3_student/tests/test_h0_contracts.py n5/phase3_student/tests/test_h0_contracts_v2.py",
+      "passed": 46,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "stdout_sha256": "c7339fc5258d0a6a4ba9ba0340408ca4a722f8a0e7615c8b122fa357293348c5",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0,
+      "warnings": 3
+    }
+  },
+  "chronology": {
+    "source_ready_commit": "0b72300fd61e020ec5d5b3090da07f1825aa6b59",
+    "source_ready_commit_timestamp": "2026-07-26T11:36:55Z",
+    "historical_packet_timestamp": "2026-07-26T11:40:00Z",
+    "historical_packet_timestamp_consumed_for_r6_pass": false,
+    "reviewed_at_utc": "2026-07-26T12:33:30Z",
+    "transition_receipt_commit_not_self_bound": true,
+    "chronology_violation": false
+  },
+  "superseded_claims": [
+    "Historical H0.3 resolver claim 25/25 is SUPERSEDED_NON_CONSUMABLE; executable denominator is 20.",
+    "Historical H0.3 packet timestamp is not used to support the R6 PASS transition."
+  ],
+  "protected_boundaries": {
+    "cal_read": false,
+    "g10_read": false,
+    "t2rd_read": false,
+    "training_started": false,
+    "inference_started": false,
+    "rollout_started": false,
+    "attack_started": false
+  },
+  "next_gate": "C3-S3",
+  "next_gate_status": "PENDING_RUNTIME_STATE_COMMIT",
+  "self_hash_algorithm": "SHA256(UTF-8(json.dumps(object_without_top_level_self_sha256, sort_keys=true, separators=(\",\", \":\"), ensure_ascii=false)))",
+  "self_sha256": "f371743ae53d4e61cd1e2bb62f0e09cf6b23e8509da029b5b6cde8be6f854457"
+}

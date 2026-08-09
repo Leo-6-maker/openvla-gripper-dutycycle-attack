@@ -1,0 +1,150 @@
+import math
+import unittest
+
+from n5.phase2_labels.c3_t0_semantic_contract import (
+    ContractError, FALSE, TRUE, UNKNOWN, apply_persistence,
+    apply_right_censor, evaluate_heads, gripper_closing_state,
+    aggregate_tri_conjunction, aggregate_tri_disjunction, k10_feasible,
+    physical_criticality, protocol_steps_remaining,
+    quaternion_equivalent, safe_release,
+)
+
+
+def _physical(**updates):
+    row = {
+        "physical_known": True, "stable_grasp": True,
+        "transport_or_manipulation": False, "placement": False,
+        "released_state": False, "release_event": False,
+        "placement_stability": True, "protocol_steps_remaining": 12,
+        "safe_release_computed": False, "slip": False, "regrasp": False,
+        "contact_loss": False, "gripper_qpos": 0.1,
+        "qpos_close_threshold": 0.2,
+    }
+    row.update(updates)
+    return row
+
+
+class TestC3T0SemanticContract(unittest.TestCase):
+    def test_tri_state_conjunction_truth_table(self):
+        for values, expected in (((TRUE, TRUE), TRUE), ((TRUE, FALSE), FALSE),
+                                 ((TRUE, UNKNOWN), UNKNOWN), ((FALSE, UNKNOWN), FALSE),
+                                 ((), UNKNOWN)):
+            self.assertEqual(aggregate_tri_conjunction(values), expected)
+
+    def test_tri_state_disjunction_unknown_is_not_false(self):
+        self.assertEqual(aggregate_tri_disjunction((FALSE, UNKNOWN)), UNKNOWN)
+        self.assertEqual(aggregate_tri_disjunction((TRUE, UNKNOWN)), TRUE)
+
+    def test_all_five_heads_have_tri_state_mask_and_reason(self):
+        result = evaluate_heads(_physical())
+        self.assertEqual(set(result), {
+            "physical_criticality", "k10_feasible", "safe_release",
+            "instability", "gripper_closing_state",
+        })
+        self.assertTrue(all(set(item) == {"value", "mask", "reason"}
+                            for item in result.values()))
+        self.assertEqual(result["physical_criticality"]["value"], TRUE)
+
+    def test_safe_release_requires_all_three_components_and_unknown_is_not_false(self):
+        self.assertEqual(safe_release(_physical(placement=True, released_state=True,
+                                                 placement_stability=True))["value"], TRUE)
+        self.assertEqual(safe_release(_physical(placement=True, released_state=True,
+                                                 placement_stability=False))["value"], FALSE)
+        unknown = safe_release(_physical(placement=True, released_state=None, placement_stability=True))
+        self.assertEqual(unknown, {"value": UNKNOWN, "mask": False,
+                                   "reason": "SAFE_RELEASE_COMPONENT_UNKNOWN"})
+
+    def test_safe_release_truth_table_and_k10_cross_head_invariant(self):
+        for placement in (True, False):
+            for release in (True, False):
+                for stability in (True, False):
+                    result = safe_release(_physical(placement=placement, released_state=release,
+                                                    placement_stability=stability))
+                    expected = TRUE if placement and release and stability else FALSE
+                    self.assertEqual(result["value"], expected)
+        result = evaluate_heads(_physical(placement=True, released_state=True,
+                                           placement_stability=True))
+        self.assertEqual(result["safe_release"]["value"], TRUE)
+        self.assertEqual(result["k10_feasible"]["value"], FALSE)
+
+    def test_physical_label_rejects_outcome_and_task_success_leakage(self):
+        self.assertEqual(physical_criticality(_physical())["value"], TRUE)
+        for forbidden in ("task_success", "terminal", "outcome", "future"):
+            with self.assertRaises(ContractError):
+                physical_criticality({**_physical(), forbidden: False})
+
+    def test_gripper_closing_uses_only_finite_physical_qpos(self):
+        self.assertEqual(gripper_closing_state(_physical(gripper_qpos=0.2))["value"], TRUE)
+        self.assertEqual(gripper_closing_state(_physical(gripper_qpos=0.3))["value"], FALSE)
+        self.assertEqual(gripper_closing_state(_physical(gripper_qpos=math.nan))["value"], UNKNOWN)
+        self.assertEqual(gripper_closing_state(_physical(gripper_qpos=math.inf))["value"], UNKNOWN)
+
+    def test_persistence_and_right_censor_are_conservative(self):
+        persisted = apply_persistence([{"value": TRUE}, {"value": TRUE}, {"value": FALSE}])
+        self.assertEqual([item["value"] for item in persisted], [UNKNOWN, TRUE, FALSE])
+        self.assertEqual(apply_right_censor(persisted[1], 9)["value"], UNKNOWN)
+        self.assertEqual(apply_right_censor(persisted[1], 10)["value"], TRUE)
+
+    def test_k10_right_censor_and_known_horizon(self):
+        self.assertEqual(k10_feasible(_physical(protocol_steps_remaining=10,
+                                                 safe_release_computed=False))["value"], TRUE)
+        self.assertEqual(k10_feasible(_physical(protocol_steps_remaining=9,
+                                                 safe_release_computed=False))["value"], FALSE)
+        self.assertEqual(k10_feasible(_physical(protocol_steps_remaining=None,
+                                                 safe_release_computed=False))["value"], UNKNOWN)
+
+    def test_k10_boundary_and_invalid_protocol_horizon_values(self):
+        for horizon, expected in ((None, UNKNOWN), (-1, UNKNOWN), (0, FALSE),
+                                  (9, FALSE), (10, TRUE), (11, TRUE),
+                                  (True, UNKNOWN), ("10", UNKNOWN),
+                                  (math.nan, UNKNOWN), (math.inf, UNKNOWN)):
+            result = k10_feasible({
+                "protocol_steps_remaining": horizon,
+                "safe_release_computed": FALSE,
+            })
+            self.assertEqual(result["value"], expected, msg=f"horizon={horizon!r}")
+        self.assertEqual(k10_feasible({
+            "protocol_steps_remaining": 10,
+            "safe_release_computed": UNKNOWN,
+        })["value"], UNKNOWN)
+
+    def test_observed_future_steps_are_separate_from_protocol_horizon(self):
+        for observed, expected in ((None, UNKNOWN), (0, UNKNOWN), (1, UNKNOWN),
+                                   (9, UNKNOWN), (10, TRUE), (True, UNKNOWN),
+                                   ("10", UNKNOWN), (math.nan, UNKNOWN),
+                                   (math.inf, UNKNOWN)):
+            result = apply_right_censor({"value": TRUE}, observed)
+            self.assertEqual(result["value"], expected, msg=f"observed={observed!r}")
+
+    def test_evaluate_heads_uses_one_computed_safe_release(self):
+        result = evaluate_heads(_physical(protocol_steps_remaining=10,
+                                           placement=False, released_state=False,
+                                           placement_stability=True))
+        direct = k10_feasible({
+            "protocol_steps_remaining": 10,
+            "safe_release_computed": result["safe_release"],
+        })
+        self.assertEqual(result["k10_feasible"], direct)
+
+    def test_protocol_horizon_is_frozen_and_not_observed_length(self):
+        self.assertEqual(protocol_steps_remaining("libero_10", 509), 10)
+        self.assertEqual(protocol_steps_remaining("libero_goal", 289), 10)
+        self.assertEqual(protocol_steps_remaining("libero_object", 269), 10)
+        self.assertEqual(protocol_steps_remaining("libero_spatial", 209), 10)
+        self.assertIsNone(protocol_steps_remaining("libero_10", 520))
+
+    def test_per_head_allowlist_ignores_nonhead_aliases_and_rejects_forbidden_aliases(self):
+        base = _physical()
+        altered = {**base, "placement_label": False, "transport_label": False}
+        self.assertEqual(physical_criticality(base), physical_criticality(altered))
+        with self.assertRaises(ContractError):
+            evaluate_heads({**base, "task_success": False})
+
+    def test_quaternion_sign_equivalence_and_nonfinite_rejection(self):
+        q = (0.5, 0.5, 0.5, 0.5)
+        self.assertTrue(quaternion_equivalent(q, tuple(-x for x in q)))
+        self.assertFalse(quaternion_equivalent(q, (math.nan, 0.5, 0.5, 0.5)))
+
+
+if __name__ == "__main__":
+    unittest.main()

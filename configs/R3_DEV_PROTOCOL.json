@@ -1,0 +1,231 @@
+{
+  "schema": "V5_TEACHER_STUDENT_R3_DEV_PROTOCOL_V1_AMENDED_FAST_CLOSURE",
+  "protocol_revision": "R3-FAST-CLOSURE-R1",
+  "supersedes_sha256": "05699e65c778101bb8eb97dd43ed2562e899ce1c88d0c1745cd5058396accf3d",
+  "amendment_reason": "Before any production label consumption, permit the sealed 8-episode canary and fixed sealed development tranches; freeze 20/20 event coverage gate.",
+  "status": "FROZEN_BEFORE_R3_1_CONSUMPTION",
+  "lineage": {
+    "base_commit": "6504e94567d9f6bc6394185daf26a60eccf0bb19",
+    "valid_r2_execution_commit": "f6f619b4fc6b1706aff1cf1967c73e8cc10b8c28",
+    "new_branch": "codex/v5-student-learnability-r3-20260728",
+    "historical_proxy_roots_are_substitutes": false,
+    "required_source_commit_format": "40 lowercase hexadecimal characters"
+  },
+  "authorization": {
+    "fit_development_only": true,
+    "required_input_status": "PASS_ENGINEERING_CONSUMABLE_INPUT_GATE",
+    "protected_reads": false,
+    "cal_reads": false,
+    "check_reads": false,
+    "g10_reads": false,
+    "t2rd_reads": false,
+    "openvla_inference": false,
+    "rollout": false,
+    "training_authorized": false,
+    "full_fit_authorized": false,
+    "attack_authorized": false
+  },
+  "input_consumption": {
+    "canonical_source": "DeepSeek_FIT670_V2_canary_or_fixed_sealed_development_tranche",
+    "allowed_tranches": [8, 40, 80, 160, 320, 670],
+    "identity_manifest_required": true,
+    "identity_order_frozen_before_read": true,
+    "old_fresh40_proxy_substitution": "FORBIDDEN",
+    "unknown_to_false": false,
+    "required_root_properties": [
+      "recursive_seal",
+      "source_commit_and_tree",
+      "transition_receipt",
+      "episode_task_state_seed_identity",
+      "per_step_schema_and_step_closure",
+      "no_protected_overlap"
+    ]
+  },
+  "teacher": {
+    "heads": [
+      "physical_criticality",
+      "k10_feasibility",
+      "safe_release",
+      "instability",
+      "gripper_closing_state"
+    ],
+    "truth_values": ["TRUE", "FALSE", "UNKNOWN"],
+    "unknown_mask": false,
+    "unknown_reason_required": true,
+    "future_frames_allowed": false,
+    "forbidden_inputs": [
+      "task_success",
+      "terminal",
+      "reward",
+      "outcome",
+      "attack_result",
+      "future_frame",
+      "future_label"
+    ],
+    "head_input_allowlist": {
+      "physical_criticality": [
+        "object_gripper_contact",
+        "contact_force",
+        "object_eef_relative_pose",
+        "object_eef_comotion",
+        "lift",
+        "support_state"
+      ],
+      "k10_feasibility": [
+        "protocol_steps_remaining",
+        "safe_release_computed"
+      ],
+      "safe_release": [
+        "placement",
+        "released_state",
+        "placement_stability"
+      ],
+      "instability": [
+        "contact_transition",
+        "relative_slip",
+        "regrasp",
+        "contact_loss"
+      ],
+      "gripper_closing_state": [
+        "physical_gripper_qpos",
+        "qpos_close_threshold"
+      ]
+    },
+    "contact_schema": {
+      "contact_pairs": "per-step complete contact pair records",
+      "contact_ncon_total": "integer equal to len(contact_pairs)",
+      "contact_truncated": false,
+      "contact_position": "finite world-frame contact position",
+      "contact_normal": "finite world-frame contact normal",
+      "normal_constraint_force_scalar": "finite MuJoCo normal constraint force scalar",
+      "object_gripper_contact_binding": "named object and gripper entities",
+      "forward_before_capture": true
+    },
+    "geometry_schema": {
+      "object_pose": "world body origin and quaternion",
+      "target_pose": "world body/site pose with body-origin and geom-center separated",
+      "eef_pose": "world EEF pose",
+      "gripper_qpos": "finite physical gripper qpos",
+      "delta_history": "current and previous observed frames only",
+      "quaternion_distance": "sign-invariant geodesic"
+    },
+    "semantic_rules": {
+      "safe_release": "placement AND released_state AND placement_stability",
+      "k10": "protocol_steps_remaining >= 10 AND safe_release_computed is FALSE",
+      "released_state": "finite open qpos AND object_gripper_contact is FALSE",
+      "event_label": "TRUE if any step TRUE; FALSE if all known steps FALSE; otherwise UNKNOWN",
+      "teacher_critical_event_source": "complete timeline before candidate gating",
+      "candidate_close_role": "detector reachability analysis only"
+    },
+    "frozen_thresholds": {
+      "qpos_close_threshold": 0.01,
+      "qpos_open_threshold": 0.02,
+      "lift_threshold_m": 0.02,
+      "placement_distance_threshold_m": 0.08,
+      "placement_stability_translation_threshold_m": 0.005,
+      "placement_stability_consecutive_steps": 2,
+      "comotion_min_displacement_m": 0.0005,
+      "comotion_cosine_threshold": 0.7,
+      "relative_motion_tolerance_m": 0.02,
+      "slip_relative_motion_threshold_m": 0.02,
+      "k10": 10,
+      "suite_protocol_horizon": {
+        "libero_10": 520,
+        "libero_goal": 300,
+        "libero_object": 280,
+        "libero_spatial": 220
+      }
+    }
+  },
+  "student": {
+    "feature_schema": "SC5StreamingFeatureAdapterV2_25D",
+    "input_dim": 25,
+    "future_frames": 0,
+    "teacher_fields_in_input": false,
+    "candidate_close_in_input": false,
+    "normalization": "train_only_zscore",
+    "dtype": "float32",
+    "architecture": {
+      "family": "dual_causal_tcn",
+      "hidden": 64,
+      "short_receptive_field": 32,
+      "long_receptive_field": 128,
+      "independent_scalar_heads": true
+    },
+    "training": {
+      "seed": 20260717,
+      "optimizer": "AdamW",
+      "learning_rate": 0.001,
+      "weight_decay": 0.00001,
+      "gradient_clip": 5.0,
+      "precision": "FP32",
+      "unknown_loss_policy": "masked_out",
+      "loss": "per-head masked BCE with train-only frozen positive weights"
+    },
+    "learnability_controls": [
+      "single_head_memorization",
+      "five_head_joint_overfit",
+      "label_shuffle_control",
+      "feature_shuffle_control",
+      "causal_prefix_equivalence",
+      "checkpoint_resume_parity",
+      "bf16_fp32_finite_loss_smoke"
+    ]
+  },
+  "split": {
+    "unit": "episode_identity",
+    "group_key": ["suite", "task_id"],
+    "task_group_overlap": false,
+    "identity_overlap": false,
+    "algorithm": "sha256(seed || canonical_group_key) ascending with frozen manifest",
+    "seed": 20260717,
+    "fit_dev_threshold_selection_once": true,
+    "heldout_threshold_tuning": false,
+    "tranches": [8, 40, 80, 160, 320, 670],
+    "coverage_hold_if_underpowered": true
+  },
+  "threshold": {
+    "engineering_threshold": 0.5,
+    "engineering_threshold_scope": "CPU/GPU learnability and contract smoke only",
+    "development_grid": [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95],
+    "selection_scope": "FIT_DEV only",
+    "selection_rule": "maximum threshold with critical event recall >= 0.95; otherwise HOLD",
+    "selection_count": 1,
+    "cal_check_g10_t2rd_selection": false
+  },
+  "metrics": {
+    "head_metrics": ["AUROC", "AUPRC", "balanced_accuracy", "prevalence"],
+    "head_mask": "only TRUE/FALSE labels; UNKNOWN excluded from numerator and denominator",
+    "event_label": "tri-valued OR",
+    "event_metrics": ["recall", "precision", "known_negative_fpr", "latency"],
+    "candidate_ceiling": "teacher critical events independently built before candidate gating",
+    "unknown_reporting": ["unknown_steps", "unknown_events", "unknown_coverage"],
+    "shadow_metrics": ["one_shot_compliance", "offline_streaming_parity", "future_leakage", "action_mutation"],
+    "bootstrap": "suite/task grouped bootstrap only after R3-4 learnability PASS"
+  },
+  "gates": {
+    "R3_0": "source and protocol closure before any new label consumption",
+    "R3_1": "8/8 contact-complete consumable FIT670 V2 canary episodes",
+    "R3_2": "five-head contract PASS, coverage reported separately",
+    "R3_3": "minimum natural event coverage before Student training",
+    "R3_4": "memorization and controls prove Student learnability",
+    "R3_5": "held-out FIT development generalization",
+    "R3_6": "FIT-only causal shadow execution contract"
+  },
+  "minimum_coverage_for_student": {
+    "per_head_positive_events": 20,
+    "per_head_negative_events": 20,
+    "physical_criticality_positive_events": 20,
+    "teacher_critical_events": 20,
+    "unknown_fraction_max_candidate_events": 0.60
+  },
+  "forbidden_substitutions": [
+    "Fresh40 proxy telemetry for missing contact pairs",
+    "task_success as a Teacher label",
+    "terminal or reward as a Teacher label",
+    "future frames or future labels",
+    "UNKNOWN mapped to FALSE",
+    "held-out results used to redefine Teacher thresholds",
+    "protected payload used for development tuning"
+  ]
+}

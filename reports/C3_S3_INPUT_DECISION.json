@@ -1,0 +1,76 @@
+{
+  "schema": "C3_S3_INPUT_DECISION_V2",
+  "decision": "HOLD_PROVENANCE",
+  "i1_status": "PASS",
+  "i1_code_commit": "f63486394212ad25ec0e9cd4d2c5ee0de94d2c31",
+  "i2_r1_code_commit": "67759b86dccc5394c9aaa7b9a664bdb88e915993",
+  "source_kind": "OFFICIAL_V3_IDENTITY_MANIFEST",
+  "source_root": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/clean",
+  "source_root_top_level_seal": "MISSING",
+  "official_manifest": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/manifests/OFFICIAL_CLEAN_2000_MANIFEST_V3.csv",
+    "sha256": "e6fdbfa7e81a150cfcf4a85ad300963d6b58dec5b84bf4334030f154315a3ffb",
+    "sidecar_matches": true,
+    "sidecar_sha256": "b2a4441fc63eaa3166ec9c75a9514e249e9248327129434d4a649d7a3b9e9659"
+  },
+  "identity_closure": {
+    "raw_records": 2000,
+    "valid_records": 2000,
+    "unique_identities": 2000,
+    "duplicate_records": 0,
+    "conflict_records": 0,
+    "malformed_records": 0,
+    "per_suite": {
+      "libero_10": 500,
+      "libero_goal": 500,
+      "libero_object": 500,
+      "libero_spatial": 500
+    },
+    "per_task": "50_each"
+  },
+  "official_horizon_contract_by_suite": {
+    "libero_10": 520,
+    "libero_goal": 300,
+    "libero_object": 280,
+    "libero_spatial": 220
+  },
+  "horizon_semantics": "CONTRACT_HORIZON_NOT_OBSERVED_EPISODE_STEP_COUNT",
+  "allocation_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/clean2000_allocation_official_v3_67759b8_20260726_2355",
+  "allocation_root_sha256s_sha256": "be7442cc7d9fbb6348e77d4d4a4904c50f7591d2d1a2cd77cdd30890e16a07bd",
+  "allocation_sha256s_sidecar_file_sha256": "f445c787fffb6cc87bb1acf0ddda0f65a6fa96bc1b2de5b7d28a688fc5441112",
+  "allocation_summary_sha256": "6d1191cac640b3e9c2fa95db6afc6c91bcccb61bb923371ff4eb3482b7c11803",
+  "allocation_ledger_sha256": "39328393895a9815ccffe3f27a58faa9529278dc9865a8712aaebd22eb83ad1e",
+  "allocation_status": "HOLD_PROVENANCE",
+  "r1a_status": "PASS",
+  "r1b_status": "HOLD_DERIVED_METADATA_ONLY",
+  "r1b_source_binding": {
+    "status": "DERIVED_OFFICIAL_V3_METADATA_ONLY",
+    "original_immutable_provenance": "TOP_LEVEL_SEAL_MISSING",
+    "generation_commit": "943b02749dce4414ec6791b15ceec87dbd3be1ba",
+    "generation_tree": "d484dc74bbc9c457371537b89afa725a8c71957c640eacb63c15a58e27571e4c",
+    "generation_command": "NOT_PRESENT_IN_ALLOWED_METADATA",
+    "payloads_read": false,
+    "window_count_363513": "NOT_RECOMPUTED_PAYLOAD_NOT_READ",
+    "npz_bindings": 0
+  },
+  "r1c_status": "NOT_EXECUTED_BLOCKED_BY_R1B",
+  "v22_800_root_status": "HISTORICAL_NON_CONSUMABLE",
+  "v22_identity_intersection": "NOT_COMPUTED_ROOT_NOT_MOUNTED",
+  "fit_only_proof": "HOLD_NOT_ESTABLISHED",
+  "protected_overlap_zero_receipt": "MISSING",
+  "protected_semantic_or_payload_reads": false,
+  "protected_metadata_sha_read_incident": true,
+  "protected_metadata_sha_read_paths": [
+    "g6_training_seal/G10_TEST_MANIFEST.json",
+    "t2rd_confirmation_cohort/T2RD_CONFIRM_MANIFEST_V1.json"
+  ],
+  "protected_overlap_computation": false,
+  "legacy_parallel_c2f_root": "/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_obs_clean_36712cc",
+  "legacy_parallel_c2f_status": "REJECTED_NOT_OFFICIAL_V3",
+  "i3_authorized": false,
+  "i4_authorized": false,
+  "model_inference": false,
+  "training": false,
+  "rollout": false,
+  "attack": false
+}

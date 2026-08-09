@@ -1,0 +1,73 @@
+name: d8-h1-contract-tests
+
+on:
+  push:
+    branches:
+      - deepseek/detector-v3-d8-continuation-20260730
+    paths:
+      - "scripts/detector_v5/d8_source_contract.py"
+      - "scripts/detector_v5/d8_train_core.py"
+      - "scripts/detector_v5/build_d8_25d_cache.py"
+      - "scripts/detector_v5/run_d8_p5_25d_gpu_smoke.py"
+      - "scripts/detector_v5/compare_d8_25d_caches.py"
+      - "scripts/detector_v5/audit_d8_h1_r9.py"
+      - "tests/detector_v5/test_d8_source_contract.py"
+      - "tests/detector_v5/test_d8_train_core_parity.py"
+      - ".github/workflows/d8-h1-contract-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install minimal CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pytest
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile formal H1 modules
+        run: |
+          python -m py_compile \
+            scripts/detector_v5/d8_source_contract.py \
+            scripts/detector_v5/make_d8_source_snapshot.py \
+            scripts/detector_v5/d8_train_core.py \
+            scripts/detector_v5/build_d8_25d_cache.py \
+            scripts/detector_v5/run_d8_p5_25d_gpu_smoke.py \
+            scripts/detector_v5/compare_d8_25d_caches.py \
+            scripts/detector_v5/audit_d8_h1_r9.py
+      - name: Reject assert in formal modules
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          files = [
+              Path("scripts/detector_v5/d8_source_contract.py"),
+              Path("scripts/detector_v5/d8_train_core.py"),
+              Path("scripts/detector_v5/build_d8_25d_cache.py"),
+              Path("scripts/detector_v5/run_d8_p5_25d_gpu_smoke.py"),
+              Path("scripts/detector_v5/compare_d8_25d_caches.py"),
+              Path("scripts/detector_v5/audit_d8_h1_r9.py"),
+          ]
+          bad = []
+          for path in files:
+              tree = ast.parse(path.read_text("utf-8"), filename=str(path))
+              if any(isinstance(node, ast.Assert) for node in ast.walk(tree)):
+                  bad.append(str(path))
+          if bad:
+              raise SystemExit(f"formal assert found: {bad}")
+          PY
+      - name: Run H1 regression tests
+        run: |
+          pytest -q \
+            tests/detector_v5/test_d8_source_contract.py \
+            tests/detector_v5/test_d8_train_core_parity.py

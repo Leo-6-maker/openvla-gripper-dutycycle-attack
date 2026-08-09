@@ -1,0 +1,82 @@
+{
+  "receipt": "CODEX_H0_3_R6_EXECUTION_RECEIPT_V1",
+  "gate": "H0.3-R6-PROVENANCE",
+  "status": "HOLD_REVIEW",
+  "owner": "Codex",
+  "code_snapshot_commit": "beb0721d36bd27412cde7d60623b8cb2f671a4bf",
+  "code_snapshot_tree": "bb7ef11fd8329ae2e8bb71a0bb4c6c4caaf2f7c3",
+  "server": {
+    "host": "pm-364c0001",
+    "repo": "/mnt/sdc/dty_user/openvla_attack",
+    "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "worktree": "/mnt/sdc/dty_user/openvla_attack_worktrees/codex-detector-completion-0b723",
+    "worktree_head": "beb0721d36bd27412cde7d60623b8cb2f671a4bf",
+    "worktree_dirty": false
+  },
+  "runs": {
+    "run_A": {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c1_v2_run_A",
+      "summary_sha256": "8e657c4c7de6b108eaecfc554782faa37d645f683c2317b35212b84402ce1085",
+      "alias_ledger_sha256": "1cce56515bfcf3e80488deb747e508129ebd14880e1ea2ae6f8f0a7e137ff1db"
+    },
+    "run_B": {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c1_v2_run_B",
+      "summary_sha256": "d59cbb9e408cbc76197b54efdb1bad0ff91782eb54c9b4a165a6e430c0db9628",
+      "alias_ledger_sha256": "1cce56515bfcf3e80488deb747e508129ebd14880e1ea2ae6f8f0a7e137ff1db"
+    },
+    "canonical_payload_sha256": "c1a10837c9f597a4ffa163dc31dd0ffba4b78a831582881385588e9fac1a2087",
+    "canonical_alias_ledger_sha256": "fa2b38ac6db37cdc19c6b3b5123dc0c277ef6d671f9ac0a52ee134b580a5eeca",
+    "object_ok": 44,
+    "target_ok": 44,
+    "object_unresolved": 0,
+    "object_ambiguous": 0,
+    "target_unresolved": 0,
+    "target_ambiguous": 0,
+    "blocked": 0,
+    "env_errors": 0
+  },
+  "finalized_evidence": {
+    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/h0_3/codex_r6_finalize_beb0721_20260726_1330",
+    "status": "PASS_CANDIDATE_AWAITING_TRANSITION_REVIEW",
+    "artifact_manifest_sha256": "8f1b6d890b21a54206e1dd4f6606901e2441b5c537e9ff6c3ba4a89d0bcea2b0",
+    "sha256sums_sha256": "14c6b728ae2c142a5dbd860384152e4665de1013ab491d2a61afe54e5576532f",
+    "sha256sums_sidecar_sha256": "d1d9f244d0f485eaab5956e61b50d4df071b7d0e745d322d6e62eedf0d4e1d67",
+    "file_count": 90,
+    "sha256sum_check": "PASS",
+    "sidecar_check": "PASS"
+  },
+  "tests": {
+    "resolver_unit": {
+      "command": "pytest -q n5/phase3_student/tests/test_c1_v2_resolver.py",
+      "passed": 20,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "full_contract": {
+      "passed": 46,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "failures": []
+    },
+    "receipt_claim_discrepancy": "H0.3 packet claims 25/25 resolver tests; official rerun executed 20/20."
+  },
+  "chronology": {
+    "h0_3_review_packet_timestamp": "2026-07-26T11:40:00Z",
+    "source_ready_commit_timestamp": "2026-07-26T11:36:55Z",
+    "transition_receipt": "NOT_CREATED",
+    "status": "NOT_CLOSED"
+  },
+  "protected_boundaries": {
+    "cal_read": false,
+    "g10_read": false,
+    "t2rd_read": false,
+    "training_started": false,
+    "inference_started": false,
+    "attack_started": false,
+    "c3_s3_authorized": false
+  },
+  "decision": "R6 provenance evidence is PASS_CANDIDATE; independent transition/chronology review remains HOLD_REVIEW; C3-S3 and all downstream gates remain BLOCKED.",
+  "self_sha256": "3dd7a16a289980b3ed007d85edfe662385d1eabb74720bcaf16d7a2aefffa2d4"
+}

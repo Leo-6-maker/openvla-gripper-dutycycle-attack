@@ -1,0 +1,118 @@
+{
+  "schema": "STAGE_V_RB1_RUNTIME_EQUIVALENCE_PROTOCOL_V2",
+  "protocol_id": "STAGE_V_RB1_RUNTIME_EQUIVALENCE_20260810_V2",
+  "status": "FROZEN_RUNTIME_GATE_CAUSAL_EQUIVALENCE_LIVE_AUTHORIZED",
+  "equality_mode": "EXACT_CANONICAL_JSON_AND_TRACE_SHA256",
+  "contract_schema": "STAGE_V_RUNNER_BINDING_PROTOCOL_V1",
+  "contract_fields": [
+    "clean_core_sha256",
+    "source_commit",
+    "source_tree",
+    "runner_sha256",
+    "model_tree_sha256",
+    "processor_sha256",
+    "tokenizer_sha256",
+    "prompt_template",
+    "unnorm_key",
+    "seed",
+    "num_steps_wait",
+    "suite_horizon",
+    "termination_predicate",
+    "success_predicate",
+    "reset_restore_contract",
+    "action_decode_contract",
+    "action_postprocess_contract",
+    "gripper_semantics",
+    "initial_state_hash_algorithm",
+    "initial_state_identity_schema"
+  ],
+  "identity_fields": [
+    "canonical_parent_key",
+    "suite",
+    "task_index",
+    "state_index"
+  ],
+  "common_trace_hash_fields": [
+    "policy_token_trace_sha256",
+    "postprocessed_action_trace_sha256",
+    "observation_trace_sha256",
+    "physical_state_trace_sha256"
+  ],
+  "noop_trace_hash_fields": [
+    "snapshot_restore_trace_sha256",
+    "noop_action_trace_sha256"
+  ],
+  "diagnostic_trace_hash_fields": [
+    "full_sim_state_trace_sha256",
+    "policy_rgb_224_trace_sha256",
+    "model_input_trace_sha256"
+  ],
+  "modes": [
+    "CLEAN_QUALIFICATION",
+    "COUNTERFACTUAL_CLEAN_PREFIX",
+    "UNINTERRUPTED_CLEAN",
+    "SNAPSHOT_RESTORE_NOOP"
+  ],
+  "comparison_scopes": [
+    "CLEAN_PATH",
+    "NOOP_CONTINUATION"
+  ],
+  "pair_kinds": {
+    "RB1A_CLEAN_PATH": {
+      "scope": "CLEAN_PATH",
+      "left_mode": "CLEAN_QUALIFICATION",
+      "right_mode": "COUNTERFACTUAL_CLEAN_PREFIX"
+    },
+    "RB1B_NOOP_CONTINUATION": {
+      "scope": "NOOP_CONTINUATION",
+      "left_mode": "UNINTERRUPTED_CLEAN",
+      "right_mode": "SNAPSHOT_RESTORE_NOOP"
+    }
+  },
+  "causal_execution_equivalence": {
+    "m1_prerequisite_status": "PASS_CLASSIFIED",
+    "m1_action_stable_required": true,
+    "visual_input_differences_allowed": true,
+    "required_exact_trace_hash_fields": [
+      "policy_token_trace_sha256",
+      "postprocessed_action_trace_sha256",
+      "physical_state_trace_sha256"
+    ],
+    "required_exact_diagnostic_hash_fields": [
+      "full_sim_state_trace_sha256"
+    ],
+    "allowed_trace_hash_fields": [
+      "observation_trace_sha256"
+    ],
+    "allowed_diagnostic_hash_fields": [
+      "policy_rgb_224_trace_sha256",
+      "model_input_trace_sha256"
+    ]
+  },
+  "protected_boundaries": [
+    "eval160_reads",
+    "protected_eval_reads",
+    "vis_pgd_attack_rollouts",
+    "attack_rollouts",
+    "intervention_applied_steps",
+    "counterfactual_open_steps"
+  ],
+  "artifact_fields": [
+    "initial_state",
+    "policy_token_trace",
+    "postprocessed_action_trace",
+    "observation_trace",
+    "physical_state_trace",
+    "snapshot_restore_trace",
+    "noop_action_trace"
+  ],
+  "initial_state_exact_required": true,
+  "action_trace_exact_required": true,
+  "token_trace_exact_required": true,
+  "termination_exact_required": true,
+  "terminal_outcome_exact_required": true,
+  "tolerance_allowed": false,
+  "independent_recompute_required": true,
+  "evidence_reuse_allowed": true,
+  "new_science_rollouts_authorized": false
+}

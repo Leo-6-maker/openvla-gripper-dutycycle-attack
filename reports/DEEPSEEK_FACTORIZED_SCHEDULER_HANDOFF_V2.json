@@ -1,0 +1,118 @@
+{
+  "schema": "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V2",
+  "status": "READY_FOR_DEEPSEEK_STATIC_INTEGRATION",
+  "branch": "codex/factorized-v2-scheduler-inputs-20260722",
+  "base_branch": "codex/v2b-exact-w32-recommended-canary-20260721",
+  "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
+  "code_snapshot_commit": "281e6953567135516a063c9413c854ab4fae595d",
+  "metadata_parent_commit": "281e6953567135516a063c9413c854ab4fae595d",
+  "branch_head_verified_externally": false,
+  "handoff_blob_sha256": "95d29d14a560aca77d758b0c2869bd12d865bb717a805cb8fd6b811ab39ff4a1",
+  "handoff_blob_hash_definition": "SHA256(canonical JSON with handoff_blob_sha256 omitted)",
+  "runtime_schema": {
+    "path": "schemas/factorized_v2_runtime_scheduler_input.schema.json",
+    "sha256": "287f96f19224e1bd35e75673fa8f47568c6f170f50e8ab6eb96b5178af1e333d"
+  },
+  "offline_label_schemas": {
+    "calibration": {"path": "schemas/factorized_v2_offline_calibration_labels.schema.json", "sha256": "ed3842867fe783dc3a14588eb35de31da9e4b30665d85fda26314520e9c34c16"},
+    "evaluation": {"path": "schemas/factorized_v2_offline_evaluation_labels.schema.json", "sha256": "8f712abc195c24ba37887ea6b68b6eaeb40e2534862b4cdd503dfae79f5825e8"}
+  },
+  "calibration_contract_schema": {
+    "path": "schemas/factorized_v2_calibration_contract.schema.json",
+    "sha256": "70a90db36d7d1650d9d2761b1a04ee5e6b43f061edc73911062d29c420cf7402"
+  },
+  "structural_config": {
+    "path": "configs/FACTORIZED_V2_SCHEDULER_PROTOCOL_V1.json",
+    "sha256": "98c5fd257ad5b34f04286818698d6d678012bd84ac9a360419c3927412c80390"
+  },
+  "scheduler_source": {
+    "path": "src/gripper_attack/factorized_scheduler.py",
+    "sha256": "dee763e40859b24c3aadc5738cc1b4c5dab9e8604c6235b157ed886bb9e0cd9a"
+  },
+  "runtime_source": {
+    "path": "src/gripper_attack/factorized_runtime.py",
+    "sha256": "e7849d1c8655c2cd4af4e6d42bd4869ac8cd6a633684668d444689b753d9271e"
+  },
+  "candidate_close": {
+    "status": "DERIVABLE_FROM_SEALED_RUNTIME_FIELD",
+    "preferred_field": "clean_action_raw_7d[6]",
+    "fallback_field": "action_raw[6]",
+    "fallback_requires_certified_manifest": true,
+    "boundary_policy": "action_known=false; candidate_close=false",
+    "twelve_split_audit": "NOT_EXECUTED_INPUT_ROOTS_NOT_MOUNTED"
+  },
+  "student_valid": {
+    "status": "DERIVED_DURING_REMATERIALIZATION",
+    "definition": "student valid AND feature_window_valid AND route_supported AND action_known",
+    "invalid_runtime_policy": "reset"
+  },
+  "teacher_known_mask_runtime_exclusion": true,
+  "runtime_forbidden_fields": [
+    "utility_probability", "regrasp_probability", "event_id", "known_mask",
+    "strict_k10_feasible", "teacher_phase", "future_fields", "attack_outcome",
+    "executed_action", "mutated_action"
+  ],
+  "head_semantics": {
+    "grasp_probability": "direct Factorized grasp_established head",
+    "manipulation_probability": "direct Factorized manipulation_active head",
+    "release_probability": "direct Factorized release_or_instability head; conditional veto only",
+    "utility_probability": "MISSING; no substitution",
+    "regrasp_probability": "MISSING; no substitution"
+  },
+  "legacy_bridge": {
+    "module": "src/gripper_attack/factorized_scheduler_bridge.py",
+    "status": "LEGACY_V5_INCOMPATIBLE_WITH_FACTORIZED_V2"
+  },
+  "factorized_rematerializer": {
+    "path": "scripts/detector_v5/rematerialize_factorized_v2_runtime_inputs.py",
+    "status": "READY_FOR_STATIC_INTEGRATION",
+    "requires_exact_twelve_split_closure": true,
+    "production_run": false
+  },
+  "scheduler_structure": {
+    "states": ["IDLE", "GRASP_EVIDENCE", "MANIPULATION_READY", "EMIT_ONCE", "DONE"],
+    "candidate_dwell": "continuous known CLOSE-intent steps",
+    "candidate_dwell_counts_before_grasp": true,
+    "persistence": "external structure config, 3-of-5 fixture only",
+    "one_shot": true,
+    "action_mutation": false,
+    "attack_enabled": false,
+    "calibration_contract_required": true
+  },
+  "inner_train_inference": {
+    "runner": "scripts/detector_v5/run_factorized_v2_inner_train_calibration.py",
+    "status": "PREPARATION_ONLY",
+    "execution_path": "implemented but requires explicit GO and execution_authorized=true",
+    "production_run": false,
+    "request": "reports/OFFLINE_INNER_TRAIN_INFERENCE_EXECUTION_REQUEST.json"
+  },
+  "forbidden_substitutions": [
+    "grasp_probability -> utility_probability",
+    "manipulation_probability -> regrasp_probability",
+    "event_id -> candidate_close",
+    "Teacher known mask -> runtime availability",
+    "zero/default fill for missing heads",
+    "env action -> raw gripper",
+    "final threshold selection by Codex"
+  ],
+  "tests": {
+    "targeted": "30 passed",
+    "compileall": "PASS",
+    "production_12_split_audit": "NOT_RUN",
+    "inner_train_inference": "NOT_RUN"
+  },
+  "execution_boundary": {
+    "training": false,
+    "full_fit": false,
+    "production_inference": false,
+    "openvla_rollout": false,
+    "passive_shadow": false,
+    "cal_check_read": false,
+    "attack": false
+  },
+  "remaining_blockers": [
+    "Exact-W32 sealed production roots are not mounted in this worktree",
+    "DeepSeek must supply external calibration contract and threshold decisions",
+    "Inner-train production inference requires separate GO authorization"
+  ]
+}

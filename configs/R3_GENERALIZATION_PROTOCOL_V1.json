@@ -1,0 +1,152 @@
+{
+  "schema": "V5_R3_GENERALIZATION_PROTOCOL_V1",
+  "status": "FROZEN_BEFORE_G1_SPLIT",
+  "protocol_revision": "R3-GENERALIZATION-R1",
+  "source_branch": "codex/v5-student-learnability-r3-20260728",
+  "source_commit": "537c6706458a4419dc0cbeba3a2f347952bdf7cd",
+  "source_commit_role": "protocol_freeze_parent_snapshot",
+  "random_init_semantics": {
+    "scope": "student_parameters_only",
+    "heldout_episode_random_init_claim": false,
+    "episode_initial_state_source": "T0-A sealed FIT episode binding"
+  },
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "input_scope": {
+    "teacher_identity_count": 670,
+    "teacher_step_count": 196483,
+    "teacher_root_status": "SEALED_FIT_ONLY",
+    "g0_status_required": "PASS_LABEL_AND_BASELINE_AUDIT",
+    "teacher_privileged_fields_in_student": false,
+    "protected_reads": false,
+    "CAL_READ": false,
+    "CHECK_READ": false,
+    "G10_READ": false,
+    "T2R_D_READ": false,
+    "attack": false,
+    "rollout": false
+  },
+  "heads": {
+    "active": [
+      "physical_criticality",
+      "k10_feasibility",
+      "instability",
+      "gripper_closing_state"
+    ],
+    "held": {
+      "safe_release": {
+        "status": "HOLD_COVERAGE",
+        "positive_events": 20,
+        "negative_events": 20,
+        "positive_episodes": 5,
+        "negative_episodes": 5,
+        "positive_tasks": 2,
+        "positive_suites": 2
+      }
+    },
+    "unknown_policy": "masked_out_never_negative",
+    "right_censor_policy": "masked_out_never_negative"
+  },
+  "features": {
+    "schema": "SC5StreamingFeatureAdapterV2_25D",
+    "input_dim": 25,
+    "feature_order_sha256": "3d1101d26567a41bf688587a70c5100a3629ad62f12f9568947ee178a8a63366",
+    "future_frames": 0,
+    "teacher_fields_in_input": false,
+    "normalization": "train_only_zscore",
+    "dtype": "float32",
+    "temporal_receptive_fields": [32, 128]
+  },
+  "episode_heldout": {
+    "train_fraction": 0.70,
+    "validation_fraction": 0.15,
+    "test_fraction": 0.15,
+    "unit": "episode_identity",
+    "group_key": ["suite", "task_id"],
+    "task_group_overlap_allowed": true,
+    "algorithm": "within_task_sha256_rank_quota_v1",
+    "seed": 20260717,
+    "split_once": true,
+    "test_read_once": true,
+    "minimum_head_coverage": {
+      "positive_events": 1,
+      "negative_events": 1,
+      "positive_episodes": 1,
+      "negative_episodes": 1
+    }
+  },
+  "task_heldout": {
+    "train_tasks": 30,
+    "validation_tasks": 5,
+    "test_tasks": 5,
+    "unit": "canonical_task",
+    "task_group_overlap": false,
+    "algorithm": "global_task_sha256_rank_quota_v1",
+    "seed": 20260717,
+    "split_once": true
+  },
+  "model_configs": {
+    "architecture": "N5MultiHeadStudent",
+    "hidden": 64,
+    "dropout": 0.0,
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 0.00001,
+    "gradient_clip": 5.0,
+    "precision": "FP32",
+    "epochs": 30,
+    "seed_first_round": 20260717,
+    "early_stopping": false,
+    "random_initialization_required": true,
+    "all_670_engineering_checkpoint_allowed": false
+  },
+  "baselines": [
+    "constant_true",
+    "constant_false",
+    "majority",
+    "label_shuffle_3_seeds",
+    "linear_probe",
+    "privileged_oracle_nondeployable",
+    "student_25d"
+  ],
+  "threshold": {
+    "grid": [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95],
+    "selection_split": "validation_only",
+    "selection_metric": "event_balanced_accuracy",
+    "tie_break_1": "higher_minority_recall",
+    "tie_break_2": "lower_false_emit_rate",
+    "test_threshold_selection": false
+  },
+  "metrics": {
+    "step": ["AUROC", "AUPRC", "balanced_accuracy", "MCC", "precision", "recall", "confusion_matrix"],
+    "event": ["recall", "precision", "known_negative_fpr", "false_emits_per_episode", "latency"],
+    "calibration": ["ECE"],
+    "unknown": ["abstention", "coverage"],
+    "bootstrap": "suite_task_grouped_95_percent",
+    "ordinary_accuracy_not_sufficient": true
+  },
+  "development_gate": {
+    "step_auroc_min": 0.70,
+    "balanced_accuracy_min": 0.65,
+    "mcc_min_exclusive": 0.0,
+    "minority_event_recall_min": 0.50,
+    "must_beat_majority": true,
+    "must_beat_label_shuffle": true,
+    "physical_and_gripper_required": true,
+    "one_of_k10_or_instability_required": true,
+    "shadow_after_pass_only": true
+  },
+  "permissions": {
+    "teacher_labels_read": true,
+    "fit_development_features_read": true,
+    "student_training": true,
+    "development_inference": true,
+    "privileged_oracle_diagnostic": true,
+    "shadow_offline": false,
+    "shadow_live": false,
+    "formal_training": false,
+    "full_fit": false,
+    "rollout": false,
+    "attack": false,
+    "protected_reads": 0
+  }
+}

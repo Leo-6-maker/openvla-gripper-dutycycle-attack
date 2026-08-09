@@ -1,0 +1,66 @@
+# FEC V5 OPEN-REGION Attack Configuration — POST_GRASP_PREMATURE_OPEN
+# Gate B: OPEN-region logsumexp objective (not single-token 31745).
+# Compares with single-token baseline to determine if objective choice matters.
+version: fec_attack_v5_open_region_canary_v1
+status: EXPERIMENTAL_CANARY
+scientific_mechanism: POST_GRASP_PREMATURE_OPEN
+
+attack_optimizer:
+  method: token_prefix_pgd
+  strict_route: true
+  allow_fallback: false
+
+  epsilon: 0.03
+  step_size: 0.006
+  num_steps: 5
+  random_start: false
+
+  temporal_init: none
+  temporal_smooth_lambda: 0.0
+
+  surrogate_score_path: cached_autoregressive_generate_v1
+  prefix_refresh_interval: 1
+
+  # OPEN-REGION objective: maximize log-mass over ALL NATIVE_OPEN tokens (31745-31871)
+  # This is closer to the scientific contract than pushing a single extreme token.
+  objective: prefix_locked_gripper_open_region_ce
+  target_execution_class: NATIVE_OPEN
+  gradient_transform: none
+
+  arm_preserve_weight: 0.1
+  gripper_margin: 5.0
+
+runtime:
+  attack_burst_frames: 10
+  fallback_forbidden: true
+  K10: 10
+
+arms:
+  CLEAN:
+    intervention: none
+    detector: logging_only
+  TRUE_T10:
+    trigger: n4_first_emit
+    objective: prefix_locked_gripper_open_region_ce
+    gradient_transform: none
+    burst_frames: 10
+  RAND_T10:
+    trigger: n4_first_emit
+    objective: prefix_locked_gripper_open_region_ce
+    gradient_transform: rademacher
+    gradient_transform_seed_per_job: true
+    burst_frames: 10
+  COMMAND_OPEN_ORACLE:
+    trigger: n4_first_emit
+    intervention: gripper_override_open
+    arm_dims_preserved: [0,1,2,3,4,5]
+    burst_frames: 10
+  RANDOM_TIME_T10:
+    trigger: pre_rollout_random_sampler
+    objective: prefix_locked_gripper_open_region_ce
+    gradient_transform: none
+    burst_frames: 10
+
+# counts_toward_formal: false
+# objective_type: OPEN-region logsumexp (not single-token 31745)
+# comparison_config: fec_attack_v5_open.yaml (single-token baseline)

@@ -1,0 +1,2599 @@
+{
+  "metadata": {
+    "diagnostic": "R10.0 Cross-Suite K10 Target Diagnostic",
+    "run_timestamp": "2026-07-19T14:26:38.345030+00:00",
+    "script_sha256": "ad9e3e092abffcf4a953e8c965d1b5662f26147cd08c2bc73da381c04c7d96f0",
+    "git_commit": "unknown",
+    "fold_id": 0,
+    "n_train": 600,
+    "n_val": 200,
+    "suite_distribution_train": {
+      "libero_10": 150,
+      "libero_goal": 150,
+      "libero_object": 150,
+      "libero_spatial": 150
+    },
+    "n_unique_tasks": 40,
+    "input_digests": {
+      "K10 labels": "891b4becdbf1f210ef64b69e3d684fdb09e6c7192bb04f8ee9799e397970cf67",
+      "Fold bundle": "dcf42800e9b1ff7fd409077cdb0b0d4d457c4daa40ec4b9a293317ed3180ad8f",
+      "Teacher Physics": "d4253d3ebd5b5b4855430100707ece3ce4c9e75b56d80733558872f89882014e",
+      "S1 student inputs": "536891d343e9825b86ceb04322b406b0aaf274cf7dfc4a1e4bba761f45705693"
+    },
+    "source_roots": {
+      "K10_ROOT": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_R7_K10_OPPORTUNITY_LABELER_V1_2_1_8e4f5ff_20260719",
+      "FOLD_ROOT": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_FIT_FOLDS_V1_d31187f",
+      "TEACHER_ROOT": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_DETECTOR_V5_TEACHER_PHYSICS_V21_7e876c2_20260719",
+      "S1_ROOT": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_S1_FIT_V1_5e27d7c"
+    },
+    "FIT_DEV_reads": 0,
+    "CAL_reads": 0,
+    "CHECK_reads": 0,
+    "CS200_reads": 0,
+    "attack_reads": 0,
+    "source_mutation": 0,
+    "training": 0,
+    "validation": 0,
+    "attack": 0,
+    "total_k10_positive_steps": 6304,
+    "libero_10_positive_steps": 5838,
+    "libero_10_share_of_positives": 0.9260786802030457,
+    "tasks_with_zero_feasible": 23,
+    "total_tasks": 40,
+    "r2_old_precision_to_k10": 0.0009523809523809524,
+    "r5_global_recall": 0.43373493975903615,
+    "r5_global_outside_emit": 109,
+    "r5_global_release_emit": 3,
+    "total_feasible_episodes": 83
+  },
+  "r1_label_geometry": {
+    "libero_10/task_00": {
+      "suite": "libero_10",
+      "task": "task_00",
+      "n_episodes": 15,
+      "n_feasible": 10,
+      "feasible_ratio": 0.6666666666666666,
+      "total_starts": 763,
+      "mean_starts_per_ep": 76.3,
+      "start_position_median": 285.0,
+      "start_position_q25": 201.0,
+      "start_position_q75": 396.0,
+      "mean_segments": 2.0,
+      "mean_max_seg_len": 62.9,
+      "single_seg_ratio": 0.5,
+      "mean_prevalence": 0.12525696366077751,
+      "mean_T_feasible": 360.2,
+      "mean_T_all": 367.3333333333333,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          2320
+        ],
+        [
+          "not_stable_grasp",
+          1718
+        ],
+        [
+          "critical",
+          1192
+        ],
+        [
+          "not_manipulation_active",
+          263
+        ],
+        [
+          "release_risk",
+          14
+        ]
+      ],
+      "gap_median": 26.0
+    },
+    "libero_10/task_01": {
+      "suite": "libero_10",
+      "task": "task_01",
+      "n_episodes": 15,
+      "n_feasible": 6,
+      "feasible_ratio": 0.4,
+      "total_starts": 605,
+      "mean_starts_per_ep": 100.83333333333333,
+      "start_position_median": 342.0,
+      "start_position_q25": 224.0,
+      "start_position_q75": 435.0,
+      "mean_segments": 2.1666666666666665,
+      "mean_max_seg_len": 83.0,
+      "single_seg_ratio": 0.6666666666666666,
+      "mean_prevalence": 0.08359664424597077,
+      "mean_T_feasible": 372.8333333333333,
+      "mean_T_all": 352.73333333333335,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          2472
+        ],
+        [
+          "not_candidate_close",
+          1724
+        ],
+        [
+          "critical",
+          986
+        ],
+        [
+          "not_manipulation_active",
+          73
+        ],
+        [
+          "release_risk",
+          36
+        ]
+      ],
+      "gap_median": 39.0
+    },
+    "libero_10/task_02": {
+      "suite": "libero_10",
+      "task": "task_02",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 378.46666666666664,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          2787
+        ],
+        [
+          "not_stable_grasp",
+          2496
+        ],
+        [
+          "not_manipulation_active",
+          374
+        ],
+        [
+          "critical",
+          20
+        ]
+      ]
+    },
+    "libero_10/task_03": {
+      "suite": "libero_10",
+      "task": "task_03",
+      "n_episodes": 15,
+      "n_feasible": 9,
+      "feasible_ratio": 0.6,
+      "total_starts": 1217,
+      "mean_starts_per_ep": 135.22222222222223,
+      "start_position_median": 319.0,
+      "start_position_q25": 252.0,
+      "start_position_q75": 409.0,
+      "mean_segments": 1.4444444444444444,
+      "mean_max_seg_len": 126.44444444444444,
+      "single_seg_ratio": 0.5555555555555556,
+      "mean_prevalence": 0.19226218101140308,
+      "mean_T_feasible": 367.44444444444446,
+      "mean_T_all": 428.46666666666664,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          2807
+        ],
+        [
+          "not_stable_grasp",
+          2168
+        ],
+        [
+          "critical",
+          1394
+        ],
+        [
+          "not_manipulation_active",
+          46
+        ],
+        [
+          "release_risk",
+          11
+        ]
+      ],
+      "gap_median": 22.0
+    },
+    "libero_10/task_04": {
+      "suite": "libero_10",
+      "task": "task_04",
+      "n_episodes": 15,
+      "n_feasible": 8,
+      "feasible_ratio": 0.5333333333333333,
+      "total_starts": 375,
+      "mean_starts_per_ep": 46.875,
+      "start_position_median": 260.0,
+      "start_position_q25": 223.0,
+      "start_position_q75": 329.0,
+      "mean_segments": 2.125,
+      "mean_max_seg_len": 34.375,
+      "single_seg_ratio": 0.5,
+      "mean_prevalence": 0.0487837070678399,
+      "mean_T_feasible": 488.875,
+      "mean_T_all": 426.26666666666665,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          2915
+        ],
+        [
+          "not_stable_grasp",
+          2491
+        ],
+        [
+          "critical",
+          864
+        ],
+        [
+          "release_risk",
+          115
+        ],
+        [
+          "regrasp_or_instability",
+          9
+        ]
+      ],
+      "gap_median": 30.0
+    },
+    "libero_10/task_05": {
+      "suite": "libero_10",
+      "task": "task_05",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 256.06666666666666,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          2940
+        ],
+        [
+          "not_stable_grasp",
+          839
+        ],
+        [
+          "critical",
+          46
+        ],
+        [
+          "release_risk",
+          11
+        ],
+        [
+          "not_manipulation_active",
+          4
+        ]
+      ]
+    },
+    "libero_10/task_06": {
+      "suite": "libero_10",
+      "task": "task_06",
+      "n_episodes": 15,
+      "n_feasible": 7,
+      "feasible_ratio": 0.4666666666666667,
+      "total_starts": 716,
+      "mean_starts_per_ep": 102.28571428571429,
+      "start_position_median": 411.0,
+      "start_position_q25": 327.0,
+      "start_position_q75": 456.0,
+      "mean_segments": 2.5714285714285716,
+      "mean_max_seg_len": 70.57142857142857,
+      "single_seg_ratio": 0.2857142857142857,
+      "mean_prevalence": 0.0917948717948718,
+      "mean_T_feasible": 520.0,
+      "mean_T_all": 428.53333333333336,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          3153
+        ],
+        [
+          "not_stable_grasp",
+          1913
+        ],
+        [
+          "critical",
+          1234
+        ],
+        [
+          "release_risk",
+          68
+        ],
+        [
+          "not_manipulation_active",
+          54
+        ]
+      ],
+      "gap_median": 15.0
+    },
+    "libero_10/task_07": {
+      "suite": "libero_10",
+      "task": "task_07",
+      "n_episodes": 15,
+      "n_feasible": 6,
+      "feasible_ratio": 0.4,
+      "total_starts": 414,
+      "mean_starts_per_ep": 69.0,
+      "start_position_median": 330.0,
+      "start_position_q25": 266.0,
+      "start_position_q75": 407.0,
+      "mean_segments": 2.1666666666666665,
+      "mean_max_seg_len": 61.0,
+      "single_seg_ratio": 0.5,
+      "mean_prevalence": 0.057339902964828535,
+      "mean_T_feasible": 386.5,
+      "mean_T_all": 411.93333333333334,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          3107
+        ],
+        [
+          "not_candidate_close",
+          2050
+        ],
+        [
+          "critical",
+          874
+        ],
+        [
+          "not_manipulation_active",
+          135
+        ],
+        [
+          "release_risk",
+          13
+        ]
+      ],
+      "gap_median": 15.0
+    },
+    "libero_10/task_08": {
+      "suite": "libero_10",
+      "task": "task_08",
+      "n_episodes": 15,
+      "n_feasible": 13,
+      "feasible_ratio": 0.8666666666666667,
+      "total_starts": 1184,
+      "mean_starts_per_ep": 91.07692307692308,
+      "start_position_median": 366.0,
+      "start_position_q25": 290.0,
+      "start_position_q75": 441.0,
+      "mean_segments": 2.076923076923077,
+      "mean_max_seg_len": 76.23076923076923,
+      "single_seg_ratio": 0.3076923076923077,
+      "mean_prevalence": 0.1557344254543675,
+      "mean_T_feasible": 484.84615384615387,
+      "mean_T_all": 489.53333333333336,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          3361
+        ],
+        [
+          "not_stable_grasp",
+          2229
+        ],
+        [
+          "critical",
+          1615
+        ],
+        [
+          "not_manipulation_active",
+          109
+        ],
+        [
+          "release_risk",
+          26
+        ]
+      ],
+      "gap_median": 30.0
+    },
+    "libero_10/task_09": {
+      "suite": "libero_10",
+      "task": "task_09",
+      "n_episodes": 15,
+      "n_feasible": 8,
+      "feasible_ratio": 0.5333333333333333,
+      "total_starts": 564,
+      "mean_starts_per_ep": 70.5,
+      "start_position_median": 346.0,
+      "start_position_q25": 241.0,
+      "start_position_q75": 438.0,
+      "mean_segments": 2.125,
+      "mean_max_seg_len": 59.5,
+      "single_seg_ratio": 0.375,
+      "mean_prevalence": 0.08259382931474195,
+      "mean_T_feasible": 434.75,
+      "mean_T_all": 474.53333333333336,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          3422
+        ],
+        [
+          "not_stable_grasp",
+          2637
+        ],
+        [
+          "critical",
+          912
+        ],
+        [
+          "not_manipulation_active",
+          127
+        ],
+        [
+          "release_risk",
+          20
+        ]
+      ],
+      "gap_median": 27.0
+    },
+    "libero_goal/task_00": {
+      "suite": "libero_goal",
+      "task": "task_00",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 220.53333333333333,
+      "top_reasons": [
+        [
+          "unknown_mask",
+          3308
+        ]
+      ]
+    },
+    "libero_goal/task_01": {
+      "suite": "libero_goal",
+      "task": "task_01",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 94.0,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          766
+        ],
+        [
+          "not_stable_grasp",
+          624
+        ],
+        [
+          "critical",
+          14
+        ],
+        [
+          "not_manipulation_active",
+          4
+        ],
+        [
+          "release_risk",
+          2
+        ]
+      ]
+    },
+    "libero_goal/task_02": {
+      "suite": "libero_goal",
+      "task": "task_02",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 116.0,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          914
+        ],
+        [
+          "not_stable_grasp",
+          768
+        ],
+        [
+          "not_manipulation_active",
+          31
+        ],
+        [
+          "critical",
+          21
+        ],
+        [
+          "release_risk",
+          6
+        ]
+      ]
+    },
+    "libero_goal/task_03": {
+      "suite": "libero_goal",
+      "task": "task_03",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 230.6,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          2381
+        ],
+        [
+          "not_candidate_close",
+          936
+        ],
+        [
+          "not_manipulation_active",
+          92
+        ],
+        [
+          "critical",
+          44
+        ],
+        [
+          "release_risk",
+          5
+        ]
+      ]
+    },
+    "libero_goal/task_04": {
+      "suite": "libero_goal",
+      "task": "task_04",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 103.66666666666667,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          836
+        ],
+        [
+          "not_stable_grasp",
+          686
+        ],
+        [
+          "not_manipulation_active",
+          24
+        ],
+        [
+          "critical",
+          9
+        ]
+      ]
+    },
+    "libero_goal/task_05": {
+      "suite": "libero_goal",
+      "task": "task_05",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 156.93333333333334,
+      "top_reasons": [
+        [
+          "not_manipulation_active",
+          1483
+        ],
+        [
+          "not_stable_grasp",
+          871
+        ]
+      ]
+    },
+    "libero_goal/task_06": {
+      "suite": "libero_goal",
+      "task": "task_06",
+      "n_episodes": 15,
+      "n_feasible": 1,
+      "feasible_ratio": 0.06666666666666667,
+      "total_starts": 111,
+      "mean_starts_per_ep": 111.0,
+      "start_position_median": 144.0,
+      "start_position_q25": 116.0,
+      "start_position_q75": 220.0,
+      "mean_segments": 5.0,
+      "mean_max_seg_len": 70.0,
+      "single_seg_ratio": 0.0,
+      "mean_prevalence": 0.024666666666666667,
+      "mean_T_feasible": 300.0,
+      "mean_T_all": 142.0,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          1052
+        ],
+        [
+          "not_candidate_close",
+          695
+        ],
+        [
+          "critical",
+          299
+        ],
+        [
+          "not_manipulation_active",
+          63
+        ],
+        [
+          "release_risk",
+          21
+        ]
+      ],
+      "gap_median": 23.0
+    },
+    "libero_goal/task_07": {
+      "suite": "libero_goal",
+      "task": "task_07",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 104.26666666666667,
+      "top_reasons": [
+        [
+          "unknown_mask",
+          1564
+        ]
+      ]
+    },
+    "libero_goal/task_08": {
+      "suite": "libero_goal",
+      "task": "task_08",
+      "n_episodes": 15,
+      "n_feasible": 2,
+      "feasible_ratio": 0.13333333333333333,
+      "total_starts": 34,
+      "mean_starts_per_ep": 17.0,
+      "start_position_median": 204.0,
+      "start_position_q25": 195.0,
+      "start_position_q75": 258.0,
+      "mean_segments": 3.0,
+      "mean_max_seg_len": 9.0,
+      "single_seg_ratio": 0.5,
+      "mean_prevalence": 0.007555555555555556,
+      "mean_T_feasible": 300.0,
+      "mean_T_all": 121.73333333333333,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          841
+        ],
+        [
+          "not_candidate_close",
+          785
+        ],
+        [
+          "critical",
+          192
+        ],
+        [
+          "not_manipulation_active",
+          5
+        ],
+        [
+          "release_risk",
+          3
+        ]
+      ],
+      "gap_median": 24.0
+    },
+    "libero_goal/task_09": {
+      "suite": "libero_goal",
+      "task": "task_09",
+      "n_episodes": 15,
+      "n_feasible": 4,
+      "feasible_ratio": 0.26666666666666666,
+      "total_starts": 72,
+      "mean_starts_per_ep": 18.0,
+      "start_position_median": 188.0,
+      "start_position_q25": 159.0,
+      "start_position_q75": 241.0,
+      "mean_segments": 2.25,
+      "mean_max_seg_len": 12.5,
+      "single_seg_ratio": 0.25,
+      "mean_prevalence": 0.016,
+      "mean_T_feasible": 300.0,
+      "mean_T_all": 225.86666666666667,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          1557
+        ],
+        [
+          "not_candidate_close",
+          1343
+        ],
+        [
+          "critical",
+          360
+        ],
+        [
+          "not_manipulation_active",
+          103
+        ],
+        [
+          "release_risk",
+          24
+        ]
+      ],
+      "gap_median": 12.0
+    },
+    "libero_object/task_00": {
+      "suite": "libero_object",
+      "task": "task_00",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 191.4,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          1351
+        ],
+        [
+          "not_candidate_close",
+          1315
+        ],
+        [
+          "not_manipulation_active",
+          109
+        ],
+        [
+          "critical",
+          86
+        ],
+        [
+          "release_risk",
+          9
+        ]
+      ]
+    },
+    "libero_object/task_01": {
+      "suite": "libero_object",
+      "task": "task_01",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 183.0,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          1467
+        ],
+        [
+          "not_candidate_close",
+          1149
+        ],
+        [
+          "critical",
+          98
+        ],
+        [
+          "release_risk",
+          16
+        ],
+        [
+          "not_manipulation_active",
+          15
+        ]
+      ]
+    },
+    "libero_object/task_02": {
+      "suite": "libero_object",
+      "task": "task_02",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 155.73333333333332,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          1167
+        ],
+        [
+          "not_candidate_close",
+          1011
+        ],
+        [
+          "not_manipulation_active",
+          97
+        ],
+        [
+          "critical",
+          61
+        ]
+      ]
+    },
+    "libero_object/task_03": {
+      "suite": "libero_object",
+      "task": "task_03",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 240.93333333333334,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          1824
+        ],
+        [
+          "not_candidate_close",
+          1707
+        ],
+        [
+          "critical",
+          47
+        ],
+        [
+          "not_manipulation_active",
+          36
+        ]
+      ]
+    },
+    "libero_object/task_04": {
+      "suite": "libero_object",
+      "task": "task_04",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 169.33333333333334,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          1422
+        ],
+        [
+          "not_stable_grasp",
+          1064
+        ],
+        [
+          "critical",
+          36
+        ],
+        [
+          "not_manipulation_active",
+          18
+        ]
+      ]
+    },
+    "libero_object/task_05": {
+      "suite": "libero_object",
+      "task": "task_05",
+      "n_episodes": 15,
+      "n_feasible": 1,
+      "feasible_ratio": 0.06666666666666667,
+      "total_starts": 2,
+      "mean_starts_per_ep": 2.0,
+      "start_position_median": 169.0,
+      "start_position_q25": 168.0,
+      "start_position_q75": 169.0,
+      "mean_segments": 1.0,
+      "mean_max_seg_len": 2.0,
+      "single_seg_ratio": 1.0,
+      "mean_prevalence": 0.0004761904761904762,
+      "mean_T_feasible": 280.0,
+      "mean_T_all": 213.8,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          1480
+        ],
+        [
+          "not_candidate_close",
+          1290
+        ],
+        [
+          "not_manipulation_active",
+          350
+        ],
+        [
+          "critical",
+          78
+        ],
+        [
+          "release_risk",
+          9
+        ]
+      ]
+    },
+    "libero_object/task_06": {
+      "suite": "libero_object",
+      "task": "task_06",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 186.73333333333332,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          1378
+        ],
+        [
+          "not_stable_grasp",
+          1330
+        ],
+        [
+          "critical",
+          85
+        ],
+        [
+          "release_risk",
+          8
+        ]
+      ]
+    },
+    "libero_object/task_07": {
+      "suite": "libero_object",
+      "task": "task_07",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 161.73333333333332,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          1222
+        ],
+        [
+          "not_stable_grasp",
+          1142
+        ],
+        [
+          "critical",
+          43
+        ],
+        [
+          "not_manipulation_active",
+          14
+        ],
+        [
+          "release_risk",
+          5
+        ]
+      ]
+    },
+    "libero_object/task_08": {
+      "suite": "libero_object",
+      "task": "task_08",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 220.4,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          1966
+        ],
+        [
+          "not_candidate_close",
+          1217
+        ],
+        [
+          "critical",
+          107
+        ],
+        [
+          "not_manipulation_active",
+          9
+        ],
+        [
+          "release_risk",
+          7
+        ]
+      ]
+    },
+    "libero_object/task_09": {
+      "suite": "libero_object",
+      "task": "task_09",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 196.86666666666667,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          1976
+        ],
+        [
+          "not_candidate_close",
+          878
+        ],
+        [
+          "not_manipulation_active",
+          71
+        ],
+        [
+          "critical",
+          28
+        ]
+      ]
+    },
+    "libero_spatial/task_00": {
+      "suite": "libero_spatial",
+      "task": "task_00",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 92.26666666666667,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          706
+        ],
+        [
+          "not_stable_grasp",
+          652
+        ],
+        [
+          "not_manipulation_active",
+          19
+        ],
+        [
+          "release_risk",
+          5
+        ],
+        [
+          "critical",
+          2
+        ]
+      ]
+    },
+    "libero_spatial/task_01": {
+      "suite": "libero_spatial",
+      "task": "task_01",
+      "n_episodes": 15,
+      "n_feasible": 1,
+      "feasible_ratio": 0.06666666666666667,
+      "total_starts": 47,
+      "mean_starts_per_ep": 47.0,
+      "start_position_median": 187.0,
+      "start_position_q25": 175.0,
+      "start_position_q75": 199.0,
+      "mean_segments": 2.0,
+      "mean_max_seg_len": 39.0,
+      "single_seg_ratio": 0.0,
+      "mean_prevalence": 0.014242424242424242,
+      "mean_T_feasible": 220.0,
+      "mean_T_all": 126.13333333333334,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          929
+        ],
+        [
+          "not_candidate_close",
+          887
+        ],
+        [
+          "critical",
+          74
+        ],
+        [
+          "not_manipulation_active",
+          2
+        ]
+      ],
+      "gap_median": 11.0
+    },
+    "libero_spatial/task_02": {
+      "suite": "libero_spatial",
+      "task": "task_02",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 123.66666666666667,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          1000
+        ],
+        [
+          "not_candidate_close",
+          818
+        ],
+        [
+          "not_manipulation_active",
+          28
+        ],
+        [
+          "release_risk",
+          5
+        ],
+        [
+          "critical",
+          4
+        ]
+      ]
+    },
+    "libero_spatial/task_03": {
+      "suite": "libero_spatial",
+      "task": "task_03",
+      "n_episodes": 15,
+      "n_feasible": 2,
+      "feasible_ratio": 0.13333333333333333,
+      "total_starts": 98,
+      "mean_starts_per_ep": 49.0,
+      "start_position_median": 165.0,
+      "start_position_q25": 140.0,
+      "start_position_q75": 189.0,
+      "mean_segments": 1.0,
+      "mean_max_seg_len": 49.0,
+      "single_seg_ratio": 1.0,
+      "mean_prevalence": 0.029696969696969697,
+      "mean_T_feasible": 220.0,
+      "mean_T_all": 104.6,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          779
+        ],
+        [
+          "not_candidate_close",
+          611
+        ],
+        [
+          "critical",
+          126
+        ],
+        [
+          "not_manipulation_active",
+          53
+        ]
+      ]
+    },
+    "libero_spatial/task_04": {
+      "suite": "libero_spatial",
+      "task": "task_04",
+      "n_episodes": 15,
+      "n_feasible": 1,
+      "feasible_ratio": 0.06666666666666667,
+      "total_starts": 7,
+      "mean_starts_per_ep": 7.0,
+      "start_position_median": 207.0,
+      "start_position_q25": 205.0,
+      "start_position_q75": 209.0,
+      "mean_segments": 1.0,
+      "mean_max_seg_len": 7.0,
+      "single_seg_ratio": 1.0,
+      "mean_prevalence": 0.002121212121212121,
+      "mean_T_feasible": 220.0,
+      "mean_T_all": 164.0,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          1238
+        ],
+        [
+          "not_stable_grasp",
+          998
+        ],
+        [
+          "not_manipulation_active",
+          189
+        ],
+        [
+          "critical",
+          32
+        ],
+        [
+          "release_risk",
+          3
+        ]
+      ]
+    },
+    "libero_spatial/task_05": {
+      "suite": "libero_spatial",
+      "task": "task_05",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 204.2,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          1455
+        ],
+        [
+          "not_stable_grasp",
+          1396
+        ],
+        [
+          "not_manipulation_active",
+          198
+        ],
+        [
+          "critical",
+          14
+        ]
+      ]
+    },
+    "libero_spatial/task_06": {
+      "suite": "libero_spatial",
+      "task": "task_06",
+      "n_episodes": 15,
+      "n_feasible": 1,
+      "feasible_ratio": 0.06666666666666667,
+      "total_starts": 2,
+      "mean_starts_per_ep": 2.0,
+      "start_position_median": 70.0,
+      "start_position_q25": 69.0,
+      "start_position_q75": 70.0,
+      "mean_segments": 1.0,
+      "mean_max_seg_len": 2.0,
+      "single_seg_ratio": 1.0,
+      "mean_prevalence": 0.0009389671361502347,
+      "mean_T_feasible": 142.0,
+      "mean_T_all": 129.46666666666667,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          942
+        ],
+        [
+          "not_stable_grasp",
+          940
+        ],
+        [
+          "not_manipulation_active",
+          35
+        ],
+        [
+          "critical",
+          24
+        ],
+        [
+          "release_risk",
+          1
+        ]
+      ]
+    },
+    "libero_spatial/task_07": {
+      "suite": "libero_spatial",
+      "task": "task_07",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 153.0,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          1543
+        ],
+        [
+          "not_stable_grasp",
+          712
+        ],
+        [
+          "critical",
+          24
+        ],
+        [
+          "not_manipulation_active",
+          13
+        ],
+        [
+          "release_risk",
+          3
+        ]
+      ]
+    },
+    "libero_spatial/task_08": {
+      "suite": "libero_spatial",
+      "task": "task_08",
+      "n_episodes": 15,
+      "n_feasible": 0,
+      "feasible_ratio": 0.0,
+      "total_starts": 0,
+      "mean_starts_per_ep": 0,
+      "start_position_median": null,
+      "start_position_q25": null,
+      "start_position_q75": null,
+      "mean_segments": 0,
+      "mean_max_seg_len": 0,
+      "single_seg_ratio": 0,
+      "mean_prevalence": 0.0,
+      "mean_T_feasible": 0,
+      "mean_T_all": 112.13333333333334,
+      "top_reasons": [
+        [
+          "not_stable_grasp",
+          779
+        ],
+        [
+          "not_candidate_close",
+          776
+        ],
+        [
+          "critical",
+          92
+        ],
+        [
+          "not_manipulation_active",
+          19
+        ],
+        [
+          "release_risk",
+          14
+        ]
+      ]
+    },
+    "libero_spatial/task_09": {
+      "suite": "libero_spatial",
+      "task": "task_09",
+      "n_episodes": 15,
+      "n_feasible": 3,
+      "feasible_ratio": 0.2,
+      "total_starts": 93,
+      "mean_starts_per_ep": 31.0,
+      "start_position_median": 184.0,
+      "start_position_q25": 177.0,
+      "start_position_q75": 192.0,
+      "mean_segments": 1.3333333333333333,
+      "mean_max_seg_len": 30.0,
+      "single_seg_ratio": 0.6666666666666666,
+      "mean_prevalence": 0.028181818181818183,
+      "mean_T_feasible": 220.0,
+      "mean_T_all": 177.26666666666668,
+      "top_reasons": [
+        [
+          "not_candidate_close",
+          1361
+        ],
+        [
+          "not_stable_grasp",
+          1093
+        ],
+        [
+          "critical",
+          178
+        ],
+        [
+          "not_manipulation_active",
+          18
+        ],
+        [
+          "release_risk",
+          8
+        ]
+      ],
+      "gap_median": 28.0
+    }
+  },
+  "r2_object_old_vs_k10": {
+    "n_identities": 150,
+    "n_feasible": 1,
+    "mean_k10_coverage_by_old": 1.0,
+    "mean_old_precision_to_k10": 0.0009523809523809524,
+    "total_k10_starts": 2,
+    "total_old_window": 321,
+    "total_overlap": 2,
+    "total_k10_not_covered": 0,
+    "total_old_fp": 319,
+    "total_far_early": 311
+  },
+  "r3_25d_distribution": {
+    "global_mean_norm": 99.33690643310547,
+    "global_std_mean": 9.406268119812012,
+    "suite_stats": {
+      "libero_object": {
+        "n_episodes": 150,
+        "n_total_steps": 28799,
+        "shift_norm": 1.642548680305481,
+        "max_dim_shift": 1.531453251838684,
+        "max_dim_shift_idx": 5,
+        "per_dim_var_mean": 283.0914611816406,
+        "per_dim_var_range": [
+          3.658597296646304e-12,
+          4212.79638671875
+        ],
+        "k10_pos_neg_sep": {
+          "n_pos": 2,
+          "n_neg": 28797,
+          "cohens_d_max": 2.382204532623291,
+          "cohens_d_mean": 0.8177715539932251,
+          "dims_d_gt_02": 21
+        }
+      },
+      "libero_spatial": {
+        "n_episodes": 150,
+        "n_total_steps": 20801,
+        "shift_norm": 1.5253597497940063,
+        "max_dim_shift": 0.8214154243469238,
+        "max_dim_shift_idx": 5,
+        "per_dim_var_mean": 150.3709716796875,
+        "per_dim_var_range": [
+          6.167044305782632e-12,
+          2415.2509765625
+        ],
+        "k10_pos_neg_sep": {
+          "n_pos": 247,
+          "n_neg": 20554,
+          "cohens_d_max": 2.4148404598236084,
+          "cohens_d_mean": 0.8248776793479919,
+          "dims_d_gt_02": 22
+        }
+      },
+      "libero_goal": {
+        "n_episodes": 150,
+        "n_total_steps": 22734,
+        "shift_norm": 1.2719701528549194,
+        "max_dim_shift": 0.7967450022697449,
+        "max_dim_shift_idx": 5,
+        "per_dim_var_mean": 305.05523681640625,
+        "per_dim_var_range": [
+          6.398021001885468e-12,
+          3629.310546875
+        ],
+        "k10_pos_neg_sep": {
+          "n_pos": 217,
+          "n_neg": 22517,
+          "cohens_d_max": 1.8769173622131348,
+          "cohens_d_mean": 0.4468137323856354,
+          "dims_d_gt_02": 15
+        }
+      },
+      "libero_10": {
+        "n_episodes": 150,
+        "n_total_steps": 60208,
+        "shift_norm": 0.7665523290634155,
+        "max_dim_shift": 0.5026171207427979,
+        "max_dim_shift_idx": 17,
+        "per_dim_var_mean": 1115.7200927734375,
+        "per_dim_var_range": [
+          2.07001494938186e-12,
+          18670.7890625
+        ],
+        "k10_pos_neg_sep": {
+          "n_pos": 5838,
+          "n_neg": 54370,
+          "cohens_d_max": 1.4295780658721924,
+          "cohens_d_mean": 0.4386843144893646,
+          "dims_d_gt_02": 13
+        }
+      }
+    }
+  },
+  "r4_cross_suite_conflict": {
+    "libero_10_vs_libero_goal": {
+      "suite_a": "libero_10",
+      "suite_b": "libero_goal",
+      "n_pairs": 1000,
+      "agreement_rate": 0.906,
+      "conflict_rate": 0.094,
+      "a_pos_b_neg": 90,
+      "a_neg_b_pos": 4,
+      "dir_asymmetry": 0.086
+    },
+    "libero_10_vs_libero_object": {
+      "suite_a": "libero_10",
+      "suite_b": "libero_object",
+      "n_pairs": 1000,
+      "agreement_rate": 0.903,
+      "conflict_rate": 0.097,
+      "a_pos_b_neg": 97,
+      "a_neg_b_pos": 0,
+      "dir_asymmetry": 0.097
+    },
+    "libero_10_vs_libero_spatial": {
+      "suite_a": "libero_10",
+      "suite_b": "libero_spatial",
+      "n_pairs": 1000,
+      "agreement_rate": 0.917,
+      "conflict_rate": 0.083,
+      "a_pos_b_neg": 79,
+      "a_neg_b_pos": 4,
+      "dir_asymmetry": 0.075
+    },
+    "libero_goal_vs_libero_object": {
+      "suite_a": "libero_goal",
+      "suite_b": "libero_object",
+      "n_pairs": 1000,
+      "agreement_rate": 0.988,
+      "conflict_rate": 0.012,
+      "a_pos_b_neg": 12,
+      "a_neg_b_pos": 0,
+      "dir_asymmetry": 0.012
+    },
+    "libero_goal_vs_libero_spatial": {
+      "suite_a": "libero_goal",
+      "suite_b": "libero_spatial",
+      "n_pairs": 1000,
+      "agreement_rate": 0.989,
+      "conflict_rate": 0.011,
+      "a_pos_b_neg": 11,
+      "a_neg_b_pos": 0,
+      "dir_asymmetry": 0.011
+    },
+    "libero_object_vs_libero_spatial": {
+      "suite_a": "libero_object",
+      "suite_b": "libero_spatial",
+      "n_pairs": 1000,
+      "agreement_rate": 0.982,
+      "conflict_rate": 0.018,
+      "a_pos_b_neg": 0,
+      "a_neg_b_pos": 18,
+      "dir_asymmetry": -0.018
+    }
+  },
+  "r5_task_median_ledger": {
+    "per_task": {
+      "libero_10/task_00": {
+        "suite": "libero_10",
+        "task": "task_00",
+        "n_episodes": 15,
+        "n_feasible": 10,
+        "n_no_corridor": 5,
+        "task_median_step": 285,
+        "recall": 0.4,
+        "precision": 0.3076923076923077,
+        "hits": 4,
+        "effective_emits": 13,
+        "outside_emit": 7,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 2,
+        "no_corridor_emit": 3
+      },
+      "libero_10/task_01": {
+        "suite": "libero_10",
+        "task": "task_01",
+        "n_episodes": 15,
+        "n_feasible": 6,
+        "n_no_corridor": 9,
+        "task_median_step": 342,
+        "recall": 0.16666666666666666,
+        "precision": 0.1111111111111111,
+        "hits": 1,
+        "effective_emits": 9,
+        "outside_emit": 4,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 6,
+        "no_corridor_emit": 3
+      },
+      "libero_10/task_02": {
+        "suite": "libero_10",
+        "task": "task_02",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 12,
+        "outside_emit": 9,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 3,
+        "no_corridor_emit": 12
+      },
+      "libero_10/task_03": {
+        "suite": "libero_10",
+        "task": "task_03",
+        "n_episodes": 15,
+        "n_feasible": 9,
+        "n_no_corridor": 6,
+        "task_median_step": 319,
+        "recall": 0.6666666666666666,
+        "precision": 0.4,
+        "hits": 6,
+        "effective_emits": 15,
+        "outside_emit": 7,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 0,
+        "no_corridor_emit": 6
+      },
+      "libero_10/task_04": {
+        "suite": "libero_10",
+        "task": "task_04",
+        "n_episodes": 15,
+        "n_feasible": 8,
+        "n_no_corridor": 7,
+        "task_median_step": 260,
+        "recall": 0.125,
+        "precision": 0.09090909090909091,
+        "hits": 1,
+        "effective_emits": 11,
+        "outside_emit": 5,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 4,
+        "no_corridor_emit": 3
+      },
+      "libero_10/task_05": {
+        "suite": "libero_10",
+        "task": "task_05",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 4,
+        "outside_emit": 4,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 11,
+        "no_corridor_emit": 4
+      },
+      "libero_10/task_06": {
+        "suite": "libero_10",
+        "task": "task_06",
+        "n_episodes": 15,
+        "n_feasible": 7,
+        "n_no_corridor": 8,
+        "task_median_step": 411,
+        "recall": 0.5714285714285714,
+        "precision": 0.4,
+        "hits": 4,
+        "effective_emits": 10,
+        "outside_emit": 5,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 5,
+        "no_corridor_emit": 3
+      },
+      "libero_10/task_07": {
+        "suite": "libero_10",
+        "task": "task_07",
+        "n_episodes": 15,
+        "n_feasible": 6,
+        "n_no_corridor": 9,
+        "task_median_step": 330,
+        "recall": 0.6666666666666666,
+        "precision": 0.3333333333333333,
+        "hits": 4,
+        "effective_emits": 12,
+        "outside_emit": 3,
+        "release_emit": 1,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 3,
+        "no_corridor_emit": 6
+      },
+      "libero_10/task_08": {
+        "suite": "libero_10",
+        "task": "task_08",
+        "n_episodes": 15,
+        "n_feasible": 13,
+        "n_no_corridor": 2,
+        "task_median_step": 366,
+        "recall": 0.23076923076923078,
+        "precision": 0.2,
+        "hits": 3,
+        "effective_emits": 15,
+        "outside_emit": 10,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 0,
+        "no_corridor_emit": 2
+      },
+      "libero_10/task_09": {
+        "suite": "libero_10",
+        "task": "task_09",
+        "n_episodes": 15,
+        "n_feasible": 8,
+        "n_no_corridor": 7,
+        "task_median_step": 346,
+        "recall": 0.25,
+        "precision": 0.13333333333333333,
+        "hits": 2,
+        "effective_emits": 15,
+        "outside_emit": 10,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 0,
+        "no_corridor_emit": 7
+      },
+      "libero_goal/task_00": {
+        "suite": "libero_goal",
+        "task": "task_00",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 8,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 7,
+        "no_corridor_emit": 8
+      },
+      "libero_goal/task_01": {
+        "suite": "libero_goal",
+        "task": "task_01",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0,
+        "hits": 0,
+        "effective_emits": 0,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 15,
+        "no_corridor_emit": 0
+      },
+      "libero_goal/task_02": {
+        "suite": "libero_goal",
+        "task": "task_02",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 1,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 14,
+        "no_corridor_emit": 1
+      },
+      "libero_goal/task_03": {
+        "suite": "libero_goal",
+        "task": "task_03",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 6,
+        "outside_emit": 2,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 9,
+        "no_corridor_emit": 6
+      },
+      "libero_goal/task_04": {
+        "suite": "libero_goal",
+        "task": "task_04",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 1,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 14,
+        "no_corridor_emit": 1
+      },
+      "libero_goal/task_05": {
+        "suite": "libero_goal",
+        "task": "task_05",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 1,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 14,
+        "no_corridor_emit": 1
+      },
+      "libero_goal/task_06": {
+        "suite": "libero_goal",
+        "task": "task_06",
+        "n_episodes": 15,
+        "n_feasible": 1,
+        "n_no_corridor": 14,
+        "task_median_step": 144,
+        "recall": 1.0,
+        "precision": 0.3333333333333333,
+        "hits": 1,
+        "effective_emits": 3,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 12,
+        "no_corridor_emit": 2
+      },
+      "libero_goal/task_07": {
+        "suite": "libero_goal",
+        "task": "task_07",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 2,
+        "outside_emit": 2,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 13,
+        "no_corridor_emit": 2
+      },
+      "libero_goal/task_08": {
+        "suite": "libero_goal",
+        "task": "task_08",
+        "n_episodes": 15,
+        "n_feasible": 2,
+        "n_no_corridor": 13,
+        "task_median_step": 204,
+        "recall": 0.5,
+        "precision": 0.3333333333333333,
+        "hits": 1,
+        "effective_emits": 3,
+        "outside_emit": 1,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 12,
+        "no_corridor_emit": 1
+      },
+      "libero_goal/task_09": {
+        "suite": "libero_goal",
+        "task": "task_09",
+        "n_episodes": 15,
+        "n_feasible": 4,
+        "n_no_corridor": 11,
+        "task_median_step": 188,
+        "recall": 0.25,
+        "precision": 0.1111111111111111,
+        "hits": 1,
+        "effective_emits": 9,
+        "outside_emit": 3,
+        "release_emit": 2,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 6,
+        "no_corridor_emit": 5
+      },
+      "libero_object/task_00": {
+        "suite": "libero_object",
+        "task": "task_00",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 4,
+        "outside_emit": 2,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 11,
+        "no_corridor_emit": 4
+      },
+      "libero_object/task_01": {
+        "suite": "libero_object",
+        "task": "task_01",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 4,
+        "outside_emit": 1,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 11,
+        "no_corridor_emit": 4
+      },
+      "libero_object/task_02": {
+        "suite": "libero_object",
+        "task": "task_02",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 1,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 14,
+        "no_corridor_emit": 1
+      },
+      "libero_object/task_03": {
+        "suite": "libero_object",
+        "task": "task_03",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 9,
+        "outside_emit": 7,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 6,
+        "no_corridor_emit": 9
+      },
+      "libero_object/task_04": {
+        "suite": "libero_object",
+        "task": "task_04",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 3,
+        "outside_emit": 3,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 12,
+        "no_corridor_emit": 3
+      },
+      "libero_object/task_05": {
+        "suite": "libero_object",
+        "task": "task_05",
+        "n_episodes": 15,
+        "n_feasible": 1,
+        "n_no_corridor": 14,
+        "task_median_step": 169,
+        "recall": 1.0,
+        "precision": 0.125,
+        "hits": 1,
+        "effective_emits": 8,
+        "outside_emit": 2,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 7,
+        "no_corridor_emit": 7
+      },
+      "libero_object/task_06": {
+        "suite": "libero_object",
+        "task": "task_06",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 4,
+        "outside_emit": 1,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 11,
+        "no_corridor_emit": 4
+      },
+      "libero_object/task_07": {
+        "suite": "libero_object",
+        "task": "task_07",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 2,
+        "outside_emit": 1,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 13,
+        "no_corridor_emit": 2
+      },
+      "libero_object/task_08": {
+        "suite": "libero_object",
+        "task": "task_08",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 7,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 8,
+        "no_corridor_emit": 7
+      },
+      "libero_object/task_09": {
+        "suite": "libero_object",
+        "task": "task_09",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0.0,
+        "hits": 0,
+        "effective_emits": 6,
+        "outside_emit": 2,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 9,
+        "no_corridor_emit": 6
+      },
+      "libero_spatial/task_00": {
+        "suite": "libero_spatial",
+        "task": "task_00",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0,
+        "hits": 0,
+        "effective_emits": 0,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 15,
+        "no_corridor_emit": 0
+      },
+      "libero_spatial/task_01": {
+        "suite": "libero_spatial",
+        "task": "task_01",
+        "n_episodes": 15,
+        "n_feasible": 1,
+        "n_no_corridor": 14,
+        "task_median_step": 187,
+        "recall": 1.0,
+        "precision": 0.5,
+        "hits": 1,
+        "effective_emits": 2,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 13,
+        "no_corridor_emit": 1
+      },
+      "libero_spatial/task_02": {
+        "suite": "libero_spatial",
+        "task": "task_02",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0,
+        "hits": 0,
+        "effective_emits": 0,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 15,
+        "no_corridor_emit": 0
+      },
+      "libero_spatial/task_03": {
+        "suite": "libero_spatial",
+        "task": "task_03",
+        "n_episodes": 15,
+        "n_feasible": 2,
+        "n_no_corridor": 13,
+        "task_median_step": 165,
+        "recall": 0.5,
+        "precision": 0.5,
+        "hits": 1,
+        "effective_emits": 2,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 13,
+        "no_corridor_emit": 0
+      },
+      "libero_spatial/task_04": {
+        "suite": "libero_spatial",
+        "task": "task_04",
+        "n_episodes": 15,
+        "n_feasible": 1,
+        "n_no_corridor": 14,
+        "task_median_step": 207,
+        "recall": 1.0,
+        "precision": 0.16666666666666666,
+        "hits": 1,
+        "effective_emits": 6,
+        "outside_emit": 3,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 9,
+        "no_corridor_emit": 5
+      },
+      "libero_spatial/task_05": {
+        "suite": "libero_spatial",
+        "task": "task_05",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0,
+        "hits": 0,
+        "effective_emits": 0,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 15,
+        "no_corridor_emit": 0
+      },
+      "libero_spatial/task_06": {
+        "suite": "libero_spatial",
+        "task": "task_06",
+        "n_episodes": 15,
+        "n_feasible": 1,
+        "n_no_corridor": 14,
+        "task_median_step": 70,
+        "recall": 1.0,
+        "precision": 0.06666666666666667,
+        "hits": 1,
+        "effective_emits": 15,
+        "outside_emit": 13,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 0,
+        "no_corridor_emit": 14
+      },
+      "libero_spatial/task_07": {
+        "suite": "libero_spatial",
+        "task": "task_07",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0,
+        "hits": 0,
+        "effective_emits": 0,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 15,
+        "no_corridor_emit": 0
+      },
+      "libero_spatial/task_08": {
+        "suite": "libero_spatial",
+        "task": "task_08",
+        "n_episodes": 15,
+        "n_feasible": 0,
+        "n_no_corridor": 15,
+        "task_median_step": 250,
+        "recall": 0,
+        "precision": 0,
+        "hits": 0,
+        "effective_emits": 0,
+        "outside_emit": 0,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 15,
+        "no_corridor_emit": 0
+      },
+      "libero_spatial/task_09": {
+        "suite": "libero_spatial",
+        "task": "task_09",
+        "n_episodes": 15,
+        "n_feasible": 3,
+        "n_no_corridor": 12,
+        "task_median_step": 184,
+        "recall": 1.0,
+        "precision": 0.375,
+        "hits": 3,
+        "effective_emits": 8,
+        "outside_emit": 2,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 7,
+        "no_corridor_emit": 5
+      }
+    },
+    "per_suite": {
+      "libero_object": {
+        "n_episodes": 150,
+        "n_feasible": 1,
+        "recall": 1.0,
+        "precision": 0.020833333333333332,
+        "total_hits": 1,
+        "outside_emit": 19,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 102,
+        "no_corridor_emit": 47
+      },
+      "libero_spatial": {
+        "n_episodes": 150,
+        "n_feasible": 8,
+        "recall": 0.875,
+        "precision": 0.21212121212121213,
+        "total_hits": 7,
+        "outside_emit": 18,
+        "release_emit": 0,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 117,
+        "no_corridor_emit": 25
+      },
+      "libero_goal": {
+        "n_episodes": 150,
+        "n_feasible": 7,
+        "recall": 0.42857142857142855,
+        "precision": 0.08823529411764706,
+        "total_hits": 3,
+        "outside_emit": 8,
+        "release_emit": 2,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 116,
+        "no_corridor_emit": 27
+      },
+      "libero_10": {
+        "n_episodes": 150,
+        "n_feasible": 67,
+        "recall": 0.373134328358209,
+        "precision": 0.21551724137931033,
+        "total_hits": 25,
+        "outside_emit": 64,
+        "release_emit": 1,
+        "regrasp_emit": 0,
+        "early_emit": 0,
+        "no_corridor_abstention": 34,
+        "no_corridor_emit": 49
+      }
+    },
+    "global": {
+      "recall": 0.43373493975903615,
+      "outside_emit": 109,
+      "release_emit": 3,
+      "regrasp_emit": 0,
+      "no_corridor_abstention": 369
+    }
+  },
+  "r6_event_structure": {
+    "libero_object": {
+      "n_episodes": 150,
+      "n_no_k10": 149,
+      "n_single_event": 1,
+      "n_multi_event": 0,
+      "multi_event_ratio": 0.0,
+      "mean_events_per_ep": 1.0,
+      "max_events_per_ep": 1,
+      "mean_cluster_len": 2.0,
+      "mean_inter_cluster_gap": 0,
+      "mean_episode_T": 191.99333333333334,
+      "event_count_dist": {
+        "1": 1
+      }
+    },
+    "libero_spatial": {
+      "n_episodes": 150,
+      "n_no_k10": 142,
+      "n_single_event": 6,
+      "n_multi_event": 2,
+      "multi_event_ratio": 0.25,
+      "mean_events_per_ep": 1.25,
+      "max_events_per_ep": 2,
+      "mean_cluster_len": 24.7,
+      "mean_inter_cluster_gap": 19.5,
+      "mean_episode_T": 138.67333333333335,
+      "event_count_dist": {
+        "2": 2,
+        "1": 6
+      }
+    },
+    "libero_goal": {
+      "n_episodes": 150,
+      "n_no_k10": 143,
+      "n_single_event": 2,
+      "n_multi_event": 5,
+      "multi_event_ratio": 0.7142857142857143,
+      "mean_events_per_ep": 2.857142857142857,
+      "max_events_per_ep": 5,
+      "mean_cluster_len": 10.85,
+      "mean_inter_cluster_gap": 21.76923076923077,
+      "mean_episode_T": 151.56,
+      "event_count_dist": {
+        "5": 2,
+        "1": 2,
+        "3": 2,
+        "2": 1
+      }
+    },
+    "libero_10": {
+      "n_episodes": 150,
+      "n_no_k10": 83,
+      "n_single_event": 30,
+      "n_multi_event": 37,
+      "multi_event_ratio": 0.5522388059701493,
+      "mean_events_per_ep": 2.0597014925373136,
+      "max_events_per_ep": 6,
+      "mean_cluster_len": 42.30434782608695,
+      "mean_inter_cluster_gap": 44.38028169014085,
+      "mean_episode_T": 401.38666666666666,
+      "event_count_dist": {
+        "3": 11,
+        "2": 19,
+        "1": 30,
+        "6": 3,
+        "5": 3,
+        "4": 1
+      }
+    }
+  },
+  "conclusions": {
+    "k10_label_collapse": "libero_10 contributes 5838/6304 = 92.6% of all K10 positive steps. Object contributes 2/6304. Spatial: 247/6304. Goal: 217/6304. The pooled 'four-suite' K10 label set degenerates to a LIBERO-10 proxy.",
+    "old_sc5_not_comparable": "Old SC5 transport window has precision 0.0010 relative to strict K10. Old Object SC5 success measured a different target (broad event/phase localization) and does not constitute evidence that strict K10 is learnable on Object data.",
+    "abstention_is_rational": "23/40 tasks have zero feasible episodes. Only 83/600 train episodes contain any K10 start. A model that never emits achieves near-optimal loss — R9.2's 96-100% abstention is expected.",
+    "multi_event_dominates_goal_l10": "Goal multi-event ratio: 0.714. L10 multi-event ratio: 0.552. Episode-global one-shot scheduling cannot handle multi-event episodes.",
+    "k10_evaluation_only": "Strict K10 remains valid as an evaluation constraint but is rejected as the sole pooled training target. Future work should decompose K10 into causal current-state labels and event-level scheduling."
+  }
+}

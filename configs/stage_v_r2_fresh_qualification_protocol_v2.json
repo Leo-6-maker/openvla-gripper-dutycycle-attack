@@ -1,0 +1,49 @@
+{
+  "schema": "STAGE_V_R2_FRESH_QUALIFICATION_PROTOCOL_V2",
+  "protocol_id": "STAGE_V_R2_FRESH_QUALIFICATION_20260810_V2",
+  "status": "FROZEN_THROUGHPUT_PARENT_ATOMIC",
+  "scientific_scope": "fresh_clean_control_only",
+  "qualification_mode": "FRESH_CLEAN_AB_REPLAY",
+  "salt": "STAGE_V_R2_CONTROL_QUALIFICATION_20260807",
+  "runtime_environment": {
+    "OPENVLA_ATTN_IMPLEMENTATION": "eager"
+  },
+  "runtime_adapter": "OPENVLA_UPSTREAM_ATTENTION_AND_MASK_OVERRIDE_V2",
+  "target_per_suite": 10,
+  "suites": [
+    "libero_10",
+    "libero_goal",
+    "libero_object",
+    "libero_spatial"
+  ],
+  "resource_policy": {
+    "mode": "MODE_B_THROUGHPUT_SCIENCE",
+    "minimum_free_memory_mib": 20480,
+    "minimum_eligible_gpus": 1,
+    "maximum_project_workers": 8,
+    "maximum_project_workers_per_gpu": 1,
+    "partial_fleet_allowed": true,
+    "foreign_workload_allowed": true,
+    "utilization_is_scheduler_preference_only": true,
+    "excluded_gpus": []
+  },
+  "parent_atomicity": {
+    "parent_bundle": ["CLEAN_A", "CLEAN_B"],
+    "same_physical_gpu_required": true,
+    "parallelize_across_parents_only": true,
+    "dynamic_gpu_claiming": true
+  },
+  "retry_policy": {
+    "max_infrastructure_retries": 1,
+    "retry_only_without_valid_scientific_result": true,
+    "oom_classification": "INFRASTRUCTURE_RESOURCE_FAILURE"
+  },
+  "protected_boundaries": {
+    "eval160_reads": 0,
+    "protected_eval_reads": 0,
+    "vis_pgd_attack_rollouts": 0,
+    "attack_rollouts": 0
+  },
+  "old_artifacts_reused": false,
+  "source_artifacts_modified": false
+}

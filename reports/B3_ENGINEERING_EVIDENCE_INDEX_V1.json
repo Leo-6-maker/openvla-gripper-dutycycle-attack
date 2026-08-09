@@ -1,0 +1,35 @@
+{
+  "schema": "B3_ENGINEERING_EVIDENCE_INDEX_V1",
+  "status": "FROZEN_READ_ONLY_INDEX",
+  "PR75_HEAD": "8a4013a221c618a44955ba01127748295306bbdd",
+  "PR76_EVIDENCE_HEAD": "6dee6186124539c545f596c3a8f3116ecf17a4be",
+  "PR76_CURRENT_HEAD": "d6e12102994ca7fe917b5fbe0877cfbebd67d619",
+  "6dee618_to_d6e1210_changed_files": [
+    "tests/test_b3_stateful_smoke_contract.py"
+  ],
+  "evidence_roots": [
+    {
+      "kind": "GPU_NUMERICAL_SMOKE",
+      "root": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_b3_stateful_gpu_smoke_6dee618",
+      "SHA256SUMS_sha256": "362a99ac8192d40ef7fe1d8e6251bba37474be7785eaf74ca3044355c9274ed6",
+      "manifest_sha256": "c9d25a2524ce9f25d2ca9ca9ad0654acbc7949c00620fdf5f18963bb79467740"
+    },
+    {
+      "kind": "REAL_STUDENT_FORWARD_G4",
+      "root": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_b3_real_student_forward_smoke_6dee618",
+      "SHA256SUMS_sha256": "86cde8924091f8e5c7368aef47caea142c2f148ca3240f508ff08e03c4732c0a",
+      "manifest_sha256": "855b6b26889b6d81d4ccf908edce2f5b1d170b3bf1e007e83193acee14da7b6f"
+    }
+  ],
+  "github_ci": {
+    "workflow": "stageb-cpu",
+    "run_id": 29434095802,
+    "conclusion": "success",
+    "url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/actions/runs/29434095802"
+  },
+  "formal_training_ready": false,
+  "formal_attack_ready": false,
+  "model_selection_eligible": false,
+  "teacher_labels_read": false,
+  "active_experiment_modified": false
+}

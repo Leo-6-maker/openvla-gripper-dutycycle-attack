@@ -1,0 +1,68 @@
+{
+  "schema": "FRESH40_V5_DEVELOPMENT_PROTOCOL_V1",
+  "status": "DEVELOPMENT_NONCONSUMABLE",
+  "source_root_role": "R5F_RUN_B_HISTORICAL_CLEAN_TELEMETRY",
+  "episode_count": 40,
+  "expected_suite_task_count": 10,
+  "split": {
+    "train_episodes": 32,
+    "dev_episodes": 8,
+    "dev_per_suite": 2,
+    "algorithm": "sha256(seed || episode_id) ascending, dev first per suite"
+  },
+  "input_contract": {
+    "student_features": "SC5StreamingFeatureAdapterV2_25D",
+    "future_frames": 0,
+    "policy_intent": false,
+    "teacher_fields_in_student_input": false,
+    "outcome_fields_in_teacher": false
+  },
+  "teacher_contract": {
+    "heads": ["physical_criticality", "k10_feasible", "safe_release", "instability", "gripper_closing_state"],
+    "truth_values": ["TRUE", "FALSE", "UNKNOWN"],
+    "unknown_is_negative": false,
+    "qpos_close_threshold": 0.01,
+    "qpos_open_threshold": 0.02,
+    "lift_threshold_m": 0.02,
+    "placement_distance_threshold_m": 0.08,
+    "placement_stability_translation_threshold_m": 0.005,
+    "placement_stability_consecutive_steps": 2,
+    "contact_distance_proxy_threshold_m": 0.08,
+    "comotion_min_displacement_m": 0.0005,
+    "comotion_cosine_threshold": 0.7,
+    "slip_relative_motion_threshold_m": 0.02,
+    "contact_source": "RECORDED_TELEMETRY_GLOBAL_CONTACT_DISTANCE_PROXY",
+    "quality_status": "DEVELOPMENT_PROXY_NONCONSUMABLE",
+    "exact_object_gripper_contact_available": false
+  },
+  "student_contract": {
+    "input_dim": 25,
+    "hidden": 64,
+    "short_rf": 32,
+    "long_rf": 128,
+    "dtype": "float32",
+    "normalization": "train_only_zscore",
+    "seed": 20260717,
+    "epochs": 12,
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 0.00001,
+    "gradient_clip": 5.0
+  },
+  "shadow_contract": {
+    "candidate_close": "raw_gripper <= 0.5 AND env_gripper > 0",
+    "critical_threshold": 0.5,
+    "safe_release_veto_threshold": 0.5,
+    "instability_veto_threshold": 0.5,
+    "one_emit_per_contiguous_candidate_event": true,
+    "action_mutation": false
+  },
+  "authorization": {
+    "formal_training_authorized": false,
+    "formal_inference_authorized": false,
+    "formal_rollout_authorized": false,
+    "attack_authorized": false,
+    "protected_reads": false,
+    "cal_check_g10_t2rd_reads": false
+  }
+}

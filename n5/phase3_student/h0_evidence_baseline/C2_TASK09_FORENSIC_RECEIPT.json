@@ -1,0 +1,40 @@
+{
+  "gate": "H0_EVIDENCE_BASELINE",
+  "sub_artifact": "C2_TASK09_FORENSIC_RECEIPT",
+  "artifact_type": "server_artifact_binding",
+  "timestamp": "2026-07-26T10:00:00Z",
+
+  "bound_artifact": {
+    "name": "C2R02_REPORT.json",
+    "server_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/t2cr02_task09_forensics/C2R02_REPORT.json",
+    "server_file_sha256": "4de9c3edf5c069faccbd46f7e4336f2c69c3b48a3633532e53d889d5d28fd166",
+    "source_commit": "94d9d15",
+    "source_script": "n5/phase3_student/t2cr02_task09_forensics.py"
+  },
+
+  "content_summary": {
+    "identity": "libero_10/task_09/state_00",
+    "numerical_parity_status": "PARTIAL",
+    "init_hash_status": "HASH_CANONICALIZATION_UNRESOLVED",
+    "repeatability_same_divergence": true,
+    "first_divergence_steps": [136, 136, 136],
+    "runs": [
+      {"run": 1, "n_issues": 200, "first_divergence_step": 136, "replay_done_step": 265},
+      {"run": 2, "n_issues": 200, "first_divergence_step": 136, "replay_done_step": 265},
+      {"run": 3, "n_issues": 200, "first_divergence_step": 136, "replay_done_step": 265}
+    ]
+  },
+
+  "key_finding": {
+    "divergence_type": "SYSTEMATIC",
+    "first_divergence_step": 136,
+    "eef_at_step_135_pre_action": [-0.0434, 0.2468, 1.0444],
+    "eef_at_step_136_pre_action": [-0.0429, 0.2552, 1.0448],
+    "ncon_at_step_135": 29,
+    "interpretation": "All 3 runs diverge at exactly step 136 with identical issue patterns. A 0.3mm EEF Y-offset is already present at step 135 pre-action. Contact dynamics (29→30 contacts) amplify this sub-pixel offset into macroscopic trajectory divergence. This is a fundamental limitation of floating-point determinism in contact-rich MuJoCo simulation, not a replay protocol error."
+  },
+
+  "implications_for_teacher": "Exact replay is NOT available for contact-sensitive trajectories near static fixtures. The C3 hybrid data contract must use: (a) static fixture world poses from invariance seal (not replay), (b) dynamic object poses from original sidecar, (c) basket via body→site reconstruction. Replay-dependent geometry validation is structurally impossible for fixture-contact episodes.",
+
+  "verdict": "VALID — systematic divergence confirmed, mechanism understood, implications for Teacher data contract documented."
+}

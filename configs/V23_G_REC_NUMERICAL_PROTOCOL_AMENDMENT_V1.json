@@ -1,0 +1,14 @@
+{
+  "schema": "V23_G_REC_NUMERICAL_PROTOCOL_AMENDMENT_V1",
+  "status": "FROZEN_BEFORE_R1C",
+  "quaternion_metric": "2*atan2(sqrt(max(0,1-dot^2)),dot)",
+  "thresholds": {
+    "body_origin_position_m": 1e-08,
+    "body_origin_rotation_rad": 1e-07,
+    "geometry_position_m": 1e-06,
+    "geometry_rotation_rad": 1e-06,
+    "extent_m": 1e-06
+  },
+  "geometry_position_not_relaxed": true,
+  "reason": "Stable q/-q geodesic conditioning amendment; geometry position tolerance is unchanged."
+}

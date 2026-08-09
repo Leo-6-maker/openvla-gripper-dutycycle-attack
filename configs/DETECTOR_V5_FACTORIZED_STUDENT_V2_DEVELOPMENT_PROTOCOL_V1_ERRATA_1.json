@@ -1,0 +1,72 @@
+{
+  "schema": "DETECTOR_V5_FACTORIZED_STUDENT_V2_DEVELOPMENT_PROTOCOL_V1_ERRATA_1",
+  "frozen_at": "2026-07-21",
+  "status": "FROZEN_ERRATA",
+
+  "binding": {
+    "protocol_commit": "ddb60817e3f3f43a707fd2543e7c9df58cd16e71",
+    "protocol_file": "configs/DETECTOR_V5_FACTORIZED_STUDENT_V2_DEVELOPMENT_PROTOCOL_V1.json",
+    "v1_forensics_seal": "OFFICIAL_V3_FACTORIZED_STUDENT_OOF_FAILURE_FORENSICS_V1_20260721"
+  },
+
+  "clarifications": {
+
+    "e1_lr_baseline_comparison": {
+      "title": "LR baseline must compare AUPRC not only AUROC",
+      "reason": "Original protocol references AUROC 0.837 as baseline. But selection criterion Priority 2 uses AUPRC. The LR baseline must be re-run on V2 inner splits to produce both AUROC and AUPRC for fair comparison.",
+      "rule": "V2 candidate release AUPRC must exceed LR release AUPRC on identical inner-CV splits. V2 candidate release AUROC must also exceed LR release AUROC. Both conditions required.",
+      "lr_metrics_required": [
+        "overall release AUROC", "overall release AUPRC",
+        "single route release AUROC/AUPRC",
+        "multi route release AUROC/AUPRC",
+        "short-event (duration < 30) release AUPRC",
+        "first-event release AUPRC",
+        "later-event release AUPRC",
+        "per outer/inner fold breakdown",
+        "paired bootstrap 95% CI for AUROC and AUPRC delta"
+      ],
+      "bootstrap_method": "identity-paired bootstrap, 10000 resamples, report 2.5th and 97.5th percentiles",
+      "inconclusive_rule": "If V2 point estimate > LR point estimate but 95% CI crosses zero: status = HOLD_STATISTICALLY_INCONCLUSIVE. Do not claim victory."
+    },
+
+    "e2_inner_cv_first_later_gap": {
+      "title": "Inner-CV uses fixed diagnostic threshold 0.5, not searched threshold",
+      "reason": "CAL is not authorized. Inner-CV must not search thresholds.",
+      "rule": "Compute first-event recall@0.5 and later-event recall@0.5. Report absolute gap. Also report threshold-free metrics: first-event AUPRC, later-event AUPRC, AUPRC gap.",
+      "diagnostic_threshold": 0.5,
+      "note": "0.5 results are for DEVELOPMENT SELECTION ONLY. Final deployment threshold must be chosen by CAL on untouched data."
+    },
+
+    "e3_nested_split_definition": {
+      "title": "Nested split is fold-relative",
+      "rule": "For outer fold f: outer_train = V1 fold f train identities; outer_val = V1 fold f validation identities. V2 inner-CV splits outer_train into 3 inner folds by identity. outer_val NEVER participates in training, inner validation, normalization, class weights, identity balancing, duration balancing, or model selection for fold f.",
+      "cross_fold_note": "The same identity may appear as outer_train in one fold and outer_val in another fold. This is acceptable and reflects the V1 fold design. Engineering OOF is therefore preliminary evidence, not final independent confirmation."
+    },
+
+    "e4_past_only_temporal_jitter": {
+      "title": "Temporal jitter is strictly past-only",
+      "rule": "For target step t, jitter j in {0,1,2,3,4}. Input window covers [max(0, t-W-j+1), t-j]. The model must predict target step t using only information up to t-j. Missing recent steps are replaced by earlier history (extending the window leftward) or zero-padding. Under no circumstance may the input window end after step t.",
+      "forbidden": [
+        "window_end > target_step",
+        "future-centered crop",
+        "Teacher event boundary aligned crop",
+        "test-time jitter",
+        "jitter that introduces information from t+1 or later"
+      ]
+    },
+
+    "e5_event_auxiliary_loss_weight": {
+      "title": "Event auxiliary loss weight fixed at 0.3",
+      "reason": "Protocol specifies event auxiliary loss but not its weight relative to step BCE. Must be frozen before any training.",
+      "value": 0.3,
+      "rationale": "Conservative weight — auxiliary loss should guide but not dominate. Step BCE remains the primary objective.",
+      "no_tuning": "This value is FROZEN. Must not be treated as a hyperparameter or adjusted based on inner-CV results."
+    },
+
+    "e6_event_aggregation_for_evaluation": {
+      "title": "Event score aggregation matches V1 evaluator",
+      "rule": "Per-event score = max(probability) within known-mask region for that event. Same as V1 OOF evaluator. Event-positive = any step in event with target=True AND known_mask=True. Event-detected = event_score >= threshold.",
+      "no_change": "Must not change aggregation method between V1 and V2 evaluations."
+    }
+  }
+}

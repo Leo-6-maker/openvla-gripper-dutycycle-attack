@@ -1,0 +1,56 @@
+{
+  "schema": "DETECTOR_V5_TEACHER_UTILITY_V1",
+  "status": "DEVELOPMENT_ONLY",
+  "source": "clean_only_privileged_teacher",
+  "utility_tiers": {
+    "0": "abstain_or_obviously_invalid",
+    "1": "low_value_close",
+    "2": "valid_retention_noncritical",
+    "3": "high_value_critical_retention"
+  },
+  "required_fields": [
+    "canonical_parent_key",
+    "step",
+    "event_id",
+    "phase_id",
+    "window_id",
+    "phase_name",
+    "window_start",
+    "window_end",
+    "candidate_close",
+    "quality_valid",
+    "veto_invalid",
+    "release_imminent",
+    "regrasp_or_unstable",
+    "known_mask",
+    "utility_tier",
+    "ranking_group"
+  ],
+  "allowed_phase_names": [
+    "PRE_SUPPORT",
+    "VALID_RETENTION",
+    "RELEASE_IMMINENT_TAIL",
+    "POST_RELEASE",
+    "UNSTABLE_TRANSITION",
+    "UNKNOWN"
+  ],
+  "student_must_not_consume": [
+    "quality_valid",
+    "veto_invalid",
+    "release_imminent",
+    "regrasp_or_unstable",
+    "known_mask",
+    "utility_tier",
+    "ranking_group",
+    "contact",
+    "object_state",
+    "object_pose",
+    "task_success",
+    "attack_outcome"
+  ],
+  "unknown_is_not_negative": true,
+  "high_value_retention_window_min_steps": 10,
+  "high_value_proxy_rule": "VALID_RETENTION window length >= 10 and no release/veto",
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}
