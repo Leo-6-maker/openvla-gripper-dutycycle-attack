@@ -5,8 +5,8 @@ Status: `HOLD`
 ## Binding
 
 - Branch: `codex/stage-v-resource-contract-20260810`
-- HEAD: `1a9d936c9a275920d08980672611d37323b76491`
-- Tree: `f2d3fefb257beb23f0eb45f18477e82b435dec59`
+- HEAD: `5d88c3ca1c370cff386be1f5ceb68eb7427db6ad`
+- Tree: `1883552d7b2b1f8e1f2873a38a1c720013fedbb7`
 - M4 runtime source: `f903f942e04e92f67308d35bb0259c477d9b23e4`
 - M4 runtime tree: `3cdb1af4893d9873e4954e95d8c33650911344eb`
 - M4 root: `/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_R2A_COUNTERFACTUAL_MAP_f903f942_20260809T204000Z`
@@ -40,7 +40,7 @@ GPU3 foreign PID `964381` (`huanzze`, Isaac GR00T) remained alive and unmodified
 
 ## Code change in this branch
 
-`run_stage_v_dynamic_dispatcher.py` now reaps registered child process groups before recovering same-run stale leases. The prospective resource contract now requires a SHA-bound exposure manifest for MODE_B, accepts partial eligible fleets, and makes the independent auditor enforce the same binding. Linux self-check passed; `py_compile` and `git diff --check` passed. Local `pytest` was unavailable (`No module named pytest`). These changes were not used to modify or repair the M4 root.
+`run_stage_v_dynamic_dispatcher.py` now reaps registered child process groups before recovering same-run stale leases. The prospective resource contract now requires a SHA-bound exposure manifest for MODE_B, accepts partial eligible fleets, makes the independent auditor enforce the same binding, and filters future formal selection against that ledger. Linux self-check passed; `py_compile` and `git diff --check` passed. Local `pytest` was unavailable (`No module named pytest`). These changes were not used to modify or repair the M4 root.
 
 ## Claims
 
