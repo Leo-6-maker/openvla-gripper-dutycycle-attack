@@ -124,6 +124,20 @@ def _query_nvidia_smi(*args: str) -> str:
     return completed.stdout
 
 
+def _runtime_gpu_uuid(gpu: int, properties: Any) -> tuple[str, str]:
+    torch_uuid = str(getattr(properties, "uuid", "") or "").strip()
+    if torch_uuid:
+        return torch_uuid, "torch.cuda.get_device_properties.uuid"
+    try:
+        output = _query_nvidia_smi(
+            f"--id={int(gpu)}", "--query-gpu=uuid", "--format=csv,noheader,nounits",
+        )
+    except (OSError, subprocess.SubprocessError, V2Error):
+        return "", "unavailable"
+    values = [line.strip() for line in output.splitlines() if line.strip()]
+    return (values[0], "nvidia-smi.query-gpu.uuid") if len(values) == 1 else ("", "unavailable")
+
+
 def _pid_detail(pid: int) -> dict[str, Any]:
     try:
         result = subprocess.run(
@@ -702,7 +716,7 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
         if observed != logical_gpu:
             raise V2Error("EGL_DEVICE_BINDING_MISMATCH")
         properties = torch.cuda.get_device_properties(0)
-        gpu_uuid = str(getattr(properties, "uuid", "")).strip()
+        gpu_uuid, gpu_uuid_source = _runtime_gpu_uuid(int(args.gpu), properties)
         if not gpu_uuid:
             raise V2Error("CANARY_GPU_UUID_UNAVAILABLE")
         renderer_device_information = {
@@ -716,6 +730,7 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
             "logical_worker_id": f"worker_{int(args.gpu)}", "requested_physical_gpu": int(args.gpu),
             "physical_gpu_index": int(args.gpu), "gpu_uuid": gpu_uuid,
             "gpu_uuid_canonical": canonical_gpu_uuid(gpu_uuid),
+            "gpu_uuid_source": gpu_uuid_source,
             "cuda_visible_devices": os.environ["CUDA_VISIBLE_DEVICES"],
             "torch_current_device": int(torch.cuda.current_device()), "cuda_logical_device": 0,
             "cuda_device_name": torch.cuda.get_device_name(0), "mujoco_gl": os.environ["MUJOCO_GL"],

@@ -19,7 +19,7 @@ from typing import Any, Mapping
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT))
-from scripts.detector_v5.run_stage_v_m1_v2_8gpu import canonical_gpu_uuid  # noqa: E402
+from scripts.detector_v5.run_stage_v_m1_v2_8gpu import _runtime_gpu_uuid, canonical_gpu_uuid  # noqa: E402
 CANONICAL_ACTION_DECODE_CONTRACT = (
     "OfficialOpenVLAActionAdapter.predict_action_with_scores_single_generation;"
     "attention_implementation=eager;predict_action_attention_mask_append=one_if_input_ids_appended"
@@ -211,7 +211,7 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
     if not torch.cuda.is_available() or int(torch.cuda.current_device()) != 0:
         raise CanonicalExecutionError("RUNTIME_CUDA_LOGICAL_DEVICE_UNVERIFIED")
     properties = torch.cuda.get_device_properties(0)
-    device_uuid = str(getattr(properties, "uuid", "")).strip()
+    device_uuid, device_uuid_source = _runtime_gpu_uuid(int(args.gpu), properties)
     if not device_uuid:
         raise CanonicalExecutionError("RUNTIME_GPU_UUID_UNAVAILABLE")
     receipt = {
@@ -224,6 +224,7 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
         "torch_current_device": int(torch.cuda.current_device()),
         "torch_device_uuid": device_uuid,
         "torch_device_uuid_canonical": canonical_gpu_uuid(device_uuid),
+        "torch_device_uuid_source": device_uuid_source,
         "torch_device_name": torch.cuda.get_device_name(0),
         "mujoco_gl": os.environ.get("MUJOCO_GL"),
         "mujoco_egl_device_id": os.environ.get("MUJOCO_EGL_DEVICE_ID"),

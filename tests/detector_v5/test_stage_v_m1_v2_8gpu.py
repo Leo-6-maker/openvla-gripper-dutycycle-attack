@@ -460,6 +460,11 @@ def test_render_binding_ids_falls_back_to_offscreen_context() -> None:
     assert _render_binding_ids(Env()) == (0, 0)
 
 
+def test_runtime_gpu_uuid_falls_back_to_physical_nvidia_smi_query(monkeypatch) -> None:
+    monkeypatch.setattr(supervisor, "_query_nvidia_smi", lambda *args: "GPU-abc\n")
+    assert supervisor._runtime_gpu_uuid(3, object()) == ("GPU-abc", "nvidia-smi.query-gpu.uuid")
+
+
 def test_binding_receipt_contract_is_fail_closed() -> None:
     valid = {
         "logical_worker_id": "worker_3", "requested_physical_gpu": 3,
