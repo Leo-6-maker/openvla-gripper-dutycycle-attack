@@ -52,14 +52,14 @@ def select(
             raise ValueError(f"candidate identity invalid: {key}")
         seen.add(key)
         rows.append(row)
-    binding = exposure_binding(seen, exposure_manifest)
-    if binding.get("status") != "PASS":
-        raise ValueError(f"candidate pool intersects exposure: {binding.get('reason')}")
     excluded = set()
     exposure = read_json(exposure_manifest)
     if isinstance(exposure, Mapping):
         excluded = {str(key) for key in exposure.get("excluded_parent_keys", [])}
     fresh = [row for row in rows if str(row["canonical_parent_key"]) not in excluded]
+    binding = exposure_binding((row["canonical_parent_key"] for row in fresh), exposure_manifest)
+    if binding.get("status") != "PASS":
+        raise ValueError(f"exposure-clean candidate set intersects exposure: {binding.get('reason')}")
     by_suite = {suite: [] for suite in SUITES}
     for row in fresh:
         by_suite[str(row["suite"])].append(row)
@@ -94,6 +94,7 @@ def select(
         "candidate_pool_path": str(candidate_pool.resolve()),
         "candidate_pool_sha256": sha256_file(candidate_pool),
         "candidate_pool_count": len(rows),
+        "candidate_pool_exposed_count": len(seen & excluded),
         "exposure_manifest_path": str(exposure_manifest.resolve()),
         "exposure_manifest_sha256": sha256_file(exposure_manifest),
         "exposure_binding": binding,
