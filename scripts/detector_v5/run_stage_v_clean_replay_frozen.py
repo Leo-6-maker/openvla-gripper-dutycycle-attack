@@ -146,10 +146,28 @@ def _bind_runtime_attention() -> str:
 
     def eager_from_pretrained(*args: Any, **kwargs: Any) -> Any:
         kwargs["attn_implementation"] = "eager"
-        return original(*args, **kwargs)
+        model = original(*args, **kwargs)
+        original_predict_action = model.predict_action
+
+        def predict_action_with_consistent_mask(*call_args: Any, **call_kwargs: Any) -> Any:
+            import torch
+
+            input_ids = call_kwargs.get("input_ids")
+            if input_ids is None and call_args:
+                input_ids = call_args[0]
+            attention_mask = call_kwargs.get("attention_mask")
+            if input_ids is not None and attention_mask is not None:
+                if int(input_ids.shape[1]) == int(attention_mask.shape[1]) and not torch.all(input_ids[:, -1] == 29871):
+                    call_kwargs["attention_mask"] = torch.cat(
+                        [attention_mask, torch.ones_like(attention_mask[:, :1])], dim=1
+                    )
+            return original_predict_action(*call_args, **call_kwargs)
+
+        model.predict_action = predict_action_with_consistent_mask
+        return model
 
     AutoModelForVision2Seq.from_pretrained = staticmethod(eager_from_pretrained)
-    return "OPENVLA_UPSTREAM_ATTENTION_OVERRIDE_V1"
+    return "OPENVLA_UPSTREAM_ATTENTION_AND_MASK_OVERRIDE_V2"
 
 
 def build_start_provenance(module: Mapping[str, Any], worker_script: Path, artifact_provenance: Mapping[str, Any]) -> dict[str, Any]:

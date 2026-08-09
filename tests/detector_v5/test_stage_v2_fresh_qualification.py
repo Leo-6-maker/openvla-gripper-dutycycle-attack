@@ -20,7 +20,7 @@ def test_fresh_qualification_protocol_is_parent_atomic_and_partial_fleet() -> No
     assert policy["excluded_gpus"] == []
     assert policy["partial_fleet_allowed"] is True
     assert PROTOCOL["runtime_environment"] == {"OPENVLA_ATTN_IMPLEMENTATION": "eager"}
-    assert PROTOCOL["runtime_adapter"] == "OPENVLA_UPSTREAM_ATTENTION_OVERRIDE_V1"
+    assert PROTOCOL["runtime_adapter"] == "OPENVLA_UPSTREAM_ATTENTION_AND_MASK_OVERRIDE_V2"
     assert atomicity["same_physical_gpu_required"] is True
     assert atomicity["parallelize_across_parents_only"] is True
 
@@ -48,9 +48,15 @@ def test_clean_wrapper_binds_eager_attention(monkeypatch) -> None:
     class FakeAutoModel:
         @classmethod
         def from_pretrained(cls, *args, **kwargs):
-            return kwargs
+            class FakeModel:
+                def predict_action(self, **call_kwargs):
+                    return call_kwargs
+            return FakeModel()
 
     monkeypatch.setitem(sys.modules, "transformers", SimpleNamespace(AutoModelForVision2Seq=FakeAutoModel))
     monkeypatch.setenv("OPENVLA_ATTN_IMPLEMENTATION", "eager")
-    assert clean._bind_runtime_attention() == "OPENVLA_UPSTREAM_ATTENTION_OVERRIDE_V1"
-    assert FakeAutoModel.from_pretrained("model", attn_implementation="flash_attention_2")["attn_implementation"] == "eager"
+    assert clean._bind_runtime_attention() == "OPENVLA_UPSTREAM_ATTENTION_AND_MASK_OVERRIDE_V2"
+    import torch
+    model = FakeAutoModel.from_pretrained("model", attn_implementation="flash_attention_2")
+    result = model.predict_action(input_ids=torch.ones((1, 2), dtype=torch.long), attention_mask=torch.ones((1, 2), dtype=torch.long))
+    assert tuple(result["attention_mask"].shape) == (1, 3)

@@ -8,7 +8,7 @@
   "runtime_environment": {
     "OPENVLA_ATTN_IMPLEMENTATION": "eager"
   },
-  "runtime_adapter": "OPENVLA_UPSTREAM_ATTENTION_OVERRIDE_V1",
+  "runtime_adapter": "OPENVLA_UPSTREAM_ATTENTION_AND_MASK_OVERRIDE_V2",
   "target_per_suite": 10,
   "suites": [
     "libero_10",
