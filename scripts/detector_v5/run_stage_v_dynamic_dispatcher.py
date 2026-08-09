@@ -12,9 +12,9 @@ import time
 from typing import Any
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, gpu_preflight, load_rows, normalize_parent, pid_alive, project_queue, read_json, sha256_file, terminate_process_group, utc_now
+    from .stage_v_dynamic_common import atomic_write_json, exposure_binding, gpu_preflight, load_rows, normalize_parent, pid_alive, project_queue, read_json, sha256_file, terminate_process_group, utc_now
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import atomic_write_json, gpu_preflight, load_rows, normalize_parent, pid_alive, project_queue, read_json, sha256_file, terminate_process_group, utc_now
+    from stage_v_dynamic_common import atomic_write_json, exposure_binding, gpu_preflight, load_rows, normalize_parent, pid_alive, project_queue, read_json, sha256_file, terminate_process_group, utc_now
 
 try:
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
@@ -37,6 +37,7 @@ class Dispatcher:
         self.run_id = args.run_id
         self.queue = AtomicTaskQueue(str(args.queue_db), run_id=self.run_id)
         self.lease_db = args.lease_db or (self.root / "GPU_LEASES.sqlite")
+        self.exposure_binding: dict[str, Any] | None = None
 
     def _owned_child_pgids(self) -> list[int]:
         parent_root = str((self.root / "parents").resolve()) + os.sep
@@ -157,6 +158,15 @@ class Dispatcher:
         keys = [row["canonical_parent_key"] for row in rows]
         if len(set(keys)) != len(keys):
             raise RuntimeError("DUPLICATE_PARENT_KEYS")
+        if self.args.resource_mode == "MODE_B_THROUGHPUT_SCIENCE":
+            if not self.args.exposure_manifest:
+                raise RuntimeError("EXPOSURE_MANIFEST_REQUIRED")
+            self.exposure_binding = exposure_binding(keys, self.args.exposure_manifest)
+            if self.exposure_binding["status"] != "PASS":
+                raise RuntimeError(
+                    "EXPOSURE_BINDING_FAIL:"
+                    + str(self.exposure_binding.get("reason") or "UNKNOWN")
+                )
         science_manifest_sha = None
         if self.args.science_runner and not self.args.science_parent_manifest:
             raise RuntimeError("SCIENCE_PARENT_MANIFEST_MISSING")
@@ -225,6 +235,11 @@ class Dispatcher:
             "resource_mode": self.args.resource_mode,
             "minimum_free_memory_mib": self.args.minimum_free_mib,
             "resource_lease_db": str(self.lease_db),
+            "exposure_manifest": (self.exposure_binding or {}).get("manifest_path"),
+            "exposure_manifest_sha256": (self.exposure_binding or {}).get("manifest_sha256"),
+            "exposure_binding_status": (self.exposure_binding or {}).get("status"),
+            "exposure_excluded_parent_count": (self.exposure_binding or {}).get("excluded_parent_count"),
+            "exposure_overlap_parent_count": (self.exposure_binding or {}).get("overlap_parent_count", 0),
             "workers": len(approved),
             "dispatcher_pid": os.getpid(),
             "dispatcher_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
@@ -245,6 +260,7 @@ class Dispatcher:
             "planned_parents": len(rows),
             "started_utc": utc_now(),
             "resource_mode": self.args.resource_mode,
+            "exposure_binding": self.exposure_binding,
         })
 
     def _spawn(self, gpu_id: int) -> None:
@@ -330,7 +346,8 @@ class Dispatcher:
             self._recover_owned_leases()
             atomic_write_json(self.root / "DISPATCHER_FAILURE.json", {
                 "schema": "STAGE_V_DYNAMIC_DISPATCHER_FAILURE_V2", "status": "FAIL",
-                "reason": f"{type(exc).__name__}:{exc}", "dispatcher_pid": os.getpid(), "updated_utc": utc_now(),
+                "reason": f"{type(exc).__name__}:{exc}", "dispatcher_pid": os.getpid(),
+                "exposure_binding": self.exposure_binding, "updated_utc": utc_now(),
             })
             return 1
         finally:
@@ -378,13 +395,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lease-db", type=Path)
     parser.add_argument("--stage", default="STAGE_V")
     parser.add_argument("--minimum-free-mib", type=int, default=20_480)
+    parser.add_argument("--exposure-manifest", type=Path)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.required_workers != 8:
-        raise SystemExit("Stage V R2 requires exactly 8 workers")
+    if args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+        if not 1 <= args.required_workers <= 8:
+            raise SystemExit("Stage V throughput/training worker cap must be between 1 and 8")
+    elif args.required_workers != 8:
+        raise SystemExit("Stage V legacy mode requires exactly 8 workers")
     return Dispatcher(args).run()
 
 

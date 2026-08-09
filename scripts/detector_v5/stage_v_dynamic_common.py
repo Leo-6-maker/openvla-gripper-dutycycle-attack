@@ -150,6 +150,47 @@ def normalize_parent(row: Mapping[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def exposure_binding(parent_keys: Iterable[str], manifest: Path) -> dict[str, Any]:
+    """Bind a prospective parent set to the append-only exposure exclusion set."""
+    path = Path(manifest).resolve()
+    try:
+        value = read_json(path)
+        manifest_sha = sha256_file(path)
+    except OSError as exc:
+        return {
+            "schema": "STAGE_V_EXPOSURE_BINDING_V1", "status": "FAIL",
+            "manifest_path": str(path), "manifest_sha256": None,
+            "reason": f"EXPOSURE_MANIFEST_READ_FAIL:{type(exc).__name__}",
+            "excluded_parent_count": 0, "overlap_parent_count": 0,
+            "overlap_parent_keys": [],
+        }
+    excluded = value.get("excluded_parent_keys") if isinstance(value, Mapping) else None
+    if not isinstance(excluded, list) or any(not isinstance(key, str) or not key for key in excluded):
+        return {
+            "schema": "STAGE_V_EXPOSURE_BINDING_V1", "status": "FAIL",
+            "manifest_path": str(path), "manifest_sha256": manifest_sha,
+            "exposure_manifest_schema": value.get("schema") if isinstance(value, Mapping) else None,
+            "reason": "EXPOSURE_MANIFEST_EXCLUDED_KEYS_MISSING_OR_INVALID",
+            "excluded_parent_count": 0, "overlap_parent_count": 0,
+            "overlap_parent_keys": [],
+        }
+    excluded_keys = [str(key) for key in excluded]
+    reason = "EXPOSURE_MANIFEST_DUPLICATE_KEYS" if len(set(excluded_keys)) != len(excluded_keys) else None
+    overlap = sorted(set(str(key) for key in parent_keys) & set(excluded_keys))
+    if overlap and reason is None:
+        reason = "EXPOSURE_PARENT_OVERLAP"
+    return {
+        "schema": "STAGE_V_EXPOSURE_BINDING_V1",
+        "status": "PASS" if reason is None else "FAIL",
+        "manifest_path": str(path), "manifest_sha256": manifest_sha,
+        "exposure_manifest_schema": value.get("schema") if isinstance(value, Mapping) else None,
+        "reason": reason,
+        "excluded_parent_count": len(excluded_keys),
+        "overlap_parent_count": len(overlap),
+        "overlap_parent_keys": overlap,
+    }
+
+
 def sanitize_key(value: str) -> str:
     return "".join(char if char.isalnum() else "_" for char in value)
 

@@ -17,7 +17,7 @@ from scripts.detector_v5.audit_stage_v_abort_postmortem import build_postmortem,
 from scripts.detector_v5 import run_stage_v_control_qualification as control_qualification
 from scripts.detector_v5.run_stage_v_control_qualification import ranked
 from scripts.detector_v5.stage_v_dynamic_common import (
-    atomic_write_json, gpu_preflight, project_queue, science_artifact_status, sha256_file,
+    atomic_write_json, exposure_binding, gpu_preflight, project_queue, science_artifact_status, sha256_file,
 )
 from scripts.detector_v5.stage_v_science_core_provenance import build as build_provenance, verify as verify_provenance
 from scripts.detector_v5.run_stage_v_local_supervisor import ExclusiveLock, SupervisorError, terminate_process_group
@@ -129,6 +129,21 @@ def test_load_rows_reads_selected_parents_manifest(tmp_path: Path) -> None:
     path = tmp_path / "manifest.json"
     write_json(path, {"schema": "STAGE_V_FORMAL_PARENT_MANIFEST_V1", "selected_parents": [{"suite": "libero_goal", "task_index": 0, "state_index": 48}]})
     assert control_qualification.load_rows(path) == [{"suite": "libero_goal", "task_index": 0, "state_index": 48}]
+
+
+def test_exposure_binding_rejects_parent_overlap_and_records_sha(tmp_path: Path) -> None:
+    manifest = tmp_path / "exposure.json"
+    write_json(manifest, {
+        "schema": "COUNTERFACTUAL_EXPOSURE_EXCLUSION_V1",
+        "excluded_parent_keys": ["libero_goal/task_00/state_48"],
+    })
+    clean = exposure_binding(["libero_object/task_00/state_48"], manifest)
+    assert clean["status"] == "PASS"
+    assert clean["manifest_sha256"] == sha256_file(manifest)
+    overlap = exposure_binding(["libero_goal/task_00/state_48"], manifest)
+    assert overlap["status"] == "FAIL"
+    assert overlap["reason"] == "EXPOSURE_PARENT_OVERLAP"
+    assert overlap["overlap_parent_keys"] == ["libero_goal/task_00/state_48"]
 
 
 def test_control_qualification_manifest_a_sidecar_is_written(tmp_path: Path) -> None:

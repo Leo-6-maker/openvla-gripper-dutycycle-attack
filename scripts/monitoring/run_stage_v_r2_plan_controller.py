@@ -114,6 +114,8 @@ class PlanController:
         self.candidate_manifest = Path(args.candidate_manifest).resolve()
         source_clean_parent_manifest = getattr(args, "source_clean_parent_manifest", None)
         self.source_clean_parent_manifest = Path(source_clean_parent_manifest).resolve() if source_clean_parent_manifest else None
+        exposure_manifest = getattr(args, "exposure_manifest", None)
+        self.exposure_manifest = Path(exposure_manifest).resolve() if exposure_manifest else None
         self.science_provenance = Path(args.science_provenance).resolve()
         self.state_root.mkdir(parents=True, exist_ok=True)
         self.state_path = self.state_root / "STAGE_V_R2_PLAN_CONTROLLER_STATE.json"
@@ -602,8 +604,11 @@ class PlanController:
         if self.source_clean_parent_manifest is None:
             self._write(WAIT_INPUT, "R2A_SOURCE_CLEAN_PARENT_MANIFEST_REQUIRED", q_reason=q_reason, next_stage="R2A")
             return WAIT_INPUT
+        if self.exposure_manifest is None:
+            self._write(WAIT_INPUT, "R2A_EXPOSURE_MANIFEST_REQUIRED", q_reason=q_reason, next_stage="R2A")
+            return WAIT_INPUT
         for path in (q2_report, q2_audit, q2_manifest, formal_manifest, self.candidate_manifest,
-                     self.source_clean_parent_manifest, self.science_provenance):
+                     self.source_clean_parent_manifest, self.exposure_manifest, self.science_provenance):
             if not path.is_file():
                 self._write(WAIT_INPUT, f"R2A_INPUT_MISSING:{path.name}", q_reason=q_reason, next_stage="R2A")
                 return WAIT_INPUT
@@ -645,6 +650,7 @@ class PlanController:
             "science_auditor_sha256": sha256_file(science_auditor), "science_auditor_git_blob_sha1": auditor_provenance["git_blob_sha1"],
             "science_parent_manifest": _receipt("science_parent_manifest", science_manifest),
             "source_clean_parent_manifest": _receipt("source_clean_parent_manifest", self.source_clean_parent_manifest),
+            "exposure_manifest": _receipt("exposure_manifest", self.exposure_manifest),
             "timeout_policy": _receipt("timeout_policy", timeout_policy), "probe_limit": 24, "expected_branch_count": 72,
             "planned_parents": 40, "approved_gpus": list(range(8)), "gpu5_authorized": True,
             "old_artifacts_reused": False, "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
@@ -668,6 +674,7 @@ class PlanController:
             "--science-runner", str(runner), "--science-provenance", str(provenance_path),
             "--science-source-commit", str(self.args.r2a_science_source_commit), "--science-source-tree", str(self.args.r2a_science_source_tree),
             "--science-repo-root", str(science_repo), "--science-parent-manifest", str(science_manifest),
+            "--exposure-manifest", str(self.exposure_manifest),
             "--probe-limit", "24", "--max-attempts", "1", "--allow-gpu5",
         ]
         audit_command = [
@@ -676,7 +683,7 @@ class PlanController:
             "--expected-parent-count", "40", "--expected-branch-count", "72", "--expected-source-commit", "{source_commit}",
             "--expected-source-tree", "{source_tree}", "--science-source-commit", str(self.args.r2a_science_source_commit),
             "--science-source-tree", str(self.args.r2a_science_source_tree), "--science-provenance", str(provenance_path),
-            "--science-parent-manifest", str(science_manifest), "--allow-gpu5",
+            "--science-parent-manifest", str(science_manifest), "--exposure-manifest", str(self.exposure_manifest), "--allow-gpu5",
         ]
         spec = {
             "schema": "STAGE_V_R2_STAGE_SPEC_V1", "stage": "R2A", "source_commit": self.source["commit"], "source_tree": self.source["tree"],
@@ -685,14 +692,17 @@ class PlanController:
             "python_executable": str(self.args.python_executable), "parent_manifest": formal_manifest_binding,
             "input_receipts": [_receipt("q2_report", q2_report), _receipt("q2_audit", q2_audit), _receipt("q2_parent_manifest", q2_manifest),
                                formal_manifest_binding, science_manifest_binding, _receipt("candidate_manifest", self.candidate_manifest),
-                               _receipt("source_clean_parent_manifest", self.source_clean_parent_manifest), _receipt("science_provenance", provenance_path),
+                               _receipt("source_clean_parent_manifest", self.source_clean_parent_manifest), _receipt("exposure_manifest", self.exposure_manifest),
+                               _receipt("science_provenance", provenance_path),
                                _receipt("science_runner", runner), _receipt("science_auditor", science_auditor), _receipt("timeout_policy", timeout_policy), _receipt("r2a_config", config_path)],
             "output_root_template": str(self.state_root.parent / "STAGE_V_R2A_COUNTERFACTUAL_MAP_{commit8}_{utc}"),
             "command_template": command, "audit_command_template": audit_command,
             "completion_receipts": ["SUPERVISOR_COMPLETE.json", "STAGE_V_CLOSURE_RECEIPT.json"],
-            "resource_policy": {"resource_kind": "GPU", "required_gpu_count": 8, "minimum_gpu_count": 8, "maximum_gpu_count": 8, "strict_gpu_count": True,
+            "resource_policy": {"resource_kind": "GPU", "required_gpu_count": 1, "minimum_gpu_count": 1, "maximum_gpu_count": 8, "strict_gpu_count": False,
+                                 "partial_fleet_allowed": True, "resource_contract_version": "STAGE_V_RESOURCE_CONTRACT_V2",
                                  "excluded_gpus": [], "gpu5_authorized": True, "protected_pids": [int(self.args.external_pid)], "canary_peak_mib": 0, "allow_foreign_gpu_sharing": True},
-            "gpu_policy": {"required_count": 8, "excluded_gpus": [], "gpu5_authorized": True, "protected_pids": [int(self.args.external_pid)], "allow_foreign_gpu_sharing": True},
+            "gpu_policy": {"required_count": 1, "minimum_count": 1, "maximum_count": 8, "partial_fleet_allowed": True,
+                            "excluded_gpus": [], "gpu5_authorized": True, "protected_pids": [int(self.args.external_pid)], "allow_foreign_gpu_sharing": True},
             "lock_path": str(self.state_root.parent / ".stage_v_r2a.lock"),
             "forbidden_boundary_contract": {"eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0},
             "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "created_utc": utc_now(),
@@ -856,6 +866,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--qualification-root", type=Path, required=True)
     parser.add_argument("--candidate-manifest", type=Path, required=True)
     parser.add_argument("--source-clean-parent-manifest", type=Path)
+    parser.add_argument("--exposure-manifest", type=Path)
     parser.add_argument("--science-provenance", type=Path, required=True)
     parser.add_argument("--lock-path", type=Path, required=True)
     parser.add_argument("--python-executable", required=True)

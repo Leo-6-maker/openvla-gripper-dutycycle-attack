@@ -212,6 +212,11 @@ class DynamicSupervisor:
             raise RuntimeError("SCIENCE_CORE_PROVENANCE_REQUIRED")
         if not self.args.parent_manifest.is_file():
             raise RuntimeError("PARENT_MANIFEST_MISSING")
+        if self.args.resource_mode == "MODE_B_THROUGHPUT_SCIENCE":
+            if not self.args.exposure_manifest:
+                raise RuntimeError("EXPOSURE_MANIFEST_REQUIRED")
+            if not self.args.exposure_manifest.is_file():
+                raise RuntimeError("EXPOSURE_MANIFEST_MISSING")
         manifest_sha = sha256_file(self.args.parent_manifest)
         if self.args.parent_manifest_sha256 and manifest_sha != self.args.parent_manifest_sha256:
             raise RuntimeError("PARENT_MANIFEST_SHA256_MISMATCH")
@@ -227,6 +232,7 @@ class DynamicSupervisor:
             "ssh_is_hard_stop": False,
             "run_root": str(self.root), "source_commit": source["source_commit"], "source_tree": source["source_tree"],
             "parent_manifest": str(self.args.parent_manifest), "parent_manifest_sha256": manifest_sha,
+            "exposure_manifest": str(self.args.exposure_manifest.resolve()) if self.args.exposure_manifest else None,
             "approved_gpus": sorted(self.args.approved_gpus), "planned_parents": self.args.expected_parent_count,
             "resource_mode": self.args.resource_mode, "minimum_free_memory_mib": self.args.minimum_free_mib,
             "resource_lease_db": str(self.args.lease_db or (self.root / "GPU_LEASES.sqlite")),
@@ -525,6 +531,8 @@ class DynamicSupervisor:
             command += ["--science-provenance", str(self.args.science_provenance)]
         if self.args.science_parent_manifest:
             command += ["--science-parent-manifest", str(self.args.science_parent_manifest)]
+        if self.args.exposure_manifest:
+            command += ["--exposure-manifest", str(self.args.exposure_manifest)]
         result = subprocess.run(command, cwd=str(self.args.repo_root), capture_output=True, text=True, check=False, timeout=self.args.audit_timeout)
         (self.root / "AUDITOR_STDOUT.txt").write_text(result.stdout + result.stderr, encoding="utf-8")
         return result.returncode
@@ -627,6 +635,8 @@ class DynamicSupervisor:
                        "--minimum-free-mib", str(self.args.minimum_free_mib)]
             if getattr(self.args, "allow_gpu5", False):
                 command += ["--allow-gpu5"]
+            if self.args.exposure_manifest:
+                command += ["--exposure-manifest", str(self.args.exposure_manifest)]
             if self.args.science_provenance:
                 command += ["--science-provenance", str(self.args.science_provenance)]
             for value in (self.args.science_runner, self.args.science_repo_root, self.args.science_parent_manifest):
@@ -693,6 +703,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--science-source-tree", default="")
     parser.add_argument("--science-repo-root", type=Path)
     parser.add_argument("--science-parent-manifest", type=Path)
+    parser.add_argument("--exposure-manifest", type=Path)
     parser.add_argument("--worker-command", default="")
     parser.add_argument("--canary-peak-mib", type=float, default=0.0)
     parser.add_argument("--probe-limit", type=int, default=24)
