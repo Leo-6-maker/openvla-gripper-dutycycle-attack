@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent read-only audit for an M1-V2.1 eight-GPU root."""
+"""Independent read-only audit for fixed M1-V2 roots and dynamic V2.2 cohorts."""
 from __future__ import annotations
 
 import argparse
@@ -11,14 +11,14 @@ from typing import Any, Mapping
 
 try:
     from .run_stage_v_m1_v2_8gpu import (
-        BOUNDARIES, GPU_IDS, IDENTITY, LABELS, REPO_ROOT, V2Error,
+        BOUNDARIES, DYNAMIC_PROTOCOL_SCHEMA, GPU_IDS, IDENTITY, LABELS, REPO_ROOT, V2Error,
         _load, _write, canonical_gpu_uuid, sha256_file, validate_binding_receipt,
         validate_manifest_authorization, validate_protocol, validate_runtime_binding_receipt,
         validate_uuid_binding,
     )
 except ImportError:  # direct script execution
     from run_stage_v_m1_v2_8gpu import (
-        BOUNDARIES, GPU_IDS, IDENTITY, LABELS, REPO_ROOT, V2Error,
+        BOUNDARIES, DYNAMIC_PROTOCOL_SCHEMA, GPU_IDS, IDENTITY, LABELS, REPO_ROOT, V2Error,
         _load, _write, canonical_gpu_uuid, sha256_file, validate_binding_receipt,
         validate_manifest_authorization, validate_protocol, validate_runtime_binding_receipt,
         validate_uuid_binding,
@@ -128,7 +128,7 @@ def _independent_classification(local: Mapping[str, Any], cross: Mapping[str, An
         classification = "PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM"
     elif profile["same_mode_visual_pairs"]:
         classification = "SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM"
-    elif same_mode_exact and len(profile["mode_specific_visual_pairs"]) >= 8:
+    elif same_mode_exact and len(profile["mode_specific_visual_pairs"]) >= len(GPU_IDS):
         classification = "MODE_PATH_SPECIFIC_VISUAL_DIVERGENCE"
     elif profile["mode_specific_visual_pairs"] or profile["cross_gpu_visual_pairs"]:
         classification = "HETEROGENEOUS_MULTI_GPU_DIVERGENCE"
@@ -186,15 +186,22 @@ def _verify_canary(root: Path) -> None:
 
 
 def _verify_preflight_bindings(root: Path, run_set: str, manifest: Mapping[str, Any], protocol_sha256: str, graphics_contract: Mapping[str, Any]) -> None:
+    dynamic = manifest.get("dynamic_primary_cohort") is True
+    frozen = tuple(sorted(int(gpu) for gpu in manifest.get("primary_clean_gpu_set", [])))
     gates = ["PRE_CANARY"] + [f"PRE_{run_set.upper()}_{label}" for label in LABELS]
     for gate in gates:
         value = _load(root / f"M1_V2_1_GPU_PREFLIGHT_{gate}.json")
-        if value.get("status") != "PASS" or value.get("all_8_safe") is not True:
+        if value.get("status") != "PASS" or (not dynamic and value.get("all_8_safe") is not True):
             raise V2Error(f"V2_PREFLIGHT_NOT_PASS:{gate}")
         expected_run_set = "canary" if gate == "PRE_CANARY" else run_set
         if value.get("gate") != gate or value.get("run_set") != expected_run_set or value.get("protocol_sha256") != protocol_sha256 or value.get("source_commit") != manifest.get("source_commit") or value.get("source_tree") != manifest.get("source_tree") or value.get("graphics_contract") != dict(graphics_contract):
             raise V2Error(f"V2_PREFLIGHT_CONTEXT_MISMATCH:{gate}")
-        if value.get("unmapped_processes") or value.get("foreign_user_workloads") or any(row.get("foreign_processes") for row in value.get("gpu_rows", [])):
+        if value.get("unmapped_processes"):
+            raise V2Error(f"V2_PREFLIGHT_FOREIGN_WORKLOAD_PRESENT:{gate}")
+        if dynamic:
+            if tuple(value.get("primary_clean_gpu_set", [])) != frozen:
+                raise V2Error(f"V2_PRIMARY_COHORT_BINDING_MISMATCH:{gate}")
+        elif value.get("foreign_user_workloads") or any(row.get("foreign_processes") for row in value.get("gpu_rows", [])):
             raise V2Error(f"V2_PREFLIGHT_FOREIGN_WORKLOAD_PRESENT:{gate}")
         if any(process.get("classification") != "SYSTEM_GRAPHICS_BASELINE" for process in value.get("baseline_system_graphics", [])):
             raise V2Error(f"V2_PREFLIGHT_GRAPHICS_BASELINE_INVALID:{gate}")
@@ -203,6 +210,8 @@ def _verify_preflight_bindings(root: Path, run_set: str, manifest: Mapping[str, 
             row = rows.get(gpu)
             if row is None or value.get("uuid_by_gpu", {}).get(str(gpu)) != canonical_gpu_uuid(row.get("uuid")):
                 raise V2Error(f"HOLD_GPU_UUID_BINDING_MISMATCH:gpu_{gpu:02d}:{gate}")
+            if dynamic and (row.get("primary_clean") is not True or row.get("foreign_processes")):
+                raise V2Error(f"V2_PRIMARY_COHORT_NOT_CLEAN:gpu_{gpu:02d}:{gate}")
         receipt_path = value.get("phase_receipt_path")
         receipt_sha = value.get("phase_receipt_sha256")
         if not receipt_path or not receipt_sha:
@@ -222,10 +231,15 @@ def _seal(root: Path, name: str) -> None:
 
 
 def audit_root(root: Path, *, final: bool) -> dict[str, Any]:
-    protocol_path = REPO_ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json"
-    protocol = validate_protocol(protocol_path)
     manifest = _load(root / "M1_V2_MANIFEST.json")
-    if manifest.get("schema") != "STAGE_V_M1_V2_1_1_8GPU_MANIFEST_V1":
+    dynamic = manifest.get("dynamic_primary_cohort") is True
+    global GPU_IDS
+    GPU_IDS = tuple(sorted(int(gpu) for gpu in manifest.get("primary_clean_gpu_set", []))) if dynamic else tuple(range(8))
+    if dynamic and not GPU_IDS:
+        raise V2Error("V2_PRIMARY_COHORT_MISSING")
+    protocol_path = REPO_ROOT / ("configs/stage_v_m1_visual_determinism_protocol_v2_2_dynamic_cohort_8gpu.json" if dynamic else "configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json")
+    protocol = validate_protocol(protocol_path)
+    if manifest.get("schema") not in {"STAGE_V_M1_V2_1_1_8GPU_MANIFEST_V1", "STAGE_V_M1_V2_2_DYNAMIC_COHORT_MANIFEST_V1"}:
         raise V2Error("V2_MANIFEST_SCHEMA_INVALID")
     if manifest.get("status") != "PREPARED_NO_RUNTIME_STARTED":
         raise V2Error("V2_ROOT_ALREADY_CONSUMED")
@@ -248,23 +262,28 @@ def audit_root(root: Path, *, final: bool) -> dict[str, Any]:
     classification_receipt = _load(root / "M1_V2_CLASSIFICATION_RECEIPT.json")
     local_count = sum(len(value["pairs"]) for value in local["gpus"].values())
     cross_count = sum(len(value) for value in cross["labels"].values())
-    if local_count != 32 or cross_count != 112:
+    expected_local = 4 * len(GPU_IDS)
+    expected_cross = 4 * len(GPU_IDS) * (len(GPU_IDS) - 1) // 2
+    if local_count != expected_local or cross_count != expected_cross:
         raise V2Error(f"V2_PAIR_COUNT_MISMATCH:{local_count}:{cross_count}")
+    if local.get("gpu_count") != len(GPU_IDS) or local.get("pair_count") != expected_local or cross.get("gpu_count") != len(GPU_IDS) or cross.get("pair_count") != expected_cross:
+        raise V2Error("V2_PAIR_MATRIX_METADATA_MISMATCH")
     classification, profile = _independent_classification(local, cross)
     if aggregate.get("classification") != classification or aggregate.get("evidence_profile") != profile:
         raise V2Error("V2_AUDITOR_CLASSIFICATION_DISAGREEMENT")
     if classification_receipt.get("classification") != classification or classification_receipt.get("evidence_profile") != profile:
         raise V2Error("V2_CLASSIFICATION_RECEIPT_DISAGREEMENT")
     receipt = {
-        "schema": "STAGE_V_M1_V2_1_INDEPENDENT_AUDIT_V1",
+        "schema": "STAGE_V_M1_V2_2_INDEPENDENT_AUDIT_V1" if dynamic else "STAGE_V_M1_V2_1_INDEPENDENT_AUDIT_V1",
         "verdict": "PASS",
         "final": final,
         "source_commit": manifest.get("source_commit"),
         "source_tree": manifest.get("source_tree"),
         "protocol_sha256": sha256_file(protocol_path),
-        "r1_run_count": 32,
-        "gpu_local_pair_count": 32,
-        "cross_gpu_pair_count": 112,
+        "r1_run_count": expected_local,
+        "gpu_local_pair_count": expected_local,
+        "cross_gpu_pair_count": expected_cross,
+        "primary_clean_gpu_set": list(GPU_IDS),
         "classification": classification,
         "evidence_profile": profile,
         "protected_boundaries": {field: 0 for field in BOUNDARIES},
@@ -275,7 +294,8 @@ def audit_root(root: Path, *, final: bool) -> dict[str, Any]:
         plan_path = root / "M1_V2_RAW_CAPTURE_PLAN.json"
         if not plan_path.is_file():
             raise V2Error("V2_RAW_CAPTURE_PLAN_MISSING")
-        if _load(plan_path).get("schema") != "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1":
+        expected_plan_schema = "STAGE_V_M1_V2_2_RAW_CAPTURE_PLAN_V1" if dynamic else "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1"
+        if _load(plan_path).get("schema") != expected_plan_schema:
             raise V2Error("V2_1_RAW_CAPTURE_PLAN_SCHEMA_INVALID")
         producer = _load(root / "M1_V2_PRODUCER_ANALYSIS.json")
         if producer.get("status") != "PASS_PENDING_INDEPENDENT_AUDIT":

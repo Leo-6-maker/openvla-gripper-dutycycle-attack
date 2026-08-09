@@ -61,9 +61,10 @@ def _full_sim_exact(pair: Mapping[str, Any]) -> bool:
     return pair.get("traces", {}).get("full_sim_state", {}).get("equal") is True
 
 
-def local_pairs(root: Path, identity: str, run_set: str = "runs") -> dict[str, Any]:
-    result: dict[str, Any] = {f"gpu_{gpu:02d}": {} for gpu in GPU_IDS}
-    for gpu in GPU_IDS:
+def local_pairs(root: Path, identity: str, run_set: str = "runs", gpu_ids: tuple[int, ...] | None = None) -> dict[str, Any]:
+    ids = tuple(GPU_IDS if gpu_ids is None else gpu_ids)
+    result: dict[str, Any] = {f"gpu_{gpu:02d}": {} for gpu in ids}
+    for gpu in ids:
         runs = {label: _run(root, gpu, label, run_set) for label in LABELS}
         result[f"gpu_{gpu:02d}"] = {
             "gpu_id": gpu,
@@ -75,18 +76,19 @@ def local_pairs(root: Path, identity: str, run_set: str = "runs") -> dict[str, A
                 f"CROSS_MODE_R2_GPU{gpu}": analyze_pair(runs["Q2"], runs["C2"], f"CROSS_MODE_R2_GPU{gpu}"),
             },
         }
-    return {"schema": "STAGE_V_M1_V2_GPU_LOCAL_PAIR_MATRIX_V1", "identity": identity, "gpu_count": 8, "pair_count": 32, "gpus": result}
+    return {"schema": "STAGE_V_M1_V2_GPU_LOCAL_PAIR_MATRIX_V1", "identity": identity, "gpu_count": len(ids), "pair_count": 4 * len(ids), "gpus": result}
 
 
-def cross_gpu_pairs(root: Path, identity: str, run_set: str = "runs") -> dict[str, Any]:
+def cross_gpu_pairs(root: Path, identity: str, run_set: str = "runs", gpu_ids: tuple[int, ...] | None = None) -> dict[str, Any]:
+    ids = tuple(GPU_IDS if gpu_ids is None else gpu_ids)
     result: dict[str, Any] = {}
     for label in LABELS:
         pairs: dict[str, Any] = {}
-        for left, right in itertools.combinations(GPU_IDS, 2):
+        for left, right in itertools.combinations(ids, 2):
             name = f"CROSS_GPU_{label}_GPU{left}_GPU{right}"
             pairs[name] = analyze_pair(_run(root, left, label, run_set), _run(root, right, label, run_set), name)
         result[label] = pairs
-    return {"schema": "STAGE_V_M1_V2_CROSS_GPU_PAIR_MATRIX_V1", "identity": identity, "gpu_count": 8, "pair_count": 112, "labels": result}
+    return {"schema": "STAGE_V_M1_V2_CROSS_GPU_PAIR_MATRIX_V1", "identity": identity, "gpu_count": len(ids), "pair_count": 4 * len(ids) * (len(ids) - 1) // 2, "labels": result}
 
 
 def _all_local_pairs(local: Mapping[str, Any]) -> list[Mapping[str, Any]]:
@@ -97,14 +99,15 @@ def _trace_equal(pair: Mapping[str, Any], field: str) -> bool:
     return pair.get("traces", {}).get(field, {}).get("equal") is True
 
 
-def evidence_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> dict[str, Any]:
-    same_q = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_Q_GPU{gpu}"] for gpu in GPU_IDS]
-    same_c = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_C_GPU{gpu}"] for gpu in GPU_IDS]
+def evidence_profile(local: Mapping[str, Any], cross: Mapping[str, Any], gpu_ids: tuple[int, ...] | None = None) -> dict[str, Any]:
+    ids = tuple(GPU_IDS if gpu_ids is None else gpu_ids)
+    same_q = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_Q_GPU{gpu}"] for gpu in ids]
+    same_c = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_C_GPU{gpu}"] for gpu in ids]
     cross_mode_by_gpu = {
         gpu: [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"CROSS_MODE_R1_GPU{gpu}"], local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"CROSS_MODE_R2_GPU{gpu}"]]
-        for gpu in GPU_IDS
+        for gpu in ids
     }
-    same_mode = [(f"SAME_MODE_Q_GPU{gpu}", pair) for gpu, pair in zip(GPU_IDS, same_q)] + [(f"SAME_MODE_C_GPU{gpu}", pair) for gpu, pair in zip(GPU_IDS, same_c)]
+    same_mode = [(f"SAME_MODE_Q_GPU{gpu}", pair) for gpu, pair in zip(ids, same_q)] + [(f"SAME_MODE_C_GPU{gpu}", pair) for gpu, pair in zip(ids, same_c)]
     cross_mode = [(f"CROSS_MODE_R{rep}_GPU{gpu}", pair) for gpu, pairs in cross_mode_by_gpu.items() for rep, pair in ((1, pairs[0]), (2, pairs[1]))]
     cross_gpu = [(f"CROSS_GPU_{label}_{name}", pair) for label, pairs in cross["labels"].items() for name, pair in pairs.items()]
     raw_only = [name for name, pair in same_mode if not _trace_equal(pair, "raw_observation") and _trace_equal(pair, "policy_rgb") and _trace_equal(pair, "model_input") and _full_sim_exact(pair)]
@@ -151,11 +154,12 @@ def evidence_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> dict
     }
 
 
-def classify_v2_with_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> tuple[str, dict[str, Any]]:
-    profile = evidence_profile(local, cross)
-    same_q = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_Q_GPU{gpu}"] for gpu in GPU_IDS]
-    same_c = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_C_GPU{gpu}"] for gpu in GPU_IDS]
-    cross_mode = [pair for gpu in GPU_IDS for pair in (local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"CROSS_MODE_R1_GPU{gpu}"], local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"CROSS_MODE_R2_GPU{gpu}"])]
+def classify_v2_with_profile(local: Mapping[str, Any], cross: Mapping[str, Any], gpu_ids: tuple[int, ...] | None = None) -> tuple[str, dict[str, Any]]:
+    ids = tuple(GPU_IDS if gpu_ids is None else gpu_ids)
+    profile = evidence_profile(local, cross, ids)
+    same_q = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_Q_GPU{gpu}"] for gpu in ids]
+    same_c = [local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_C_GPU{gpu}"] for gpu in ids]
+    cross_mode = [pair for gpu in ids for pair in (local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"CROSS_MODE_R1_GPU{gpu}"], local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"CROSS_MODE_R2_GPU{gpu}"])]
     same_mode_exact = all(_pair_exact(pair) for pair in same_q + same_c)
     if profile["simulator_pairs"]:
         return "SIMULATOR_RUNTIME_NONDETERMINISM", profile
@@ -169,15 +173,15 @@ def classify_v2_with_profile(local: Mapping[str, Any], cross: Mapping[str, Any])
         return "PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM", profile
     if profile["same_mode_visual_pairs"]:
         return "SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM", profile
-    if same_mode_exact and len(profile["mode_specific_visual_pairs"]) >= 8:
+    if same_mode_exact and len(profile["mode_specific_visual_pairs"]) >= len(ids):
         return "MODE_PATH_SPECIFIC_VISUAL_DIVERGENCE", profile
     if profile["mode_specific_visual_pairs"] or profile["cross_gpu_visual_pairs"]:
         return "HETEROGENEOUS_MULTI_GPU_DIVERGENCE", profile
     return "UNCLASSIFIED", profile
 
 
-def classify_v2(local: Mapping[str, Any], cross: Mapping[str, Any]) -> str:
-    classification, _profile = classify_v2_with_profile(local, cross)
+def classify_v2(local: Mapping[str, Any], cross: Mapping[str, Any], gpu_ids: tuple[int, ...] | None = None) -> str:
+    classification, _profile = classify_v2_with_profile(local, cross, gpu_ids)
     return classification
 
 
@@ -191,9 +195,10 @@ def _first_steps(pairs: Mapping[str, Mapping[str, Any]]) -> dict[str, int | None
     return {"t_star": min(values) if values else None}
 
 
-def make_r2_plan(root: Path, identity: str, local: Mapping[str, Any], cross: Mapping[str, Any], local_sha: str, cross_sha: str, *, schema: str = "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1") -> dict[str, Any]:
+def make_r2_plan(root: Path, identity: str, local: Mapping[str, Any], cross: Mapping[str, Any], local_sha: str, cross_sha: str, *, schema: str = "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", gpu_ids: tuple[int, ...] | None = None) -> dict[str, Any]:
+    ids = tuple(GPU_IDS if gpu_ids is None else gpu_ids)
     local_t: dict[str, int | None] = {}
-    for gpu in GPU_IDS:
+    for gpu in ids:
         local_t[f"gpu_{gpu:02d}"] = _first_steps(local["gpus"][f"gpu_{gpu:02d}"]["pairs"])["t_star"]
     cross_t = {label: _first_steps(pairs)["t_star"] for label, pairs in cross["labels"].items()}
     all_steps = [value for value in local_t.values() if value is not None] + [value for value in cross_t.values() if value is not None]
@@ -202,7 +207,7 @@ def make_r2_plan(root: Path, identity: str, local: Mapping[str, Any], cross: Map
     def n2(value: int | None) -> set[int]:
         return set() if value is None else set(range(max(0, value - 2), value + 3))
 
-    by_gpu = {str(gpu): sorted({0, *n2(global_t), *n2(local_t[f"gpu_{gpu:02d}"])}) for gpu in GPU_IDS}
+    by_gpu = {str(gpu): sorted({0, *n2(global_t), *n2(local_t[f"gpu_{gpu:02d}"])}) for gpu in ids}
     return {
         "schema": schema,
         "status": "FROZEN_BEFORE_RAW_CAPTURE_RUN",
@@ -235,9 +240,10 @@ def _raw_audit(run_root: Path) -> dict[str, Any]:
     return {"verdict": "PASS" if not bad else "FAIL", "entry_count": len(manifest.get("entries", [])), "bad_entries": bad}
 
 
-def numeric_forensics(root: Path, local: Mapping[str, Any], cross: Mapping[str, Any]) -> dict[str, Any]:
+def numeric_forensics(root: Path, local: Mapping[str, Any], cross: Mapping[str, Any], gpu_ids: tuple[int, ...] | None = None) -> dict[str, Any]:
+    ids = tuple(GPU_IDS if gpu_ids is None else gpu_ids)
     pairs: dict[str, Any] = {}
-    for gpu in GPU_IDS:
+    for gpu in ids:
         for name, pair in local["gpus"][f"gpu_{gpu:02d}"]["pairs"].items():
             pairs[name] = pair.get("numeric_forensic")
     for label, label_pairs in cross["labels"].items():
@@ -246,9 +252,10 @@ def numeric_forensics(root: Path, local: Mapping[str, Any], cross: Mapping[str, 
     return {"schema": "STAGE_V_M1_V2_NUMERIC_VISUAL_FORENSIC_V1", "pair_count": len(pairs), "pairs": pairs}
 
 
-def hash_clusters(root: Path) -> dict[str, Any]:
+def hash_clusters(root: Path, gpu_ids: tuple[int, ...] | None = None) -> dict[str, Any]:
+    ids = tuple(GPU_IDS if gpu_ids is None else gpu_ids)
     clusters: dict[str, dict[str, list[str]]] = {}
-    for gpu in GPU_IDS:
+    for gpu in ids:
         for label in LABELS:
             manifest_path = _run(root, gpu, label, "raw_runs") / "M1_RAW_CAPTURE_MANIFEST.json"
             if not manifest_path.is_file():
@@ -262,19 +269,21 @@ def hash_clusters(root: Path) -> dict[str, Any]:
 def analyze_root(root: Path, *, final: bool = False) -> dict[str, Any]:
     manifest = _load(root / "M1_V2_MANIFEST.json")
     identity = str(manifest["diagnostic_identity"])
-    local = local_pairs(root, identity)
-    cross = cross_gpu_pairs(root, identity)
+    cohort = tuple(sorted(int(gpu) for gpu in manifest.get("primary_clean_gpu_set", []))) or GPU_IDS
+    counts = {"gpu_local_pair_count": 4 * len(cohort), "cross_gpu_pair_count": 4 * len(cohort) * (len(cohort) - 1) // 2}
+    local = local_pairs(root, identity, gpu_ids=cohort)
+    cross = cross_gpu_pairs(root, identity, gpu_ids=cohort)
     local_path = root / "M1_V2_R1_GPU_LOCAL_PAIR_MATRIX.json"
     cross_path = root / "M1_V2_R1_CROSS_GPU_PAIR_MATRIX.json"
     _write(local_path, local)
     _write(cross_path, cross)
-    classification, profile = classify_v2_with_profile(local, cross)
+    classification, profile = classify_v2_with_profile(local, cross, cohort)
     aggregate = {
         "schema": "STAGE_V_M1_V2_R1_AGGREGATE_REPORT_V1", "identity": identity,
-        "gpu_local_pair_count": 32, "cross_gpu_pair_count": 112,
+        **counts,
         "classification": classification,
-        "same_mode_q_visual_mismatch_gpus": sum(_visual_diff(local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_Q_GPU{gpu}"]) for gpu in GPU_IDS),
-        "same_mode_c_visual_mismatch_gpus": sum(_visual_diff(local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_C_GPU{gpu}"]) for gpu in GPU_IDS),
+        "same_mode_q_visual_mismatch_gpus": sum(_visual_diff(local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_Q_GPU{gpu}"]) for gpu in cohort),
+        "same_mode_c_visual_mismatch_gpus": sum(_visual_diff(local["gpus"][f"gpu_{gpu:02d}"]["pairs"][f"SAME_MODE_C_GPU{gpu}"]) for gpu in cohort),
         "full_sim_exact_pairs": sum(_full_sim_exact(pair) for pair in _all_local_pairs(local)),
         "token_action_exact_pairs": sum(pair.get("traces", {}).get("token", {}).get("equal") and pair.get("traces", {}).get("postprocessed_action", {}).get("equal") for pair in _all_local_pairs(local)),
         "evidence_profile": profile,
@@ -282,21 +291,21 @@ def analyze_root(root: Path, *, final: bool = False) -> dict[str, Any]:
     aggregate_path = root / "M1_V2_R1_AGGREGATE_REPORT.json"
     _write(aggregate_path, aggregate)
     (root / "M1_V2_R1_AGGREGATE_REPORT.md").write_text("# M1-V2 R1 aggregate report\n\n" + "\n".join(f"- {key}: {value}" for key, value in aggregate.items() if key != "schema") + "\n", encoding="utf-8")
-    plan_schema = "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1" if manifest.get("protocol_schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU" else ("STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1" if manifest.get("protocol_schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU" else "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1")
-    plan = make_r2_plan(root, identity, local, cross, _sha256(local_path), _sha256(cross_path), schema=plan_schema)
+    plan_schema = "STAGE_V_M1_V2_2_RAW_CAPTURE_PLAN_V1" if manifest.get("protocol_schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_2_DYNAMIC_COHORT_8GPU" else ("STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1" if manifest.get("protocol_schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU" else ("STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1" if manifest.get("protocol_schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU" else "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1"))
+    plan = make_r2_plan(root, identity, local, cross, _sha256(local_path), _sha256(cross_path), schema=plan_schema, gpu_ids=cohort)
     _write(root / "M1_V2_RAW_CAPTURE_PLAN.json", plan)
     _write(root / "M1_V2_CLASSIFICATION_RECEIPT.json", {"schema": "STAGE_V_M1_V2_CLASSIFICATION_RECEIPT_V1", "status": "PENDING_INDEPENDENT_AUDIT" if final else "PENDING_R2_RAW_CAPTURE", "classification": classification, "evidence_profile": profile, "rb1a_status": "HOLD", "identity": identity, "source_commit": manifest.get("source_commit"), "source_tree": manifest.get("source_tree")})
     if final:
-        raw_audits = {f"gpu_{gpu:02d}/{label}": _raw_audit(_run(root, gpu, label, "raw_runs")) for gpu in GPU_IDS for label in LABELS}
+        raw_audits = {f"gpu_{gpu:02d}/{label}": _raw_audit(_run(root, gpu, label, "raw_runs")) for gpu in cohort for label in LABELS}
         if any(value["verdict"] != "PASS" for value in raw_audits.values()):
             raise ValueError("M1_V2_RAW_AUDIT_FAIL")
-        raw_local = local_pairs(root, identity, "raw_runs")
-        raw_cross = cross_gpu_pairs(root, identity, "raw_runs")
-        numeric = numeric_forensics(root, raw_local, raw_cross)
-        clusters = hash_clusters(root)
+        raw_local = local_pairs(root, identity, "raw_runs", cohort)
+        raw_cross = cross_gpu_pairs(root, identity, "raw_runs", cohort)
+        numeric = numeric_forensics(root, raw_local, raw_cross, cohort)
+        clusters = hash_clusters(root, cohort)
         _write(root / "M1_V2_NUMERIC_VISUAL_FORENSIC.json", numeric)
         _write(root / "M1_V2_VISUAL_HASH_CLUSTER_REPORT.json", clusters)
-        _write(root / "M1_V2_PRODUCER_ANALYSIS.json", {"schema": "STAGE_V_M1_V2_PRODUCER_ANALYSIS_V1", "status": "PASS_PENDING_INDEPENDENT_AUDIT", "verdict": "PASS", "r1_run_count": 32, "gpu_local_pair_count": 32, "cross_gpu_pair_count": 112, "raw_audits": raw_audits, "classification": classification, "evidence_profile": profile})
+        _write(root / "M1_V2_PRODUCER_ANALYSIS.json", {"schema": "STAGE_V_M1_V2_PRODUCER_ANALYSIS_V1", "status": "PASS_PENDING_INDEPENDENT_AUDIT", "verdict": "PASS", "r1_run_count": 4 * len(cohort), **counts, "primary_clean_gpu_set": list(cohort), "raw_audits": raw_audits, "classification": classification, "evidence_profile": profile})
     return {"classification": classification, "local": local, "cross": cross, "plan": plan, "aggregate": aggregate}
 
 
@@ -311,7 +320,7 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
         print(json.dumps({"verdict": "FAIL", "reason": str(exc)}, sort_keys=True))
         return 2
-    print(json.dumps({"verdict": "PASS", "classification": result["classification"], "gpu_local_pair_count": 32, "cross_gpu_pair_count": 112}, sort_keys=True))
+    print(json.dumps({"verdict": "PASS", "classification": result["classification"], "gpu_local_pair_count": result["aggregate"]["gpu_local_pair_count"], "cross_gpu_pair_count": result["aggregate"]["cross_gpu_pair_count"]}, sort_keys=True))
     return 0
 
 

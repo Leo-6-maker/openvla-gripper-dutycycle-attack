@@ -47,13 +47,13 @@ def _load(path: Path) -> dict[str, Any]:
 
 def _load_raw_capture_plan(path: Path, identity: Mapping[str, Any], horizon: int, gpu: int | None = None) -> tuple[dict[str, Any], frozenset[int]]:
     plan = _load(path)
-    if plan.get("schema") not in {"STAGE_V_M1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1"}:
+    if plan.get("schema") not in {"STAGE_V_M1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_2_RAW_CAPTURE_PLAN_V1"}:
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_SCHEMA_INVALID")
     if plan.get("status") != "FROZEN_BEFORE_RAW_CAPTURE_RUN":
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_NOT_FROZEN")
     if plan.get("identity") != identity.get("canonical_parent_key"):
         raise CanonicalExecutionError("RAW_CAPTURE_PLAN_IDENTITY_MISMATCH")
-    if plan.get("schema") in {"STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1"}:
+    if plan.get("schema") in {"STAGE_V_M1_V2_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_1_1_RAW_CAPTURE_PLAN_V1", "STAGE_V_M1_V2_2_RAW_CAPTURE_PLAN_V1"}:
         if gpu is None or str(gpu) not in plan.get("capture_steps_by_gpu", {}):
             raise CanonicalExecutionError("RAW_CAPTURE_PLAN_GPU_MISSING")
         source_steps = plan["capture_steps_by_gpu"][str(gpu)]

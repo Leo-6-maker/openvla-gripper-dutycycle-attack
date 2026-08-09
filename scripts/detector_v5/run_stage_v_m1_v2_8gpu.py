@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed eight-GPU Stage V M1-V2 supervisor."""
+"""Fail-closed Stage V M1-V2 supervisor (legacy fixed and V2.2 dynamic cohorts)."""
 from __future__ import annotations
 
 import argparse
@@ -19,6 +19,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 PYTHON_PREFIX = "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800"
 IDENTITY = "libero_10/task_08/state_47"
 GPU_IDS = tuple(range(8))
+MIN_PRIMARY_CLEAN_GPUS = 4
+DYNAMIC_PROTOCOL_SCHEMA = "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_2_DYNAMIC_COHORT_8GPU"
 PHASES = {
     "Q1": ("CLEAN_QUALIFICATION", "rep_01"),
     "C1": ("COUNTERFACTUAL_CLEAN_PREFIX", "rep_01"),
@@ -39,6 +41,20 @@ AUTHORIZATION_FLAGS = (
 
 class V2Error(RuntimeError):
     pass
+
+
+def is_dynamic_protocol(protocol: Mapping[str, Any]) -> bool:
+    return protocol.get("schema") == DYNAMIC_PROTOCOL_SCHEMA
+
+
+def dynamic_counts(gpu_ids: tuple[int, ...] | list[int]) -> dict[str, int]:
+    n = len(tuple(gpu_ids))
+    return {
+        "primary_clean_gpu_count": n,
+        "r1_run_count": 4 * n,
+        "gpu_local_pair_count": 4 * n,
+        "cross_gpu_pair_count": 4 * n * (n - 1) // 2,
+    }
 
 
 def canonical_gpu_uuid(value: Any) -> str:
@@ -240,7 +256,9 @@ def _matches_graphics_baseline(process: Mapping[str, Any], contract: Mapping[str
 
 
 def gpu_preflight(*, gpu_ids: tuple[int, ...] = GPU_IDS, idle_memory_max_mib: int = 1024,
-                  system_graphics_baseline: Mapping[str, Any] | None = None) -> dict[str, Any]:
+                  system_graphics_baseline: Mapping[str, Any] | None = None,
+                  dynamic_cohort: bool = False,
+                  minimum_primary_clean_gpus: int = MIN_PRIMARY_CLEAN_GPUS) -> dict[str, Any]:
     """Take one conservative all-GPU snapshot; any telemetry gap is unsafe."""
     gpu_text = _query_nvidia_smi(
         "--query-gpu=index,uuid,name,memory.total,memory.used,memory.free,utilization.gpu",
@@ -325,13 +343,29 @@ def gpu_preflight(*, gpu_ids: tuple[int, ...] = GPU_IDS, idle_memory_max_mib: in
             "system_graphics_processes": baseline_by_gpu[gpu],
             "foreign_processes": foreign_by_gpu[gpu],
             "safe": not reasons,
+            "primary_clean": not reasons,
+            "primary_clean_exclusion_reason": reasons[0] if reasons else None,
             "reasons": reasons,
         })
     all_safe = not unmapped and all(bool(row["safe"]) for row in decisions)
+    primary_clean_gpu_set = [int(row["index"]) for row in decisions if row["primary_clean"]]
+    if dynamic_cohort:
+        if unmapped:
+            status = "HOLD_UNMAPPED_PROCESS_TELEMETRY"
+        elif len(primary_clean_gpu_set) < minimum_primary_clean_gpus:
+            status = "HOLD_PRIMARY_CLEAN_COHORT_BELOW_MINIMUM"
+        else:
+            status = "PASS"
+    else:
+        status = "PASS" if all_safe else "HOLD_WAIT_FOR_8GPU_SAFE"
     return {
-        "schema": "STAGE_V_M1_V2_1_GPU_PREFLIGHT_V1" if system_graphics_baseline is not None else "STAGE_V_M1_V2_GPU_PREFLIGHT_V1",
-        "status": "PASS" if all_safe else "HOLD_WAIT_FOR_8GPU_SAFE",
+        "schema": "STAGE_V_M1_V2_2_DYNAMIC_GPU_PREFLIGHT_V1" if dynamic_cohort else ("STAGE_V_M1_V2_1_GPU_PREFLIGHT_V1" if system_graphics_baseline is not None else "STAGE_V_M1_V2_GPU_PREFLIGHT_V1"),
+        "status": status,
         "gpu_ids": list(gpu_ids), "all_8_safe": all_safe,
+        "primary_clean_gpu_set": primary_clean_gpu_set,
+        "primary_clean_gpu_count": len(primary_clean_gpu_set),
+        "minimum_primary_clean_gpus": minimum_primary_clean_gpus,
+        "dynamic_primary_cohort": dynamic_cohort,
         "uuid_by_gpu": {str(row["index"]): row["uuid_canonical"] for row in gpu_rows},
         "idle_memory_max_mib": idle_memory_max_mib, "graphics_memory_max_mib": memory_limit, "gpu_rows": decisions,
         "unmapped_processes": unmapped, "baseline_system_graphics": baseline_system_graphics,
@@ -347,24 +381,75 @@ def validate_protocol(path: Path) -> dict[str, Any]:
         "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_8GPU",
         "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU",
         "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU",
+        DYNAMIC_PROTOCOL_SCHEMA,
     }:
         raise V2Error("V2_PROTOCOL_SCHEMA_INVALID")
-    required = {
-        "schema": schema,
-        "status": "FROZEN_DIAGNOSTIC_ONLY_NO_SCIENCE_AUTHORIZATION",
-        "gpu_ids": list(GPU_IDS), "workers": 8, "runs_per_gpu": 4,
-        "total_r1_runs": 32, "parallelism": 8, "seed": 7,
-        "worker_gpu_mapping": "FIXED_WORKER_I_TO_GPU_I",
-        "fresh_subprocess_per_run": True, "lockstep_barriers": True,
-        "renderer_binding_canary_required": True, "tolerance_allowed": False,
-        "gpu5_authorized": True,
-    }
-    for key, expected in required.items():
-        if protocol.get(key) != expected:
-            raise V2Error(f"V2_PROTOCOL_INVALID:{key}")
+    if is_dynamic_protocol(protocol):
+        required = {
+            "schema": DYNAMIC_PROTOCOL_SCHEMA,
+            "status": "FROZEN_DIAGNOSTIC_ONLY_NO_SCIENCE_AUTHORIZATION",
+            "gpu_ids": list(GPU_IDS), "workers": "PRIMARY_CLEAN_GPU_COUNT",
+            "runs_per_gpu": 4, "total_r1_runs": "4N", "parallelism": "PRIMARY_CLEAN_GPU_COUNT",
+            "seed": 7, "worker_gpu_mapping": "WORKER_K_TO_PRIMARY_CLEAN_GPU_SET_SORTED",
+            "fresh_subprocess_per_run": True, "lockstep_barriers": True,
+            "renderer_binding_canary_required": True, "tolerance_allowed": False,
+            "gpu5_authorized": True, "primary_clean_gpu_minimum": MIN_PRIMARY_CLEAN_GPUS,
+            "dynamic_count_formulas": {
+                "r1_runs": "4N",
+                "gpu_local_pairs": "4N",
+                "cross_gpu_pairs": "4*C(N,2)",
+            },
+            "primary_clean_gpu_rule": "ONLY_REGISTERED_SYSTEM_GRAPHICS_BASELINE_NO_FOREIGN_COMPUTE_OR_GRAPHICS_CUDA_EGL_CLOSURE",
+            "complete_ownership": "AUDITOR_ONLY",
+        }
+        for key, expected in required.items():
+            if protocol.get(key) != expected:
+                raise V2Error(f"V2_2_PROTOCOL_INVALID:{key}")
+    else:
+        required = {
+            "schema": schema,
+            "status": "FROZEN_DIAGNOSTIC_ONLY_NO_SCIENCE_AUTHORIZATION",
+            "gpu_ids": list(GPU_IDS), "workers": 8, "runs_per_gpu": 4,
+            "total_r1_runs": 32, "parallelism": 8, "seed": 7,
+            "worker_gpu_mapping": "FIXED_WORKER_I_TO_GPU_I",
+            "fresh_subprocess_per_run": True, "lockstep_barriers": True,
+            "renderer_binding_canary_required": True, "tolerance_allowed": False,
+            "gpu5_authorized": True,
+        }
+        for key, expected in required.items():
+            if protocol.get(key) != expected:
+                raise V2Error(f"V2_PROTOCOL_INVALID:{key}")
     if protocol.get("phase_order") != list(PHASES):
         raise V2Error("V2_PHASE_ORDER_INVALID")
-    if schema in {
+    if is_dynamic_protocol(protocol):
+        for key, expected in {
+            "actual_runtime_binding_receipt_required": True,
+            "fresh_preflight_per_gate": True,
+            "require_prepare_before_preflight": True,
+            "classification_evidence_profile_required": True,
+            "independent_classification_check": True,
+            "uuid_three_way_closure_required": True,
+            "uuid_canonicalization": "LOWERCASE_STRIP_GPU_PREFIX_EXACT",
+            "producer_complete_owned_by_auditor": True,
+        }.items():
+            if protocol.get(key) != expected:
+                raise V2Error(f"V2_2_PROTOCOL_INVALID:{key}")
+        if _git_blob_sha("configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json") != protocol.get("base_v2_1_1_protocol_sha256"):
+            raise V2Error("V2_1_1_BASE_PROTOCOL_CHANGED")
+        graphics = protocol.get("system_graphics_baseline")
+        if not isinstance(graphics, Mapping) or graphics != {
+            "enabled": True, "kind": "G", "process_name": "Xorg", "owner": "gdm",
+            "executable": "/usr/lib/xorg/Xorg", "max_memory_used_mib": 128,
+            "require_all_gpu_coverage": True, "require_single_consistent_pid": True,
+            "compute_processes_never_whitelisted": True,
+        }:
+            raise V2Error("V2_2_GRAPHICS_BASELINE_INVALID")
+        if protocol.get("preflight_gates") != [
+            "PRE_CANARY", "PRE_R1_Q1", "PRE_R1_C1", "PRE_R1_Q2", "PRE_R1_C2",
+            "PRE_R2_Q1", "PRE_R2_C1", "PRE_R2_Q2", "PRE_R2_C2",
+        ]:
+            raise V2Error("V2_2_PREFLIGHT_GATES_INVALID")
+    elif schema in {
         "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_8GPU",
         "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU",
     }:
@@ -451,16 +536,28 @@ def prepare_root(root: Path, protocol: Mapping[str, Any], *, source_commit: str,
         raise V2Error("V2_SOURCE_BINDING_MISMATCH")
     root.mkdir(parents=True)
     protocol_path = (protocol_path or REPO_ROOT / "configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json").resolve()
+    dynamic = is_dynamic_protocol(protocol)
     manifest_schema = (
+        "STAGE_V_M1_V2_2_DYNAMIC_COHORT_MANIFEST_V1"
+        if dynamic else (
         "STAGE_V_M1_V2_1_1_8GPU_MANIFEST_V1"
         if protocol.get("schema") == "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU"
         else "STAGE_V_M1_V2_1_8GPU_MANIFEST_V1"
+        )
     )
+    initial_counts = dynamic_counts(()) if dynamic else {"primary_clean_gpu_count": 8, "r1_run_count": 32, "gpu_local_pair_count": 32, "cross_gpu_pair_count": 112}
     manifest = {
         "schema": manifest_schema, "status": "PREPARED_NO_RUNTIME_STARTED",
         "created_utc": _now(), "protocol": protocol.get("protocol_id", "M1_V2_1_1_8GPU"), "protocol_schema": protocol.get("schema"), "protocol_sha256": sha256_file(protocol_path),
         "diagnostic_identity": IDENTITY, "source_commit": source_commit, "source_tree": source_tree,
-        "gpu_ids": list(GPU_IDS), "workers": 8, "runs_per_gpu": 4, "total_r1_runs": 32,
+        "gpu_ids": list(GPU_IDS),
+        "primary_clean_gpu_set": [], "primary_clean_gpu_count": initial_counts["primary_clean_gpu_count"],
+        "workers": initial_counts["primary_clean_gpu_count"], "runs_per_gpu": 4,
+        "total_r1_runs": initial_counts["r1_run_count"],
+        "gpu_local_pair_count": initial_counts["gpu_local_pair_count"],
+        "cross_gpu_pair_count": initial_counts["cross_gpu_pair_count"],
+        "primary_clean_gpu_minimum": int(protocol.get("primary_clean_gpu_minimum", 8 if not dynamic else MIN_PRIMARY_CLEAN_GPUS)),
+        "dynamic_primary_cohort": dynamic,
         "phase_order": list(PHASES), "seed": 7, "model_path": model_path,
         "new_science_rollouts_authorized": False, "formal_parent_promotion_authorized": False,
         "eval160_authorized": False, "protected_evaluation_authorized": False,
@@ -470,7 +567,7 @@ def prepare_root(root: Path, protocol: Mapping[str, Any], *, source_commit: str,
         "intervention_applied_steps": 0, "counterfactual_open_steps": 0,
     }
     _write(root / "M1_V2_MANIFEST.json", manifest)
-    _write(root / "M1_V2_STATUS.json", {"schema": "STAGE_V_M1_V2_1_STATUS_V1", "status": "PREPARED_NO_RUNTIME_STARTED", "r1_started": False, "r2_started": False, "classification": "UNCLASSIFIED"})
+    _write(root / "M1_V2_STATUS.json", {"schema": "STAGE_V_M1_V2_2_STATUS_V1" if dynamic else "STAGE_V_M1_V2_1_STATUS_V1", "status": "PREPARED_NO_RUNTIME_STARTED", "r1_started": False, "r2_started": False, "classification": "UNCLASSIFIED"})
 
 
 def _require_manifest(root: Path) -> dict[str, Any]:
@@ -488,11 +585,24 @@ def _preflight_path(root: Path, gate: str) -> Path:
     return root / f"M1_V2_1_GPU_PREFLIGHT_{gate}.json"
 
 
+def _manifest_cohort(root: Path) -> tuple[int, ...]:
+    manifest = _load(root / "M1_V2_MANIFEST.json")
+    if not manifest.get("dynamic_primary_cohort"):
+        return GPU_IDS
+    cohort = tuple(sorted(int(gpu) for gpu in manifest.get("primary_clean_gpu_set", [])))
+    if not cohort:
+        raise V2Error("PRIMARY_CLEAN_GPU_SET_MISSING")
+    return cohort
+
+
 def _fresh_preflight(root: Path, protocol: Mapping[str, Any], gate: str, *, run_set: str, protocol_path: Path | None = None) -> dict[str, Any]:
     manifest = _require_manifest(root)
+    dynamic = is_dynamic_protocol(protocol)
     value = gpu_preflight(
         idle_memory_max_mib=int(protocol["idle_memory_max_mib"]),
         system_graphics_baseline=protocol["system_graphics_baseline"],
+        dynamic_cohort=dynamic,
+        minimum_primary_clean_gpus=int(protocol.get("primary_clean_gpu_minimum", MIN_PRIMARY_CLEAN_GPUS)),
     )
     value.update({
         "protocol_id": protocol["protocol_id"],
@@ -504,14 +614,35 @@ def _fresh_preflight(root: Path, protocol: Mapping[str, Any], gate: str, *, run_
         "phase_receipt_sha256": None,
         "phase_receipt_path": None,
     })
+    if dynamic:
+        selected = tuple(sorted(int(gpu) for gpu in value["primary_clean_gpu_set"]))
+        if gate == "PRE_CANARY":
+            manifest = dict(manifest)
+            counts = dynamic_counts(selected)
+            manifest.update({
+                "primary_clean_gpu_set": list(selected),
+                "primary_clean_gpu_count": counts["primary_clean_gpu_count"],
+                "workers": counts["primary_clean_gpu_count"],
+                "total_r1_runs": counts["r1_run_count"],
+                "gpu_local_pair_count": counts["gpu_local_pair_count"],
+                "cross_gpu_pair_count": counts["cross_gpu_pair_count"],
+                "primary_clean_gpu_minimum": int(protocol["primary_clean_gpu_minimum"]),
+            })
+            _write(root / "M1_V2_MANIFEST.json", manifest)
+        else:
+            frozen = tuple(sorted(int(gpu) for gpu in manifest.get("primary_clean_gpu_set", [])))
+            value["primary_clean_cohort_frozen"] = list(frozen)
+            if selected != frozen:
+                value["status"] = "HOLD_PRIMARY_COHORT_DRIFT"
+                value["primary_clean_cohort_drift"] = {"frozen": list(frozen), "current": list(selected)}
     path = _preflight_path(root, gate)
     _write(path, value)
-    if value.get("status") != "PASS" or value.get("all_8_safe") is not True:
+    if value.get("status") != "PASS" or (not dynamic and value.get("all_8_safe") is not True):
         status_path = root / "M1_V2_STATUS.json"
         status = _load(status_path)
         status.update({"status": f"HOLD_RESOURCE_DRIFT_{gate}", "preflight_gate": gate, "preflight": value})
         _write(status_path, status)
-        raise V2Error(f"HOLD_WAIT_FOR_8GPU_SAFE:{gate}")
+        raise V2Error(f"HOLD_PRIMARY_CLEAN_COHORT:{gate}" if dynamic else f"HOLD_WAIT_FOR_8GPU_SAFE:{gate}")
     return value
 
 
@@ -525,8 +656,11 @@ def _bind_preflight(root: Path, gate: str, receipt_path: Path) -> None:
 
 def _require_preflight(root: Path, gate: str) -> dict[str, Any]:
     value = _load(_preflight_path(root, gate))
-    if value.get("status") != "PASS" or value.get("all_8_safe") is not True:
-        raise V2Error(f"HOLD_WAIT_FOR_8GPU_SAFE:{gate}")
+    manifest = _load(root / "M1_V2_MANIFEST.json")
+    if value.get("status") != "PASS" or (not manifest.get("dynamic_primary_cohort") and value.get("all_8_safe") is not True):
+        raise V2Error(f"HOLD_PRIMARY_CLEAN_COHORT:{gate}" if manifest.get("dynamic_primary_cohort") else f"HOLD_WAIT_FOR_8GPU_SAFE:{gate}")
+    if manifest.get("dynamic_primary_cohort") and value.get("primary_clean_gpu_set") != manifest.get("primary_clean_gpu_set"):
+        raise V2Error(f"HOLD_PRIMARY_COHORT_DRIFT:{gate}")
     return value
 
 
@@ -594,6 +728,7 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
 
 def run_renderer_canary(root: Path, args: argparse.Namespace, protocol: Mapping[str, Any]) -> None:
     _fresh_preflight(root, protocol, "PRE_CANARY", run_set="canary", protocol_path=args.protocol)
+    cohort = _manifest_cohort(root)
     output_root = root / "renderer_canary"
     output_root.mkdir(parents=True, exist_ok=True)
 
@@ -603,8 +738,8 @@ def run_renderer_canary(root: Path, args: argparse.Namespace, protocol: Mapping[
         result = subprocess.run(command, check=False, env={**os.environ, "CUDA_VISIBLE_DEVICES": str(gpu), "MUJOCO_GL": "egl", "MUJOCO_EGL_DEVICE_ID": "0"}, capture_output=True, text=True)
         return {"gpu": gpu, "returncode": result.returncode, "stderr": result.stderr[-1000:], "output": str(output)}
 
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        results = list(pool.map(one, GPU_IDS))
+    with ThreadPoolExecutor(max_workers=len(cohort)) as pool:
+        results = list(pool.map(one, cohort))
     if any(item["returncode"] != 0 or not Path(item["output"]).is_file() or _load(Path(item["output"])).get("status") != "PASS" for item in results):
         canary_path = root / "M1_V2_RENDERER_CANARY.json"
         _write(canary_path, {"schema": "STAGE_V_M1_V2_1_RENDERER_CANARY_AGGREGATE_V1", "status": "HOLD_RENDER_DEVICE_BINDING_MISMATCH", "results": results})
@@ -613,7 +748,7 @@ def run_renderer_canary(root: Path, args: argparse.Namespace, protocol: Mapping[
     preflight = _require_preflight(root, "PRE_CANARY")
     uuid_by_gpu: dict[str, str] = {}
     try:
-        for gpu in GPU_IDS:
+        for gpu in cohort:
             canary = _load(output_root / f"gpu_{gpu:02d}.json")
             validate_binding_receipt(canary, gpu, require_canonical_uuid=True)
             uuid_by_gpu[str(gpu)] = validate_uuid_binding(
@@ -628,7 +763,7 @@ def run_renderer_canary(root: Path, args: argparse.Namespace, protocol: Mapping[
         _bind_preflight(root, "PRE_CANARY", canary_path)
         raise
     canary_path = root / "M1_V2_RENDERER_CANARY.json"
-    _write(canary_path, {"schema": "STAGE_V_M1_V2_1_RENDERER_CANARY_AGGREGATE_V1", "status": "PASS", "gpu_ids": list(GPU_IDS), "uuid_by_gpu": uuid_by_gpu, "results": results})
+    _write(canary_path, {"schema": "STAGE_V_M1_V2_2_RENDERER_CANARY_AGGREGATE_V1" if is_dynamic_protocol(protocol) else "STAGE_V_M1_V2_1_RENDERER_CANARY_AGGREGATE_V1", "status": "PASS", "gpu_ids": list(cohort), "uuid_by_gpu": uuid_by_gpu, "results": results})
     _bind_preflight(root, "PRE_CANARY", canary_path)
 
 
@@ -677,6 +812,7 @@ def run_matrix(root: Path, args: argparse.Namespace, run_set: str, protocol: Map
     if args.source_commit != manifest.get("source_commit") or args.source_tree != manifest.get("source_tree"):
         raise V2Error("V2_SOURCE_BINDING_ARGUMENT_MISMATCH")
     _require_preflight(root, "PRE_CANARY")
+    cohort = _manifest_cohort(root)
     if not _load(root / "M1_V2_RENDERER_CANARY.json").get("status") == "PASS":
         raise V2Error("HOLD_RENDER_DEVICE_BINDING_MISMATCH")
     if run_set == "r2" and not args.raw_capture_plan:
@@ -688,8 +824,8 @@ def run_matrix(root: Path, args: argparse.Namespace, run_set: str, protocol: Map
     for label in PHASES:
         gate = f"PRE_{run_set.upper()}_{label}"
         _fresh_preflight(root, protocol, gate, run_set=run_set, protocol_path=args.protocol)
-        with ThreadPoolExecutor(max_workers=8) as pool:
-            results = list(pool.map(lambda gpu: _run_one(root, args, gpu, label, run_set), GPU_IDS))
+        with ThreadPoolExecutor(max_workers=len(cohort)) as pool:
+            results = list(pool.map(lambda gpu: _run_one(root, args, gpu, label, run_set), cohort))
         receipt_path = root / f"M1_V2_{run_set.upper()}_{label}_RECEIPTS.json"
         _write(receipt_path, {"schema": "STAGE_V_M1_V2_1_PHASE_RECEIPTS_V1", "phase": label, "run_set": run_set, "results": results})
         _bind_preflight(root, gate, receipt_path)
@@ -745,7 +881,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         protocol = validate_protocol(args.protocol.resolve())
-        if protocol.get("schema") != "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU":
+        if protocol.get("schema") not in {"STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V2_1_1_8GPU", DYNAMIC_PROTOCOL_SCHEMA}:
             raise V2Error("V2_1_1_PROTOCOL_REQUIRED")
         if args.renderer_canary:
             if args.gpu not in GPU_IDS or not args.canary_output or not args.candidate or not args.official_snapshot_root or not args.upstream_root:
