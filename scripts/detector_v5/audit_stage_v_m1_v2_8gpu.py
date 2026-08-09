@@ -65,7 +65,11 @@ def _independent_profile(local: Mapping[str, Any], cross: Mapping[str, Any]) -> 
     for gpu in GPU_IDS:
         pairs = local["gpus"][f"gpu_{gpu:02d}"]["pairs"]
         same_mode.append((f"SAME_MODE_C_GPU{gpu}", pairs[f"SAME_MODE_C_GPU{gpu}"]))
-    cross_gpu = [(f"CROSS_GPU_{label}_{name}", pair) for label, pairs in cross["labels"].items() for name, pair in pairs.items()]
+    cross_gpu = [
+        (f"CROSS_GPU_{label}_{name}", pair)
+        for label in LABELS
+        for name, pair in cross["labels"].get(label, {}).items()
+    ]
     raw_only = [name for name, pair in same_mode if not _trace_equal(pair, "raw_observation") and _trace_equal(pair, "policy_rgb") and _trace_equal(pair, "model_input") and _full_sim_exact(pair)]
     processor_only = [name for name, pair in same_mode if _trace_equal(pair, "raw_observation") and _trace_equal(pair, "policy_rgb") and not _trace_equal(pair, "model_input") and _full_sim_exact(pair)]
     same_visual = [name for name, pair in same_mode if _render_visual_diff(pair) and _full_sim_exact(pair)]
