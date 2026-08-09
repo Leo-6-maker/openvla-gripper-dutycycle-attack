@@ -12,9 +12,9 @@ import time
 from typing import Any
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, gpu_preflight, load_rows, normalize_parent, project_queue, sha256_file, terminate_process_group, utc_now
+    from .stage_v_dynamic_common import atomic_write_json, gpu_preflight, load_rows, normalize_parent, pid_alive, project_queue, read_json, sha256_file, terminate_process_group, utc_now
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import atomic_write_json, gpu_preflight, load_rows, normalize_parent, project_queue, sha256_file, terminate_process_group, utc_now
+    from stage_v_dynamic_common import atomic_write_json, gpu_preflight, load_rows, normalize_parent, pid_alive, project_queue, read_json, sha256_file, terminate_process_group, utc_now
 
 try:
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
@@ -38,8 +38,62 @@ class Dispatcher:
         self.queue = AtomicTaskQueue(str(args.queue_db), run_id=self.run_id)
         self.lease_db = args.lease_db or (self.root / "GPU_LEASES.sqlite")
 
+    def _owned_child_pgids(self) -> list[int]:
+        parent_root = str((self.root / "parents").resolve()) + os.sep
+        current_pgid = os.getpgid(0) if hasattr(os, "getpgid") else os.getpid()
+        pgids: set[int] = set()
+        for status_path in self.root.glob("worker_gpu*/WORKER_STATUS.json"):
+            value = read_json(status_path, {})
+            if not isinstance(value, dict) or not str(value.get("current_output_dir", "")).startswith(parent_root):
+                continue
+            child_pid = int(value.get("child_pid") or 0)
+            child_pgid = int(value.get("child_pgid") or 0)
+            if child_pid <= 1 or child_pgid <= 1 or child_pgid == current_pgid or not pid_alive(child_pid):
+                continue
+            try:
+                if os.getpgid(child_pid) == child_pgid:
+                    pgids.add(child_pgid)
+            except OSError:
+                pass
+        return sorted(pgids)
+
+    def _terminate_owned_children(self, grace_seconds: float = 5.0) -> None:
+        if os.name != "posix":
+            return
+        pgids = self._owned_child_pgids()
+        for pgid in pgids:
+            try:
+                os.killpg(pgid, signal.SIGTERM)
+            except (OSError, ProcessLookupError):
+                pass
+        deadline = time.monotonic() + grace_seconds
+        while time.monotonic() < deadline and any(pid_alive(pgid) for pgid in pgids):
+            time.sleep(0.1)
+        for pgid in pgids:
+            if pid_alive(pgid):
+                try:
+                    os.killpg(pgid, signal.SIGKILL)
+                except (OSError, ProcessLookupError):
+                    pass
+
+    def _recover_owned_leases(self) -> None:
+        worker_pids = {process.pid for process in self.processes}
+        store = GpuLeaseStore(self.lease_db)
+        for lease in store.active():
+            if (
+                lease.get("runtime_root") == str(self.root)
+                and lease.get("atomic_job_id") == self.run_id
+                and int(lease.get("worker_pid") or 0) in worker_pids
+                and not pid_alive(int(lease["worker_pid"]))
+            ):
+                store.recover_stale(
+                    lease["lease_id"], pid_alive=False, identity_verified=True,
+                    reason="DISPATCHER_PROCESS_REAP",
+                )
+
     def _signal(self, *_args: Any) -> None:
         self.stop_requested = True
+        self._terminate_owned_children(grace_seconds=5)
         for process in self.processes:
             if process.poll() is None:
                 terminate_process_group(process, grace_seconds=5)
@@ -269,20 +323,24 @@ class Dispatcher:
                     return 0
                 time.sleep(self.args.poll_seconds)
         except Exception as exc:
+            self._terminate_owned_children(grace_seconds=5)
             for process in self.processes:
                 if process.poll() is None:
                     terminate_process_group(process, grace_seconds=5)
+            self._recover_owned_leases()
             atomic_write_json(self.root / "DISPATCHER_FAILURE.json", {
                 "schema": "STAGE_V_DYNAMIC_DISPATCHER_FAILURE_V2", "status": "FAIL",
                 "reason": f"{type(exc).__name__}:{exc}", "dispatcher_pid": os.getpid(), "updated_utc": utc_now(),
             })
             return 1
         finally:
+            self._terminate_owned_children(grace_seconds=2)
             for process in self.processes:
                 if process.poll() is None:
                     terminate_process_group(process, grace_seconds=5)
                 else:
                     process.wait()
+            self._recover_owned_leases()
             self.queue.close()
 
 
