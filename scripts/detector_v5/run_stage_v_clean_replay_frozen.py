@@ -137,6 +137,21 @@ def last_jsonl(path: Path) -> Mapping[str, Any] | None:
     return last
 
 
+def _bind_runtime_attention() -> str:
+    if os.environ.get("OPENVLA_ATTN_IMPLEMENTATION") != "eager":
+        return "UNMODIFIED"
+    from transformers import AutoModelForVision2Seq
+
+    original = AutoModelForVision2Seq.from_pretrained
+
+    def eager_from_pretrained(*args: Any, **kwargs: Any) -> Any:
+        kwargs["attn_implementation"] = "eager"
+        return original(*args, **kwargs)
+
+    AutoModelForVision2Seq.from_pretrained = staticmethod(eager_from_pretrained)
+    return "OPENVLA_UPSTREAM_ATTENTION_OVERRIDE_V1"
+
+
 def build_start_provenance(module: Mapping[str, Any], worker_script: Path, artifact_provenance: Mapping[str, Any]) -> dict[str, Any]:
     repo_root = worker_script.resolve().parents[1]
     return {
@@ -181,7 +196,9 @@ def run(args: argparse.Namespace) -> int:
     model_path = Path(args.model_path) if args.model_path else Path(upstream_provenance["checkpoints"][suite]["path"])
     manifest_path = output_dir / "OFFICIAL_CLEAN_REPLAY_MANIFEST.csv"
     control: dict[str, Any]
+    runtime_adapter = "NOT_APPLIED"
     try:
+        runtime_adapter = _bind_runtime_attention()
         old_argv = sys.argv[:]
         old_pycache = os.environ.get("PYTHONDONTWRITEBYTECODE")
         try:
@@ -265,6 +282,7 @@ def run(args: argparse.Namespace) -> int:
             "attack_rollouts": 0,
             "worker_gpu": int(args.gpu),
             "runtime_environment": {"OPENVLA_ATTN_IMPLEMENTATION": os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "")},
+            "runtime_adapter": runtime_adapter,
             "runtime_pythonpath_prefixes": runtime_pythonpath_prefixes,
             "generated_utc": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
         }
@@ -279,6 +297,7 @@ def run(args: argparse.Namespace) -> int:
             "error": f"{type(exc).__name__}:{str(exc)[:1000]}", "old_artifacts_reused": False,
             "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
             "runtime_environment": {"OPENVLA_ATTN_IMPLEMENTATION": os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "")},
+            "runtime_adapter": runtime_adapter,
             "runtime_pythonpath_prefixes": runtime_pythonpath_prefixes,
         }
     atomic_write_json(output_dir / "CONTROL_RESULT.json", control)

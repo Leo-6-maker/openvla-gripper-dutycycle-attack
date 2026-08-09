@@ -13,6 +13,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.detector_v5 import run_stage_v_parent_aware_supervisor as sup
+from scripts.detector_v5 import run_stage_v_dynamic_dispatcher as dispatcher
 from scripts.detector_v5.audit_stage_v_abort_postmortem import build_postmortem, build_timeout_policy
 from scripts.detector_v5 import run_stage_v_control_qualification as control_qualification
 from scripts.detector_v5.run_stage_v_control_qualification import ranked
@@ -182,6 +183,16 @@ def test_gpu_preflight_selects_exactly_eight_when_more_are_safe(monkeypatch: pyt
     assert len(result["all_safe_gpus"]) == 8
     assert result["safe_gpus"] == result["all_safe_gpus"]
     assert 5 not in result["safe_gpus"]
+
+
+def test_stage_v_dispatcher_accepts_partial_fleet_worker_cap() -> None:
+    args = dispatcher.build_parser().parse_args([
+        "--run-root", "run", "--repo-root", ".", "--parent-manifest", "manifest.json",
+        "--queue-db", "queue.sqlite", "--run-id", "run", "--source-commit", "commit",
+        "--source-tree", "tree", "--expected-parent-count", "1", "--preflight-file", "preflight.json",
+        "--preflight-output", "out.json", "--required-workers", "7",
+    ])
+    assert 1 <= args.required_workers <= 8
 
 
 @pytest.mark.skipif(os.name == "nt", reason="fcntl process locking is Linux production behavior")

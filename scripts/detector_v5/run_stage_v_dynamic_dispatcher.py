@@ -37,6 +37,7 @@ class Dispatcher:
         self.run_id = args.run_id
         self.queue = AtomicTaskQueue(str(args.queue_db), run_id=self.run_id)
         self.lease_db = args.lease_db or (self.root / "GPU_LEASES.sqlite")
+        self.started_gpu_ids: set[int] = set()
 
     def _signal(self, *_args: Any) -> None:
         self.stop_requested = True
@@ -229,7 +230,35 @@ class Dispatcher:
         finally:
             log.close()
         self.processes.append(process)
+        self.started_gpu_ids.add(gpu_id)
         atomic_write_json(self.root / f"worker_gpu{gpu_id}.pid.json", {"pid": process.pid, "gpu_id": gpu_id, "started_utc": utc_now()})
+
+    def _spawn_new_eligible_gpus(self) -> None:
+        if self.args.resource_mode not in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+            return
+        active_count = sum(process.poll() is None for process in self.processes)
+        slots = self.args.required_workers - active_count
+        if slots <= 0:
+            return
+        inventory, error = query_inventory()
+        if error:
+            return
+        leases = GpuLeaseStore(self.lease_db).active()
+        admission = admit_mode_b_or_c(
+            inventory,
+            mode=self.args.resource_mode,
+            leased_gpu_ids=[row["gpu_id"] for row in leases],
+            project_pids=[row["worker_pid"] for row in leases],
+            project_process_tokens=(str(self.root), "run_stage_v_dynamic_worker.py"),
+            excluded_gpu_ids=self.args.excluded_gpus,
+            minimum_free_mib=self.args.minimum_free_mib,
+        )
+        candidates = [
+            int(gpu) for gpu in admission.get("eligible_gpu_ids", [])
+            if int(gpu) not in self.started_gpu_ids
+        ]
+        for gpu_id in candidates[:slots]:
+            self._spawn(gpu_id)
 
     def run(self) -> int:
         if hasattr(signal, "SIGTERM"):
@@ -253,6 +282,9 @@ class Dispatcher:
                         raise RuntimeError(f"WORKER_EXIT:{process.pid}:{code}")
                 project_queue(self.root, self.queue.list_tasks())
                 tasks = self.queue.list_tasks()
+                if any(task["state"] not in {"DONE_VALID", "DONE", "DONE_CLASSIFIED_TC"} for task in tasks):
+                    self._spawn_new_eligible_gpus()
+                    alive = sum(process.poll() is None for process in self.processes)
                 if alive == 0:
                     fatal = [task for task in tasks if task["state"] not in {"DONE_VALID", "DONE", "DONE_CLASSIFIED_TC"}]
                     if fatal:
@@ -325,8 +357,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.required_workers != 8:
-        raise SystemExit("Stage V R2 requires exactly 8 workers")
+    if not 1 <= args.required_workers <= 8:
+        raise SystemExit("Stage V R2 requires 1-8 maximum workers")
     return Dispatcher(args).run()
 
 
