@@ -1,0 +1,172 @@
+{
+  "schema": "STAGE_V_MILESTONE_HANDOFF_V1",
+  "created_utc": "2026-08-09T16:48:28.678Z",
+  "milestone": "M1_RUNTIME_DETERMINISM",
+  "status": "HOLD",
+  "milestone_ledger": {
+    "M0_V2_1_1_STATIC": "PASS",
+    "M1_RUNTIME_DETERMINISM": "HOLD",
+    "M2_EXECUTION_EQUIVALENCE": "NOT_STARTED",
+    "M3_FRESH_QUALIFICATION": "NOT_STARTED",
+    "M4_COUNTERFACTUAL_V_MAP": "NOT_STARTED",
+    "M5_V_TEACHER": "NOT_STARTED",
+    "M6_V_STUDENT": "NOT_STARTED",
+    "M7_EVENT_SCHEDULER": "NOT_STARTED",
+    "M8_STUDENT_TIME_CAUSAL": "NOT_STARTED",
+    "M9_VIS_SELECTIVITY": "NOT_STARTED",
+    "M10_FINAL_FREEZE": "NOT_STARTED",
+    "M11_READY_FOR_PROTECTED_EVAL": "NOT_STARTED"
+  },
+  "repository": {
+    "full_name": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/m1-v2-eight-gpu-diagnostic-20260808",
+    "runtime_source_commit": "c3edc4c547957395000adfb068f06cc96267ef0a",
+    "runtime_source_tree": "2199d67445e6b2f61ef5b40928736de9383683de",
+    "worktree": "D:/vla_attack/repo_work/openvla-gripper-dutycycle-attack-m1-v2-8gpu-20260808",
+    "worktree_status": "CLEAN_AT_CAPTURE",
+    "runtime_source_role": "FROZEN_RUNTIME_BINDING"
+  },
+  "protocol": {
+    "id": "STAGE_V_M1_VISUAL_DETERMINISM_V2_1_1_8GPU_20260809",
+    "path": "configs/stage_v_m1_visual_determinism_protocol_v2_1_1_8gpu.json",
+    "sha256": "b7de17bd7bf7a50bc7682491a8e7ee0d6ec19ddc1e201e4866abb042425962ee"
+  },
+  "runtime": {
+    "server_alias": "dty-server",
+    "hostname": "pm-364c0001",
+    "worktree": "/mnt/sdc/dty_user/stage-v-m1-v2-1-1-c3edc4c5",
+    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/M1_V2_1_1_8GPU_c3edc4c5_20260809T164314Z",
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "torch": "2.2.2+cu118",
+    "gpu_model": "NVIDIA A800-SXM4-80GB",
+    "gpu_ids": [0, 1, 2, 3, 4, 5, 6, 7],
+    "worker_binding": "worker_i -> physical GPU_i",
+    "preflight_gate": "PRE_CANARY",
+    "preflight_captured_utc": "2026-08-09T16:43:43.356293Z",
+    "preflight_status": "HOLD_WAIT_FOR_8GPU_SAFE:PRE_CANARY",
+    "root_status": "HOLD_RESOURCE_DRIFT_PRE_CANARY",
+    "classification": "UNCLASSIFIED",
+    "uuid_closure": "NOT_STARTED",
+    "latest_live_resource_check_utc": "2026-08-09T16:47:11Z"
+  },
+  "source_artifacts": {
+    "m1_runner_sha256": "f5f687dcc8b47a91d8d146e909624e4fdd5ce49d5642e3df4413b80b710b25df",
+    "canonical_clean_runner_sha256": "639ac477b1a5d55e399d2df95e2d8e7260b5ffda3024b9065ffc686da7ae9b55",
+    "canonical_execution_core_sha256": "b994cf36c1243708ecb370fdfe348db7bc36609f938df6a7456e8a048fb029eb",
+    "independent_auditor_sha256": "6ae80ce45449c168abf5161b0192597c65429a6cc2a0bde0ee7b1d67c9ab88b1"
+  },
+  "gpu_binding": {
+    "physical_uuid_canonical": {
+      "0": "bf4309d3-8cba-437e-8d87-cee9f1e6d232",
+      "1": "f6910e5c-f41e-109e-43d0-f01f0d77dbf2",
+      "2": "7b06162a-27e4-2552-e891-d201e3fae6b9",
+      "3": "41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
+      "4": "e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
+      "5": "185b30c0-074c-6f07-aa8b-a67d00e8e4a9",
+      "6": "92963392-f77a-85ce-4ba7-7a8288429ca5",
+      "7": "bd2cfcc1-64ab-c2d0-9ae3-245fc8d21a76"
+    },
+    "renderer_canary_uuid_closure": "NOT_STARTED",
+    "child_torch_uuid_closure": "NOT_STARTED"
+  },
+  "resource_hold": {
+    "mode": "MODE_A_DETERMINISM_SENSITIVE",
+    "required_safe_gpu_count": 8,
+    "all_8_safe": false,
+    "safe_gpus_at_preflight": [0, 1, 2, 4, 5, 6, 7],
+    "unsafe_gpu": 3,
+    "gpu_uuid_canonical": "41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
+    "foreign_pid": 964381,
+    "owner": "huanzze",
+    "process": "/home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3",
+    "workload": "Isaac GR00T timed server",
+    "memory_used_mib": 6715,
+    "compute_memory_mib": 6696,
+    "reasons": ["MEMORY_NOT_IDLE", "FOREIGN_PROCESS_PRESENT"],
+    "system_graphics_baseline": "Xorg PID 7846, gdm, all 8 GPUs, 10 MiB/GPU",
+    "foreign_processes_touched": false,
+    "shared_gpu_execution_allowed": false,
+    "partial_fleet_allowed": false
+  },
+  "evidence": {
+    "manifest": {
+      "path": "M1_V2_MANIFEST.json",
+      "sha256": "5a9549f3cbf38b03a1a7b6e39ee2dc27c82c66b107bd390a612ead4989c066c9"
+    },
+    "status": {
+      "path": "M1_V2_STATUS.json",
+      "sha256": "37decce652bf9d076a17dd161de9ef5eb96988d1d124d25e1d42eac495a2b2fd"
+    },
+    "preflight": {
+      "path": "M1_V2_1_GPU_PREFLIGHT_PRE_CANARY.json",
+      "sha256": "bf48558fe6958c33e22b703d29a4f04ab5033c0a85983a1ba6b23a7556841d98"
+    },
+    "runtime_files_present": [
+      "M1_V2_MANIFEST.json",
+      "M1_V2_STATUS.json",
+      "M1_V2_1_GPU_PREFLIGHT_PRE_CANARY.json"
+    ],
+    "canary_started": false,
+    "r1_started": false,
+    "r2_started": false,
+    "scientific_rows_produced": 0
+  },
+  "runs": {
+    "expected_next_atomic_unit": "8 renderer canaries",
+    "runs_expected": 8,
+    "runs_completed": 0,
+    "missing": 8,
+    "invalid": 0,
+    "retries": 0
+  },
+  "science_scope": {
+    "new_science_parents": 0,
+    "diagnostic_identity": "libero_10/task_08/state_47",
+    "diagnostic_identity_future_eligibility": "EXCLUDED_M1_DIAGNOSTIC_IDENTITY",
+    "train_val_test_parent_split": "NOT_APPLICABLE_BEFORE_M3",
+    "exposure_manifest_recompute": "REQUIRED_BEFORE_M3_PARENT_SELECTION"
+  },
+  "counters": {
+    "eval160_reads": 0,
+    "protected_eval_reads": 0,
+    "attack_rollouts": 0,
+    "counterfactual_open_steps": 0,
+    "intervention_applied_steps": 0,
+    "vis_pgd_attack_rollouts": 0,
+    "training_launched": false,
+    "new_science_rollouts": 0,
+    "foreign_processes_touched": false
+  },
+  "validation": {
+    "focused_v2_1_1_tests": "49 passed",
+    "full_detector_v5": "232 passed, 6 skipped, 1 pre-existing failure",
+    "pre_existing_failure": "test_m1_v1_protocol_blob_is_frozen",
+    "py_compile": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "interpretation": {
+    "claim": "Corrected M1 source is statically validated but runtime evidence is blocked before canary by MODE_A resource drift.",
+    "m1_runtime": "HOLD",
+    "rb1a": "HOLD",
+    "execution_equivalence": "NOT_ASSESSED",
+    "vulnerability_labels": "NOT_GENERATED",
+    "claims_forbidden": [
+      "M1 runtime PASS",
+      "RB1A PASS",
+      "partial 7-GPU equivalence",
+      "V_t vulnerability result",
+      "protected evaluation readiness"
+    ]
+  },
+  "allowed_next_action": "After a new live snapshot shows 8/8 safe, run a fresh PRE_CANARY against the unchanged c3ed runtime binding; otherwise remain HOLD.",
+  "forbidden_next_actions": [
+    "run renderer canary while GPU3 is foreign-occupied",
+    "run R1 or R2",
+    "touch or terminate foreign PID 964381",
+    "share GPU3",
+    "use partial 7-GPU results",
+    "promote M1 or RB1A",
+    "read Eval160 or protected evaluation",
+    "modify the c3ed-bound runtime root in place"
+  ]
+}
