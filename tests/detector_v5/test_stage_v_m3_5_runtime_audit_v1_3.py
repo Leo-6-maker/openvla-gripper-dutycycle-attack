@@ -83,3 +83,46 @@ def test_manual_pair_selection_is_deterministic_and_in_range():
     assert first["probe_id"] in {f"Q{index:02d}" for index in range(24)}
     assert first["repetition"] in range(3)
     assert first["dose"] in {"T3", "T5", "T10"}
+
+
+def test_exact_a800_receipt_is_bound_to_tests_code_and_clean_source(tmp_path):
+    test_file = tmp_path / "tests/detector_v5/test_stage_v_example.py"
+    code_file = tmp_path / "scripts/example.py"
+    test_file.parent.mkdir(parents=True)
+    code_file.parent.mkdir(parents=True)
+    test_file.write_text("assert True\n", encoding="utf-8")
+    code_file.write_text("VALUE = 1\n", encoding="utf-8")
+    bindings = {path.relative_to(tmp_path).as_posix(): _STATIC._sha256(path) for path in (code_file, test_file)}
+    binding = {
+        "runtime_python": "/exact/python",
+        "source_commit": "a" * 40,
+        "source_tree": "b" * 40,
+        "expected_collected": 2,
+        "test_files": [test_file.relative_to(tmp_path).as_posix()],
+        "tested_bindings": bindings,
+    }
+    receipt = {
+        "schema": "STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1",
+        "status": "PASS",
+        "runtime_python": "/exact/python",
+        "source_commit": "a" * 40,
+        "source_tree": "b" * 40,
+        "source_status_porcelain": "",
+        "cuda_visible_devices": "",
+        "test_files": binding["test_files"],
+        "tested_bindings": bindings,
+        "collected": 2,
+        "passed": 1,
+        "skipped": 1,
+        "failed": 0,
+        "errors": 0,
+        "deselected": 0,
+        "py_compile_status": "PASS",
+        "protected_counters": dict(_STATIC.COUNTERS),
+    }
+    assert _STATIC._exact_regression_valid(tmp_path, binding, receipt, "/exact/python")[0]
+    receipt["source_status_porcelain"] = " M dirty.py"
+    assert not _STATIC._exact_regression_valid(tmp_path, binding, receipt, "/exact/python")[0]
+    receipt["source_status_porcelain"] = ""
+    code_file.write_text("VALUE = 2\n", encoding="utf-8")
+    assert not _STATIC._exact_regression_valid(tmp_path, binding, receipt, "/exact/python")[0]

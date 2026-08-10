@@ -115,6 +115,76 @@ def _git_input(checks: list[dict[str, Any]], name: str, binding: Any) -> None:
         _check(checks, f"runtime_input:{name}:adapter", adapter.is_file() and _sha256(adapter) == binding.get("adapter_sha256"), adapter)
 
 
+def _exact_regression_valid(
+    repo: Path,
+    binding: Any,
+    receipt: Any,
+    runtime_python: Any,
+) -> tuple[bool, dict[str, Any]]:
+    if not isinstance(binding, Mapping) or not isinstance(receipt, Mapping):
+        return False, {"error": "binding and receipt mappings required"}
+    test_files = binding.get("test_files")
+    tested_bindings = binding.get("tested_bindings")
+    counts = {name: receipt.get(name) for name in ("collected", "passed", "skipped", "failed", "errors", "deselected")}
+    counts_valid = all(isinstance(value, int) and not isinstance(value, bool) and value >= 0 for value in counts.values())
+    paths_valid = isinstance(test_files, list) and bool(test_files) and all(
+        isinstance(path, str) and path.startswith("tests/detector_v5/test_stage_v") and path.endswith(".py")
+        for path in test_files
+    )
+    paths_valid = paths_valid and test_files == sorted(set(test_files))
+    bindings_valid = isinstance(tested_bindings, Mapping) and bool(tested_bindings)
+    if bindings_valid:
+        for relative, expected_sha in tested_bindings.items():
+            path = Path(str(relative))
+            resolved = (repo / path).resolve()
+            if (
+                not isinstance(relative, str)
+                or not isinstance(expected_sha, str)
+                or len(expected_sha) != 64
+                or any(character not in "0123456789abcdef" for character in expected_sha)
+                or path.is_absolute()
+                or ".." in path.parts
+                or not resolved.is_relative_to(repo)
+                or not resolved.is_file()
+                or _sha256(resolved) != expected_sha
+            ):
+                bindings_valid = False
+                break
+    valid = (
+        receipt.get("schema") == "STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1"
+        and receipt.get("status") == "PASS"
+        and receipt.get("runtime_python") == binding.get("runtime_python") == runtime_python
+        and all(
+            isinstance(binding.get(name), str)
+            and len(binding[name]) == 40
+            and all(character in "0123456789abcdef" for character in binding[name])
+            for name in ("source_commit", "source_tree")
+        )
+        and receipt.get("source_commit") == binding.get("source_commit")
+        and receipt.get("source_tree") == binding.get("source_tree")
+        and receipt.get("source_status_porcelain") == ""
+        and receipt.get("cuda_visible_devices") == ""
+        and receipt.get("test_files") == test_files
+        and receipt.get("tested_bindings") == tested_bindings
+        and paths_valid
+        and bindings_valid
+        and all(path in tested_bindings for path in test_files)
+        and counts_valid
+        and counts["collected"] == binding.get("expected_collected")
+        and counts["collected"] == counts["passed"] + counts["skipped"]
+        and counts["failed"] == counts["errors"] == counts["deselected"] == 0
+        and receipt.get("py_compile_status") == "PASS"
+        and receipt.get("protected_counters") == COUNTERS
+    )
+    return valid, {
+        "source_commit": receipt.get("source_commit"),
+        "source_tree": receipt.get("source_tree"),
+        "test_file_count": len(test_files) if isinstance(test_files, list) else None,
+        "tested_binding_count": len(tested_bindings) if isinstance(tested_bindings, Mapping) else None,
+        "counts": counts,
+    }
+
+
 def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
     repo = repo_root.resolve()
     protocol_path = protocol_path.resolve()
@@ -265,7 +335,15 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
     test_binding = protocol.get("exact_a800_regression", {})
     test_path = Path(str(test_binding.get("path", ""))).resolve()
     test_receipt = _load(test_path) if test_path.is_file() else {}
-    _check(checks, "exact_a800_regression", test_path.is_file() and _sha256(test_path) == test_binding.get("sha256") and test_receipt.get("schema") == "STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1" and test_receipt.get("status") == "PASS" and test_receipt.get("failed") == 0, test_path)
+    regression_valid, regression_detail = _exact_regression_valid(
+        repo, test_binding, test_receipt, protocol.get("source_binding", {}).get("runtime_python")
+    )
+    _check(
+        checks,
+        "exact_a800_regression",
+        test_path.is_file() and _sha256(test_path) == test_binding.get("sha256") and regression_valid,
+        regression_detail,
+    )
     for name, path in bound_paths.items():
         if path and path.suffix == ".py":
             result = subprocess.run([sys.executable, "-m", "py_compile", str(path)], cwd=repo, capture_output=True, text=True)
