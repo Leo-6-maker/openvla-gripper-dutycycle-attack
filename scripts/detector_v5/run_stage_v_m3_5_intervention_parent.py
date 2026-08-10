@@ -140,6 +140,8 @@ def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path)
     import torch
 
     render_id = getattr(env, "render_gpu_device_id", None)
+    if render_id is None:
+        render_id = getattr(getattr(env, "env", None), "render_gpu_device_id", None)
     try:
         render_id = int(render_id)
     except (TypeError, ValueError):
