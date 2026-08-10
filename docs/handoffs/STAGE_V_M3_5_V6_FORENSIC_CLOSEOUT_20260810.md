@@ -66,6 +66,18 @@ The contract requires treatment compliance receipts for canonical raw
 isolation, `CONTROL x3 / T3,T5,T10 x3` diagnostics, a physical truth table with
 explicit abstains, and per-probe rather than global terminal/horizon gating.
 
+Preliminary read-only historical gap audit:
+
+`/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_HISTORICAL_EXPOSED_GAP_AUDIT_V1_20260810T094153Z/M3_5_HISTORICAL_EXPOSED_GAP_AUDIT.json`
+
+SHA256: `d8b2c50ab66baa1f5623d280416174efbcd448997c415c779e419b76e757c444`
+
+It inspected 6 historical exposed parents / 432 branch rows. Treatment
+compliance, full simulator-state binding, policy-input binding, surgical arm
+isolation, and repeated outcome-stability receipts were all `0/432`. Existing
+prefix replay and qpos/object/contact comparisons are useful diagnostics but do
+not satisfy the M3.5 gates.
+
 The historical exposure inventory is read-only input only:
 
 `/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/runner_binding_forensics_c80eb290_20260808T013003Z/COUNTERFACTUAL_EXPOSURE_EXCLUSION_V1.json`
