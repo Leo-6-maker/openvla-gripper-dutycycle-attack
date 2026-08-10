@@ -27,6 +27,7 @@ def select(
     source_commit: str,
     source_tree: str,
     target_per_suite: int = 10,
+    protocol_id: str = PROTOCOL_ID,
 ) -> dict[str, Any]:
     if output.exists():
         raise FileExistsError(f"refusing to overwrite candidate manifest: {output}")
@@ -86,7 +87,7 @@ def select(
     report = {
         "schema": "STAGE_V_DYNAMIC_CLEAN_QUALIFICATION_CANDIDATE_MANIFEST_V1",
         "status": "FROZEN",
-        "protocol_id": PROTOCOL_ID,
+        "protocol_id": protocol_id,
         "source_commit": source_commit,
         "source_tree": source_tree,
         "salt": salt,
@@ -136,6 +137,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
     parser.add_argument("--target-per-suite", type=int, default=10)
+    parser.add_argument("--protocol-id", default=PROTOCOL_ID)
     args = parser.parse_args(argv)
     report = select(**vars(args))
     print(json.dumps({
