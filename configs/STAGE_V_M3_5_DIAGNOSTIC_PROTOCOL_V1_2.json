@@ -1,0 +1,95 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_2",
+  "version": "V1.2",
+  "status": "FROZEN_PROSPECTIVE_RUNTIME_READY_PENDING_INDEPENDENT_AUDIT",
+  "supersedes": "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_1.json",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "protocol_role": "pre_v7_m3_5_semantics_label_validity_and_direct_open_diagnostic",
+  "historical_roots_immutable": true,
+  "protected_eval160": {"reads_allowed": false, "rollouts_allowed": false, "hard_stop": true},
+  "source_binding": {
+    "contract_source_commit": "208461a24fa8254c278b56af79d1420966b3fd14",
+    "contract_source_tree": "f2dd5ea16a94c6aa562e30d753418d7625629c0f",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "canonical_action_semantics": "raw > 0.5 -> OPEN; env=-1.0"
+  },
+  "contract_bindings": {
+    "label_contract": {"path": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_2.json", "sha256": "4c876cf0c2504e755d01fdc6429930a255ff63fbad27af056b056b1dc15f254d", "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_2"},
+    "phase_classifier": {"path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py", "sha256": "94f46e45aec00c96a18a86230c516b535511c21d2e6a068a9b7ac6bd455fc8e1"},
+    "probe_plan_builder": {"path": "scripts/detector_v5/build_stage_v_m3_5_probe_plan.py", "sha256": "62bd87fd4fd9b9a1fd3a42e988e9754b9a8921a657b85c6a5abb21bb99b57a85"},
+    "physical_taxonomy": {"path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "sha256": "117baccfc70a0dfb6cb4adcf77d58b52c08b3d5cf09e0f1b0a65e2524a67b5b"},
+    "runner": {"path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py", "sha256": "09ab9cfe342b42a89be5eacd3b92b6a66a52838a8da3fb28c84d8e4fa62779fa"}
+  },
+  "freshness_bindings": {
+    "exposure_union": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4_20260810T104027Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4.json", "sha256": "b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612", "union_sha256": "62012ba0246d123fb6caa59a8dbc80bc3bd4fb27ea32a6a6c4f87bb3c111dc4a", "count": 53},
+    "clean_attempt_union": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2_20260810T104027Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2.json", "sha256": "a8be0582c5cbe3ae2224cf6786ac18a0558f2105962aef73ea69fffd462e81e6", "union_sha256": "bbe427d645efcaa683d7cfb305014333317ed9cd1e369a1825406b08c2e6302a", "count": 357},
+    "diagnostic_selection": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1_20260810T110240Z/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1.json", "sha256": "af4f5a3925c6de51a0e8fa0cf7436ca41d2212523feb4c45293e34f2c4a297eb", "selected_count": 8, "outcomes_read": false}
+  },
+  "diagnostic_execution_accounting": {
+    "selected_parents": 8,
+    "probes_per_parent": 24,
+    "repetitions_per_probe": 3,
+    "conditions_per_probe_and_repetition": ["CONTROL", "T3", "T5", "T10"],
+    "physical_branches_per_parent": 288,
+    "physical_branches_total": 2304,
+    "treatment_label_rows_per_parent": 216,
+    "treatment_label_rows_total": 1728,
+    "formal_m4_accounting_is_separate": true
+  },
+  "intervention_contract": {
+    "control_branch": "one clean matched control execution per probe and repetition",
+    "treatment_branches": ["T3", "T5", "T10"],
+    "dose_steps": {"T3": 3, "T5": 5, "T10": 10},
+    "forced_gripper_raw_action": 1.0,
+    "forced_gripper_env_action": -1.0,
+    "only_gripper_component_may_change": true,
+    "arm_delta_must_equal_zero": true,
+    "post_treatment_mode": "each branch resumes its own frozen-policy closed-loop",
+    "control_replay_after_treatment": false
+  },
+  "phase_and_probe_contract": {
+    "registered_phases": ["PRE_CONTACT", "CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY"],
+    "unknown_label": "UNKNOWN",
+    "probes_per_phase": 6,
+    "minimum_remaining_steps": 20,
+    "selection_outcome_blind": true,
+    "backfill_allowed": false
+  },
+  "repeatability_gate": {
+    "control_repetitions": 3,
+    "treatment_repetitions_each": 3,
+    "discordant_valid_outcome": "HOLD_STOCHASTIC_INTERVENTION_OUTCOME",
+    "stable_abstain_is_not_negative": true
+  },
+  "resource_contract": {
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "partial_fleet_allowed": true,
+    "foreign_workloads_allowed_if_admitted": true,
+    "gpu3_foreign_process_must_not_be_modified": true,
+    "parent_atomicity": "all registered branches for one parent stay on one physical GPU",
+    "lease_sequence": ["check_free_memory", "atomic_acquire", "recheck_free_memory", "launch", "flush_artifacts", "release"]
+  },
+  "runtime_prerequisites": {
+    "intervention_runner_status": "PASS",
+    "physical_taxonomy_status": "PASS",
+    "runtime_authorization_receipt_required": true,
+    "no_gpu_launch_under_this_freeze": false,
+    "v7_and_m4_before_m3_5_pass": false
+  },
+  "static_audit_binding": {
+    "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_2.py",
+    "auditor_script_sha256": "3b21a84f8dcaf70cf8dbe34d938d2323bf92ce31712fb4f9d5a0696d0beb9cf5",
+    "authorization_issuer_script_path": "scripts/detector_v5/issue_stage_v_m3_5_runtime_authorization.py",
+    "authorization_issuer_script_sha256": "0375fa4976b7088cd5e4b55d89a3d4d2989ad699d8ff4377fb4e54ba7092bae6",
+    "receipt_schema": "STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1_2",
+    "receipt_status": "REQUIRED_AFTER_PROTOCOL_FREEZE"
+  },
+  "launch_policy": {
+    "runtime_authorized": true,
+    "m3_5_pass_required_before_v7": true,
+    "eval160_allowed": false,
+    "outcome_informed_revision": "forbidden; prospective V1.3 required"
+  }
+}

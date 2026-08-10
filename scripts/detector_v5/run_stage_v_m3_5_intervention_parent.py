@@ -528,7 +528,17 @@ def _verify_runtime_contract(args: argparse.Namespace, protocol: Mapping[str, An
     counters = dict(selection.get("protected_counters", {}))
     if counters != EXPECTED_PROTECTED_COUNTERS:
         raise M35RunnerError("SELECTION_PROTECTED_COUNTERS_NONZERO")
-    return {"actual_source_commit": actual_commit, "actual_source_tree": actual_tree}
+    authorization_path = Path(args.authorization_receipt).resolve()
+    authorization = _load_json(authorization_path)
+    if authorization.get("status") != "PASS":
+        raise M35RunnerError("RUNTIME_AUTHORIZATION_RECEIPT_NOT_PASS")
+    if authorization.get("protocol_sha256") != _sha256_file(Path(args.protocol).resolve()):
+        raise M35RunnerError("RUNTIME_AUTHORIZATION_PROTOCOL_SHA_MISMATCH")
+    if authorization.get("source_commit") != actual_commit or authorization.get("source_tree") != actual_tree:
+        raise M35RunnerError("RUNTIME_AUTHORIZATION_SOURCE_MISMATCH")
+    if authorization.get("protected_counters") != EXPECTED_PROTECTED_COUNTERS:
+        raise M35RunnerError("RUNTIME_AUTHORIZATION_PROTECTED_COUNTERS_NONZERO")
+    return {"actual_source_commit": actual_commit, "actual_source_tree": actual_tree, "authorization_receipt": str(authorization_path)}
 
 
 def run_parent(args: argparse.Namespace) -> int:
@@ -688,6 +698,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--gpu", type=int, required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
+    parser.add_argument("--authorization-receipt", type=Path, required=True)
     parser.add_argument("--run-label", default="M3_5")
     parser.add_argument("--run-set", default="M3_5_PARENT")
     parser.add_argument("--enable-runtime", action="store_true")
