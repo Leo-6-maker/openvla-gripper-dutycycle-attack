@@ -500,8 +500,83 @@ def _strict_branch_errors(branch_rows: list[dict[str, Any]], parent_key: str) ->
     return sorted(set(errors))
 
 
+def _m35_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
+                         expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    results = list(Path(output_dir).rglob("PARENT_RESULT.json"))
+    if len(results) != 1:
+        return {"valid": False, "reason": f"PARENT_RESULT_COUNT:{len(results)}", "result": None, "path": None}
+    result_path = results[0]
+    result = read_json(result_path, {})
+    if not isinstance(result, Mapping):
+        return {"valid": False, "reason": "PARENT_RESULT_NOT_OBJECT", "result": None, "path": str(result_path)}
+    if str(result.get("schema")) != "STAGE_V_M3_5_PARENT_RESULT_V1" or str(result.get("canonical_parent_key")) != parent_key:
+        return {"valid": False, "reason": "M35_RESULT_SCHEMA_OR_IDENTITY_INVALID", "result": dict(result), "path": str(result_path)}
+    errors: list[str] = []
+    if result.get("status") != "PASS" or result.get("clean_success") is not True:
+        errors.append("M35_RESULT_NOT_PASS")
+    if result.get("parent_atomic") is not True or result.get("probe_count") != 24:
+        errors.append("M35_PARENT_ACCOUNTING_INVALID")
+    if result.get("expected_physical_branches") != 288 or result.get("actual_physical_branches") != 288:
+        errors.append("M35_PHYSICAL_BRANCH_COUNT_INVALID")
+    if result.get("expected_treatment_label_rows") != 216 or result.get("actual_treatment_label_rows") != 216:
+        errors.append("M35_LABEL_ROW_COUNT_INVALID")
+    if result.get("protected_counters") != {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}:
+        errors.append("M35_PROTECTED_COUNTERS_INVALID")
+    if expected_source_commit and result.get("source_commit") != expected_source_commit:
+        errors.append("SCIENCE_SOURCE_COMMIT_MISMATCH")
+    if expected_source_tree and result.get("source_tree") != expected_source_tree:
+        errors.append("SCIENCE_SOURCE_TREE_MISMATCH")
+    if expected_row is not None:
+        for field in ("suite", "task_index", "state_index"):
+            if result.get(field) != expected_row.get(field):
+                errors.append(f"PARENT_{field.upper()}_MISMATCH")
+    branches = list(Path(result_path.parent).rglob("COUNTERFACTUAL_BRANCHES.jsonl"))
+    if len(branches) != 1:
+        errors.append("M35_BRANCH_FILE_COUNT_INVALID")
+    else:
+        rows, parse_errors = _branch_rows(branches[0])
+        errors.extend(parse_errors)
+        if len(rows) != 288:
+            errors.append(f"M35_BRANCH_COUNT:{len(rows)}/288")
+        identities = set()
+        counts = {arm: 0 for arm in ("CONTROL", "T3", "T5", "T10")}
+        for row in rows:
+            identity = (row.get("canonical_parent_key"), row.get("probe_step"), row.get("repetition"), row.get("arm"))
+            if identity in identities:
+                errors.append("M35_DUPLICATE_BRANCH_IDENTITY")
+            identities.add(identity)
+            if row.get("canonical_parent_key") != parent_key:
+                errors.append("M35_BRANCH_PARENT_IDENTITY_MISMATCH")
+            arm = row.get("arm")
+            if arm not in counts:
+                errors.append("M35_BRANCH_ARM_INVALID")
+            else:
+                counts[arm] += 1
+            if row.get("eval160_reads", 0) != 0 or row.get("protected_eval_reads", 0) != 0 or row.get("attack_rollouts", 0) != 0:
+                errors.append("M35_BRANCH_BOUNDARY_VIOLATION")
+            if arm != "CONTROL" and not isinstance(row.get("pair"), Mapping):
+                errors.append("M35_TREATMENT_PAIR_MISSING")
+        if any(count != 72 for count in counts.values()):
+            errors.append("M35_BRANCH_ARM_BALANCE_INVALID")
+    seal_ok, seal_reason = _verify_parent_seal(result_path.parent)
+    if not seal_ok:
+        errors.append(seal_reason)
+    if errors:
+        return {"valid": False, "reason": ";".join(sorted(set(errors))), "result": dict(result), "path": str(result_path)}
+    return {
+        "valid": True, "reason": "PASS", "result": dict(result), "path": str(result_path),
+        "artifact_sha256": sha256_file(result_path), "label_status": "VALID", "parent_seal": "PASS",
+    }
+
+
 def science_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
-                            expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None) -> dict[str, Any]:
+                            expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None,
+                            artifact_schema: str = "STAGE_V_PARENT_RESULT_V2") -> dict[str, Any]:
+    if artifact_schema == "STAGE_V_M3_5_PARENT_RESULT_V1":
+        return _m35_artifact_status(
+            output_dir, parent_key, expected_source_commit=expected_source_commit,
+            expected_source_tree=expected_source_tree, expected_row=expected_row,
+        )
     results = list(Path(output_dir).rglob("PARENT_RESULT.json"))
     if len(results) != 1:
         return {"valid": False, "reason": f"PARENT_RESULT_COUNT:{len(results)}", "result": None, "path": None}

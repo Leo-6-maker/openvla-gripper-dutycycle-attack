@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -256,6 +257,38 @@ def test_local_heartbeat_is_atomic(tmp_path: Path) -> None:
     path = tmp_path / "LOCAL_HEARTBEAT.json"
     atomic_write_json(path, {"schema": "test", "heartbeat_count": 1})
     assert json.loads(path.read_text(encoding="utf-8"))["heartbeat_count"] == 1
+
+
+def test_m35_artifact_status_accepts_sealed_parent(tmp_path: Path) -> None:
+    parent = "libero_goal/task_01/state_47"
+    branch_rows = [
+        {"canonical_parent_key": parent, "probe_step": probe, "repetition": repetition, "arm": arm,
+         "eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0,
+         **({"pair": {"label_class": "V_PHYS"}} if arm != "CONTROL" else {})}
+        for probe in range(24) for repetition in range(3) for arm in ("CONTROL", "T3", "T5", "T10")
+    ]
+    branch_path = tmp_path / "COUNTERFACTUAL_BRANCHES.jsonl"
+    branch_path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in branch_rows), encoding="utf-8")
+    result_path = tmp_path / "PARENT_RESULT.json"
+    result_path.write_text(json.dumps({
+        "schema": "STAGE_V_M3_5_PARENT_RESULT_V1", "status": "PASS", "canonical_parent_key": parent,
+        "suite": "libero_goal", "task_index": 1, "state_index": 47, "source_commit": "commit", "source_tree": "tree",
+        "parent_atomic": True, "clean_success": True, "probe_count": 24,
+        "expected_physical_branches": 288, "actual_physical_branches": 288,
+        "expected_treatment_label_rows": 216, "actual_treatment_label_rows": 216,
+        "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0},
+    }, sort_keys=True) + "\n", encoding="utf-8")
+    files = [branch_path, result_path]
+    sums = "".join(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n" for path in sorted(files, key=lambda item: item.name))
+    (tmp_path / "SHA256SUMS").write_text(sums, encoding="utf-8")
+    sums_sha = hashlib.sha256((tmp_path / "SHA256SUMS").read_bytes()).hexdigest()
+    (tmp_path / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
+    checked = science_artifact_status(
+        tmp_path, parent, expected_source_commit="commit", expected_source_tree="tree",
+        expected_row={"suite": "libero_goal", "task_index": 1, "state_index": 47},
+        artifact_schema="STAGE_V_M3_5_PARENT_RESULT_V1",
+    )
+    assert checked["valid"] is True
 
 
 def test_worker_heartbeat_file_is_preferred_over_legacy_status(tmp_path: Path) -> None:

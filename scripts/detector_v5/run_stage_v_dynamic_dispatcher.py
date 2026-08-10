@@ -334,6 +334,7 @@ class Dispatcher:
             "--lease-db", str(self.lease_db),
             "--stage", self.args.stage,
             "--minimum-free-mib", str(self.args.minimum_free_mib),
+            "--artifact-schema", self.args.artifact_schema,
         ]
         if self.args.science_provenance:
             command += ["--science-provenance", str(self.args.science_provenance)]
@@ -476,6 +477,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lease-db", type=Path)
     parser.add_argument("--stage", default="STAGE_V")
     parser.add_argument("--minimum-free-mib", type=int, default=20_480)
+    parser.add_argument("--artifact-schema", default="STAGE_V_PARENT_RESULT_V2")
     parser.add_argument("--exposure-manifest", type=Path)
     return parser
 

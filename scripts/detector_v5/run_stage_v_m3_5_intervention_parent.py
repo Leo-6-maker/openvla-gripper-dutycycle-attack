@@ -168,6 +168,7 @@ def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path)
         "source_commit": str(args.source_commit),
         "source_tree": str(args.source_tree),
         "parent_key": str(args.parent_key),
+        "runtime_input_binding": getattr(args, "runtime_input_binding", None),
         "worker_pid": os.getpid(),
         "episode_started": False,
         "receipt_written_before_policy_step_0": True,
@@ -517,12 +518,13 @@ def _verify_runtime_contract(args: argparse.Namespace, protocol: Mapping[str, An
     actual_tree = _git(REPO_ROOT, "rev-parse", "HEAD^{tree}")
     if actual_commit != str(args.source_commit) or actual_tree != str(args.source_tree):
         raise M35RunnerError("SOURCE_COMMIT_OR_TREE_MISMATCH")
-    runner_binding = protocol.get("runner_binding", {})
-    runner_path = REPO_ROOT / str(runner_binding.get("module_path", ""))
+    contract_bindings = protocol.get("contract_bindings", {})
+    runner_binding = contract_bindings.get("runner", protocol.get("runner_binding", {}))
+    runner_path = REPO_ROOT / str(runner_binding.get("path", runner_binding.get("module_path", "")))
     if not runner_path.is_file() or _sha256_file(runner_path) != str(runner_binding.get("sha256")):
         raise M35RunnerError("RUNNER_SHA_BINDING_MISMATCH")
-    taxonomy_binding = protocol.get("physical_taxonomy", {})
-    taxonomy_path = REPO_ROOT / str(taxonomy_binding.get("module_path", ""))
+    taxonomy_binding = contract_bindings.get("physical_taxonomy", protocol.get("physical_taxonomy", {}))
+    taxonomy_path = REPO_ROOT / str(taxonomy_binding.get("path", taxonomy_binding.get("module_path", "")))
     if not taxonomy_path.is_file() or _sha256_file(taxonomy_path) != str(taxonomy_binding.get("sha256")):
         raise M35RunnerError("PHYSICAL_TAXONOMY_SHA_BINDING_MISMATCH")
     counters = dict(selection.get("protected_counters", {}))
@@ -538,7 +540,62 @@ def _verify_runtime_contract(args: argparse.Namespace, protocol: Mapping[str, An
         raise M35RunnerError("RUNTIME_AUTHORIZATION_SOURCE_MISMATCH")
     if authorization.get("protected_counters") != EXPECTED_PROTECTED_COUNTERS:
         raise M35RunnerError("RUNTIME_AUTHORIZATION_PROTECTED_COUNTERS_NONZERO")
-    return {"actual_source_commit": actual_commit, "actual_source_tree": actual_tree, "authorization_receipt": str(authorization_path)}
+    runtime_inputs = protocol.get("runtime_inputs")
+    if not isinstance(runtime_inputs, Mapping):
+        raise M35RunnerError("RUNTIME_INPUT_BINDING_MISSING")
+    input_binding: dict[str, Any] = {}
+    for input_name in ("official_snapshot", "upstream"):
+        binding = runtime_inputs.get(input_name)
+        if not isinstance(binding, Mapping):
+            raise M35RunnerError(f"RUNTIME_INPUT_BINDING_MISSING:{input_name}")
+        root = Path(str(binding.get("path", ""))).resolve()
+        if root != Path(str(getattr(args, "official_snapshot_root" if input_name == "official_snapshot" else "upstream_root"))).resolve():
+            raise M35RunnerError(f"RUNTIME_INPUT_PATH_MISMATCH:{input_name}")
+        try:
+            input_commit = _git(root, "rev-parse", "HEAD")
+            input_tree = _git(root, "rev-parse", "HEAD^{tree}")
+            input_status = _git(root, "status", "--porcelain")
+        except (OSError, subprocess.CalledProcessError) as exc:
+            raise M35RunnerError(f"RUNTIME_INPUT_GIT_READ_FAIL:{input_name}:{type(exc).__name__}") from exc
+        if input_commit != str(binding.get("git_commit")) or input_tree != str(binding.get("git_tree")) or input_status:
+            raise M35RunnerError(f"RUNTIME_INPUT_GIT_BINDING_MISMATCH:{input_name}")
+        input_binding[input_name] = {
+            "path": str(root), "git_commit": input_commit, "git_tree": input_tree,
+            "worktree_status": input_status,
+        }
+        adapter_path_value = binding.get("adapter_path")
+        if adapter_path_value:
+            adapter_path = Path(str(adapter_path_value)).resolve()
+            if not adapter_path.is_file() or _sha256_file(adapter_path) != str(binding.get("adapter_sha256")):
+                raise M35RunnerError(f"RUNTIME_INPUT_ADAPTER_BINDING_MISMATCH:{input_name}")
+            input_binding[input_name].update({
+                "adapter_path": str(adapter_path), "adapter_sha256": _sha256_file(adapter_path),
+            })
+    suite = str(args.parent_key).split("/", 1)[0]
+    models = runtime_inputs.get("models")
+    model_binding = models.get(suite) if isinstance(models, Mapping) else None
+    if not isinstance(model_binding, Mapping):
+        raise M35RunnerError(f"RUNTIME_MODEL_BINDING_MISSING:{suite}")
+    model_path = Path(args.model_path).resolve()
+    if model_path != Path(str(model_binding.get("path", ""))).resolve() or not model_path.is_dir():
+        raise M35RunnerError("RUNTIME_MODEL_PATH_MISMATCH")
+    input_binding["model"] = {"suite": suite, "path": str(model_path)}
+    repo_bindings = runtime_inputs.get("repo_bindings")
+    if not isinstance(repo_bindings, Mapping) or not repo_bindings:
+        raise M35RunnerError("RUNTIME_REPO_BINDINGS_MISSING")
+    for binding_name, binding in repo_bindings.items():
+        if not isinstance(binding, Mapping):
+            raise M35RunnerError(f"RUNTIME_REPO_BINDING_INVALID:{binding_name}")
+        path = REPO_ROOT / str(binding.get("path", ""))
+        if not path.is_file() or _sha256_file(path) != str(binding.get("sha256")):
+            raise M35RunnerError(f"RUNTIME_REPO_BINDING_MISMATCH:{binding_name}")
+    input_binding["repo_bindings"] = dict(repo_bindings)
+    return {
+        "actual_source_commit": actual_commit,
+        "actual_source_tree": actual_tree,
+        "authorization_receipt": str(authorization_path),
+        "runtime_inputs": input_binding,
+    }
 
 
 def run_parent(args: argparse.Namespace) -> int:
@@ -548,7 +605,7 @@ def run_parent(args: argparse.Namespace) -> int:
     if _sha256_file(selection_path) != str(protocol["diagnostic_parent_selection"]["sha256"]):
         raise M35RunnerError("SELECTION_MANIFEST_SHA_MISMATCH")
     parent = _selected_parent(selection, args.parent_key)
-    _verify_runtime_contract(args, protocol, selection)
+    args.runtime_input_binding = _verify_runtime_contract(args, protocol, selection)
     output_dir = args.output_dir.resolve()
     if output_dir.exists():
         raise M35RunnerError(f"REFUSE_OVERWRITE:{output_dir}")
@@ -677,6 +734,7 @@ def run_parent(args: argparse.Namespace) -> int:
         "branch_outcomes_read_before_probe_selection": False,
         "protected_counters": dict(EXPECTED_PROTECTED_COUNTERS),
         "taxonomy_binding": binding,
+        "runtime_input_binding": getattr(args, "runtime_input_binding", None),
         "state_restore_api": "fresh_env_set_init_state_dummy_wait_then_exact_clean_prefix_replay",
         "post_treatment_mode": "own_closed_loop_policy_after_matched_control_arm",
     }

@@ -398,6 +398,7 @@ class Worker:
             expected_source_tree=self.args.science_source_tree or None,
             expected_row=self.manifest_rows.get(task["canonical_parent_key"])
             if (self.args.science_source_commit or self.args.science_source_tree) else None,
+            artifact_schema=self.args.artifact_schema,
         )
         validation = {
             "schema": "STAGE_V_PARENT_VALIDATION_V2",
@@ -406,6 +407,7 @@ class Worker:
             "source_tree": self.args.source_tree,
             "science_source_commit": self.args.science_source_commit,
             "science_source_tree": self.args.science_source_tree,
+            "artifact_schema": self.args.artifact_schema,
             "science_provenance": str(self.args.science_provenance) if self.args.science_provenance else None,
             "exit_code": code,
             "artifact_audit_verdict": "PASS" if artifact["valid"] and code == 0 else "FAIL",
@@ -523,6 +525,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lease-db", type=Path)
     parser.add_argument("--stage", default="STAGE_V")
     parser.add_argument("--minimum-free-mib", type=int, default=20_480)
+    parser.add_argument("--artifact-schema", default="STAGE_V_PARENT_RESULT_V2")
     return parser
 
 
