@@ -125,7 +125,8 @@ def audit(
         _check(checks, "protocol_schema", protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1", str(protocol.get("schema")))
         _check(checks, "protocol_frozen", protocol.get("status") == "FROZEN_FOR_VALIDATION", str(protocol.get("status")))
         _check(checks, "protocol_runtime_boundary", protocol.get("runtime_authorized") is False, str(protocol.get("runtime_authorized")))
-        _check(checks, "protocol_contract_sha", protocol.get("label_contract_sha256") == _sha256(label_path) and protocol.get("fresh_contract_sha256") == _sha256(fresh_path), "protocol binds both contract SHAs")
+        protocol_contracts = protocol.get("contract_bindings", {})
+        _check(checks, "protocol_contract_sha", protocol_contracts.get("label_contract", {}).get("sha256") == _sha256(label_path) and protocol_contracts.get("fresh_parent_contract", {}).get("sha256") == _sha256(fresh_path), "protocol binds both contract SHAs")
 
     failures = [item for item in checks if item["status"] != "PASS"]
     report = {
