@@ -610,7 +610,7 @@ def run_parent(args: argparse.Namespace) -> int:
     parent = _selected_parent(selection, args.parent_key)
     args.runtime_input_binding = _verify_runtime_contract(args, protocol, selection)
     output_dir = args.output_dir.resolve()
-    if output_dir.exists() and any(path.name not in {"JOB.json", "RESOURCE_PRE.json"} for path in output_dir.iterdir()):
+    if output_dir.exists() and any(path.name not in {"JOB.json", "RESOURCE_PRE.json", "SCIENCE_RUNNER.log"} for path in output_dir.iterdir()):
         raise M35RunnerError(f"REFUSE_OVERWRITE:{output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
