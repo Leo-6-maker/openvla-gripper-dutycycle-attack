@@ -17,8 +17,8 @@
     "vis_pgd_attack_rollouts": 0
   },
   "source_binding": {
-    "implementation_source_commit": "3b483fbf6319d88feb561a8e6ca8bb5de2c26591",
-    "implementation_source_tree": "1135f12ca1404eea7d0a15475875af49c090e3ec",
+    "implementation_source_commit": "6a135ff2fd9f25ef5892902f8a303027c8e32942",
+    "implementation_source_tree": "e94a2a392e4c4a4726044ab0ea298bdd0dc1f844",
     "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
     "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0"
   },

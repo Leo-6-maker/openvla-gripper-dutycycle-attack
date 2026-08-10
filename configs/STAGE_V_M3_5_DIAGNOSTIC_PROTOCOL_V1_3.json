@@ -20,15 +20,15 @@
     "vis_pgd_attack_rollouts": 0
   },
   "source_binding": {
-    "implementation_source_commit": "3b483fbf6319d88feb561a8e6ca8bb5de2c26591",
-    "implementation_source_tree": "1135f12ca1404eea7d0a15475875af49c090e3ec",
+    "implementation_source_commit": "6a135ff2fd9f25ef5892902f8a303027c8e32942",
+    "implementation_source_tree": "e94a2a392e4c4a4726044ab0ea298bdd0dc1f844",
     "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
     "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0"
   },
   "contract_bindings": {
     "label_contract": {
       "path": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_3.json",
-      "sha256": "cf986e7a1550a5fb712ab98df5c9329a8aea46e95252ac39f125bef4a9975d8c",
+      "sha256": "e829225a9eacb06652c9b70f5be2efb0fb9eb0706b7cba23f5f5c2fde4cfe8c3",
       "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_3"
     },
     "canonical_execution_core": {
@@ -89,7 +89,7 @@
     },
     "static_auditor": {
       "path": "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_3.py",
-      "sha256": "168c4fc35ab7edb614be346cde12cd80e81b3b0e7a3d1fc86955a2503c1d91fd"
+      "sha256": "606fd1b9a25ffa3b04ed7ddb8e65b2335d7bd151e53accbba61739ae490a2e24"
     },
     "authorization_issuer": {
       "path": "scripts/detector_v5/issue_stage_v_m3_5_runtime_authorization.py",
@@ -321,11 +321,11 @@
     }
   },
   "exact_a800_regression": {
-    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_20260810T174015Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
-    "sha256": "0c4d868e641c60c1c3905d03494db0174e20664589f6a9b014327d4ca68c743b",
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_20260810T180015Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
+    "sha256": "838b595d61641a3b726cc2801e249c7738aa7329b1803d5e6ff6751ce568ef20",
     "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
-    "source_commit": "3b483fbf6319d88feb561a8e6ca8bb5de2c26591",
-    "source_tree": "1135f12ca1404eea7d0a15475875af49c090e3ec",
+    "source_commit": "6a135ff2fd9f25ef5892902f8a303027c8e32942",
+    "source_tree": "e94a2a392e4c4a4726044ab0ea298bdd0dc1f844",
     "expected_collected": 204,
     "test_files": [
       "tests/detector_v5/test_stage_v1_m1_visual_determinism.py",
@@ -363,7 +363,7 @@
       "scripts/detector_v5/audit_stage_v_m3_5_runtime_v1_3.py": "30e84ac480ea9ab36f5ebbcfc7f01405a5a5de0dddbd7cbb3b0f1bc213852ba4",
       "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_1.py": "c454cc2e0141113861b272e6cb1df4dc850baade83dce8efc11770255dffd5cc",
       "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_2.py": "2fbd5043cb81266cbfe21ba3560cd50d954d078eb3960f99228397ee4bfcfb49",
-      "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_3.py": "168c4fc35ab7edb614be346cde12cd80e81b3b0e7a3d1fc86955a2503c1d91fd",
+      "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_3.py": "606fd1b9a25ffa3b04ed7ddb8e65b2335d7bd151e53accbba61739ae490a2e24",
       "scripts/detector_v5/audit_stage_v_r2_control_qualification_v2.py": "8bef3decc4fcf3ce10a5ae7acc53915257c1672a9211346b1be16dc50bbc1449",
       "scripts/detector_v5/audit_stage_v_r2b_decision.py": "6f1062b10513ce7fec88e81fea1bed1993c49989dfb18f0ad6fa21f25409540e",
       "scripts/detector_v5/audit_stage_v_rb1_receipt.py": "6813e064b2e185a26f5bcf36a6bafa155eb7e2d904a1d95e2c37a8ed528654c8",
@@ -421,7 +421,7 @@
       "tests/detector_v5/test_stage_v_m3_5_intervention_parent.py": "05085d65d43e3d94daf3cd721839c61486c44f412c8e11daf530f620c675577e",
       "tests/detector_v5/test_stage_v_m3_5_phase_classifier.py": "4a60d3258334e6c30697158e9be1900444ef922bd69711d82c3d93d0a977ac31",
       "tests/detector_v5/test_stage_v_m3_5_physical_taxonomy.py": "e7c962892cc46b8afc523ec8748e54f98b3fb084ca7e218639e233e08aacaf1c",
-      "tests/detector_v5/test_stage_v_m3_5_runtime_audit_v1_3.py": "8d3e89d23d3531bed57b64170367b76f1d4c43f935eaad143005c2373a9b5872",
+      "tests/detector_v5/test_stage_v_m3_5_runtime_audit_v1_3.py": "592970d3ec03ad7aa8ed13f3c03ab82ed3ccd4fba6d92bc07f4d31455fff12d4",
       "tests/detector_v5/test_stage_v_m3_5_selection_v2.py": "b0b91767fc98cdfce55166c376cbb1fb8d0c1a95474831bba4cfa6a1e072e1c4",
       "tests/detector_v5/test_stage_v_parent_split.py": "44bb0679b383351d5afb26379825130d4b959e97c43b1c96cb19fe40d7a43aac",
       "tests/detector_v5/test_stage_v_r2_q2.py": "b57cd5aef2aed43b31b79659cafa00b78c992b88560749583cb9d59b57f0ad16",
@@ -506,7 +506,7 @@
   },
   "static_audit_binding": {
     "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_3.py",
-    "auditor_script_sha256": "168c4fc35ab7edb614be346cde12cd80e81b3b0e7a3d1fc86955a2503c1d91fd",
+    "auditor_script_sha256": "606fd1b9a25ffa3b04ed7ddb8e65b2335d7bd151e53accbba61739ae490a2e24",
     "authorization_issuer_script_path": "scripts/detector_v5/issue_stage_v_m3_5_runtime_authorization.py",
     "authorization_issuer_script_sha256": "a3733f69195b2921c3dc531409abf9971b9806bdc1aa8ffe9a0da19ea552e910",
     "receipt_schema": "STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1_3",
