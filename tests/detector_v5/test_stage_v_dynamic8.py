@@ -13,6 +13,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.detector_v5 import run_stage_v_parent_aware_supervisor as sup
+from scripts.detector_v5.run_stage_v_dynamic_dispatcher import dynamic_gpu_slots
 from scripts.detector_v5.audit_stage_v_abort_postmortem import build_postmortem, build_timeout_policy
 from scripts.detector_v5 import run_stage_v_control_qualification as control_qualification
 from scripts.detector_v5.run_stage_v_control_qualification import ranked
@@ -68,6 +69,12 @@ def test_atomic_queue_parent_affinity_filters_claims(tmp_path: Path) -> None:
     assert second is None
     assert third and third["parent_id"] == "p1"
     queue.close()
+
+
+def test_dynamic_gpu_slots_claims_late_eligible_gpu_without_duplicate_worker() -> None:
+    assert dynamic_gpu_slots(eligible_gpu_ids=[0, 1, 2, 3], active_gpu_ids=[0, 2], max_workers=4) == [1, 3]
+    assert dynamic_gpu_slots(eligible_gpu_ids=[0, 1, 2, 3], active_gpu_ids=[0, 2], max_workers=3) == [1]
+    assert dynamic_gpu_slots(eligible_gpu_ids=[0, 1], active_gpu_ids=[0, 1], max_workers=8) == []
 
 
 def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

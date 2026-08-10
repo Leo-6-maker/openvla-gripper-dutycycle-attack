@@ -9,7 +9,7 @@ import signal
 import subprocess
 import sys
 import time
-from typing import Any
+from typing import Any, Iterable
 
 try:
     from .stage_v_dynamic_common import atomic_write_json, exposure_binding, gpu_preflight, load_rows, normalize_parent, pid_alive, project_queue, read_json, sha256_file, terminate_process_group, utc_now
@@ -28,11 +28,22 @@ except ImportError:  # direct server execution
     from stage_v_gpu_resource_contract import GpuLeaseStore, admit_mode_b_or_c, query_inventory
 
 
+def dynamic_gpu_slots(*, eligible_gpu_ids: Iterable[int], active_gpu_ids: Iterable[int], max_workers: int) -> list[int]:
+    """Return newly eligible physical GPUs without exceeding the worker cap."""
+    if max_workers <= 0:
+        return []
+    active = {int(gpu) for gpu in active_gpu_ids}
+    return sorted({int(gpu) for gpu in eligible_gpu_ids} - active)[:max(0, max_workers - len(active))]
+
+
 class Dispatcher:
     def __init__(self, args: argparse.Namespace):
         self.args = args
         self.root = args.run_root.resolve()
         self.processes: list[subprocess.Popen[Any]] = []
+        self.process_gpus: dict[int, int] = {}
+        self.approved_gpus: list[int] = []
+        self.gpu_claims: list[dict[str, Any]] = []
         self.stop_requested = False
         self.run_id = args.run_id
         self.queue = AtomicTaskQueue(str(args.queue_db), run_id=self.run_id)
@@ -152,6 +163,7 @@ class Dispatcher:
             raise RuntimeError("GPU_PREFLIGHT_POLICY_FAIL")
         if 5 in approved and not getattr(self.args, "allow_gpu5", False):
             raise RuntimeError("GPU5_REQUIRES_EXPLICIT_AUTHORIZATION")
+        self.approved_gpus = approved
         rows = [normalize_parent(row) for row in load_rows(self.args.parent_manifest)]
         if len(rows) != self.args.expected_parent_count:
             raise RuntimeError(f"PARENT_MANIFEST_COUNT:{len(rows)}/{self.args.expected_parent_count}")
@@ -230,6 +242,7 @@ class Dispatcher:
             "parent_manifest_sha256": manifest_sha,
             "planned_parents": len(rows),
             "approved_gpus": approved,
+            "initial_approved_gpus": approved,
             "gpu5_used": 5 in approved,
             "gpu5_authorized": bool(getattr(self.args, "allow_gpu5", False)),
             "resource_mode": self.args.resource_mode,
@@ -244,6 +257,8 @@ class Dispatcher:
             "dispatcher_pid": os.getpid(),
             "dispatcher_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
             "dynamic_claims": True,
+            "dynamic_gpu_claiming": self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"},
+            "gpu_claims_path": str(self.root / "GPU_CLAIMS.json"),
             "one_project_worker_per_gpu": True,
             "old_artifacts_reused": False,
             "eval160_reads": 0,
@@ -262,8 +277,46 @@ class Dispatcher:
             "resource_mode": self.args.resource_mode,
             "exposure_binding": self.exposure_binding,
         })
+        atomic_write_json(self.root / "GPU_CLAIMS.json", {
+            "schema": "STAGE_V_GPU_CLAIMS_V1",
+            "status": "ACTIVE",
+            "max_project_workers": self.args.required_workers,
+            "claims": [],
+            "updated_utc": utc_now(),
+        })
 
-    def _spawn(self, gpu_id: int) -> None:
+    def _record_gpu_claim(self, gpu_id: int, process: subprocess.Popen[Any], preflight: dict[str, Any], claim_type: str) -> None:
+        decision = next((item for item in preflight.get("gpu_decisions", []) if int(item.get("gpu_id", -1)) == gpu_id), {})
+        claim = {
+            "gpu_id": gpu_id,
+            "gpu_uuid": decision.get("gpu_uuid"),
+            "worker_pid": process.pid,
+            "worker_id": f"stage-v-r2-gpu{gpu_id}",
+            "job_id": self.run_id,
+            "claim_type": claim_type,
+            "source_commit": self.args.source_commit,
+            "source_tree": self.args.source_tree,
+            "runtime_root": str(self.root),
+            "start_utc": utc_now(),
+            "preflight": decision,
+        }
+        self.gpu_claims.append(claim)
+        atomic_write_json(self.root / "GPU_CLAIMS.json", {
+            "schema": "STAGE_V_GPU_CLAIMS_V1",
+            "status": "ACTIVE",
+            "max_project_workers": self.args.required_workers,
+            "claims": self.gpu_claims,
+            "updated_utc": utc_now(),
+        })
+        manifest = read_json(self.root / "RUN_MANIFEST.json", {})
+        if isinstance(manifest, dict):
+            manifest["approved_gpus"] = sorted({*self.approved_gpus, gpu_id})
+            manifest["workers"] = len(manifest["approved_gpus"])
+            manifest["gpu5_used"] = 5 in manifest["approved_gpus"]
+            manifest["dynamic_gpu_claim_count"] = len(self.gpu_claims)
+            atomic_write_json(self.root / "RUN_MANIFEST.json", manifest)
+
+    def _spawn(self, gpu_id: int, *, preflight: dict[str, Any], claim_type: str) -> None:
         worker = Path(__file__).with_name("run_stage_v_dynamic_worker.py")
         command = [
             sys.executable, str(worker),
@@ -299,7 +352,30 @@ class Dispatcher:
         finally:
             log.close()
         self.processes.append(process)
+        self.process_gpus[process.pid] = gpu_id
         atomic_write_json(self.root / f"worker_gpu{gpu_id}.pid.json", {"pid": process.pid, "gpu_id": gpu_id, "started_utc": utc_now()})
+        self._record_gpu_claim(gpu_id, process, preflight, claim_type)
+
+    def _refresh_dynamic_workers(self, tasks: list[dict[str, Any]]) -> None:
+        if self.args.resource_mode not in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+            return
+        if not any(task.get("state") not in {"DONE_VALID", "DONE", "DONE_CLASSIFIED_TC"} for task in tasks):
+            return
+        preflight = self._preflight()
+        atomic_write_json(self.root / "DYNAMIC_RESOURCE_PREFLIGHT.json", preflight)
+        if preflight.get("status") != "PASS":
+            return
+        active_gpus = {
+            self.process_gpus[process.pid]
+            for process in self.processes
+            if process.poll() is None and process.pid in self.process_gpus
+        }
+        for gpu_id in dynamic_gpu_slots(
+            eligible_gpu_ids=preflight.get("eligible_gpu_ids", []),
+            active_gpu_ids=active_gpus,
+            max_workers=self.args.required_workers,
+        ):
+            self._spawn(int(gpu_id), preflight=preflight, claim_type="LATE_ELIGIBLE_GPU")
 
     def run(self) -> int:
         if hasattr(signal, "SIGTERM"):
@@ -310,7 +386,7 @@ class Dispatcher:
             preflight = json.loads(self.args.preflight_output.read_text(encoding="utf-8"))
             eligible_key = "eligible_gpu_ids" if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"} else "safe_gpus"
             for gpu_id in sorted(preflight[eligible_key])[:self.args.required_workers]:
-                self._spawn(int(gpu_id))
+                self._spawn(int(gpu_id), preflight=preflight, claim_type="INITIAL_PRE_CANARY_GPU")
             while True:
                 if self.stop_requested:
                     raise RuntimeError("DISPATCHER_STOP_REQUESTED")
@@ -321,8 +397,10 @@ class Dispatcher:
                         alive += 1
                     elif code != 0:
                         raise RuntimeError(f"WORKER_EXIT:{process.pid}:{code}")
-                project_queue(self.root, self.queue.list_tasks())
                 tasks = self.queue.list_tasks()
+                self._refresh_dynamic_workers(tasks)
+                project_queue(self.root, tasks)
+                alive = sum(process.poll() is None for process in self.processes)
                 if alive == 0:
                     fatal = [task for task in tasks if task["state"] not in {"DONE_VALID", "DONE", "DONE_CLASSIFIED_TC"}]
                     if fatal:
@@ -332,6 +410,9 @@ class Dispatcher:
                         "schema": "STAGE_V_DYNAMIC_DISPATCHER_COMPLETE_V2", "status": "PASS",
                         "dispatcher_pid": os.getpid(), "run_id": self.run_id,
                         "resource_mode": self.args.resource_mode,
+                        "approved_gpus": self.approved_gpus,
+                        "dynamic_gpu_claims": True,
+                        "gpu_claim_count": len(self.gpu_claims),
                         "planned_parents": len(tasks), "completed_parents": sum(task["state"] == "DONE_VALID" for task in tasks),
                         "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0,
                         "completed_utc": utc_now(),
