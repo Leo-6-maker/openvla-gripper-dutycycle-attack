@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.detector_v5.build_stage_v_clean_attempt_union_v2 import build as build_clean_union
 from scripts.detector_v5.build_stage_v_exposure_union_v4 import build as build_exposure_union
+from scripts.detector_v5.select_stage_v_m3_5_diagnostic_manifest_v1 import select as select_diagnostic
 
 
 def write_json(path: Path, value: object) -> None:
@@ -66,3 +67,16 @@ def test_clean_v2_refuses_single_source(tmp_path: Path) -> None:
     write_json(source, {"schema": "X", "status": "PASS", "excluded_parent_keys": ["libero_goal/task_00/state_20"]})
     with pytest.raises(ValueError, match="at least prior"):
         build_clean_union([source], tmp_path / "v2.json")
+
+
+def test_m35_selection_is_outcome_blind_and_covers_all_suites(tmp_path: Path) -> None:
+    source = tmp_path / "v4.json"
+    keys = [f"{suite}/task_00/state_{20 + i}" for suite in ("libero_10", "libero_goal", "libero_object", "libero_spatial") for i in range(3)]
+    write_json(source, {"schema": "STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4", "status": "PASS", "excluded_parent_keys": keys})
+    output = tmp_path / "diagnostic.json"
+    report = select_diagnostic(source, output, per_suite=2, salt="test")
+    assert report["status"] == "FROZEN_FOR_VALIDATION"
+    assert report["selected_count"] == 8
+    assert report["selected_counts_by_suite"] == {suite: 2 for suite in ("libero_10", "libero_goal", "libero_object", "libero_spatial")}
+    assert report["selection_reads"]["outcomes_read"] is False
+    assert report["runtime_authorized"] is False
