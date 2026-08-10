@@ -131,7 +131,7 @@ def _exact_regression_valid(
         isinstance(path, str) and path.startswith("tests/detector_v5/test_stage_v") and path.endswith(".py")
         for path in test_files
     )
-    paths_valid = paths_valid and test_files == sorted(set(test_files))
+    paths_valid = paths_valid and len(test_files) == len(set(test_files))
     bindings_valid = isinstance(tested_bindings, Mapping) and bool(tested_bindings)
     if bindings_valid:
         for relative, expected_sha in tested_bindings.items():

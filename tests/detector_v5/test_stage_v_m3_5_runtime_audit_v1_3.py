@@ -86,19 +86,21 @@ def test_manual_pair_selection_is_deterministic_and_in_range():
 
 
 def test_exact_a800_receipt_is_bound_to_tests_code_and_clean_source(tmp_path):
-    test_file = tmp_path / "tests/detector_v5/test_stage_v_example.py"
+    test_file = tmp_path / "tests/detector_v5/test_stage_v_z.py"
+    second_test_file = tmp_path / "tests/detector_v5/test_stage_v_a.py"
     code_file = tmp_path / "scripts/example.py"
     test_file.parent.mkdir(parents=True)
     code_file.parent.mkdir(parents=True)
     test_file.write_text("assert True\n", encoding="utf-8")
+    second_test_file.write_text("assert True\n", encoding="utf-8")
     code_file.write_text("VALUE = 1\n", encoding="utf-8")
-    bindings = {path.relative_to(tmp_path).as_posix(): _STATIC._sha256(path) for path in (code_file, test_file)}
+    bindings = {path.relative_to(tmp_path).as_posix(): _STATIC._sha256(path) for path in (code_file, test_file, second_test_file)}
     binding = {
         "runtime_python": "/exact/python",
         "source_commit": "a" * 40,
         "source_tree": "b" * 40,
         "expected_collected": 2,
-        "test_files": [test_file.relative_to(tmp_path).as_posix()],
+        "test_files": [test_file.relative_to(tmp_path).as_posix(), second_test_file.relative_to(tmp_path).as_posix()],
         "tested_bindings": bindings,
     }
     receipt = {
