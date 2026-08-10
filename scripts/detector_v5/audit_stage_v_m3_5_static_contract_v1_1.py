@@ -41,6 +41,13 @@ def _all_zero(value: Any) -> bool:
     return isinstance(value, dict) and all(value.get(key, 0) == 0 for key in value)
 
 
+def _repo_file(repo_root: Path, value: Any) -> Path | None:
+    if not isinstance(value, str) or not value:
+        return None
+    path = Path(value)
+    return path.resolve() if path.is_absolute() else (repo_root / path).resolve()
+
+
 def audit(
     label_contract_path: Path,
     fresh_contract_path: Path,
@@ -51,11 +58,13 @@ def audit(
     output_path: Path | None = None,
     auditor_source_commit: str | None = None,
     auditor_source_tree: str | None = None,
+    repo_root: Path | None = None,
 ) -> dict[str, Any]:
     label_path = Path(label_contract_path).resolve()
     fresh_path = Path(fresh_contract_path).resolve()
     exposure_path = Path(exposure_manifest_path).resolve()
     clean_path = Path(clean_manifest_path).resolve()
+    repo_root = (repo_root or Path(__file__).resolve().parents[2]).resolve()
     label = _load(label_path)
     fresh = _load(fresh_path)
     exposure = _load(exposure_path)
@@ -122,11 +131,35 @@ def audit(
     _check(checks, "all_four_suites", label.get("diagnostic_parent_universe", {}).get("all_four_suites_required") is True, "all four suites required")
 
     if protocol is not None:
-        _check(checks, "protocol_schema", protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1", str(protocol.get("schema")))
+        protocol_schema = protocol.get("schema")
+        _check(checks, "protocol_schema", protocol_schema in {"STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1", "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_1"}, str(protocol_schema))
         _check(checks, "protocol_frozen", protocol.get("status") == "FROZEN_FOR_VALIDATION", str(protocol.get("status")))
         _check(checks, "protocol_runtime_boundary", protocol.get("runtime_authorized") is False, str(protocol.get("runtime_authorized")))
         protocol_contracts = protocol.get("contract_bindings", {})
         _check(checks, "protocol_contract_sha", protocol_contracts.get("label_contract", {}).get("sha256") == _sha256(label_path) and protocol_contracts.get("fresh_parent_contract", {}).get("sha256") == _sha256(fresh_path), "protocol binds both contract SHAs")
+        if protocol_schema == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_1":
+            phase_binding = protocol.get("phase_classifier", {})
+            phase_path = _repo_file(repo_root, phase_binding.get("module_path"))
+            phase_text = phase_path.read_text(encoding="utf-8") if phase_path and phase_path.is_file() else ""
+            _check(checks, "phase_classifier_source_exists", bool(phase_path and phase_path.is_file()), str(phase_path))
+            _check(checks, "phase_classifier_sha_bound", bool(phase_path and phase_path.is_file()) and phase_binding.get("sha256") == _sha256(phase_path), "phase classifier source SHA")
+            _check(checks, "phase_classifier_executable", all(token in phase_text for token in ("def classify_phase", "def classify_trajectory", "UNKNOWN")), "callable fail-closed classifier")
+            _check(checks, "phase_classifier_schema", phase_binding.get("schema") == "STAGE_V_M3_5_PHASE_CLASSIFIER_V1" and phase_binding.get("version") == "V1", str(phase_binding))
+            _check(checks, "phase_classifier_labels", phase_binding.get("registered_phase_labels") == ["PRE_CONTACT", "CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY"], str(phase_binding.get("registered_phase_labels")))
+            _check(checks, "phase_classifier_clean_blind", phase_binding.get("clean_only") is True and phase_binding.get("outcome_blind") is True, "clean-only and outcome-blind")
+            required_fields = phase_binding.get("required_fields")
+            _check(checks, "phase_classifier_required_fields", isinstance(required_fields, list) and {"step", "object_position", "eef_position", "object_gripper_contact", "contact_telemetry_valid", "raw_gripper", "env_gripper"}.issubset(required_fields), str(required_fields))
+            thresholds = phase_binding.get("thresholds", {})
+            _check(checks, "phase_classifier_thresholds", thresholds.get("lift_delta_m", 0) > 0 and thresholds.get("carry_stability_steps", 0) >= 2 and thresholds.get("raw_open_threshold") == 0.5, str(thresholds))
+
+            builder_binding = protocol.get("probe_plan_builder", {})
+            builder_path = _repo_file(repo_root, builder_binding.get("script_path"))
+            builder_text = builder_path.read_text(encoding="utf-8") if builder_path and builder_path.is_file() else ""
+            _check(checks, "probe_plan_builder_source_exists", bool(builder_path and builder_path.is_file()), str(builder_path))
+            _check(checks, "probe_plan_builder_sha_bound", bool(builder_path and builder_path.is_file()) and builder_binding.get("sha256") == _sha256(builder_path), "probe builder source SHA")
+            _check(checks, "probe_plan_builder_executable", "def select_probe_steps" in builder_text and "PROBE_PLAN_INSUFFICIENT_PHASE_COVERAGE" in builder_text, "deterministic probe builder")
+            _check(checks, "probe_plan_builder_no_backfill", builder_binding.get("outcome_blind") is True and builder_binding.get("backfill_allowed") is False and builder_binding.get("probes_per_phase") == 6, str(builder_binding))
+            _check(checks, "probe_plan_builder_accounting", builder_binding.get("probe_count") == 24 and builder_binding.get("minimum_remaining_steps") == 20, str(builder_binding))
 
     failures = [item for item in checks if item["status"] != "PASS"]
     report = {
@@ -139,6 +172,7 @@ def audit(
             "exposure_manifest": {"path": str(exposure_path), "sha256": _sha256(exposure_path)},
             "clean_manifest": {"path": str(clean_path), "sha256": _sha256(clean_path)},
             "protocol": {"path": str(Path(protocol_path).resolve()), "sha256": _sha256(Path(protocol_path))} if protocol_path else None,
+            "repo_root": str(repo_root),
         },
         "checks": checks,
         "failure_count": len(failures),
@@ -165,6 +199,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--auditor-source-commit")
     parser.add_argument("--auditor-source-tree")
+    parser.add_argument("--repo-root", type=Path)
     args = parser.parse_args(argv)
     report = audit(
         args.label_contract,
@@ -175,6 +210,7 @@ def main(argv: list[str] | None = None) -> int:
         output_path=args.output,
         auditor_source_commit=args.auditor_source_commit,
         auditor_source_tree=args.auditor_source_tree,
+        repo_root=args.repo_root,
     )
     print(json.dumps({"status": report["status"], "failure_count": report["failure_count"], "output": str(Path(args.output).resolve()) if args.output else None}, sort_keys=True))
     return 0 if report["status"] == "PASS" else 2
