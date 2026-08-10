@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Issue a launch receipt only after the independent V1.2 static audit passes."""
+"""Issue a launch receipt only after the protocol-bound static audit passes."""
 from __future__ import annotations
 
 import argparse
@@ -48,18 +48,33 @@ def main(argv: list[str] | None = None) -> int:
     audit_path = args.audit_report.resolve()
     protocol = _load(protocol_path)
     audit = _load(audit_path)
+    if not str(args.owner_basis).strip() or protocol.get("requires_explicit_owner_authorization") is not True:
+        raise SystemExit("EXPLICIT_OWNER_AUTHORIZATION_BASIS_REQUIRED")
     actual_commit = _git(repo, "rev-parse", "HEAD")
     actual_tree = _git(repo, "rev-parse", "HEAD^{tree}")
-    if audit.get("schema") != "STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1_2" or audit.get("status") != "PASS":
+    actual_status = _git(repo, "status", "--porcelain")
+    audit_binding = protocol.get("static_audit_binding", {})
+    if audit.get("schema") != audit_binding.get("receipt_schema") or audit.get("status") != "PASS":
         raise SystemExit("STATIC_AUDIT_NOT_PASS")
     if audit.get("protocol_sha256") != _sha256(protocol_path):
         raise SystemExit("AUDIT_PROTOCOL_SHA_MISMATCH")
-    if actual_commit != str(args.source_commit) or actual_tree != str(args.source_tree):
+    if actual_commit != str(args.source_commit) or actual_tree != str(args.source_tree) or actual_status:
         raise SystemExit("SOURCE_COMMIT_OR_TREE_MISMATCH")
+    if audit.get("actual_source_commit") != actual_commit or audit.get("actual_source_tree") != actual_tree or audit.get("actual_source_status") not in ("", None):
+        raise SystemExit("STATIC_AUDIT_SOURCE_BINDING_MISMATCH")
     if protocol.get("runtime_authorized") is not True or protocol.get("protected_eval160", {}).get("reads_allowed") is not False:
         raise SystemExit("PROTOCOL_NOT_RUNTIME_AUTHORIZED_OR_EVAL160_NOT_PROTECTED")
+    selection_binding = protocol.get("diagnostic_parent_selection", {})
+    selection_path = Path(str(selection_binding.get("path", ""))).resolve()
+    if not selection_path.is_file() or _sha256(selection_path) != str(selection_binding.get("sha256", "")):
+        raise SystemExit("DIAGNOSTIC_SELECTION_BINDING_MISMATCH")
+    receipt_schema = str(audit_binding.get("authorization_receipt_schema", ""))
+    if not receipt_schema:
+        raise SystemExit("AUTHORIZATION_RECEIPT_SCHEMA_MISSING")
+    if args.output.exists():
+        raise SystemExit(f"REFUSE_OVERWRITE:{args.output}")
     receipt = {
-        "schema": "STAGE_V_M3_5_RUNTIME_AUTHORIZATION_RECEIPT_V1",
+        "schema": receipt_schema,
         "status": "PASS",
         "protocol": str(protocol_path),
         "protocol_sha256": _sha256(protocol_path),
@@ -67,6 +82,9 @@ def main(argv: list[str] | None = None) -> int:
         "static_audit_sha256": _sha256(audit_path),
         "source_commit": actual_commit,
         "source_tree": actual_tree,
+        "source_status": actual_status,
+        "selection": str(selection_path),
+        "selection_sha256": _sha256(selection_path),
         "runtime_python": protocol.get("source_binding", {}).get("runtime_python"),
         "owner_authorization_basis": str(args.owner_basis),
         "protected_counters": dict(COUNTERS),

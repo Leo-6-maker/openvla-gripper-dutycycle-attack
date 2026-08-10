@@ -49,40 +49,57 @@ def test_classifier_emits_registered_phase_sequence_and_fail_closed_unknown():
     assert classify_trajectory([_row(0, remaining=19)])[0]["clean_only_phase_label"] == UNKNOWN
 
 
-def test_probe_plan_requires_six_clean_candidates_per_phase_and_is_deterministic():
-    rows = []
-    step = 0
-    for phase in PHASES:
-        for _ in range(8):
-            rows.append({
-                "step": step,
-                "clean_record_valid": True,
-                "phase_eligible": True,
-                "clean_only_phase_label": phase,
-                "remaining_horizon": 30,
-            })
-            step += 1
+def _corridor_row(step: int, phase: str = "CONTACT_MANIPULATION", *, remaining: int = 30) -> dict:
+    return {
+        "step": step,
+        "clean_record_valid": True,
+        "clean_terminal": False,
+        "phase_eligible": True,
+        "clean_only_phase_label": phase,
+        "remaining_horizon": remaining,
+        "contact_telemetry_valid": True,
+        "object_identity": "cube_1",
+        "object_position": [0.0, 0.0, 0.1],
+        "eef_position": [0.0, 0.0, 0.11],
+        "object_eef_distance_m": 0.01,
+        "object_gripper_contact": True,
+        "object_support_contact": False,
+    }
+
+
+def test_probe_plan_uses_deterministic_corridor_quantiles_without_phase_quota():
+    rows = [_corridor_row(step, PHASES[step % len(PHASES)]) for step in range(48)]
     first = select_probe_steps(rows, "libero_goal/task_00/state_00")
     second = select_probe_steps(rows, "libero_goal/task_00/state_00")
     assert first == second
     assert first["probe_count"] == 24
-    assert {phase: sum(item["phase_label"] == phase for item in first["probe_steps"]) for phase in PHASES} == {phase: 6 for phase in PHASES}
+    assert [item["quantile_ordinal"] for item in first["probe_steps"]] == list(range(24))
+    assert len({item["step"] for item in first["probe_steps"]}) == 24
+    assert first["selected_phase_distribution_descriptive_only"] == {
+        phase: sum(item["phase_label"] == phase for item in first["probe_steps"])
+        for phase in PHASES
+    }
     assert first["outcomes_read"] is False
 
 
-def test_probe_plan_does_not_backfill_missing_phase():
-    rows = []
-    for step in range(24):
-        rows.append({
-            "step": step,
-            "clean_record_valid": True,
-            "phase_eligible": True,
-            "clean_only_phase_label": PHASES[0] if step < 18 else PHASES[1],
-            "remaining_horizon": 30,
-        })
+def test_probe_plan_fails_deterministically_below_24_corridor_states():
+    rows = [_corridor_row(step) for step in range(42)]
+    for row in rows[23:]:
+        row["object_gripper_contact"] = False
     try:
         select_probe_steps(rows, "libero_goal/task_00/state_00")
     except ProbePlanError as exc:
-        assert "INSUFFICIENT_PHASE_COVERAGE" in str(exc)
+        assert str(exc) == "PROBE_PLAN_INSUFFICIENT_CORRIDOR:23/24"
     else:
-        raise AssertionError("missing phase coverage must fail closed")
+        raise AssertionError("short corridor must fail closed")
+
+
+def test_probe_plan_rejects_gapped_step_horizon():
+    rows = [_corridor_row(step) for step in range(44)]
+    rows[20]["step"] = 100
+    try:
+        select_probe_steps(rows, "libero_goal/task_00/state_00")
+    except ProbePlanError as exc:
+        assert str(exc) == "CLEAN_TRAJECTORY_STEPS_NOT_CONTIGUOUS_FROM_ZERO"
+    else:
+        raise AssertionError("row count must not substitute for an environment-step horizon")

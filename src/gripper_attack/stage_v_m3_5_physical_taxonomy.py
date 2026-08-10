@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-SCHEMA = "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V1"
+SCHEMA = "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2"
 _GOAL_OBJECT_RE = re.compile(r"\((?:In|On)\s+([A-Za-z0-9_]+)\s+", re.IGNORECASE)
 _OBJECT_LINE_RE = re.compile(r"^\s*([A-Za-z0-9_ ]+)\s+-\s+([A-Za-z0-9_]+)\s*$")
 _GRIPPER_WORDS = ("gripper", "finger", "eef", "hand")
@@ -58,9 +58,25 @@ def parse_goal_object_ids(bddl_text: str) -> tuple[str, ...]:
     return tuple(result)
 
 
-def target_object_ids_from_bddl(path: Path) -> tuple[str, ...]:
+def taxonomy_eligibility_from_bddl(path: Path) -> dict[str, Any]:
+    """Classify fixture-only goals prospectively without inventing an object."""
     text = path.read_text(encoding="utf-8")
+    declared = parse_declared_object_ids(text)
     targets = parse_goal_object_ids(text)
+    return {
+        "schema": SCHEMA,
+        "status": "PASS" if targets else "INELIGIBLE",
+        "eligible": bool(targets),
+        "reason": "" if targets else "UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+        "rule": "at least one declared source object in an In/On goal predicate",
+        "declared_object_ids": list(declared),
+        "target_object_ids": list(targets),
+        "fixture_binding_inference_allowed": False,
+    }
+
+
+def target_object_ids_from_bddl(path: Path) -> tuple[str, ...]:
+    targets = tuple(taxonomy_eligibility_from_bddl(path)["target_object_ids"])
     if not targets:
         raise PhysicalTaxonomyError("GOAL_OBJECT_BINDING_EMPTY")
     return targets
@@ -121,43 +137,72 @@ def build_forced_open_action(control_raw_action: Any, control_env_action: Any) -
 def evaluate_treatment_compliance(
     receipts: list[Mapping[str, Any]],
     *,
+    expected_steps: int | None = None,
     aperture_delta_min: float = APERTURE_RESPONSE_DELTA_MIN,
     already_open_min: float = ALREADY_OPEN_APERTURE_MIN,
 ) -> dict[str, Any]:
     """Evaluate command delivery and physical aperture response separately."""
     if not receipts:
-        return {"treatment_compliant": False, "compliance_reason": "NO_TREATMENT_STEPS"}
+        return {
+            "treatment_compliant": False,
+            "command_delivery_valid": False,
+            "compliance_reason": "NO_TREATMENT_STEPS",
+            "delivered_open_steps": 0,
+            "expected_open_steps": expected_steps,
+        }
     command_failures: list[str] = []
     pre_metrics: list[float] = []
     post_metrics: list[float] = []
+    if expected_steps is not None and len(receipts) != int(expected_steps):
+        command_failures.append(f"DELIVERED_STEP_COUNT:{len(receipts)}/{int(expected_steps)}")
     for index, row in enumerate(receipts):
         raw = row.get("raw_policy_action")
+        normalized = row.get("normalized_action")
         env = row.get("env_action")
-        if not isinstance(raw, list) or len(raw) != 7 or abs(float(raw[-1]) - 1.0) > 1e-7:
+        try:
+            raw_valid = isinstance(raw, list) and len(raw) == 7 and all(math.isfinite(float(item)) for item in raw) and abs(float(raw[-1]) - 1.0) <= 1e-7
+            normalized_valid = isinstance(normalized, list) and len(normalized) == 7 and all(math.isfinite(float(item)) for item in normalized) and abs(float(normalized[-1]) - 1.0) <= 1e-7
+            env_valid = isinstance(env, list) and len(env) == 7 and all(math.isfinite(float(item)) for item in env) and abs(float(env[-1]) + 1.0) <= 1e-7
+        except (TypeError, ValueError):
+            raw_valid = normalized_valid = env_valid = False
+        if not raw_valid:
             command_failures.append(f"STEP_{index}_RAW_OPEN_INVALID")
-        if not isinstance(env, list) or len(env) != 7 or abs(float(env[-1]) + 1.0) > 1e-7:
+        if not normalized_valid:
+            command_failures.append(f"STEP_{index}_NORMALIZED_OPEN_INVALID")
+        if not env_valid:
             command_failures.append(f"STEP_{index}_ENV_OPEN_INVALID")
-        if float(row.get("arm_delta_linf", math.inf)) > 1e-7:
+        try:
+            arm_delta_linf = float(row.get("arm_delta_linf", math.inf))
+        except (TypeError, ValueError):
+            arm_delta_linf = math.inf
+        if not math.isfinite(arm_delta_linf) or arm_delta_linf > 1e-7:
             command_failures.append(f"STEP_{index}_ARM_DELTA_NONZERO")
         pre = row.get("pre_aperture")
         post = row.get("post_aperture")
-        if pre is not None:
-            pre_metrics.append(float(pre))
-        if post is not None:
-            post_metrics.append(float(post))
+        try:
+            if pre is not None and math.isfinite(float(pre)):
+                pre_metrics.append(float(pre))
+            if post is not None and math.isfinite(float(post)):
+                post_metrics.append(float(post))
+        except (TypeError, ValueError):
+            command_failures.append(f"STEP_{index}_APERTURE_INVALID")
     if command_failures:
         return {
             "treatment_compliant": False,
+            "command_delivery_valid": False,
             "already_open_state": False,
             "aperture_response": False,
             "compliance_reason": "COMMAND_DELIVERY_INVALID",
             "command_failures": command_failures,
+            "delivered_open_steps": len(receipts),
+            "expected_open_steps": expected_steps,
         }
     already_open = bool(pre_metrics and pre_metrics[0] >= float(already_open_min))
     response_delta = (max(post_metrics) - pre_metrics[0]) if pre_metrics and post_metrics else None
     response = response_delta is not None and response_delta >= float(aperture_delta_min)
     return {
         "treatment_compliant": bool(already_open or response),
+        "command_delivery_valid": True,
         "already_open_state": already_open,
         "aperture_response": bool(response),
         "pre_aperture": pre_metrics[0] if pre_metrics else None,
@@ -165,6 +210,8 @@ def evaluate_treatment_compliance(
         "aperture_delta": response_delta,
         "compliance_reason": "ALREADY_OPEN" if already_open else ("APERTURE_RESPONSE" if response else "APERTURE_RESPONSE_NOT_SATISFIED"),
         "command_failures": [],
+        "delivered_open_steps": len(receipts),
+        "expected_open_steps": expected_steps,
     }
 
 
@@ -184,14 +231,14 @@ def repeatability_receipt(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
 
 def v_phys_label(*, control_valid: bool, treatment_valid: bool, f_control: int | None, f_open: int | None) -> str:
     """Return the registered truth-table class; never coerce unknown to zero."""
+    if f_control == 1:
+        return "CONTROL_CONTAMINATION_ABSTAIN" if f_open == 1 else "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
     if not control_valid:
         return "CONTROL_INVALID_ABSTAIN"
     if not treatment_valid:
         return "TREATMENT_INVALID_ABSTAIN"
     if f_control is None or f_open is None:
         return "PHYSICAL_AMBIGUITY_ABSTAIN"
-    if f_control == 1:
-        return "CONTROL_CONTAMINATION_ABSTAIN" if f_open == 1 else "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
     return "V_PHYS" if f_open == 1 else "NO_PHYSICAL_VULNERABILITY"
 
 
@@ -220,7 +267,10 @@ def _body_id(model: Any, target: str, body_names: list[str]) -> int | None:
 
 def bind_object_taxonomy(env: Any, bddl_path: Path) -> dict[str, Any]:
     """Bind BDDL goal objects to one live MuJoCo body each, fail-closed."""
-    targets = target_object_ids_from_bddl(bddl_path)
+    eligibility = taxonomy_eligibility_from_bddl(bddl_path)
+    targets = tuple(eligibility["target_object_ids"])
+    if not targets:
+        return {**eligibility, "bddl_path": str(bddl_path), "target_body_ids": {}, "eef_site_id": None}
     model = getattr(getattr(env, "sim", None), "model", None)
     if model is None:
         return {"schema": SCHEMA, "status": "ABSTAIN", "reason": "SIM_MODEL_MISSING", "target_object_ids": list(targets)}
@@ -244,6 +294,7 @@ def bind_object_taxonomy(env: Any, bddl_path: Path) -> dict[str, Any]:
         "eef_site_name": "gripper0_grip_site",
         "eef_site_id": site_id,
         "body_names": body_names,
+        "taxonomy_eligibility": eligibility,
     }
 
 
@@ -256,12 +307,13 @@ def _contact_body_ids(model: Any, contact: Any) -> tuple[int, int]:
     return int(model.geom_bodyid[int(contact.geom1)]), int(model.geom_bodyid[int(contact.geom2)])
 
 
-def telemetry_from_env(env: Any, binding: Mapping[str, Any]) -> dict[str, Any]:
+def telemetry_from_env(env: Any, binding: Mapping[str, Any], *, target_object_id: str | None = None) -> dict[str, Any]:
     """Collect current geometry/contact facts without reading task outcome."""
     base = {
         "schema": SCHEMA,
         "contact_telemetry_valid": False,
-        "object_identity": "|".join(str(item) for item in binding.get("target_object_ids", [])),
+        "object_identity": str(target_object_id or ""),
+        "registered_target_object_ids": [str(item) for item in binding.get("target_object_ids", [])],
         "object_position": None,
         "eef_position": None,
         "object_eef_distance_m": None,
@@ -276,10 +328,16 @@ def telemetry_from_env(env: Any, binding: Mapping[str, Any]) -> dict[str, Any]:
     model = getattr(sim, "model", None)
     data = getattr(sim, "data", None)
     try:
+        registered = [str(item) for item in binding.get("target_object_ids", [])]
+        if target_object_id is not None and str(target_object_id) not in registered:
+            base["telemetry_reason"] = "TARGET_OBJECT_NOT_REGISTERED"
+            return base
         eef = _finite_vector(data.site_xpos[int(binding["eef_site_id"])])
         body_positions = data.body_xpos
         candidates = []
-        for object_id in binding["target_object_ids"]:
+        for object_id in registered:
+            if target_object_id is not None and object_id != str(target_object_id):
+                continue
             body_id = int(binding["target_body_ids"][object_id])
             position = _finite_vector(body_positions[body_id])
             if position is not None:
@@ -288,8 +346,8 @@ def telemetry_from_env(env: Any, binding: Mapping[str, Any]) -> dict[str, Any]:
         if eef is None or not candidates:
             base["telemetry_reason"] = "OBJECT_OR_EEF_POSITION_INVALID"
             return base
-        _distance, _selected_id, _selected_body, position = min(candidates)
-        target_body_ids = {int(value) for value in binding["target_body_ids"].values()}
+        _distance, selected_id, selected_body, position = min(candidates)
+        target_body_ids = {int(selected_body)}
         body_names = list(binding.get("body_names", []))
         object_gripper_contact = False
         object_support_contact = False
@@ -306,6 +364,8 @@ def telemetry_from_env(env: Any, binding: Mapping[str, Any]) -> dict[str, Any]:
         distance = math.sqrt(sum((position[index] - eef[index]) ** 2 for index in range(3)))
         base.update({
             "contact_telemetry_valid": True,
+            "object_identity": selected_id,
+            "selected_target_body_id": selected_body,
             "object_position": position,
             "eef_position": eef,
             "object_eef_distance_m": distance,
@@ -332,6 +392,7 @@ __all__ = [
     "parse_goal_object_ids",
     "target_object_ids_from_bddl",
     "telemetry_from_env",
+    "taxonomy_eligibility_from_bddl",
     "repeatability_receipt",
     "v_phys_label",
 ]

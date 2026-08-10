@@ -21,6 +21,9 @@ from scripts.detector_v5.run_stage_v_control_qualification import ranked
 from scripts.detector_v5.stage_v_dynamic_common import (
     atomic_write_json, exposure_binding, gpu_preflight, project_queue, science_artifact_status, sha256_file,
 )
+from scripts.detector_v5.run_stage_v_m3_5_intervention_parent import (
+    _branch_record, _collapsed_label, _treatment_observation,
+)
 from scripts.detector_v5.stage_v_science_core_provenance import build as build_provenance, verify as verify_provenance
 from scripts.detector_v5.run_stage_v_local_supervisor import ExclusiveLock, SupervisorError, terminate_process_group
 from scripts.fec.atomic_task_queue import AtomicTaskQueue
@@ -289,6 +292,109 @@ def test_m35_artifact_status_accepts_sealed_parent(tmp_path: Path) -> None:
         artifact_schema="STAGE_V_M3_5_PARENT_RESULT_V1",
     )
     assert checked["valid"] is True
+
+
+def _write_m35_v2_bundle(root: Path, *, corrupt_control_lineage: bool = False) -> str:
+    parent = "libero_goal/task_01/state_47"
+    counters = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
+    branches = []
+    observations = []
+    dose_steps = {"T3": 3, "T5": 5, "T10": 10}
+    for probe in range(24):
+        probe_id = f"Q{probe:02d}"
+        for repetition in range(3):
+            control = {"status": "PASS"}
+            control_record = _branch_record(
+                control, parent_key=parent, probe_id=probe_id, probe_step=probe,
+                repetition=repetition, arm="CONTROL",
+            )
+            branches.append(control_record)
+            for dose, steps in dose_steps.items():
+                treatment = {
+                    "status": "PASS", "treatment_compliant": True,
+                    "treatment_compliance": {"delivered_open_steps": steps},
+                }
+                pair = {
+                    "label_class": "NO_PHYSICAL_VULNERABILITY", "control_valid": True,
+                    "treatment_valid": True, "f_control": 0, "f_open": 0,
+                    "control_physical_class": "NO_PHYSICAL_FAILURE",
+                    "treatment_physical_class": "NO_PHYSICAL_FAILURE",
+                    "required_horizon_steps": steps + 10,
+                    "shared_control_branch_id": control_record["branch_id"],
+                    "shared_control_result_sha256": control_record["branch_result_sha256"],
+                }
+                treatment_record = _branch_record(
+                    treatment, parent_key=parent, probe_id=probe_id, probe_step=probe,
+                    repetition=repetition, arm=dose,
+                    shared_control_branch_id=control_record["branch_id"],
+                    shared_control_result_sha256=control_record["branch_result_sha256"], pair=pair,
+                )
+                branches.append(treatment_record)
+                observations.append(_treatment_observation(control_record, treatment_record))
+    labels = [
+        _collapsed_label([row for row in observations if row["probe_id"] == f"Q{probe:02d}" and row["dose"] == dose])
+        for probe in range(24) for dose in dose_steps
+    ]
+    if corrupt_control_lineage:
+        next(row for row in branches if row["arm"] != "CONTROL")["shared_control_result_sha256"] = "0" * 64
+    (root / "COUNTERFACTUAL_BRANCHES.jsonl").write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in branches), encoding="utf-8")
+    (root / "TREATMENT_REPETITION_OBSERVATIONS.jsonl").write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in observations), encoding="utf-8")
+    (root / "COLLAPSED_PROBE_DOSE_LABELS.jsonl").write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in labels), encoding="utf-8")
+    write_json(root / "M35_RUNTIME_BINDING_RECEIPT.json", {"schema": "STAGE_V_M3_5_RUNTIME_BINDING_RECEIPT_V1", "status": "PASS", "parent_key": parent, "source_commit": "commit", "source_tree": "tree"})
+    write_json(root / "CLEAN_TRAJECTORY.json", {"schema": "STAGE_V_M3_5_CLEAN_TRAJECTORY_V1", "outcomes_read": False, "task_success": True, "rows": []})
+    write_json(root / "PROBE_PLAN.json", {"schema": "STAGE_V_M3_5_PROBE_PLAN_V2", "outcomes_read": False, "probe_count": 24, "protected_counters": counters})
+    write_json(root / "CORRIDOR_COVERAGE.json", {"schema": "STAGE_V_M3_5_CORRIDOR_COVERAGE_V2", "outcomes_read": False, "corridor_qualified": True, "protected_counters": counters})
+    write_json(root / "REPEATABILITY_SUMMARY.json", {"schema": "STAGE_V_M3_5_REPEATABILITY_SUMMARY_V2", "collapsed_label_count": 72, "collapsed_labels": labels})
+    write_json(root / "BLINDED_TAXONOMY_EVIDENCE_MANIFEST.json", {"schema": "STAGE_V_M3_5_BLINDED_TAXONOMY_EVIDENCE_MANIFEST_V1", "canonical_parent_key": parent, "complete": True, "protected_counters": counters})
+    write_json(root / "PROGRESS.json", {"schema": "STAGE_V_M3_5_PROGRESS_V1", "stage": "COMPLETE", "branch_progress": 288, "current_branch": None, "protected_counters": counters})
+    write_json(root / "PARENT_RESULT.json", {
+        "schema": "STAGE_V_M3_5_PARENT_RESULT_V2", "status": "COMPLETE_VALID",
+        "label_validation_status": "PASS", "canonical_parent_key": parent,
+        "suite": "libero_goal", "task_index": 1, "state_index": 47,
+        "source_commit": "commit", "source_tree": "tree", "parent_atomic": True,
+        "clean_success": True, "probe_count": 24,
+        "expected_physical_executions": 288, "actual_physical_executions": 288,
+        "expected_treatment_repetition_observations": 216, "actual_treatment_repetition_observations": 216,
+        "expected_collapsed_probe_dose_labels": 72, "actual_collapsed_probe_dose_labels": 72,
+        "protected_counters": counters,
+    })
+    files = sorted((path for path in root.iterdir() if path.is_file()), key=lambda path: path.name)
+    (root / "SHA256SUMS").write_text("".join(f"{sha256_file(path)}  {path.name}\n" for path in files), encoding="utf-8")
+    (root / "SHA256SUMS.sha256").write_text(f"{sha256_file(root / 'SHA256SUMS')}  SHA256SUMS\n", encoding="utf-8")
+    return parent
+
+
+def test_m35_v2_artifact_status_reconciles_and_rejects_orphaned_control(tmp_path: Path) -> None:
+    parent = _write_m35_v2_bundle(tmp_path)
+    checked = science_artifact_status(
+        tmp_path, parent, expected_source_commit="commit", expected_source_tree="tree",
+        expected_row={"suite": "libero_goal", "task_index": 1, "state_index": 47},
+        artifact_schema="STAGE_V_M3_5_PARENT_RESULT_V2",
+    )
+    assert checked["valid"] is True
+
+    corrupt = tmp_path / "corrupt"
+    corrupt.mkdir()
+    parent = _write_m35_v2_bundle(corrupt, corrupt_control_lineage=True)
+    checked = science_artifact_status(corrupt, parent, artifact_schema="STAGE_V_M3_5_PARENT_RESULT_V2")
+    assert checked["valid"] is False
+    assert "M35_V2_MATCHED_CONTROL_LINEAGE_INVALID" in checked["reason"]
+
+    malformed = tmp_path / "malformed"
+    malformed.mkdir()
+    parent = _write_m35_v2_bundle(malformed)
+    observations_path = malformed / "TREATMENT_REPETITION_OBSERVATIONS.jsonl"
+    observations = [json.loads(line) for line in observations_path.read_text(encoding="utf-8").splitlines()]
+    observations[0]["repetition"] = "bad"
+    observations_path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in observations), encoding="utf-8")
+    (malformed / "SHA256SUMS").unlink()
+    (malformed / "SHA256SUMS.sha256").unlink()
+    files = sorted((path for path in malformed.iterdir() if path.is_file()), key=lambda path: path.name)
+    (malformed / "SHA256SUMS").write_text("".join(f"{sha256_file(path)}  {path.name}\n" for path in files), encoding="utf-8")
+    (malformed / "SHA256SUMS.sha256").write_text(f"{sha256_file(malformed / 'SHA256SUMS')}  SHA256SUMS\n", encoding="utf-8")
+    checked = science_artifact_status(malformed, parent, artifact_schema="STAGE_V_M3_5_PARENT_RESULT_V2")
+    assert checked["valid"] is False
+    assert checked["reason"].startswith("M35_V2_MALFORMED_ARTIFACT:ValueError:")
 
 
 def test_m35_coverage_artifact_status_accepts_sealed_parent(tmp_path: Path) -> None:
