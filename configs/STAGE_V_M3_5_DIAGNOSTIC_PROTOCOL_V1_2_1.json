@@ -1,0 +1,93 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_2",
+  "version": "V1.2.1",
+  "status": "FROZEN_PROSPECTIVE_RUNTIME_READY_PENDING_INDEPENDENT_AUDIT",
+  "supersedes": "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_2.json",
+  "prospective_patch": "runtime-input-provenance-and-m35-atomic-queue-closure",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "protocol_role": "pre_v7_m3_5_semantics_label_validity_and_direct_open_diagnostic",
+  "historical_roots_immutable": true,
+  "protected_eval160": {"reads_allowed": false, "rollouts_allowed": false, "hard_stop": true},
+  "source_binding": {
+    "contract_source_commit": "208461a24fa8254c278b56af79d1420966b3fd14",
+    "contract_source_tree": "f2dd5ea16a94c6aa562e30d753418d7625629c0f",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "canonical_action_semantics": "raw > 0.5 -> OPEN; env=-1.0"
+  },
+  "contract_bindings": {
+    "label_contract": {"path": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_2.json", "sha256": "1a86b85ec03be7c858c031f89710a9aab08cec64f6d03c5b7906162e7b0affab", "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_2"},
+    "phase_classifier": {"path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py", "sha256": "94f46e45aec00c96a18a86230c516b535511c21d2e6a068a9b7ac6bd455fc8e1"},
+    "probe_plan_builder": {"path": "scripts/detector_v5/build_stage_v_m3_5_probe_plan.py", "sha256": "62bd87fd4fd9b9a1fd3a42e988e9754b9a8921a657b85c6a5abb21bb99b57a85"},
+    "physical_taxonomy": {"path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "sha256": "117baccfcb70a0dfb6cb4adcf77d58b52c08b3d5cf09e0f1b0a65e2524a67b5b"},
+    "runner": {"path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py", "sha256": "c1f443daaf7cf4f488ebc5b68827f13d288c7944d51c02e879b8bc3149415e31"},
+    "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "0ad29711afa508417131750c9aea032b76fae35fa18f52201eadae7d1e8c4e57"},
+    "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "652b574253c142b8c4ca91587be269f5625d9d6ee58d50997622873acaaa2841"},
+    "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "3512ae2bc6dc2bf079bcc9db8b138155031954f6c009429b470110dd4767da76"},
+    "dynamic_common": {"path": "scripts/detector_v5/stage_v_dynamic_common.py", "sha256": "aaddf5d868262a55e16d175ab2ae387f5a54332bda8d73938959952eb108c4ba"}
+  },
+  "freshness_bindings": {
+    "exposure_union": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4_20260810T104027Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4.json", "sha256": "b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612", "union_sha256": "62012ba0246d123fb6caa59a8dbc80bc3bd4fb27ea32a6a6c4f87bb3c111dc4a", "count": 53},
+    "clean_attempt_union": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2_20260810T104027Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2.json", "sha256": "a8be0582c5cbe3ae2224cf6786ac18a0558f2105962aef73ea69fffd462e81e6", "union_sha256": "bbe427d645efcaa683d7cfb305014333317ed9cd1e369a1825406b08c2e6302a", "count": 357},
+    "diagnostic_selection": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1_20260810T110240Z/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1.json", "sha256": "af4f5a3925c6de51a0e8fa0cf7436ca41d2212523feb4c45293e34f2c4a297eb", "selected_count": 8, "outcomes_read": false}
+  },
+  "runtime_inputs": {
+    "official_snapshot": {"path": "/mnt/sdc/dty_user/openvla_attack_official_v3_20260716", "git_commit": "4d7a9daeb2bf9cf6b5d911f0ddcd93c254d0362b", "git_tree": "cd5fe5263afd66d9131159d97bba1d1d660be5df", "adapter_path": "/mnt/sdc/dty_user/openvla_attack_official_v3_20260716/src/gripper_attack/official_openvla_adapter.py", "adapter_sha256": "38d2c272123002a6a6caaabefd0ce96f425ff5e06186199b3a2c4a96b05d0cf4"},
+    "upstream": {"path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4", "git_commit": "c8f03f48af692657d3060c19588038c7220e9af9", "git_tree": "c326be57bb61629a3efd2b968ef141fa576a623f"},
+    "models": {
+      "libero_10": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10"},
+      "libero_goal": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal"},
+      "libero_object": {"path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object"},
+      "libero_spatial": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"}
+    },
+    "repo_bindings": {
+      "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "652b574253c142b8c4ca91587be269f5625d9d6ee58d50997622873acaaa2841"},
+      "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "3512ae2bc6dc2bf079bcc9db8b138155031954f6c009429b470110dd4767da76"},
+      "dynamic_common": {"path": "scripts/detector_v5/stage_v_dynamic_common.py", "sha256": "aaddf5d868262a55e16d175ab2ae387f5a54332bda8d73938959952eb108c4ba"},
+      "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "0ad29711afa508417131750c9aea032b76fae35fa18f52201eadae7d1e8c4e57"}
+    }
+  },
+  "diagnostic_execution_accounting": {
+    "selected_parents": 8,
+    "probes_per_parent": 24,
+    "repetitions_per_probe": 3,
+    "conditions_per_probe_and_repetition": ["CONTROL", "T3", "T5", "T10"],
+    "physical_branches_per_parent": 288,
+    "physical_branches_total": 2304,
+    "treatment_label_rows_per_parent": 216,
+    "treatment_label_rows_total": 1728,
+    "formal_m4_accounting_is_separate": true
+  },
+  "resource_contract": {
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "partial_fleet_allowed": true,
+    "foreign_workloads_allowed_if_admitted": true,
+    "gpu3_foreign_process_must_not_be_modified": true,
+    "parent_atomicity": "all registered branches for one parent stay on one physical GPU",
+    "lease_sequence": ["check_free_memory", "atomic_acquire", "recheck_free_memory", "launch", "flush_artifacts", "release"],
+    "dynamic_queue": "frozen parent order plus eligible-GPU claiming",
+    "artifact_schema": "STAGE_V_M3_5_PARENT_RESULT_V1"
+  },
+  "runtime_prerequisites": {
+    "intervention_runner_status": "PASS",
+    "physical_taxonomy_status": "PASS",
+    "runtime_authorization_receipt_required": true,
+    "no_gpu_launch_under_this_freeze": false,
+    "v7_and_m4_before_m3_5_pass": false
+  },
+  "static_audit_binding": {
+    "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_2.py",
+    "auditor_script_sha256": "cab39b20e768451d5f7a37b7e7db7baeea99ce0c590199261bcd829e6def9dc6",
+    "authorization_issuer_script_path": "scripts/detector_v5/issue_stage_v_m3_5_runtime_authorization.py",
+    "authorization_issuer_sha256": "0375fa4976b7088cd5e4b55d89ad3d4d2989ad699d8ff4377fb4e54ba7092bae6",
+    "receipt_schema": "STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1_2",
+    "receipt_status": "REQUIRED_AFTER_PROTOCOL_FREEZE"
+  },
+  "launch_policy": {
+    "runtime_authorized": true,
+    "m3_5_pass_required_before_v7": true,
+    "eval160_allowed": false,
+    "outcome_informed_revision": "forbidden; prospective V1.3 required"
+  }
+}
