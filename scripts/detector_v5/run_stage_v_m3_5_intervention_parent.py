@@ -600,9 +600,12 @@ def _verify_runtime_contract(args: argparse.Namespace, protocol: Mapping[str, An
 
 def run_parent(args: argparse.Namespace) -> int:
     protocol = _load_json(args.protocol)
-    selection_path = Path(protocol["diagnostic_parent_selection"]["path"])
+    selection_binding = protocol.get("diagnostic_parent_selection") or protocol.get("freshness_bindings", {}).get("diagnostic_selection")
+    if not isinstance(selection_binding, Mapping) or not selection_binding.get("path"):
+        raise M35RunnerError("DIAGNOSTIC_SELECTION_BINDING_MISSING")
+    selection_path = Path(str(selection_binding["path"]))
     selection = _load_json(selection_path)
-    if _sha256_file(selection_path) != str(protocol["diagnostic_parent_selection"]["sha256"]):
+    if _sha256_file(selection_path) != str(selection_binding.get("sha256")):
         raise M35RunnerError("SELECTION_MANIFEST_SHA_MISMATCH")
     parent = _selected_parent(selection, args.parent_key)
     args.runtime_input_binding = _verify_runtime_contract(args, protocol, selection)
