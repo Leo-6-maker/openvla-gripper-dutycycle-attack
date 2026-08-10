@@ -154,6 +154,33 @@ def query_inventory(
     ), None
 
 
+def resolve_cuda_physical_uuid(
+    physical_gpu_id: int,
+    *,
+    torch_device_uuid: Any = None,
+    cuda_visible_devices: Any = None,
+    inventory: Iterable[Mapping[str, Any]] | None = None,
+) -> tuple[str, str]:
+    """Resolve logical CUDA 0 to its physical UUID across PyTorch versions."""
+    visible = str(os.environ.get("CUDA_VISIBLE_DEVICES", "") if cuda_visible_devices is None else cuda_visible_devices).strip()
+    if visible != str(int(physical_gpu_id)):
+        raise ResourceContractError(f"CUDA_VISIBLE_DEVICES_PHYSICAL_INDEX_MISMATCH:{visible}:{physical_gpu_id}")
+    rows = list(inventory) if inventory is not None else None
+    if rows is None:
+        rows, query_error = query_inventory()
+        if query_error:
+            raise ResourceContractError(f"GPU_INVENTORY_QUERY_FAILED:{query_error}")
+    row = next((item for item in rows if int(item.get("gpu_id", -1)) == int(physical_gpu_id)), None)
+    physical_uuid = canonical_uuid(row.get("gpu_uuid")) if row else ""
+    if not physical_uuid:
+        raise ResourceContractError(f"PHYSICAL_GPU_UUID_UNAVAILABLE:{physical_gpu_id}")
+    direct_uuid = canonical_uuid(torch_device_uuid)
+    if direct_uuid and direct_uuid != physical_uuid:
+        raise ResourceContractError(f"TORCH_GPU_UUID_MISMATCH:{direct_uuid}:{physical_uuid}")
+    source = "torch.cuda.get_device_properties.uuid+nvidia-smi" if direct_uuid else "CUDA_VISIBLE_DEVICES[0]+nvidia-smi_physical_index"
+    return physical_uuid, source
+
+
 def _admission_row(
     row: Mapping[str, Any], *, mode: str, minimum_free_mib: int,
     leased_gpu_ids: set[int], project_pids: set[int], project_process_tokens: tuple[str, ...],

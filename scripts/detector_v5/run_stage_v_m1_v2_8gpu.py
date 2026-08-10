@@ -16,6 +16,11 @@ from typing import Any, Mapping
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+from scripts.detector_v5.stage_v_gpu_resource_contract import (  # noqa: E402
+    ResourceContractError,
+    resolve_cuda_physical_uuid,
+)
 PYTHON_PREFIX = "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800"
 IDENTITY = "libero_10/task_08/state_47"
 GPU_IDS = tuple(range(8))
@@ -561,9 +566,12 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
         if observed != physical_gpu:
             raise V2Error("EGL_DEVICE_BINDING_MISMATCH")
         properties = torch.cuda.get_device_properties(0)
-        gpu_uuid = str(getattr(properties, "uuid", "")).strip()
-        if not gpu_uuid:
-            raise V2Error("CANARY_GPU_UUID_UNAVAILABLE")
+        try:
+            gpu_uuid, gpu_uuid_source = resolve_cuda_physical_uuid(
+                physical_gpu, torch_device_uuid=getattr(properties, "uuid", None)
+            )
+        except ResourceContractError as exc:
+            raise V2Error(f"CANARY_GPU_UUID_UNAVAILABLE:{exc}") from exc
         renderer_device_information = {
             "env_class": type(env).__name__,
             "sim_class": type(getattr(env, "sim", None)).__name__,
@@ -575,6 +583,7 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
             "logical_worker_id": f"worker_{int(args.gpu)}", "requested_physical_gpu": int(args.gpu),
             "physical_gpu_index": int(args.gpu), "gpu_uuid": gpu_uuid,
             "gpu_uuid_canonical": canonical_gpu_uuid(gpu_uuid),
+            "gpu_uuid_source": gpu_uuid_source,
             "cuda_visible_devices": os.environ["CUDA_VISIBLE_DEVICES"],
             "torch_current_device": int(torch.cuda.current_device()), "cuda_logical_device": 0,
             "cuda_device_name": torch.cuda.get_device_name(0), "mujoco_gl": os.environ["MUJOCO_GL"],

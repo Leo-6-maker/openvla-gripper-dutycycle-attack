@@ -16,6 +16,7 @@ from scripts.detector_v5.stage_v_gpu_resource_contract import (
     ResourceContractError,
     admit_mode_b_or_c,
     combine_inventory,
+    resolve_cuda_physical_uuid,
     verify_recheck,
     write_resource_receipt,
 )
@@ -111,6 +112,17 @@ def test_recheck_requires_same_physical_uuid_and_memory() -> None:
     with pytest.raises(ResourceContractError, match="UUID_MISMATCH"):
         verify_recheck({"gpu_id": 2, "gpu_uuid": "other", "memory_free_mib": MIN_FREE_MEMORY_MIB},
                        expected_gpu_id=2, expected_gpu_uuid=UUID)
+
+
+def test_cuda_uuid_falls_back_to_bound_physical_inventory_when_torch_omits_uuid() -> None:
+    value, source = resolve_cuda_physical_uuid(2, torch_device_uuid=None, cuda_visible_devices="2", inventory=inventory())
+    assert value == UUID
+    assert source == "CUDA_VISIBLE_DEVICES[0]+nvidia-smi_physical_index"
+
+
+def test_cuda_uuid_rejects_direct_torch_mismatch() -> None:
+    with pytest.raises(ResourceContractError, match="TORCH_GPU_UUID_MISMATCH"):
+        resolve_cuda_physical_uuid(2, torch_device_uuid="GPU-other", cuda_visible_devices="2", inventory=inventory())
     with pytest.raises(ResourceContractError, match="MEMORY_INSUFFICIENT"):
         verify_recheck({"gpu_id": 2, "gpu_uuid": UUID, "memory_free_mib": MIN_FREE_MEMORY_MIB - 1},
                        expected_gpu_id=2, expected_gpu_uuid=UUID)

@@ -47,7 +47,12 @@ from scripts.detector_v5.build_stage_v_m3_5_probe_plan import (  # noqa: E402
     PROBE_COUNT,
     select_probe_steps,
 )
-from scripts.detector_v5.stage_v_gpu_resource_contract import canonical_uuid, query_inventory  # noqa: E402
+from scripts.detector_v5.stage_v_gpu_resource_contract import (  # noqa: E402
+    ResourceContractError,
+    canonical_uuid,
+    query_inventory,
+    resolve_cuda_physical_uuid,
+)
 
 
 NUM_STEPS_WAIT = 10
@@ -238,9 +243,12 @@ def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path)
     ):
         raise M35RunnerError("RUNTIME_GPU_UUID_POST_MODEL_LOAD_MISMATCH")
     properties = torch.cuda.get_device_properties(0)
-    torch_uuid = str(getattr(properties, "uuid", "")).strip()
-    if not torch_uuid or canonical_uuid(torch_uuid) != canonical_uuid(runtime_uuid):
-        raise M35RunnerError("RUNTIME_TORCH_PHYSICAL_GPU_UUID_MISMATCH")
+    try:
+        torch_uuid, torch_uuid_source = resolve_cuda_physical_uuid(
+            int(args.gpu), torch_device_uuid=getattr(properties, "uuid", None), inventory=inventory
+        )
+    except ResourceContractError as exc:
+        raise M35RunnerError(f"RUNTIME_TORCH_PHYSICAL_GPU_UUID_MISMATCH:{exc}") from exc
     receipt = {
         "schema": "STAGE_V_M3_5_RUNTIME_BINDING_RECEIPT_V1",
         "status": "PASS",
@@ -251,6 +259,7 @@ def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path)
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
         "torch_current_device": int(torch.cuda.current_device()),
         "torch_device_uuid": torch_uuid,
+        "torch_device_uuid_source": torch_uuid_source,
         "torch_device_name": torch.cuda.get_device_name(0),
         "mujoco_gl": os.environ.get("MUJOCO_GL", ""),
         "mujoco_egl_device_id": os.environ.get("MUJOCO_EGL_DEVICE_ID", ""),
@@ -902,7 +911,7 @@ def _manual_taxonomy_pair(protocol: Mapping[str, Any], parent_key: str) -> dict[
 
 
 def _verify_runtime_contract(args: argparse.Namespace, protocol: Mapping[str, Any], selection: Mapping[str, Any]) -> dict[str, Any]:
-    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" or protocol.get("version") != "V1.3.1":
+    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" or protocol.get("version") != "V1.3.2":
         raise M35RunnerError("PROTOCOL_SCHEMA_OR_VERSION_INVALID")
     if protocol.get("runtime_authorized") is not True or protocol.get("runtime_prerequisites", {}).get("intervention_runner_status") != "PASS":
         raise M35RunnerError("RUNTIME_NOT_AUTHORIZED_OR_RUNNER_NOT_BOUND")
@@ -1400,7 +1409,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if not args.enable_runtime:
-            raise M35RunnerError("RUNTIME_DISABLED_UNTIL_V1_3_1_AUTHORIZATION")
+            raise M35RunnerError("RUNTIME_DISABLED_UNTIL_V1_3_2_AUTHORIZATION")
         return run_parent(args)
     except (OSError, KeyError, ValueError, M35RunnerError) as exc:
         print(json.dumps({"status": "FAIL", "reason": f"{type(exc).__name__}:{exc}"}, sort_keys=True))

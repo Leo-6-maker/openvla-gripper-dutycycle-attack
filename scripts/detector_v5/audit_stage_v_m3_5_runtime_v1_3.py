@@ -324,6 +324,10 @@ def _audit_parent(
         gates,
         "provenance",
         str(runtime.get("torch_device_uuid", "")).lower().removeprefix("gpu-") == expected_gpu
+        and runtime.get("torch_device_uuid_source") in {
+            "torch.cuda.get_device_properties.uuid+nvidia-smi",
+            "CUDA_VISIBLE_DEVICES[0]+nvidia-smi_physical_index",
+        }
         and runtime.get("torch_current_device") == 0
         and runtime.get("cuda_visible_devices") == str(result.get("gpu"))
         and runtime.get("mujoco_egl_device_id") == str(result.get("gpu"))
@@ -608,7 +612,7 @@ def _audit_all(protocol_path: Path, authorization_path: Path, runtime_root: Path
     selection_path = Path(str(protocol.get("diagnostic_parent_selection", {}).get("path", ""))).resolve()
     selection = _load(selection_path) if selection_path.is_file() else {}
     structural: list[str] = []
-    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" or protocol.get("version") != "V1.3.1" or _sha_file(protocol_path) != authorization.get("protocol_sha256"):
+    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" or protocol.get("version") != "V1.3.2" or _sha_file(protocol_path) != authorization.get("protocol_sha256"):
         structural.append("PROTOCOL_OR_AUTHORIZATION_BINDING_INVALID")
     source_commit, source_tree = authorization.get("source_commit"), authorization.get("source_tree")
     if authorization.get("status") != "PASS" or not isinstance(source_commit, str) or len(source_commit) != 40 or not isinstance(source_tree, str) or len(source_tree) != 40 or authorization.get("source_status") not in ("", None) or authorization.get("protected_counters") != COUNTERS:

@@ -194,8 +194,8 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
     actual_tree = _git(repo, "rev-parse", "HEAD^{tree}")
     actual_status = _git(repo, "status", "--porcelain")
     _check(checks, "source_worktree_clean", not actual_status, actual_status or "clean")
-    _check(checks, "protocol_schema", protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" and protocol.get("version") == "V1.3.1", {"schema": protocol.get("schema"), "version": protocol.get("version")})
-    _check(checks, "protocol_revision", protocol.get("supersedes") == "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3.json" and protocol.get("revision_reason") == "correct physical EGL binding before any simulator step or rollout", {"supersedes": protocol.get("supersedes"), "revision_reason": protocol.get("revision_reason")})
+    _check(checks, "protocol_schema", protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" and protocol.get("version") == "V1.3.2", {"schema": protocol.get("schema"), "version": protocol.get("version")})
+    _check(checks, "protocol_revision", protocol.get("supersedes") == "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3_1.json" and protocol.get("revision_reason") == "support pinned PyTorch UUID fallback before any simulator step or rollout", {"supersedes": protocol.get("supersedes"), "revision_reason": protocol.get("revision_reason")})
     _check(checks, "protocol_status", protocol.get("status") == "FROZEN_PROSPECTIVE_RUNTIME_READY_PENDING_INDEPENDENT_AUDIT", protocol.get("status"))
     _check(checks, "runtime_authorized", protocol.get("runtime_authorized") is True and protocol.get("requires_explicit_owner_authorization") is True and protocol.get("launch_policy", {}).get("runtime_authorized") is True, "explicit owner-authorized diagnostic only")
     _check(checks, "protected_eval160", protocol.get("protected_eval160") == {"reads_allowed": False, "rollouts_allowed": False, "hard_stop": True}, protocol.get("protected_eval160"))
@@ -220,6 +220,47 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
         and predecessor.get("protected_counters") == COUNTERS
         and all(predecessor_snapshot.get(field) == 0 for field in ("simulator_steps", "clean_trajectory_files", "parent_results", "physical_branches", "treatment_observations", "collapsed_labels")),
         predecessor_binding,
+    )
+    bootstrap_binding = protocol.get("egl_bootstrap_failure_predecessor", {})
+    bootstrap_path = Path(str(bootstrap_binding.get("receipt_path", ""))).resolve()
+    bootstrap = _load(bootstrap_path) if bootstrap_path.is_file() else {}
+    bootstrap_root = bootstrap_path.parent
+    bootstrap_seal = bootstrap_root / "SHA256SUMS"
+    bootstrap_script = bootstrap_root / "SMOKE.py"
+    torch_probe = bootstrap_root / "TORCH_UUID_CAPABILITY_PROBE.log"
+    bootstrap_auth_path = Path(str(bootstrap.get("authorization", ""))).resolve()
+    bootstrap_auth = _load(bootstrap_auth_path) if bootstrap_auth_path.is_file() else {}
+    _check(
+        checks,
+        "egl_bootstrap_failure_predecessor",
+        bootstrap_path.is_file()
+        and _sha256(bootstrap_path) == bootstrap_binding.get("receipt_sha256")
+        and bootstrap_seal.is_file()
+        and _sha256(bootstrap_seal) == bootstrap_binding.get("root_sha256s_sha256")
+        and bootstrap_script.is_file()
+        and _sha256(bootstrap_script) == bootstrap.get("smoke_script_sha256") == bootstrap_binding.get("smoke_script_sha256")
+        and torch_probe.is_file()
+        and _sha256(torch_probe) == bootstrap_binding.get("torch_uuid_probe_sha256")
+        and bootstrap_auth_path.is_file()
+        and _sha256(bootstrap_auth_path) == bootstrap_binding.get("authorization_sha256")
+        and bootstrap_auth.get("source_commit") == bootstrap_binding.get("source_commit")
+        and bootstrap_auth.get("source_tree") == bootstrap_binding.get("source_tree")
+        and bootstrap_auth.get("protocol_sha256") == bootstrap_binding.get("protocol_sha256")
+        and bootstrap.get("schema") == "STAGE_V_M3_5_EGL_BOOTSTRAP_SMOKE_V1"
+        and bootstrap.get("version") == "V1.3.1"
+        and bootstrap.get("status") == "FAIL"
+        and bootstrap.get("failure", {}).get("message") == "TORCH_PHYSICAL_GPU_UUID_MISMATCH"
+        and bootstrap.get("environment_closed") is True
+        and bootstrap.get("source_status_after") in ("", None)
+        and bootstrap.get("outcome_data_observed") is False
+        and bootstrap.get("rollout_started") is False
+        and bootstrap.get("model_loaded") is False
+        and bootstrap.get("policy_loaded") is False
+        and bootstrap.get("protected_counters") == COUNTERS
+        and all(bootstrap.get(field) == 0 for field in ("simulator_steps", "environment_reset_calls", "environment_step_calls"))
+        and bootstrap_binding.get("status") == "SEALED_STRUCTURAL_FAILURE_ZERO_ROLLOUT"
+        and bootstrap_root.stat().st_mode & 0o222 == 0,
+        bootstrap_binding,
     )
     _check(checks, "exact_python", Path(sys.executable).as_posix() == str(protocol.get("source_binding", {}).get("runtime_python")), sys.executable)
 
@@ -344,6 +385,18 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
         and protocol.get("resource_contract", {}).get("mujoco_egl_device_id") == "admitted physical GPU index"
         and protocol.get("resource_contract", {}).get("env_render_gpu_device_id") == "admitted physical GPU index",
         protocol.get("resource_contract", {}),
+    )
+    resource_text = bound_paths.get("resource_contract").read_text(encoding="utf-8") if bound_paths.get("resource_contract") else ""
+    runner_text = bound_paths.get("runner").read_text(encoding="utf-8") if bound_paths.get("runner") else ""
+    _check(
+        checks,
+        "torch_physical_uuid_binding",
+        protocol.get("resource_contract", {}).get("torch_device_uuid_binding")
+        == "torch property when available; otherwise CUDA_VISIBLE_DEVICES[0] plus nvidia-smi physical index"
+        and "def resolve_cuda_physical_uuid(" in resource_text
+        and "CUDA_VISIBLE_DEVICES[0]+nvidia-smi_physical_index" in resource_text
+        and "resolve_cuda_physical_uuid(" in runner_text,
+        protocol.get("resource_contract", {}).get("torch_device_uuid_binding"),
     )
     egl_files = protocol.get("resource_contract", {}).get("runtime_egl_files", {})
     actual_egl_files = {
