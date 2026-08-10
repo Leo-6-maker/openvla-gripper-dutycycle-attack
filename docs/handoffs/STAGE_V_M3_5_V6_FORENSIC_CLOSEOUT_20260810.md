@@ -56,10 +56,19 @@ the prospective contract separates those layers.
 
 ## M3.5 prospective contract
 
-Added, but not yet scientifically frozen:
+The V1 files below are historical drafts and are not runtime authority. GPT's
+static review identified P0 gaps; the prospective V1.1 patch is now the only
+candidate contract, and it remains runtime-unauthorized until a later explicit
+audit/authorization boundary:
 
 - `configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1.json`
 - `configs/STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1.json`
+- `configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1.json`
+- `configs/STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1.json`
+
+The V1.1 patch binds the latest 53-parent exposure union and the mechanically
+computed 357-parent cumulative clean-attempt union. Its exact freeze receipt is
+`docs/handoffs/STAGE_V_M3_5_V1_1_PATCH_20260810.md`.
 
 The contract requires treatment compliance receipts for canonical raw
 `1.0 -> env -1.0 OPEN`, sufficient causal-state binding, matched-control arm
@@ -89,6 +98,8 @@ select positive parents.
 
 ## Next legal gate
 
-Complete the CPU-side M3.5 audit and freeze the two prospective contracts only
-after their gates pass. Then create a new V7 source/root/salt/candidate pool.
-Only a fresh V7 PASS may create the formal 40-parent split and unlock M4.
+The V1.1 static contract audit is complete, but no M3.5 diagnostic runtime is
+authorized by this handoff. A later authorized M3.5 run must produce its
+validation receipt without changing the frozen contract SHA. Then create a new
+V7 source/root/salt/candidate pool; only a fresh V7 PASS may create the formal
+40-parent split and unlock M4.

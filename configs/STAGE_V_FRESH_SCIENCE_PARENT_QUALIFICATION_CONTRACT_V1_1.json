@@ -1,0 +1,125 @@
+{
+  "schema": "STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1",
+  "version": "V1.1",
+  "status": "FROZEN_PROSPECTIVE_NO_RUNTIME_AUTHORIZATION",
+  "supersedes": "configs/STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1.json",
+  "label_contract": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1.json",
+  "authoritative_freshness": {
+    "latest_counterfactual_exposure_union_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_EXPOSURE_UNION_V3_20260810T013514Z.json",
+    "latest_counterfactual_exposure_union_sha256": "1f26391d4af7637b898806fbe6b008651fa19138d20c2b95e0589ca8b4dbd350",
+    "latest_counterfactual_exposure_union_count": 53,
+    "cumulative_clean_attempt_union_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_UNION_V1_20260810T102002Z/CUMULATIVE_CLEAN_ATTEMPT_UNION_V1.json",
+    "cumulative_clean_attempt_union_sha256": "b3aa0de403820714742d6724db1e6e8e77cebaadf4d602c13be1e8e141059bd2",
+    "cumulative_clean_attempt_union_count": 357,
+    "older_50_and_117_manifests_are_not_sufficient": true,
+    "launcher_accepts_only_bound_union_sha256": true,
+    "post_m35_exposure_union_recompute_before_v7": true,
+    "post_m35_clean_attempt_union_recompute_before_v7": true
+  },
+  "qualification_layering": {
+    "engineering_valid_statuses": ["DONE", "PASS", "QUALIFIED", "TASK_FAILURE"],
+    "engineering_valid_requires": [
+      "exit_code==0",
+      "artifact_validation_pass",
+      "runtime_valid",
+      "snapshot_restore_valid",
+      "task_identity_valid",
+      "metrics_finite",
+      "source_commit_and_tree_exact",
+      "provenance_copy_equals_source",
+      "canonical_parent_key_exact",
+      "assigned_gpu_exact",
+      "protected_and_attack_counters_zero",
+      "old_artifacts_reused==false"
+    ],
+    "clean_science_gate": [
+      "A engineering_valid",
+      "B engineering_valid",
+      "A clean_success==true",
+      "B clean_success==true",
+      "A/B initial_state_identity_sha256 equal",
+      "source/model/runtime binding exact",
+      "parent GPU affinity exact",
+      "no protected or exposure violation"
+    ],
+    "not_parent_hard_gates": [
+      "terminal_state_sha256 equality",
+      "terminal sidecar record equality",
+      "global remaining_horizon_complete equality"
+    ],
+    "descriptive_parent_metrics": [
+      "terminal_state_sha256 equality",
+      "terminal_outcome equality",
+      "completion_step difference",
+      "global remaining horizon"
+    ],
+    "probe_level_hard_gates": [
+      "exact saved branch snapshot",
+      "treatment compliance",
+      "matched control validity",
+      "dose-specific physical horizon",
+      "physical ambiguity and non-gripper failure abstain"
+    ]
+  },
+  "identity_contract": {
+    "authoritative_name": "initial_state_identity_sha256",
+    "legacy_alias": "key_state_identity_sha256",
+    "legacy_alias_must_equal_authoritative": true,
+    "probe_state_identity_is_separate": true
+  },
+  "formal_accounting": {
+    "probes_per_parent": 24,
+    "shared_control_executions_per_parent": 24,
+    "treatment_label_rows_per_parent": 72,
+    "physical_branch_executions_per_parent": 96,
+    "formal_parent_count": 40,
+    "formal_treatment_label_rows": 2880,
+    "formal_physical_branch_executions": 3840,
+    "parent_atomicity": "one parent owns all 96 physical executions on one GPU",
+    "control_reference_rule": "each treatment label row references one of the 24 same-probe control receipts"
+  },
+  "freshness_contract": {
+    "new_source_commit_required": true,
+    "new_source_tree_required": true,
+    "new_runtime_root_required": true,
+    "new_qualification_salt_required": true,
+    "new_candidate_pool_required": true,
+    "selection_must_not_read_any_prior_outcome": true,
+    "selection_rule": "freeze candidate universe and hash rank after binding both cumulative unions and before reading any new clean result",
+    "future_candidate_intersection_must_be_zero_with": [
+      "latest_counterfactual_exposure_union",
+      "cumulative_clean_attempt_union"
+    ]
+  },
+  "resource_contract": {
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "partial_fleet_allowed": true,
+    "foreign_workloads_allowed_in_throughput_mode": true,
+    "parent_bundle_atomicity": "all 24 control plus 72 treatment executions stay on one GPU",
+    "gpu3_foreign_process_must_not_be_modified": true
+  },
+  "pass_target": {
+    "suite_names": ["libero_10", "libero_goal", "libero_object", "libero_spatial"],
+    "qualified_parents_per_suite": 10,
+    "formal_parent_count": 40,
+    "m4_label_rows": 2880,
+    "m4_physical_branch_executions": 3840
+  },
+  "hard_stops": [
+    "protected Eval160 read or rollout",
+    "parent or split leakage",
+    "source/tree mismatch",
+    "union SHA mismatch or incomplete freshness union",
+    "scientific artifact corruption",
+    "producer/auditor irreconcilable disagreement",
+    "rerun-to-pass or post-outcome protocol modification"
+  ],
+  "launch_policy": {
+    "v7_authorized_by_this_file": false,
+    "m4_authorized_by_this_file": false,
+    "requires_m3_5_validation_receipt": true,
+    "requires_fresh_v7_pass_and_independent_audit": true
+  }
+}

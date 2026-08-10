@@ -1,0 +1,65 @@
+# Stage V M3.5 V1.1 prospective patch — 2026-08-10
+
+## Decision
+
+GPT review found static P0s in the V1 drafts. They are patched prospectively
+in V1.1. V1 remains historical draft material; V6 remains immutable FAIL.
+
+```text
+V6 CLOSEOUT                         PASS
+V6 FORENSIC INTERPRETATION          PASS
+M3.5 SCIENTIFIC DIRECTION           PASS
+M3.5 OPERATIONAL CONTRACT           FROZEN_PROSPECTIVE / NO RUNTIME AUTHORIZATION
+M3.5 DIAGNOSTIC RUNTIME             NOT AUTHORIZED
+V7                                  NOT AUTHORIZED
+M4                                  BLOCKED
+```
+
+## New frozen prospective files
+
+- `configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1.json`
+- `configs/STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1.json`
+
+They are frozen before any M3.5 intervention runtime. A runtime validation
+receipt must preserve the contract SHA; a scientific change becomes V1.2.
+
+## P0 closure
+
+1. Freshness binds the latest exposure union V3 (`53`, SHA
+   `1f26391d4af7637b898806fbe6b008651fa19138d20c2b95e0589ca8b4dbd350`) and
+   the mechanically generated cumulative clean-attempt union (`357`, SHA
+   `b3aa0de403820714742d6724db1e6e8e77cebaadf4d602c13be1e8e141059bd2`).
+   The old 50/117 component manifests are not authoritative V7 inputs.
+2. Accounting is explicit: 24 shared control executions plus 72 treatment
+   executions equals 96 physical branch executions per parent, while only 72
+   treatment rows receive labels. Formal totals are 2,880 label rows and 3,840
+   physical branch executions.
+3. The 24 probes are selected deterministically from clean-only phase strata
+   (`6 × PRE_CONTACT`, `CONTACT_MANIPULATION`, `ENGAGED_LIFT`, `CARRY`) using a
+   frozen hash rank. There is no outcome-informed backfill.
+4. Horizon is dose-specific: treatment delivery, 10-step physical observation,
+   and independent official task-consequence horizons are recorded separately.
+5. During T3/T5/T10 only the gripper component changes; after treatment each
+   branch resumes its own closed-loop policy from its own state. Control replay
+   after treatment is forbidden.
+6. OPEN/aperture response is a treatment/mediator receipt, not physical
+   vulnerability. Physical failure classes now have executable predicates and
+   explicit abstains.
+7. Repeatability is a hard gate: three valid repetitions must emit the same
+   registered class and all treatment repetitions must be compliant. Discordance
+   emits `HOLD_STOCHASTIC_INTERVENTION_OUTCOME`.
+8. All four suites must have diagnostic coverage; no positive-balance tuning is
+   permitted.
+
+## Runtime boundary
+
+No GPU diagnostic has started under V1.1. No V7 candidate selection, fresh
+qualification, formal split, M4 map, Teacher, Student, Stage O, VIS, or
+protected Eval160 access is authorized. GPU3 foreign workloads remain outside
+the project's control boundary.
+
+Before runtime, an independent static audit must verify both V1.1 JSON files,
+the two bound union SHAs, the accounting identity, the probe algorithm, and the
+freeze-before-runtime receipt. After runtime, the independent audit must verify
+the compliance receipts, physical predicates, 3/3 repeatability, and all-suite
+coverage without changing the frozen SHA.

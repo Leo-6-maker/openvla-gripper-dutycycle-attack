@@ -1,0 +1,292 @@
+{
+  "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1",
+  "version": "V1.1",
+  "status": "FROZEN_PROSPECTIVE_DIAGNOSTIC_NO_RUNTIME_AUTHORIZATION",
+  "supersedes": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1.json",
+  "protocol_role": "measurement_contract_for_m3_5_before_fresh_v7",
+  "historical_roots_immutable": true,
+  "protected_eval160": {
+    "reads_allowed": false,
+    "rollouts_allowed": false,
+    "hard_stop": true
+  },
+  "freeze_order": {
+    "static_p0_patch_completed_before_runtime": true,
+    "contract_and_label_sha_frozen_before_runtime": true,
+    "runtime_authorized_by_this_file": false,
+    "validation_receipt_required_after_runtime": true,
+    "failure_policy": "V1_1 remains HOLD; any scientific change requires a prospective V1_2"
+  },
+  "authoritative_freshness_bindings": {
+    "latest_counterfactual_exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_EXPOSURE_UNION_V3_20260810T013514Z.json",
+      "sha256": "1f26391d4af7637b898806fbe6b008651fa19138d20c2b95e0589ca8b4dbd350",
+      "schema": "STAGE_V_EXPOSURE_MANIFEST_V2",
+      "status": "PASS",
+      "excluded_parent_count": 53,
+      "launcher_role": "authoritative exposure union; launcher accepts only this manifest SHA",
+      "coverage_rule": "must cumulatively include every historical, M4, M3.5, direct-OPEN, VIS, and counterfactual exposure before V7 selection"
+    },
+    "cumulative_clean_attempt_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_UNION_V1_20260810T102002Z/CUMULATIVE_CLEAN_ATTEMPT_UNION_V1.json",
+      "sha256": "b3aa0de403820714742d6724db1e6e8e77cebaadf4d602c13be1e8e141059bd2",
+      "schema": "STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_UNION_V1",
+      "status": "PASS",
+      "excluded_parent_count": 357,
+      "components": {
+        "prior_clean_control_attempts": 117,
+        "v6_clean_qualification_attempts": 240,
+        "overlap": 0
+      },
+      "launcher_role": "authoritative cumulative clean-attempt exclusion; no older component manifest is sufficient"
+    },
+    "historical_inventory_is_provenance_only": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/runner_binding_forensics_c80eb290_20260808T013003Z/COUNTERFACTUAL_EXPOSURE_EXCLUSION_V1.json"
+  },
+  "diagnostic_parent_universe": {
+    "source": "latest_counterfactual_exposure_union.excluded_parent_keys",
+    "selection_rule": "use every identity whose registered historical diagnostic source is present; sort canonical keys lexicographically; do not subsample by any outcome, label, suite success, or balance target",
+    "outcome_fields_forbidden_before_freeze": [
+      "opened_success",
+      "task_vulnerability",
+      "local_vulnerability",
+      "V_phys",
+      "V_task",
+      "clean_success"
+    ],
+    "all_four_suites_required": true,
+    "minimum_suite_coverage": "at least one registered diagnostic parent per suite; missing suite coverage is a hard HOLD",
+    "post_m35_exposure_recompute_required_before_v7": true
+  },
+  "canonical_execution_semantics": {
+    "raw_policy_gripper_encoding": {
+      "0.0": "CLOSE",
+      "1.0": "OPEN"
+    },
+    "official_normalize_invert_mapping": {
+      "raw_policy_value": 1.0,
+      "expected_env_action_value": -1.0,
+      "meaning": "OPEN"
+    },
+    "treatment_compliance_is_not_inferred": true,
+    "required_env_step_receipt_fields": [
+      "raw_policy_action",
+      "normalized_action",
+      "env_action",
+      "pre_step_qpos_or_aperture",
+      "post_step_qpos_or_aperture",
+      "already_open_state",
+      "treatment_compliant",
+      "compliance_reason"
+    ],
+    "legacy_suite_sign_warning": "not runtime authority; canonical mapping and actual env.step receipt are authoritative"
+  },
+  "counterfactual_state_contract": {
+    "branching_unit": "exact_saved_clean_snapshot",
+    "required_identity_fields": [
+      "canonical_parent_key",
+      "full_simulator_state_sha256",
+      "initial_state_identity_sha256",
+      "policy_input_sha256",
+      "prompt_or_input_ids_sha256",
+      "pixel_values_sha256",
+      "decode_config_sha256",
+      "model_source_sha256",
+      "runtime_source_commit",
+      "runtime_source_tree",
+      "seed_and_rng_receipt_if_stochastic"
+    ],
+    "legacy_name_policy": "key_state_identity_sha256 may be retained only as a verified migration alias; all V1.1 and V7 decisions use initial_state_identity_sha256",
+    "policy_state_rule": "If a stateless deterministic policy is proved, policy history/KV state is not required. If recurrent state, KV cache, stochastic sampling, or hidden mutable state exists, it must be captured and bound."
+  },
+  "probe_selection_algorithm": {
+    "algorithm_id": "STAGE_V_PROBE_SELECTION_CLEAN_PHASE_STRATIFIED_HASH_V1_1",
+    "inputs_only": [
+      "canonical_parent_key",
+      "clean_trajectory_records",
+      "clean_only_phase_label",
+      "clean_only_validity",
+      "clean_only_remaining_horizon"
+    ],
+    "forbidden_inputs": [
+      "OPEN_or_treatment_result",
+      "control_or_treatment_outcome",
+      "V_phys_or_V_task",
+      "future_label_balance",
+      "M3.5_repeatability_result"
+    ],
+    "phase_strata": [
+      "PRE_CONTACT",
+      "CONTACT_MANIPULATION",
+      "ENGAGED_LIFT",
+      "CARRY"
+    ],
+    "probes_per_stratum": 6,
+    "probe_count_per_parent": 24,
+    "selection_salt": "STAGE_V_M3_5_PROBE_SELECTION_V1_1",
+    "eligibility_predicate": {
+      "clean_record_valid": true,
+      "clean_record_not_terminal": true,
+      "phase_label_in_registered_strata": true,
+      "remaining_steps_at_probe_gte": "T10 + physical_outcome_horizon_steps"
+    },
+    "ranking_key": "sha256(selection_salt + '::' + canonical_parent_key + '::' + clean_only_phase_label + '::' + decimal_step_id)",
+    "selection_procedure": [
+      "partition eligible clean-only step IDs by phase stratum",
+      "sort each stratum by ranking_key, then decimal_step_id",
+      "take the first six from every stratum",
+      "emit the exact 24 step IDs, phase labels, eligibility receipts, and ranking hashes",
+      "if any stratum has fewer than six eligible steps, emit PROBE_SELECTION_INSUFFICIENT_PHASE_COVERAGE and do not backfill"
+    ],
+    "probe_locations_are_not_dose_values": true,
+    "outcome_blind_before_runtime": true
+  },
+  "execution_accounting": {
+    "per_parent": {
+      "probe_locations": 24,
+      "shared_control_executions": 24,
+      "treatment_executions": 72,
+      "physical_branch_executions": 96,
+      "treatment_label_rows": 72
+    },
+    "treatment_breakdown": {
+      "T3": 24,
+      "T5": 24,
+      "T10": 24
+    },
+    "label_row_rule": "one treatment label row per probe-dose pair; each row references exactly one shared control receipt for that probe",
+    "formal_m4_totals": {
+      "parents": 40,
+      "treatment_label_rows": 2880,
+      "physical_branch_executions": 3840
+    },
+    "parent_atomicity": "one parent owns all 24 control plus 72 treatment executions on one GPU"
+  },
+  "intervention_contract": {
+    "control_branch": "one registered clean control execution per probe snapshot",
+    "treatment_branches": ["T3", "T5", "T10"],
+    "dose_unit": "consecutive env steps with forced OPEN treatment",
+    "dose_steps": {
+      "T3": 3,
+      "T5": 5,
+      "T10": 10
+    },
+    "treatment_window": {
+      "control_arm": "frozen canonical control action arm at the same registered step",
+      "open_arm": "exact same frozen control action arm",
+      "only_gripper_component_may_change": true,
+      "arm_delta_must_equal_zero": true,
+      "forced_gripper_env_action": -1.0
+    },
+    "post_treatment_mode": "each branch resumes its own frozen-policy closed-loop from its own post-treatment state",
+    "control_replay_after_treatment": false,
+    "estimand": "short surgical gripper intervention with downstream physical effects, not open-loop control replay"
+  },
+  "horizon_contract": {
+    "treatment_delivery_horizon": "dose_steps[T]",
+    "physical_outcome_horizon_steps": 10,
+    "task_consequence_horizon": "continue each branch under its own closed-loop policy until official success, failure, or official horizon",
+    "probe_eligibility_rule": "remaining clean horizon >= dose_steps[T10] + physical_outcome_horizon_steps",
+    "physical_label_censoring": "if the post-treatment physical horizon is incomplete, V_phys=ABSTAIN_HORIZON_CENSORED",
+    "task_label_censoring": "if the official task consequence is incomplete, V_task=ABSTAIN_TASK_HORIZON_CENSORED",
+    "global_remaining_horizon_is_not_parent_gate": true
+  },
+  "treatment_compliance": {
+    "command_delivery_predicate": "raw_policy_gripper == 1.0 AND env_action_gripper == -1.0 on every registered treatment step",
+    "response_predicate": "already_open_state == true OR registered aperture response predicate is satisfied",
+    "already_open_is_compliant": true,
+    "aperture_delta_alone_is_not_sufficient": true,
+    "failure_label": "TREATMENT_NONCOMPLIANCE_ABSTAIN",
+    "receipt_must_bind": ["raw action", "normalized action", "env action", "pre/post aperture or qpos", "compliance reason"]
+  },
+  "mediator_and_physical_failure_contract": {
+    "causal_layers": ["TREATMENT", "MEDIATOR", "F_PHYS", "F_TASK"],
+    "mediators": {
+      "OPEN_COMMAND_DELIVERED": "command_delivery_predicate",
+      "APERTURE_RESPONSE": "response_predicate",
+      "CONTACT_QUALITY_CHANGE": "registered contact metrics compared with matched control"
+    },
+    "registered_thresholds": {
+      "contact_absence_consecutive_frames": 2,
+      "object_release_l2_threshold": 0.01,
+      "object_drop_height_threshold": 0.02
+    },
+    "physical_failure_predicates": {
+      "GRIPPER_CONTACT_LOSS": "control_contact_eligible == true AND contact_absence_consecutive_frames >= 2 AND normal_release_window == false",
+      "PREMATURE_OBJECT_RELEASE": "object_engaged_before_treatment == true AND supporting_contact_lost == true AND normal_release_window == false AND object_displacement_l2 >= object_release_l2_threshold",
+      "OBJECT_DROP": "object_engaged_before_treatment == true AND supporting_contact_lost == true AND object_drop_height >= object_drop_height_threshold AND normal_release_window == false"
+    },
+    "not_physical_failure": [
+      "OPEN_COMMAND_DELIVERED",
+      "APERTURE_RESPONSE",
+      "TREATMENT_MEDIATOR_ONLY"
+    ],
+    "abstain_predicates": {
+      "NON_GRIPPER_FAILURE": "registered non-gripper failure predicate == true",
+      "PHYSICAL_AMBIGUITY": "required physical fields missing or mutually discordant",
+      "CONTROL_CONTAMINATION": "F_control == 1",
+      "TREATMENT_NONCOMPLIANCE": "treatment_compliant == false",
+      "STATE_RESTORE_INVALID": "exact saved snapshot restore == false",
+      "HORIZON_CENSORED": "required physical or task horizon incomplete",
+      "NO_CONTACT_ELIGIBILITY": "control_contact_eligible == false for a contact-dependent physical label"
+    },
+    "unknown_is_not_negative": true
+  },
+  "vulnerability_label_contract": {
+    "primary_estimand": "V_phys",
+    "secondary_estimand": "V_task",
+    "physical_failure_symbol": "F",
+    "primary_rule": "V_phys=1 iff control_valid=true, treatment_valid=true, F_control=0, and F_open=1",
+    "truth_table": [
+      {"control_valid": true, "treatment_valid": true, "F_control": 0, "F_open": 0, "label": "NO_PHYSICAL_VULNERABILITY"},
+      {"control_valid": true, "treatment_valid": true, "F_control": 0, "F_open": 1, "label": "V_PHYS"},
+      {"control_valid": true, "treatment_valid": true, "F_control": 1, "F_open": 0, "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"},
+      {"control_valid": true, "treatment_valid": true, "F_control": 1, "F_open": 1, "label": "CONTROL_CONTAMINATION_ABSTAIN"},
+      {"control_valid": false, "treatment_valid": true, "F_control": null, "F_open": null, "label": "CONTROL_INVALID_ABSTAIN"},
+      {"control_valid": true, "treatment_valid": false, "F_control": null, "F_open": null, "label": "TREATMENT_INVALID_ABSTAIN"}
+    ],
+    "task_rule": "V_task is secondary and requires valid clean-success control plus valid official task consequence; it never replaces V_phys"
+  },
+  "repeatability_gate": {
+    "control_repetitions": 3,
+    "treatment_repetitions_each": 3,
+    "registered_outcome_unit": "parent_key + probe_step + dose + label_class",
+    "pass_rule": "all three valid repetitions emit the same registered outcome class and all three treatments are compliant",
+    "discordant_rule": "any valid class disagreement emits HOLD_STOCHASTIC_INTERVENTION_OUTCOME",
+    "stable_abstain_rule": "3/3 identical abstain is stable diagnostic evidence but cannot produce a positive V_phys or V_task label",
+    "hard_gate_name": "INTERVENTION_REPEATABILITY_3_OF_3"
+  },
+  "m3_5_hard_gates": [
+    "PROTOCOL_FROZEN_BEFORE_RUNTIME",
+    "LATEST_EXPOSURE_UNION_SHA_BOUND",
+    "CUMULATIVE_CLEAN_ATTEMPT_UNION_SHA_BOUND",
+    "TREATMENT_SEMANTICS_AND_ENV_STEP_COMPLIANCE",
+    "COUNTERFACTUAL_STATE_SUFFICIENCY",
+    "DETERMINISTIC_PROBE_SELECTION",
+    "96_EXECUTION_72_LABEL_ACCOUNTING",
+    "DOSE_SPECIFIC_PHYSICAL_AND_TASK_HORIZON",
+    "SURGICAL_ARM_ISOLATION_AND_POST_TREATMENT_CLOSED_LOOP",
+    "EXECUTABLE_MEDIATOR_AND_PHYSICAL_FAILURE_PREDICATES",
+    "CONTROL_TREATMENT_TRUTH_TABLE_AND_ABSTAIN_TAXONOMY",
+    "INTERVENTION_REPEATABILITY_3_OF_3",
+    "ALL_FOUR_SUITES_DIAGNOSTIC_COVERAGE"
+  ],
+  "required_outputs": [
+    "GRIPPER_EXECUTION_SEMANTICS.json",
+    "TREATMENT_COMPLIANCE_AUDIT.json",
+    "COUNTERFACTUAL_STATE_CONTRACT.json",
+    "PHYSICAL_FAILURE_TAXONOMY.json",
+    "VULNERABILITY_LABEL_TRUTH_TABLE.json",
+    "PROBE_AND_DOSE_PROTOCOL.json",
+    "FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1.json",
+    "M3_5_INDEPENDENT_AUDIT.json",
+    "M3_5_VALIDATION_RECEIPT.json",
+    "LABEL_CONTRACT.sha256"
+  ],
+  "launch_policy": {
+    "m3_5_runtime_allowed_by_this_contract": false,
+    "new_v7_qualification_allowed_before_m3_5_validation_receipt": false,
+    "m4_allowed_before_fresh_v7_pass": false,
+    "v6_rerun_to_pass": false,
+    "outcome_informed_contract_revision": "forbidden; use prospective V1_2"
+  }
+}
