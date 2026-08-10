@@ -1,5 +1,7 @@
 import importlib.util
+import json
 from pathlib import Path
+from types import SimpleNamespace
 
 
 _SCRIPT = Path(__file__).parents[2] / "scripts" / "detector_v5" / "run_stage_v_m3_5_intervention_parent.py"
@@ -13,6 +15,7 @@ _treatment_observation = _MODULE._treatment_observation
 _collapsed_label = _MODULE._collapsed_label
 _directory_tree_binding = _MODULE._directory_tree_binding
 _new_env = _MODULE._new_env
+_model_binding_receipt = _MODULE._model_binding_receipt
 
 
 def _branch(contact=True):
@@ -122,3 +125,32 @@ def test_env_uses_physical_egl_index_after_cuda_isolation(monkeypatch, tmp_path)
     assert env.render_gpu_device_id == 5
     assert _MODULE.os.environ["CUDA_VISIBLE_DEVICES"] == "5"
     assert _MODULE.os.environ["MUJOCO_EGL_DEVICE_ID"] == "5"
+
+
+def test_model_binding_receipt_uses_verified_runtime_gpu_binding(monkeypatch, tmp_path):
+    gpu_uuid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "5")
+    monkeypatch.setitem(_MODULE.sys.modules, "torch", SimpleNamespace(cuda=SimpleNamespace(
+        is_available=lambda: True,
+        current_device=lambda: 0,
+        get_device_properties=lambda _device: SimpleNamespace(),
+        get_device_name=lambda _device: "A800",
+    )))
+    monkeypatch.setattr(_MODULE, "query_inventory", lambda: ([{"gpu_id": 5, "gpu_uuid": gpu_uuid}], None))
+    args = SimpleNamespace(
+        gpu=5,
+        parent_key="libero_goal/task_00/state_00",
+        source_commit="commit",
+        source_tree="tree",
+        runtime_input_binding={"runtime_inputs": {"gpu": {
+            "physical_gpu_index": 5,
+            "gpu_uuid": gpu_uuid,
+        }}},
+    )
+
+    _model_binding_receipt(args, SimpleNamespace(render_gpu_device_id=5), tmp_path)
+
+    receipt = json.loads((tmp_path / "M35_RUNTIME_BINDING_RECEIPT.json").read_text(encoding="utf-8"))
+    assert receipt["status"] == "PASS"
+    assert receipt["expected_gpu_uuid"] == gpu_uuid
+    assert receipt["torch_device_uuid"] == gpu_uuid

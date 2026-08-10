@@ -194,8 +194,8 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
     actual_tree = _git(repo, "rev-parse", "HEAD^{tree}")
     actual_status = _git(repo, "status", "--porcelain")
     _check(checks, "source_worktree_clean", not actual_status, actual_status or "clean")
-    _check(checks, "protocol_schema", protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" and protocol.get("version") == "V1.3.2", {"schema": protocol.get("schema"), "version": protocol.get("version")})
-    _check(checks, "protocol_revision", protocol.get("supersedes") == "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3_1.json" and protocol.get("revision_reason") == "support pinned PyTorch UUID fallback before any simulator step or rollout", {"supersedes": protocol.get("supersedes"), "revision_reason": protocol.get("revision_reason")})
+    _check(checks, "protocol_schema", protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" and protocol.get("version") == "V1.3.3", {"schema": protocol.get("schema"), "version": protocol.get("version")})
+    _check(checks, "protocol_revision", protocol.get("supersedes") == "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3_2.json" and protocol.get("revision_reason") == "correct verified runtime GPU binding lookup before any simulator step or rollout", {"supersedes": protocol.get("supersedes"), "revision_reason": protocol.get("revision_reason")})
     _check(checks, "protocol_status", protocol.get("status") == "FROZEN_PROSPECTIVE_RUNTIME_READY_PENDING_INDEPENDENT_AUDIT", protocol.get("status"))
     _check(checks, "runtime_authorized", protocol.get("runtime_authorized") is True and protocol.get("requires_explicit_owner_authorization") is True and protocol.get("launch_policy", {}).get("runtime_authorized") is True, "explicit owner-authorized diagnostic only")
     _check(checks, "protected_eval160", protocol.get("protected_eval160") == {"reads_allowed": False, "rollouts_allowed": False, "hard_stop": True}, protocol.get("protected_eval160"))
@@ -217,8 +217,13 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
         and predecessor.get("consumable_for_labels") is False
         and predecessor.get("outcome_data_observed") is False
         and predecessor.get("root_reuse_prohibited") is True
+        and predecessor.get("failure_class") == "PRE_ROLLOUT_RUNTIME_BINDING"
+        and predecessor.get("root_cause", {}).get("error_signature") == "M35RunnerError:RUNTIME_GPU_UUID_POST_MODEL_LOAD_MISMATCH"
+        and predecessor.get("run", {}).get("source_commit") == predecessor_binding.get("source_commit")
+        and predecessor.get("run", {}).get("source_tree") == predecessor_binding.get("source_tree")
         and predecessor.get("protected_counters") == COUNTERS
-        and all(predecessor_snapshot.get(field) == 0 for field in ("simulator_steps", "clean_trajectory_files", "parent_results", "physical_branches", "treatment_observations", "collapsed_labels")),
+        and all(predecessor_snapshot.get(field) == 0 for field in ("simulator_steps", "clean_trajectory_files", "runtime_binding_receipts", "parent_results", "physical_branches", "treatment_observations", "collapsed_labels"))
+        and predecessor_path.parent.stat().st_mode & 0o222 == 0,
         predecessor_binding,
     )
     bootstrap_binding = protocol.get("egl_bootstrap_failure_predecessor", {})
@@ -397,6 +402,12 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
         and "CUDA_VISIBLE_DEVICES[0]+nvidia-smi_physical_index" in resource_text
         and "resolve_cuda_physical_uuid(" in runner_text,
         protocol.get("resource_contract", {}).get("torch_device_uuid_binding"),
+    )
+    _check(
+        checks,
+        "runtime_gpu_receipt_binding",
+        'get("runtime_inputs", {}).get("gpu", {})' in runner_text,
+        "verified runtime_inputs.gpu is rechecked after model load",
     )
     egl_files = protocol.get("resource_contract", {}).get("runtime_egl_files", {})
     actual_egl_files = {
