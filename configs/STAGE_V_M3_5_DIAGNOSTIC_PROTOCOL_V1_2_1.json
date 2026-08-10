@@ -22,8 +22,8 @@
     "physical_taxonomy": {"path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "sha256": "117baccfcb70a0dfb6cb4adcf77d58b52c08b3d5cf09e0f1b0a65e2524a67b5b"},
     "runner": {"path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py", "sha256": "c1f443daaf7cf4f488ebc5b68827f13d288c7944d51c02e879b8bc3149415e31"},
     "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "0ad29711afa508417131750c9aea032b76fae35fa18f52201eadae7d1e8c4e57"},
-    "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "652b574253c142b8c4ca91587be269f5625d9d6ee58d50997622873acaaa2841"},
-    "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "3512ae2bc6dc2bf079bcc9db8b138155031954f6c009429b470110dd4767da76"},
+    "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "70098e9621e4171df18d598d9763a86375c7a2f9e9bfe538d2995190b699a69a"},
+    "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "43e0db0e830c73fe0a72e4477f014e6ee157074688854d8a670c23fed3fc61d4"},
     "dynamic_common": {"path": "scripts/detector_v5/stage_v_dynamic_common.py", "sha256": "aaddf5d868262a55e16d175ab2ae387f5a54332bda8d73938959952eb108c4ba"}
   },
   "freshness_bindings": {
@@ -41,8 +41,8 @@
       "libero_spatial": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"}
     },
     "repo_bindings": {
-      "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "652b574253c142b8c4ca91587be269f5625d9d6ee58d50997622873acaaa2841"},
-      "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "3512ae2bc6dc2bf079bcc9db8b138155031954f6c009429b470110dd4767da76"},
+      "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "70098e9621e4171df18d598d9763a86375c7a2f9e9bfe538d2995190b699a69a"},
+      "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "43e0db0e830c73fe0a72e4477f014e6ee157074688854d8a670c23fed3fc61d4"},
       "dynamic_common": {"path": "scripts/detector_v5/stage_v_dynamic_common.py", "sha256": "aaddf5d868262a55e16d175ab2ae387f5a54332bda8d73938959952eb108c4ba"},
       "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "0ad29711afa508417131750c9aea032b76fae35fa18f52201eadae7d1e8c4e57"}
     }
