@@ -19,9 +19,11 @@ M4                                  BLOCKED
 
 - `configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1.json`
 - `configs/STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1.json`
-- `configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1.json`
+- `configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_1.json`
+- `src/gripper_attack/stage_v_m3_5_phase_classifier.py`
+- `scripts/detector_v5/build_stage_v_m3_5_probe_plan.py`
 - `reports/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1.json`
-- `reports/STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1.json`
+- `reports/STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1_1.json`
 
 They are frozen before any M3.5 intervention runtime. A runtime validation
 receipt must preserve the contract SHA; a scientific change becomes V1.2.
@@ -42,7 +44,9 @@ receipt must preserve the contract SHA; a scientific change becomes V1.2.
    physical branch executions.
 3. The 24 probes are selected deterministically from clean-only phase strata
    (`6 × PRE_CONTACT`, `CONTACT_MANIPULATION`, `ENGAGED_LIFT`, `CARRY`) using a
-   frozen hash rank. There is no outcome-informed backfill.
+   frozen hash rank. The executable classifier is fail-closed on missing
+   geometry/contact telemetry, and the probe builder has no outcome-informed
+   backfill.
 4. Horizon is dose-specific: treatment delivery, 10-step physical observation,
    and independent official task-consequence horizons are recorded separately.
 5. During T3/T5/T10 only the gripper component changes; after treatment each
@@ -59,19 +63,25 @@ receipt must preserve the contract SHA; a scientific change becomes V1.2.
 
 ## Static audit and runtime boundary
 
-The independent server-side static audit passed `41/41` checks with receipt
-SHA `cd55078c8b70b6d01d7c92c628d0ee12d573054419176b4c95e73f47aa58c44e`.
+The independent server-side static audit passed `54/54` checks with receipt
+SHA `7b46c1feb30cf072a03b71c34a349a1a786e7632fe06f1d484a6f1e70cfa3fbf`.
+It was run with exact source commit/tree
+`c8f81820a345aa98ff5c386b82bdc67d8333b76b` /
+`c9b04bd00911ff8b98623d4347e1205db61e6479` and Python
+`/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python`.
 The diagnostic parent selection is frozen at 8 exposed parents, 2 per suite,
 with zero outcome reads.
 
 No GPU diagnostic has started under V1.1. The diagnostic protocol is frozen for
-validation but has `runtime_authorized=false`; no V7 candidate selection, fresh
-qualification, formal split, M4 map, Teacher, Student, Stage O, VIS, or
-protected Eval160 access is authorized. GPU3 foreign workloads remain outside
-the project's control boundary.
+validation but has `runtime_authorized=false`; its intervention runner is not
+yet bound, so no M3.5 runtime is executable under this freeze. No V7 candidate
+selection, fresh qualification, formal split, M4 map, Teacher, Student, Stage
+O, VIS, or protected Eval160 access is authorized. GPU3 foreign workloads
+remain outside the project's control boundary.
 
-The frozen protocol SHA is recorded in
-`reports/STAGE_V_M3_5_PROTOCOL_V1_SHA256SUMS.txt`. After any separately
+The frozen V1.1 protocol SHA is
+`604e55408f15f04d9481dd85bf8ee8dd4772e1b5f62d8021b904a60498b34738` and is
+recorded in `reports/STAGE_V_M3_5_PROTOCOL_V1_1_SHA256SUMS.txt`. After any separately
 authorized runtime, the independent audit must verify the compliance receipts,
 physical predicates, 3/3 repeatability, and all-suite coverage without changing
 the frozen SHA.
