@@ -23,9 +23,12 @@ except ModuleNotFoundError:  # direct server execution
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
 
 try:
-    from .stage_v_gpu_resource_contract import GpuLeaseStore, admit_mode_b_or_c, query_inventory
+    from .stage_v_gpu_resource_contract import GpuLeaseStore, MODE_M35, admit_mode_b_or_c, query_inventory
 except ImportError:  # direct server execution
-    from stage_v_gpu_resource_contract import GpuLeaseStore, admit_mode_b_or_c, query_inventory
+    from stage_v_gpu_resource_contract import GpuLeaseStore, MODE_M35, admit_mode_b_or_c, query_inventory
+
+
+DYNAMIC_RESOURCE_MODES = {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING", MODE_M35}
 
 
 def dynamic_gpu_slots(*, eligible_gpu_ids: Iterable[int], active_gpu_ids: Iterable[int], max_workers: int) -> list[int]:
@@ -111,7 +114,7 @@ class Dispatcher:
                 terminate_process_group(process, grace_seconds=5)
 
     def _preflight(self) -> dict[str, Any]:
-        if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+        if self.args.resource_mode in DYNAMIC_RESOURCE_MODES:
             inventory, error = query_inventory()
             if error:
                 return {"schema": "STAGE_V_GPU_RESOURCE_ADMISSION_V1", "status": "HOLD_QUERY_ERROR", "query_error": error}
@@ -153,9 +156,9 @@ class Dispatcher:
         atomic_write_json(self.args.preflight_output, preflight)
         if preflight.get("status") != "PASS":
             raise RuntimeError("PRELAUNCH_WAITING_FOR_8_GPUS")
-        eligible_key = "eligible_gpu_ids" if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"} else "safe_gpus"
+        eligible_key = "eligible_gpu_ids" if self.args.resource_mode in DYNAMIC_RESOURCE_MODES else "safe_gpus"
         approved = sorted(int(gpu) for gpu in preflight.get(eligible_key, []))
-        if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+        if self.args.resource_mode in DYNAMIC_RESOURCE_MODES:
             approved = approved[:self.args.required_workers]
             if not approved or any(gpu in self.args.excluded_gpus for gpu in approved):
                 raise RuntimeError("GPU_PREFLIGHT_POLICY_FAIL")
@@ -179,6 +182,21 @@ class Dispatcher:
                     "EXPOSURE_BINDING_FAIL:"
                     + str(self.exposure_binding.get("reason") or "UNKNOWN")
                 )
+        elif self.args.resource_mode == MODE_M35:
+            if not self.args.exposure_manifest:
+                raise RuntimeError("M35_EXPOSURE_MANIFEST_REQUIRED")
+            self.exposure_binding = exposure_binding(keys, self.args.exposure_manifest)
+            if self.exposure_binding.get("reason") != "EXPOSURE_PARENT_OVERLAP":
+                raise RuntimeError(
+                    "M35_EXPOSURE_SELECTION_BINDING_FAIL:"
+                    + str(self.exposure_binding.get("reason") or "NO_REGISTERED_OVERLAP")
+                )
+            self.exposure_binding = dict(self.exposure_binding)
+            self.exposure_binding.update({
+                "status": "REGISTERED_M35_EXPOSURE_OVERLAP_ALLOWED",
+                "overlap_allowed": True,
+                "selection_role": "outcome_blind_m3_5_diagnostic_only; exposed identities only",
+            })
         science_manifest_sha = None
         if self.args.science_runner and not self.args.science_parent_manifest:
             raise RuntimeError("SCIENCE_PARENT_MANIFEST_MISSING")
@@ -257,7 +275,7 @@ class Dispatcher:
             "dispatcher_pid": os.getpid(),
             "dispatcher_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
             "dynamic_claims": True,
-            "dynamic_gpu_claiming": self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"},
+            "dynamic_gpu_claiming": self.args.resource_mode in DYNAMIC_RESOURCE_MODES,
             "gpu_claims_path": str(self.root / "GPU_CLAIMS.json"),
             "one_project_worker_per_gpu": True,
             "old_artifacts_reused": False,
@@ -371,7 +389,7 @@ class Dispatcher:
         self._record_gpu_claim(gpu_id, process, preflight, claim_type)
 
     def _refresh_dynamic_workers(self, tasks: list[dict[str, Any]]) -> None:
-        if self.args.resource_mode not in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+        if self.args.resource_mode not in DYNAMIC_RESOURCE_MODES:
             return
         if not any(task.get("state") not in {"DONE_VALID", "DONE", "DONE_CLASSIFIED_TC"} for task in tasks):
             return
@@ -398,7 +416,7 @@ class Dispatcher:
         try:
             self._prepare()
             preflight = json.loads(self.args.preflight_output.read_text(encoding="utf-8"))
-            eligible_key = "eligible_gpu_ids" if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"} else "safe_gpus"
+            eligible_key = "eligible_gpu_ids" if self.args.resource_mode in DYNAMIC_RESOURCE_MODES else "safe_gpus"
             for gpu_id in sorted(preflight[eligible_key])[:self.args.required_workers]:
                 self._spawn(int(gpu_id), preflight=preflight, claim_type="INITIAL_PRE_CANARY_GPU")
             while True:
@@ -506,7 +524,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+    if args.resource_mode in DYNAMIC_RESOURCE_MODES:
         if not 1 <= args.required_workers <= 8:
             raise SystemExit("Stage V throughput/training worker cap must be between 1 and 8")
     elif args.required_workers != 8:

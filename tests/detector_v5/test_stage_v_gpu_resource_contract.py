@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.detector_v5.stage_v_gpu_resource_contract import (
     MODE_B,
+    MODE_M35,
     MIN_FREE_MEMORY_MIB,
     GpuLeaseStore,
     ResourceContractError,
@@ -48,6 +49,16 @@ def test_mode_b_allows_foreign_compute_when_memory_is_admitted() -> None:
     assert row["foreign_workload_present"] is True
     assert row["foreign_processes"][0]["owner"] == "foreign"
     assert row["utilization_gpu_percent"] == 97
+
+
+def test_m35_mode_allows_registered_foreign_compute_when_memory_is_admitted() -> None:
+    decision = admit_mode_b_or_c(
+        inventory(process_rows=[{"gpu_uuid": UUID, "pid": 77, "process_name": "foreign.py", "used_memory_mib": 4096}]),
+        mode=MODE_M35,
+    )
+    assert decision["status"] == "PASS"
+    assert decision["eligible_gpu_ids"] == [2]
+    assert decision["gpu_decisions"][0]["foreign_workload_present"] is True
 
 
 def test_mode_b_rejects_memory_below_contract_even_with_idle_utilization() -> None:

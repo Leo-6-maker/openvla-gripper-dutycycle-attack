@@ -33,12 +33,12 @@ except ModuleNotFoundError:  # direct server execution from scripts/detector_v5
 
 try:
     from .stage_v_gpu_resource_contract import (
-        GpuLeaseStore, ResourceContractError, admit_mode_b_or_c, query_inventory,
+        GpuLeaseStore, MODE_M35, ResourceContractError, admit_mode_b_or_c, query_inventory,
         verify_recheck, write_resource_receipt,
     )
 except ImportError:  # direct server execution
     from stage_v_gpu_resource_contract import (
-        GpuLeaseStore, ResourceContractError, admit_mode_b_or_c, query_inventory,
+        GpuLeaseStore, MODE_M35, ResourceContractError, admit_mode_b_or_c, query_inventory,
         verify_recheck, write_resource_receipt,
     )
 
@@ -103,12 +103,12 @@ class Worker:
         self.parent_started_epoch: float | None = None
         self.resource_lease: dict[str, Any] | None = None
         self.resource_store: GpuLeaseStore | None = None
-        if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+        if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING", MODE_M35}:
             self.resource_store = GpuLeaseStore(self.args.lease_db or (self.root / "GPU_LEASES.sqlite"))
 
     @property
     def resource_enabled(self) -> bool:
-        return self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}
+        return self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING", MODE_M35}
 
     def _resource_row(self) -> dict[str, Any]:
         inventory, error = query_inventory()

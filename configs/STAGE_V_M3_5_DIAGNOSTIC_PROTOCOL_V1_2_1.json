@@ -22,8 +22,8 @@
     "physical_taxonomy": {"path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "sha256": "117baccfcb70a0dfb6cb4adcf77d58b52c08b3d5cf09e0f1b0a65e2524a67b5b"},
     "runner": {"path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py", "sha256": "c1f443daaf7cf4f488ebc5b68827f13d288c7944d51c02e879b8bc3149415e31"},
     "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "0ad29711afa508417131750c9aea032b76fae35fa18f52201eadae7d1e8c4e57"},
-    "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "70098e9621e4171df18d598d9763a86375c7a2f9e9bfe538d2995190b699a69a"},
-    "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "43e0db0e830c73fe0a72e4477f014e6ee157074688854d8a670c23fed3fc61d4"},
+    "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "8b77bc1afb94682f5904447f7fea4b008fe9ebb12d937717d629b44d708ded2f"},
+    "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "45db2fbad5edca110b014fe4f3c8167d3e02c74d43e7a6688885bef182dab2fc"},
     "dynamic_common": {"path": "scripts/detector_v5/stage_v_dynamic_common.py", "sha256": "aaddf5d868262a55e16d175ab2ae387f5a54332bda8d73938959952eb108c4ba"}
   },
   "freshness_bindings": {
@@ -41,10 +41,11 @@
       "libero_spatial": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"}
     },
     "repo_bindings": {
-      "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "70098e9621e4171df18d598d9763a86375c7a2f9e9bfe538d2995190b699a69a"},
-      "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "43e0db0e830c73fe0a72e4477f014e6ee157074688854d8a670c23fed3fc61d4"},
+      "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "8b77bc1afb94682f5904447f7fea4b008fe9ebb12d937717d629b44d708ded2f"},
+      "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "45db2fbad5edca110b014fe4f3c8167d3e02c74d43e7a6688885bef182dab2fc"},
       "dynamic_common": {"path": "scripts/detector_v5/stage_v_dynamic_common.py", "sha256": "aaddf5d868262a55e16d175ab2ae387f5a54332bda8d73938959952eb108c4ba"},
-      "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "0ad29711afa508417131750c9aea032b76fae35fa18f52201eadae7d1e8c4e57"}
+      "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "0ad29711afa508417131750c9aea032b76fae35fa18f52201eadae7d1e8c4e57"},
+      "resource_contract": {"path": "scripts/detector_v5/stage_v_gpu_resource_contract.py", "sha256": "29c841dff809c0cb8e0fa8b64e4d02062fd4caf0fd7cab011ac38d58a6a84a56"}
     }
   },
   "diagnostic_execution_accounting": {
@@ -59,6 +60,7 @@
     "formal_m4_accounting_is_separate": true
   },
   "resource_contract": {
+    "resource_mode": "MODE_M35_DIAGNOSTIC",
     "minimum_free_memory_mib": 20480,
     "maximum_project_workers_per_gpu": 1,
     "partial_fleet_allowed": true,
@@ -67,7 +69,8 @@
     "parent_atomicity": "all registered branches for one parent stay on one physical GPU",
     "lease_sequence": ["check_free_memory", "atomic_acquire", "recheck_free_memory", "launch", "flush_artifacts", "release"],
     "dynamic_queue": "frozen parent order plus eligible-GPU claiming",
-    "artifact_schema": "STAGE_V_M3_5_PARENT_RESULT_V1"
+    "artifact_schema": "STAGE_V_M3_5_PARENT_RESULT_V1",
+    "exposure_selection_binding": "the frozen outcome-blind M3.5 selection is intentionally drawn from exposed identities; overlap is permitted only in MODE_M35_DIAGNOSTIC and recorded"
   },
   "runtime_prerequisites": {
     "intervention_runner_status": "PASS",

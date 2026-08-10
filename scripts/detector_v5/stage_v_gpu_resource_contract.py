@@ -18,6 +18,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 MODE_B = "MODE_B_THROUGHPUT_SCIENCE"
 MODE_C = "MODE_C_TRAINING"
+MODE_M35 = "MODE_M35_DIAGNOSTIC"
 MIN_FREE_MEMORY_MIB = 20_480
 
 
@@ -175,7 +176,7 @@ def _admission_row(
     free = row.get("memory_free_mib")
     if free is None or float(free) < minimum_free_mib:
         reasons.append("INSUFFICIENT_FREE_MEMORY")
-    # Foreign work is explicitly allowed in MODE_B/C; it is telemetry, not a
+    # Foreign work is explicitly allowed in MODE_B/C/M35; it is telemetry, not a
     # scheduler veto.  Project ownership is vetoed by the lease table above.
     foreign = [item for item in processes if item not in project_processes]
     result = {
@@ -203,7 +204,7 @@ def admit_mode_b_or_c(
     excluded_gpu_ids: Iterable[int] = (),
     minimum_free_mib: int = MIN_FREE_MEMORY_MIB,
 ) -> dict[str, Any]:
-    if mode not in {MODE_B, MODE_C}:
+    if mode not in {MODE_B, MODE_C, MODE_M35}:
         raise ResourceContractError(f"UNSUPPORTED_RESOURCE_MODE:{mode}")
     leased = {int(item) for item in leased_gpu_ids}
     project = {int(item) for item in project_pids}
