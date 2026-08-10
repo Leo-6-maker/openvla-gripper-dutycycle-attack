@@ -136,7 +136,7 @@ def _prefix(prefix: str, telemetry: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path) -> None:
-    """Bind physical GPU, logical CUDA 0, and logical EGL 0 before step 0."""
+    """Bind physical GPU, logical CUDA 0, and the physical EGL token before step 0."""
     import torch
 
     render_id = getattr(env, "render_gpu_device_id", None)
@@ -163,7 +163,7 @@ def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path)
         "mujoco_gl": os.environ.get("MUJOCO_GL", ""),
         "mujoco_egl_device_id": os.environ.get("MUJOCO_EGL_DEVICE_ID", ""),
         "env_render_gpu_device_id": render_id,
-        "physical_to_logical_mapping": "CUDA_VISIBLE_DEVICES[0]=requested physical GPU; CUDA/EGL logical device=0",
+        "physical_to_logical_mapping": "CUDA_VISIBLE_DEVICES[0]=requested physical GPU; CUDA logical device=0; MUJOCO_EGL_DEVICE_ID=requested physical EGL index",
         "runtime_python": sys.executable,
         "source_commit": str(args.source_commit),
         "source_tree": str(args.source_tree),
@@ -179,7 +179,7 @@ def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path)
 def _new_env(OffScreenRenderEnv: Any, bddl: str, horizon: int, gpu: int, init_state: Any, args: argparse.Namespace, output_dir: Path, *, write_binding: bool = False) -> tuple[Any, Any]:
     os.environ["CUDA_VISIBLE_DEVICES"] = str(int(gpu))
     os.environ["MUJOCO_GL"] = "egl"
-    os.environ["MUJOCO_EGL_DEVICE_ID"] = "0"
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(int(gpu))
     env = OffScreenRenderEnv(
         bddl_file_name=bddl,
         camera_heights=256,
@@ -619,7 +619,7 @@ def run_parent(args: argparse.Namespace) -> int:
     state_index = int(state_part.removeprefix("state_"))
     os.environ["CUDA_VISIBLE_DEVICES"] = str(int(args.gpu))
     os.environ["MUJOCO_GL"] = "egl"
-    os.environ["MUJOCO_EGL_DEVICE_ID"] = "0"
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(int(args.gpu))
     from scripts.detector_v5.run_stage_v_canonical_clean import _load_external_modules, _load_policy
 
     get_libero_image, get_processor, get_model, adapter_type, benchmark, libero_runtime = _load_external_modules(args.official_snapshot_root, args.upstream_root)
