@@ -19,6 +19,9 @@ M4                                  BLOCKED
 
 - `configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1.json`
 - `configs/STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1.json`
+- `configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1.json`
+- `reports/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1.json`
+- `reports/STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1.json`
 
 They are frozen before any M3.5 intervention runtime. A runtime validation
 receipt must preserve the contract SHA; a scientific change becomes V1.2.
@@ -54,15 +57,21 @@ receipt must preserve the contract SHA; a scientific change becomes V1.2.
 8. All four suites must have diagnostic coverage; no positive-balance tuning is
    permitted.
 
-## Runtime boundary
+## Static audit and runtime boundary
 
-No GPU diagnostic has started under V1.1. No V7 candidate selection, fresh
+The independent server-side static audit passed `41/41` checks with receipt
+SHA `cd55078c8b70b6d01d7c92c628d0ee12d573054419176b4c95e73f47aa58c44e`.
+The diagnostic parent selection is frozen at 8 exposed parents, 2 per suite,
+with zero outcome reads.
+
+No GPU diagnostic has started under V1.1. The diagnostic protocol is frozen for
+validation but has `runtime_authorized=false`; no V7 candidate selection, fresh
 qualification, formal split, M4 map, Teacher, Student, Stage O, VIS, or
 protected Eval160 access is authorized. GPU3 foreign workloads remain outside
 the project's control boundary.
 
-Before runtime, an independent static audit must verify both V1.1 JSON files,
-the two bound union SHAs, the accounting identity, the probe algorithm, and the
-freeze-before-runtime receipt. After runtime, the independent audit must verify
-the compliance receipts, physical predicates, 3/3 repeatability, and all-suite
-coverage without changing the frozen SHA.
+The frozen protocol SHA is recorded in
+`reports/STAGE_V_M3_5_PROTOCOL_V1_SHA256SUMS.txt`. After any separately
+authorized runtime, the independent audit must verify the compliance receipts,
+physical predicates, 3/3 repeatability, and all-suite coverage without changing
+the frozen SHA.
