@@ -81,6 +81,20 @@ def test_dynamic_gpu_slots_claims_late_eligible_gpu_without_duplicate_worker() -
     assert dynamic_gpu_slots(eligible_gpu_ids=[0, 1], active_gpu_ids=[0, 1], max_workers=8) == []
 
 
+def test_m35_supervisor_accepts_registered_partial_fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sup.DynamicSupervisor, "run", lambda self: 0)
+    required_paths = {name: tmp_path / name for name in ("manifest.json", "queue.sqlite", "lock", "preflight.json", "dispatcher.py", "auditor.py")}
+    assert sup.main([
+        "--run-root", str(tmp_path / "run"), "--repo-root", str(tmp_path),
+        "--parent-manifest", str(required_paths["manifest.json"]), "--queue-db", str(required_paths["queue.sqlite"]),
+        "--run-id", "m35", "--expected-parent-count", "8", "--expected-source-commit", "commit",
+        "--expected-source-tree", "tree", "--lock-path", str(required_paths["lock"]),
+        "--approved-gpus", "0,1,2,4,5,6,7", "--excluded-gpus", "3",
+        "--preflight-file", str(required_paths["preflight.json"]), "--dispatcher-script", str(required_paths["dispatcher.py"]),
+        "--auditor-script", str(required_paths["auditor.py"]), "--resource-mode", "MODE_M35_DIAGNOSTIC",
+    ]) == 0
+
+
 def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert control_qualification.DEFAULT_SALT == "STAGE_V_R2_CONTROL_QUALIFICATION_20260807"
     manifest = tmp_path / "candidates.json"

@@ -31,15 +31,18 @@ except ImportError:  # direct server execution
     from scripts.detector_v5.stage_v_science_core_provenance import verify as verify_science_provenance
 
 try:
-    from .stage_v_gpu_resource_contract import GpuLeaseStore, admit_mode_b_or_c, query_inventory
+    from .stage_v_gpu_resource_contract import GpuLeaseStore, MODE_M35, admit_mode_b_or_c, query_inventory
 except ImportError:  # direct server execution
-    from stage_v_gpu_resource_contract import GpuLeaseStore, admit_mode_b_or_c, query_inventory
+    from stage_v_gpu_resource_contract import GpuLeaseStore, MODE_M35, admit_mode_b_or_c, query_inventory
 
 try:
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
 except ModuleNotFoundError:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     from scripts.fec.atomic_task_queue import AtomicTaskQueue
+
+
+DYNAMIC_RESOURCE_MODES = {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING", MODE_M35}
 
 
 def _proc_values(path: str) -> dict[str, int]:
@@ -119,7 +122,7 @@ class DynamicSupervisor:
 
     def _preflight(self) -> dict[str, Any]:
         if not self.args.skip_resource_checks:
-            if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+            if self.args.resource_mode in DYNAMIC_RESOURCE_MODES:
                 inventory, error = query_inventory()
                 if error:
                     return {"schema": "STAGE_V_GPU_RESOURCE_ADMISSION_V1", "status": "HOLD_QUERY_ERROR", "query_error": error}
@@ -144,10 +147,10 @@ class DynamicSupervisor:
         if not isinstance(value, Mapping):
             return {"status": "PRELAUNCH_WAITING_FOR_8_GPUS", "reason": "PREFLIGHT_NOT_OBJECT"}
         value = dict(value)
-        safe_key = "eligible_gpu_ids" if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"} else "safe_gpus"
+        safe_key = "eligible_gpu_ids" if self.args.resource_mode in DYNAMIC_RESOURCE_MODES else "safe_gpus"
         all_safe = sorted({int(gpu) for gpu in value.get(safe_key, value.get("all_safe_gpus", [])) if int(gpu) not in self.args.excluded_gpus})
         approved = all_safe[:8]
-        needs_eight = self.args.resource_mode not in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}
+        needs_eight = self.args.resource_mode not in DYNAMIC_RESOURCE_MODES
         if value.get("status") != "PASS" or not all_safe or (needs_eight and len(all_safe) < 8) or 5 in approved:
             value["status"] = "PRELAUNCH_WAITING_FOR_8_GPUS"
             value.setdefault("reason", "NO_ELIGIBLE_GPU_OR_GPU5_EXCLUDED")
@@ -188,8 +191,8 @@ class DynamicSupervisor:
                 raise RuntimeError("PRELAUNCH_WAITING_FOR_8_GPUS")
             time.sleep(max(1.0, float(getattr(self.args, "preflight_interval_seconds", 300.0))))
         actual_gpus = sorted(int(gpu) for gpu in preflight.get(
-            "eligible_gpu_ids" if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"} else "safe_gpus", []))
-        if self.args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+            "eligible_gpu_ids" if self.args.resource_mode in DYNAMIC_RESOURCE_MODES else "safe_gpus", []))
+        if self.args.resource_mode in DYNAMIC_RESOURCE_MODES:
             if not actual_gpus or not set(actual_gpus).issubset(set(self.args.approved_gpus)):
                 raise RuntimeError("PREFLIGHT_APPROVED_GPU_SET_MISMATCH")
             self.args.approved_gpus = actual_gpus
@@ -731,7 +734,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.allow_gpu5:
         args.excluded_gpus = [gpu for gpu in args.excluded_gpus if gpu != 5]
-    if args.resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}:
+    if args.resource_mode in DYNAMIC_RESOURCE_MODES:
         if not args.approved_gpus or len(set(args.approved_gpus)) != len(args.approved_gpus):
             raise SystemExit("at least one unique approved GPU is required")
     elif len(args.approved_gpus) != 8 or (5 in args.approved_gpus and not args.allow_gpu5):
