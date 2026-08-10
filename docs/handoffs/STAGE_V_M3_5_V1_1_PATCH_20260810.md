@@ -25,11 +25,14 @@ receipt must preserve the contract SHA; a scientific change becomes V1.2.
 
 ## P0 closure
 
-1. Freshness binds the latest exposure union V3 (`53`, SHA
-   `1f26391d4af7637b898806fbe6b008651fa19138d20c2b95e0589ca8b4dbd350`) and
-   the mechanically generated cumulative clean-attempt union (`357`, SHA
-   `b3aa0de403820714742d6724db1e6e8e77cebaadf4d602c13be1e8e141059bd2`).
-   The old 50/117 component manifests are not authoritative V7 inputs.
+1. Freshness binds the mechanically generated V4 exposure union (`53`, manifest
+   SHA `b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612`,
+   union-key SHA `62012ba0246d123fb6caa59a8dbc80bc3bd4fb27ea32a6a6c4f87bb3c111dc4a`)
+   and V2 cumulative clean-attempt union (`357`, manifest SHA
+   `a8be0582c5cbe3ae2224cf6786ac18a0558f2105962aef73ea69fffd462e81e6`,
+   union-key SHA `bbe427d645efcaa683d7cfb305014333317ed9cd1e369a1825406b08c2e6302a`).
+   The old 50/117 component manifests and V3/V1 aggregate receipts are
+   provenance only, not authoritative V7 inputs.
 2. Accounting is explicit: 24 shared control executions plus 72 treatment
    executions equals 96 physical branch executions per parent, while only 72
    treatment rows receive labels. Formal totals are 2,880 label rows and 3,840

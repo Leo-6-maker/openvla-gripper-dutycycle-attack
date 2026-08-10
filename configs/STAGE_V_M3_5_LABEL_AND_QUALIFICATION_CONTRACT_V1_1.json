@@ -19,18 +19,20 @@
   },
   "authoritative_freshness_bindings": {
     "latest_counterfactual_exposure_union": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_EXPOSURE_UNION_V3_20260810T013514Z.json",
-      "sha256": "1f26391d4af7637b898806fbe6b008651fa19138d20c2b95e0589ca8b4dbd350",
-      "schema": "STAGE_V_EXPOSURE_MANIFEST_V2",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4_20260810T104027Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4.json",
+      "sha256": "b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612",
+      "union_sha256": "62012ba0246d123fb6caa59a8dbc80bc3bd4fb27ea32a6a6c4f87bb3c111dc4a",
+      "schema": "STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4",
       "status": "PASS",
       "excluded_parent_count": 53,
       "launcher_role": "authoritative exposure union; launcher accepts only this manifest SHA",
       "coverage_rule": "must cumulatively include every historical, M4, M3.5, direct-OPEN, VIS, and counterfactual exposure before V7 selection"
     },
     "cumulative_clean_attempt_union": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_UNION_V1_20260810T102002Z/CUMULATIVE_CLEAN_ATTEMPT_UNION_V1.json",
-      "sha256": "b3aa0de403820714742d6724db1e6e8e77cebaadf4d602c13be1e8e141059bd2",
-      "schema": "STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_UNION_V1",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2_20260810T104027Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2.json",
+      "sha256": "a8be0582c5cbe3ae2224cf6786ac18a0558f2105962aef73ea69fffd462e81e6",
+      "union_sha256": "bbe427d645efcaa683d7cfb305014333317ed9cd1e369a1825406b08c2e6302a",
+      "schema": "STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2",
       "status": "PASS",
       "excluded_parent_count": 357,
       "components": {
