@@ -1,6 +1,11 @@
 # Stage V M3 fresh qualification V6 handoff
 
-Status: `RUNNING`
+Status: `SUPERSEDED — V6 COMPLETE_VALID / QUALIFICATION FAIL`
+
+> This file preserves the historical in-run snapshot below. The current
+> closeout is [STAGE_V_M3_5_V6_FORENSIC_CLOSEOUT_20260810.md](STAGE_V_M3_5_V6_FORENSIC_CLOSEOUT_20260810.md).
+> V6 finished with `480/480 DONE_VALID`, frozen qualification `FAIL`, and
+> independent audit `FAIL`; no V6 rerun-to-pass was performed.
 
 This handoff is a live progress snapshot for draft review. It does not promote
 the qualification run, the historical M4 root, or any downstream detector
