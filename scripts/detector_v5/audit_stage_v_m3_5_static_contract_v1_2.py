@@ -87,7 +87,21 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
     selection = _load(selection_path) if selection_path.is_file() else {}
     _check(checks, "selection_exists", selection_path.is_file(), str(selection_path))
     _check(checks, "selection_sha", selection_path.is_file() and _sha256(selection_path) == str(selection_binding.get("sha256", "")), str(selection_binding.get("sha256", "")))
-    _check(checks, "selection_count", selection.get("selected_count") == 8 and selection.get("selected_counts_by_suite") == {"libero_10": 2, "libero_goal": 2, "libero_object": 2, "libero_spatial": 2}, str(selection.get("selected_counts_by_suite")))
+    coverage_mode = protocol.get("protocol_role") == "clean_phase_coverage_census"
+    selected_count = selection.get("selected_count")
+    counts = selection.get("selected_counts_by_suite")
+    if coverage_mode:
+        selection_ok = (
+            isinstance(selected_count, int)
+            and selected_count >= 1
+            and isinstance(counts, Mapping)
+            and set(counts) == {"libero_10", "libero_goal", "libero_object", "libero_spatial"}
+            and all(isinstance(value, int) and value >= 1 for value in counts.values())
+            and sum(counts.values()) == selected_count
+        )
+    else:
+        selection_ok = selected_count == 8 and counts == {"libero_10": 2, "libero_goal": 2, "libero_object": 2, "libero_spatial": 2}
+    _check(checks, "selection_count", selection_ok, str(counts))
     _check(checks, "selection_outcome_blind", selection.get("selection_reads", {}).get("outcomes_read") is False and selection.get("selection_reads", {}).get("branch_results_read") is False, str(selection.get("selection_reads")))
 
     audit_binding = protocol.get("static_audit_binding", {})
