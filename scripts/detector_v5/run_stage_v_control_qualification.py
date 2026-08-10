@@ -243,14 +243,17 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
     minimum_free_mib = int(getattr(args, "minimum_free_mib", MIN_FREE_MEMORY_MIB))
     if resource_mode not in {"LEGACY", MODE_B}:
         raise ValueError(f"unsupported resource mode: {resource_mode}")
-    parent_gpu_map = {
-        key: gpus[int(hashlib.sha256(f"{args.salt}::{key}".encode()).hexdigest(), 16) % len(gpus)]
-        for key in keys
-    }
-    rows = [
-        {**row, "assigned_gpu": parent_gpu_map[str(row["canonical_parent_key"])], "parent_gpu_affinity": "FROZEN_HASH_SALT"}
-        for row in rows
-    ]
+    if resource_mode == MODE_B:
+        parent_gpu_map = {
+            key: gpus[int(hashlib.sha256(f"{args.salt}::{key}".encode()).hexdigest(), 16) % len(gpus)]
+            for key in keys
+        }
+        rows = [
+            {**row, "assigned_gpu": parent_gpu_map[str(row["canonical_parent_key"])], "parent_gpu_affinity": "FROZEN_HASH_SALT"}
+            for row in rows
+        ]
+    else:
+        parent_gpu_map = {}
     by_suite = {suite: [row for row in rows if str(row["suite"]) == suite] for suite in suites}
     rows_out: list[dict[str, Any]] = []
     selected: dict[str, list[dict[str, Any]]] = {suite: [] for suite in suites}
@@ -291,7 +294,8 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         capacity_policy={
             "mode": "atomic_dynamic_workers", "gpus": gpus, "worker_count": len(gpus),
             "resource_mode": resource_mode, "minimum_free_memory_mib": minimum_free_mib,
-            "maximum_project_workers_per_gpu": 1, "parent_gpu_affinity": "FROZEN_HASH_SALT",
+            "maximum_project_workers_per_gpu": 1,
+            "parent_gpu_affinity": "FROZEN_HASH_SALT" if resource_mode == MODE_B else None,
             "lease_db": str(resource_lease_db) if resource_lease_store else None,
             "old_artifacts_reused": False,
         },
@@ -301,7 +305,10 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
     def qualification_worker(gpu: int, batch_keys: set[str], batch_index: int) -> list[tuple[str, str, int, dict[str, Any]]]:
         worker_id = f"stage-v-control-qualifier-gpu{gpu}-pid{os.getpid()}"
         outcomes: list[tuple[str, str, int, dict[str, Any]]] = []
-        allowed_parent_ids = {key for key in batch_keys if parent_gpu_map.get(key) == gpu}
+        allowed_parent_ids = (
+            {key for key in batch_keys if parent_gpu_map.get(key) == gpu}
+            if resource_mode == MODE_B else None
+        )
         lease = None
         try:
             if resource_lease_store is not None and allowed_parent_ids:
