@@ -492,7 +492,7 @@ def _pair_label(control: Mapping[str, Any], treatment: Mapping[str, Any]) -> dic
 def _seal(root: Path) -> dict[str, Any]:
     rows = []
     for path in sorted(root.rglob("*")):
-        if path.is_file() and path.name not in {"SHA256SUMS", "SHA256SUMS.sha256"}:
+        if path.is_file() and path.name not in {"SHA256SUMS", "SHA256SUMS.sha256", "JOB.json"}:
             rows.append({"path": path.relative_to(root).as_posix(), "size": path.stat().st_size, "sha256": _sha256_file(path)})
     sums = "".join(f"{row['sha256']}  {row['path']}\n" for row in rows)
     (root / "SHA256SUMS").write_text(sums, encoding="utf-8")
@@ -610,7 +610,7 @@ def run_parent(args: argparse.Namespace) -> int:
     parent = _selected_parent(selection, args.parent_key)
     args.runtime_input_binding = _verify_runtime_contract(args, protocol, selection)
     output_dir = args.output_dir.resolve()
-    if output_dir.exists() and any(output_dir.iterdir()):
+    if output_dir.exists() and any(path.name not in {"JOB.json", "RESOURCE_PRE.json"} for path in output_dir.iterdir()):
         raise M35RunnerError(f"REFUSE_OVERWRITE:{output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
