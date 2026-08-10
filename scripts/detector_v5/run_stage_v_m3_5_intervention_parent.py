@@ -610,9 +610,9 @@ def run_parent(args: argparse.Namespace) -> int:
     parent = _selected_parent(selection, args.parent_key)
     args.runtime_input_binding = _verify_runtime_contract(args, protocol, selection)
     output_dir = args.output_dir.resolve()
-    if output_dir.exists():
+    if output_dir.exists() and any(output_dir.iterdir()):
         raise M35RunnerError(f"REFUSE_OVERWRITE:{output_dir}")
-    output_dir.mkdir(parents=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     suite, task_part, state_part = str(args.parent_key).split("/")
     task_index = int(task_part.removeprefix("task_"))
