@@ -500,6 +500,43 @@ def _strict_branch_errors(branch_rows: list[dict[str, Any]], parent_key: str) ->
     return sorted(set(errors))
 
 
+def _m35_coverage_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
+                                   expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    results = list(Path(output_dir).rglob("PARENT_RESULT.json"))
+    if len(results) != 1:
+        return {"valid": False, "reason": f"PARENT_RESULT_COUNT:{len(results)}", "result": None, "path": None}
+    result_path = results[0]
+    result = read_json(result_path, {})
+    if not isinstance(result, Mapping) or str(result.get("schema")) != "STAGE_V_M3_5_CLEAN_COVERAGE_RESULT_V1" or str(result.get("canonical_parent_key")) != parent_key:
+        return {"valid": False, "reason": "M35_COVERAGE_RESULT_SCHEMA_OR_IDENTITY_INVALID", "result": dict(result) if isinstance(result, Mapping) else None, "path": str(result_path)}
+    errors: list[str] = []
+    if result.get("status") != "PASS" or result.get("coverage_only") is not True or result.get("parent_atomic") is not True:
+        errors.append("M35_COVERAGE_RESULT_INVALID")
+    counts = result.get("phase_counts") if isinstance(result.get("phase_counts"), Mapping) else {}
+    if set(counts) != {"PRE_CONTACT", "CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY"} or any(not isinstance(counts.get(phase), int) or counts.get(phase) < 0 for phase in counts):
+        errors.append("M35_COVERAGE_PHASE_COUNTS_INVALID")
+    elif result.get("coverage_qualified") is not all(int(counts[phase]) >= 6 for phase in counts):
+        errors.append("M35_COVERAGE_QUALIFICATION_MISMATCH")
+    if result.get("protected_counters") != {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}:
+        errors.append("M35_COVERAGE_PROTECTED_COUNTERS_INVALID")
+    if expected_source_commit and result.get("source_commit") != expected_source_commit:
+        errors.append("SCIENCE_SOURCE_COMMIT_MISMATCH")
+    if expected_source_tree and result.get("source_tree") != expected_source_tree:
+        errors.append("SCIENCE_SOURCE_TREE_MISMATCH")
+    if expected_row is not None:
+        for field in ("suite", "task_index", "state_index"):
+            if result.get(field) != expected_row.get(field):
+                errors.append(f"PARENT_{field.upper()}_MISMATCH")
+    if len(list(result_path.parent.rglob("CLEAN_TRAJECTORY.json"))) != 1 or len(list(result_path.parent.rglob("PHASE_COVERAGE.json"))) != 1:
+        errors.append("M35_COVERAGE_INPUT_FILES_INVALID")
+    seal_ok, seal_reason = _verify_parent_seal(result_path.parent)
+    if not seal_ok:
+        errors.append(seal_reason)
+    if errors:
+        return {"valid": False, "reason": ";".join(sorted(set(errors))), "result": dict(result), "path": str(result_path)}
+    return {"valid": True, "reason": "PASS", "result": dict(result), "path": str(result_path), "artifact_sha256": sha256_file(result_path), "label_status": "COVERAGE_ONLY", "parent_seal": "PASS"}
+
+
 def _m35_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
                          expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None) -> dict[str, Any]:
     results = list(Path(output_dir).rglob("PARENT_RESULT.json"))
@@ -572,6 +609,11 @@ def _m35_artifact_status(output_dir: Path, parent_key: str, *, expected_source_c
 def science_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
                             expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None,
                             artifact_schema: str = "STAGE_V_PARENT_RESULT_V2") -> dict[str, Any]:
+    if artifact_schema == "STAGE_V_M3_5_COVERAGE_RESULT_V1":
+        return _m35_coverage_artifact_status(
+            output_dir, parent_key, expected_source_commit=expected_source_commit,
+            expected_source_tree=expected_source_tree, expected_row=expected_row,
+        )
     if artifact_schema == "STAGE_V_M3_5_PARENT_RESULT_V1":
         return _m35_artifact_status(
             output_dir, parent_key, expected_source_commit=expected_source_commit,

@@ -29,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--gpu", type=int, required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
+    parser.add_argument("--coverage-only", action="store_true")
     args = parser.parse_args(argv)
 
     suite = str(args.parent_key).split("/", 1)[0]
@@ -52,6 +53,8 @@ def main(argv: list[str] | None = None) -> int:
         "--authorization-receipt", str(args.authorization_receipt),
         "--enable-runtime",
     ]
+    if args.coverage_only:
+        command.append("--coverage-only")
     return subprocess.call(command)
 
 

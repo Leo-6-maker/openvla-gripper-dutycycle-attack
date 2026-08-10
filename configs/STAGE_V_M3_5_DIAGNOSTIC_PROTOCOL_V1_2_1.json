@@ -20,11 +20,11 @@
     "phase_classifier": {"path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py", "sha256": "94f46e45aec00c96a18a86230c516b535511c21d2e6a068a9b7ac6bd455fc8e1"},
     "probe_plan_builder": {"path": "scripts/detector_v5/build_stage_v_m3_5_probe_plan.py", "sha256": "62bd87fd4fd9b9a1fd3a42e988e9754b9a8921a657b85c6a5abb21bb99b57a85"},
     "physical_taxonomy": {"path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "sha256": "117baccfcb70a0dfb6cb4adcf77d58b52c08b3d5cf09e0f1b0a65e2524a67b5b"},
-    "runner": {"path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py", "sha256": "24bec3d0661b7ee398901649229b9759ea6b293ca04f1ba24dc586e56cd87ccc"},
-    "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "0ad29711afa508417131750c9aea032b76fae35fa18f52201eadae7d1e8c4e57"},
+    "runner": {"path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py", "sha256": "558f0508f9ac82e0558c0f78f3a9e5ac8ca368c4a029224db4d104966cc42f02"},
+    "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "4baed14a2af8f36d7d1ef4165d96140f783a31163ca3f8da973cd846994e0f54"},
     "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "8b77bc1afb94682f5904447f7fea4b008fe9ebb12d937717d629b44d708ded2f"},
     "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "45db2fbad5edca110b014fe4f3c8167d3e02c74d43e7a6688885bef182dab2fc"},
-    "dynamic_common": {"path": "scripts/detector_v5/stage_v_dynamic_common.py", "sha256": "aaddf5d868262a55e16d175ab2ae387f5a54332bda8d73938959952eb108c4ba"}
+    "dynamic_common": {"path": "scripts/detector_v5/stage_v_dynamic_common.py", "sha256": "e68fbee9971413c177c4ecff939aeb72669970e9787a9559baa506874bbe2529"}
   },
   "freshness_bindings": {
     "exposure_union": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4_20260810T104027Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4.json", "sha256": "b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612", "union_sha256": "62012ba0246d123fb6caa59a8dbc80bc3bd4fb27ea32a6a6c4f87bb3c111dc4a", "count": 53},
@@ -43,10 +43,10 @@
     "repo_bindings": {
       "dynamic_dispatcher": {"path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py", "sha256": "8b77bc1afb94682f5904447f7fea4b008fe9ebb12d937717d629b44d708ded2f"},
       "dynamic_worker": {"path": "scripts/detector_v5/run_stage_v_dynamic_worker.py", "sha256": "45db2fbad5edca110b014fe4f3c8167d3e02c74d43e7a6688885bef182dab2fc"},
-      "dynamic_common": {"path": "scripts/detector_v5/stage_v_dynamic_common.py", "sha256": "aaddf5d868262a55e16d175ab2ae387f5a54332bda8d73938959952eb108c4ba"},
-      "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "0ad29711afa508417131750c9aea032b76fae35fa18f52201eadae7d1e8c4e57"},
+      "dynamic_common": {"path": "scripts/detector_v5/stage_v_dynamic_common.py", "sha256": "e68fbee9971413c177c4ecff939aeb72669970e9787a9559baa506874bbe2529"},
+      "dynamic_parent_launcher": {"path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py", "sha256": "4baed14a2af8f36d7d1ef4165d96140f783a31163ca3f8da973cd846994e0f54"},
       "resource_contract": {"path": "scripts/detector_v5/stage_v_gpu_resource_contract.py", "sha256": "29c841dff809c0cb8e0fa8b64e4d02062fd4caf0fd7cab011ac38d58a6a84a56"},
-      "m35_runner": {"path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py", "sha256": "24bec3d0661b7ee398901649229b9759ea6b293ca04f1ba24dc586e56cd87ccc"}
+      "m35_runner": {"path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py", "sha256": "558f0508f9ac82e0558c0f78f3a9e5ac8ca368c4a029224db4d104966cc42f02"}
     }
   },
   "diagnostic_execution_accounting": {

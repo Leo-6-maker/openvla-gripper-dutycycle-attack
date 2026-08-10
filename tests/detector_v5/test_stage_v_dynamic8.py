@@ -291,6 +291,18 @@ def test_m35_artifact_status_accepts_sealed_parent(tmp_path: Path) -> None:
     assert checked["valid"] is True
 
 
+def test_m35_coverage_artifact_status_accepts_sealed_parent(tmp_path: Path) -> None:
+    parent = "libero_goal/task_01/state_47"
+    write_json(tmp_path / "CLEAN_TRAJECTORY.json", {"schema": "STAGE_V_M3_5_CLEAN_TRAJECTORY_V1", "rows": [], "outcomes_read": False})
+    write_json(tmp_path / "PHASE_COVERAGE.json", {"schema": "STAGE_V_M3_5_PHASE_COVERAGE_V1", "canonical_parent_key": parent, "phase_counts": {phase: 6 for phase in ("PRE_CONTACT", "CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY")}, "coverage_qualified": True, "outcomes_read": False, "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}})
+    write_json(tmp_path / "PARENT_RESULT.json", {"schema": "STAGE_V_M3_5_CLEAN_COVERAGE_RESULT_V1", "status": "PASS", "coverage_only": True, "canonical_parent_key": parent, "suite": "libero_goal", "task_index": 1, "state_index": 47, "source_commit": "commit", "source_tree": "tree", "parent_atomic": True, "clean_success": True, "phase_counts": {phase: 6 for phase in ("PRE_CONTACT", "CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY")}, "coverage_qualified": True, "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}})
+    files = sorted(tmp_path.iterdir(), key=lambda item: item.name)
+    (tmp_path / "SHA256SUMS").write_text("".join(f"{sha256_file(path)}  {path.name}\n" for path in files), encoding="utf-8")
+    (tmp_path / "SHA256SUMS.sha256").write_text(f"{sha256_file(tmp_path / 'SHA256SUMS')}  SHA256SUMS\n", encoding="utf-8")
+    checked = science_artifact_status(tmp_path, parent, expected_source_commit="commit", expected_source_tree="tree", expected_row={"suite": "libero_goal", "task_index": 1, "state_index": 47}, artifact_schema="STAGE_V_M3_5_COVERAGE_RESULT_V1")
+    assert checked["valid"] is True
+
+
 def test_worker_heartbeat_file_is_preferred_over_legacy_status(tmp_path: Path) -> None:
     root = tmp_path / "run"
     worker_root = root / "worker_gpu0"

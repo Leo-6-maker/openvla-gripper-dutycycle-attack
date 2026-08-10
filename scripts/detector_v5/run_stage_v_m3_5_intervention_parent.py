@@ -27,7 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT))
 
-from gripper_attack.stage_v_m3_5_phase_classifier import classify_trajectory  # noqa: E402
+from gripper_attack.stage_v_m3_5_phase_classifier import PHASES, MIN_REMAINING_STEPS, classify_trajectory  # noqa: E402
 from gripper_attack.stage_v_m3_5_physical_taxonomy import (  # noqa: E402
     build_forced_open_action,
     evaluate_treatment_compliance,
@@ -684,6 +684,38 @@ def run_parent(args: argparse.Namespace) -> int:
     clean_trajectory_sha = _sha256_json(clean_rows)
     _write_json(output_dir / "CLEAN_TRAJECTORY.json", {"schema": "STAGE_V_M3_5_CLEAN_TRAJECTORY_V1", "outcomes_read": False, "rows": clean_rows, "trajectory_sha256": clean_trajectory_sha, "task_success": task_success})
 
+    phase_counts = {phase: sum(1 for row in clean_rows if row.get("clean_only_phase_label") == phase and row.get("phase_eligible") is True and row.get("clean_record_valid") is True and int(row.get("remaining_horizon", -1)) >= MIN_REMAINING_STEPS) for phase in PHASES}
+    coverage_qualified = all(count >= 6 for count in phase_counts.values())
+    _write_json(output_dir / "PHASE_COVERAGE.json", {"schema": "STAGE_V_M3_5_PHASE_COVERAGE_V1", "canonical_parent_key": args.parent_key, "phase_counts": phase_counts, "minimum_candidates_per_phase": 6, "coverage_qualified": coverage_qualified, "outcomes_read": False, "protected_counters": dict(EXPECTED_PROTECTED_COUNTERS)})
+    if args.coverage_only:
+        result = {
+            "schema": "STAGE_V_M3_5_CLEAN_COVERAGE_RESULT_V1",
+            "status": "PASS",
+            "coverage_only": True,
+            "canonical_parent_key": args.parent_key,
+            "suite": suite,
+            "task_index": task_index,
+            "state_index": state_index,
+            "source_commit": str(args.source_commit),
+            "source_tree": str(args.source_tree),
+            "runner_sha256": _sha256_file(Path(__file__)),
+            "parent_atomic": True,
+            "gpu": int(args.gpu),
+            "clean_steps": len(clean_rows),
+            "clean_success": bool(task_success),
+            "phase_counts": phase_counts,
+            "minimum_candidates_per_phase": 6,
+            "coverage_qualified": coverage_qualified,
+            "selection_outcomes_read": False,
+            "protected_counters": dict(EXPECTED_PROTECTED_COUNTERS),
+            "runtime_input_binding": getattr(args, "runtime_input_binding", None),
+        }
+        _write_json(output_dir / "PARENT_RESULT.json", result)
+        result["artifact_seal"] = _seal(output_dir)
+        _write_json(output_dir / "PARENT_RESULT.json", result)
+        _seal(output_dir)
+        return 0
+
     from scripts.detector_v5.build_stage_v_m3_5_probe_plan import select_probe_steps
 
     probe_plan = select_probe_steps(clean_rows, args.parent_key)
@@ -772,6 +804,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run-label", default="M3_5")
     parser.add_argument("--run-set", default="M3_5_PARENT")
     parser.add_argument("--enable-runtime", action="store_true")
+    parser.add_argument("--coverage-only", action="store_true")
     args = parser.parse_args(argv)
     try:
         if not args.enable_runtime:
