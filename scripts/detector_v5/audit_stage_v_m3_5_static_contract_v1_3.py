@@ -194,7 +194,8 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
     actual_tree = _git(repo, "rev-parse", "HEAD^{tree}")
     actual_status = _git(repo, "status", "--porcelain")
     _check(checks, "source_worktree_clean", not actual_status, actual_status or "clean")
-    _check(checks, "protocol_schema", protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" and protocol.get("version") == "V1.3", protocol.get("schema"))
+    _check(checks, "protocol_schema", protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" and protocol.get("version") == "V1.3.1", {"schema": protocol.get("schema"), "version": protocol.get("version")})
+    _check(checks, "protocol_revision", protocol.get("supersedes") == "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3.json" and protocol.get("revision_reason") == "correct physical EGL binding before any simulator step or rollout", {"supersedes": protocol.get("supersedes"), "revision_reason": protocol.get("revision_reason")})
     _check(checks, "protocol_status", protocol.get("status") == "FROZEN_PROSPECTIVE_RUNTIME_READY_PENDING_INDEPENDENT_AUDIT", protocol.get("status"))
     _check(checks, "runtime_authorized", protocol.get("runtime_authorized") is True and protocol.get("requires_explicit_owner_authorization") is True and protocol.get("launch_policy", {}).get("runtime_authorized") is True, "explicit owner-authorized diagnostic only")
     _check(checks, "protected_eval160", protocol.get("protected_eval160") == {"reads_allowed": False, "rollouts_allowed": False, "hard_stop": True}, protocol.get("protected_eval160"))
@@ -319,8 +320,8 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
         "logical_cuda_egl_binding",
         protocol.get("resource_contract", {}).get("cuda_visible_devices") == "one admitted physical GPU per worker"
         and protocol.get("resource_contract", {}).get("torch_logical_device") == 0
-        and protocol.get("resource_contract", {}).get("mujoco_egl_device_id") == 0
-        and protocol.get("resource_contract", {}).get("env_render_gpu_device_id") == 0,
+        and protocol.get("resource_contract", {}).get("mujoco_egl_device_id") == "admitted physical GPU index"
+        and protocol.get("resource_contract", {}).get("env_render_gpu_device_id") == "admitted physical GPU index",
         protocol.get("resource_contract", {}),
     )
     gpu_result = subprocess.run(["nvidia-smi", "--query-gpu=index,uuid", "--format=csv,noheader,nounits"], capture_output=True, text=True, check=False)

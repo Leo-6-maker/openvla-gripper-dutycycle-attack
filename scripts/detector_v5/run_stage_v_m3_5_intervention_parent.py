@@ -220,8 +220,8 @@ def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path)
         render_id = int(render_id)
     except (TypeError, ValueError):
         render_id = None
-    if render_id != 0:
-        raise M35RunnerError("RUNTIME_EGL_LOGICAL_DEVICE_UNVERIFIED")
+    if render_id != int(args.gpu):
+        raise M35RunnerError("RUNTIME_EGL_PHYSICAL_DEVICE_UNVERIFIED")
     if not torch.cuda.is_available() or int(torch.cuda.current_device()) != 0:
         raise M35RunnerError("RUNTIME_CUDA_LOGICAL_DEVICE_UNVERIFIED")
     inventory, query_error = query_inventory()
@@ -255,7 +255,7 @@ def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path)
         "mujoco_gl": os.environ.get("MUJOCO_GL", ""),
         "mujoco_egl_device_id": os.environ.get("MUJOCO_EGL_DEVICE_ID", ""),
         "env_render_gpu_device_id": render_id,
-        "physical_to_logical_mapping": "CUDA_VISIBLE_DEVICES[0]=requested physical GPU; CUDA logical device=0; MUJOCO_EGL_DEVICE_ID=0; OffScreenRenderEnv render device=0",
+        "device_mapping": "CUDA_VISIBLE_DEVICES[0]=requested physical GPU; CUDA device=logical 0; MUJOCO_EGL_DEVICE_ID and OffScreenRenderEnv use the physical GPU index",
         "runtime_python": sys.executable,
         "source_commit": str(args.source_commit),
         "source_tree": str(args.source_tree),
@@ -271,7 +271,7 @@ def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path)
 def _new_env(OffScreenRenderEnv: Any, bddl: str, horizon: int, gpu: int, init_state: Any, args: argparse.Namespace, output_dir: Path, *, write_binding: bool = False) -> tuple[Any, Any]:
     os.environ["CUDA_VISIBLE_DEVICES"] = str(int(gpu))
     os.environ["MUJOCO_GL"] = "egl"
-    os.environ["MUJOCO_EGL_DEVICE_ID"] = "0"
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(int(gpu))
     env = OffScreenRenderEnv(
         bddl_file_name=bddl,
         camera_heights=256,
@@ -281,7 +281,7 @@ def _new_env(OffScreenRenderEnv: Any, bddl: str, horizon: int, gpu: int, init_st
         has_offscreen_renderer=True,
         use_camera_obs=True,
         control_freq=20,
-        render_gpu_device_id=0,
+        render_gpu_device_id=int(gpu),
         horizon=horizon + NUM_STEPS_WAIT,
     )
     if write_binding:
@@ -902,7 +902,7 @@ def _manual_taxonomy_pair(protocol: Mapping[str, Any], parent_key: str) -> dict[
 
 
 def _verify_runtime_contract(args: argparse.Namespace, protocol: Mapping[str, Any], selection: Mapping[str, Any]) -> dict[str, Any]:
-    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" or protocol.get("version") != "V1.3":
+    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" or protocol.get("version") != "V1.3.1":
         raise M35RunnerError("PROTOCOL_SCHEMA_OR_VERSION_INVALID")
     if protocol.get("runtime_authorized") is not True or protocol.get("runtime_prerequisites", {}).get("intervention_runner_status") != "PASS":
         raise M35RunnerError("RUNTIME_NOT_AUTHORIZED_OR_RUNNER_NOT_BOUND")
@@ -1090,7 +1090,7 @@ def run_parent(args: argparse.Namespace) -> int:
     state_index = int(state_part.removeprefix("state_"))
     os.environ["CUDA_VISIBLE_DEVICES"] = str(int(args.gpu))
     os.environ["MUJOCO_GL"] = "egl"
-    os.environ["MUJOCO_EGL_DEVICE_ID"] = "0"
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(int(args.gpu))
     from scripts.detector_v5.run_stage_v_canonical_clean import _load_external_modules, _load_policy
 
     get_libero_image, get_processor, get_model, adapter_type, benchmark, libero_runtime = _load_external_modules(args.official_snapshot_root, args.upstream_root)
@@ -1400,7 +1400,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if not args.enable_runtime:
-            raise M35RunnerError("RUNTIME_DISABLED_UNTIL_V1_3_AUTHORIZATION")
+            raise M35RunnerError("RUNTIME_DISABLED_UNTIL_V1_3_1_AUTHORIZATION")
         return run_parent(args)
     except (OSError, KeyError, ValueError, M35RunnerError) as exc:
         print(json.dumps({"status": "FAIL", "reason": f"{type(exc).__name__}:{exc}"}, sort_keys=True))

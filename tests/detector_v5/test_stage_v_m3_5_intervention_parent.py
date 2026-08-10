@@ -98,7 +98,7 @@ def test_model_tree_binding_covers_relative_paths_and_contents(tmp_path):
     assert first["tree_sha256"] != second["tree_sha256"]
 
 
-def test_env_uses_logical_egl_zero_after_physical_gpu_isolation(monkeypatch, tmp_path):
+def test_env_uses_physical_egl_index_after_cuda_isolation(monkeypatch, tmp_path):
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "before")
     monkeypatch.setenv("MUJOCO_EGL_DEVICE_ID", "before")
     class Env:
@@ -119,6 +119,6 @@ def test_env_uses_logical_egl_zero_after_physical_gpu_isolation(monkeypatch, tmp
 
     args = type("Args", (), {})()
     env, _obs = _new_env(Env, "task.bddl", 10, 5, [0.0], args, tmp_path)
-    assert env.render_gpu_device_id == 0
+    assert env.render_gpu_device_id == 5
     assert _MODULE.os.environ["CUDA_VISIBLE_DEVICES"] == "5"
-    assert _MODULE.os.environ["MUJOCO_EGL_DEVICE_ID"] == "0"
+    assert _MODULE.os.environ["MUJOCO_EGL_DEVICE_ID"] == "5"
