@@ -33,7 +33,15 @@ def atomic_write_json(path: Path, value: Mapping[str, Any]) -> None:
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(tmp, path)
+        for attempt in range(8):
+            try:
+                os.replace(tmp, path)
+                break
+            except PermissionError:
+                if os.name != "nt" or attempt == 7:
+                    raise
+                # Windows readers can briefly hold the destination open.
+                time.sleep(0.01 * (attempt + 1))
         if os.name != "nt":
             directory_fd = os.open(path.parent, os.O_RDONLY)
             try:
