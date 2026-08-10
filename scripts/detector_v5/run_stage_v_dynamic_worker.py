@@ -301,6 +301,25 @@ class Worker:
         return exit_code
 
     def _command(self, task: dict[str, Any], output_dir: Path) -> list[str]:
+        if self.args.m35_launcher:
+            required = (
+                self.args.m35_runner, self.args.m35_protocol, self.args.m35_authorization_receipt,
+                self.args.m35_official_snapshot_root, self.args.m35_upstream_root,
+                self.args.m35_model_root, self.args.m35_source_commit, self.args.m35_source_tree,
+            )
+            if any(value is None for value in required):
+                raise RuntimeError("M35_LAUNCHER_CONFIGURATION_INCOMPLETE")
+            return [
+                sys.executable, str(self.args.m35_launcher),
+                "--runner", str(self.args.m35_runner), "--protocol", str(self.args.m35_protocol),
+                "--authorization-receipt", str(self.args.m35_authorization_receipt),
+                "--official-snapshot-root", str(self.args.m35_official_snapshot_root),
+                "--upstream-root", str(self.args.m35_upstream_root),
+                "--model-root", str(self.args.m35_model_root),
+                "--parent-key", task["canonical_parent_key"], "--output-dir", str(output_dir),
+                "--gpu", str(self.args.gpu_id), "--source-commit", str(self.args.m35_source_commit),
+                "--source-tree", str(self.args.m35_source_tree),
+            ]
         if self.args.worker_command:
             text = self.args.worker_command.format(
                 parent_key=task["canonical_parent_key"], output_dir=str(output_dir),
@@ -526,6 +545,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--stage", default="STAGE_V")
     parser.add_argument("--minimum-free-mib", type=int, default=20_480)
     parser.add_argument("--artifact-schema", default="STAGE_V_PARENT_RESULT_V2")
+    parser.add_argument("--m35-launcher", type=Path)
+    parser.add_argument("--m35-runner", type=Path)
+    parser.add_argument("--m35-protocol", type=Path)
+    parser.add_argument("--m35-authorization-receipt", type=Path)
+    parser.add_argument("--m35-official-snapshot-root", type=Path)
+    parser.add_argument("--m35-upstream-root", type=Path)
+    parser.add_argument("--m35-model-root", type=Path)
+    parser.add_argument("--m35-source-commit")
+    parser.add_argument("--m35-source-tree")
     return parser
 
 

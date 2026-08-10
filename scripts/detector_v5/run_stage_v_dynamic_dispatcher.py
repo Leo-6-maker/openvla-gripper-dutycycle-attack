@@ -346,6 +346,19 @@ class Dispatcher:
             command += ["--science-parent-manifest", str(self.args.science_parent_manifest)]
         if self.args.worker_command:
             command += ["--worker-command", self.args.worker_command]
+        for option, value in (
+            ("--m35-launcher", self.args.m35_launcher),
+            ("--m35-runner", self.args.m35_runner),
+            ("--m35-protocol", self.args.m35_protocol),
+            ("--m35-authorization-receipt", self.args.m35_authorization_receipt),
+            ("--m35-official-snapshot-root", self.args.m35_official_snapshot_root),
+            ("--m35-upstream-root", self.args.m35_upstream_root),
+            ("--m35-model-root", self.args.m35_model_root),
+            ("--m35-source-commit", self.args.m35_source_commit),
+            ("--m35-source-tree", self.args.m35_source_tree),
+        ):
+            if value:
+                command += [option, str(value)]
         log = (self.root / f"worker_gpu{gpu_id}.log").open("a", encoding="utf-8")
         try:
             process = subprocess.Popen(command, cwd=str(self.args.repo_root), stdin=subprocess.DEVNULL,
@@ -478,6 +491,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--stage", default="STAGE_V")
     parser.add_argument("--minimum-free-mib", type=int, default=20_480)
     parser.add_argument("--artifact-schema", default="STAGE_V_PARENT_RESULT_V2")
+    parser.add_argument("--m35-launcher", type=Path)
+    parser.add_argument("--m35-runner", type=Path)
+    parser.add_argument("--m35-protocol", type=Path)
+    parser.add_argument("--m35-authorization-receipt", type=Path)
+    parser.add_argument("--m35-official-snapshot-root", type=Path)
+    parser.add_argument("--m35-upstream-root", type=Path)
+    parser.add_argument("--m35-model-root", type=Path)
+    parser.add_argument("--m35-source-commit")
+    parser.add_argument("--m35-source-tree")
     parser.add_argument("--exposure-manifest", type=Path)
     return parser
 
