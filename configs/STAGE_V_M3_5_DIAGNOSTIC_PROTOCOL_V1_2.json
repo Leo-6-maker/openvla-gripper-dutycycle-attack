@@ -15,10 +15,10 @@
     "canonical_action_semantics": "raw > 0.5 -> OPEN; env=-1.0"
   },
   "contract_bindings": {
-    "label_contract": {"path": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_2.json", "sha256": "4c876cf0c2504e755d01fdc6429930a255ff63fbad27af056b056b1dc15f254d", "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_2"},
+    "label_contract": {"path": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_2.json", "sha256": "1a86b85ec03be7c858c031f89710a9aab08cec64f6d03c5b7906162e7b0affab", "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_2"},
     "phase_classifier": {"path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py", "sha256": "94f46e45aec00c96a18a86230c516b535511c21d2e6a068a9b7ac6bd455fc8e1"},
     "probe_plan_builder": {"path": "scripts/detector_v5/build_stage_v_m3_5_probe_plan.py", "sha256": "62bd87fd4fd9b9a1fd3a42e988e9754b9a8921a657b85c6a5abb21bb99b57a85"},
-    "physical_taxonomy": {"path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "sha256": "117baccfc70a0dfb6cb4adcf77d58b52c08b3d5cf09e0f1b0a65e2524a67b5b"},
+    "physical_taxonomy": {"path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "sha256": "117baccfcb70a0dfb6cb4adcf77d58b52c08b3d5cf09e0f1b0a65e2524a67b5b"},
     "runner": {"path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py", "sha256": "09ab9cfe342b42a89be5eacd3b92b6a66a52838a8da3fb28c84d8e4fa62779fa"}
   },
   "freshness_bindings": {
@@ -80,7 +80,7 @@
   },
   "static_audit_binding": {
     "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_2.py",
-    "auditor_script_sha256": "3b21a84f8dcaf70cf8dbe34d938d2323bf92ce31712fb4f9d5a0696d0beb9cf5",
+    "auditor_script_sha256": "7259ce05648972c392648e5a16296af17c28f91e93926f9f065099a3ac075ef8",
     "authorization_issuer_script_path": "scripts/detector_v5/issue_stage_v_m3_5_runtime_authorization.py",
     "authorization_issuer_script_sha256": "0375fa4976b7088cd5e4b55d89a3d4d2989ad699d8ff4377fb4e54ba7092bae6",
     "receipt_schema": "STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1_2",

@@ -67,7 +67,7 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
         if binding_name == "phase_classifier":
             tokens = ("def classify_phase", "def classify_trajectory", "UNKNOWN", "outcome_blind")
         elif binding_name == "probe_plan_builder":
-            tokens = ("def select_probe_steps", "PROBE_PLAN_INSUFFICIENT", "outcomes_read", "backfill_allowed")
+            tokens = ("def select_probe_steps", "PROBE_PLAN_INSUFFICIENT_PHASE_COVERAGE", "outcomes_read", "backfill_allowed")
         else:
             tokens = ("def bind_object_taxonomy", "def telemetry_from_env", "def evaluate_treatment_compliance", "def v_phys_label", "object_gripper_contact", "object_support_contact")
         _check(checks, f"{binding_name}_executable_tokens", all(token in text for token in tokens), ", ".join(tokens))

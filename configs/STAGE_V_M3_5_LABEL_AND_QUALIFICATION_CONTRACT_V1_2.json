@@ -61,7 +61,7 @@
   },
   "physical_taxonomy": {
     "module_path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
-    "sha256": "117baccfc70a0dfb6cb4adcf77d58b52c08b3d5cf09e0f1b0a65e2524a67b5b",
+    "sha256": "117baccfcb70a0dfb6cb4adcf77d58b52c08b3d5cf09e0f1b0a65e2524a67b5b",
     "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V1",
     "outcome_blind": true,
     "object_identity_source": "goal source objects parsed from bound BDDL",
