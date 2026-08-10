@@ -200,6 +200,27 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
     _check(checks, "runtime_authorized", protocol.get("runtime_authorized") is True and protocol.get("requires_explicit_owner_authorization") is True and protocol.get("launch_policy", {}).get("runtime_authorized") is True, "explicit owner-authorized diagnostic only")
     _check(checks, "protected_eval160", protocol.get("protected_eval160") == {"reads_allowed": False, "rollouts_allowed": False, "hard_stop": True}, protocol.get("protected_eval160"))
     _check(checks, "protected_counters", protocol.get("protected_counters") == COUNTERS, protocol.get("protected_counters"))
+    predecessor_binding = protocol.get("structural_failure_predecessor", {})
+    predecessor_path = Path(str(predecessor_binding.get("receipt_path", ""))).resolve()
+    predecessor = _load(predecessor_path) if predecessor_path.is_file() else {}
+    predecessor_snapshot = predecessor.get("observed_terminal_snapshot", {})
+    predecessor_seal = predecessor_path.parent / "SHA256SUMS"
+    _check(
+        checks,
+        "structural_failure_predecessor",
+        predecessor_path.is_file()
+        and _sha256(predecessor_path) == predecessor_binding.get("receipt_sha256")
+        and predecessor_seal.is_file()
+        and _sha256(predecessor_seal) == predecessor_binding.get("root_sha256s_sha256")
+        and predecessor.get("schema") == "STAGE_V_M3_5_STRUCTURAL_FAILURE_RECEIPT_V1"
+        and predecessor.get("status") == "SEALED_STRUCTURAL_FAILURE_ZERO_ROLLOUT"
+        and predecessor.get("consumable_for_labels") is False
+        and predecessor.get("outcome_data_observed") is False
+        and predecessor.get("root_reuse_prohibited") is True
+        and predecessor.get("protected_counters") == COUNTERS
+        and all(predecessor_snapshot.get(field) == 0 for field in ("simulator_steps", "clean_trajectory_files", "parent_results", "physical_branches", "treatment_observations", "collapsed_labels")),
+        predecessor_binding,
+    )
     _check(checks, "exact_python", Path(sys.executable).as_posix() == str(protocol.get("source_binding", {}).get("runtime_python")), sys.executable)
 
     bindings = protocol.get("contract_bindings") if isinstance(protocol.get("contract_bindings"), Mapping) else {}
@@ -323,6 +344,19 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
         and protocol.get("resource_contract", {}).get("mujoco_egl_device_id") == "admitted physical GPU index"
         and protocol.get("resource_contract", {}).get("env_render_gpu_device_id") == "admitted physical GPU index",
         protocol.get("resource_contract", {}),
+    )
+    egl_files = protocol.get("resource_contract", {}).get("runtime_egl_files", {})
+    actual_egl_files = {
+        name: _sha256(Path(str(binding.get("path", ""))).resolve())
+        for name, binding in egl_files.items()
+        if isinstance(binding, Mapping) and Path(str(binding.get("path", ""))).resolve().is_file()
+    } if isinstance(egl_files, Mapping) else {}
+    _check(
+        checks,
+        "runtime_egl_files",
+        set(actual_egl_files) == {"binding_utils", "egl_context"}
+        and all(actual_egl_files[name] == egl_files[name].get("sha256") for name in actual_egl_files),
+        actual_egl_files,
     )
     gpu_result = subprocess.run(["nvidia-smi", "--query-gpu=index,uuid", "--format=csv,noheader,nounits"], capture_output=True, text=True, check=False)
     actual_gpu_map = {}
