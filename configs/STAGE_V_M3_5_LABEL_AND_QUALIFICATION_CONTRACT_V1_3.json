@@ -1,0 +1,197 @@
+{
+  "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_3",
+  "version": "V1.3",
+  "status": "FROZEN_PROSPECTIVE_M3_5_RUNTIME_CONTRACT",
+  "supersedes": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_2.json",
+  "protocol_role": "pre_v7_m3_5_physical_label_validity_diagnostic",
+  "historical_roots_immutable": true,
+  "protected_eval160": {
+    "reads_allowed": false,
+    "rollouts_allowed": false,
+    "hard_stop": true
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "source_binding": {
+    "implementation_source_commit": "3b483fbf6319d88feb561a8e6ca8bb5de2c26591",
+    "implementation_source_tree": "1135f12ca1404eea7d0a15475875af49c090e3ec",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0"
+  },
+  "probe_contract": {
+    "schema": "STAGE_V_M3_5_PROBE_PLAN_V2",
+    "clean_only": true,
+    "outcome_blind": true,
+    "probe_count_per_parent": 24,
+    "selection": "24 deterministic round-half-up quantiles over timestep-sorted eligible corridor",
+    "phase_quota": null,
+    "phase_distribution_role": "descriptive only",
+    "corridor": "one declared target object with contact and object-eef distance <= 0.08 m",
+    "contiguous_clean_steps_from_zero_required": true,
+    "minimum_observed_remaining_steps": 20,
+    "minimum_declared_remaining_steps": 20,
+    "backfill_allowed": false
+  },
+  "treatment_contract": {
+    "control_arm": "frozen policy action from the same exact restored probe state",
+    "treatment_arms": {
+      "T3": 3,
+      "T5": 5,
+      "T10": 10
+    },
+    "dose_unit": "consecutive environment steps",
+    "forced_raw_gripper": 1,
+    "forced_normalized_gripper": 1,
+    "forced_env_gripper": -1,
+    "arm_delta_linf_tolerance": 1e-7,
+    "treatment_arm_source": "exact matched-control arm and action lineage at every registered dose step",
+    "post_treatment_mode": "own frozen-policy closed-loop from intervention-altered state",
+    "control_replay_after_treatment": false
+  },
+  "treatment_compliance": {
+    "required_fields": [
+      "raw_policy_action",
+      "normalized_action",
+      "env_action",
+      "arm_delta_linf",
+      "pre_aperture",
+      "post_aperture",
+      "already_open_state",
+      "treatment_compliant",
+      "compliance_reason"
+    ],
+    "already_open_aperture_min": 0.03,
+    "aperture_response_delta_min": 0.005,
+    "already_open_is_compliant": true,
+    "response_is_not_command_delivery": true,
+    "noncompliance_class": "TREATMENT_NONCOMPLIANCE_ABSTAIN"
+  },
+  "horizon_contract": {
+    "dose_steps": {
+      "T3": 3,
+      "T5": 5,
+      "T10": 10
+    },
+    "H_phys": 10,
+    "primary_required_steps": {
+      "T3": 13,
+      "T5": 15,
+      "T10": 20
+    },
+    "clean_recording_after_first_success_steps": 20,
+    "actual_observed_suffix_required": true,
+    "H_task": "not consumed by M3.5; task success inside the frozen physical window is descriptive only",
+    "incomplete_primary_horizon": "HORIZON_CENSORED_ABSTAIN"
+  },
+  "physical_taxonomy": {
+    "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+    "outcome_blind": true,
+    "fixture_only_goal_policy": "INELIGIBLE; never infer a movable object from a fixture",
+    "target_tracking": "one prospectively bound goal-source object per probe and branch",
+    "physical_failure_classes": [
+      "GRIPPER_CONTACT_LOSS",
+      "PREMATURE_OBJECT_RELEASE",
+      "OBJECT_DROP"
+    ],
+    "no_failure_class": "NO_PHYSICAL_FAILURE",
+    "unknown_is_not_negative": true,
+    "precedence": [
+      "OBJECT_DROP",
+      "PREMATURE_OBJECT_RELEASE",
+      "GRIPPER_CONTACT_LOSS",
+      "NO_PHYSICAL_FAILURE"
+    ],
+    "thresholds": {
+      "contact_absence_consecutive_frames": 2,
+      "object_release_l2_threshold": 0.01,
+      "object_drop_height_threshold": 0.02,
+      "already_open_aperture_min": 0.03,
+      "aperture_response_delta_min": 0.005
+    }
+  },
+  "truth_table": {
+    "primary_estimand": "V_phys",
+    "label_rule": "V_phys=1 iff control_valid=true, treatment_valid=true, F_control=0, F_open=1",
+    "registered_classes": [
+      "V_PHYS",
+      "NO_PHYSICAL_VULNERABILITY",
+      "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+      "CONTROL_INVALID_ABSTAIN",
+      "TREATMENT_INVALID_ABSTAIN",
+      "PHYSICAL_AMBIGUITY_ABSTAIN"
+    ]
+  },
+  "repeatability_gate": {
+    "repetitions": 3,
+    "pass_rule": "3/3 identical registered class and 3/3 compliant; no majority vote",
+    "discordant_rule": "HOLD_STOCHASTIC_INTERVENTION_OUTCOME",
+    "stable_abstain_is_not_negative": true
+  },
+  "lineage_contract": {
+    "required_fields": [
+      "shared_control_branch_id",
+      "shared_control_result_sha256"
+    ],
+    "orphan_control_allowed": false,
+    "control_class_key": [
+      "canonical_parent_key",
+      "probe_id",
+      "repetition",
+      "dose"
+    ]
+  },
+  "causal_state_contract": {
+    "required_bindings": [
+      "full_simulator_state_sha256",
+      "policy_input_sha256",
+      "prompt_sha256",
+      "input_ids_sha256",
+      "pixel_values_sha256",
+      "decode_config_sha256",
+      "model_tree_sha256",
+      "source_commit",
+      "source_tree",
+      "gpu_uuid"
+    ],
+    "sampling": false,
+    "generation_passes_per_step": 1,
+    "exact_restore_required": true
+  },
+  "execution_accounting": {
+    "selected_parents": 8,
+    "probes_per_parent": 24,
+    "repetitions": 3,
+    "conditions_per_probe_and_repetition": [
+      "CONTROL",
+      "T3",
+      "T5",
+      "T10"
+    ],
+    "physical_diagnostic_executions_per_parent": 288,
+    "physical_diagnostic_executions_total": 2304,
+    "treatment_repetition_observations_per_parent": 216,
+    "treatment_repetition_observations_total": 1728,
+    "repeatability_collapsed_probe_dose_labels_per_parent": 72,
+    "repeatability_collapsed_probe_dose_labels_total": 576,
+    "formal_m4_physical_executions_per_parent": 96,
+    "formal_m4_matched_labels_per_parent": 72,
+    "formal_m4_accounting_is_separate": true,
+    "parent_atomicity": "all 288 physical diagnostic executions for one parent remain on one physical GPU"
+  },
+  "blinded_manual_taxonomy_gate": {
+    "parents": 8,
+    "sequences_per_parent": 2,
+    "reviewer_condition_identity_visible": false,
+    "major_disagreement_rule": "manual FAILURE vs automatic NO_FAILURE, or reverse",
+    "any_major_disagreement": "FAIL_AND_SEAL"
+  },
+  "launch_policy": {
+    "m3_5_pass_required_before_v7": true,
+    "eval160_allowed": false,
+    "outcome_informed_revision": "forbidden; any revision requires a new prospective version"
+  }
+}
