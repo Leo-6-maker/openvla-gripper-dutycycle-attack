@@ -194,8 +194,8 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
     actual_tree = _git(repo, "rev-parse", "HEAD^{tree}")
     actual_status = _git(repo, "status", "--porcelain")
     _check(checks, "source_worktree_clean", not actual_status, actual_status or "clean")
-    _check(checks, "protocol_schema", protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" and protocol.get("version") == "V1.3.3", {"schema": protocol.get("schema"), "version": protocol.get("version")})
-    _check(checks, "protocol_revision", protocol.get("supersedes") == "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3_2.json" and protocol.get("revision_reason") == "correct verified runtime GPU binding lookup before any simulator step or rollout", {"supersedes": protocol.get("supersedes"), "revision_reason": protocol.get("revision_reason")})
+    _check(checks, "protocol_schema", protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" and protocol.get("version") == "V1.3.4", {"schema": protocol.get("schema"), "version": protocol.get("version")})
+    _check(checks, "protocol_revision", protocol.get("supersedes") == "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3_3.json" and protocol.get("revision_reason") == "support deterministic RGB PIL trace descriptors before the first clean action", {"supersedes": protocol.get("supersedes"), "revision_reason": protocol.get("revision_reason")})
     _check(checks, "protocol_status", protocol.get("status") == "FROZEN_PROSPECTIVE_RUNTIME_READY_PENDING_INDEPENDENT_AUDIT", protocol.get("status"))
     _check(checks, "runtime_authorized", protocol.get("runtime_authorized") is True and protocol.get("requires_explicit_owner_authorization") is True and protocol.get("launch_policy", {}).get("runtime_authorized") is True, "explicit owner-authorized diagnostic only")
     _check(checks, "protected_eval160", protocol.get("protected_eval160") == {"reads_allowed": False, "rollouts_allowed": False, "hard_stop": True}, protocol.get("protected_eval160"))
@@ -213,16 +213,24 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
         and predecessor_seal.is_file()
         and _sha256(predecessor_seal) == predecessor_binding.get("root_sha256s_sha256")
         and predecessor.get("schema") == "STAGE_V_M3_5_STRUCTURAL_FAILURE_RECEIPT_V1"
-        and predecessor.get("status") == "SEALED_STRUCTURAL_FAILURE_ZERO_ROLLOUT"
+        and predecessor.get("status") == "SEALED_STRUCTURAL_FAILURE_PRE_FIRST_CLEAN_ACTION"
         and predecessor.get("consumable_for_labels") is False
-        and predecessor.get("outcome_data_observed") is False
+        and predecessor.get("selection_outcomes_read") is False
+        and predecessor.get("counterfactual_outcomes_observed") is False
         and predecessor.get("root_reuse_prohibited") is True
-        and predecessor.get("failure_class") == "PRE_ROLLOUT_RUNTIME_BINDING"
-        and predecessor.get("root_cause", {}).get("error_signature") == "M35RunnerError:RUNTIME_GPU_UUID_POST_MODEL_LOAD_MISMATCH"
+        and predecessor.get("failure_class") == "PRE_FIRST_CLEAN_ACTION_TRACE_SERIALIZATION"
+        and predecessor.get("root_cause", {}).get("error_signature") == "CanonicalExecutionError: UNSUPPORTED_TRACE_VALUE:Image"
         and predecessor.get("run", {}).get("source_commit") == predecessor_binding.get("source_commit")
         and predecessor.get("run", {}).get("source_tree") == predecessor_binding.get("source_tree")
         and predecessor.get("protected_counters") == COUNTERS
-        and all(predecessor_snapshot.get(field) == 0 for field in ("simulator_steps", "clean_trajectory_files", "runtime_binding_receipts", "parent_results", "physical_branches", "treatment_observations", "collapsed_labels"))
+        and predecessor_snapshot.get("registered_clean_simulator_steps") == 0
+        and predecessor_snapshot.get("formal_clean_policy_actions_applied") == 0
+        and predecessor_snapshot.get("runtime_binding_receipts") == 5
+        and predecessor_snapshot.get("environment_reset_and_dummy_wait_initialization_may_have_occurred") is True
+        and predecessor_snapshot.get("first_clean_policy_action_generated_before_trace_failure") is True
+        and predecessor_snapshot.get("worker_processes_reaped") is True
+        and all(predecessor_snapshot.get(field) == 0 for field in ("clean_trajectory_files", "probe_plan_files", "parent_results", "physical_branches", "treatment_observations", "collapsed_labels"))
+        and predecessor_binding.get("status") == "SEALED_STRUCTURAL_FAILURE_PRE_FIRST_CLEAN_ACTION"
         and predecessor_path.parent.stat().st_mode & 0o222 == 0,
         predecessor_binding,
     )
@@ -393,6 +401,13 @@ def audit(repo_root: Path, protocol_path: Path) -> dict[str, Any]:
     )
     resource_text = bound_paths.get("resource_contract").read_text(encoding="utf-8") if bound_paths.get("resource_contract") else ""
     runner_text = bound_paths.get("runner").read_text(encoding="utf-8") if bound_paths.get("runner") else ""
+    core_text = bound_paths.get("canonical_execution_core").read_text(encoding="utf-8") if bound_paths.get("canonical_execution_core") else ""
+    _check(
+        checks,
+        "pil_trace_descriptor",
+        '"kind": "image"' in core_text and 'hasattr(value, "mode")' in core_text and 'hasattr(value, "size")' in core_text,
+        "shared canonical_value hashes PIL-like image bytes with mode and size",
+    )
     _check(
         checks,
         "torch_physical_uuid_binding",

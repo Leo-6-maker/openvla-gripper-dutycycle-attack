@@ -911,7 +911,7 @@ def _manual_taxonomy_pair(protocol: Mapping[str, Any], parent_key: str) -> dict[
 
 
 def _verify_runtime_contract(args: argparse.Namespace, protocol: Mapping[str, Any], selection: Mapping[str, Any]) -> dict[str, Any]:
-    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" or protocol.get("version") != "V1.3.3":
+    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3" or protocol.get("version") != "V1.3.4":
         raise M35RunnerError("PROTOCOL_SCHEMA_OR_VERSION_INVALID")
     if protocol.get("runtime_authorized") is not True or protocol.get("runtime_prerequisites", {}).get("intervention_runner_status") != "PASS":
         raise M35RunnerError("RUNTIME_NOT_AUTHORIZED_OR_RUNNER_NOT_BOUND")
@@ -1409,7 +1409,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if not args.enable_runtime:
-            raise M35RunnerError("RUNTIME_DISABLED_UNTIL_V1_3_3_AUTHORIZATION")
+            raise M35RunnerError("RUNTIME_DISABLED_UNTIL_V1_3_4_AUTHORIZATION")
         return run_parent(args)
     except (OSError, KeyError, ValueError, M35RunnerError) as exc:
         print(json.dumps({"status": "FAIL", "reason": f"{type(exc).__name__}:{exc}"}, sort_keys=True))

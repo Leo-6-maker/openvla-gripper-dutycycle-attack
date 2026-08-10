@@ -142,6 +142,23 @@ def test_bfloat16_tensor_has_canonical_bytes() -> None:
     assert len(descriptor["raw_sha256"]) == 64
 
 
+def test_pil_like_image_has_canonical_bytes() -> None:
+    class FakeImage:
+        mode = "RGB"
+        size = (2, 1)
+
+        @staticmethod
+        def tobytes() -> bytes:
+            return bytes((0, 1, 2, 3, 4, 5))
+
+    assert canonical_value(FakeImage()) == {
+        "kind": "image",
+        "mode": "RGB",
+        "size": [2, 1],
+        "raw_sha256": "17e88db187afd62c16e5debf3e6527cd006bc012bc90b51a810cd80c2d511f43",
+    }
+
+
 def test_producer_receipt_requires_independent_audit(tmp_path: Path) -> None:
     core = _core()
     trace = core.run_clean_episode(mode="CLEAN_QUALIFICATION")

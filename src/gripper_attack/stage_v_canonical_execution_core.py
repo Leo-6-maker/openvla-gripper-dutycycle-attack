@@ -95,6 +95,13 @@ def canonical_value(value: Any) -> Any:
     descriptor = _array_descriptor(value)
     if descriptor is not None:
         return descriptor
+    if hasattr(value, "tobytes") and hasattr(value, "mode") and hasattr(value, "size"):
+        return {
+            "kind": "image",
+            "mode": str(value.mode),
+            "size": [int(item) for item in value.size],
+            "raw_sha256": hashlib.sha256(value.tobytes()).hexdigest(),
+        }
     if value is None or isinstance(value, (str, bool, int)):
         return value
     if isinstance(value, float):
