@@ -80,7 +80,7 @@
   },
   "static_audit_binding": {
     "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_2.py",
-    "auditor_script_sha256": "7259ce05648972c392648e5a16296af17c28f91e93926f9f065099a3ac075ef8",
+    "auditor_script_sha256": "cab39b20e768451d5f7a37b7e7db7baeea99ce0c590199261bcd829e6def9dc6",
     "authorization_issuer_script_path": "scripts/detector_v5/issue_stage_v_m3_5_runtime_authorization.py",
     "authorization_issuer_script_sha256": "0375fa4976b7088cd5e4b55d89a3d4d2989ad699d8ff4377fb4e54ba7092bae6",
     "receipt_schema": "STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1_2",
