@@ -36,6 +36,7 @@ from gripper_attack.stage_v_m3_5_physical_taxonomy import (  # noqa: E402
     v_phys_label,
     aperture_metric,
 )
+from scripts.detector_v5.stage_v_gpu_resource_contract import query_inventory  # noqa: E402
 
 
 NUM_STEPS_WAIT = 10
@@ -150,17 +151,23 @@ def _model_binding_receipt(args: argparse.Namespace, env: Any, output_dir: Path)
         raise M35RunnerError("RUNTIME_EGL_LOGICAL_DEVICE_UNVERIFIED")
     if not torch.cuda.is_available() or int(torch.cuda.current_device()) != 0:
         raise M35RunnerError("RUNTIME_CUDA_LOGICAL_DEVICE_UNVERIFIED")
-    properties = torch.cuda.get_device_properties(0)
-    uuid = str(getattr(properties, "uuid", "")).strip()
-    if not uuid:
+    inventory, query_error = query_inventory()
+    if query_error:
+        raise M35RunnerError(f"RUNTIME_GPU_UUID_QUERY_FAILED:{query_error}")
+    runtime_row = next((row for row in inventory if int(row.get("gpu_id", -1)) == int(args.gpu)), None)
+    runtime_uuid = str(runtime_row.get("gpu_uuid", "") if runtime_row else "").strip()
+    if not runtime_uuid:
         raise M35RunnerError("RUNTIME_GPU_UUID_UNAVAILABLE")
+    properties = torch.cuda.get_device_properties(0)
     receipt = {
         "schema": "STAGE_V_M3_5_RUNTIME_BINDING_RECEIPT_V1",
         "status": "PASS",
         "physical_gpu_index": int(args.gpu),
+        "gpu_uuid": runtime_uuid,
+        "gpu_uuid_source": "nvidia-smi_physical_index",
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
         "torch_current_device": int(torch.cuda.current_device()),
-        "torch_device_uuid": uuid,
+        "torch_device_uuid": None,
         "torch_device_name": torch.cuda.get_device_name(0),
         "mujoco_gl": os.environ.get("MUJOCO_GL", ""),
         "mujoco_egl_device_id": os.environ.get("MUJOCO_EGL_DEVICE_ID", ""),
