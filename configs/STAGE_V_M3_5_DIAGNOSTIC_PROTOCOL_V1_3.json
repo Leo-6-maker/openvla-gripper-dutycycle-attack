@@ -20,15 +20,15 @@
     "vis_pgd_attack_rollouts": 0
   },
   "source_binding": {
-    "implementation_source_commit": "6a135ff2fd9f25ef5892902f8a303027c8e32942",
-    "implementation_source_tree": "e94a2a392e4c4a4726044ab0ea298bdd0dc1f844",
+    "implementation_source_commit": "4641fd7218f888f732c6ff71d8962b466062b928",
+    "implementation_source_tree": "e422967ea3a929612e7629f86704afe5a89b80aa",
     "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
     "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0"
   },
   "contract_bindings": {
     "label_contract": {
       "path": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_3.json",
-      "sha256": "e829225a9eacb06652c9b70f5be2efb0fb9eb0706b7cba23f5f5c2fde4cfe8c3",
+      "sha256": "1f339e16f8d245a737076e3a7c790b6b71572e2555c409b997e7b4a8a30e6fc3",
       "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_3"
     },
     "canonical_execution_core": {
@@ -77,7 +77,7 @@
     },
     "parent_supervisor": {
       "path": "scripts/detector_v5/run_stage_v_parent_aware_supervisor.py",
-      "sha256": "4dd26d832d72cb9c09c05ceca955117fad4b00760c6f893e2d3b09c828d91a2e"
+      "sha256": "f814c8cfae3821530ec8baebad9e3b99549a3cc8ad390ebb9c8489aeceed8501"
     },
     "queue_auditor": {
       "path": "scripts/detector_v5/audit_stage_v_dynamic_queue.py",
@@ -308,7 +308,7 @@
       },
       "run_stage_v_parent_aware_supervisor": {
         "path": "scripts/detector_v5/run_stage_v_parent_aware_supervisor.py",
-        "sha256": "4dd26d832d72cb9c09c05ceca955117fad4b00760c6f893e2d3b09c828d91a2e"
+        "sha256": "f814c8cfae3821530ec8baebad9e3b99549a3cc8ad390ebb9c8489aeceed8501"
       },
       "audit_stage_v_dynamic_queue": {
         "path": "scripts/detector_v5/audit_stage_v_dynamic_queue.py",
@@ -321,12 +321,12 @@
     }
   },
   "exact_a800_regression": {
-    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_20260810T180015Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
-    "sha256": "838b595d61641a3b726cc2801e249c7738aa7329b1803d5e6ff6751ce568ef20",
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_20260810T180734Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
+    "sha256": "9d3a8564325ab7941feab25d010ec4ee191c4c97f54b3554393d87b12287c116",
     "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
-    "source_commit": "6a135ff2fd9f25ef5892902f8a303027c8e32942",
-    "source_tree": "e94a2a392e4c4a4726044ab0ea298bdd0dc1f844",
-    "expected_collected": 204,
+    "source_commit": "4641fd7218f888f732c6ff71d8962b466062b928",
+    "source_tree": "e422967ea3a929612e7629f86704afe5a89b80aa",
+    "expected_collected": 205,
     "test_files": [
       "tests/detector_v5/test_stage_v1_m1_visual_determinism.py",
       "tests/detector_v5/test_stage_v2_teacher_enrichment.py",
@@ -390,7 +390,7 @@
       "scripts/detector_v5/run_stage_v_m1_visual_repeatability.py": "5c08475922d620f83b48b7a562d77a8d69f9c14ba077b060fd3565ee68d36c22",
       "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py": "4baed14a2af8f36d7d1ef4165d96140f783a31163ca3f8da973cd846994e0f54",
       "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py": "20141bf75083849a552903185828ceb273ba272e310cf50b8578a90728493582",
-      "scripts/detector_v5/run_stage_v_parent_aware_supervisor.py": "4dd26d832d72cb9c09c05ceca955117fad4b00760c6f893e2d3b09c828d91a2e",
+      "scripts/detector_v5/run_stage_v_parent_aware_supervisor.py": "f814c8cfae3821530ec8baebad9e3b99549a3cc8ad390ebb9c8489aeceed8501",
       "scripts/detector_v5/run_stage_v_r2_q2_control_qualification.py": "684993bda3e99e2d2682cdc69541e2e92af8064d43418ab669ebf36d88798121",
       "scripts/detector_v5/run_stage_v_r2_q2_supervisor.py": "921b5b405184b3ddb4c95f78dd9e31921015f57ece71853b424b7c8d23b50d21",
       "scripts/detector_v5/run_stage_v_rb1a_diagnostic.py": "72a3f66b8fd34b1f43602db05be5a841753d082b72bd8ba69a9a706e16e671df",
@@ -412,7 +412,7 @@
       "tests/detector_v5/test_stage_v2_upstream_provenance.py": "3ba6c6ce1a7068ac75566e1fde18345c04fe2f02e8b5344c87d957d2f844caa5",
       "tests/detector_v5/test_stage_v_canonical_execution_core.py": "ff93fdd4699d0b4b4d0d75ba5db0075e608197ab9597ec2d08a3c6473aabd8ef",
       "tests/detector_v5/test_stage_v_clean_replay_frozen.py": "3aa9def6843d95e4b19996906796516f52951f63f27b4686d482d08da1577d52",
-      "tests/detector_v5/test_stage_v_dynamic8.py": "9151be5c47796291ba40aa09525ab7f190aaa1b508d954e0f7eb114f1181e6ed",
+      "tests/detector_v5/test_stage_v_dynamic8.py": "70126f16939d4470bfbe5bf2c86426ab22672fa8e43c94eb4f4584b1403a1b1f",
       "tests/detector_v5/test_stage_v_fresh_g10_pool.py": "312f3e4c13809d058b5b07c686e28d774b1fb0e5a48a31b445b6f5bbad80af53",
       "tests/detector_v5/test_stage_v_freshness_v4_v2.py": "008b87db52cf827ea46f385cfe93c5947088ab01e00bb5cb687630d36f375a10",
       "tests/detector_v5/test_stage_v_gpu_resource_contract.py": "4814966e762fef12a3e408122c0465ee3b346ab0f68eb56d6f1b460f389ae78d",
@@ -450,7 +450,7 @@
     "formal_m4_accounting_is_separate": true
   },
   "resource_contract": {
-    "resource_mode": "MODE_M35_DIAGNOSTIC_V1_3",
+    "resource_mode": "MODE_M35_DIAGNOSTIC",
     "admitted_gpu_indices": [
       0,
       1,
@@ -476,7 +476,7 @@
     "minimum_free_memory_mib": 20480,
     "maximum_project_workers_per_gpu": 1,
     "partial_fleet_allowed": true,
-    "foreign_workloads_allowed_if_admitted": false,
+    "foreign_workloads_allowed_if_admitted": true,
     "gpu3_foreign_process_must_not_be_modified": true,
     "parent_atomicity": "all registered branches for one parent stay on one physical GPU",
     "cuda_visible_devices": "one admitted physical GPU per worker",
