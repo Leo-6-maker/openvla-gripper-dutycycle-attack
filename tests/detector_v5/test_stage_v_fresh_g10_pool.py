@@ -10,7 +10,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.detector_v5.build_stage_v_clean_attempt_exclusion import build as build_attempt_exclusion
 from scripts.detector_v5.build_stage_v_g10_candidate_pool import build as build_pool
-from scripts.detector_v5.stage_v_dynamic_common import sha256_file
 
 
 def write_json(path: Path, value: object) -> None:
@@ -64,7 +63,11 @@ def test_g10_pool_is_deterministic_and_excludes_both_ledgers(tmp_path: Path) -> 
     assert "libero_goal/task_00/state_20" not in keys
     assert "libero_object/task_00/state_20" not in keys
     assert one["gates"]["attack_rollouts"] == 0
-    assert sha256_file(first) == sha256_file(second)
+    first_value = json.loads(first.read_text(encoding="utf-8"))
+    second_value = json.loads(second.read_text(encoding="utf-8"))
+    first_value.pop("generated_utc")
+    second_value.pop("generated_utc")
+    assert first_value == second_value
 
 
 def test_g10_pool_refuses_duplicate_identity(tmp_path: Path) -> None:
