@@ -35,6 +35,7 @@ from gripper_attack.stage_v_causal_observation_snapshot import (  # noqa: E402
     load_snapshot,
     matched_action,
     restore_rng_state,
+    restore_runtime_state,
 )
 from gripper_attack.stage_v_canonical_execution_core import canonical_sha256, canonical_value  # noqa: E402
 from gripper_attack.stage_v_m3_5_physical_taxonomy import (  # noqa: E402
@@ -267,6 +268,7 @@ def _restore_probe_env(*, snapshot_root: Path, gate_a_root: Path, OffScreenRende
             raise M35RunnerError(f"CLEAN_PREFIX_TERMINATED:{step}")
     simulator = capture_simulator_state(env)
     natural_runtime = capture_runtime_state(env, model=model, adapter=adapter)
+    restore_runtime_state(env, payload["controller_and_wrapper_runtime_state"], model=model, adapter=adapter)
     restore_rng_state(payload["required_rng_state"])
     runtime = capture_runtime_state(env, model=model, adapter=adapter)
     try:

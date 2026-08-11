@@ -390,6 +390,99 @@ def capture_runtime_state(env: Any, *, model: Any | None = None, adapter: Any | 
     }
 
 
+def _assign_runtime_value(current: Any, value: Any) -> Any:
+    if current is not None and hasattr(current, "copy_"):
+        try:
+            current.copy_(value)
+            return current
+        except (TypeError, RuntimeError):
+            pass
+    if isinstance(current, np.ndarray):
+        try:
+            array = np.asarray(value)
+            if array.shape == current.shape:
+                current[...] = array
+                return current
+        except (TypeError, ValueError):
+            pass
+    if isinstance(current, list) and isinstance(value, list):
+        current[:] = value
+        return current
+    return value
+
+
+def _restore_rng_object(current: Any, value: Mapping[str, Any]) -> Any:
+    kind = value.get("kind")
+    if kind == "get_state" and current is not None and hasattr(current, "set_state"):
+        current.set_state(_tuple_tree(value.get("state")))
+        return current
+    if kind == "bit_generator_state" and current is not None:
+        bit_generator = getattr(current, "bit_generator", None)
+        if bit_generator is not None:
+            bit_generator.state = value.get("state")
+            return current
+    return value
+
+
+def _restore_object(obj: Any, state: Mapping[str, Any]) -> None:
+    for name, value in state.items():
+        if name == "unhandled_runtime_type":
+            continue
+        current = getattr(obj, name, None)
+        if isinstance(value, Mapping) and value.get("kind") in {"get_state", "bit_generator_state"}:
+            restored = _restore_rng_object(current, value)
+        elif isinstance(value, Mapping) and current is not None and not isinstance(current, (dict, list, tuple, str, bytes)):
+            _restore_object(current, value)
+            restored = current
+        else:
+            restored = _assign_runtime_value(current, value)
+        if restored is not current:
+            try:
+                setattr(obj, name, restored)
+            except (AttributeError, TypeError):
+                pass
+
+
+def restore_runtime_state(env: Any, state: Mapping[str, Any], *, model: Any | None = None, adapter: Any | None = None) -> None:
+    """Restore the captured mutable state before a counterfactual branch."""
+    inner = getattr(env, "env", None)
+    target = inner if inner is not None else env
+    environment = state.get("environment")
+    if isinstance(environment, Mapping):
+        _restore_object(target, environment)
+    robots_state = state.get("robots")
+    robots = getattr(target, "robots", ()) or ()
+    if isinstance(robots_state, list):
+        for row in robots_state:
+            if not isinstance(row, Mapping):
+                continue
+            index = int(row.get("index", -1))
+            if index < 0 or index >= len(robots):
+                continue
+            robot = robots[index]
+            recent = row.get("recent_buffers")
+            if isinstance(recent, Mapping):
+                _restore_object(robot, recent)
+            controller = getattr(robot, "controller", None)
+            controller_state = row.get("controller")
+            if controller is not None and isinstance(controller_state, Mapping):
+                _restore_object(controller, controller_state)
+    observables = state.get("observables")
+    live_observables = getattr(target, "_observables", None)
+    if isinstance(observables, Mapping) and isinstance(live_observables, Mapping):
+        for name, observable_state in observables.items():
+            observable = live_observables.get(name)
+            if observable is not None and isinstance(observable_state, Mapping):
+                _restore_object(observable, observable_state)
+    if model is not None and isinstance(state.get("model_execution"), Mapping):
+        _restore_object(model, state["model_execution"])
+    if adapter is not None and isinstance(state.get("adapter_execution"), Mapping):
+        _restore_object(adapter, state["adapter_execution"])
+    runtime_rng = state.get("rng")
+    if isinstance(runtime_rng, Mapping):
+        restore_rng_state(runtime_rng)
+
+
 def capture_simulator_state(env: Any) -> dict[str, Any]:
     """Capture simulator arrays plus the wrapper's registered flat state."""
     sim = getattr(env, "sim", None)

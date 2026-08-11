@@ -36,6 +36,7 @@ from gripper_attack.stage_v_causal_observation_snapshot import (  # noqa: E402
     load_snapshot,
     reference_action_window,
     restore_rng_state,
+    restore_runtime_state,
     write_snapshot,
 )
 from gripper_attack.stage_v_canonical_execution_core import canonical_sha256, canonical_value  # noqa: E402
@@ -275,6 +276,7 @@ def _replay_canary(snapshot_root: Path, *, OffScreenRenderEnv: Any, bddl: str, h
         replay_runtime_natural = capture_runtime_state(env, model=model, adapter=adapter)
         # The frozen branch state explicitly restores required RNG bytes; no
         # policy decode or renderer output is consumed in this canary.
+        restore_runtime_state(env, payload["controller_and_wrapper_runtime_state"], model=model, adapter=adapter)
         restore_rng_state(payload["required_rng_state"])
         replay_runtime_bound = capture_runtime_state(env, model=model, adapter=adapter)
         assert_exact(replay_simulator, payload["full_simulator_state"], label="simulator_state")

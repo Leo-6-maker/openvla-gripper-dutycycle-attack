@@ -17,6 +17,7 @@ from gripper_attack.stage_v_causal_observation_snapshot import (
     matched_action,
     reference_action_window,
     write_snapshot,
+    restore_runtime_state,
 )
 
 
@@ -109,11 +110,17 @@ def test_runtime_capture_records_controller_wrapper_observable_and_rng_state() -
     class Env:
         env = Inner()
 
-    state = capture_runtime_state(Env())
+    env = Env()
+    state = capture_runtime_state(env)
     assert state["environment"]["timestep"] == 4
     assert state["robots"][0]["controller"]["interpolator_pos"]["step"] == 2
     assert state["observables"]["camera"]["_sampled"] is True
     assert "python_random" in state["rng"]
+    env.env.timestep = 99
+    env.env._observables["camera"]._sampled = False
+    restore_runtime_state(env, state)
+    assert env.env.timestep == 4
+    assert env.env._observables["camera"]._sampled is True
 
 
 def test_reference_window_and_surgical_open_action() -> None:

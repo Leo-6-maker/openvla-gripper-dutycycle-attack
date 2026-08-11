@@ -55,7 +55,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     snapshot_tree = ast.parse(snapshot_path.read_text(encoding="utf-8"), filename=str(snapshot_path))
     replay = _function(runner_tree, "_replay_canary")
     gate_b_primary = _function(gate_b_tree, "_run_branch")
-    required_runner_calls = {"load_snapshot", "restore_rng_state", "capture_simulator_state", "capture_runtime_state", "assert_exact"}
+    required_runner_calls = {"load_snapshot", "restore_rng_state", "restore_runtime_state", "capture_simulator_state", "capture_runtime_state", "assert_exact"}
     required_snapshot_functions = {"write_snapshot", "load_snapshot", "capture_runtime_state", "capture_simulator_state", "restore_rng_state", "reference_action_window", "matched_action", "primary_observation_hashes", "assert_primary_observation_exact"}
     snapshot_names = {node.name for node in ast.walk(snapshot_tree) if isinstance(node, ast.FunctionDef)}
     primary_calls = _called_names(replay)
