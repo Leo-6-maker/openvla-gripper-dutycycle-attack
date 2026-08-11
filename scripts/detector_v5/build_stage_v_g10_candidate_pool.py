@@ -16,8 +16,8 @@ except ImportError:  # pragma: no cover
 
 SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
 POOL_SCHEMA = "D8_STAGE_V_CLEAN_PROBE_CANDIDATE_POOL_V1"
-EXPOSURE_SCHEMA = "STAGE_V_EXPOSURE_MANIFEST_V2"
-ATTEMPT_SCHEMA = "STAGE_V_CLEAN_QUALIFICATION_ATTEMPT_EXCLUSION_V1"
+EXPOSURE_SCHEMAS = {"STAGE_V_EXPOSURE_MANIFEST_V2", "STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4"}
+ATTEMPT_SCHEMAS = {"STAGE_V_CLEAN_QUALIFICATION_ATTEMPT_EXCLUSION_V1", "STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2"}
 
 
 def _keys(value: Any, *, field: str) -> set[str]:
@@ -74,10 +74,10 @@ def build(
         raise ValueError("candidates_per_suite must be positive")
     rows, g10_value = _g10_rows(g10_manifest)
     exposure = read_json(exposure_manifest)
-    if not isinstance(exposure, Mapping) or exposure.get("schema") != EXPOSURE_SCHEMA or exposure.get("status") != "PASS":
-        raise ValueError("exposure manifest is not a PASS V2 manifest")
+    if not isinstance(exposure, Mapping) or exposure.get("schema") not in EXPOSURE_SCHEMAS or exposure.get("status") != "PASS":
+        raise ValueError("exposure manifest is not an accepted PASS manifest")
     attempts = read_json(attempt_exclusion)
-    if not isinstance(attempts, Mapping) or attempts.get("schema") != ATTEMPT_SCHEMA or attempts.get("status") != "PASS":
+    if not isinstance(attempts, Mapping) or attempts.get("schema") not in ATTEMPT_SCHEMAS or attempts.get("status") != "PASS":
         raise ValueError("clean-attempt exclusion is not a PASS manifest")
     exposed = _keys(exposure, field="excluded_parent_keys")
     attempted = _keys(attempts, field="excluded_parent_keys")
