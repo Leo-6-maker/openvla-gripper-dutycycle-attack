@@ -384,7 +384,7 @@ def run(args: argparse.Namespace) -> int:
                         if aperture is not None:
                             break
             row, baseline_z = _clean_row(step, horizon, capture, telemetry, aperture, baseline_z)
-            row["state_sha256"] = _array_sha(capture["simulator"]["registered_flat_state"])
+            row["state_sha256"] = _array_sha(simulator["registered_flat_state"])
             row["clean_terminal"] = terminal_seen
             clean_rows.append(row)
             clean_actions.append(list(capture["env_action"]))
