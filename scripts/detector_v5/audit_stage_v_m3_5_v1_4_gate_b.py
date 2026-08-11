@@ -198,12 +198,27 @@ def audit(root: Path, *, parent_key: str, source_commit: str, source_tree: str) 
         errors.append("PRIMARY_RENDER_OR_POLICY_BOUNDARY_INVALID")
     if receipt.get("protected_counters") != COUNTERS:
         errors.append("PROTECTED_COUNTERS_NONZERO")
+    protocol_path = root / "M3_5_V1_4_GATE_B_PROTOCOL.json"
+    try:
+        protocol = _load(protocol_path)
+        binding = protocol.get("requires", {}).get("gate_a_bindings", {}).get(parent_key)
+        if protocol.get("requires", {}).get("gate_a_binding_mode") != "PER_PARENT_EXACT_SHA256" or not isinstance(binding, Mapping):
+            errors.append("GATE_A_BINDING_CONTRACT_INVALID")
+    except (OSError, ValueError, json.JSONDecodeError, AttributeError):
+        binding = None
+        errors.append("GATE_B_PROTOCOL_BINDING_READ_FAIL")
     if len(branches) != 288 or len(observations) != 216 or len(collapsed) != 72:
         errors.append(f"ACCOUNTING_INVALID:{len(branches)}/{len(observations)}/{len(collapsed)}")
     expected_observations: dict[str, tuple[str, dict[str, str | None]]] = {}
     gate_a_root = Path(str(receipt.get("gate_a_root", ""))).resolve()
     try:
         gate_a = _load(gate_a_root / "M3_5_V1_4_GATE_A_RECEIPT.json")
+        gate_a_receipt_path = gate_a_root / "M3_5_V1_4_GATE_A_RECEIPT.json"
+        gate_a_audit_path = gate_a_root / "M3_5_V1_4_GATE_A_INDEPENDENT_AUDIT.json"
+        if not isinstance(binding, Mapping) or binding.get("gate_a_receipt_sha256") != _sha_file(gate_a_receipt_path) or binding.get("gate_a_independent_audit_sha256") != _sha_file(gate_a_audit_path):
+            errors.append("GATE_A_PROVENANCE_BINDING_INVALID")
+        if receipt.get("gate_a_receipt_sha256") != _sha_file(gate_a_receipt_path) or receipt.get("gate_a_independent_audit_sha256") != _sha_file(gate_a_audit_path):
+            errors.append("RECEIPT_GATE_A_PROVENANCE_INVALID")
         for snapshot in gate_a.get("snapshots", []):
             probe_id = str(snapshot["probe_id"])
             snapshot_root = gate_a_root / str(snapshot["path"])

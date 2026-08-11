@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from gripper_attack.stage_v_causal_observation_snapshot import matched_action
 from scripts.detector_v5.audit_stage_v_m3_5_v1_4_gate_b import _compliant
-from scripts.detector_v5.run_stage_v_m3_5_v1_4_gate_b import _pair_label
+from scripts.detector_v5.run_stage_v_m3_5_v1_4_gate_b import _pair_label, _validate_protocol
 
 
 def test_matched_open_keeps_arm_exact() -> None:
@@ -35,3 +35,18 @@ def test_gate_b_pair_label_never_coerces_invalid_control_to_negative() -> None:
     treatment = {"status": "FAIL", "state_restore_exact": False, "causal_input_binding_pass": False, "available_horizon_steps": 0, "rows": [], "treatment_compliant": False, "treatment_compliance": {}}
     result = _pair_label(control, treatment, 5)
     assert result["label_class"].endswith("_ABSTAIN")
+
+
+def test_gate_b_protocol_requires_per_parent_gate_a_binding() -> None:
+    protocol = {
+        "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_B",
+        "version": "V1.4-GATE-B",
+        "status": "FROZEN_RUNTIME_AUTHORIZED",
+        "runtime_authorized": True,
+        "source_binding": {"runtime_commit": "commit", "runtime_tree": "tree"},
+        "operation": {"fresh_render_primary_consumption": "HARD_STOP", "fresh_render_equality_gate_used": False, "native_closed_loop_policy_in_primary_window": False},
+        "matrix": {"repetitions": 3, "conditions": ["CONTROL", "T3", "T5", "T10"]},
+        "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0},
+        "requires": {"gate_a_status": "PASS", "gate_a_binding_mode": "PER_PARENT_EXACT_SHA256", "gate_a_bindings": {"parent": {}}},
+    }
+    _validate_protocol(protocol, type("Args", (), {"source_commit": "commit", "source_tree": "tree"})())

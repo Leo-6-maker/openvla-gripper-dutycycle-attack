@@ -130,9 +130,14 @@ def _validate_protocol(protocol: Mapping[str, Any], args: argparse.Namespace) ->
         raise M35RunnerError("GATE_B_MATRIX_INVALID")
     if protocol.get("protected_counters") != EXPECTED_COUNTERS:
         raise M35RunnerError("PROTECTED_COUNTER_CONTRACT_INVALID")
+    requires = protocol.get("requires", {})
+    if requires.get("gate_a_status") != "PASS" or requires.get("gate_a_binding_mode") != "PER_PARENT_EXACT_SHA256":
+        raise M35RunnerError("GATE_A_BINDING_CONTRACT_INVALID")
+    if not isinstance(requires.get("gate_a_bindings"), Mapping):
+        raise M35RunnerError("GATE_A_BINDINGS_MISSING")
 
 
-def _validate_gate_a(root: Path, args: argparse.Namespace) -> dict[str, Any]:
+def _validate_gate_a(root: Path, args: argparse.Namespace, protocol: Mapping[str, Any]) -> dict[str, Any]:
     receipt_path = root / "M3_5_V1_4_GATE_A_RECEIPT.json"
     if not receipt_path.is_file():
         raise M35RunnerError("GATE_A_RECEIPT_MISSING")
@@ -144,6 +149,11 @@ def _validate_gate_a(root: Path, args: argparse.Namespace) -> dict[str, Any]:
     audit_path = root / "M3_5_V1_4_GATE_A_INDEPENDENT_AUDIT.json"
     if not audit_path.is_file() or _load_json(audit_path).get("status") != "PASS":
         raise M35RunnerError("GATE_A_INDEPENDENT_AUDIT_NOT_PASS")
+    binding = protocol["requires"]["gate_a_bindings"].get(args.parent_key)
+    if not isinstance(binding, Mapping):
+        raise M35RunnerError("GATE_A_PARENT_BINDING_MISSING")
+    if binding.get("gate_a_receipt_sha256") != _sha_file(receipt_path) or binding.get("gate_a_independent_audit_sha256") != _sha_file(audit_path):
+        raise M35RunnerError("GATE_A_PROVENANCE_BINDING_MISMATCH")
     return receipt
 
 
@@ -450,7 +460,7 @@ def run(args: argparse.Namespace) -> int:
     protocol = _load_json(args.protocol)
     _validate_protocol(protocol, args)
     gate_a_root = args.gate_a_root.resolve()
-    gate_a_receipt = _validate_gate_a(gate_a_root, args)
+    gate_a_receipt = _validate_gate_a(gate_a_root, args, protocol)
     output_dir = args.output_dir.resolve()
     if output_dir.exists() and any(output_dir.iterdir()):
         raise M35RunnerError(f"REFUSE_OVERWRITE:{output_dir}")
@@ -571,6 +581,7 @@ def run(args: argparse.Namespace) -> int:
         "runner_sha256": _sha_file(Path(__file__)),
         "protocol_sha256": _sha_file(args.protocol.resolve()),
         "gate_a_receipt_sha256": _sha_file(gate_a_root / "M3_5_V1_4_GATE_A_RECEIPT.json"),
+        "gate_a_independent_audit_sha256": _sha_file(gate_a_root / "M3_5_V1_4_GATE_A_INDEPENDENT_AUDIT.json"),
         "gate_a_root": str(gate_a_root),
         "matrix": {"probes": len(probes), "physical_branches": len(branch_rows), "treatment_observations": len(observations), "collapsed_labels": len(collapsed), "control_repetitions": 3, "treatment_repetitions_each": 3},
         "gates": {"causal_snapshot": causal_pass, "treatment_compliance": treatment_pass, "arm_isolation": isolation_pass, "repeatability": repeatability_pass, "physical_taxonomy": taxonomy_pass, "four_suite_coverage": False},
