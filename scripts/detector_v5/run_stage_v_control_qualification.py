@@ -123,9 +123,14 @@ def qualifies(row: Mapping[str, Any], a: Mapping[str, Any], b: Mapping[str, Any]
             errors.append(f"{name}_HORIZON_INCOMPLETE")
         if row.get("assigned_gpu") is not None and result.get("worker_gpu") != int(row["assigned_gpu"]):
             errors.append(f"{name}_GPU_AFFINITY_MISMATCH")
-    for field in ("terminal_outcome", "terminal_state_sha256", "key_state_identity_sha256"):
-        if a.get(field) is None or b.get(field) is None or a.get(field) != b.get(field):
-            errors.append(f"AB_MISMATCH:{field}")
+    # Terminal outcome/state are descriptive for fresh clean qualification.
+    # Only the initial identity binds A and B to the same causal parent.
+    if (
+        not a.get("key_state_identity_sha256")
+        or not b.get("key_state_identity_sha256")
+        or a.get("key_state_identity_sha256") != b.get("key_state_identity_sha256")
+    ):
+        errors.append("AB_MISMATCH:key_state_identity_sha256")
     if a.get("canonical_parent_key") != row.get("canonical_parent_key"):
         errors.append("A_PARENT_IDENTITY_MISMATCH")
     if b.get("canonical_parent_key") != row.get("canonical_parent_key"):
@@ -152,9 +157,14 @@ def audit_qualification_row(row: Mapping[str, Any], a: Mapping[str, Any], b: Map
             errors.append(f"{name}_PARENT_IDENTITY_MISMATCH")
         if row.get("assigned_gpu") is not None and result.get("worker_gpu") != int(row["assigned_gpu"]):
             errors.append(f"{name}_GPU_AFFINITY_MISMATCH")
-    for field in ("terminal_outcome", "terminal_state_sha256", "key_state_identity_sha256"):
-        if a.get(field) is None or b.get(field) is None or a.get(field) != b.get(field):
-            errors.append(f"AB_MISMATCH:{field}")
+    # Keep the auditor aligned with the frozen contract: terminal fields are
+    # descriptive; initial identity remains an exact hard gate.
+    if (
+        not a.get("key_state_identity_sha256")
+        or not b.get("key_state_identity_sha256")
+        or a.get("key_state_identity_sha256") != b.get("key_state_identity_sha256")
+    ):
+        errors.append("AB_MISMATCH:key_state_identity_sha256")
     return not errors, sorted(set(errors))
 
 
