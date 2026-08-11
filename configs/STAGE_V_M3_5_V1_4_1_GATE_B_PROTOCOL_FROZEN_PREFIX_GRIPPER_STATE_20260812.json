@@ -1,0 +1,78 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_B",
+  "version": "V1.4.1-GATE-B",
+  "protocol_revision": "CONTACT_RECOMPUTE_FIX_APERTURE_MEDIATOR_PREFIX_PROBES",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "purpose": "MATCHED_ACTION_PRIMARY_PHYSICAL_COUNTERFACTUAL_DIAGNOSTIC_WITH_GRIPPER_WRAPPER_STATE",
+  "source_binding": {
+    "runtime_commit": "94af963f8d5a797eb17f557eddf2ae39e57eacb2",
+    "runtime_tree": "cddea2a161cb2b4b7c4d4c9a031905a312120e0c",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0",
+    "runtime_state_schema": "STAGE_V_CONTROLLER_WRAPPER_RUNTIME_STATE_V2"
+  },
+  "predecessor": {
+    "runtime_commit": "0b864c84c68d85a27bea0985faf9bbb04708f50b",
+    "runtime_tree": "37d05a8accc0298342b46ea0e2da6e7bbf61517e",
+    "sealed_root_reuse_prohibited": true,
+    "failure_class": "GATE_B_HOLD_SEALED_8_OF_8"
+  },
+  "requires": {
+    "gate_a_status": "PASS",
+    "gate_a_binding_mode": "PER_PARENT_EXACT_SHA256",
+    "gate_a_protocol_sha256": "a6610929a01e7f8ab6e8f95f1e09caf7775bbb4b58b82372a00bf3094ad5c081",
+    "gate_a_probe_plan_selection_version": "STAGE_V_M3_5_CORRIDOR_PREFIX_V1",
+    "gate_a_bindings": {
+      "libero_10/task_00/state_47": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_1_GATE_A_PREFIX_GRIPPER_STATE_20260812T210000Z/libero_10_task00_state47", "gate_a_receipt_sha256": "38e9ab63533704241961f52cfcfe40b3e2a14ac73f81542c64c5b5a34e80c267", "gate_a_independent_audit_sha256": "ef3813e23e3995c52dda9b34bbe513595f6b7cbb44f78abb16209a2141ea42a3"},
+      "libero_10/task_01/state_48": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_1_GATE_A_PREFIX_GRIPPER_STATE_20260812T210000Z/libero_10_task01_state48", "gate_a_receipt_sha256": "b12040499cd266bd1814de68966a1d3f4829b82a55474af278812e58402c04d2", "gate_a_independent_audit_sha256": "5566b74e095af99b7b30d7f59070caf95dacc161b91cef0aa6663a8f2bec46c0"},
+      "libero_goal/task_02/state_49": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_1_GATE_A_PREFIX_GRIPPER_STATE_20260812T210000Z/libero_goal_task02_state49", "gate_a_receipt_sha256": "dfcee48c3752905bf68c27ff7096a1cf8c901cfab9669efca1b8afa1eed23748", "gate_a_independent_audit_sha256": "78e32600bb0d8ce47da2afdaba4b16e402c16cb397a6260b58e53a317b433cdc"},
+      "libero_goal/task_04/state_47": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_1_GATE_A_PREFIX_GRIPPER_STATE_20260812T210000Z/libero_goal_task04_state47", "gate_a_receipt_sha256": "1b6b1d6a0103a0141348e47e051cda129b2e45832aed3ef34c428bffe77573f3", "gate_a_independent_audit_sha256": "2705b796456fab9ef24b5b056db07ddb137f39571d46f54d953cf96f65f87664"},
+      "libero_object/task_02/state_49": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_1_GATE_A_PREFIX_GRIPPER_STATE_20260812T210000Z/libero_object_task02_state49", "gate_a_receipt_sha256": "dc3fecadc81ea2fa593039c904d7e6eb47b7ed2eb279e02720d9adfa8c23fbb0", "gate_a_independent_audit_sha256": "c3a75ae458a52cf510b61222517b7590486d75c1a62b442b10e5494da1a216f0"},
+      "libero_object/task_04/state_47": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_1_GATE_A_PREFIX_GRIPPER_STATE_20260812T210000Z/libero_object_task04_state47", "gate_a_receipt_sha256": "eff94203910ca6bc45365e7da8c168dfac0c2a1e6e222a8c9e2e4566156644f2", "gate_a_independent_audit_sha256": "f38aa2d6eeaa958e2f38da0a089876d6df8da5dc6f7942e30bcc8041cd11980b"},
+      "libero_spatial/task_02/state_47": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_1_GATE_A_PREFIX_GRIPPER_STATE_20260812T210000Z/libero_spatial_task02_state47", "gate_a_receipt_sha256": "65ac7864bd3f3eabfaf1fa8c2723863f98d40dfa25fb12f4f5db96400447e418", "gate_a_independent_audit_sha256": "059346f8e49030039120aa09b041ccd1ae71ae7c14852fbd1544d4cf2a9337af"},
+      "libero_spatial/task_02/state_49": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_1_GATE_A_PREFIX_GRIPPER_STATE_20260812T210000Z/libero_spatial_task02_state49", "gate_a_receipt_sha256": "5f0abb2273fd030502077a7bdced2ce721c84f8a8cd265c7d06f31ffd05fa7a5", "gate_a_independent_audit_sha256": "b800ad9274e0270d51ef9f551ce2b626f3d7c3af2198619ca9ecfd69a6ecf76c"}
+    },
+    "new_source_commit": true,
+    "new_source_tree": true,
+    "new_runtime_root": true,
+    "gripper_runtime_state_required": true
+  },
+  "operation": {
+    "primary_window": "T_plus_H_phys",
+    "native_closed_loop_policy_in_primary_window": false,
+    "primary_estimand": "V_phys under registered gripper OPEN with clean non-gripper action reference fixed",
+    "secondary_native_closed_loop_after_primary_freeze": true,
+    "fresh_render_equality_gate_used": false,
+    "fresh_render_primary_consumption": "HARD_STOP"
+  },
+  "matrix": {
+    "scope": "historically exposed diagnostics only",
+    "minimum_parents_per_suite": 2,
+    "required_suite_coverage": ["libero_10", "libero_goal", "libero_object", "libero_spatial"],
+    "repetitions": 3,
+    "conditions": ["CONTROL", "T3", "T5", "T10"],
+    "fresh_process_per_repetition": true,
+    "shared_mutable_runtime_state_across_repetitions": false
+  },
+  "control": {"action_source": "canonical_clean_reference_env_action", "arm_delta_linf": 0.0, "gripper": "canonical_clean_reference_gripper"},
+  "treatment": {
+    "action_source": "canonical_clean_reference_arm_plus_registered_open_gripper",
+    "arm_delta_linf": 0.0,
+    "after_dose": "return_to_canonical_clean_reference_action_replay_until_primary_window_end",
+    "native_policy_resume": "secondary_only_after_V_phys_freezes",
+    "compliance_gate": "COMMAND_DELIVERY_ONLY; APERTURE_MEDIATOR_DESCRIPTIVE",
+    "canonical_raw_open": 1.0,
+    "canonical_env_open": -1.0
+  },
+  "required_exact_checks": ["CAUSAL_SNAPSHOT_HARD_GATES", "GRIPPER_WRAPPER_STATE_EXACT", "REFERENCE_ACTION_EXACT", "FROZEN_OBSERVATION_BINDING_EXACT", "TREATMENT_COMPLIANCE", "ARM_ISOLATION", "CONTROL_VALIDITY", "PHYSICAL_TAXONOMY", "REPEATABILITY_3_OF_3", "FOUR_SUITE_DIAGNOSTIC_COVERAGE", "INDEPENDENT_AUDIT"],
+  "abstain_classes": ["CONTROL_CONTAMINATION", "TREATMENT_NONCOMPLIANCE", "STATE_RESTORE_INVALID", "CAUSAL_INPUT_INVALID", "HORIZON_CENSORED", "PHYSICAL_AMBIGUITY", "NON_GRIPPER_FAILURE", "ENGINEERING_INVALID"],
+  "repeatability": {"required": "3_of_3_same_registered_physical_outcome_class", "majority_vote_allowed": false, "failure_status": "HOLD_STOCHASTIC_INTERVENTION_OUTCOME"},
+  "pass_unlocks": "M3_5_LABEL_VALIDATION_PASS",
+  "failure_action": "seal_classify_handoff_stop",
+  "required_outputs": ["M3_5_V1_4_GATE_B_RECEIPT.json", "M3_5_V1_4_GATE_B_INDEPENDENT_AUDIT.json", "TREATMENT_COMPLIANCE_AUDIT.json", "ARM_ISOLATION_AUDIT.json", "REPEATABILITY_AUDIT.json", "PHYSICAL_TAXONOMY_AUDIT.json", "M3_5_V1_4_FINAL_RECEIPT.json"],
+  "protected_eval160": {"reads_allowed": false, "rollouts_allowed": false, "hard_stop": true},
+  "resource_contract": {"admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7], "excluded_gpu_indices": [], "minimum_free_memory_mib": 20480, "foreign_process_interference": false, "mujoco_egl_device_id": "admitted physical GPU index", "env_render_gpu_device_id": "admitted physical GPU index"},
+  "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
+}
