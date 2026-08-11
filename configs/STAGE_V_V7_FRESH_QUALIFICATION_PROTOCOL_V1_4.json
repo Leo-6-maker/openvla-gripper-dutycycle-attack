@@ -1,7 +1,7 @@
 {
   "schema": "STAGE_V_V7_FRESH_QUALIFICATION_PROTOCOL_V1_4",
   "version": "V7-FRESH-QUALIFICATION-V1.4",
-  "status": "FROZEN_DESIGN_ONLY",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
   "purpose": "Fresh clean A/B qualification after M3.5 PASS using the corrected terminal-observation contract.",
   "predecessor": {
     "m3_5_status": "PASS",
