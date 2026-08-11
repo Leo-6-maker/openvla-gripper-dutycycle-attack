@@ -71,3 +71,21 @@ Student, Scheduler, or attack rollout was launched.
 M3.5 V1.4.2 remains the last valid upstream gate. Any further qualification
 attempt requires a new prospective protocol/decision and must use the updated
 cumulative exclusion; this handoff does not authorize one.
+
+## Post-seal implementation audit
+
+The sealed root remains immutable and non-consumable. A subsequent source audit
+found that the V7.3 runtime helper at `f91182c5` did not implement the frozen
+qualification contract: both the producer and independent auditor treated
+`terminal_outcome` and `terminal_state_sha256` equality as hard gates even
+though `terminal_hash_equality_hard_gate` was frozen as `false`. The helper also
+placed the initial-state identity in that same loop; initial identity remains a
+hard gate, but terminal fields are descriptive only.
+
+All 60 `libero_goal` rows recorded terminal-state mismatches. A read-only
+recomputation that removes only those out-of-contract terminal gates yields 38
+protocol-relevant rows before the frozen per-suite cap of 10; this is diagnostic
+evidence only, not a qualification result, because V7.3 ran under the wrong
+implementation. Therefore the original seal's quota-failure classification
+must not be used as scientific evidence. A new source commit, protocol, root,
+fresh candidate universe, and authorization are required before any retry.
