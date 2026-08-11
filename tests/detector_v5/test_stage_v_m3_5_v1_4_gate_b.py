@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from gripper_attack.stage_v_causal_observation_snapshot import matched_action
 from scripts.detector_v5.audit_stage_v_m3_5_v1_4_gate_b import _compliant
-from scripts.detector_v5.run_stage_v_m3_5_v1_4_gate_b import _pair_label, _validate_protocol
+from scripts.detector_v5.run_stage_v_m3_5_v1_4_gate_b import _pair_label, _physical_outcome, _validate_protocol
 
 
 def test_matched_open_keeps_arm_exact() -> None:
@@ -35,6 +35,12 @@ def test_gate_b_pair_label_never_coerces_invalid_control_to_negative() -> None:
     treatment = {"status": "FAIL", "state_restore_exact": False, "causal_input_binding_pass": False, "available_horizon_steps": 0, "rows": [], "treatment_compliant": False, "treatment_compliance": {}}
     result = _pair_label(control, treatment, 5)
     assert result["label_class"].endswith("_ABSTAIN")
+
+
+def test_gate_b_matched_contact_loss_uses_control_reference() -> None:
+    control = {"status": "PASS", "state_restore_exact": True, "causal_input_binding_pass": True, "available_horizon_steps": 2, "rows": [{"post_contact_telemetry_valid": True, "post_object_gripper_contact": True}, {"post_contact_telemetry_valid": True, "post_object_gripper_contact": True}]}
+    treatment = {"status": "PASS", "state_restore_exact": True, "causal_input_binding_pass": True, "available_horizon_steps": 2, "rows": [{"post_contact_telemetry_valid": True, "post_object_gripper_contact": False}, {"post_contact_telemetry_valid": True, "post_object_gripper_contact": False}]}
+    assert _physical_outcome(treatment, required_steps=2, reference=control)["class"] == "GRIPPER_CONTACT_LOSS"
 
 
 def test_gate_b_protocol_requires_per_parent_gate_a_binding() -> None:

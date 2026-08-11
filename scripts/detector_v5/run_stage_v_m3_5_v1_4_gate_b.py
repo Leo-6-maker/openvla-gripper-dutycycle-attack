@@ -185,13 +185,13 @@ def _position(row: Mapping[str, Any]) -> list[float] | None:
     return result if all(math.isfinite(item) for item in result) else None
 
 
-def _contact_loss(control: Sequence[Mapping[str, Any]], treatment: Sequence[Mapping[str, Any]] | None = None) -> int | None:
+def _contact_loss(rows: Sequence[Mapping[str, Any]], reference: Sequence[Mapping[str, Any]] | None = None) -> int | None:
     count = 0
-    for index, row in enumerate(control):
-        if treatment is None:
+    for index, row in enumerate(rows):
+        if reference is None:
             lost = row.get("post_object_gripper_contact") is not True
         else:
-            lost = control[index].get("post_object_gripper_contact") is True and row.get("post_object_gripper_contact") is not True
+            lost = reference[index].get("post_object_gripper_contact") is True and row.get("post_object_gripper_contact") is not True
         count = count + 1 if lost else 0
         if count >= 2:
             return index - 1
