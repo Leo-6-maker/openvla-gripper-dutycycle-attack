@@ -7,8 +7,8 @@
   "requires_explicit_owner_authorization": true,
   "purpose": "ZERO_TREATMENT_CAUSAL_OBSERVATION_SNAPSHOT_REPLAY_CANARY_WITH_CLOSED_CLEAN_GRIPPER_PREFIX",
   "source_binding": {
-    "runtime_commit": "73625bd3835eb1f1a45e20dc7deeff0be2389d8b",
-    "runtime_tree": "46b83828042c0bf7ea350fe445d9b0791c4e8fc0",
+    "runtime_commit": "6a3d3d37215a5101c5d204d26d1ce052e548b858",
+    "runtime_tree": "f3e09517707298ce98fd872dc1e5bc5e19998acf",
     "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
     "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0",
     "runtime_state_schema": "STAGE_V_CONTROLLER_WRAPPER_RUNTIME_STATE_V2"
@@ -29,12 +29,12 @@
   "probe_plan_selection_version": "STAGE_V_M3_5_CORRIDOR_CLOSED_PREFIX_V2",
   "probe_plan_rule": "raw_gripper <= 0.5 for every clean reference step in the T10 + H_phys primary window",
   "exact_a800_regression": {
-    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_4_2_CLOSED_PREFIX_20260812T224000Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
-    "sha256": "6fc065f63bf40b33b2c4700acba5507a6c63b0106c8e3fe6c532bb0cfe25987d",
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_4_2_CLOSED_PREFIX_20260811T145000Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
+    "sha256": "3c041a2f9045437ae9901b63c848d3108bf477f090bab9f722cac10eb00448ee",
     "status": "PASS",
     "expected_collected": 224,
-    "source_commit": "73625bd3835eb1f1a45e20dc7deeff0be2389d8b",
-    "source_tree": "46b83828042c0bf7ea350fe445d9b0791c4e8fc0"
+    "source_commit": "6a3d3d37215a5101c5d204d26d1ce052e548b858",
+    "source_tree": "f3e09517707298ce98fd872dc1e5bc5e19998acf"
   },
   "static_audit_binding": {
     "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_v1_4_static.py",
