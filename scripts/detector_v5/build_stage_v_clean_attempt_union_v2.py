@@ -60,7 +60,7 @@ def _source_record(path: Path) -> tuple[dict[str, Any], set[str]]:
     if not isinstance(value, Mapping):
         raise ValueError(f"source manifest is not an object: {path}")
     status = str(value.get("status", ""))
-    if status not in {"PASS", "FROZEN", "COMPLETE_VALID"}:
+    if status not in {"PASS", "FROZEN", "COMPLETE_VALID", "FAIL_SEALED_NON_CONSUMABLE"}:
         raise ValueError(f"source manifest is not admissible: {path}:{status}")
     keys = _collect_keys(value)
     if not keys:
