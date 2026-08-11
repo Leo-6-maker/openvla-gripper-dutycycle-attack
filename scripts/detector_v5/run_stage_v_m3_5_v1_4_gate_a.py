@@ -47,6 +47,7 @@ from gripper_attack.stage_v_m3_5_physical_taxonomy import (  # noqa: E402
 )
 from scripts.detector_v5.build_stage_v_m3_5_probe_plan import (  # noqa: E402
     DEFAULT_SELECTION_VERSION,
+    CLOSED_PREFIX_SELECTION_VERSION,
     H_PHYS,
     PREFIX_SELECTION_VERSION,
     PROBE_COUNT,
@@ -416,7 +417,7 @@ def run(args: argparse.Namespace) -> int:
     trajectory_sha = canonical_sha256(clean_rows)
     _write_json(output_dir / "CLEAN_TRAJECTORY_V1_4.json", {"schema": "STAGE_V_M3_5_CLEAN_TRAJECTORY_V1_4", "outcomes_read": False, "rows": clean_rows, "trajectory_sha256": trajectory_sha, "task_success": task_success, "protected_counters": dict(PROTECTED_COUNTERS)})
     selection_version = str(protocol.get("probe_plan_selection_version", DEFAULT_SELECTION_VERSION))
-    if selection_version not in {DEFAULT_SELECTION_VERSION, PREFIX_SELECTION_VERSION}:
+    if selection_version not in {DEFAULT_SELECTION_VERSION, PREFIX_SELECTION_VERSION, CLOSED_PREFIX_SELECTION_VERSION}:
         raise M35RunnerError(f"PROBE_PLAN_SELECTION_VERSION_INVALID:{selection_version}")
     plan = select_probe_steps(clean_rows, args.parent_key, selection_version=selection_version)
     _write_json(output_dir / "PROBE_PLAN_V1_4.json", plan)

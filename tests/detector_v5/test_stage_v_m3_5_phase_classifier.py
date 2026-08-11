@@ -14,6 +14,7 @@ from gripper_attack.stage_v_m3_5_phase_classifier import (  # noqa: E402
     classify_trajectory,
 )
 from scripts.detector_v5.build_stage_v_m3_5_probe_plan import (  # noqa: E402
+    CLOSED_PREFIX_SELECTION_VERSION,
     PREFIX_SELECTION_VERSION,
     ProbePlanError,
     select_probe_steps,
@@ -65,6 +66,8 @@ def _corridor_row(step: int, phase: str = "CONTACT_MANIPULATION", *, remaining: 
         "object_eef_distance_m": 0.01,
         "object_gripper_contact": True,
         "object_support_contact": False,
+        "raw_gripper": 0.0,
+        "env_gripper": 1.0,
     }
 
 
@@ -88,6 +91,17 @@ def test_probe_plan_prefix_selection_is_outcome_blind_and_early():
     plan = select_probe_steps(rows, "libero_goal/task_00/state_00", selection_version=PREFIX_SELECTION_VERSION)
     assert [item["step"] for item in plan["probe_steps"]] == list(range(24))
     assert plan["selection_algorithm"].startswith("sort eligible corridor by timestep; choose the first 24")
+    assert plan["outcomes_read"] is False
+
+
+def test_probe_plan_closed_prefix_excludes_clean_open_window():
+    rows = [_corridor_row(step, PHASES[step % len(PHASES)]) for step in range(48)]
+    for row in rows[:2]:
+        row["raw_gripper"] = 1.0
+        row["env_gripper"] = -1.0
+    plan = select_probe_steps(rows, "libero_goal/task_00/state_00", selection_version=CLOSED_PREFIX_SELECTION_VERSION)
+    assert [item["step"] for item in plan["probe_steps"]] == list(range(2, 26))
+    assert all(item["eligibility"]["clean_gripper_closed_for_primary_window"] is True for item in plan["probe_steps"])
     assert plan["outcomes_read"] is False
 
 

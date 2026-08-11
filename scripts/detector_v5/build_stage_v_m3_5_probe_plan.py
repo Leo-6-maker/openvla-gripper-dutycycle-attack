@@ -24,6 +24,7 @@ DOSE_STEPS = {"T3": 3, "T5": 5, "T10": 10}
 MIN_REMAINING_STEPS = max(DOSE_STEPS.values()) + H_PHYS
 DEFAULT_SELECTION_VERSION = "STAGE_V_M3_5_CORRIDOR_QUANTILES_V1"
 PREFIX_SELECTION_VERSION = "STAGE_V_M3_5_CORRIDOR_PREFIX_V1"
+CLOSED_PREFIX_SELECTION_VERSION = "STAGE_V_M3_5_CORRIDOR_CLOSED_PREFIX_V2"
 
 
 class ProbePlanError(ValueError):
@@ -117,6 +118,17 @@ def _quantile_indices(candidate_count: int) -> list[int]:
     return indices
 
 
+def _clean_gripper_closed_window(rows: Sequence[Mapping[str, Any]], start: int) -> bool:
+    """Require the registered clean gripper channel to stay closed for the primary window."""
+    window = rows[start : start + MIN_REMAINING_STEPS]
+    if len(window) != MIN_REMAINING_STEPS:
+        return False
+    try:
+        return all(float(row.get("raw_gripper")) <= 0.5 for row in window)
+    except (TypeError, ValueError):
+        return False
+
+
 def select_probe_steps(
     rows: Sequence[Mapping[str, Any]], parent_key: str, *, selection_version: str = DEFAULT_SELECTION_VERSION,
 ) -> dict[str, Any]:
@@ -133,15 +145,25 @@ def select_probe_steps(
     normalized_rows.sort(key=lambda row: int(row["step"]))
     if [int(row["step"]) for row in normalized_rows] != list(range(len(normalized_rows))):
         raise ProbePlanError("CLEAN_TRAJECTORY_STEPS_NOT_CONTIGUOUS_FROM_ZERO")
-    candidates = [
-        candidate for index, row in enumerate(normalized_rows)
-        if (candidate := _corridor_candidate(row, observed_remaining_horizon=len(normalized_rows) - index)) is not None
-    ]
-    if selection_version == PREFIX_SELECTION_VERSION:
+    candidates = []
+    for index, row in enumerate(normalized_rows):
+        candidate = _corridor_candidate(row, observed_remaining_horizon=len(normalized_rows) - index)
+        if candidate is None:
+            continue
+        if selection_version == CLOSED_PREFIX_SELECTION_VERSION and not _clean_gripper_closed_window(normalized_rows, index):
+            continue
+        if selection_version == CLOSED_PREFIX_SELECTION_VERSION:
+            candidate["eligibility"]["clean_gripper_closed_for_primary_window"] = True
+            candidate["clean_gripper_window_steps"] = MIN_REMAINING_STEPS
+        candidates.append(candidate)
+    if selection_version in {PREFIX_SELECTION_VERSION, CLOSED_PREFIX_SELECTION_VERSION}:
         if len(candidates) < PROBE_COUNT:
             raise ProbePlanError(f"PROBE_PLAN_INSUFFICIENT_CORRIDOR:{len(candidates)}/{PROBE_COUNT}")
         indices = list(range(PROBE_COUNT))
-        selection_algorithm = "sort eligible corridor by timestep; choose the first 24 eligible states; preserve order"
+        if selection_version == CLOSED_PREFIX_SELECTION_VERSION:
+            selection_algorithm = "sort eligible closed-gripper corridor by timestep; choose the first 24 states with a closed clean T10+H_phys window; preserve order"
+        else:
+            selection_algorithm = "sort eligible corridor by timestep; choose the first 24 eligible states; preserve order"
     else:
         indices = _quantile_indices(len(candidates))
         selection_algorithm = "sort eligible corridor by timestep; for q=0..23 choose round_half_up(q*(N-1)/23); preserve order; deterministic dedup; fail if fewer than 24 unique"
@@ -165,14 +187,14 @@ def select_probe_steps(
         "canonical_parent_key": parent_key,
         "selection_algorithm": selection_algorithm,
         "selection_version": selection_version,
-        "source_inputs": ["clean trajectory rows", "clean-only contact and object telemetry", "remaining horizon"],
+        "source_inputs": ["clean trajectory rows", "clean-only contact and object telemetry", "remaining horizon", "clean reference gripper channel for closed-prefix selection"],
         "forbidden_inputs": ["OPEN outcome", "CONTROL outcome", "V_phys", "V_task", "Teacher prediction", "Student prediction"],
         "outcomes_read": False,
         "probe_count": PROBE_COUNT,
         "corridor_candidate_count": len(candidates),
         "corridor_first_step": int(candidates[0]["step"]),
         "corridor_last_step": int(candidates[-1]["step"]),
-        "corridor_rule": "clean valid nonterminal state with bound finite object/eef telemetry, explicit gripper-object contact, registered clean phase, and remaining_horizon >= T10 + H_phys",
+        "corridor_rule": "clean valid nonterminal state with bound finite object/eef telemetry, explicit gripper-object contact, registered clean phase, remaining_horizon >= T10 + H_phys, and (for CLOSED_PREFIX_SELECTION_VERSION) raw_gripper <= 0.5 for the full T10 + H_phys clean reference window",
         "intentional_post_release_exclusion": "object_gripper_contact must be true at the probe",
         "selected_phase_distribution_descriptive_only": phase_distribution,
         "dose_steps": dict(DOSE_STEPS),
