@@ -5,8 +5,8 @@
   "runtime_authorized": true,
   "purpose": "MATCHED_ACTION_PRIMARY_PHYSICAL_COUNTERFACTUAL_DIAGNOSTIC",
   "source_binding": {
-    "runtime_commit": "cb99ec6843b821bc888d92d3d35dde2e6063a0d0",
-    "runtime_tree": "b2e2023fb0287ebc23e620b060160e39a3e9e500",
+    "runtime_commit": "74649062c9979b7eb3becf9bf5c1f335dae1f480",
+    "runtime_tree": "d04483f6ebb84c83769925278c483166dd0a156a",
     "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
     "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0"
   },
