@@ -74,7 +74,11 @@ def _safe_name(value: str) -> str:
 def _write_field(value: Any, root: Path, path: str, arrays: list[dict[str, Any]]) -> Any:
     raw = _array_bytes(value)
     logical_type = None
+    image_mode = None
+    image_size = None
     if raw is None and hasattr(value, "tobytes") and hasattr(value, "mode") and hasattr(value, "size"):
+        image_mode = str(value.mode)
+        image_size = [int(item) for item in value.size]
         value = np.asarray(value)
         raw = _array_bytes(value)
         logical_type = "image"
@@ -96,6 +100,8 @@ def _write_field(value: Any, root: Path, path: str, arrays: list[dict[str, Any]]
         }
         if logical_type is not None:
             descriptor["logical_type"] = logical_type
+            descriptor["image_mode"] = image_mode
+            descriptor["image_size"] = image_size
         arrays.append({"field": path, **descriptor})
         return {ARRAY_MARKER: len(arrays) - 1}
     if isinstance(value, Mapping):
@@ -136,6 +142,15 @@ def _read_field(value: Any, root: Path, arrays: Sequence[Mapping[str, Any]], *, 
         if len(payload) != int(descriptor["byte_length"]) or _sha256(payload) != descriptor["raw_sha256"]:
             raise CausalSnapshotError(f"ARRAY_BYTES_SHA_MISMATCH:{descriptor.get('field', index)}")
         shape = tuple(int(item) for item in descriptor["shape"])
+        if descriptor.get("logical_type") == "image":
+            try:
+                from PIL import Image
+
+                mode = str(descriptor["image_mode"])
+                size = tuple(int(item) for item in descriptor["image_size"])
+                return Image.frombytes(mode, size, payload)
+            except (ImportError, KeyError, TypeError, ValueError) as exc:
+                raise CausalSnapshotError(f"IMAGE_RECONSTRUCTION_FAILED:{descriptor.get('field', index)}") from exc
         if descriptor["backend"] == "torch" and materialize_torch:
             import torch
 

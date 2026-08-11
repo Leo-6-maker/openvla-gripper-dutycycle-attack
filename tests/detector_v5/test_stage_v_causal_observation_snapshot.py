@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from PIL import Image
 
 from gripper_attack.stage_v_causal_observation_snapshot import (
     CausalSnapshotError,
@@ -42,6 +43,14 @@ def test_snapshot_tamper_fails_closed(tmp_path: Path) -> None:
     target.write_bytes(target.read_bytes() + b"x")
     with pytest.raises(CausalSnapshotError, match="ARRAY_BYTES_SHA_MISMATCH"):
         load_snapshot(tmp_path)
+
+
+def test_snapshot_roundtrip_preserves_pil_image_bytes(tmp_path: Path) -> None:
+    image = Image.frombytes("RGB", (2, 1), bytes((0, 1, 2, 3, 4, 5)))
+    payload = {"processed_image": image}
+    write_snapshot(tmp_path, payload, binding={"probe": "Q00"})
+    loaded = load_snapshot(tmp_path)
+    assert_exact(loaded["payload"], payload, label="pil_roundtrip")
 
 
 def test_primary_observation_digest_binding_fails_closed() -> None:
