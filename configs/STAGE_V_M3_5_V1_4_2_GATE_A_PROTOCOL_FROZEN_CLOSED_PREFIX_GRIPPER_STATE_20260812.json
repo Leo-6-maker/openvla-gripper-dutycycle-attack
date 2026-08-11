@@ -1,0 +1,82 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_A",
+  "version": "V1.4.2-GATE-A",
+  "protocol_revision": "CLOSED_CLEAN_GRIPPER_PRIMARY_WINDOW_AFTER_V1_4_1_GATE_B_HOLD",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "purpose": "ZERO_TREATMENT_CAUSAL_OBSERVATION_SNAPSHOT_REPLAY_CANARY_WITH_CLOSED_CLEAN_GRIPPER_PREFIX",
+  "source_binding": {
+    "runtime_commit": "73625bd3835eb1f1a45e20dc7deeff0be2389d8b",
+    "runtime_tree": "46b83828042c0bf7ea350fe445d9b0791c4e8fc0",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0",
+    "runtime_state_schema": "STAGE_V_CONTROLLER_WRAPPER_RUNTIME_STATE_V2"
+  },
+  "predecessor": {
+    "runtime_commit": "94af963f8d5a797eb17f557eddf2ae39e57eacb2",
+    "runtime_tree": "cddea2a161cb2b4b7c4d4c9a031905a312120e0c",
+    "sealed_root_reuse_prohibited": true,
+    "failure_class": "GATE_B_HOLD_SEALED_GOAL_TASK02_CONTROL_OPEN_REFERENCE"
+  },
+  "diagnostic_parent_selection": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V2_20260810T174118Z/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V2.json",
+    "sha256": "ab265b4e74597c46b16361b4eeae39e7ab7ff66d9fb5d0e1c46eb1f709fd76a9",
+    "selected_count": 8,
+    "selected_counts_by_suite": {"libero_10": 2, "libero_goal": 2, "libero_object": 2, "libero_spatial": 2},
+    "outcomes_read": false
+  },
+  "probe_plan_selection_version": "STAGE_V_M3_5_CORRIDOR_CLOSED_PREFIX_V2",
+  "probe_plan_rule": "raw_gripper <= 0.5 for every clean reference step in the T10 + H_phys primary window",
+  "exact_a800_regression": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_4_2_CLOSED_PREFIX_20260812T224000Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
+    "sha256": "6fc065f63bf40b33b2c4700acba5507a6c63b0106c8e3fe6c532bb0cfe25987d",
+    "status": "PASS",
+    "expected_collected": 224,
+    "source_commit": "73625bd3835eb1f1a45e20dc7deeff0be2389d8b",
+    "source_tree": "46b83828042c0bf7ea350fe445d9b0791c4e8fc0"
+  },
+  "static_audit_binding": {
+    "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_v1_4_static.py",
+    "auditor_script_sha256": "f587d5e8bbf178946a50c392d05813888db8938fb3066fdce95bb8c7e5b7d664",
+    "authorization_issuer_script_path": "scripts/detector_v5/issue_stage_v_m3_5_v1_4_runtime_authorization.py",
+    "authorization_issuer_script_sha256": "4a83defb9cf70db5c17bf06d76fd0b1e46369616781cdd14ef31ec53b32aa0bf",
+    "receipt_schema": "STAGE_V_M3_5_V1_4_STATIC_AUDIT_V1",
+    "authorization_receipt_schema": "STAGE_V_M3_5_V1_4_RUNTIME_AUTHORIZATION_V1",
+    "receipt_status": "REQUIRED_AFTER_PROTOCOL_FREEZE"
+  },
+  "identity_scope": {
+    "allowed": "historically exposed diagnostic identities only",
+    "selection_reads_branch_results": false,
+    "selection_reads_counterfactual_outcomes": false,
+    "future_v7_parents_allowed": false,
+    "eval160_allowed": false,
+    "suite_coverage": ["libero_object", "libero_spatial", "libero_goal", "libero_10"],
+    "preferred_parents_per_suite": 2
+  },
+  "operation": {
+    "intervention_executed": false,
+    "primary_input_authority": "loaded_frozen_canonical_bytes",
+    "fresh_render_equality_gate_used": false,
+    "fresh_render_diagnostic_allowed": true,
+    "fresh_render_primary_consumption": "HARD_STOP",
+    "native_policy_decode_in_primary_canary": false,
+    "matched_action_window": false
+  },
+  "snapshot": {
+    "schema": "STAGE_V_CAUSAL_PROBE_SNAPSHOT_V2",
+    "runtime_state_schema": "STAGE_V_CONTROLLER_WRAPPER_RUNTIME_STATE_V2",
+    "required_runtime_gripper_fields": ["current_action", "speed", "dof"],
+    "created_from": "canonical_clean_trajectory_at_probe_t",
+    "later_replay_reconstruction_as_authority": false,
+    "raw_authority": "uncompressed_sidecar_bytes",
+    "required_payload": ["full_simulator_state", "controller_and_wrapper_runtime_state", "required_rng_state", "raw_observation", "raw_observation_sha256", "canonical_policy_rgb_224", "processed_image", "processed_image_sha256", "input_ids", "pixel_values", "attention_mask", "attention_mask_present", "prompt", "decode_config", "clean_reference_action_window"]
+  },
+  "required_exact_checks": ["SIMULATOR_STATE_EXACT", "CONTROLLER_STATE_EXACT", "WRAPPER_STATE_EXACT", "GRIPPER_CURRENT_ACTION_EXACT", "GRIPPER_SPEED_EXACT", "GRIPPER_DOF_EXACT", "REQUIRED_RNG_STATE_EXACT", "RAW_OBSERVATION_EXACT", "CANONICAL_POLICY_RGB_EXACT", "PROCESSED_IMAGE_EXACT", "INPUT_IDS_EXACT", "PIXEL_VALUES_EXACT", "ATTENTION_MASK_EXACT_IF_PRESENT", "PROMPT_EXACT", "DECODE_CONFIG_EXACT", "REFERENCE_RAW_ACTION_EXACT", "REFERENCE_ENV_ACTION_EXACT", "NO_FRESH_RENDER_PRIMARY_CONSUMPTION"],
+  "pass_conditions": ["all selected snapshot packages load and verify", "all hard exact checks are 100 percent", "all robot gripper wrapper states are captured and restored exactly", "no intervention action is executed", "no fresh-rendered input is consumed by primary path", "protected_reads=0", "independent auditor PASS"],
+  "failure_action": {"status": "HOLD_CAUSAL_SNAPSHOT_INSUFFICIENT", "seal_root": true, "retry_same_root": false, "add_tolerance": false, "drop_component": false, "move_component_to_descriptive": false, "next_version_required": true},
+  "required_outputs": ["CAUSAL_SNAPSHOT_COMPONENT_INVENTORY.json", "CAUSAL_SNAPSHOT_SUFFICIENCY_AUDIT.json", "CAUSAL_PROBE_SNAPSHOT_SCHEMA.json", "CAUSAL_SNAPSHOT_STATIC_AUDIT.json", "M3_5_V1_4_GATE_A_RECEIPT.json", "M3_5_V1_4_GATE_A_INDEPENDENT_AUDIT.json"],
+  "protected_eval160": {"reads_allowed": false, "rollouts_allowed": false, "hard_stop": true},
+  "resource_contract": {"admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7], "excluded_gpu_indices": [], "minimum_free_memory_mib": 20480, "foreign_process_interference": false, "mujoco_egl_device_id": "admitted physical GPU index", "env_render_gpu_device_id": "admitted physical GPU index"},
+  "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
+}
