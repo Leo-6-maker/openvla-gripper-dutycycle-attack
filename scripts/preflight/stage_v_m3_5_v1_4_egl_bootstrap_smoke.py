@@ -89,6 +89,7 @@ def main(argv: list[str] | None = None) -> int:
     output = args.output.resolve()
     if output.exists():
         raise SystemExit(f"REFUSE_OVERWRITE:{output}")
+    output.parent.mkdir(parents=True, exist_ok=True)
     receipt: dict[str, Any] = {
         "schema": "STAGE_V_M3_5_V1_4_EGL_BOOTSTRAP_SMOKE_V1",
         "version": "V1.4",
@@ -204,7 +205,6 @@ def main(argv: list[str] | None = None) -> int:
         receipt["status"] = "FAIL"
     if receipt["source_status_after"] or receipt["protected_counters"] != COUNTERS or not receipt["protected_pid_alive_after"]:
         receipt["status"] = "FAIL"
-    output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(receipt, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
     output.with_name(output.name + ".sha256").write_text(f"{_sha(output)}  {output.name}\n", encoding="utf-8")
     print(json.dumps({"status": receipt["status"], "gpu": args.gpu, "simulator_steps": receipt["simulator_steps"], "reset_calls": receipt["smoke_reset_calls"], "step_calls": receipt["smoke_step_calls"], "uuid_source": receipt.get("torch_device_uuid_source")}, sort_keys=True))
