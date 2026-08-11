@@ -17,8 +17,8 @@
   },
   "requires": {
     "gate_a_status": "PASS",
-    "gate_a_receipt_sha256": null,
-    "gate_a_independent_audit_sha256": null,
+    "gate_a_receipt_sha256": "6ce99961da4ed8bd42f53cb870b58825cb862e4deaf622a93a51e4b73de8fbe2",
+    "gate_a_independent_audit_sha256": "fe990b8f920f8f5514261b6f166c9755408a9516eca0f26c710ed44b976aee97",
     "new_source_commit": true,
     "new_source_tree": true,
     "new_runtime_root": true
