@@ -10,6 +10,27 @@
     "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
     "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0"
   },
+  "model_binding": {
+    "selection": "suite-specific checkpoint; invocation must use the matching path",
+    "by_suite": {
+      "libero_10": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+        "tree_sha256": "4417b0f3c383f0b88c2f659471ada6b0d8ef138234441db43d180f9f963a5b9b"
+      },
+      "libero_goal": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+        "tree_sha256": "210c088fc888700884cce76ea14155da1c113e21dc7cc3b7b425d3e22839ef62"
+      },
+      "libero_object": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+        "tree_sha256": "6c8701d56115ef6ff534bc5cb779ec27f3dd69a06fd0bb535dbd1b2ac2780948"
+      },
+      "libero_spatial": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620",
+        "tree_sha256": "462fc2f03b6cc6696e1bef0403670565148103e0264d8ff62e5548ff9fac459d"
+      }
+    }
+  },
   "predecessor": {
     "runtime_commit": "d104713027a82eeb858ba9036200d7ab010959cc",
     "runtime_tree": "3f22ea412975f294b59bc569ef9fb896eff8d410",
