@@ -310,7 +310,12 @@ def _capture_value(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
         return [_capture_value(item) for item in value]
     if _array_bytes(value) is not None:
-        return value
+        if hasattr(value, "detach"):
+            return value.detach().cpu().contiguous().clone()
+        try:
+            return value.copy()
+        except (AttributeError, TypeError):
+            return np.asarray(value).copy()
     if hasattr(value, "flatten") and callable(value.flatten):
         try:
             return np.asarray(value.flatten())
