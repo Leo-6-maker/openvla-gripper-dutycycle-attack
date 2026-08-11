@@ -48,6 +48,7 @@ are independently verified:
 `src/gripper_attack/stage_v_causal_observation_snapshot.py` now provides:
 
 - exact raw array sidecars and dtype/shape/byte SHA descriptors;
+- explicit raw-observation, processed-input and policy-input digest rebinding;
 - simulator data plus registered flat-state capture;
 - manifest and sidecar checksum verification with fail-closed tamper errors;
 - runtime-state capture scaffolding for wrappers, observables, controllers,
@@ -79,8 +80,8 @@ The matched-action producer and independent audits are now also wired:
 - `scripts/detector_v5/audit_stage_v_m3_5_v1_4_gate_a.py` independently checks
   snapshot sidecars, exact payload fields, reference windows and zero treatment.
 - `scripts/detector_v5/audit_stage_v_m3_5_v1_4_gate_b.py` independently
-  recomputes branch accounting, treatment compliance, arm isolation, physical
-  classes and 3/3 repeatability for one parent.
+  recomputes branch accounting, treatment compliance, arm isolation, frozen
+  observation binding, physical classes and 3/3 repeatability for one parent.
 - `scripts/detector_v5/audit_stage_v_m3_5_v1_4_final.py` requires two valid
   parent roots per suite before it can emit `M3_5_LABEL_VALIDATION=PASS`.
 

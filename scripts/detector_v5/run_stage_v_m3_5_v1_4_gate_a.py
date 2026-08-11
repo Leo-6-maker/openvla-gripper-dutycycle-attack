@@ -32,6 +32,7 @@ from gripper_attack.stage_v_causal_observation_snapshot import (  # noqa: E402
     capture_rng_state,
     capture_runtime_state,
     capture_simulator_state,
+    assert_primary_observation_exact,
     load_snapshot,
     reference_action_window,
     restore_rng_state,
@@ -144,10 +145,16 @@ def _policy_capture(adapter: Any, get_libero_image: Any, obs: Any, task_label: s
     prompt = str(meta.get("prompt", ""))
     processed_image = meta.get("processed_image")
     decode_config = _decode_config(adapter, meta)
+    model_input_descriptor = {
+        "input_ids": model_inputs["input_ids"],
+        "pixel_values": model_inputs["pixel_values"],
+    }
+    if "attention_mask" in model_inputs:
+        model_input_descriptor["attention_mask"] = model_inputs["attention_mask"]
     policy_descriptor = {
         "prompt": prompt,
         "processed_image": canonical_value(processed_image),
-        "model_inputs": canonical_value(model_inputs),
+        "model_inputs": canonical_value(model_input_descriptor),
         "policy_rgb_224": canonical_value(image),
         "decode_config": decode_config,
     }
@@ -161,6 +168,7 @@ def _policy_capture(adapter: Any, get_libero_image: Any, obs: Any, task_label: s
         "input_ids": model_inputs["input_ids"],
         "pixel_values": model_inputs["pixel_values"],
         "attention_mask": model_inputs.get("attention_mask"),
+        "attention_mask_present": "attention_mask" in model_inputs,
         "prompt": prompt,
         "decode_config": decode_config,
         "policy_input_sha256": canonical_sha256(policy_descriptor),
@@ -233,11 +241,14 @@ def _snapshot_payload(capture: Mapping[str, Any], *, probe: Mapping[str, Any], s
         "required_rng_state": runtime["rng"],
         "episode_start_rng_state": episode_rng,
         "raw_observation": capture["raw_observation"],
+        "raw_observation_sha256": canonical_sha256(canonical_value(capture["raw_observation"])),
         "canonical_policy_rgb_224": capture["canonical_policy_rgb_224"],
+        "processed_image_sha256": canonical_sha256(canonical_value(capture["processed_image"])),
         "processed_image": capture["processed_image"],
         "input_ids": capture["input_ids"],
         "pixel_values": capture["pixel_values"],
         "attention_mask": capture["attention_mask"],
+        "attention_mask_present": capture["attention_mask_present"],
         "prompt": capture["prompt"],
         "decode_config": capture["decode_config"],
         "policy_input_sha256": capture["policy_input_sha256"],
@@ -249,6 +260,7 @@ def _snapshot_payload(capture: Mapping[str, Any], *, probe: Mapping[str, Any], s
 def _replay_canary(snapshot_root: Path, *, OffScreenRenderEnv: Any, bddl: str, horizon: int, init_state: Any, args: argparse.Namespace, output_dir: Path, clean_actions: list[list[float]], model: Any, adapter: Any) -> dict[str, Any]:
     loaded = load_snapshot(snapshot_root, materialize_torch=True)
     payload = loaded["payload"]
+    observation_hashes = assert_primary_observation_exact(payload)
     step = int(payload["probe"]["step"])
     restore_rng_state(payload["episode_start_rng_state"])
     env, _obs = _new_env(OffScreenRenderEnv, bddl, horizon, args.gpu, copy.deepcopy(init_state), args, output_dir)
@@ -267,10 +279,7 @@ def _replay_canary(snapshot_root: Path, *, OffScreenRenderEnv: Any, bddl: str, h
         replay_runtime_bound = capture_runtime_state(env, model=model, adapter=adapter)
         assert_exact(replay_simulator, payload["full_simulator_state"], label="simulator_state")
         assert_exact(replay_runtime_bound, payload["controller_and_wrapper_runtime_state"], label="runtime_state")
-        primary = {
-            key: payload[key]
-            for key in ("raw_observation", "canonical_policy_rgb_224", "processed_image", "input_ids", "pixel_values", "attention_mask", "prompt", "decode_config")
-        }
+        primary = {key: payload[key] for key in ("raw_observation", "canonical_policy_rgb_224", "processed_image", "input_ids", "pixel_values", "attention_mask", "prompt", "decode_config")}
         assert_exact(primary, {key: payload[key] for key in primary}, label="frozen_primary_input")
         primary_checks = {
             "raw_observation_exact": True,
@@ -289,6 +298,7 @@ def _replay_canary(snapshot_root: Path, *, OffScreenRenderEnv: Any, bddl: str, h
             "simulator_state_exact": True,
             "runtime_state_exact": True,
             "primary_exact_checks": primary_checks,
+            "primary_observation_hashes": observation_hashes,
             "primary_input_authority": "loaded_frozen_canonical_bytes",
             "fresh_render_equality_gate_used": False,
             "fresh_render_diagnostic_sha256": None,
@@ -323,7 +333,7 @@ def run(args: argparse.Namespace) -> int:
         "schema": "STAGE_V_CAUSAL_PROBE_SNAPSHOT_SCHEMA_V2",
         "snapshot_schema": "STAGE_V_CAUSAL_PROBE_SNAPSHOT_V2",
         "primary_authority": "uncompressed_sidecar_bytes",
-        "required_payload_fields": ["full_simulator_state", "controller_and_wrapper_runtime_state", "required_rng_state", "raw_observation", "canonical_policy_rgb_224", "processed_image", "input_ids", "pixel_values", "attention_mask", "prompt", "decode_config", "clean_reference_action_window"],
+        "required_payload_fields": ["full_simulator_state", "controller_and_wrapper_runtime_state", "required_rng_state", "raw_observation", "raw_observation_sha256", "canonical_policy_rgb_224", "processed_image", "processed_image_sha256", "input_ids", "pixel_values", "attention_mask", "attention_mask_present", "prompt", "decode_config", "clean_reference_action_window"],
         "source_commit": args.source_commit,
         "source_tree": args.source_tree,
         "fresh_render_equality_gate_used": False,

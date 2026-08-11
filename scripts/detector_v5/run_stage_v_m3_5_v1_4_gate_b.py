@@ -29,6 +29,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from gripper_attack.stage_v_causal_observation_snapshot import (  # noqa: E402
     CausalSnapshotError,
     assert_exact,
+    assert_primary_observation_exact,
     capture_runtime_state,
     capture_simulator_state,
     load_snapshot,
@@ -250,6 +251,7 @@ def _restore_probe_env(*, snapshot_root: Path, gate_a_root: Path, OffScreenRende
     loaded = load_snapshot(snapshot_root, materialize_torch=True)
     manifest = loaded["manifest"]
     payload = loaded["payload"]
+    observation_hashes = assert_primary_observation_exact(payload)
     step = int(payload["probe"]["step"])
     if manifest.get("binding", {}).get("parent_key") != args.parent_key or manifest.get("binding", {}).get("probe_id") != payload["probe"].get("probe_id"):
         raise M35RunnerError("SNAPSHOT_IDENTITY_BINDING_INVALID")
@@ -273,7 +275,12 @@ def _restore_probe_env(*, snapshot_root: Path, gate_a_root: Path, OffScreenRende
     except Exception:
         env.close()
         raise
-    return env, obs, payload, {"natural_runtime": natural_runtime, "bound_runtime": runtime}
+    return env, obs, payload, {
+        "natural_runtime": natural_runtime,
+        "bound_runtime": runtime,
+        "snapshot_manifest_sha256": _sha_file(snapshot_root / "CAUSAL_PROBE_SNAPSHOT_V2.json"),
+        "primary_observation_hashes": observation_hashes,
+    }
 
 
 def _run_branch(*, snapshot_root: Path, gate_a_root: Path, OffScreenRenderEnv: Any, bddl: str, horizon: int, init_state: Any, args: argparse.Namespace, output_dir: Path, clean_actions: Sequence[Sequence[float]], model: Any, adapter: Any, arm: str, dose: int, probe_id: str, repetition: int) -> dict[str, Any]:
@@ -374,6 +381,8 @@ def _run_branch(*, snapshot_root: Path, gate_a_root: Path, OffScreenRenderEnv: A
             "target_object_id": target_object_id,
             "runtime_state_sha256": canonical_sha256(canonical_value(runtime_receipt["bound_runtime"])),
             "natural_runtime_state_sha256": canonical_sha256(canonical_value(runtime_receipt["natural_runtime"])),
+            "snapshot_manifest_sha256": runtime_receipt["snapshot_manifest_sha256"],
+            "primary_observation_hashes": runtime_receipt["primary_observation_hashes"],
             "protected_counters": dict(EXPECTED_COUNTERS),
         }
     except Exception as exc:

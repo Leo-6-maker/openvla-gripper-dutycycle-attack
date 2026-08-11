@@ -56,7 +56,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     replay = _function(runner_tree, "_replay_canary")
     gate_b_primary = _function(gate_b_tree, "_run_branch")
     required_runner_calls = {"load_snapshot", "restore_rng_state", "capture_simulator_state", "capture_runtime_state", "assert_exact"}
-    required_snapshot_functions = {"write_snapshot", "load_snapshot", "capture_runtime_state", "capture_simulator_state", "restore_rng_state", "reference_action_window", "matched_action"}
+    required_snapshot_functions = {"write_snapshot", "load_snapshot", "capture_runtime_state", "capture_simulator_state", "restore_rng_state", "reference_action_window", "matched_action", "primary_observation_hashes", "assert_primary_observation_exact"}
     snapshot_names = {node.name for node in ast.walk(snapshot_tree) if isinstance(node, ast.FunctionDef)}
     primary_calls = _called_names(replay)
     gate_b_calls = _called_names(gate_b_primary)
@@ -73,6 +73,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "gate_b_primary_uses_matched_actions": "matched_action" in gate_b_calls,
         "gate_b_primary_does_not_decode_policy": "predict_action" not in gate_b_calls and "get_libero_image" not in gate_b_calls,
         "gate_b_primary_has_zero_fresh_render_consumption": '"fresh_render_primary_consumption": False' in gate_b_text,
+        "gate_b_auditor_rebinds_frozen_observation": "assert_primary_observation_exact" in gate_b_auditor_text and "snapshot_manifest_sha256" in gate_b_auditor_text,
         "independent_auditors_do_not_import_producer": "run_stage_v_m3_5_v1_4_gate" not in gate_a_auditor_text and "run_stage_v_m3_5_v1_4_gate" not in gate_b_auditor_text,
         "gate_b_required_outputs_bound": all(name in gate_b_text for name in ("TREATMENT_COMPLIANCE_AUDIT.json", "ARM_ISOLATION_AUDIT.json", "REPEATABILITY_AUDIT.json", "PHYSICAL_TAXONOMY_AUDIT.json", "M3_5_V1_4_GATE_B_RECEIPT.json")),
         "gate_a_schema_output_bound": "CAUSAL_PROBE_SNAPSHOT_SCHEMA.json" in runner_path.read_text(encoding="utf-8"),

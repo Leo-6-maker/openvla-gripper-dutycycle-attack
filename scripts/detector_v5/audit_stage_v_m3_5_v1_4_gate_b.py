@@ -14,6 +14,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from gripper_attack.stage_v_canonical_execution_core import canonical_value
+from gripper_attack.stage_v_causal_observation_snapshot import (
+    CausalSnapshotError,
+    assert_primary_observation_exact,
+    load_snapshot,
+)
 
 
 COUNTERS = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
@@ -195,6 +200,20 @@ def audit(root: Path, *, parent_key: str, source_commit: str, source_tree: str) 
         errors.append("PROTECTED_COUNTERS_NONZERO")
     if len(branches) != 288 or len(observations) != 216 or len(collapsed) != 72:
         errors.append(f"ACCOUNTING_INVALID:{len(branches)}/{len(observations)}/{len(collapsed)}")
+    expected_observations: dict[str, tuple[str, dict[str, str | None]]] = {}
+    gate_a_root = Path(str(receipt.get("gate_a_root", ""))).resolve()
+    try:
+        gate_a = _load(gate_a_root / "M3_5_V1_4_GATE_A_RECEIPT.json")
+        for snapshot in gate_a.get("snapshots", []):
+            probe_id = str(snapshot["probe_id"])
+            snapshot_root = gate_a_root / str(snapshot["path"])
+            loaded = load_snapshot(snapshot_root, materialize_torch=True)
+            expected_observations[probe_id] = (
+                _sha_file(snapshot_root / "CAUSAL_PROBE_SNAPSHOT_V2.json"),
+                assert_primary_observation_exact(loaded["payload"]),
+            )
+    except (OSError, KeyError, TypeError, ValueError, CausalSnapshotError) as exc:
+        errors.append(f"GATE_A_OBSERVATION_BINDING_READ_FAIL:{type(exc).__name__}:{exc}")
     by_identity: dict[tuple[str, int, str], Mapping[str, Any]] = {}
     controls: dict[tuple[str, int], Mapping[str, Any]] = {}
     for row in branches:
@@ -205,6 +224,9 @@ def audit(root: Path, *, parent_key: str, source_commit: str, source_tree: str) 
         by_identity[key] = branch
         if str(row.get("canonical_parent_key")) != parent_key or branch.get("status") != "PASS" or branch.get("causal_input_binding_pass") is not True or branch.get("primary_input_authority") != "loaded_frozen_canonical_bytes" or branch.get("fresh_render_primary_consumption") is not False or branch.get("native_policy_calls_in_primary_window") != 0:
             errors.append(f"BRANCH_CAUSAL_GATE_INVALID:{key}")
+        expected_observation = expected_observations.get(str(row.get("probe_id")))
+        if expected_observation is None or branch.get("snapshot_manifest_sha256") != expected_observation[0] or branch.get("primary_observation_hashes") != expected_observation[1]:
+            errors.append(f"BRANCH_OBSERVATION_BINDING_INVALID:{key}")
         expected_branch_sha = _sha_json(canonical_value(branch))
         if row.get("branch_result_sha256") != expected_branch_sha:
             errors.append(f"BRANCH_SHA_INVALID:{key}")

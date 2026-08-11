@@ -24,6 +24,16 @@ SNAPSHOT_FILENAME = "CAUSAL_PROBE_SNAPSHOT_V2.json"
 SNAPSHOT_SHA_FILENAME = "CAUSAL_PROBE_SNAPSHOT_V2.json.sha256"
 ARRAY_DESCRIPTOR_SCHEMA = "STAGE_V_CAUSAL_ARRAY_DESCRIPTOR_V1"
 ARRAY_MARKER = "__causal_array__"
+PRIMARY_OBSERVATION_FIELDS = (
+    "raw_observation",
+    "canonical_policy_rgb_224",
+    "processed_image",
+    "input_ids",
+    "pixel_values",
+    "attention_mask",
+    "prompt",
+    "decode_config",
+)
 
 
 class CausalSnapshotError(RuntimeError):
@@ -187,6 +197,45 @@ def load_snapshot(root: Path, *, materialize_torch: bool = False) -> dict[str, A
 def assert_exact(actual: Any, expected: Any, *, label: str) -> None:
     if canonical_value(actual) != canonical_value(expected):
         raise CausalSnapshotError(f"EXACT_BINDING_MISMATCH:{label}")
+
+
+def primary_observation_hashes(payload: Mapping[str, Any]) -> dict[str, str | None]:
+    """Recompute the exact frozen observation/input digests from loaded bytes."""
+    missing = [field for field in PRIMARY_OBSERVATION_FIELDS if field not in payload]
+    if missing:
+        raise CausalSnapshotError(f"PRIMARY_OBSERVATION_FIELDS_MISSING:{','.join(missing)}")
+    model_inputs = {
+        "input_ids": payload["input_ids"],
+        "pixel_values": payload["pixel_values"],
+    }
+    if bool(payload.get("attention_mask_present", payload["attention_mask"] is not None)):
+        model_inputs["attention_mask"] = payload["attention_mask"]
+    descriptor = {
+        "prompt": payload["prompt"],
+        "processed_image": canonical_value(payload["processed_image"]),
+        "model_inputs": canonical_value(model_inputs),
+        "policy_rgb_224": canonical_value(payload["canonical_policy_rgb_224"]),
+        "decode_config": payload["decode_config"],
+    }
+    return {
+        "raw_observation_sha256": canonical_sha256(canonical_value(payload["raw_observation"])),
+        "policy_rgb_224_sha256": canonical_sha256(canonical_value(payload["canonical_policy_rgb_224"])),
+        "processed_image_sha256": canonical_sha256(canonical_value(payload["processed_image"])),
+        "input_ids_sha256": canonical_sha256(canonical_value(payload["input_ids"])),
+        "pixel_values_sha256": canonical_sha256(canonical_value(payload["pixel_values"])),
+        "attention_mask_sha256": canonical_sha256(canonical_value(payload["attention_mask"])) if payload["attention_mask"] is not None else None,
+        "policy_input_sha256": canonical_sha256(descriptor),
+    }
+
+
+def assert_primary_observation_exact(payload: Mapping[str, Any]) -> dict[str, str | None]:
+    """Fail closed if loaded primary bytes do not match their frozen digests."""
+    hashes = primary_observation_hashes(payload)
+    for name, actual in hashes.items():
+        expected = payload.get(name)
+        if expected is not None and actual != expected:
+            raise CausalSnapshotError(f"EXACT_BINDING_MISMATCH:{name}")
+    return hashes
 
 
 def capture_rng_state() -> dict[str, Any]:

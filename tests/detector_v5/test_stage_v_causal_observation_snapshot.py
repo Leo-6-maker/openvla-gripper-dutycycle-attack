@@ -9,6 +9,7 @@ import pytest
 from gripper_attack.stage_v_causal_observation_snapshot import (
     CausalSnapshotError,
     assert_exact,
+    assert_primary_observation_exact,
     capture_runtime_state,
     capture_simulator_state,
     load_snapshot,
@@ -41,6 +42,24 @@ def test_snapshot_tamper_fails_closed(tmp_path: Path) -> None:
     target.write_bytes(target.read_bytes() + b"x")
     with pytest.raises(CausalSnapshotError, match="ARRAY_BYTES_SHA_MISMATCH"):
         load_snapshot(tmp_path)
+
+
+def test_primary_observation_digest_binding_fails_closed() -> None:
+    payload = {
+        "raw_observation": {"agentview_image": np.zeros((2, 2, 3), dtype=np.uint8)},
+        "canonical_policy_rgb_224": np.zeros((2, 2, 3), dtype=np.uint8),
+        "processed_image": np.asarray([1.0], dtype=np.float32),
+        "input_ids": np.asarray([[1, 2]], dtype=np.int64),
+        "pixel_values": np.asarray([[[[0.25]]]], dtype=np.float32),
+        "attention_mask": None,
+        "prompt": "pick",
+        "decode_config": {"do_sample": False},
+    }
+    payload.update(assert_primary_observation_exact({**payload, **{}}))
+    assert_primary_observation_exact(payload)
+    payload["prompt"] = "tampered"
+    with pytest.raises(CausalSnapshotError, match="policy_input_sha256"):
+        assert_primary_observation_exact(payload)
 
 
 def test_runtime_capture_records_controller_wrapper_observable_and_rng_state() -> None:

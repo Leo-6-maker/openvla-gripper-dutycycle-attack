@@ -13,7 +13,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from gripper_attack.stage_v_canonical_execution_core import canonical_value
-from gripper_attack.stage_v_causal_observation_snapshot import CausalSnapshotError, load_snapshot
+from gripper_attack.stage_v_causal_observation_snapshot import (
+    CausalSnapshotError,
+    assert_primary_observation_exact,
+    load_snapshot,
+)
 
 
 COUNTERS = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
@@ -23,11 +27,14 @@ REQUIRED_PAYLOAD = {
     "controller_and_wrapper_runtime_state",
     "required_rng_state",
     "raw_observation",
+    "raw_observation_sha256",
     "canonical_policy_rgb_224",
     "processed_image",
+    "processed_image_sha256",
     "input_ids",
     "pixel_values",
     "attention_mask",
+    "attention_mask_present",
     "prompt",
     "decode_config",
     "clean_reference_action_window",
@@ -91,6 +98,7 @@ def _audit(root: Path, *, parent_key: str, source_commit: str, source_tree: str)
         if not isinstance(row, Mapping):
             errors.append(f"SNAPSHOT_ROW_INVALID:{index}")
             continue
+        observation_hashes = None
         try:
             snapshot_root = _inside(root, row.get("path"))
             loaded = load_snapshot(snapshot_root, materialize_torch=True)
@@ -104,6 +112,7 @@ def _audit(root: Path, *, parent_key: str, source_commit: str, source_tree: str)
                 errors.append(f"SNAPSHOT_PRIMARY_AUTHORITY_INVALID:{index}")
             if not REQUIRED_PAYLOAD.issubset(payload):
                 errors.append(f"SNAPSHOT_PAYLOAD_FIELDS_MISSING:{index}")
+            observation_hashes = assert_primary_observation_exact(payload)
             runtime = payload.get("controller_and_wrapper_runtime_state", {})
             if not isinstance(runtime, Mapping) or not isinstance(runtime.get("rng"), Mapping) or _sha_json(canonical_value(runtime.get("rng"))) != _sha_json(canonical_value(payload.get("required_rng_state"))):
                 errors.append(f"RNG_BINDING_MISMATCH:{index}")
@@ -130,6 +139,8 @@ def _audit(root: Path, *, parent_key: str, source_commit: str, source_tree: str)
             checks = canary.get("primary_exact_checks", {}) if isinstance(canary, Mapping) else {}
             if not isinstance(checks, Mapping) or not checks or not all(value is True for value in checks.values()):
                 errors.append(f"CANARY_EXACT_CHECKS_INVALID:{index}")
+            if not isinstance(canary, Mapping) or canary.get("primary_observation_hashes") != observation_hashes:
+                errors.append(f"CANARY_OBSERVATION_BINDING_INVALID:{index}")
     result = {
         "schema": "STAGE_V_M3_5_V1_4_GATE_A_INDEPENDENT_AUDIT_V1",
         "status": "PASS" if not errors else "FAIL",
