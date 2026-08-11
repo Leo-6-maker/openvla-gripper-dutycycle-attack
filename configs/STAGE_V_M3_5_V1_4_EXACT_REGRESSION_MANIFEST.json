@@ -35,7 +35,7 @@
     "src/gripper_attack/stage_v_*.py",
     "tests/detector_v5/test_stage_v*.py"
   ],
-  "expected_collected": 219,
+  "expected_collected": 220,
   "cuda_visible_devices": "",
   "protected_counters": {
     "protected_reads": 0,
