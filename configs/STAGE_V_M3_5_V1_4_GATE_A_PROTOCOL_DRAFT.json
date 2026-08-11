@@ -1,0 +1,114 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_A",
+  "version": "V1.4-GATE-A",
+  "status": "DRAFT_NOT_FROZEN",
+  "runtime_authorized": false,
+  "purpose": "ZERO_TREATMENT_CAUSAL_OBSERVATION_SNAPSHOT_REPLAY_CANARY",
+  "predecessor": {
+    "runtime_commit": "d104713027a82eeb858ba9036200d7ab010959cc",
+    "runtime_tree": "3f22ea412975f294b59bc569ef9fb896eff8d410",
+    "protocol_sha256": "2e3364e5e86894ff7b5b9300dbc03875d1e9b5acb10f923ec798b4d06babba41",
+    "sealed_root_reuse_prohibited": true
+  },
+  "source_binding": {
+    "status": "PENDING_NEW_IMPLEMENTATION_FREEZE",
+    "runtime_commit": null,
+    "runtime_tree": null,
+    "protocol_sha256": null
+  },
+  "identity_scope": {
+    "allowed": "historically exposed diagnostic identities only",
+    "selection_reads_branch_results": false,
+    "selection_reads_counterfactual_outcomes": false,
+    "future_v7_parents_allowed": false,
+    "eval160_allowed": false,
+    "suite_coverage": ["libero_object", "libero_spatial", "libero_goal", "libero_10"],
+    "preferred_parents_per_suite": 2
+  },
+  "operation": {
+    "intervention_executed": false,
+    "primary_input_authority": "loaded_frozen_canonical_bytes",
+    "fresh_render_equality_gate_used": false,
+    "fresh_render_diagnostic_allowed": true,
+    "fresh_render_primary_consumption": "HARD_STOP",
+    "native_policy_decode_in_primary_canary": false,
+    "matched_action_window": false
+  },
+  "required_exact_checks": [
+    "SIMULATOR_STATE_EXACT",
+    "CONTROLLER_STATE_EXACT",
+    "WRAPPER_STATE_EXACT",
+    "REQUIRED_RNG_STATE_EXACT",
+    "RAW_OBSERVATION_EXACT",
+    "CANONICAL_POLICY_RGB_EXACT",
+    "PROCESSED_IMAGE_EXACT",
+    "INPUT_IDS_EXACT",
+    "PIXEL_VALUES_EXACT",
+    "ATTENTION_MASK_EXACT_IF_PRESENT",
+    "PROMPT_EXACT",
+    "DECODE_CONFIG_EXACT",
+    "REFERENCE_RAW_ACTION_EXACT",
+    "REFERENCE_ENV_ACTION_EXACT",
+    "NO_FRESH_RENDER_PRIMARY_CONSUMPTION"
+  ],
+  "snapshot": {
+    "schema": "STAGE_V_CAUSAL_PROBE_SNAPSHOT_V2",
+    "created_from": "canonical_clean_trajectory_at_probe_t",
+    "later_replay_reconstruction_as_authority": false,
+    "raw_authority": "uncompressed_sidecar_bytes",
+    "required_payload": [
+      "full_simulator_state",
+      "controller_and_wrapper_runtime_state",
+      "required_rng_state",
+      "raw_observation",
+      "canonical_policy_rgb_224",
+      "processed_image",
+      "input_ids",
+      "pixel_values",
+      "attention_mask_if_present",
+      "prompt",
+      "decode_config",
+      "clean_reference_action_window"
+    ]
+  },
+  "pass_conditions": [
+    "all selected snapshot packages load and verify",
+    "all hard exact checks are 100 percent",
+    "no intervention action is executed",
+    "no fresh-rendered input is consumed by primary path",
+    "protected_reads=0",
+    "eval160_reads=0",
+    "independent auditor PASS"
+  ],
+  "failure_action": {
+    "status": "HOLD_CAUSAL_SNAPSHOT_INSUFFICIENT",
+    "seal_root": true,
+    "retry_same_root": false,
+    "add_tolerance": false,
+    "drop_component": false,
+    "move_component_to_descriptive": false,
+    "next_version_required": true
+  },
+  "required_outputs": [
+    "CAUSAL_SNAPSHOT_COMPONENT_INVENTORY.json",
+    "CAUSAL_SNAPSHOT_SUFFICIENCY_AUDIT.json",
+    "CAUSAL_PROBE_SNAPSHOT_SCHEMA.json",
+    "CAUSAL_SNAPSHOT_STATIC_AUDIT.json",
+    "M3_5_V1_4_GATE_A_RECEIPT.json",
+    "M3_5_V1_4_GATE_A_INDEPENDENT_AUDIT.json"
+  ],
+  "resource_contract": {
+    "one_project_worker_per_physical_gpu": true,
+    "foreign_process_interference": false,
+    "partial_fleet_allowed": true,
+    "gpu_identity_recorded": true,
+    "atomic_leases": true,
+    "throughput_is_not_a_gate": true
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  }
+}

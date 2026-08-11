@@ -1,0 +1,75 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_B",
+  "version": "V1.4-GATE-B",
+  "status": "DRAFT_NOT_FROZEN",
+  "runtime_authorized": false,
+  "purpose": "MATCHED_ACTION_PRIMARY_PHYSICAL_COUNTERFACTUAL_DIAGNOSTIC",
+  "requires": {
+    "gate_a_status": "PASS",
+    "gate_a_receipt_sha256": null,
+    "gate_a_independent_audit_sha256": null,
+    "new_source_commit": true,
+    "new_source_tree": true,
+    "new_runtime_root": true
+  },
+  "operation": {
+    "primary_window": "T_plus_H_phys",
+    "native_closed_loop_policy_in_primary_window": false,
+    "primary_estimand": "V_phys under registered gripper OPEN with clean non-gripper action reference fixed",
+    "secondary_native_closed_loop_after_primary_freeze": true,
+    "fresh_render_equality_gate_used": false,
+    "fresh_render_primary_consumption": "HARD_STOP"
+  },
+  "matrix": {
+    "scope": "historically exposed diagnostics only",
+    "repetitions": 3,
+    "conditions": ["CONTROL", "T3", "T5", "T10"],
+    "fresh_process_per_repetition": true,
+    "shared_mutable_runtime_state_across_repetitions": false
+  },
+  "control": {
+    "action_source": "canonical_clean_reference_env_action",
+    "arm_delta_linf": 0.0,
+    "gripper": "canonical_clean_reference_gripper"
+  },
+  "treatment": {
+    "action_source": "canonical_clean_reference_arm_plus_registered_open_gripper",
+    "arm_delta_linf": 0.0,
+    "after_dose": "return_to_canonical_clean_reference_action_replay_until_primary_window_end",
+    "native_policy_resume": "secondary_only_after_V_phys_freezes"
+  },
+  "required_exact_checks": [
+    "CAUSAL_SNAPSHOT_HARD_GATES",
+    "REFERENCE_ACTION_EXACT",
+    "TREATMENT_COMPLIANCE",
+    "ARM_ISOLATION",
+    "CONTROL_VALIDITY",
+    "PHYSICAL_TAXONOMY",
+    "REPEATABILITY_3_OF_3",
+    "FOUR_SUITE_DIAGNOSTIC_COVERAGE",
+    "INDEPENDENT_AUDIT"
+  ],
+  "abstain_classes": [
+    "CONTROL_CONTAMINATION",
+    "TREATMENT_NONCOMPLIANCE",
+    "STATE_RESTORE_INVALID",
+    "CAUSAL_INPUT_INVALID",
+    "HORIZON_CENSORED",
+    "PHYSICAL_AMBIGUITY",
+    "NON_GRIPPER_FAILURE",
+    "ENGINEERING_INVALID"
+  ],
+  "repeatability": {
+    "required": "3_of_3_same_registered_physical_outcome_class",
+    "majority_vote_allowed": false,
+    "failure_status": "HOLD_STOCHASTIC_INTERVENTION_OUTCOME"
+  },
+  "pass_unlocks": "M3_5_LABEL_VALIDATION_PASS",
+  "failure_action": "seal_classify_handoff_stop",
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  }
+}

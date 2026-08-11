@@ -1,0 +1,47 @@
+{
+  "checks": {
+    "fresh_render_gate_literal_false": true,
+    "fresh_render_primary_hard_stop": true,
+    "protected_counters_zero": true,
+    "protocol_is_draft_or_frozen": true,
+    "protocol_schema": true,
+    "runner_has_exact_replay_calls": true,
+    "runner_primary_does_not_call_renderer": true,
+    "snapshot_helpers_present": true,
+    "source_binding_is_not_predecessor": true
+  },
+  "next_action": "KEEP_PROTOCOL_DRAFT_AND_DO_NOT_LAUNCH",
+  "primary_replay_calls": [
+    "M35RunnerError",
+    "_new_env",
+    "assert_exact",
+    "bool",
+    "canonical_sha256",
+    "canonical_value",
+    "capture_runtime_state",
+    "capture_simulator_state",
+    "close",
+    "deepcopy",
+    "dict",
+    "int",
+    "len",
+    "load_snapshot",
+    "range",
+    "restore_rng_state",
+    "step"
+  ],
+  "protected_counters": {
+    "attack_rollouts": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "runner_sha256": "9d8abf5bdf4aa3e3beaa2503e2252fd71fbb866d6a70ded7e6d7b503eac49d38",
+  "runtime_authorized": false,
+  "runtime_executed": false,
+  "schema": "STAGE_V_M3_5_V1_4_STATIC_AUDIT_V1",
+  "snapshot_module_sha256": "45330e1ec4755f1599c8d0c35c4fb05fff5d0d2e3d77bb39073a39b40ee7c291",
+  "source_commit": "f7de0ef36ca96bbf2c10b13cc757db85531c638a",
+  "source_tree": "df25b59f3f7dec5c78fedc7038260b2d3cde1f28",
+  "status": "PASS_STATIC_DESIGN_ONLY"
+}
