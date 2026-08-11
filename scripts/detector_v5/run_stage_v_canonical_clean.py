@@ -178,8 +178,15 @@ def _load_policy(args: argparse.Namespace, get_processor: Any, get_model: Any, a
 def _render_binding_ids(env: Any) -> tuple[int | None, int | None]:
     observed: int | None = None
     context_observed: int | None = None
-    context = getattr(getattr(env, "sim", None), "render_context", None)
-    for obj in (env, getattr(env, "sim", None), context):
+    # LIBERO's OffScreenRenderEnv stores the physical binding on its wrapped
+    # robosuite environment, not always on the top-level wrapper.
+    inner = getattr(env, "env", None)
+    sim = getattr(inner, "sim", None) if inner is not None else None
+    if sim is None:
+        sim = getattr(env, "sim", None)
+    context = getattr(sim, "render_context", None)
+    objects = (env, inner, sim, context)
+    for obj in objects:
         for name in ("render_gpu_device_id", "gpu_device_id", "device_id"):
             value = getattr(obj, name, None) if obj is not None else None
             if value is None:
@@ -200,6 +207,10 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
 
     observed, context_observed = _render_binding_ids(env)
     env_device_attribute = getattr(env, "render_gpu_device_id", None)
+    env_device_attribute_source = "env.render_gpu_device_id"
+    if env_device_attribute is None:
+        env_device_attribute = getattr(getattr(env, "env", None), "render_gpu_device_id", None)
+        env_device_attribute_source = "env.env.render_gpu_device_id"
     env_device = env_device_attribute
     try:
         env_device = int(env_device)
@@ -232,7 +243,7 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
         "mujoco_egl_device_id": os.environ.get("MUJOCO_EGL_DEVICE_ID"),
         "env_render_gpu_device_id": env_device,
         "env_render_gpu_device_id_attribute_present": env_device_attribute is not None,
-        "egl_binding_source": "env.render_gpu_device_id" if env_device_attribute is not None else "renderer_device_observation",
+        "egl_binding_source": env_device_attribute_source if env_device_attribute is not None else "renderer_device_observation",
         "render_context_observed_device_id": context_observed,
         "renderer_device_information": {
             "env_class": type(env).__name__,
