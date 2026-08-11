@@ -1,6 +1,6 @@
 {
   "schema": "STAGE_V_V7_FRESH_QUALIFICATION_PROTOCOL_V1",
-  "version": "V7-FRESH-QUALIFICATION-V1.1",
+  "version": "V7-FRESH-QUALIFICATION-V1.2",
   "status": "FROZEN_RUNTIME_AUTHORIZED",
   "purpose": "FRESH_CLEAN_AB_QUALIFICATION_AFTER_M3_5_PASS",
   "source_binding": {
@@ -25,7 +25,11 @@
     "failed_exclusion_manifest": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_QUALIFICATION_20260812T004000Z/V7_FAILED_CLEAN_ATTEMPT_EXCLUSION.json",
     "failed_exclusion_manifest_sha256": "9f134bb7792d3c464947f43133d6531c1592613da6f854be048ed5f157cafa6d",
     "failed_identity_count": 240,
-    "resume_or_reuse_allowed": false
+    "resume_or_reuse_allowed": false,
+    "next_failed_attempt_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_QUALIFICATION_V1_1_20260812T014000Z",
+    "next_failure_seal_sha256": "3088195a9c2747ad75ec32002462ffbd24e062eb50c5b322ed3d113a93da0dba",
+    "next_failed_exclusion_manifest_sha256": "63664355110ebe4cab818270f046e265eba8f591bb7438022fd0c19b226f7537",
+    "next_failed_identity_count": 120
   },
   "freshness": {
     "g10_manifest": {
@@ -42,16 +46,16 @@
       "m35_status": "PASS"
     },
     "clean_attempt_union": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V4_POST_V7_FAIL_20260812T011500Z.json",
-      "sha256": "186f3e27343fac6ffa57246a4b4e3a7a1c3b7c51caa6b567fa0958c57683b68e",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V5_POST_V7_FAIL2_20260812T021000Z.json",
+      "sha256": "4bc67f48fb3c939434745b6f4a7493e9016fe0745345778eb148b9f8133e07fa",
       "schema": "STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2",
       "status": "PASS",
-      "excluded_parent_count": 597,
-      "failed_v7_identities_included": 240
+      "excluded_parent_count": 717,
+      "failed_v7_identities_included": 360
     },
     "candidate_pool": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_G10_FRESH_CANDIDATE_POOL_V4_POST_V7_FAIL_20260812T012000Z.json",
-      "sha256": "28e87e1cce31e2a7eb425798e3e622f564dd2087e3b4e34fc78afcb20cb02c40",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_G10_FRESH_CANDIDATE_POOL_V5_POST_V7_FAIL2_20260812T022000Z.json",
+      "sha256": "ffa43027cfb562224fb9a3a4d43c21ead23a309744173198e8dc97d472ed33bd",
       "schema": "D8_STAGE_V_CLEAN_PROBE_CANDIDATE_POOL_V1",
       "candidate_count": 240,
       "candidates_per_suite": 60,
@@ -60,8 +64,8 @@
       "protected_eval_reads": 0
     },
     "selected_manifest": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_CLEAN_QUALIFICATION_CANDIDATE_MANIFEST_V2_POST_V7_FAIL_20260812T013000Z.json",
-      "sha256": "55f17f649a3fa191a4bc42ad3b47c19c45452e60fecd6d161d0d521df03ad8aa",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_CLEAN_QUALIFICATION_CANDIDATE_MANIFEST_V3_POST_V7_FAIL2_20260812T023000Z.json",
+      "sha256": "0e3b076410ca17b2cf233a54ba825a9f4a42a8602816a1d52b5230d9c0a1386c",
       "schema": "STAGE_V_DYNAMIC_CLEAN_QUALIFICATION_CANDIDATE_MANIFEST_V1",
       "status": "FROZEN",
       "fresh_candidate_count": 240,
@@ -72,8 +76,8 @@
         "libero_spatial": 60
       }
     },
-    "salt": "576b49b8fd05cca6dcc20a85e9e16df1",
-    "source_clean_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_CLEAN_SOURCE_V2_20260812T013000Z",
+    "salt": "b73aa1b1496bb3231cc46fe1b4f49dec",
+    "source_clean_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_CLEAN_SOURCE_V3_20260812T023000Z",
     "old_artifacts_reused": false,
     "source_artifacts_modified": false,
     "selection_before_new_rollouts": true,
@@ -84,12 +88,13 @@
     "worker_sha256": "a8e230f1ef10f51ee61c847c49969b444ab57697ac7312100b06e64d03491311",
     "worker_commit": "943b02749dce4414ec6791b15ceec87dbd3be1ba",
     "worker_tree": "07a4efa9663edf415c957374e86d12db30854fbe",
-    "upstream_root": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream",
+    "upstream_root": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4",
     "upstream_commit": "c8f03f48af692657d3060c19588038c7220e9af9",
     "upstream_tree": "c326be57bb61629a3efd2b968ef141fa576a623f",
-    "provenance_source": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/provenance/UPSTREAM_PROVENANCE.json",
-    "provenance_source_sha256": "506cf28ad5ebedaa96ebd10de0a166b7c77458e612a55df92b1b7189d1d49291",
-    "runner_command_template": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800.pre_official_align_20260723/bin/python /mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m35-v1_4-regression-d9bbdaa7/scripts/detector_v5/run_stage_v_clean_replay_frozen.py --candidate-path {candidate_path} --output-dir {output_dir} --replicate {replicate} --gpu {gpu} --worker-id stage-v-v7-clean --worker-script /mnt/sdc/dty_user/openvla_attack_official_v3_legacy_20260716/scripts/official_clean_worker.py --provenance-source /mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/provenance/UPSTREAM_PROVENANCE.json --upstream-root /mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream --source-commit {source_commit} --source-tree {source_tree} --seed 7"
+    "provenance_source": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_PROVENANCE_V2_20260812T020000Z/UPSTREAM_PROVENANCE.json",
+    "provenance_source_sha256": "43739aeaefc677067c87226b4db9af32813ac66c841b5a2251d23acfecae6869",
+    "provenance_source_original_sha256": "506cf28ad5ebedaa96ebd10de0a166b7c77458e612a55df92b1b7189d1d49291",
+    "runner_command_template": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800.pre_official_align_20260723/bin/python /mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m35-v1_4-regression-d9bbdaa7/scripts/detector_v5/run_stage_v_clean_replay_frozen.py --candidate-path {candidate_path} --output-dir {output_dir} --replicate {replicate} --gpu {gpu} --worker-id stage-v-v7-clean --worker-script /mnt/sdc/dty_user/openvla_attack_official_v3_legacy_20260716/scripts/official_clean_worker.py --provenance-source /mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_PROVENANCE_V2_20260812T020000Z/UPSTREAM_PROVENANCE.json --upstream-root /mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4 --source-commit {source_commit} --source-tree {source_tree} --seed 7"
   },
   "qualification": {
     "mode": "FRESH_CLEAN_AB_REPLAY",
