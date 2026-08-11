@@ -1,0 +1,113 @@
+{
+  "schema": "STAGE_V_V7_FRESH_QUALIFICATION_PROTOCOL_V1_4",
+  "version": "V7-FRESH-QUALIFICATION-V1.4",
+  "status": "FROZEN_DESIGN_ONLY",
+  "purpose": "Fresh clean A/B qualification after M3.5 PASS using the corrected terminal-observation contract.",
+  "predecessor": {
+    "m3_5_status": "PASS",
+    "m3_5_final_receipt_sha256": "b10438583535080796ddf8374fd2fd32306dfeb72c4f6aae511a9f6d92f7d0ac",
+    "m3_5_independent_audit_sha256": "8d95c8e2bef241a260b749b5a40b8c132d8aba2591b5853c9148a3f9d33e8ac4",
+    "m3_5_label_count": 576,
+    "v1_3_4_reuse_prohibited": true,
+    "v7_3_root_reuse_prohibited": true,
+    "v7_3_failure_seal_sha256": "ffce29d29ecfdb73a8d3645e6575608c30b3d42ff5d115233108825a06c21774"
+  },
+  "source_binding": {
+    "runtime_commit": "17fb76971da28dc9a61aaead52cebea62b653a46",
+    "runtime_tree": "6efec29765121710456ae93ffe292965490022bf",
+    "worker_commit": "943b027049dce4414ec6791b15ceec87dbd3be1ba",
+    "worker_tree": "07a4efa9663edf415c957374e86d12db30854fbe",
+    "worker_sha256": "a8e230f1ef10f51ee61c847c49969b444ab57697ac7312100b06e64d03491311",
+    "upstream_commit": "c8f03f48af692657d3060c19588038c7220e9af9",
+    "upstream_tree": "c326be57bb61629a3efd2b968ef141fa576a623f",
+    "attention_implementation": "eager",
+    "terminal_gate_fix_commit": "17fb76971da28dc9a61aaead52cebea62b653a46"
+  },
+  "freshness": {
+    "g10_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json",
+      "sha256": "06bd43fe5666b6bacb763e0ae7dbba12ef317911ba923b469dab8628cc8bb7ef",
+      "identity_count": 1200
+    },
+    "exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V5_POST_M35_20260811T162000Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V5.json",
+      "sha256": "2ef448f172dc2c8fa2304a6772a7024d76391ed2f6cbca1fc8e79b8a6425dd5a",
+      "excluded_count": 53
+    },
+    "clean_attempt_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V7_POST_V7_FAIL4_20260812T212000Z.json",
+      "sha256": "b6576ca6f3ea6ebee9b6a2159018ead81eda5eef3bec2f016d5786ad3c05f918",
+      "excluded_count": 887,
+      "overlap_count": 0
+    },
+    "candidate_pool": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_G10_FRESH_CANDIDATE_POOL_V7_POST_V7_FAIL4_20260812T083500Z.json",
+      "sha256": "287a3179ee9008327fe6556c60735ed7f08502f0d2a024674b3ef6ef25b23854",
+      "candidate_count": 160,
+      "candidates_per_suite": 40
+    },
+    "selected_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_CLEAN_QUALIFICATION_CANDIDATE_MANIFEST_V5_POST_V7_FAIL4_20260812T084000Z.json",
+      "sha256": "fb12502883a3b44fc58fb0ee37b075b8a1b0f5ee270c06c4b92d869945fba311",
+      "candidate_count": 160,
+      "candidate_counts_by_suite": {
+        "libero_10": 40,
+        "libero_goal": 40,
+        "libero_object": 40,
+        "libero_spatial": 40
+      }
+    },
+    "salt": "4a8b2c1d6e7f8091a2b3c4d5e6f70819",
+    "source_clean_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_CLEAN_SOURCE_V5_20260812T084000Z",
+    "selection_before_new_rollouts": true,
+    "outcome_blind": true,
+    "old_artifacts_reused": false,
+    "source_artifacts_modified": false
+  },
+  "qualification": {
+    "mode": "FRESH_CLEAN_AB_REPLAY",
+    "replicates": ["A", "B"],
+    "initial_per_suite": 10,
+    "batch_size": 10,
+    "target_per_suite": 10,
+    "required_suite_coverage": ["libero_10", "libero_goal", "libero_object", "libero_spatial"],
+    "clean_success_required_for_both": true,
+    "initial_state_identity_exact": true,
+    "terminal_hash_equality_hard_gate": false,
+    "terminal_outcome_equality_hard_gate": false,
+    "remaining_horizon_minimum_steps": 10,
+    "engineering_invalid_is_non_consumable": true,
+    "labels_consumable_only_on_report_and_audit_pass": true
+  },
+  "resource_contract": {
+    "resource_contract_version": "STAGE_V_RESOURCE_CONTRACT_V2",
+    "admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7],
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "foreign_workload_allowed": true,
+    "foreign_process_interference": false,
+    "partial_fleet_allowed": true
+  },
+  "pass_conditions": [
+    "CONTROL_QUALIFICATION_REPORT_PASS",
+    "INDEPENDENT_AUDIT_PASS",
+    "10_QUALIFIED_PARENTS_PER_SUITE",
+    "A_B_CLEAN_SUCCESS",
+    "INITIAL_STATE_IDENTITY_EXACT",
+    "PROTECTED_COUNTERS_ZERO",
+    "NO_OLD_ARTIFACT_REUSE",
+    "NO_SOURCE_ARTIFACT_MODIFICATION"
+  ],
+  "failure_action": "seal_classify_handoff_stop",
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "v7_3_forensic_correction": {
+    "terminal_fields_descriptive_only": true,
+    "invalidated_reason": "V7.3 producer and auditor incorrectly hard-gated terminal fields despite frozen terminal_hash_equality_hard_gate=false",
+    "same_root_rerun_allowed": false
+  }
+}
