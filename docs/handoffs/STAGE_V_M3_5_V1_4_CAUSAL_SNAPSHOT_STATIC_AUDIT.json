@@ -4,6 +4,7 @@
     "fresh_render_gate_literal_false": true,
     "fresh_render_primary_hard_stop": true,
     "gate_a_schema_output_bound": true,
+    "gate_b_auditor_rebinds_frozen_observation": true,
     "gate_b_primary_does_not_decode_policy": true,
     "gate_b_primary_has_zero_fresh_render_consumption": true,
     "gate_b_primary_uses_matched_actions": true,
@@ -22,6 +23,7 @@
     "M35RunnerError",
     "_new_env",
     "assert_exact",
+    "assert_primary_observation_exact",
     "bool",
     "canonical_sha256",
     "canonical_value",
@@ -43,12 +45,12 @@
     "protected_reads": 0,
     "vis_pgd_attack_rollouts": 0
   },
-  "runner_sha256": "a783ba864d4a8d6d325c518e468557505a275a483150e7524998466cbcaebae6",
+  "runner_sha256": "0c182b57060fb09b14e07271985082d40f108f1bbae68315c20e5bf2a7cd329b",
   "runtime_authorized": false,
   "runtime_executed": false,
   "schema": "STAGE_V_M3_5_V1_4_STATIC_AUDIT_V1",
-  "snapshot_module_sha256": "d7ccb1d153aac05a23625298067de875ac2aaa511e196df9255970d18359d233",
-  "source_commit": "faad5b0a85dea67853c26b9269bc41ca0dbe0db9",
-  "source_tree": "9763c88a46f5e7698ea036622a4c3c0c694b2cbb",
+  "snapshot_module_sha256": "d880285a799e2a89ec273f85166f87c16b5485f072f7b6e79d5207087e308bd7",
+  "source_commit": "6efce8abcbdcd57960102f037e10abffc32bec00",
+  "source_tree": "d1797481b081559af7b8cd65cd9dc574f8b52e83",
   "status": "PASS_STATIC_DESIGN_ONLY"
 }
