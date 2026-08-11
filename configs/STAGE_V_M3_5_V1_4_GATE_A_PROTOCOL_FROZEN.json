@@ -134,6 +134,34 @@
     "rollouts_allowed": false,
     "hard_stop": true
   },
+  "resource_contract": {
+    "admitted_gpu_indices": [0, 1, 2, 4, 5, 6, 7],
+    "excluded_gpu_indices": [3],
+    "minimum_free_memory_mib": 20480,
+    "mujoco_egl_device_id": "admitted physical GPU index",
+    "env_render_gpu_device_id": "admitted physical GPU index",
+    "gpu_uuid_by_index": {
+      "0": "bf4309d3-8cba-437e-8d87-cee9f1e6d232",
+      "1": "f6910e5c-f41e-109e-43d0-f01f0d77dbf2",
+      "2": "7b06162a-27e4-2552-e891-d201e3fae6b9",
+      "3": "41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
+      "4": "e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
+      "5": "185b30c0-074c-6f07-aa8b-a67d00e8e4a9",
+      "6": "92963392-f77a-85ce-4ba7-7a8288429ca5",
+      "7": "bd2cfcc1-64ab-c2d0-9ae3-245fc8d21a76"
+    },
+    "torch_device_uuid_binding": "torch property when available; otherwise CUDA_VISIBLE_DEVICES[0] plus nvidia-smi physical index",
+    "runtime_egl_files": {
+      "binding_utils": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/robosuite/utils/binding_utils.py",
+        "sha256": "5ac3c9da0cb9f85d694c6147103268df65151f751612a6c575ae0da4eb4988e4"
+      },
+      "egl_context": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/robosuite/renderers/context/egl_context.py",
+        "sha256": "fd5d6d8e4978477d0333f33315224e520245ebbedb5c27e50b0e13543893ffc1"
+      }
+    }
+  },
   "protected_counters": {
     "protected_reads": 0,
     "eval160_reads": 0,

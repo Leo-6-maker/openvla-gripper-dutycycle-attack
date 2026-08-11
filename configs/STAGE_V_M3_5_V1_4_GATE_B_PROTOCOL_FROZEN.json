@@ -94,6 +94,13 @@
     "rollouts_allowed": false,
     "hard_stop": true
   },
+  "resource_contract": {
+    "admitted_gpu_indices": [0, 1, 2, 4, 5, 6, 7],
+    "excluded_gpu_indices": [3],
+    "minimum_free_memory_mib": 20480,
+    "mujoco_egl_device_id": "admitted physical GPU index",
+    "env_render_gpu_device_id": "admitted physical GPU index"
+  },
   "protected_counters": {
     "protected_reads": 0,
     "eval160_reads": 0,
