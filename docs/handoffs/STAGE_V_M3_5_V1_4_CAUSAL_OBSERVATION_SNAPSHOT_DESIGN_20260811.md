@@ -71,6 +71,23 @@ recorded in:
 
 The static audit is `PASS_STATIC_DESIGN_ONLY`; it is not runtime authorization.
 
+The matched-action producer and independent audits are now also wired:
+
+- `scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py` runs CONTROL/T3/T5/T10
+  from the Gate-A packages, keeps CONTROL through the longest 20-step primary
+  window, and uses no native policy decode or fresh-render input there.
+- `scripts/detector_v5/audit_stage_v_m3_5_v1_4_gate_a.py` independently checks
+  snapshot sidecars, exact payload fields, reference windows and zero treatment.
+- `scripts/detector_v5/audit_stage_v_m3_5_v1_4_gate_b.py` independently
+  recomputes branch accounting, treatment compliance, arm isolation, physical
+  classes and 3/3 repeatability for one parent.
+- `scripts/detector_v5/audit_stage_v_m3_5_v1_4_final.py` requires two valid
+  parent roots per suite before it can emit `M3_5_LABEL_VALIDATION=PASS`.
+
+These paths are code-complete enough for preflight but remain unrun and
+unauthorized until a new frozen protocol, exact regression, runtime receipt,
+smoke root and Gate-A PASS are bound.
+
 ## Gate drafts
 
 - [Gate A draft](../../configs/STAGE_V_M3_5_V1_4_GATE_A_PROTOCOL_DRAFT.json)

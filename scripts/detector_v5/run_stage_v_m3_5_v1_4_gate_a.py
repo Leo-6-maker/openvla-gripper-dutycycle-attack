@@ -14,6 +14,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 from typing import Any, Mapping
 
@@ -50,6 +52,7 @@ from scripts.detector_v5.run_stage_v_m3_5_intervention_parent import (  # noqa: 
     HORIZONS,
     M35RunnerError,
     NUM_STEPS_WAIT,
+    _seal as _seal_root,
     _new_env,
 )
 from scripts.detector_v5.run_stage_v_canonical_clean import (  # noqa: E402
@@ -221,9 +224,10 @@ def _verify_exposed_parent(selection_path: Path, parent_key: str) -> Mapping[str
     raise M35RunnerError("PARENT_NOT_IN_FROZEN_SELECTION")
 
 
-def _snapshot_payload(capture: Mapping[str, Any], *, step: int, simulator: Mapping[str, Any], runtime: Mapping[str, Any], episode_rng: Mapping[str, Any], action_rows: list[Mapping[str, Any]]) -> dict[str, Any]:
+def _snapshot_payload(capture: Mapping[str, Any], *, probe: Mapping[str, Any], simulator: Mapping[str, Any], runtime: Mapping[str, Any], episode_rng: Mapping[str, Any], action_rows: list[Mapping[str, Any]]) -> dict[str, Any]:
+    step = int(probe["step"])
     return {
-        "probe": {"step": int(step)},
+        "probe": {key: probe[key] for key in ("probe_id", "step", "object_identity", "phase_label") if key in probe},
         "full_simulator_state": simulator,
         "controller_and_wrapper_runtime_state": runtime,
         "required_rng_state": runtime["rng"],
@@ -243,7 +247,7 @@ def _snapshot_payload(capture: Mapping[str, Any], *, step: int, simulator: Mappi
 
 
 def _replay_canary(snapshot_root: Path, *, OffScreenRenderEnv: Any, bddl: str, horizon: int, init_state: Any, args: argparse.Namespace, output_dir: Path, clean_actions: list[list[float]], model: Any, adapter: Any) -> dict[str, Any]:
-    loaded = load_snapshot(snapshot_root, materialize_torch=False)
+    loaded = load_snapshot(snapshot_root, materialize_torch=True)
     payload = loaded["payload"]
     step = int(payload["probe"]["step"])
     restore_rng_state(payload["episode_start_rng_state"])
@@ -305,6 +309,26 @@ def run(args: argparse.Namespace) -> int:
     if output_dir.exists() and any(output_dir.iterdir()):
         raise M35RunnerError(f"REFUSE_OVERWRITE:{output_dir}")
     output_dir.mkdir(parents=True, exist_ok=False)
+    shutil.copy2(args.protocol.resolve(), output_dir / "M3_5_V1_4_GATE_A_PROTOCOL.json")
+    for filename in (
+        "STAGE_V_M3_5_V1_4_CAUSAL_SNAPSHOT_COMPONENT_INVENTORY.json",
+        "STAGE_V_M3_5_V1_4_CAUSAL_SNAPSHOT_SUFFICIENCY_AUDIT.json",
+        "STAGE_V_M3_5_V1_4_MODEL_STEP_STATELESS_RECEIPT.json",
+        "STAGE_V_M3_5_V1_4_CAUSAL_SNAPSHOT_STATIC_AUDIT.json",
+    ):
+        source = REPO_ROOT / "docs/handoffs" / filename
+        if source.is_file():
+            shutil.copy2(source, output_dir / ("CAUSAL_SNAPSHOT_" + filename.split("CAUSAL_SNAPSHOT_", 1)[-1] if "CAUSAL_SNAPSHOT_" in filename else filename))
+    _write_json(output_dir / "CAUSAL_PROBE_SNAPSHOT_SCHEMA.json", {
+        "schema": "STAGE_V_CAUSAL_PROBE_SNAPSHOT_SCHEMA_V2",
+        "snapshot_schema": "STAGE_V_CAUSAL_PROBE_SNAPSHOT_V2",
+        "primary_authority": "uncompressed_sidecar_bytes",
+        "required_payload_fields": ["full_simulator_state", "controller_and_wrapper_runtime_state", "required_rng_state", "raw_observation", "canonical_policy_rgb_224", "processed_image", "input_ids", "pixel_values", "attention_mask", "prompt", "decode_config", "clean_reference_action_window"],
+        "source_commit": args.source_commit,
+        "source_tree": args.source_tree,
+        "fresh_render_equality_gate_used": False,
+        "protected_counters": dict(PROTECTED_COUNTERS),
+    })
     suite, task_part, state_part = str(args.parent_key).split("/")
     task_index = int(task_part.removeprefix("task_"))
     state_index = int(state_part.removeprefix("state_"))
@@ -390,8 +414,8 @@ def run(args: argparse.Namespace) -> int:
         snapshot_root = output_dir / "CAUSAL_SNAPSHOTS" / str(probe["probe_id"])
         manifest = write_snapshot(
             snapshot_root,
-            _snapshot_payload(capture, step=step, simulator=capture["simulator"], runtime=capture["runtime"], episode_rng=episode_rng, action_rows=clean_rows),
-            binding={"parent_key": args.parent_key, "probe_id": probe["probe_id"], "step": step, "source_commit": args.source_commit, "source_tree": args.source_tree},
+            _snapshot_payload(capture, probe=probe, simulator=capture["simulator"], runtime=capture["runtime"], episode_rng=episode_rng, action_rows=clean_rows),
+            binding={"parent_key": args.parent_key, "probe_id": probe["probe_id"], "step": step, "object_identity": probe.get("object_identity"), "source_commit": args.source_commit, "source_tree": args.source_tree},
         )
         snapshot_rows.append({"probe_id": probe["probe_id"], "step": step, "path": snapshot_root.relative_to(output_dir).as_posix(), "manifest_sha256": manifest["manifest_sha256"], "policy_input_sha256": capture["policy_input_sha256"], "policy_rgb_224_sha256": capture["policy_rgb_224_sha256"]})
     canary_receipts = []
@@ -416,7 +440,30 @@ def run(args: argparse.Namespace) -> int:
         "protected_counters": dict(PROTECTED_COUNTERS),
     }
     _write_json(output_dir / "M3_5_V1_4_GATE_A_RECEIPT.json", receipt)
-    return 0 if status == "PASS" else 2
+    auditor = REPO_ROOT / "scripts/detector_v5/audit_stage_v_m3_5_v1_4_gate_a.py"
+    audit_process = subprocess.run(
+        [
+            sys.executable,
+            str(auditor),
+            "--root", str(output_dir),
+            "--parent-key", str(args.parent_key),
+            "--source-commit", str(args.source_commit),
+            "--source-tree", str(args.source_tree),
+        ],
+        cwd=str(REPO_ROOT),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    audit_path = output_dir / "M3_5_V1_4_GATE_A_INDEPENDENT_AUDIT.json"
+    audit = _load_json(audit_path) if audit_path.is_file() else {"status": "FAIL", "error": audit_process.stderr[-1000:]}
+    receipt["independent_audit_status"] = audit.get("status")
+    receipt["independent_audit_sha256"] = _sha256_file(audit_path) if audit_path.is_file() else None
+    if audit.get("status") != "PASS":
+        receipt["status"] = "HOLD"
+    _write_json(output_dir / "M3_5_V1_4_GATE_A_RECEIPT.json", receipt)
+    _seal_root(output_dir)
+    return 0 if receipt["status"] == "PASS" and audit.get("status") == "PASS" and audit_process.returncode == 0 else 2
 
 
 def main(argv: list[str] | None = None) -> int:

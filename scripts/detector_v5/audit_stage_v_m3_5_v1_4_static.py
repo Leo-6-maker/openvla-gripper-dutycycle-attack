@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CPU-only static audit for the prospective M3.5 V1.4 Gate-A path."""
+"""CPU-only static audit for the prospective M3.5 V1.4 Gate-A/B paths."""
 from __future__ import annotations
 
 import argparse
@@ -44,21 +44,39 @@ def _called_names(node: ast.AST) -> set[str]:
 
 def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[str, Any]:
     runner_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_a.py"
+    gate_b_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py"
+    gate_a_auditor_path = REPO_ROOT / "scripts/detector_v5/audit_stage_v_m3_5_v1_4_gate_a.py"
+    gate_b_auditor_path = REPO_ROOT / "scripts/detector_v5/audit_stage_v_m3_5_v1_4_gate_b.py"
+    final_auditor_path = REPO_ROOT / "scripts/detector_v5/audit_stage_v_m3_5_v1_4_final.py"
     snapshot_path = REPO_ROOT / "src/gripper_attack/stage_v_causal_observation_snapshot.py"
     protocol = _load(protocol_path)
     runner_tree = ast.parse(runner_path.read_text(encoding="utf-8"), filename=str(runner_path))
+    gate_b_tree = ast.parse(gate_b_path.read_text(encoding="utf-8"), filename=str(gate_b_path))
     snapshot_tree = ast.parse(snapshot_path.read_text(encoding="utf-8"), filename=str(snapshot_path))
     replay = _function(runner_tree, "_replay_canary")
+    gate_b_primary = _function(gate_b_tree, "_run_branch")
     required_runner_calls = {"load_snapshot", "restore_rng_state", "capture_simulator_state", "capture_runtime_state", "assert_exact"}
     required_snapshot_functions = {"write_snapshot", "load_snapshot", "capture_runtime_state", "capture_simulator_state", "restore_rng_state", "reference_action_window", "matched_action"}
     snapshot_names = {node.name for node in ast.walk(snapshot_tree) if isinstance(node, ast.FunctionDef)}
     primary_calls = _called_names(replay)
+    gate_b_calls = _called_names(gate_b_primary)
+    gate_a_auditor_text = gate_a_auditor_path.read_text(encoding="utf-8")
+    gate_b_auditor_text = gate_b_auditor_path.read_text(encoding="utf-8")
+    final_auditor_text = final_auditor_path.read_text(encoding="utf-8")
+    gate_b_text = gate_b_path.read_text(encoding="utf-8")
     checks = {
         "protocol_schema": protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_A",
         "protocol_is_draft_or_frozen": protocol.get("version") == "V1.4-GATE-A",
         "source_binding_is_not_predecessor": str(protocol.get("source_binding", {}).get("runtime_commit")) != "d104713027a82eeb858ba9036200d7ab010959cc",
         "runner_has_exact_replay_calls": required_runner_calls.issubset(primary_calls),
         "runner_primary_does_not_call_renderer": "get_libero_image" not in primary_calls,
+        "gate_b_primary_uses_matched_actions": "matched_action" in gate_b_calls,
+        "gate_b_primary_does_not_decode_policy": "predict_action" not in gate_b_calls and "get_libero_image" not in gate_b_calls,
+        "gate_b_primary_has_zero_fresh_render_consumption": '"fresh_render_primary_consumption": False' in gate_b_text,
+        "independent_auditors_do_not_import_producer": "run_stage_v_m3_5_v1_4_gate" not in gate_a_auditor_text and "run_stage_v_m3_5_v1_4_gate" not in gate_b_auditor_text,
+        "gate_b_required_outputs_bound": all(name in gate_b_text for name in ("TREATMENT_COMPLIANCE_AUDIT.json", "ARM_ISOLATION_AUDIT.json", "REPEATABILITY_AUDIT.json", "PHYSICAL_TAXONOMY_AUDIT.json", "M3_5_V1_4_GATE_B_RECEIPT.json")),
+        "gate_a_schema_output_bound": "CAUSAL_PROBE_SNAPSHOT_SCHEMA.json" in runner_path.read_text(encoding="utf-8"),
+        "final_auditor_requires_four_suite_coverage": "suite_counts != {suite: 2 for suite in SUITES}" in final_auditor_text and "M3_5_V1_4_FINAL_RECEIPT_V1" in final_auditor_text,
         "snapshot_helpers_present": required_snapshot_functions.issubset(snapshot_names),
         "fresh_render_gate_literal_false": protocol.get("operation", {}).get("fresh_render_equality_gate_used") is False,
         "fresh_render_primary_hard_stop": protocol.get("operation", {}).get("fresh_render_primary_consumption") == "HARD_STOP",

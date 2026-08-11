@@ -4,6 +4,12 @@
   "status": "DRAFT_NOT_FROZEN",
   "runtime_authorized": false,
   "purpose": "MATCHED_ACTION_PRIMARY_PHYSICAL_COUNTERFACTUAL_DIAGNOSTIC",
+  "source_binding": {
+    "status": "PENDING_NEW_IMPLEMENTATION_FREEZE",
+    "runtime_commit": null,
+    "runtime_tree": null,
+    "protocol_sha256": null
+  },
   "requires": {
     "gate_a_status": "PASS",
     "gate_a_receipt_sha256": null,
@@ -22,6 +28,8 @@
   },
   "matrix": {
     "scope": "historically exposed diagnostics only",
+    "minimum_parents_per_suite": 2,
+    "required_suite_coverage": ["libero_10", "libero_goal", "libero_object", "libero_spatial"],
     "repetitions": 3,
     "conditions": ["CONTROL", "T3", "T5", "T10"],
     "fresh_process_per_repetition": true,
@@ -66,6 +74,15 @@
   },
   "pass_unlocks": "M3_5_LABEL_VALIDATION_PASS",
   "failure_action": "seal_classify_handoff_stop",
+  "required_outputs": [
+    "M3_5_V1_4_GATE_B_RECEIPT.json",
+    "M3_5_V1_4_GATE_B_INDEPENDENT_AUDIT.json",
+    "TREATMENT_COMPLIANCE_AUDIT.json",
+    "ARM_ISOLATION_AUDIT.json",
+    "REPEATABILITY_AUDIT.json",
+    "PHYSICAL_TAXONOMY_AUDIT.json",
+    "M3_5_V1_4_FINAL_RECEIPT.json"
+  ],
   "protected_counters": {
     "protected_reads": 0,
     "eval160_reads": 0,

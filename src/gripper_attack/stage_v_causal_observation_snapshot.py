@@ -372,7 +372,17 @@ def reference_action_window(rows: Sequence[Mapping[str, Any]], *, start_step: in
 
 def matched_action(reference: Mapping[str, Any], *, forced_open: bool = False) -> dict[str, Any]:
     if not forced_open:
-        return {"raw_policy_action": list(reference["raw_policy_action"]), "normalized_action": list(reference["raw_policy_action"]), "env_action": list(reference["env_action"]), "arm_source": "CANONICAL_CLEAN_REFERENCE"}
+        raw = list(reference["raw_policy_action"])
+        env = list(reference["env_action"])
+        return {
+            "raw_policy_action": raw,
+            "normalized_action": raw,
+            "env_action": env,
+            "arm_delta": [0.0] * 6,
+            "arm_delta_linf": 0.0,
+            "gripper_delta_env": 0.0,
+            "arm_source": "CANONICAL_CLEAN_REFERENCE",
+        }
     from .stage_v_m3_5_physical_taxonomy import build_forced_open_action
 
     action = build_forced_open_action(reference["raw_policy_action"], reference["env_action"])
