@@ -89,6 +89,8 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "status": status,
         "runtime_authorized": False,
         "runtime_executed": False,
+        "protocol": str(protocol_path.resolve()),
+        "protocol_sha256": _sha256(protocol_path),
         "source_commit": source_commit,
         "source_tree": source_tree,
         "runner_sha256": _sha256(runner_path),
