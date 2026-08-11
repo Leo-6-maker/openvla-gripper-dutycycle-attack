@@ -1,0 +1,143 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_A",
+  "version": "V1.4-GATE-A",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "purpose": "ZERO_TREATMENT_CAUSAL_OBSERVATION_SNAPSHOT_REPLAY_CANARY",
+  "source_binding": {
+    "runtime_commit": "4bd1bb7c68cb892b427bb0af1d24513be4e65f2d",
+    "runtime_tree": "9d71861989db6d3bbefdbcdfa62dc7f9cc88aa4d",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0"
+  },
+  "predecessor": {
+    "runtime_commit": "d104713027a82eeb858ba9036200d7ab010959cc",
+    "runtime_tree": "3f22ea412975f294b59bc569ef9fb896eff8d410",
+    "sealed_root_reuse_prohibited": true
+  },
+  "diagnostic_parent_selection": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V2_20260810T174118Z/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V2.json",
+    "sha256": "ab265b4e74597c46b16361b4eeae39e7ab7ff66d9fb5d0e1c46eb1f709fd76a9",
+    "selected_count": 8,
+    "selected_counts_by_suite": {
+      "libero_10": 2,
+      "libero_goal": 2,
+      "libero_object": 2,
+      "libero_spatial": 2
+    },
+    "outcomes_read": false
+  },
+  "exact_a800_regression": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_4_20260811T090000Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
+    "sha256": "15fe2102085ce309d47b73bf57194d995330c0d93df8adbc7440721dc420eaf3",
+    "status": "PASS",
+    "expected_collected": 218,
+    "source_commit": "4bd1bb7c68cb892b427bb0af1d24513be4e65f2d",
+    "source_tree": "9d71861989db6d3bbefdbcdfa62dc7f9cc88aa4d"
+  },
+  "static_audit_binding": {
+    "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_v1_4_static.py",
+    "auditor_script_sha256": "5853799c0af78bd2d691bf13b553220c8b91c7bc27debcfc8a52d56b45bda9df",
+    "authorization_issuer_script_path": "scripts/detector_v5/issue_stage_v_m3_5_v1_4_runtime_authorization.py",
+    "authorization_issuer_script_sha256": "4a83defb9cf70db5c17bf06d76fd0b1e46369616781cdd14ef31ec53b32aa0bf",
+    "receipt_schema": "STAGE_V_M3_5_V1_4_STATIC_AUDIT_V1",
+    "authorization_receipt_schema": "STAGE_V_M3_5_V1_4_RUNTIME_AUTHORIZATION_V1",
+    "receipt_status": "REQUIRED_AFTER_PROTOCOL_FREEZE"
+  },
+  "identity_scope": {
+    "allowed": "historically exposed diagnostic identities only",
+    "selection_reads_branch_results": false,
+    "selection_reads_counterfactual_outcomes": false,
+    "future_v7_parents_allowed": false,
+    "eval160_allowed": false,
+    "suite_coverage": ["libero_object", "libero_spatial", "libero_goal", "libero_10"],
+    "preferred_parents_per_suite": 2
+  },
+  "operation": {
+    "intervention_executed": false,
+    "primary_input_authority": "loaded_frozen_canonical_bytes",
+    "fresh_render_equality_gate_used": false,
+    "fresh_render_diagnostic_allowed": true,
+    "fresh_render_primary_consumption": "HARD_STOP",
+    "native_policy_decode_in_primary_canary": false,
+    "matched_action_window": false
+  },
+  "snapshot": {
+    "schema": "STAGE_V_CAUSAL_PROBE_SNAPSHOT_V2",
+    "created_from": "canonical_clean_trajectory_at_probe_t",
+    "later_replay_reconstruction_as_authority": false,
+    "raw_authority": "uncompressed_sidecar_bytes",
+    "required_payload": [
+      "full_simulator_state",
+      "controller_and_wrapper_runtime_state",
+      "required_rng_state",
+      "raw_observation",
+      "raw_observation_sha256",
+      "canonical_policy_rgb_224",
+      "processed_image",
+      "processed_image_sha256",
+      "input_ids",
+      "pixel_values",
+      "attention_mask",
+      "attention_mask_present",
+      "prompt",
+      "decode_config",
+      "clean_reference_action_window"
+    ]
+  },
+  "required_exact_checks": [
+    "SIMULATOR_STATE_EXACT",
+    "CONTROLLER_STATE_EXACT",
+    "WRAPPER_STATE_EXACT",
+    "REQUIRED_RNG_STATE_EXACT",
+    "RAW_OBSERVATION_EXACT",
+    "CANONICAL_POLICY_RGB_EXACT",
+    "PROCESSED_IMAGE_EXACT",
+    "INPUT_IDS_EXACT",
+    "PIXEL_VALUES_EXACT",
+    "ATTENTION_MASK_EXACT_IF_PRESENT",
+    "PROMPT_EXACT",
+    "DECODE_CONFIG_EXACT",
+    "REFERENCE_RAW_ACTION_EXACT",
+    "REFERENCE_ENV_ACTION_EXACT",
+    "NO_FRESH_RENDER_PRIMARY_CONSUMPTION"
+  ],
+  "pass_conditions": [
+    "all selected snapshot packages load and verify",
+    "all hard exact checks are 100 percent",
+    "no intervention action is executed",
+    "no fresh-rendered input is consumed by primary path",
+    "protected_reads=0",
+    "eval160_reads=0",
+    "independent auditor PASS"
+  ],
+  "failure_action": {
+    "status": "HOLD_CAUSAL_SNAPSHOT_INSUFFICIENT",
+    "seal_root": true,
+    "retry_same_root": false,
+    "add_tolerance": false,
+    "drop_component": false,
+    "move_component_to_descriptive": false,
+    "next_version_required": true
+  },
+  "required_outputs": [
+    "CAUSAL_SNAPSHOT_COMPONENT_INVENTORY.json",
+    "CAUSAL_SNAPSHOT_SUFFICIENCY_AUDIT.json",
+    "CAUSAL_PROBE_SNAPSHOT_SCHEMA.json",
+    "CAUSAL_SNAPSHOT_STATIC_AUDIT.json",
+    "M3_5_V1_4_GATE_A_RECEIPT.json",
+    "M3_5_V1_4_GATE_A_INDEPENDENT_AUDIT.json"
+  ],
+  "protected_eval160": {
+    "reads_allowed": false,
+    "rollouts_allowed": false,
+    "hard_stop": true
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  }
+}
