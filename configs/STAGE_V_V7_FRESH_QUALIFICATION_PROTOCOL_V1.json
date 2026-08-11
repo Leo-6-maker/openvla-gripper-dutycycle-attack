@@ -1,13 +1,13 @@
 {
   "schema": "STAGE_V_V7_FRESH_QUALIFICATION_PROTOCOL_V1",
-  "version": "V7-FRESH-QUALIFICATION-V1",
+  "version": "V7-FRESH-QUALIFICATION-V1.1",
   "status": "FROZEN_RUNTIME_AUTHORIZED",
   "purpose": "FRESH_CLEAN_AB_QUALIFICATION_AFTER_M3_5_PASS",
   "source_binding": {
-    "runtime_commit": "755654f864438c6239697438c0ed4b27cbcb5b2d",
-    "runtime_tree": "4e05283cd87ec86c147240a3eda8d7f0cc399884",
+    "runtime_commit": "f91182c5650fc0a2339b5e68f8cfb78c69231c6c",
+    "runtime_tree": "8b6246726d0b23fde42d51729b193f5522ac9534",
     "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800.pre_official_align_20260723/bin/python",
-    "exact_regression_receipt_sha256": "b3f70b7aaec532553fd2a8c5cc68e4a8445774fe806c24915901873a0c0dab2c",
+    "exact_regression_receipt_sha256": "5dd8798bd9bfd1fdf763c2194856479754869e66b80e6441d649b7b6783255a0",
     "exact_regression_collected": 224,
     "exact_regression_passed": 224
   },
@@ -18,6 +18,14 @@
     "m3_5_label_count": 576,
     "m3_5_protected_reads": 0,
     "sealed_v1_3_4_reuse_prohibited": true
+  },
+  "prior_failed_v7_attempt": {
+    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_QUALIFICATION_20260812T004000Z",
+    "failure_seal_sha256": "1aa6b45e61b9b64a6aa9a3723a048ee561fe12e1ad20d217eafb29d2b9fc0e1f",
+    "failed_exclusion_manifest": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_QUALIFICATION_20260812T004000Z/V7_FAILED_CLEAN_ATTEMPT_EXCLUSION.json",
+    "failed_exclusion_manifest_sha256": "9f134bb7792d3c464947f43133d6531c1592613da6f854be048ed5f157cafa6d",
+    "failed_identity_count": 240,
+    "resume_or_reuse_allowed": false
   },
   "freshness": {
     "g10_manifest": {
@@ -34,15 +42,16 @@
       "m35_status": "PASS"
     },
     "clean_attempt_union": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V3_POST_M35_20260811T162000Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V3.json",
-      "sha256": "da492693a58b78dfea52fd45f02d5b60b12fd6ac830d1b2112589368750432b6",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V4_POST_V7_FAIL_20260812T011500Z.json",
+      "sha256": "186f3e27343fac6ffa57246a4b4e3a7a1c3b7c51caa6b567fa0958c57683b68e",
       "schema": "STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2",
       "status": "PASS",
-      "excluded_parent_count": 357
+      "excluded_parent_count": 597,
+      "failed_v7_identities_included": 240
     },
     "candidate_pool": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_G10_FRESH_CANDIDATE_POOL_V3_POST_M35_20260812T001500Z.json",
-      "sha256": "e74c7f93ddfd157bc3e31fa3c43a9ff0f3bce316333a7ec5ed633dc4fdc103c",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_G10_FRESH_CANDIDATE_POOL_V4_POST_V7_FAIL_20260812T012000Z.json",
+      "sha256": "28e87e1cce31e2a7eb425798e3e622f564dd2087e3b4e34fc78afcb20cb02c40",
       "schema": "D8_STAGE_V_CLEAN_PROBE_CANDIDATE_POOL_V1",
       "candidate_count": 240,
       "candidates_per_suite": 60,
@@ -51,8 +60,8 @@
       "protected_eval_reads": 0
     },
     "selected_manifest": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_CLEAN_QUALIFICATION_CANDIDATE_MANIFEST_V1_20260812T002000Z.json",
-      "sha256": "ccbf6956383c3f3da938a0aaa04a20a79d98dd610e325a7f073f576f2917a7d1",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_CLEAN_QUALIFICATION_CANDIDATE_MANIFEST_V2_POST_V7_FAIL_20260812T013000Z.json",
+      "sha256": "55f17f649a3fa191a4bc42ad3b47c19c45452e60fecd6d161d0d521df03ad8aa",
       "schema": "STAGE_V_DYNAMIC_CLEAN_QUALIFICATION_CANDIDATE_MANIFEST_V1",
       "status": "FROZEN",
       "fresh_candidate_count": 240,
@@ -63,8 +72,8 @@
         "libero_spatial": 60
       }
     },
-    "salt": "0a188b5b37616960eb718818a8175b55",
-    "source_clean_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_CLEAN_SOURCE_20260812T002000Z",
+    "salt": "576b49b8fd05cca6dcc20a85e9e16df1",
+    "source_clean_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_CLEAN_SOURCE_V2_20260812T013000Z",
     "old_artifacts_reused": false,
     "source_artifacts_modified": false,
     "selection_before_new_rollouts": true,
@@ -75,12 +84,12 @@
     "worker_sha256": "a8e230f1ef10f51ee61c847c49969b444ab57697ac7312100b06e64d03491311",
     "worker_commit": "943b02749dce4414ec6791b15ceec87dbd3be1ba",
     "worker_tree": "07a4efa9663edf415c957374e86d12db30854fbe",
-    "upstream_root": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4",
+    "upstream_root": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream",
     "upstream_commit": "c8f03f48af692657d3060c19588038c7220e9af9",
     "upstream_tree": "c326be57bb61629a3efd2b968ef141fa576a623f",
     "provenance_source": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/provenance/UPSTREAM_PROVENANCE.json",
     "provenance_source_sha256": "506cf28ad5ebedaa96ebd10de0a166b7c77458e612a55df92b1b7189d1d49291",
-    "runner_command_template": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800.pre_official_align_20260723/bin/python /mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m35-v1_4-regression-d9bbdaa7/scripts/detector_v5/run_stage_v_clean_replay_frozen.py --candidate-path {candidate_path} --output-dir {output_dir} --replicate {replicate} --gpu {gpu} --worker-id stage-v-v7-clean --worker-script /mnt/sdc/dty_user/openvla_attack_official_v3_legacy_20260716/scripts/official_clean_worker.py --provenance-source /mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/provenance/UPSTREAM_PROVENANCE.json --upstream-root /mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4 --source-commit {source_commit} --source-tree {source_tree} --seed 7"
+    "runner_command_template": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800.pre_official_align_20260723/bin/python /mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m35-v1_4-regression-d9bbdaa7/scripts/detector_v5/run_stage_v_clean_replay_frozen.py --candidate-path {candidate_path} --output-dir {output_dir} --replicate {replicate} --gpu {gpu} --worker-id stage-v-v7-clean --worker-script /mnt/sdc/dty_user/openvla_attack_official_v3_legacy_20260716/scripts/official_clean_worker.py --provenance-source /mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/provenance/UPSTREAM_PROVENANCE.json --upstream-root /mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream --source-commit {source_commit} --source-tree {source_tree} --seed 7"
   },
   "qualification": {
     "mode": "FRESH_CLEAN_AB_REPLAY",
