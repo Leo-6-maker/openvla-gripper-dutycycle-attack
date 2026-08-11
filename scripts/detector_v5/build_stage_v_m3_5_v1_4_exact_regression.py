@@ -36,6 +36,17 @@ def _expand(repo: Path, patterns: list[str]) -> list[str]:
     return sorted(paths)
 
 
+def _seal(root: Path) -> None:
+    rows = []
+    for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
+        if path.is_file() and path.name not in {"SHA256SUMS", "SHA256SUMS.sha256"}:
+            rows.append(f"{_sha(path)}  {path.relative_to(root).as_posix()}\n")
+    sums = root / "SHA256SUMS"
+    sums.write_text("".join(rows), encoding="utf-8")
+    sums_sha = _sha(sums)
+    (root / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", type=Path, required=True)
@@ -114,6 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     receipt_path = output / "STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json"
     receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
     receipt_path.with_name(receipt_path.name + ".sha256").write_text(f"{_sha(receipt_path)}  {receipt_path.name}\n", encoding="utf-8")
+    _seal(output)
     print(json.dumps({"status": status, "collected": collected, "passed": passed, "skipped": skipped, "failed": failed, "errors": errors}, sort_keys=True))
     return 0 if status == "PASS" else 2
 
