@@ -6,8 +6,8 @@
   "requires_explicit_owner_authorization": true,
   "purpose": "ZERO_TREATMENT_CAUSAL_OBSERVATION_SNAPSHOT_REPLAY_CANARY",
   "source_binding": {
-    "runtime_commit": "4bd1bb7c68cb892b427bb0af1d24513be4e65f2d",
-    "runtime_tree": "9d71861989db6d3bbefdbcdfa62dc7f9cc88aa4d",
+    "runtime_commit": "91052d7fc00de8b98e73f9c790e4f926c853eb33",
+    "runtime_tree": "ed1dd140eb7738ce286e6e2428b0b33181e1a232",
     "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
     "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0"
   },
@@ -29,12 +29,12 @@
     "outcomes_read": false
   },
   "exact_a800_regression": {
-    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_4_20260811T090000Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
-    "sha256": "15fe2102085ce309d47b73bf57194d995330c0d93df8adbc7440721dc420eaf3",
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_4_20260811T091500Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
+    "sha256": "ece76b42ab294a93a02faed2bf5bd325606bf0cd17fe8eff5826aa3490c6f855",
     "status": "PASS",
     "expected_collected": 218,
-    "source_commit": "4bd1bb7c68cb892b427bb0af1d24513be4e65f2d",
-    "source_tree": "9d71861989db6d3bbefdbcdfa62dc7f9cc88aa4d"
+    "source_commit": "91052d7fc00de8b98e73f9c790e4f926c853eb33",
+    "source_tree": "ed1dd140eb7738ce286e6e2428b0b33181e1a232"
   },
   "static_audit_binding": {
     "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_v1_4_static.py",
