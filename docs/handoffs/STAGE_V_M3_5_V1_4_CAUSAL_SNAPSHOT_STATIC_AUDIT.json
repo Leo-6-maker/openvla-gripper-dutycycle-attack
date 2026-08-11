@@ -1,7 +1,14 @@
 {
   "checks": {
+    "final_auditor_requires_four_suite_coverage": true,
     "fresh_render_gate_literal_false": true,
     "fresh_render_primary_hard_stop": true,
+    "gate_a_schema_output_bound": true,
+    "gate_b_primary_does_not_decode_policy": true,
+    "gate_b_primary_has_zero_fresh_render_consumption": true,
+    "gate_b_primary_uses_matched_actions": true,
+    "gate_b_required_outputs_bound": true,
+    "independent_auditors_do_not_import_producer": true,
     "protected_counters_zero": true,
     "protocol_is_draft_or_frozen": true,
     "protocol_schema": true,
@@ -36,12 +43,12 @@
     "protected_reads": 0,
     "vis_pgd_attack_rollouts": 0
   },
-  "runner_sha256": "9d8abf5bdf4aa3e3beaa2503e2252fd71fbb866d6a70ded7e6d7b503eac49d38",
+  "runner_sha256": "a783ba864d4a8d6d325c518e468557505a275a483150e7524998466cbcaebae6",
   "runtime_authorized": false,
   "runtime_executed": false,
   "schema": "STAGE_V_M3_5_V1_4_STATIC_AUDIT_V1",
-  "snapshot_module_sha256": "45330e1ec4755f1599c8d0c35c4fb05fff5d0d2e3d77bb39073a39b40ee7c291",
-  "source_commit": "f7de0ef36ca96bbf2c10b13cc757db85531c638a",
-  "source_tree": "df25b59f3f7dec5c78fedc7038260b2d3cde1f28",
+  "snapshot_module_sha256": "d7ccb1d153aac05a23625298067de875ac2aaa511e196df9255970d18359d233",
+  "source_commit": "faad5b0a85dea67853c26b9269bc41ca0dbe0db9",
+  "source_tree": "9763c88a46f5e7698ea036622a4c3c0c694b2cbb",
   "status": "PASS_STATIC_DESIGN_ONLY"
 }
