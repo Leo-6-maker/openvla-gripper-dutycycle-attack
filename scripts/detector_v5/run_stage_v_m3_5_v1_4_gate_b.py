@@ -113,7 +113,7 @@ def _array_sha(value: Any) -> str:
 
 
 def _validate_protocol(protocol: Mapping[str, Any], args: argparse.Namespace) -> None:
-    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_B" or protocol.get("version") != "V1.4-GATE-B":
+    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_B" or protocol.get("version") not in {"V1.4-GATE-B", "V1.4.1-GATE-B"}:
         raise M35RunnerError("V1_4_GATE_B_PROTOCOL_INVALID")
     if protocol.get("status") != "FROZEN_RUNTIME_AUTHORIZED" or protocol.get("runtime_authorized") is not True:
         raise M35RunnerError("V1_4_GATE_B_PROTOCOL_NOT_FROZEN_OR_AUTHORIZED")
@@ -378,6 +378,8 @@ def _run_branch(*, snapshot_root: Path, gate_a_root: Path, OffScreenRenderEnv: A
             "runtime_state_exact": True,
             "causal_input_binding_pass": True,
             "primary_input_authority": "loaded_frozen_canonical_bytes",
+            "frozen_canonical_input_loaded": True,
+            "branch_used_primary_input_hashes": dict(runtime_receipt["primary_observation_hashes"]),
             "fresh_render_equality_gate_used": False,
             "fresh_render_primary_consumption": False,
             "native_policy_calls_in_primary_window": 0,
@@ -410,6 +412,8 @@ def _run_branch(*, snapshot_root: Path, gate_a_root: Path, OffScreenRenderEnv: A
             "runtime_state_exact": False,
             "causal_input_binding_pass": False,
             "primary_input_authority": "loaded_frozen_canonical_bytes",
+            "frozen_canonical_input_loaded": False,
+            "branch_used_primary_input_hashes": None,
             "fresh_render_equality_gate_used": False,
             "fresh_render_primary_consumption": False,
             "native_policy_calls_in_primary_window": 0,

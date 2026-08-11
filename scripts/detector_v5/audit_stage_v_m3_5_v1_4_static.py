@@ -66,7 +66,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     gate_b_text = gate_b_path.read_text(encoding="utf-8")
     checks = {
         "protocol_schema": protocol.get("schema") == "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_A",
-        "protocol_is_draft_or_frozen": protocol.get("version") == "V1.4-GATE-A",
+        "protocol_is_draft_or_frozen": protocol.get("version") in {"V1.4-GATE-A", "V1.4.1-GATE-A"},
         "source_binding_is_not_predecessor": str(protocol.get("source_binding", {}).get("runtime_commit")) != "d104713027a82eeb858ba9036200d7ab010959cc",
         "runner_has_exact_replay_calls": required_runner_calls.issubset(primary_calls),
         "runner_primary_does_not_call_renderer": "get_libero_image" not in primary_calls,

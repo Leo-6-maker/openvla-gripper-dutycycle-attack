@@ -23,6 +23,7 @@ H_PHYS = 10
 DOSE_STEPS = {"T3": 3, "T5": 5, "T10": 10}
 MIN_REMAINING_STEPS = max(DOSE_STEPS.values()) + H_PHYS
 DEFAULT_SELECTION_VERSION = "STAGE_V_M3_5_CORRIDOR_QUANTILES_V1"
+PREFIX_SELECTION_VERSION = "STAGE_V_M3_5_CORRIDOR_PREFIX_V1"
 
 
 class ProbePlanError(ValueError):
@@ -136,7 +137,14 @@ def select_probe_steps(
         candidate for index, row in enumerate(normalized_rows)
         if (candidate := _corridor_candidate(row, observed_remaining_horizon=len(normalized_rows) - index)) is not None
     ]
-    indices = _quantile_indices(len(candidates))
+    if selection_version == PREFIX_SELECTION_VERSION:
+        if len(candidates) < PROBE_COUNT:
+            raise ProbePlanError(f"PROBE_PLAN_INSUFFICIENT_CORRIDOR:{len(candidates)}/{PROBE_COUNT}")
+        indices = list(range(PROBE_COUNT))
+        selection_algorithm = "sort eligible corridor by timestep; choose the first 24 eligible states; preserve order"
+    else:
+        indices = _quantile_indices(len(candidates))
+        selection_algorithm = "sort eligible corridor by timestep; for q=0..23 choose round_half_up(q*(N-1)/23); preserve order; deterministic dedup; fail if fewer than 24 unique"
     selected = [
         {
             **candidates[index],
@@ -155,7 +163,7 @@ def select_probe_steps(
         "version": VERSION,
         "status": "FROZEN_BEFORE_COUNTERFACTUAL_OUTCOMES",
         "canonical_parent_key": parent_key,
-        "selection_algorithm": "sort eligible corridor by timestep; for q=0..23 choose round_half_up(q*(N-1)/23); preserve order; deterministic dedup; fail if fewer than 24 unique",
+        "selection_algorithm": selection_algorithm,
         "selection_version": selection_version,
         "source_inputs": ["clean trajectory rows", "clean-only contact and object telemetry", "remaining horizon"],
         "forbidden_inputs": ["OPEN outcome", "CONTROL outcome", "V_phys", "V_task", "Teacher prediction", "Student prediction"],

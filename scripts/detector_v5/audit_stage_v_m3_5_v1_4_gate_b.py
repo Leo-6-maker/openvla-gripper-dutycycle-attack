@@ -254,6 +254,8 @@ def audit(root: Path, *, parent_key: str, source_commit: str, source_tree: str) 
         expected_observation = expected_observations.get(str(row.get("probe_id")))
         if expected_observation is None or branch.get("snapshot_manifest_sha256") != expected_observation[0] or branch.get("primary_observation_hashes") != expected_observation[1]:
             errors.append(f"BRANCH_OBSERVATION_BINDING_INVALID:{key}")
+        if branch.get("frozen_canonical_input_loaded") is not True or branch.get("branch_used_primary_input_hashes") != (expected_observation[1] if expected_observation is not None else None):
+            errors.append(f"BRANCH_FROZEN_INPUT_BINDING_INVALID:{key}")
         expected_branch_sha = _sha_json(canonical_value(branch))
         if row.get("branch_result_sha256") != expected_branch_sha:
             errors.append(f"BRANCH_SHA_INVALID:{key}")

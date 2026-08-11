@@ -197,18 +197,22 @@ def evaluate_treatment_compliance(
             "delivered_open_steps": len(receipts),
             "expected_open_steps": expected_steps,
         }
+    # Command delivery is the treatment gate.  Aperture movement is a
+    # descriptive mediator and may be blocked by contact or dynamics; it is
+    # not permission to relabel a delivered OPEN command as noncompliance.
     already_open = bool(pre_metrics and pre_metrics[0] >= float(already_open_min))
     response_delta = (max(post_metrics) - pre_metrics[0]) if pre_metrics and post_metrics else None
     response = response_delta is not None and response_delta >= float(aperture_delta_min)
     return {
-        "treatment_compliant": bool(already_open or response),
+        "treatment_compliant": True,
         "command_delivery_valid": True,
         "already_open_state": already_open,
         "aperture_response": bool(response),
         "pre_aperture": pre_metrics[0] if pre_metrics else None,
         "max_post_aperture": max(post_metrics) if post_metrics else None,
         "aperture_delta": response_delta,
-        "compliance_reason": "ALREADY_OPEN" if already_open else ("APERTURE_RESPONSE" if response else "APERTURE_RESPONSE_NOT_SATISFIED"),
+        "compliance_reason": "COMMAND_DELIVERY",
+        "mediator_reason": "ALREADY_OPEN" if already_open else ("APERTURE_RESPONSE" if response else "APERTURE_RESPONSE_NOT_SATISFIED"),
         "command_failures": [],
         "delivered_open_steps": len(receipts),
         "expected_open_steps": expected_steps,

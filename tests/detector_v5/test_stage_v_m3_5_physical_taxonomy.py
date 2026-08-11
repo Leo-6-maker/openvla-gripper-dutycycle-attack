@@ -128,6 +128,13 @@ def test_compliance_distinguishes_command_from_response():
     assert result["command_delivery_valid"] is True
     assert result["aperture_response"] is True
 
+    no_movement = [dict(receipt[0], post_aperture=0.001)]
+    no_movement_result = evaluate_treatment_compliance(no_movement, expected_steps=1)
+    assert no_movement_result["treatment_compliant"] is True
+    assert no_movement_result["aperture_response"] is False
+    assert no_movement_result["compliance_reason"] == "COMMAND_DELIVERY"
+    assert no_movement_result["mediator_reason"] == "APERTURE_RESPONSE_NOT_SATISFIED"
+
     incomplete = evaluate_treatment_compliance(receipt, expected_steps=3)
     assert incomplete["treatment_compliant"] is False
     assert "DELIVERED_STEP_COUNT:1/3" in incomplete["command_failures"]

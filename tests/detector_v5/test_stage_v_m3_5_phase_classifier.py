@@ -14,6 +14,7 @@ from gripper_attack.stage_v_m3_5_phase_classifier import (  # noqa: E402
     classify_trajectory,
 )
 from scripts.detector_v5.build_stage_v_m3_5_probe_plan import (  # noqa: E402
+    PREFIX_SELECTION_VERSION,
     ProbePlanError,
     select_probe_steps,
 )
@@ -80,6 +81,14 @@ def test_probe_plan_uses_deterministic_corridor_quantiles_without_phase_quota():
         for phase in PHASES
     }
     assert first["outcomes_read"] is False
+
+
+def test_probe_plan_prefix_selection_is_outcome_blind_and_early():
+    rows = [_corridor_row(step, PHASES[step % len(PHASES)]) for step in range(48)]
+    plan = select_probe_steps(rows, "libero_goal/task_00/state_00", selection_version=PREFIX_SELECTION_VERSION)
+    assert [item["step"] for item in plan["probe_steps"]] == list(range(24))
+    assert plan["selection_algorithm"].startswith("sort eligible corridor by timestep; choose the first 24")
+    assert plan["outcomes_read"] is False
 
 
 def test_probe_plan_fails_deterministically_below_24_corridor_states():
