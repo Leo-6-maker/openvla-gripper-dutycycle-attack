@@ -213,7 +213,7 @@ def _clean_row(step: int, horizon: int, capture: Mapping[str, Any], telemetry: M
 
 
 def _validate_protocol(protocol: Mapping[str, Any], args: argparse.Namespace) -> None:
-    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_A" or protocol.get("version") not in {"V1.4-GATE-A", "V1.4.1-GATE-A"}:
+    if protocol.get("schema") != "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_A" or protocol.get("version") not in {"V1.4-GATE-A", "V1.4.1-GATE-A", "V1.4.2-GATE-A"}:
         raise M35RunnerError("V1_4_GATE_A_PROTOCOL_INVALID")
     if protocol.get("status") != "FROZEN_RUNTIME_AUTHORIZED" or protocol.get("runtime_authorized") is not True:
         raise M35RunnerError("V1_4_GATE_A_PROTOCOL_NOT_FROZEN_OR_AUTHORIZED")
