@@ -38,8 +38,8 @@ def test_gate_b_pair_label_never_coerces_invalid_control_to_negative() -> None:
 
 
 def test_gate_b_matched_contact_loss_uses_control_reference() -> None:
-    control = {"status": "PASS", "state_restore_exact": True, "causal_input_binding_pass": True, "available_horizon_steps": 2, "rows": [{"post_contact_telemetry_valid": True, "post_object_gripper_contact": True}, {"post_contact_telemetry_valid": True, "post_object_gripper_contact": True}]}
-    treatment = {"status": "PASS", "state_restore_exact": True, "causal_input_binding_pass": True, "available_horizon_steps": 2, "rows": [{"post_contact_telemetry_valid": True, "post_object_gripper_contact": False}, {"post_contact_telemetry_valid": True, "post_object_gripper_contact": False}]}
+    control = {"status": "PASS", "state_restore_exact": True, "causal_input_binding_pass": True, "available_horizon_steps": 2, "rows": [{"post_contact_telemetry_valid": True, "post_object_gripper_contact": True, "post_object_position": [0.0, 0.0, 0.0]}, {"post_contact_telemetry_valid": True, "post_object_gripper_contact": True, "post_object_position": [0.0, 0.0, 0.0]}]}
+    treatment = {"status": "PASS", "state_restore_exact": True, "causal_input_binding_pass": True, "available_horizon_steps": 2, "rows": [{"post_contact_telemetry_valid": True, "post_object_gripper_contact": False, "post_object_position": [0.0, 0.0, 0.0]}, {"post_contact_telemetry_valid": True, "post_object_gripper_contact": False, "post_object_position": [0.0, 0.0, 0.0]}]}
     assert _physical_outcome(treatment, required_steps=2, reference=control)["class"] == "GRIPPER_CONTACT_LOSS"
 
 
