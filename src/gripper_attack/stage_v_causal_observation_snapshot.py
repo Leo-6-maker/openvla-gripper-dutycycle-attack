@@ -24,6 +24,7 @@ SNAPSHOT_FILENAME = "CAUSAL_PROBE_SNAPSHOT_V2.json"
 SNAPSHOT_SHA_FILENAME = "CAUSAL_PROBE_SNAPSHOT_V2.json.sha256"
 ARRAY_DESCRIPTOR_SCHEMA = "STAGE_V_CAUSAL_ARRAY_DESCRIPTOR_V1"
 ARRAY_MARKER = "__causal_array__"
+RUNTIME_STATE_SCHEMA = "STAGE_V_CONTROLLER_WRAPPER_RUNTIME_STATE_V2"
 PRIMARY_OBSERVATION_FIELDS = (
     "raw_observation",
     "canonical_policy_rgb_224",
@@ -379,6 +380,8 @@ def capture_runtime_state(env: Any, *, model: Any | None = None, adapter: Any | 
     robots: list[dict[str, Any]] = []
     for index, robot in enumerate(getattr(target, "robots", ()) or ()):
         row: dict[str, Any] = {"index": index, "recent_buffers": _attrs(robot, ("recent_qpos", "recent_actions", "recent_torques", "recent_ee_forcetorques", "recent_ee_pose", "recent_ee_vel", "recent_ee_vel_buffer", "recent_ee_acc"))}
+        gripper = getattr(robot, "gripper", None)
+        row["gripper"] = _attrs(gripper, ("current_action", "speed", "dof")) if gripper is not None else {}
         controller = getattr(robot, "controller", None)
         if controller is not None:
             row["controller"] = _controller_state(controller)
@@ -386,6 +389,7 @@ def capture_runtime_state(env: Any, *, model: Any | None = None, adapter: Any | 
     model_state = _attrs(model, ("training",)) if model is not None else {}
     adapter_state = _attrs(adapter, ("unnorm_key", "center_crop", "base_vla_name", "open_token_ids", "close_token_ids", "token_action_map")) if adapter is not None else {}
     return {
+        "schema": RUNTIME_STATE_SCHEMA,
         "environment": environment,
         "observables": _observable_state(getattr(target, "_observables", None)),
         "robots": robots,
@@ -450,6 +454,8 @@ def _restore_object(obj: Any, state: Mapping[str, Any]) -> None:
 
 def restore_runtime_state(env: Any, state: Mapping[str, Any], *, model: Any | None = None, adapter: Any | None = None) -> None:
     """Restore the captured mutable state before a counterfactual branch."""
+    if state.get("schema") != RUNTIME_STATE_SCHEMA:
+        raise CausalSnapshotError("RUNTIME_STATE_SCHEMA_INVALID")
     inner = getattr(env, "env", None)
     target = inner if inner is not None else env
     environment = state.get("environment")
@@ -468,6 +474,10 @@ def restore_runtime_state(env: Any, state: Mapping[str, Any], *, model: Any | No
             recent = row.get("recent_buffers")
             if isinstance(recent, Mapping):
                 _restore_object(robot, recent)
+            gripper = getattr(robot, "gripper", None)
+            gripper_state = row.get("gripper")
+            if gripper is not None and isinstance(gripper_state, Mapping):
+                _restore_object(gripper, gripper_state)
             controller = getattr(robot, "controller", None)
             controller_state = row.get("controller")
             if controller is not None and isinstance(controller_state, Mapping):

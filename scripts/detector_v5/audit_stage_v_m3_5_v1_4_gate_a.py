@@ -66,6 +66,16 @@ def _inside(root: Path, relative: Any) -> Path:
     return path
 
 
+def _gripper_runtime_complete(runtime: Any) -> bool:
+    if not isinstance(runtime, Mapping) or runtime.get("schema") != "STAGE_V_CONTROLLER_WRAPPER_RUNTIME_STATE_V2":
+        return False
+    robots = runtime.get("robots")
+    if not isinstance(robots, list) or not robots:
+        return False
+    required = {"current_action", "speed", "dof"}
+    return all(isinstance(row, Mapping) and isinstance(row.get("gripper"), Mapping) and required.issubset(row["gripper"]) for row in robots)
+
+
 def _audit(root: Path, *, parent_key: str, source_commit: str, source_tree: str) -> dict[str, Any]:
     errors: list[str] = []
     receipt_path = root / "M3_5_V1_4_GATE_A_RECEIPT.json"
@@ -114,6 +124,8 @@ def _audit(root: Path, *, parent_key: str, source_commit: str, source_tree: str)
                 errors.append(f"SNAPSHOT_PAYLOAD_FIELDS_MISSING:{index}")
             observation_hashes = assert_primary_observation_exact(payload)
             runtime = payload.get("controller_and_wrapper_runtime_state", {})
+            if not _gripper_runtime_complete(runtime):
+                errors.append(f"GRIPPER_RUNTIME_STATE_BINDING_INVALID:{index}")
             if not isinstance(runtime, Mapping) or not isinstance(runtime.get("rng"), Mapping) or _sha_json(canonical_value(runtime.get("rng"))) != _sha_json(canonical_value(payload.get("required_rng_state"))):
                 errors.append(f"RNG_BINDING_MISMATCH:{index}")
             window = payload.get("clean_reference_action_window")

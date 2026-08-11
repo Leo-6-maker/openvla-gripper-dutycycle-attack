@@ -89,8 +89,14 @@ def test_runtime_capture_records_controller_wrapper_observable_and_rng_state() -
         goal_ori = np.eye(3)
         interpolator_pos = Interpolator()
 
+    class Gripper:
+        current_action = np.asarray([0.25, -0.25], dtype=np.float64)
+        speed = 0.01
+        dof = 2
+
     class Robot:
         controller = Controller()
+        gripper = Gripper()
         recent_actions = Buffer()
 
     class Observable:
@@ -112,15 +118,27 @@ def test_runtime_capture_records_controller_wrapper_observable_and_rng_state() -
 
     env = Env()
     state = capture_runtime_state(env)
+    assert state["schema"] == "STAGE_V_CONTROLLER_WRAPPER_RUNTIME_STATE_V2"
     assert state["environment"]["timestep"] == 4
     assert state["robots"][0]["controller"]["interpolator_pos"]["step"] == 2
+    assert state["robots"][0]["gripper"]["current_action"].tolist() == [0.25, -0.25]
     assert state["observables"]["camera"]["_sampled"] is True
     assert "python_random" in state["rng"]
     env.env.timestep = 99
     env.env._observables["camera"]._sampled = False
+    env.env.robots[0].gripper.current_action[...] = [0.9, 0.9]
     restore_runtime_state(env, state)
     assert env.env.timestep == 4
     assert env.env._observables["camera"]._sampled is True
+    assert env.env.robots[0].gripper.current_action.tolist() == [0.25, -0.25]
+
+
+def test_runtime_restore_rejects_legacy_state_without_gripper_schema() -> None:
+    class Env:
+        env = type("Inner", (), {"robots": [], "_observables": {}})()
+
+    with pytest.raises(CausalSnapshotError, match="RUNTIME_STATE_SCHEMA_INVALID"):
+        restore_runtime_state(Env(), {"environment": {}, "robots": []})
 
 
 def test_reference_window_and_surgical_open_action() -> None:

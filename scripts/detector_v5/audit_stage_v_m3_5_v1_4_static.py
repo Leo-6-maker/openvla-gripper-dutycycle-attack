@@ -79,6 +79,8 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "gate_a_schema_output_bound": "CAUSAL_PROBE_SNAPSHOT_SCHEMA.json" in runner_path.read_text(encoding="utf-8"),
         "final_auditor_requires_four_suite_coverage": "suite_counts != {suite: 2 for suite in SUITES}" in final_auditor_text and "M3_5_V1_4_FINAL_RECEIPT_V1" in final_auditor_text,
         "snapshot_helpers_present": required_snapshot_functions.issubset(snapshot_names),
+        "runtime_snapshot_captures_gripper_state": all(token in snapshot_path.read_text(encoding="utf-8") for token in ("RUNTIME_STATE_SCHEMA", "current_action", "restore_runtime_state")),
+        "independent_audits_require_gripper_state": "_gripper_runtime_complete" in gate_a_auditor_text and "_gripper_runtime_complete" in gate_b_auditor_text,
         "fresh_render_gate_literal_false": protocol.get("operation", {}).get("fresh_render_equality_gate_used") is False,
         "fresh_render_primary_hard_stop": protocol.get("operation", {}).get("fresh_render_primary_consumption") == "HARD_STOP",
         "protected_counters_zero": protocol.get("protected_counters") == {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0},

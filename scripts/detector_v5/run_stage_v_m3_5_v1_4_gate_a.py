@@ -334,6 +334,8 @@ def run(args: argparse.Namespace) -> int:
     _write_json(output_dir / "CAUSAL_PROBE_SNAPSHOT_SCHEMA.json", {
         "schema": "STAGE_V_CAUSAL_PROBE_SNAPSHOT_SCHEMA_V2",
         "snapshot_schema": "STAGE_V_CAUSAL_PROBE_SNAPSHOT_V2",
+        "runtime_state_schema": "STAGE_V_CONTROLLER_WRAPPER_RUNTIME_STATE_V2",
+        "required_runtime_gripper_fields": ["current_action", "speed", "dof"],
         "primary_authority": "uncompressed_sidecar_bytes",
         "required_payload_fields": ["full_simulator_state", "controller_and_wrapper_runtime_state", "required_rng_state", "raw_observation", "raw_observation_sha256", "canonical_policy_rgb_224", "processed_image", "processed_image_sha256", "input_ids", "pixel_values", "attention_mask", "attention_mask_present", "prompt", "decode_config", "clean_reference_action_window"],
         "source_commit": args.source_commit,

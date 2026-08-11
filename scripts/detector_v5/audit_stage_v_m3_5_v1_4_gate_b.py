@@ -65,6 +65,16 @@ def _inside(root: Path, relative: str) -> Path:
     return path
 
 
+def _gripper_runtime_complete(runtime: Any) -> bool:
+    if not isinstance(runtime, Mapping) or runtime.get("schema") != "STAGE_V_CONTROLLER_WRAPPER_RUNTIME_STATE_V2":
+        return False
+    robots = runtime.get("robots")
+    if not isinstance(robots, list) or not robots:
+        return False
+    required = {"current_action", "speed", "dof"}
+    return all(isinstance(row, Mapping) and isinstance(row.get("gripper"), Mapping) and required.issubset(row["gripper"]) for row in robots)
+
+
 def _verify_seal(root: Path) -> list[str]:
     errors: list[str] = []
     sums = root / "SHA256SUMS"
@@ -223,6 +233,8 @@ def audit(root: Path, *, parent_key: str, source_commit: str, source_tree: str) 
             probe_id = str(snapshot["probe_id"])
             snapshot_root = gate_a_root / str(snapshot["path"])
             loaded = load_snapshot(snapshot_root, materialize_torch=True)
+            if not _gripper_runtime_complete(loaded["payload"].get("controller_and_wrapper_runtime_state")):
+                errors.append(f"GATE_A_GRIPPER_RUNTIME_STATE_INVALID:{probe_id}")
             expected_observations[probe_id] = (
                 _sha_file(snapshot_root / "CAUSAL_PROBE_SNAPSHOT_V2.json"),
                 assert_primary_observation_exact(loaded["payload"]),
