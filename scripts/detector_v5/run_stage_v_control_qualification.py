@@ -168,13 +168,18 @@ def audit_qualification_row(row: Mapping[str, Any], a: Mapping[str, Any], b: Map
     return not errors, sorted(set(errors))
 
 
-def build_science_parent_manifest(formal_manifest: Mapping[str, Any], *, source_clean_root: str) -> dict[str, Any]:
-    """Build a fresh V1 identity manifest for the frozen external science runner."""
+def build_science_parent_manifest(
+    formal_manifest: Mapping[str, Any], *, source_clean_root: str,
+    expected_parent_count: int | None = 40,
+) -> dict[str, Any]:
+    """Build a fresh identity manifest for the frozen external science runner."""
     if formal_manifest.get("schema") != "STAGE_V_FORMAL_PARENT_MANIFEST_V2" or formal_manifest.get("status") != "PASS":
         raise ValueError("formal qualification manifest is not PASS")
     rows = formal_manifest.get("selected_parents")
-    if not isinstance(rows, list) or len(rows) != 40:
-        raise ValueError("formal qualification manifest must contain 40 parents")
+    if not isinstance(rows, list) or not rows:
+        raise ValueError("qualification manifest must contain at least one parent")
+    if expected_parent_count is not None and len(rows) != expected_parent_count:
+        raise ValueError(f"qualification manifest must contain {expected_parent_count} parents")
     root = str(source_clean_root).rstrip("/")
     if not root:
         raise ValueError("source clean root is missing")
@@ -600,6 +605,7 @@ def main(argv: list[str] | None = None) -> int:
         atomic_write_json(manifest_path, extras["manifest"])
         science_manifest = build_science_parent_manifest(
             extras["manifest"], source_clean_root=str(args.source_clean_root.resolve()),
+            expected_parent_count=None if args.suites else 40,
         )
         science_path = args.output_dir / "STAGE_V_FORMAL_PARENT_MANIFEST_V1.json"
         atomic_write_json(science_path, science_manifest)
