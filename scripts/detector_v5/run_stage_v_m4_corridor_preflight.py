@@ -93,6 +93,18 @@ def _write_clean_failure(args: argparse.Namespace, parent: Mapping[str, Any], ou
     })
 
 
+def _candidate_manifest_binding(protocol: Mapping[str, Any]) -> tuple[Path, str, int]:
+    """Resolve either the frozen formal split or a separately frozen reserve set."""
+    inputs = protocol["inputs"]
+    reserve_path = inputs.get("candidate_parent_manifest_path")
+    path_key = "candidate_parent_manifest_path" if reserve_path else "formal_parent_split_path"
+    sha_key = "candidate_parent_manifest_sha256" if reserve_path else "formal_parent_split_sha256"
+    expected_count = int(protocol["qualification"]["candidate_parent_count"])
+    if expected_count <= 0:
+        raise ValueError("M4_CORRIDOR_CANDIDATE_COUNT_INVALID")
+    return Path(str(inputs[path_key])).resolve(), str(inputs.get(sha_key, "")), expected_count
+
+
 def _validate(protocol: Mapping[str, Any], authorization: Mapping[str, Any], args: argparse.Namespace) -> None:
     if protocol.get("schema") != "STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1" or protocol.get("status") != "FROZEN_RUNTIME_AUTHORIZED" or protocol.get("runtime_authorized") is not True:
         raise ValueError("M4_CORRIDOR_PROTOCOL_NOT_AUTHORIZED")
@@ -103,11 +115,12 @@ def _validate(protocol: Mapping[str, Any], authorization: Mapping[str, Any], arg
         raise ValueError("M4_CORRIDOR_AUTHORIZATION_BINDING_INVALID")
     if protocol.get("protected_counters") != COUNTERS:
         raise ValueError("M4_CORRIDOR_PROTECTED_BOUNDARY_INVALID")
-    split = Path(str(protocol["inputs"]["formal_parent_split_path"])).resolve()
-    if _sha(split) != protocol["inputs"].get("formal_parent_split_sha256"):
+    split, expected_sha, expected_count = _candidate_manifest_binding(protocol)
+    if _sha(split) != expected_sha:
         raise ValueError("M4_CORRIDOR_SPLIT_BINDING_INVALID")
     value = _load(split)
-    if value.get("schema") != "STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V1" or value.get("status") != "FROZEN" or len(value.get("parents", [])) != 40:
+    allowed_schemas = {"STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V1", "STAGE_V_M4_CORRIDOR_RESERVE_PARENT_MANIFEST_V1"}
+    if value.get("schema") not in allowed_schemas or value.get("status") != "FROZEN" or len(value.get("parents", [])) != expected_count:
         raise ValueError("M4_CORRIDOR_SPLIT_INVALID")
 
 
@@ -222,7 +235,8 @@ def main(argv: list[str] | None = None) -> int:
         protocol = _load(args.protocol.resolve())
         authorization = _load(args.authorization.resolve())
         _validate(protocol, authorization, args)
-        split = _load(Path(str(protocol["inputs"]["formal_parent_split_path"])).resolve())
+        split_path, _expected_sha, _expected_count = _candidate_manifest_binding(protocol)
+        split = _load(split_path)
         parent = next(row for row in split["parents"] if str(row["canonical_parent_key"]) == args.parent_key)
         output = args.output_dir.resolve()
         if output.exists():

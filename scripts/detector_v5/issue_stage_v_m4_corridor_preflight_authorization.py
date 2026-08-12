@@ -24,6 +24,17 @@ def _load(path: Path) -> dict[str, Any]:
     return value
 
 
+def _load_jsonl(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            value = json.loads(line)
+            if not isinstance(value, dict):
+                raise SystemExit(f"JSON_OBJECT_REQUIRED:{path}")
+            rows.append(value)
+    return rows
+
+
 def _git(repo: Path, *args: str) -> str:
     return subprocess.check_output(["git", *args], cwd=repo, text=True).strip()
 
@@ -62,10 +73,32 @@ def main(argv: list[str] | None = None) -> int:
     if audit.get("schema") != "STAGE_V_M4_CORRIDOR_STATIC_AUDIT_V1" or audit.get("status") != "PASS_STATIC_DESIGN_ONLY" or audit.get("protocol_sha256") != _sha(protocol_path):
         raise SystemExit("M4_CORRIDOR_STATIC_AUDIT_NOT_BOUND")
     inputs = protocol.get("inputs", {})
-    if str(inputs.get("formal_parent_split_path")) != str(split_path) or inputs.get("formal_parent_split_sha256") != _sha(split_path):
+    reserve_manifest = bool(inputs.get("candidate_parent_manifest_path"))
+    manifest_key = "candidate_parent_manifest_path" if reserve_manifest else "formal_parent_split_path"
+    manifest_sha_key = "candidate_parent_manifest_sha256" if reserve_manifest else "formal_parent_split_sha256"
+    candidate_count = int(protocol.get("qualification", {}).get("candidate_parent_count", 0) or 0)
+    if str(inputs.get(manifest_key)) != str(split_path) or inputs.get(manifest_sha_key) != _sha(split_path):
         raise SystemExit("M4_CORRIDOR_SPLIT_BINDING_MISMATCH")
-    if split.get("schema") != "STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V1" or split.get("status") != "FROZEN" or len(split.get("parents", [])) != 40:
+    allowed_schemas = {"STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V1", "STAGE_V_M4_CORRIDOR_RESERVE_PARENT_MANIFEST_V1"}
+    if split.get("schema") not in allowed_schemas or split.get("status") != "FROZEN" or len(split.get("parents", [])) != candidate_count:
         raise SystemExit("M4_CORRIDOR_SPLIT_INVALID")
+    if not reserve_manifest and candidate_count != 40:
+        raise SystemExit("M4_CORRIDOR_FORMAL_SPLIT_INVALID")
+    if reserve_manifest:
+        rows_path = Path(str(inputs.get("v7_control_qualification_rows_path", ""))).resolve()
+        if not rows_path.is_file() or inputs.get("v7_control_qualification_rows_sha256") != _sha(rows_path):
+            raise SystemExit("M4_CORRIDOR_V7_ROWS_BINDING_INVALID")
+        by_key = {str(row.get("canonical_parent_key")): row for row in _load_jsonl(rows_path)}
+        for parent in split["parents"]:
+            key = str(parent.get("canonical_parent_key", ""))
+            row = by_key.get(key)
+            if row is None or row.get("qualified") is not True or row.get("errors") != []:
+                raise SystemExit(f"M4_CORRIDOR_RESERVE_NOT_V7_QUALIFIED:{key}")
+            replicates = row.get("replicates", {})
+            if any(not isinstance(replicates.get(rep), dict) or replicates[rep].get("status") != "PASS" for rep in ("A", "B")):
+                raise SystemExit(f"M4_CORRIDOR_RESERVE_REPLICATES_INVALID:{key}")
+            if parent.get("v7_candidate_sha256") != row.get("candidate_sha256"):
+                raise SystemExit(f"M4_CORRIDOR_RESERVE_CANDIDATE_BINDING_INVALID:{key}")
     if v7.get("schema") != "STAGE_V_V7_FORMAL_QUALIFICATION_PASS_RECEIPT_V1" or v7.get("status") != "PASS_FORMAL_PARENT_QUALIFICATION" or v7.get("formal_parent_count") != 40:
         raise SystemExit("V7_RECEIPT_NOT_PASS")
     if inputs.get("v7_formal_receipt_sha256") != _sha(v7_path) or protocol.get("protected_counters") != COUNTERS:
@@ -81,13 +114,17 @@ def main(argv: list[str] | None = None) -> int:
         "static_audit_sha256": _sha(audit_path),
         "v7_formal_receipt": str(v7_path),
         "v7_formal_receipt_sha256": _sha(v7_path),
-        "formal_parent_split": str(split_path),
-        "formal_parent_split_sha256": _sha(split_path),
+        "authorization_kind": "RESERVE_CANDIDATE" if reserve_manifest else "FORMAL",
+        "candidate_parent_manifest": str(split_path),
+        "candidate_parent_manifest_sha256": _sha(split_path),
+        "candidate_parent_count": candidate_count,
+        "formal_parent_split": None if reserve_manifest else str(split_path),
+        "formal_parent_split_sha256": None if reserve_manifest else _sha(split_path),
         "source_commit": args.source_commit,
         "source_tree": args.source_tree,
         "repository_head": _git(repo, "rev-parse", "HEAD"),
         "repository_tree": _git(repo, "rev-parse", "HEAD^{tree}"),
-        "formal_parent_count": 40,
+        "formal_parent_count": None if reserve_manifest else 40,
         "clean_replicates": ["A", "B"],
         "minimum_corridor_candidates": 24,
         "owner_authorization_basis": str(args.owner_basis),

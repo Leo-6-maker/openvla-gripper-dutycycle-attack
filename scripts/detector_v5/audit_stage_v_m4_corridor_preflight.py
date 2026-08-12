@@ -36,13 +36,18 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     text = runner.read_text(encoding="utf-8")
     source = protocol.get("source_binding", {})
     inputs = protocol.get("inputs", {})
+    qualification = protocol.get("qualification", {})
+    reserve_manifest = bool(inputs.get("candidate_parent_manifest_path"))
+    candidate_count = int(qualification.get("candidate_parent_count", 0) or 0)
+    candidate_path = inputs.get("candidate_parent_manifest_path") or inputs.get("formal_parent_split_path")
+    candidate_sha = inputs.get("candidate_parent_manifest_sha256") or inputs.get("formal_parent_split_sha256")
     checks = {
         "protocol_schema": protocol.get("schema") == "STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1",
         "protocol_frozen_authorized": protocol.get("status") == "FROZEN_RUNTIME_AUTHORIZED" and protocol.get("runtime_authorized") is True,
         "source_binding": source.get("runtime_commit") == source_commit and source.get("runtime_tree") == source_tree,
-        "candidate_count_exact": protocol.get("qualification", {}).get("candidate_parent_count") == 40,
-        "replicates_exact": protocol.get("qualification", {}).get("clean_replicates") == ["A", "B"],
-        "corridor_threshold_exact": protocol.get("qualification", {}).get("minimum_corridor_candidates") == 24,
+        "candidate_count_exact": candidate_count > 0 and (reserve_manifest or candidate_count == 40),
+        "replicates_exact": qualification.get("clean_replicates") == ["A", "B"],
+        "corridor_threshold_exact": qualification.get("minimum_corridor_candidates") == 24,
         "outcome_blind": protocol.get("operation", {}).get("outcomes_read") is False,
         "no_intervention": protocol.get("operation", {}).get("intervention_executed") is False,
         "protected_counters_zero": protocol.get("protected_counters") == COUNTERS,
@@ -51,8 +56,8 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "runner_has_no_open_literal": "OPEN_T" not in text and "forced_open" not in text,
         "runner_writes_clean_only_receipt": "M4_CORRIDOR_PREFLIGHT_V1" in text,
         "runner_records_registered_clean_failure": "OBJECT_TAXONOMY_BINDING_" in text and "CLEAN_FAILURE" in text,
-        "runner_checks_frozen_split": "formal_parent_split_path" in text and "formal_parent_split_sha256" in text,
-        "formal_split_bound": bool(inputs.get("formal_parent_split_path")) and bool(inputs.get("formal_parent_split_sha256")),
+        "runner_checks_frozen_split": "formal_parent_split_path" in text and "formal_parent_split_sha256" in text and "candidate_parent_manifest_path" in text,
+        "formal_split_bound": bool(candidate_path) and bool(candidate_sha),
     }
     status = "PASS_STATIC_DESIGN_ONLY" if all(checks.values()) else "FAIL_STATIC_CONTRACT"
     return {
