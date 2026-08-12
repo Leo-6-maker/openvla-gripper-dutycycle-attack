@@ -1,0 +1,93 @@
+{
+  "schema": "STAGE_V_M4_CORRIDOR_AB_RECONCILIATION_V1",
+  "status": "HOLD_FORMAL_M4_CORRIDOR_INSUFFICIENT",
+  "created_utc": "2026-08-12T12:00:01Z",
+  "protocol": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-v7-terminal-gate-fix-20260812/configs/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1_3.json",
+    "sha256": "7f9d8ecf167c986edb49f603fda18d4f06dd40ccaf0038b2fa1d920a5ff58fb7"
+  },
+  "authorization": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_RUNTIME_AUTHORIZATION_V1_3_20260812T122500Z/STAGE_V_M4_CORRIDOR_RUNTIME_AUTHORIZATION.json",
+    "sha256": "c3d4183fbdd49f9ca520f533e0ca947ae0aa891eee906ccc1986837016def6f2"
+  },
+  "source_binding": {
+    "dispatcher_commit": "0aafb617cd772bc37fb5eb271c058b6519494db5",
+    "dispatcher_tree": "dc094568124c119b3ac2efeed1baa08083871188",
+    "science_commit": "7d5cc9762f2c0e66df6a701ceb76bda902318543",
+    "science_tree": "d152141b91d8d02e268a390d99c3c109775c6611"
+  },
+  "roots": {
+    "A": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_PREFLIGHT_A_20260812T123000Z",
+      "dispatcher_complete_sha256": "83cda35c76a3fdb3a5b913c3bc53919c0b079d520b03e045bdb4b7cad7624e7c",
+      "run_manifest_sha256": "f99e896d6cdcb00ed6850f5f58f4a4dd0f0be9a8dd99d15a82f53067a0fe54e2",
+      "dispatcher_status": "PASS",
+      "completed_parents": 40,
+      "approved_gpus": [0, 1, 2, 3, 4, 6, 7],
+      "gpu5_used": false,
+      "status_counts": {"PASS": 29, "INELIGIBLE": 6, "CLEAN_FAILURE": 5}
+    },
+    "B": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_PREFLIGHT_B_20260812T125000Z",
+      "dispatcher_complete_sha256": "6e4f768eceb73c6bf64a1444d5c5059c1f2cb41618b05ecc5e34ec1b2428077e",
+      "run_manifest_sha256": "0f1b27c42bd62a2cf47e61ba11df4bb5254e2bed9c046b9005a185f476e97ce2",
+      "dispatcher_status": "PASS",
+      "completed_parents": 40,
+      "approved_gpus": [0, 1, 2, 3, 4, 5, 6, 7],
+      "gpu5_used": true,
+      "status_counts": {"PASS": 33, "INELIGIBLE": 4, "CLEAN_FAILURE": 3}
+    }
+  },
+  "qualification": {
+    "formal_candidate_count": 40,
+    "replicates": ["A", "B"],
+    "minimum_corridor_candidates": 24,
+    "stable_parent_count": 29,
+    "stable_by_suite": {
+      "libero_10": 9,
+      "libero_goal": 4,
+      "libero_object": 10,
+      "libero_spatial": 6
+    },
+    "stable_parent_keys": [
+      "libero_10/task_00/state_34",
+      "libero_10/task_01/state_29",
+      "libero_10/task_01/state_42",
+      "libero_10/task_02/state_32",
+      "libero_10/task_02/state_35",
+      "libero_10/task_05/state_39",
+      "libero_10/task_05/state_42",
+      "libero_10/task_06/state_30",
+      "libero_10/task_06/state_39",
+      "libero_goal/task_02/state_44",
+      "libero_goal/task_05/state_23",
+      "libero_goal/task_05/state_41",
+      "libero_goal/task_08/state_33",
+      "libero_object/task_00/state_23",
+      "libero_object/task_01/state_45",
+      "libero_object/task_04/state_32",
+      "libero_object/task_04/state_41",
+      "libero_object/task_04/state_43",
+      "libero_object/task_06/state_26",
+      "libero_object/task_06/state_46",
+      "libero_object/task_07/state_23",
+      "libero_object/task_07/state_26",
+      "libero_object/task_09/state_29",
+      "libero_spatial/task_01/state_25",
+      "libero_spatial/task_01/state_42",
+      "libero_spatial/task_02/state_45",
+      "libero_spatial/task_07/state_24",
+      "libero_spatial/task_09/state_22",
+      "libero_spatial/task_09/state_23"
+    ]
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "outcomes_read": false,
+  "labels_generated": false,
+  "next_action": "QUALIFY_V7_RESERVES_AND_FILL_FRESH_SUITE_DEFICITS"
+}
