@@ -7,10 +7,16 @@ import ast
 import hashlib
 import json
 from pathlib import Path
+import sys
 from typing import Any, Mapping
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.detector_v5.stage_v_m4_governance import protocol_declares_corridor_gate  # noqa: E402
+
 COUNTERS = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
 
 
@@ -46,6 +52,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     gate_a_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_a.py"
     gate_b_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py"
     auditor_path = REPO_ROOT / "scripts/detector_v5/audit_stage_v_m4_matched_parent.py"
+    authorization_issuer_path = REPO_ROOT / "scripts/detector_v5/issue_stage_v_m4_runtime_authorization.py"
     snapshot_path = REPO_ROOT / "src/gripper_attack/stage_v_causal_observation_snapshot.py"
     runner_tree = ast.parse(runner_path.read_text(encoding="utf-8"), filename=str(runner_path))
     gate_a_tree = ast.parse(gate_a_path.read_text(encoding="utf-8"), filename=str(gate_a_path))
@@ -53,6 +60,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     runner_text = runner_path.read_text(encoding="utf-8")
     gate_b_text = gate_b_path.read_text(encoding="utf-8")
     auditor_text = auditor_path.read_text(encoding="utf-8")
+    authorization_issuer_text = authorization_issuer_path.read_text(encoding="utf-8")
     snapshot_text = snapshot_path.read_text(encoding="utf-8")
     replay = _function(gate_a_tree, "_replay_canary")
     branch = _function(gate_b_tree, "_run_branch")
@@ -64,6 +72,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     checks = {
         "protocol_schema": protocol.get("schema") == "STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V1",
         "protocol_frozen_authorized": protocol.get("status") == "FROZEN_RUNTIME_AUTHORIZED" and protocol.get("runtime_authorized") is True,
+        "formal_corridor_gate_bound": protocol_declares_corridor_gate(protocol),
         "source_binding": source.get("runtime_commit") == source_commit and source.get("runtime_tree") == source_tree,
         "matrix_exact": matrix == {
             "parents": 40, "probes_per_parent": 24, "repetitions": 1,
@@ -82,6 +91,8 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "runner_emits_exact_counts": all(token in runner_text for token in ('"expected_physical_executions": 96', '"expected_treatment_labels": 72', "len(probes) != PROBE_COUNT")),
         "runner_emits_protected_counters": '"protected_counters": dict(COUNTERS)' in runner_text,
         "independent_auditor_is_producer_free": "run_stage_v_m4_matched_parent" not in auditor_text,
+        "runner_requires_formal_corridor_gate": "validate_formal_m4_corridor_gate" in runner_text,
+        "authorization_issuer_requires_formal_corridor_gate": "validate_formal_m4_corridor_gate" in authorization_issuer_text,
         "snapshot_module_has_exact_binding": all(token in snapshot_text for token in ("CAUSAL_PROBE_SNAPSHOT_V2", "assert_primary_observation_exact", "write_snapshot", "load_snapshot")),
         "protected_counters_zero": protocol.get("protected_counters") == COUNTERS,
     }
@@ -99,6 +110,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "gate_a_sha256": _sha(gate_a_path),
         "gate_b_sha256": _sha(gate_b_path),
         "independent_auditor_sha256": _sha(auditor_path),
+        "authorization_issuer_sha256": _sha(authorization_issuer_path),
         "checks": checks,
         "primary_replay_calls": sorted(replay_calls),
         "primary_branch_calls": sorted(branch_calls),

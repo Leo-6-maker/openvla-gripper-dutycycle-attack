@@ -7,7 +7,17 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import sys
 from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.detector_v5.stage_v_m4_governance import (
+    M4GovernanceError,
+    validate_formal_m4_corridor_gate,
+)
 
 
 COUNTERS = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
@@ -103,6 +113,16 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("V7_FORMAL_RECEIPT_HASH_MISMATCH")
     if protocol.get("protected_counters") != COUNTERS:
         raise SystemExit("M4_PROTECTED_BOUNDARY_INVALID")
+    try:
+        corridor_gate = validate_formal_m4_corridor_gate(
+            protocol,
+            protocol_path=protocol_path,
+            split_path=split_path,
+            source_commit=args.source_commit,
+            source_tree=args.source_tree,
+        )
+    except M4GovernanceError as exc:
+        raise SystemExit(str(exc)) from exc
     if args.output.exists():
         raise SystemExit(f"REFUSE_OVERWRITE:{args.output}")
     receipt = {
@@ -118,6 +138,13 @@ def main(argv: list[str] | None = None) -> int:
         "formal_parent_split_sha256": _sha(split_path),
         "formal_parent_split_audit": str(split_audit_path),
         "formal_parent_split_audit_sha256": _sha(split_audit_path),
+        "supersession_hold": corridor_gate["hold_path"],
+        "supersession_hold_sha256": corridor_gate["hold_sha256"],
+        "corridor_pass_receipt": corridor_gate["receipt_path"],
+        "corridor_pass_receipt_sha256": corridor_gate["receipt_sha256"],
+        "corridor_qualification_protocol_sha256": inputs["corridor_qualification_protocol_sha256"],
+        "corridor_qualification_authorization_sha256": inputs["corridor_qualification_authorization_sha256"],
+        "corridor_reconciliation_sha256": inputs["corridor_reconciliation_sha256"],
         "source_commit": args.source_commit,
         "source_tree": args.source_tree,
         "repository_head": actual_commit,
