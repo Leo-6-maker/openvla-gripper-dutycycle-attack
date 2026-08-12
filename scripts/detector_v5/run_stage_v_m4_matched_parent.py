@@ -191,9 +191,13 @@ def run(args: argparse.Namespace) -> int:
     split = _validate(protocol, authorization, protocol_path=protocol_path, authorization_path=authorization_path, split_path=split_path, args=args)
     parent = _parent_row(split, args.parent_key)
     output = args.output_dir.resolve()
-    if output.exists() and any(output.iterdir()):
-        raise M35RunnerError(f"M4_OUTPUT_NOT_NEW:{output}")
-    output.mkdir(parents=True, exist_ok=False)
+    if output.exists():
+        allowed_worker_files = {"JOB.json", "RESOURCE_PRE.json"}
+        unexpected = [path.name for path in output.iterdir() if path.name not in allowed_worker_files]
+        if unexpected:
+            raise M35RunnerError(f"M4_OUTPUT_NOT_NEW:{output}:{sorted(unexpected)}")
+    else:
+        output.mkdir(parents=True, exist_ok=False)
     shutil.copy2(protocol_path, output / "M4_PROTOCOL.json")
     shutil.copy2(authorization_path, output / "M4_AUTHORIZATION.json")
     suite, task_part, state_part = args.parent_key.split("/")
