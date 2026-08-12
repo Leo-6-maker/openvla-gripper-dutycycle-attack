@@ -1,0 +1,67 @@
+{
+  "schema": "STAGE_V_M4_FORMAL_AUTHORIZATION_SUPERSESSION_HOLD_V1",
+  "version": "M4-FORMAL-AUTHORIZATION-SUPERSESSION-HOLD-V1",
+  "status": "HOLD_FORMAL_M4_CORRIDOR_INSUFFICIENT",
+  "append_only": true,
+  "historical_m4_protocol_sha256": "b70a8614938a33a7e8c3ba19de6aa8b37fede67f109a66405071d675cf92c795",
+  "historical_m4_authorization_sha256": "91a62f446fde33d0fd1aae32f6150e83da8ef371231f49eef2416cc571f52dbd",
+  "current_formal_corridor_reconciliation_sha256": "1de1d0d4ca1be7cb8e1acc82d5033f0c8521885525493381bc8ff065d831162",
+  "stable_parent_count": 29,
+  "required_parent_count": 40,
+  "required_suite_counts": {
+    "libero_10": 10,
+    "libero_goal": 10,
+    "libero_object": 10,
+    "libero_spatial": 10
+  },
+  "required_split_counts": {
+    "TRAIN": 24,
+    "VAL": 8,
+    "TEST": 8
+  },
+  "required_per_suite_split_counts": {
+    "libero_10": {"TRAIN": 6, "VAL": 2, "TEST": 2},
+    "libero_goal": {"TRAIN": 6, "VAL": 2, "TEST": 2},
+    "libero_object": {"TRAIN": 6, "VAL": 2, "TEST": 2},
+    "libero_spatial": {"TRAIN": 6, "VAL": 2, "TEST": 2}
+  },
+  "exact_stable_parent_keys": [
+    "libero_10/task_00/state_34",
+    "libero_10/task_01/state_29",
+    "libero_10/task_01/state_42",
+    "libero_10/task_02/state_32",
+    "libero_10/task_02/state_35",
+    "libero_10/task_05/state_39",
+    "libero_10/task_05/state_42",
+    "libero_10/task_06/state_30",
+    "libero_10/task_06/state_39",
+    "libero_goal/task_02/state_44",
+    "libero_goal/task_05/state_23",
+    "libero_goal/task_05/state_41",
+    "libero_goal/task_08/state_33",
+    "libero_object/task_00/state_23",
+    "libero_object/task_01/state_45",
+    "libero_object/task_04/state_32",
+    "libero_object/task_04/state_41",
+    "libero_object/task_04/state_43",
+    "libero_object/task_06/state_26",
+    "libero_object/task_06/state_46",
+    "libero_object/task_07/state_23",
+    "libero_object/task_07/state_26",
+    "libero_object/task_09/state_29",
+    "libero_spatial/task_01/state_25",
+    "libero_spatial/task_01/state_42",
+    "libero_spatial/task_02/state_45",
+    "libero_spatial/task_07/state_24",
+    "libero_spatial/task_09/state_22",
+    "libero_spatial/task_09/state_23"
+  ],
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "consumability_rule": "Historical M4 protocol/authorization are superseded. A future formal M4 artifact is consumable only when its protocol, final 40-parent manifest/split, and independent PASS_FORMAL_M4_CORRIDOR receipt bind exactly and all protected counters are zero.",
+  "failure_action": "HOLD_AND_DO_NOT_LAUNCH"
+}

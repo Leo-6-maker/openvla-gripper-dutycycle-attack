@@ -16,6 +16,11 @@ from typing import Any, Mapping
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+from scripts.detector_v5.stage_v_gpu_resource_contract import (  # noqa: E402
+    ResourceContractError,
+    resolve_cuda_physical_uuid,
+)
 PYTHON_PREFIX = "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800"
 IDENTITY = "libero_10/task_08/state_47"
 GPU_IDS = tuple(range(8))
@@ -168,8 +173,7 @@ def validate_binding_receipt(receipt: Mapping[str, Any], gpu: int, *, require_ca
         "cuda_visible_devices": str(gpu),
         "torch_current_device": 0,
         "mujoco_gl": "egl",
-        # CUDA_VISIBLE_DEVICES remaps the selected physical GPU to logical EGL 0.
-        "egl_device_identifier": 0,
+        "egl_device_identifier": gpu,
     }
     for key, value in expected.items():
         if receipt.get(key) != value:
@@ -193,9 +197,8 @@ def validate_runtime_binding_receipt(receipt: Mapping[str, Any], gpu: int, *, ru
         "cuda_visible_devices": str(gpu),
         "torch_current_device": 0,
         "mujoco_gl": "egl",
-        # Each child exposes exactly one physical GPU, so MuJoCo sees logical 0.
-        "mujoco_egl_device_id": "0",
-        "env_render_gpu_device_id": 0,
+        "mujoco_egl_device_id": str(gpu),
+        "env_render_gpu_device_id": gpu,
         "run_set": run_set,
         "run_label": phase,
         "source_commit": source_commit,
@@ -217,7 +220,7 @@ def validate_runtime_binding_receipt(receipt: Mapping[str, Any], gpu: int, *, ru
         raise V2Error(f"RUNTIME_BINDING_RECEIPT_GPU_UUID_MISSING:gpu_{gpu:02d}:{phase}")
     if receipt.get("torch_device_uuid_canonical") != canonical_gpu_uuid(torch_uuid):
         raise V2Error(f"RUNTIME_BINDING_RECEIPT_GPU_UUID_CANONICAL_INVALID:gpu_{gpu:02d}:{phase}")
-    if receipt.get("render_context_observed_device_id") != 0:
+    if receipt.get("render_context_observed_device_id") != gpu:
         raise V2Error(f"RUNTIME_BINDING_RECEIPT_RENDER_CONTEXT_MISMATCH:gpu_{gpu:02d}:{phase}")
     if not isinstance(receipt.get("renderer_device_information"), Mapping):
         raise V2Error(f"RUNTIME_BINDING_RECEIPT_RENDERER_INFO_MISSING:gpu_{gpu:02d}:{phase}")
@@ -533,8 +536,8 @@ def _require_preflight(root: Path, gate: str) -> dict[str, Any]:
 def _run_renderer_canary_child(args: argparse.Namespace) -> int:
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
     os.environ["MUJOCO_GL"] = "egl"
-    logical_gpu = 0
-    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(logical_gpu)
+    physical_gpu = int(args.gpu)
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(physical_gpu)
     sys.path.insert(0, str(REPO_ROOT / "src"))
     import torch
     if not torch.cuda.is_available():
@@ -549,7 +552,7 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
     suite_instance = benchmark.get_benchmark_dict()[args.suite]()
     task = suite_instance.get_task(int(candidate["task_index"]))
     bddl = os.path.join(get_libero_path("bddl_files"), task.problem_folder, task.bddl_file)
-    env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=8, camera_widths=8, has_renderer=False, has_offscreen_renderer=True, use_camera_obs=False, render_gpu_device_id=logical_gpu, horizon=1)
+    env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=8, camera_widths=8, has_renderer=False, has_offscreen_renderer=True, use_camera_obs=False, render_gpu_device_id=physical_gpu, horizon=1)
     try:
         observed = None
         for obj in (env, getattr(env, "sim", None), getattr(getattr(env, "sim", None), "render_context", None)):
@@ -560,12 +563,15 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
                     break
             if observed is not None:
                 break
-        if observed != logical_gpu:
+        if observed != physical_gpu:
             raise V2Error("EGL_DEVICE_BINDING_MISMATCH")
         properties = torch.cuda.get_device_properties(0)
-        gpu_uuid = str(getattr(properties, "uuid", "")).strip()
-        if not gpu_uuid:
-            raise V2Error("CANARY_GPU_UUID_UNAVAILABLE")
+        try:
+            gpu_uuid, gpu_uuid_source = resolve_cuda_physical_uuid(
+                physical_gpu, torch_device_uuid=getattr(properties, "uuid", None)
+            )
+        except ResourceContractError as exc:
+            raise V2Error(f"CANARY_GPU_UUID_UNAVAILABLE:{exc}") from exc
         renderer_device_information = {
             "env_class": type(env).__name__,
             "sim_class": type(getattr(env, "sim", None)).__name__,
@@ -577,6 +583,7 @@ def _run_renderer_canary_child(args: argparse.Namespace) -> int:
             "logical_worker_id": f"worker_{int(args.gpu)}", "requested_physical_gpu": int(args.gpu),
             "physical_gpu_index": int(args.gpu), "gpu_uuid": gpu_uuid,
             "gpu_uuid_canonical": canonical_gpu_uuid(gpu_uuid),
+            "gpu_uuid_source": gpu_uuid_source,
             "cuda_visible_devices": os.environ["CUDA_VISIBLE_DEVICES"],
             "torch_current_device": int(torch.cuda.current_device()), "cuda_logical_device": 0,
             "cuda_device_name": torch.cuda.get_device_name(0), "mujoco_gl": os.environ["MUJOCO_GL"],
@@ -600,7 +607,7 @@ def run_renderer_canary(root: Path, args: argparse.Namespace, protocol: Mapping[
     def one(gpu: int) -> dict[str, Any]:
         output = output_root / f"gpu_{gpu:02d}.json"
         command = [str(sys.executable), str(Path(__file__).resolve()), "--renderer-canary", "--protocol", str(args.protocol), "--root", str(root), "--gpu", str(gpu), "--canary-output", str(output), "--candidate", str(args.candidate), "--suite", args.suite, "--official-snapshot-root", str(args.official_snapshot_root), "--upstream-root", str(args.upstream_root)]
-        result = subprocess.run(command, check=False, env={**os.environ, "CUDA_VISIBLE_DEVICES": str(gpu), "MUJOCO_GL": "egl", "MUJOCO_EGL_DEVICE_ID": "0"}, capture_output=True, text=True)
+        result = subprocess.run(command, check=False, env={**os.environ, "CUDA_VISIBLE_DEVICES": str(gpu), "MUJOCO_GL": "egl", "MUJOCO_EGL_DEVICE_ID": str(gpu)}, capture_output=True, text=True)
         return {"gpu": gpu, "returncode": result.returncode, "stderr": result.stderr[-1000:], "output": str(output)}
 
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -640,7 +647,7 @@ def _run_one(root: Path, args: argparse.Namespace, gpu: int, label: str, run_set
         return {"gpu": gpu, "label": label, "status": "HOLD_PARTIAL_R1_ARTIFACT", "reason": "OUTPUT_ALREADY_EXISTS"}
     log_root = root / "logs" / f"gpu_{gpu:02d}"
     log_root.mkdir(parents=True, exist_ok=True)
-    env = {**os.environ, "CUDA_VISIBLE_DEVICES": str(gpu), "MUJOCO_GL": "egl", "MUJOCO_EGL_DEVICE_ID": "0", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1", "PYTHONHASHSEED": "7", "PYTHONUNBUFFERED": "1"}
+    env = {**os.environ, "CUDA_VISIBLE_DEVICES": str(gpu), "MUJOCO_GL": "egl", "MUJOCO_EGL_DEVICE_ID": str(gpu), "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1", "PYTHONHASHSEED": "7", "PYTHONUNBUFFERED": "1"}
     command = [str(sys.executable), str(REPO_ROOT / "scripts/detector_v5/run_stage_v_canonical_clean.py"), "--candidate", str(args.candidate), "--contract", str(args.contract), "--output-dir", str(output), "--official-snapshot-root", str(args.official_snapshot_root), "--upstream-root", str(args.upstream_root), "--model-path", str(args.model_path), "--suite", args.suite, "--gpu", str(gpu), "--seed", "7", "--mode", mode, "--source-commit", str(args.source_commit), "--source-tree", str(args.source_tree), "--run-label", label, "--run-set", run_set, "--enable-runtime"]
     if run_set == "r2":
         command.extend(["--raw-capture-plan", str(args.raw_capture_plan)])

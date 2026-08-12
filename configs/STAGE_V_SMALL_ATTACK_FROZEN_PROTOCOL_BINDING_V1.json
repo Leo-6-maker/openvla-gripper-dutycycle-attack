@@ -1,0 +1,146 @@
+{
+  "schema": "STAGE_V_SMALL_ATTACK_FROZEN_PROTOCOL_BINDING_V1",
+  "version": "SMALL_ATTACK_PROTOCOL_BINDING_20260813_V1",
+  "status": "HOLD_AUTHORITATIVE_OWNER_APPROVAL_UNRESOLVED",
+  "append_only": true,
+  "created_at": "2026-08-13",
+  "purpose": "Read-only provenance binding for the proposed Teacher-Student small attack matrix; not an executable attack authorization.",
+  "selection_rule": "Do not choose a protocol by memory, chat text, copied commands, or historical performance. Select only an owner-approved artifact with a complete receipt chain.",
+  "sha256_basis": "Canonical server/GitHub artifact bytes; Windows CRLF working-copy hashes are not used for text artifacts.",
+  "prohibited_action": [
+    "Do not launch any attack, VIS, PGD, oracle, or Teacher-Student attack runtime.",
+    "Do not select or mutate epsilon, norm, PGD steps, step size, K, target, loss, arm treatment, preprocessing, decode path, temporal history, random-control budget, or perturbation mask.",
+    "Do not create a partial PASS or use a historical protocol as current authority."
+  ],
+  "github_context": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "pull_request": 111,
+    "pull_request_url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/111",
+    "audited_head_commit": "9cca6a561267c831baa7f95150dd1b9fc15c13f1",
+    "audited_head_tree": "9884ab179758da5689fd19d1f76516e5aa524a81"
+  },
+  "runtime_audit_context": {
+    "server_alias": "dty-server",
+    "server_worktree": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-governed-20260812",
+    "server_checkout_commit": "9cca6a561267c831baa7f95150dd1b9fc15c13f1",
+    "server_checkout_tree": "9884ab179758da5689fd19d1f76516e5aa524a81",
+    "official_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "bound_runtime_code_snapshot_commit": "73bc7287a03457b105c035025a91dcb03883876f",
+    "bound_runtime_code_snapshot_tree": "763291b23174affe63296941efc4dc65ee7ec829",
+    "attack_rollouts_started": false,
+    "protected_eval160_reads": 0
+  },
+  "candidate_artifacts": [
+    {
+      "path": "configs/B3_OFFICIAL_V3_ATTACK_PROTOCOL_V1.json",
+      "sha256": "819b47f541dfe2260c2a066ea39b2a6f11a9f16a6452371caa823e74560b857b",
+      "observed_status": "PREPARATION_ONLY",
+      "attack_execution_authorized": false,
+      "authority_result": "REJECTED_AS_EXECUTABLE_AUTHORITY",
+      "reason": "Lists historical R9Q-style arms but does not bind exact attack parameters or owner-approved execution authorization."
+    },
+    {
+      "path": "configs/B3_OFFICIAL_V3_RUNTIME_PROTOCOL_V1.json",
+      "sha256": "098a22088997b4d617dd6dfb96943eb774f2845c3adf3346aa64cb6e4bcb619e",
+      "observed_status": "PREPARATION_ONLY",
+      "attack_execution_authorized": false,
+      "authority_result": "REJECTED_AS_EXECUTABLE_AUTHORITY",
+      "reason": "Runtime persistence and scheduler preparation only; formal attack authorization is false."
+    },
+    {
+      "path": "configs/V5_SCIENTIFIC_CONTRACT_V1.json",
+      "sha256": "2887ba2ecb02098ea62a41bba9cfdd0c82a5e99caf388d2a4f284f23ba68b32d",
+      "observed_status": "FROZEN_SEMANTIC_CONTRACT_NOT_RUNTIME_AUTHORIZATION",
+      "attack_execution_authorized": false,
+      "authority_result": "CANDIDATE_REQUIRES_OWNER_RECEIPT",
+      "reason": "Defines V5 semantic payload and matched-arm contract but does not provide the complete current executor, checkpoint, route, and runtime authorization chain."
+    },
+    {
+      "path": "configs/V5_ACTION_SEMANTICS_SEAL_V1.json",
+      "sha256": "15b7a73bef978581e85e013b5897307aa9f3dd986d6a84c69a4a756f89faa472",
+      "observed_status": "FROZEN_ACTION_SEMANTICS_ONLY",
+      "attack_execution_authorized": false,
+      "authority_result": "SUPPORTING_SEAL_ONLY",
+      "reason": "Binds raw/environment gripper semantics but is not a complete attack protocol or runtime authorization."
+    },
+    {
+      "path": "configs/fec_attack_v5_open.yaml",
+      "sha256": "af64e14b3aecb08acc93f50943845e1d488d1501bf96710c586a5d47a2157dfd",
+      "observed_status": "EXPERIMENTAL_CANARY",
+      "attack_execution_authorized": false,
+      "authority_result": "REJECTED_AS_CURRENT_AUTHORITY",
+      "reason": "Experimental V5 open canary; not an owner-approved formal protocol."
+    },
+    {
+      "path": "configs/fec_attack_v5_open_region.yaml",
+      "sha256": "9388d7991ed6e6cf58d21b83ed55f56cae7ae8c938d3e205f41ef536f573164b",
+      "observed_status": "EXPERIMENTAL_CANARY",
+      "attack_execution_authorized": false,
+      "authority_result": "REJECTED_AS_CURRENT_AUTHORITY",
+      "reason": "Alternative experimental objective and route; not an owner-approved formal protocol."
+    },
+    {
+      "path": "configs/sweep_v5_e0.06_s20.yaml",
+      "sha256": "a71f24379accb597fbb087a55c1f190bfa04d9f1c9d198a954e7fe00e7f8e3ea",
+      "observed_status": "EXPERIMENTAL_CANARY_SWEEP",
+      "attack_execution_authorized": false,
+      "authority_result": "REJECTED_AS_CURRENT_AUTHORITY",
+      "reason": "Parameter sweep artifact; selecting it would be retuning by historical configuration."
+    },
+    {
+      "path": "configs/sc5_cross_suite_protocol_v1.yaml",
+      "sha256": "636d0c3fa0051a28d77674c8d8fdd496f0e9a5f48e7742175a53613e652bb4ee",
+      "observed_status": "HISTORICAL_SUPERSEDED_OR_INVALID",
+      "attack_execution_authorized": false,
+      "authority_result": "REJECTED_AS_CURRENT_AUTHORITY",
+      "reason": "Historical SC5 protocol; later V5 evidence records its target-token and execution-class path as invalid for current semantics."
+    },
+    {
+      "path": "reports/V4_FORMAL_FINAL_SEALED_RECEIPT_V2.json",
+      "sha256": "b54da144c5971418a8b1502166a46708f069c332e98790941d652b4107a73da1",
+      "observed_status": "HISTORICAL_COMPLETE_BUT_INVALID_FOR_CURRENT_VIS_SEMANTICS",
+      "attack_execution_authorized": false,
+      "authority_result": "HISTORICAL_ONLY",
+      "reason": "Historical V4 receipt; subsequent V5 handoff identifies the V4 VIS implementation and target semantics as invalid for current use."
+    },
+    {
+      "path": "scripts/stageb/run_v2_vis_sc5_bridge.py",
+      "sha256": "44e214eab1d0c13cf4cf4c7110d075f4bb290eaff4cb60e331928ebccc189168",
+      "observed_status": "HISTORICAL_CODE_PATH",
+      "attack_execution_authorized": false,
+      "authority_result": "REJECTED_AS_CURRENT_AUTHORITY",
+      "reason": "Hardcodes the old SC5 target and route; preserved only as historical evidence."
+    },
+    {
+      "path": "src/gripper_attack/route_contract.py",
+      "sha256": "1fd53e0ce09ed7e97b02aac0ca76cb173082178135131392e1e9f9ae50d132a9",
+      "observed_status": "CURRENT_ROUTE_CONTRACT_EVIDENCE",
+      "attack_execution_authorized": false,
+      "authority_result": "SUPPORTING_CODE_ONLY",
+      "reason": "Current strict route evidence expects the V5 target semantics, but a route contract alone cannot authorize an attack."
+    }
+  ],
+  "observed_ambiguity": [
+    "Historical V4, SC5, experimental V5, and semantic V5 records do not form one owner-approved executable receipt chain.",
+    "B3 protocol files explicitly remain preparation-only and set attack execution authorization false.",
+    "No current owner-approved receipt was found that simultaneously binds protocol, budget, executor, route, model/checkpoint, preprocessing, target semantics, random control, source commit/tree, and runtime authorization."
+  ],
+  "required_resolution_binding": [
+    "owner-approved protocol JSON/YAML and SHA256",
+    "budget seal and exact epsilon/norm/steps/step-size/K/history rules",
+    "attack executor SHA and route-contract SHA",
+    "model/checkpoint/preprocessing/decode SHAs",
+    "target action/token and raw/environment gripper semantics",
+    "random-control construction, salt/seed, and matched timing rule",
+    "source commit/tree and runtime authorization receipt",
+    "explicit owner approval that this chain is the current authority"
+  ],
+  "next_resolution": "Resolve the owner-approved receipt chain in GitHub/receipts, update this binding with the exact selected artifact and all required SHAs, then create the separate matrix protocol, parent manifest, static audit, and runtime authorization. Until then attack execution remains HOLD.",
+  "protected_boundary": {
+    "m4_outcomes_read": false,
+    "attack_outcomes_read": false,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0,
+    "eval160_reads": 0
+  }
+}

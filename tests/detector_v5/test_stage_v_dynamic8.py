@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -13,11 +14,15 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.detector_v5 import run_stage_v_parent_aware_supervisor as sup
+from scripts.detector_v5.run_stage_v_dynamic_dispatcher import dynamic_gpu_slots
 from scripts.detector_v5.audit_stage_v_abort_postmortem import build_postmortem, build_timeout_policy
 from scripts.detector_v5 import run_stage_v_control_qualification as control_qualification
 from scripts.detector_v5.run_stage_v_control_qualification import ranked
 from scripts.detector_v5.stage_v_dynamic_common import (
-    atomic_write_json, gpu_preflight, project_queue, science_artifact_status, sha256_file,
+    atomic_write_json, exposure_binding, gpu_preflight, project_queue, science_artifact_status, sha256_file,
+)
+from scripts.detector_v5.run_stage_v_m3_5_intervention_parent import (
+    _branch_record, _collapsed_label, _treatment_observation,
 )
 from scripts.detector_v5.stage_v_science_core_provenance import build as build_provenance, verify as verify_provenance
 from scripts.detector_v5.run_stage_v_local_supervisor import ExclusiveLock, SupervisorError, terminate_process_group
@@ -52,6 +57,42 @@ def test_atomic_queue_claim_is_single_owner(tmp_path: Path) -> None:
     second = queue.claim_task("w2", expected_manifest_sha="m", expected_source_sha="s")
     assert first and second is None
     queue.close()
+
+
+def test_atomic_queue_parent_affinity_filters_claims(tmp_path: Path) -> None:
+    queue = AtomicTaskQueue(str(tmp_path / "q.sqlite"), run_id="r")
+    queue.init_run(state="ACTIVE", manifest_sha="m", source_sha="s")
+    queue.register_tasks([
+        {"cell_id": "p0a", "parent_id": "p0", "suite": "libero_goal", "task_index": 0, "state_index": 48, "arm": "A"},
+        {"cell_id": "p1a", "parent_id": "p1", "suite": "libero_goal", "task_index": 1, "state_index": 48, "arm": "A"},
+    ])
+    first = queue.claim_task("w0", gpu_id=0, allowed_parent_ids={"p0"}, expected_manifest_sha="m", expected_source_sha="s")
+    second = queue.claim_task("w0", gpu_id=0, allowed_parent_ids={"p0"}, expected_manifest_sha="m", expected_source_sha="s")
+    third = queue.claim_task("w1", gpu_id=1, allowed_parent_ids={"p1"}, expected_manifest_sha="m", expected_source_sha="s")
+    assert first and first["parent_id"] == "p0"
+    assert second is None
+    assert third and third["parent_id"] == "p1"
+    queue.close()
+
+
+def test_dynamic_gpu_slots_claims_late_eligible_gpu_without_duplicate_worker() -> None:
+    assert dynamic_gpu_slots(eligible_gpu_ids=[0, 1, 2, 3], active_gpu_ids=[0, 2], max_workers=4) == [1, 3]
+    assert dynamic_gpu_slots(eligible_gpu_ids=[0, 1, 2, 3], active_gpu_ids=[0, 2], max_workers=3) == [1]
+    assert dynamic_gpu_slots(eligible_gpu_ids=[0, 1], active_gpu_ids=[0, 1], max_workers=8) == []
+
+
+def test_m35_supervisor_accepts_registered_partial_fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sup.DynamicSupervisor, "run", lambda self: 0)
+    required_paths = {name: tmp_path / name for name in ("manifest.json", "queue.sqlite", "lock", "preflight.json", "dispatcher.py", "auditor.py")}
+    assert sup.main([
+        "--run-root", str(tmp_path / "run"), "--repo-root", str(tmp_path),
+        "--parent-manifest", str(required_paths["manifest.json"]), "--queue-db", str(required_paths["queue.sqlite"]),
+        "--run-id", "m35", "--expected-parent-count", "8", "--expected-source-commit", "commit",
+        "--expected-source-tree", "tree", "--lock-path", str(required_paths["lock"]),
+        "--approved-gpus", "0,1,2,4,5,6,7", "--excluded-gpus", "3",
+        "--preflight-file", str(required_paths["preflight.json"]), "--dispatcher-script", str(required_paths["dispatcher.py"]),
+        "--auditor-script", str(required_paths["auditor.py"]), "--resource-mode", "MODE_M35_DIAGNOSTIC",
+    ]) == 0
 
 
 def test_control_qualification_uses_queue_and_seals_two_arms(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -129,6 +170,21 @@ def test_load_rows_reads_selected_parents_manifest(tmp_path: Path) -> None:
     path = tmp_path / "manifest.json"
     write_json(path, {"schema": "STAGE_V_FORMAL_PARENT_MANIFEST_V1", "selected_parents": [{"suite": "libero_goal", "task_index": 0, "state_index": 48}]})
     assert control_qualification.load_rows(path) == [{"suite": "libero_goal", "task_index": 0, "state_index": 48}]
+
+
+def test_exposure_binding_rejects_parent_overlap_and_records_sha(tmp_path: Path) -> None:
+    manifest = tmp_path / "exposure.json"
+    write_json(manifest, {
+        "schema": "COUNTERFACTUAL_EXPOSURE_EXCLUSION_V1",
+        "excluded_parent_keys": ["libero_goal/task_00/state_48"],
+    })
+    clean = exposure_binding(["libero_object/task_00/state_48"], manifest)
+    assert clean["status"] == "PASS"
+    assert clean["manifest_sha256"] == sha256_file(manifest)
+    overlap = exposure_binding(["libero_goal/task_00/state_48"], manifest)
+    assert overlap["status"] == "FAIL"
+    assert overlap["reason"] == "EXPOSURE_PARENT_OVERLAP"
+    assert overlap["overlap_parent_keys"] == ["libero_goal/task_00/state_48"]
 
 
 def test_control_qualification_manifest_a_sidecar_is_written(tmp_path: Path) -> None:
@@ -218,6 +274,153 @@ def test_local_heartbeat_is_atomic(tmp_path: Path) -> None:
     path = tmp_path / "LOCAL_HEARTBEAT.json"
     atomic_write_json(path, {"schema": "test", "heartbeat_count": 1})
     assert json.loads(path.read_text(encoding="utf-8"))["heartbeat_count"] == 1
+
+
+def test_m35_artifact_status_accepts_sealed_parent(tmp_path: Path) -> None:
+    parent = "libero_goal/task_01/state_47"
+    branch_rows = [
+        {"canonical_parent_key": parent, "probe_step": probe, "repetition": repetition, "arm": arm,
+         "eval160_reads": 0, "protected_eval_reads": 0, "attack_rollouts": 0,
+         **({"pair": {"label_class": "V_PHYS"}} if arm != "CONTROL" else {})}
+        for probe in range(24) for repetition in range(3) for arm in ("CONTROL", "T3", "T5", "T10")
+    ]
+    branch_path = tmp_path / "COUNTERFACTUAL_BRANCHES.jsonl"
+    branch_path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in branch_rows), encoding="utf-8")
+    result_path = tmp_path / "PARENT_RESULT.json"
+    result_path.write_text(json.dumps({
+        "schema": "STAGE_V_M3_5_PARENT_RESULT_V1", "status": "PASS", "canonical_parent_key": parent,
+        "suite": "libero_goal", "task_index": 1, "state_index": 47, "source_commit": "commit", "source_tree": "tree",
+        "parent_atomic": True, "clean_success": True, "probe_count": 24,
+        "expected_physical_branches": 288, "actual_physical_branches": 288,
+        "expected_treatment_label_rows": 216, "actual_treatment_label_rows": 216,
+        "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0},
+    }, sort_keys=True) + "\n", encoding="utf-8")
+    files = [branch_path, result_path]
+    sums = "".join(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n" for path in sorted(files, key=lambda item: item.name))
+    (tmp_path / "SHA256SUMS").write_text(sums, encoding="utf-8")
+    sums_sha = hashlib.sha256((tmp_path / "SHA256SUMS").read_bytes()).hexdigest()
+    (tmp_path / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
+    checked = science_artifact_status(
+        tmp_path, parent, expected_source_commit="commit", expected_source_tree="tree",
+        expected_row={"suite": "libero_goal", "task_index": 1, "state_index": 47},
+        artifact_schema="STAGE_V_M3_5_PARENT_RESULT_V1",
+    )
+    assert checked["valid"] is True
+
+
+def _write_m35_v2_bundle(root: Path, *, corrupt_control_lineage: bool = False) -> str:
+    parent = "libero_goal/task_01/state_47"
+    counters = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
+    branches = []
+    observations = []
+    dose_steps = {"T3": 3, "T5": 5, "T10": 10}
+    for probe in range(24):
+        probe_id = f"Q{probe:02d}"
+        for repetition in range(3):
+            control = {"status": "PASS"}
+            control_record = _branch_record(
+                control, parent_key=parent, probe_id=probe_id, probe_step=probe,
+                repetition=repetition, arm="CONTROL",
+            )
+            branches.append(control_record)
+            for dose, steps in dose_steps.items():
+                treatment = {
+                    "status": "PASS", "treatment_compliant": True,
+                    "treatment_compliance": {"delivered_open_steps": steps},
+                }
+                pair = {
+                    "label_class": "NO_PHYSICAL_VULNERABILITY", "control_valid": True,
+                    "treatment_valid": True, "f_control": 0, "f_open": 0,
+                    "control_physical_class": "NO_PHYSICAL_FAILURE",
+                    "treatment_physical_class": "NO_PHYSICAL_FAILURE",
+                    "required_horizon_steps": steps + 10,
+                    "shared_control_branch_id": control_record["branch_id"],
+                    "shared_control_result_sha256": control_record["branch_result_sha256"],
+                }
+                treatment_record = _branch_record(
+                    treatment, parent_key=parent, probe_id=probe_id, probe_step=probe,
+                    repetition=repetition, arm=dose,
+                    shared_control_branch_id=control_record["branch_id"],
+                    shared_control_result_sha256=control_record["branch_result_sha256"], pair=pair,
+                )
+                branches.append(treatment_record)
+                observations.append(_treatment_observation(control_record, treatment_record))
+    labels = [
+        _collapsed_label([row for row in observations if row["probe_id"] == f"Q{probe:02d}" and row["dose"] == dose])
+        for probe in range(24) for dose in dose_steps
+    ]
+    if corrupt_control_lineage:
+        next(row for row in branches if row["arm"] != "CONTROL")["shared_control_result_sha256"] = "0" * 64
+    (root / "COUNTERFACTUAL_BRANCHES.jsonl").write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in branches), encoding="utf-8")
+    (root / "TREATMENT_REPETITION_OBSERVATIONS.jsonl").write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in observations), encoding="utf-8")
+    (root / "COLLAPSED_PROBE_DOSE_LABELS.jsonl").write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in labels), encoding="utf-8")
+    write_json(root / "M35_RUNTIME_BINDING_RECEIPT.json", {"schema": "STAGE_V_M3_5_RUNTIME_BINDING_RECEIPT_V1", "status": "PASS", "parent_key": parent, "source_commit": "commit", "source_tree": "tree"})
+    write_json(root / "CLEAN_TRAJECTORY.json", {"schema": "STAGE_V_M3_5_CLEAN_TRAJECTORY_V1", "outcomes_read": False, "task_success": True, "rows": []})
+    write_json(root / "PROBE_PLAN.json", {"schema": "STAGE_V_M3_5_PROBE_PLAN_V2", "outcomes_read": False, "probe_count": 24, "protected_counters": counters})
+    write_json(root / "CORRIDOR_COVERAGE.json", {"schema": "STAGE_V_M3_5_CORRIDOR_COVERAGE_V2", "outcomes_read": False, "corridor_qualified": True, "protected_counters": counters})
+    write_json(root / "REPEATABILITY_SUMMARY.json", {"schema": "STAGE_V_M3_5_REPEATABILITY_SUMMARY_V2", "collapsed_label_count": 72, "collapsed_labels": labels})
+    write_json(root / "BLINDED_TAXONOMY_EVIDENCE_MANIFEST.json", {"schema": "STAGE_V_M3_5_BLINDED_TAXONOMY_EVIDENCE_MANIFEST_V1", "canonical_parent_key": parent, "complete": True, "protected_counters": counters})
+    write_json(root / "PROGRESS.json", {"schema": "STAGE_V_M3_5_PROGRESS_V1", "stage": "COMPLETE", "branch_progress": 288, "current_branch": None, "protected_counters": counters})
+    write_json(root / "PARENT_RESULT.json", {
+        "schema": "STAGE_V_M3_5_PARENT_RESULT_V2", "status": "COMPLETE_VALID",
+        "label_validation_status": "PASS", "canonical_parent_key": parent,
+        "suite": "libero_goal", "task_index": 1, "state_index": 47,
+        "source_commit": "commit", "source_tree": "tree", "parent_atomic": True,
+        "clean_success": True, "probe_count": 24,
+        "expected_physical_executions": 288, "actual_physical_executions": 288,
+        "expected_treatment_repetition_observations": 216, "actual_treatment_repetition_observations": 216,
+        "expected_collapsed_probe_dose_labels": 72, "actual_collapsed_probe_dose_labels": 72,
+        "protected_counters": counters,
+    })
+    files = sorted((path for path in root.iterdir() if path.is_file()), key=lambda path: path.name)
+    (root / "SHA256SUMS").write_text("".join(f"{sha256_file(path)}  {path.name}\n" for path in files), encoding="utf-8")
+    (root / "SHA256SUMS.sha256").write_text(f"{sha256_file(root / 'SHA256SUMS')}  SHA256SUMS\n", encoding="utf-8")
+    return parent
+
+
+def test_m35_v2_artifact_status_reconciles_and_rejects_orphaned_control(tmp_path: Path) -> None:
+    parent = _write_m35_v2_bundle(tmp_path)
+    checked = science_artifact_status(
+        tmp_path, parent, expected_source_commit="commit", expected_source_tree="tree",
+        expected_row={"suite": "libero_goal", "task_index": 1, "state_index": 47},
+        artifact_schema="STAGE_V_M3_5_PARENT_RESULT_V2",
+    )
+    assert checked["valid"] is True
+
+    corrupt = tmp_path / "corrupt"
+    corrupt.mkdir()
+    parent = _write_m35_v2_bundle(corrupt, corrupt_control_lineage=True)
+    checked = science_artifact_status(corrupt, parent, artifact_schema="STAGE_V_M3_5_PARENT_RESULT_V2")
+    assert checked["valid"] is False
+    assert "M35_V2_MATCHED_CONTROL_LINEAGE_INVALID" in checked["reason"]
+
+    malformed = tmp_path / "malformed"
+    malformed.mkdir()
+    parent = _write_m35_v2_bundle(malformed)
+    observations_path = malformed / "TREATMENT_REPETITION_OBSERVATIONS.jsonl"
+    observations = [json.loads(line) for line in observations_path.read_text(encoding="utf-8").splitlines()]
+    observations[0]["repetition"] = "bad"
+    observations_path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in observations), encoding="utf-8")
+    (malformed / "SHA256SUMS").unlink()
+    (malformed / "SHA256SUMS.sha256").unlink()
+    files = sorted((path for path in malformed.iterdir() if path.is_file()), key=lambda path: path.name)
+    (malformed / "SHA256SUMS").write_text("".join(f"{sha256_file(path)}  {path.name}\n" for path in files), encoding="utf-8")
+    (malformed / "SHA256SUMS.sha256").write_text(f"{sha256_file(malformed / 'SHA256SUMS')}  SHA256SUMS\n", encoding="utf-8")
+    checked = science_artifact_status(malformed, parent, artifact_schema="STAGE_V_M3_5_PARENT_RESULT_V2")
+    assert checked["valid"] is False
+    assert checked["reason"].startswith("M35_V2_MALFORMED_ARTIFACT:ValueError:")
+
+
+def test_m35_coverage_artifact_status_accepts_sealed_parent(tmp_path: Path) -> None:
+    parent = "libero_goal/task_01/state_47"
+    write_json(tmp_path / "CLEAN_TRAJECTORY.json", {"schema": "STAGE_V_M3_5_CLEAN_TRAJECTORY_V1", "rows": [], "outcomes_read": False})
+    write_json(tmp_path / "PHASE_COVERAGE.json", {"schema": "STAGE_V_M3_5_PHASE_COVERAGE_V1", "canonical_parent_key": parent, "phase_counts": {phase: 6 for phase in ("PRE_CONTACT", "CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY")}, "coverage_qualified": True, "outcomes_read": False, "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}})
+    write_json(tmp_path / "PARENT_RESULT.json", {"schema": "STAGE_V_M3_5_CLEAN_COVERAGE_RESULT_V1", "status": "PASS", "coverage_only": True, "canonical_parent_key": parent, "suite": "libero_goal", "task_index": 1, "state_index": 47, "source_commit": "commit", "source_tree": "tree", "parent_atomic": True, "clean_success": True, "phase_counts": {phase: 6 for phase in ("PRE_CONTACT", "CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY")}, "coverage_qualified": True, "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}})
+    files = sorted(tmp_path.iterdir(), key=lambda item: item.name)
+    (tmp_path / "SHA256SUMS").write_text("".join(f"{sha256_file(path)}  {path.name}\n" for path in files), encoding="utf-8")
+    (tmp_path / "SHA256SUMS.sha256").write_text(f"{sha256_file(tmp_path / 'SHA256SUMS')}  SHA256SUMS\n", encoding="utf-8")
+    checked = science_artifact_status(tmp_path, parent, expected_source_commit="commit", expected_source_tree="tree", expected_row={"suite": "libero_goal", "task_index": 1, "state_index": 47}, artifact_schema="STAGE_V_M3_5_COVERAGE_RESULT_V1")
+    assert checked["valid"] is True
 
 
 def test_worker_heartbeat_file_is_preferred_over_legacy_status(tmp_path: Path) -> None:

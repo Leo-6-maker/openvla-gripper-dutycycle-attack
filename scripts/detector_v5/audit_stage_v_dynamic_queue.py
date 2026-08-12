@@ -8,10 +8,10 @@ import sys
 from typing import Any, Mapping
 
 try:
-    from .stage_v_dynamic_common import atomic_write_json, load_rows, normalize_parent, read_json, science_artifact_status, sha256_file, utc_now
+    from .stage_v_dynamic_common import atomic_write_json, exposure_binding, load_rows, normalize_parent, read_json, science_artifact_status, sha256_file, utc_now
     from .stage_v_science_core_provenance import verify as verify_science_provenance
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import atomic_write_json, load_rows, normalize_parent, read_json, science_artifact_status, sha256_file, utc_now
+    from stage_v_dynamic_common import atomic_write_json, exposure_binding, load_rows, normalize_parent, read_json, science_artifact_status, sha256_file, utc_now
     from stage_v_science_core_provenance import verify as verify_science_provenance
 
 try:
@@ -89,9 +89,29 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             if not provenance_ok:
                 errors.extend(f"SCIENCE_PROVENANCE:{item}" for item in provenance_errors)
     run_manifest = read_json(root / "RUN_MANIFEST.json", {})
+    resource_mode = "LEGACY"
+    exposure_receipt: dict[str, Any] | None = None
     if not isinstance(run_manifest, Mapping):
         errors.append("RUN_MANIFEST_MISSING_OR_INVALID")
     else:
+        resource_mode = str(run_manifest.get("resource_mode", "LEGACY"))
+        if resource_mode == "MODE_B_THROUGHPUT_SCIENCE":
+            registered_exposure = str(run_manifest.get("exposure_manifest") or "")
+            if not registered_exposure:
+                errors.append("RUN_MANIFEST_EXPOSURE_MANIFEST_MISSING")
+            else:
+                exposure_path = args.exposure_manifest.resolve() if args.exposure_manifest else Path(registered_exposure).resolve()
+                if args.exposure_manifest and str(exposure_path) != str(Path(registered_exposure).resolve()):
+                    errors.append("RUN_MANIFEST_EXPOSURE_MANIFEST_PATH_FAIL")
+                exposure_receipt = exposure_binding(keys, exposure_path)
+                if exposure_receipt["status"] != "PASS":
+                    errors.append("EXPOSURE_BINDING_FAIL:" + str(exposure_receipt.get("reason") or "UNKNOWN"))
+                if run_manifest.get("exposure_manifest_sha256") != exposure_receipt.get("manifest_sha256"):
+                    errors.append("RUN_MANIFEST_EXPOSURE_MANIFEST_SHA_MISMATCH")
+                if run_manifest.get("exposure_binding_status") != exposure_receipt.get("status"):
+                    errors.append("RUN_MANIFEST_EXPOSURE_BINDING_STATUS_FAIL")
+                if run_manifest.get("exposure_overlap_parent_count") != exposure_receipt.get("overlap_parent_count"):
+                    errors.append("RUN_MANIFEST_EXPOSURE_OVERLAP_COUNT_FAIL")
         if run_manifest.get("source_commit") != args.expected_source_commit or run_manifest.get("source_tree") != args.expected_source_tree:
             errors.append("RUN_MANIFEST_SOURCE_BINDING_FAIL")
         if run_manifest.get("parent_manifest_sha256") != sha256_file(args.parent_manifest):
@@ -103,7 +123,10 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         if run_manifest.get("dynamic_claims") is not True or run_manifest.get("one_project_worker_per_gpu") is not True:
             errors.append("RUN_MANIFEST_DYNAMIC_WORKER_BINDING_FAIL")
         approved_gpus = run_manifest.get("approved_gpus")
-        if (not isinstance(approved_gpus, list) or len(approved_gpus) != 8 or len(set(approved_gpus)) != 8
+        partial_fleet = resource_mode in {"MODE_B_THROUGHPUT_SCIENCE", "MODE_C_TRAINING"}
+        approved_valid = isinstance(approved_gpus, list) and all(isinstance(gpu, int) for gpu in approved_gpus)
+        if (not approved_valid or not approved_gpus or len(approved_gpus) > 8 or len(set(approved_gpus)) != len(approved_gpus)
+                or (not partial_fleet and len(approved_gpus) != 8)
                 or (5 in approved_gpus and not getattr(args, "allow_gpu5", False))):
             errors.append("RUN_MANIFEST_APPROVED_GPU_SET_FAIL")
         if run_manifest.get("gpu5_used") is True and not getattr(args, "allow_gpu5", False):
@@ -225,6 +248,9 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         "control_branch_failure": 0 if status == "PASS" else sum(1 for error in errors if "BRANCH_FAILURE" in error),
         "source_commit": args.expected_source_commit,
         "source_tree": args.expected_source_tree,
+        "resource_mode": resource_mode,
+        "approved_gpu_count": len(run_manifest.get("approved_gpus", [])) if isinstance(run_manifest, Mapping) and isinstance(run_manifest.get("approved_gpus"), list) else 0,
+        "exposure_binding": exposure_receipt,
         "launcher_verdict": status,
         "independent_auditor_verdict": status,
         "auditor_agreement": status == "PASS",
@@ -250,6 +276,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--science-source-tree", default="")
     parser.add_argument("--science-provenance", type=Path)
     parser.add_argument("--science-parent-manifest", type=Path)
+    parser.add_argument("--exposure-manifest", type=Path)
     parser.add_argument("--allow-gpu5", action="store_true", help="Authorize GPU5 for this fresh run")
     return parser
 

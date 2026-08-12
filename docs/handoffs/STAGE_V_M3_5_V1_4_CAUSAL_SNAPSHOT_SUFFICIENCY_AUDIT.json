@@ -1,0 +1,84 @@
+{
+  "schema": "STAGE_V_CAUSAL_SNAPSHOT_SUFFICIENCY_AUDIT_V1",
+  "status": "DESIGN_ONLY_HOLD",
+  "classification": "HOLD_CAUSAL_SNAPSHOT_INSUFFICIENT_UNTIL_RUNTIME_BINDING",
+  "runtime_authorized": false,
+  "unknown_component_count": 0,
+  "unverified_implementation_count": 5,
+  "predecessor": {
+    "runtime_commit": "d104713027a82eeb858ba9036200d7ab010959cc",
+    "runtime_tree": "3f22ea412975f294b59bc569ef9fb896eff8d410",
+    "formal_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_V1_3_4_20260810T201623Z",
+    "formal_receipt_sha256": "13d6c5de2d138917ed6b5016b7d30970433193d52d9d17e3b6ba330e96fc556a",
+    "reuse_prohibited": true
+  },
+  "findings": [
+    {
+      "id": "SIM_STATE_NOT_SUFFICIENT",
+      "severity": "SCIENTIFIC_BLOCKER",
+      "result": "CONFIRMED",
+      "evidence": "V1.3.4 restored exact flattened simulator state, then fresh policy RGB diverged at probe 53/T3.",
+      "primary_gate": true
+    },
+    {
+      "id": "SET_INIT_STATE_SCOPE",
+      "severity": "SCIENTIFIC_BLOCKER",
+      "result": "CONFIRMED",
+      "evidence": "LIBERO set_init_state calls sim.set_state_from_flattened, sim.forward, _post_process and forced observable update; it does not restore wrapper counters, controller state, RNG state or renderer history.",
+      "source_sha256": "a782fb76c9792268d28979474fe72849e1e98ada49c8e997a65359a8d6b6acd0",
+      "primary_gate": true
+    },
+    {
+      "id": "CONTROLLER_STATE_OUTSIDE_SIM_STATE",
+      "severity": "SCIENTIFIC_BLOCKER",
+      "result": "CONFIRMED",
+      "evidence": "OSC goals/interpolators and robot recent buffers are mutable Python objects; fresh environment construction initializes them independently.",
+      "source_sha256": "cfa62a0e719bc53ef0c701efa66f7b3e2272d4fca2150ec73c05bb145eba85cb",
+      "primary_gate": true
+    },
+    {
+      "id": "OBSERVABLE_STATE_OUTSIDE_SIM_STATE",
+      "severity": "SCIENTIFIC_BLOCKER",
+      "result": "CONFIRMED",
+      "evidence": "Observable sampling time, delay, sampled flag, cache and current value are mutable and can affect regenerated observations.",
+      "source_sha256": "0368fbfca3b732915819f9618a30aa38b559cc343a45fc15fab8ef0d5e8f7446",
+      "primary_gate": true
+    },
+    {
+      "id": "RNG_SEED_NOT_STATE",
+      "severity": "SCIENCE_SAFETY",
+      "result": "CONFIRMED",
+      "evidence": "V1.3.4 calls env.seed(0) but has no exact Python/NumPy/Torch RNG-state receipt; V1.4 must capture or prove no primary-window draw.",
+      "primary_gate": true
+    },
+    {
+      "id": "POLICY_INPUT_CAPTURE",
+      "severity": "SCIENCE_SAFETY",
+      "result": "PARTIALLY_AVAILABLE",
+      "evidence": "The pinned clean runner captures actual model inputs through _stage_v_last_model_inputs, but V1.3.4 branch logic re-renders and calls policy again. V1.4 sidecars now provide exact loaded bytes, pending runtime wiring.",
+      "primary_gate": true
+    },
+    {
+      "id": "MODEL_AND_ADAPTER_STEP_STATE",
+      "severity": "SCIENCE_SAFETY",
+      "result": "DESIGN_AUDITED",
+      "evidence": "The pinned path is eval-mode, deterministic generation, one call per step, and restores its temporary generate hook. A machine-readable stateless receipt is still required before authorization.",
+      "primary_gate": true
+    },
+    {
+      "id": "FRESH_RENDER_PRIMARY_CONSUMPTION",
+      "severity": "PROTOCOL_BOUNDARY",
+      "result": "FORBIDDEN",
+      "evidence": "Fresh-render hashes remain descriptive; any primary action/treatment/label consuming them is a protocol violation and hard stop.",
+      "primary_gate": true
+    },
+    {
+      "id": "MATCHED_ACTION_ESTIMAND",
+      "severity": "SCIENCE_DEFINITION",
+      "result": "DESIGN_SELECTED",
+      "evidence": "Primary M3.5/M4 uses canonical clean reference actions and changes only registered gripper OPEN; native closed-loop is secondary after V_phys freezes.",
+      "primary_gate": true
+    }
+  ],
+  "decision": "No V1.4 runtime authorization yet. Complete runtime snapshot capture/restore or exact reconstruction, then independent audit; Gate A must be zero-treatment and may not reuse the sealed V1.3.4 root."
+}

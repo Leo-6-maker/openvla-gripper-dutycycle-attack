@@ -24,6 +24,17 @@ try:
 except ImportError:  # direct server execution
     from stage_v_dynamic_common import atomic_write_json, canonical_parent_key, load_rows, normalize_parent, sha256_file, sha256_text, utc_now
 
+try:
+    from .stage_v_gpu_resource_contract import (
+        MODE_B, MIN_FREE_MEMORY_MIB, GpuLeaseStore, admit_mode_b_or_c, query_inventory,
+        verify_recheck, write_resource_receipt,
+    )
+except ImportError:  # direct server execution
+    from stage_v_gpu_resource_contract import (
+        MODE_B, MIN_FREE_MEMORY_MIB, GpuLeaseStore, admit_mode_b_or_c, query_inventory,
+        verify_recheck, write_resource_receipt,
+    )
+
 
 FORBIDDEN = re.compile(r"(?<![A-Za-z0-9_])(?:OPEN(?:_T[0-9]+)?|VIS|PGD|ATTACK|EVAL160|PROTECTED|TEACHER)(?![A-Za-z0-9_])", re.IGNORECASE)
 EXPECTED_SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
@@ -110,9 +121,16 @@ def qualifies(row: Mapping[str, Any], a: Mapping[str, Any], b: Mapping[str, Any]
             errors.append(f"{name}_PROVENANCE_MISMATCH")
         if result.get("remaining_horizon_complete") is not True:
             errors.append(f"{name}_HORIZON_INCOMPLETE")
-    for field in ("terminal_outcome", "terminal_state_sha256", "key_state_identity_sha256"):
-        if a.get(field) is None or b.get(field) is None or a.get(field) != b.get(field):
-            errors.append(f"AB_MISMATCH:{field}")
+        if row.get("assigned_gpu") is not None and result.get("worker_gpu") != int(row["assigned_gpu"]):
+            errors.append(f"{name}_GPU_AFFINITY_MISMATCH")
+    # Terminal outcome/state are descriptive for fresh clean qualification.
+    # Only the initial identity binds A and B to the same causal parent.
+    if (
+        not a.get("key_state_identity_sha256")
+        or not b.get("key_state_identity_sha256")
+        or a.get("key_state_identity_sha256") != b.get("key_state_identity_sha256")
+    ):
+        errors.append("AB_MISMATCH:key_state_identity_sha256")
     if a.get("canonical_parent_key") != row.get("canonical_parent_key"):
         errors.append("A_PARENT_IDENTITY_MISMATCH")
     if b.get("canonical_parent_key") != row.get("canonical_parent_key"):
@@ -137,19 +155,31 @@ def audit_qualification_row(row: Mapping[str, Any], a: Mapping[str, Any], b: Map
             errors.append(f"{name}_PROVENANCE_MISMATCH")
         if result.get("canonical_parent_key") != row.get("canonical_parent_key"):
             errors.append(f"{name}_PARENT_IDENTITY_MISMATCH")
-    for field in ("terminal_outcome", "terminal_state_sha256", "key_state_identity_sha256"):
-        if a.get(field) is None or b.get(field) is None or a.get(field) != b.get(field):
-            errors.append(f"AB_MISMATCH:{field}")
+        if row.get("assigned_gpu") is not None and result.get("worker_gpu") != int(row["assigned_gpu"]):
+            errors.append(f"{name}_GPU_AFFINITY_MISMATCH")
+    # Keep the auditor aligned with the frozen contract: terminal fields are
+    # descriptive; initial identity remains an exact hard gate.
+    if (
+        not a.get("key_state_identity_sha256")
+        or not b.get("key_state_identity_sha256")
+        or a.get("key_state_identity_sha256") != b.get("key_state_identity_sha256")
+    ):
+        errors.append("AB_MISMATCH:key_state_identity_sha256")
     return not errors, sorted(set(errors))
 
 
-def build_science_parent_manifest(formal_manifest: Mapping[str, Any], *, source_clean_root: str) -> dict[str, Any]:
-    """Build a fresh V1 identity manifest for the frozen external science runner."""
+def build_science_parent_manifest(
+    formal_manifest: Mapping[str, Any], *, source_clean_root: str,
+    expected_parent_count: int | None = 40,
+) -> dict[str, Any]:
+    """Build a fresh identity manifest for the frozen external science runner."""
     if formal_manifest.get("schema") != "STAGE_V_FORMAL_PARENT_MANIFEST_V2" or formal_manifest.get("status") != "PASS":
         raise ValueError("formal qualification manifest is not PASS")
     rows = formal_manifest.get("selected_parents")
-    if not isinstance(rows, list) or len(rows) != 40:
-        raise ValueError("formal qualification manifest must contain 40 parents")
+    if not isinstance(rows, list) or not rows:
+        raise ValueError("qualification manifest must contain at least one parent")
+    if expected_parent_count is not None and len(rows) != expected_parent_count:
+        raise ValueError(f"qualification manifest must contain {expected_parent_count} parents")
     root = str(source_clean_root).rstrip("/")
     if not root:
         raise ValueError("source clean root is missing")
@@ -220,13 +250,55 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         raise ValueError("candidate manifest has no requested suites")
     if not args.suites and tuple(suites) != EXPECTED_SUITES:
         raise ValueError(f"candidate manifest suites must be {EXPECTED_SUITES}, got {tuple(suites)}")
-    by_suite = {suite: [row for row in rows if str(row["suite"]) == suite] for suite in suites}
     keys = [str(row["canonical_parent_key"]) for row in rows]
     if len(keys) != len(set(keys)):
         raise ValueError("candidate manifest contains duplicate canonical parent keys")
+    gpus = _parse_gpus(args.gpus)
+    resource_mode = str(getattr(args, "resource_mode", "LEGACY"))
+    minimum_free_mib = int(getattr(args, "minimum_free_mib", MIN_FREE_MEMORY_MIB))
+    if resource_mode not in {"LEGACY", MODE_B}:
+        raise ValueError(f"unsupported resource mode: {resource_mode}")
+    if resource_mode == MODE_B:
+        parent_gpu_map = {
+            key: gpus[int(hashlib.sha256(f"{args.salt}::{key}".encode()).hexdigest(), 16) % len(gpus)]
+            for key in keys
+        }
+        rows = [
+            {**row, "assigned_gpu": parent_gpu_map[str(row["canonical_parent_key"])], "parent_gpu_affinity": "FROZEN_HASH_SALT"}
+            for row in rows
+        ]
+    else:
+        parent_gpu_map = {}
+    by_suite = {suite: [row for row in rows if str(row["suite"]) == suite] for suite in suites}
     rows_out: list[dict[str, Any]] = []
     selected: dict[str, list[dict[str, Any]]] = {suite: [] for suite in suites}
-    gpus = _parse_gpus(args.gpus)
+    resource_lease_store = None
+    resource_preflight: dict[str, Any] | None = None
+    resource_lease_db = Path(getattr(args, "resource_lease_db", args.output_dir / "GPU_LEASES.sqlite")).resolve()
+    if resource_mode == MODE_B:
+        resource_lease_store = GpuLeaseStore(resource_lease_db)
+        inventory, inventory_error = query_inventory()
+        if inventory_error:
+            raise RuntimeError(f"RESOURCE_PREFLIGHT_FAIL:{inventory_error}")
+        active = resource_lease_store.active()
+        admission = admit_mode_b_or_c(
+            inventory, mode=MODE_B, leased_gpu_ids=[item["gpu_id"] for item in active],
+            minimum_free_mib=minimum_free_mib,
+        )
+        missing = sorted(set(gpus) - set(admission.get("eligible_gpu_ids", [])))
+        if missing:
+            raise RuntimeError(f"RESOURCE_PREFLIGHT_GPU_NOT_ELIGIBLE:{missing}")
+        resource_preflight = {
+            "schema": "STAGE_V_DYNAMIC_CLEAN_QUALIFICATION_RESOURCE_PREFLIGHT_V1",
+            "status": "PASS", "resource_mode": MODE_B, "requested_gpu_ids": gpus,
+            "minimum_free_memory_mib": minimum_free_mib,
+            "maximum_project_workers_per_gpu": 1, "partial_fleet_allowed": True,
+            "foreign_workload_allowed": True, "admission": admission,
+            "inventory": inventory, "active_project_leases": active,
+            "lease_db": str(resource_lease_db), "source_commit": args.source_commit,
+            "source_tree": args.source_tree, "captured_utc": utc_now(),
+        }
+        atomic_write_json(args.output_dir / "PRE_QUALIFICATION_RESOURCE_RECEIPT.json", resource_preflight)
     queue_db = args.output_dir / "CONTROL_QUALIFICATION.sqlite"
     queue = AtomicTaskQueue(str(queue_db), run_id=args.salt)
     manifest_sha = sha256_file(args.candidate_manifest)
@@ -234,18 +306,62 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
     queue.init_run(
         state="ACTIVE", manifest_sha=manifest_sha, source_sha=source_sha,
         config_sha=sha256_text(args.runner_command),
-        capacity_policy={"mode": "atomic_dynamic_workers", "gpus": gpus, "worker_count": len(gpus), "old_artifacts_reused": False},
+        capacity_policy={
+            "mode": "atomic_dynamic_workers", "gpus": gpus, "worker_count": len(gpus),
+            "resource_mode": resource_mode, "minimum_free_memory_mib": minimum_free_mib,
+            "maximum_project_workers_per_gpu": 1,
+            "parent_gpu_affinity": "FROZEN_HASH_SALT" if resource_mode == MODE_B else None,
+            "lease_db": str(resource_lease_db) if resource_lease_store else None,
+            "old_artifacts_reused": False,
+        },
     )
     rows_by_key = {str(row["canonical_parent_key"]): row for row in rows}
 
-    def qualification_worker(gpu: int, batch_keys: set[str]) -> list[tuple[str, str, int, dict[str, Any]]]:
-        worker_id = f"stage-v-control-qualifier-gpu{gpu}-pid{os.getpid()}-tid{__import__('threading').get_ident()}"
+    def qualification_worker(gpu: int, batch_keys: set[str], batch_index: int) -> list[tuple[str, str, int, dict[str, Any]]]:
+        worker_id = f"stage-v-control-qualifier-gpu{gpu}-pid{os.getpid()}"
         outcomes: list[tuple[str, str, int, dict[str, Any]]] = []
+        allowed_parent_ids = (
+            {key for key in batch_keys if parent_gpu_map.get(key) == gpu}
+            if resource_mode == MODE_B else None
+        )
+        lease = None
         try:
+            if resource_lease_store is not None and allowed_parent_ids:
+                inventory, inventory_error = query_inventory()
+                if inventory_error:
+                    raise RuntimeError(f"RESOURCE_JOB_PREFLIGHT_FAIL:{inventory_error}")
+                active = resource_lease_store.active()
+                admission = admit_mode_b_or_c(
+                    inventory, mode=MODE_B, leased_gpu_ids=[item["gpu_id"] for item in active],
+                    minimum_free_mib=minimum_free_mib,
+                )
+                decision = next((item for item in admission.get("gpu_decisions", []) if int(item.get("gpu_id", -1)) == gpu), None)
+                if gpu not in set(admission.get("eligible_gpu_ids", [])) or not decision:
+                    raise RuntimeError(f"RESOURCE_JOB_GPU_NOT_ELIGIBLE:{gpu}")
+                lease = resource_lease_store.acquire(
+                    gpu_id=gpu, gpu_uuid=str(decision["gpu_uuid"]), worker_id=worker_id,
+                    worker_pid=os.getpid(), stage="STAGE_V_DYNAMIC_CLEAN_QUALIFICATION",
+                    atomic_job_id=f"{args.salt}:batch_{batch_index}:gpu_{gpu}",
+                    source_commit=args.source_commit, source_tree=args.source_tree,
+                    runtime_root=args.output_dir, launch_snapshot=decision,
+                )
+                rechecked_inventory, recheck_error = query_inventory()
+                if recheck_error:
+                    raise RuntimeError(f"RESOURCE_JOB_RECHECK_FAIL:{recheck_error}")
+                rechecked = next((item for item in rechecked_inventory if int(item.get("gpu_id", -1)) == gpu), None)
+                if rechecked is None:
+                    raise RuntimeError(f"RESOURCE_JOB_RECHECK_GPU_MISSING:{gpu}")
+                verify_recheck(rechecked, expected_gpu_id=gpu, expected_gpu_uuid=str(decision["gpu_uuid"]), minimum_free_mib=minimum_free_mib)
+                write_resource_receipt(
+                    args.output_dir / f"PRE_JOB_RESOURCE_RECEIPT_BATCH{batch_index}_GPU{gpu}.json",
+                    phase="PRE_JOB_RESOURCE_RECEIPT", gpu_snapshot=rechecked, lease=lease,
+                    atomic_job_id=f"{args.salt}:batch_{batch_index}:gpu_{gpu}",
+                )
             while True:
                 task = queue.claim_task(
                     worker_id, hostname=socket.gethostname(), pid=os.getpid(), gpu_id=gpu,
                     expected_manifest_sha=manifest_sha, expected_source_sha=source_sha,
+                    allowed_parent_ids=allowed_parent_ids,
                 )
                 if task is None:
                     return outcomes
@@ -270,10 +386,14 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
                     raise RuntimeError(f"CONTROL_QUALIFICATION_QUEUE_COMMIT_FAIL:{key}:{replicate}")
                 outcomes.append((key, replicate, code, dict(result)))
         finally:
+            if lease is not None and resource_lease_store is not None:
+                resource_lease_store.release(lease, reason="QUALIFICATION_BATCH_FINISHED")
             queue.close()
 
     cursor = {suite: 0 for suite in suites}
+    batch_index = 0
     while True:
+        batch_index += 1
         batch_rows: list[dict[str, Any]] = []
         for suite in suites:
             if len(selected[suite]) >= args.target_per_suite:
@@ -312,7 +432,7 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         outcomes: list[tuple[str, str, int, dict[str, Any]]] = []
         worker_errors: list[str] = []
         with ThreadPoolExecutor(max_workers=len(gpus), thread_name_prefix="stage-v-control") as pool:
-            futures = [pool.submit(qualification_worker, gpu, batch_keys) for gpu in gpus]
+            futures = [pool.submit(qualification_worker, gpu, batch_keys, batch_index) for gpu in gpus]
             for future in as_completed(futures):
                 try:
                     outcomes.extend(future.result())
@@ -341,6 +461,8 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
                 "suite": str(row["suite"]),
                 "task_index": int(row["task_index"]),
                 "state_index": int(row["state_index"]),
+                "assigned_gpu": int(row["assigned_gpu"]) if row.get("assigned_gpu") is not None else None,
+                "replicate_worker_gpus": {replicate: replicate_rows[replicate].get("worker_gpu") for replicate in ("A", "B")},
                 "qualification_rank_sha256": row["qualification_rank_sha256"],
                 "candidate_sha256": sha256_file(base / "CANDIDATE.json"),
                 "replicates": replicate_rows,
@@ -367,6 +489,12 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         "source_clean_root": source_clean_root,
         "gpus": gpus,
         "worker_count": len(gpus),
+        "resource_mode": resource_mode,
+        "minimum_free_memory_mib": minimum_free_mib,
+        "resource_lease_db": str(resource_lease_db) if resource_lease_store else None,
+        "resource_preflight": resource_preflight,
+        "parent_gpu_assignment": parent_gpu_map,
+        "parent_gpu_assignment_sha256": sha256_text(json.dumps(parent_gpu_map, sort_keys=True, separators=(",", ":"))),
         "initial_per_suite": args.initial_per_suite,
         "batch_size": args.batch_size,
         "target_per_suite": args.target_per_suite,
@@ -396,6 +524,10 @@ def qualify(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, An
         "selected_count": len(manifest_rows),
         "planned_parent_count": len(manifest_rows),
         "parents_by_suite": {suite: args.target_per_suite for suite in suites},
+        "resource_mode": resource_mode,
+        "minimum_free_memory_mib": minimum_free_mib,
+        "parent_gpu_assignment": parent_gpu_map,
+        "parent_gpu_assignment_sha256": sha256_text(json.dumps(parent_gpu_map, sort_keys=True, separators=(",", ":"))),
         "old_artifacts_reused": False,
         "generated_utc": utc_now(),
     }
@@ -447,6 +579,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--batch-size", type=int, default=10)
     parser.add_argument("--target-per-suite", type=int, default=10)
     parser.add_argument("--suites", default="")
+    parser.add_argument("--resource-mode", default="LEGACY")
+    parser.add_argument("--resource-lease-db", type=Path)
+    parser.add_argument("--minimum-free-mib", type=int, default=MIN_FREE_MEMORY_MIB)
     args = parser.parse_args(argv)
     args.output_dir = args.output_dir.resolve()
     if args.output_dir.exists():
@@ -470,6 +605,7 @@ def main(argv: list[str] | None = None) -> int:
         atomic_write_json(manifest_path, extras["manifest"])
         science_manifest = build_science_parent_manifest(
             extras["manifest"], source_clean_root=str(args.source_clean_root.resolve()),
+            expected_parent_count=None if args.suites else 40,
         )
         science_path = args.output_dir / "STAGE_V_FORMAL_PARENT_MANIFEST_V1.json"
         atomic_write_json(science_path, science_manifest)

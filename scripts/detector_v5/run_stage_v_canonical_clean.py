@@ -19,7 +19,11 @@ from typing import Any, Mapping
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT))
-from scripts.detector_v5.run_stage_v_m1_v2_8gpu import canonical_gpu_uuid  # noqa: E402
+from scripts.detector_v5.stage_v_gpu_resource_contract import (  # noqa: E402
+    ResourceContractError,
+    canonical_uuid,
+    resolve_cuda_physical_uuid,
+)
 CANONICAL_ACTION_DECODE_CONTRACT = (
     "OfficialOpenVLAActionAdapter.predict_action_with_scores_single_generation;"
     "attention_implementation=eager;predict_action_attention_mask_append=one_if_input_ids_appended"
@@ -174,8 +178,15 @@ def _load_policy(args: argparse.Namespace, get_processor: Any, get_model: Any, a
 def _render_binding_ids(env: Any) -> tuple[int | None, int | None]:
     observed: int | None = None
     context_observed: int | None = None
-    context = getattr(getattr(env, "sim", None), "render_context", None)
-    for obj in (env, getattr(env, "sim", None), context):
+    # LIBERO's OffScreenRenderEnv stores the physical binding on its wrapped
+    # robosuite environment, not always on the top-level wrapper.
+    inner = getattr(env, "env", None)
+    sim = getattr(inner, "sim", None) if inner is not None else None
+    if sim is None:
+        sim = getattr(env, "sim", None)
+    context = getattr(sim, "render_context", None)
+    objects = (env, inner, sim, context)
+    for obj in objects:
         for name in ("render_gpu_device_id", "gpu_device_id", "device_id"):
             value = getattr(obj, name, None) if obj is not None else None
             if value is None:
@@ -196,6 +207,10 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
 
     observed, context_observed = _render_binding_ids(env)
     env_device_attribute = getattr(env, "render_gpu_device_id", None)
+    env_device_attribute_source = "env.render_gpu_device_id"
+    if env_device_attribute is None:
+        env_device_attribute = getattr(getattr(env, "env", None), "render_gpu_device_id", None)
+        env_device_attribute_source = "env.env.render_gpu_device_id"
     env_device = env_device_attribute
     try:
         env_device = int(env_device)
@@ -206,9 +221,12 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
     if not torch.cuda.is_available() or int(torch.cuda.current_device()) != 0:
         raise CanonicalExecutionError("RUNTIME_CUDA_LOGICAL_DEVICE_UNVERIFIED")
     properties = torch.cuda.get_device_properties(0)
-    device_uuid = str(getattr(properties, "uuid", "")).strip()
-    if not device_uuid:
-        raise CanonicalExecutionError("RUNTIME_GPU_UUID_UNAVAILABLE")
+    try:
+        device_uuid, device_uuid_source = resolve_cuda_physical_uuid(
+            int(args.gpu), torch_device_uuid=getattr(properties, "uuid", None)
+        )
+    except ResourceContractError as exc:
+        raise CanonicalExecutionError(f"RUNTIME_GPU_UUID_UNAVAILABLE:{exc}") from exc
     receipt = {
         "schema": "STAGE_V_M1_V2_1_1_RUNTIME_BINDING_RECEIPT_V1",
         "status": "PASS",
@@ -218,13 +236,14 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
         "torch_current_device": int(torch.cuda.current_device()),
         "torch_device_uuid": device_uuid,
-        "torch_device_uuid_canonical": canonical_gpu_uuid(device_uuid),
+        "torch_device_uuid_canonical": canonical_uuid(device_uuid),
+        "torch_device_uuid_source": device_uuid_source,
         "torch_device_name": torch.cuda.get_device_name(0),
         "mujoco_gl": os.environ.get("MUJOCO_GL"),
         "mujoco_egl_device_id": os.environ.get("MUJOCO_EGL_DEVICE_ID"),
         "env_render_gpu_device_id": env_device,
         "env_render_gpu_device_id_attribute_present": env_device_attribute is not None,
-        "egl_binding_source": "env.render_gpu_device_id" if env_device_attribute is not None else "renderer_device_observation",
+        "egl_binding_source": env_device_attribute_source if env_device_attribute is not None else "renderer_device_observation",
         "render_context_observed_device_id": context_observed,
         "renderer_device_information": {
             "env_class": type(env).__name__,
@@ -234,8 +253,8 @@ def _write_runtime_binding_receipt(args: argparse.Namespace, env: Any, output_di
         },
         "source_commit": str(args.source_commit),
         "source_tree": str(args.source_tree),
-        "run_label": str(args.run_label or "UNSPECIFIED"),
-        "run_set": str(args.run_set or "UNSPECIFIED"),
+        "run_label": str(getattr(args, "run_label", None) or "UNSPECIFIED"),
+        "run_set": str(getattr(args, "run_set", None) or "UNSPECIFIED"),
         "pid": os.getpid(),
         "episode_started": False,
         "receipt_written_before_step_0": True,
@@ -271,11 +290,10 @@ def run(args: argparse.Namespace) -> int:
     suite = args.suite
     task_index = int(candidate["task_index"])
     state_index = int(candidate["state_index"])
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    physical_gpu = int(args.gpu)
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(physical_gpu)
     os.environ["MUJOCO_GL"] = "egl"
-    # CUDA_VISIBLE_DEVICES exposes the selected physical GPU as logical EGL 0.
-    logical_gpu = 0
-    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(logical_gpu)
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(physical_gpu)
     get_libero_image, get_processor, get_model, adapter_type, benchmark, libero_runtime = _load_external_modules(args.official_snapshot_root, args.upstream_root)
     get_libero_path, OffScreenRenderEnv = libero_runtime
     suite_instance = benchmark.get_benchmark_dict()[suite]()
@@ -300,7 +318,7 @@ def run(args: argparse.Namespace) -> int:
             bddl_file_name=bddl,
             camera_heights=256,
             camera_widths=256,
-            render_gpu_device_id=logical_gpu,
+            render_gpu_device_id=physical_gpu,
         )
         try:
             _write_runtime_binding_receipt(args, env, output_dir)

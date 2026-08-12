@@ -1,0 +1,99 @@
+{
+  "schema": "STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V1",
+  "version": "M4-MATCHED-ACTION-V1",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "purpose": "Formal V_phys map using a causal snapshot jointly bound to simulator state and the exact clean policy observation, with matched clean non-gripper action replay.",
+  "predecessor": {
+    "v1_3_4_immutable": true,
+    "m3_5_v1_4_status": "PASS",
+    "v7_status": "PASS_FORMAL_PARENT_QUALIFICATION",
+    "v7_m4_authorized": true
+  },
+  "source_binding": {
+    "runtime_commit": "d0ef32304e16e95a93d09c89c06e408f6254a590",
+    "runtime_tree": "9c6bbc01a54b3c7ca880ecc1986edd3d68deb2a3",
+    "upstream_commit": "c8f03f48af692657d3060c19588038c7220e9af9",
+    "upstream_tree": "c326be57bb61629a3efd2b968ef141fa576a623f",
+    "attention_implementation": "eager"
+  },
+  "inputs": {
+    "v7_formal_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_QUALIFICATION_PASS_V1_20260812T113000Z/V7_FORMAL_QUALIFICATION_PASS_RECEIPT.json",
+    "v7_formal_receipt_sha256": "36af16ea9c79a7a6a6537d5be2de3b18a69fed2cce523b05c368009c99709118",
+    "v7_protocol_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-v7-terminal-gate-fix-20260812/configs/STAGE_V_V7_FRESH_QUALIFICATION_PROTOCOL_V1_4.json",
+    "v7_protocol_sha256": "c24ecb5eedbb771b977db51cec7c23183a25414dd0f8a53085b3165fba6a2475",
+    "formal_parent_split_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_PARENT_SPLIT_V1_20260812T110000Z/STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V1.json",
+    "formal_parent_split_sha256": "0811bb0890756a9e5078f8282dd0f049991e17f8e4b3c0b55ee1f19c88952a9f",
+    "formal_parent_split_audit_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_PARENT_SPLIT_AUDIT_V1_20260812T111500Z/STAGE_V_FORMAL_PARENT_SPLIT_INDEPENDENT_AUDIT.json",
+    "formal_parent_split_audit_sha256": "af95533119f0d8d1d39095c96dfd7ca1375789b6ea6aa2c7f0090cb846f2705f",
+    "formal_parent_count": 40,
+    "formal_split_counts": {"TRAIN": 24, "VAL": 8, "TEST": 8},
+    "exposure_union_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V5_POST_M35_20260811T162000Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V5.json",
+    "exposure_union_sha256": "2ef448f172dc2c8fa2304a6772a7024d76391ed2f6cbca1fc8e79b8a6425dd5a",
+    "outcomes_read": false,
+    "old_artifacts_reused": false,
+    "source_artifacts_modified": false,
+    "authorization_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_RUNTIME_AUTHORIZATION_V1_20260812T104500Z/STAGE_V_M4_RUNTIME_AUTHORIZATION.json"
+  },
+  "matrix": {
+    "parents": 40,
+    "probes_per_parent": 24,
+    "repetitions": 1,
+    "conditions": ["CONTROL", "T3", "T5", "T10"],
+    "physical_executions_per_parent": 96,
+    "treatment_labels_per_parent": 72,
+    "physical_executions_total": 3840,
+    "treatment_labels_total": 2880,
+    "primary_dose": "T5",
+    "secondary_doses": ["T3", "T10"],
+    "dose_steps": {"T3": 3, "T5": 5, "T10": 10},
+    "h_phys": 10
+  },
+  "operation": {
+    "matched_clean_action_replay": true,
+    "primary_window": "T_PLUS_H_PHYS",
+    "native_policy_calls_in_primary_window": 0,
+    "fresh_render_primary_consumption": false,
+    "fresh_render_equality_gate_used": false,
+    "fresh_render_diagnostic_role": "DESCRIPTIVE_ONLY",
+    "treatment_only_difference": "GRIPPER_OPEN",
+    "arm_delta_linf_exact_zero": true,
+    "clean_reference_action_lineage": true,
+    "primary_estimand": "Counterfactual physical vulnerability under a short gripper-channel intervention with matched non-gripper action replay.",
+    "binary_labels_only_when_taxonomy_valid": true,
+    "abstain_is_non_consumable": true
+  },
+  "pass_conditions": [
+    "ALL_40_PARENT_RESULTS_PASS",
+    "ALL_INDEPENDENT_PARENT_AUDITS_PASS",
+    "ALL_PARENT_SEALS_PASS",
+    "24_EXACT_CAUSAL_SNAPSHOT_CANARIES_PER_PARENT",
+    "96_PHYSICAL_BRANCHES_AND_72_TREATMENT_LABELS_PER_PARENT",
+    "TREATMENT_COMPLIANCE_PASS",
+    "ARM_DELTA_LINF_EXACT_ZERO",
+    "PROTECTED_COUNTERS_ZERO",
+    "NO_OLD_ARTIFACT_REUSE",
+    "NO_SOURCE_ARTIFACT_MODIFICATION"
+  ],
+  "resource_contract": {
+    "resource_contract_version": "STAGE_V_RESOURCE_CONTRACT_V2",
+    "resource_mode": "MODE_B_THROUGHPUT_SCIENCE",
+    "admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7],
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "foreign_workload_allowed": true,
+    "foreign_process_interference": false,
+    "partial_fleet_allowed": true
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "static_audit_binding": {
+    "receipt_schema": "STAGE_V_M4_STATIC_AUDIT_V1"
+  },
+  "failure_action": "seal_classify_handoff_stop"
+}

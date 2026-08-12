@@ -137,6 +137,39 @@ def last_jsonl(path: Path) -> Mapping[str, Any] | None:
     return last
 
 
+def _bind_runtime_attention() -> str:
+    if os.environ.get("OPENVLA_ATTN_IMPLEMENTATION") != "eager":
+        return "UNMODIFIED"
+    from transformers import AutoModelForVision2Seq
+
+    original = AutoModelForVision2Seq.from_pretrained
+
+    def eager_from_pretrained(*args: Any, **kwargs: Any) -> Any:
+        kwargs["attn_implementation"] = "eager"
+        model = original(*args, **kwargs)
+        original_predict_action = model.predict_action
+
+        def predict_action_with_consistent_mask(*call_args: Any, **call_kwargs: Any) -> Any:
+            import torch
+
+            input_ids = call_kwargs.get("input_ids")
+            if input_ids is None and call_args:
+                input_ids = call_args[0]
+            attention_mask = call_kwargs.get("attention_mask")
+            if input_ids is not None and attention_mask is not None:
+                if int(input_ids.shape[1]) == int(attention_mask.shape[1]) and not torch.all(input_ids[:, -1] == 29871):
+                    call_kwargs["attention_mask"] = torch.cat(
+                        [attention_mask, torch.ones_like(attention_mask[:, :1])], dim=1
+                    )
+            return original_predict_action(*call_args, **call_kwargs)
+
+        model.predict_action = predict_action_with_consistent_mask
+        return model
+
+    AutoModelForVision2Seq.from_pretrained = staticmethod(eager_from_pretrained)
+    return "OPENVLA_UPSTREAM_ATTENTION_AND_MASK_OVERRIDE_V2"
+
+
 def build_start_provenance(module: Mapping[str, Any], worker_script: Path, artifact_provenance: Mapping[str, Any]) -> dict[str, Any]:
     repo_root = worker_script.resolve().parents[1]
     return {
@@ -181,7 +214,9 @@ def run(args: argparse.Namespace) -> int:
     model_path = Path(args.model_path) if args.model_path else Path(upstream_provenance["checkpoints"][suite]["path"])
     manifest_path = output_dir / "OFFICIAL_CLEAN_REPLAY_MANIFEST.csv"
     control: dict[str, Any]
+    runtime_adapter = "NOT_APPLIED"
     try:
+        runtime_adapter = _bind_runtime_attention()
         old_argv = sys.argv[:]
         old_pycache = os.environ.get("PYTHONDONTWRITEBYTECODE")
         try:
@@ -264,6 +299,8 @@ def run(args: argparse.Namespace) -> int:
             "vis_pgd_attack_rollouts": 0,
             "attack_rollouts": 0,
             "worker_gpu": int(args.gpu),
+            "runtime_environment": {"OPENVLA_ATTN_IMPLEMENTATION": os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "")},
+            "runtime_adapter": runtime_adapter,
             "runtime_pythonpath_prefixes": runtime_pythonpath_prefixes,
             "generated_utc": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
         }
@@ -277,6 +314,8 @@ def run(args: argparse.Namespace) -> int:
             "source_commit": args.source_commit, "source_tree": args.source_tree,
             "error": f"{type(exc).__name__}:{str(exc)[:1000]}", "old_artifacts_reused": False,
             "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
+            "runtime_environment": {"OPENVLA_ATTN_IMPLEMENTATION": os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "")},
+            "runtime_adapter": runtime_adapter,
             "runtime_pythonpath_prefixes": runtime_pythonpath_prefixes,
         }
     atomic_write_json(output_dir / "CONTROL_RESULT.json", control)

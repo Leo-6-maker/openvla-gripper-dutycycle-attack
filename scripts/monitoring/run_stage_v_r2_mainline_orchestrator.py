@@ -428,9 +428,15 @@ def validate_plan(path: Path, *, source: Mapping[str, str], expected_stage: str 
     if stage in {"C0", "R2A", "R2B"}:
         excluded = {int(x) for x in policy.get("excluded_gpus", [])}
         gpu5_authorized = bool(policy.get("gpu5_authorized"))
-        if (str(policy.get("resource_kind")) != "GPU" or required != 8
-                or not bool(policy.get("strict_gpu_count"))
-                or (5 not in excluded and not gpu5_authorized)):
+        dynamic_r2a = stage == "R2A" and bool(policy.get("partial_fleet_allowed"))
+        if dynamic_r2a:
+            if (str(policy.get("resource_kind")) != "GPU" or required != 1 or minimum != 1
+                    or maximum != 8 or bool(policy.get("strict_gpu_count"))
+                    or (5 not in excluded and not gpu5_authorized)):
+                raise OrchestratorError("PLAN_GPU_POLICY_NOT_DYNAMIC_PARTIAL_FLEET")
+        elif (str(policy.get("resource_kind")) != "GPU" or required != 8
+              or not bool(policy.get("strict_gpu_count"))
+              or (5 not in excluded and not gpu5_authorized)):
             raise OrchestratorError("PLAN_GPU_POLICY_NOT_STRICT_8")
     if not isinstance(plan.get("lock_path"), str) or not plan["lock_path"]:
         raise OrchestratorError("PLAN_LOCK_MISSING")

@@ -1,0 +1,558 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3",
+  "version": "V1.3.2",
+  "status": "FROZEN_PROSPECTIVE_RUNTIME_READY_PENDING_INDEPENDENT_AUDIT",
+  "supersedes": "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3_1.json",
+  "prospective_patch": "pinned-pytorch-uuid-resolution-via-cuda-visible-devices-and-nvidia-smi",
+  "revision_reason": "support pinned PyTorch UUID fallback before any simulator step or rollout",
+  "protocol_role": "pre_v7_m3_5_semantics_label_validity_and_direct_open_diagnostic",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "historical_roots_immutable": true,
+  "protected_eval160": {
+    "reads_allowed": false,
+    "rollouts_allowed": false,
+    "hard_stop": true
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "structural_failure_predecessor": {
+    "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_V1_3_20260810T182132Z/STAGE_V_M3_5_STRUCTURAL_FAILURE_RECEIPT_V1.json",
+    "receipt_sha256": "b5c4d80edb5a02f085e6b678ff4fcce07646c5044d4c8a18cccca21227ed9068",
+    "root_sha256s_sha256": "2a8e5d0d42f3d7f8332a07a1caf6fd42a0dc78cb82abbf22e3598cbbde5580a0",
+    "source_commit": "8e9ddee262e7b2475e46001d2031a4130913b056",
+    "source_tree": "25d161f60e58720300550faefec55c51115f551d",
+    "status": "SEALED_STRUCTURAL_FAILURE_ZERO_ROLLOUT"
+  },
+  "egl_bootstrap_failure_predecessor": {
+    "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EGL_BOOTSTRAP_SMOKE_V1_3_1_20260810T185622Z/STAGE_V_M3_5_EGL_BOOTSTRAP_SMOKE_V1.json",
+    "receipt_sha256": "b56ba28ea209b06fd7018ae17d68a6e61ee96072e6e8c20742887ab570cd72f8",
+    "root_sha256s_sha256": "6f0800f76963531796b7f5ea56231252d16a5b876de9f279173604b86aa31542",
+    "smoke_script_sha256": "889df6def20e09458db66a3e8917c0ebdb589bcd037bbe076509edbd64857067",
+    "torch_uuid_probe_sha256": "c95bcb7ff8b45bf8017c5068ade9dec163ae4afb85746c99933d9dbffe064f73",
+    "authorization_sha256": "1460915be83c9b6c7db84433a2d2a68139b3025508fd09bda95d9f86b1f4b69b",
+    "protocol_sha256": "c8c7d63679a4cff342191135c65fcf2f24c6010e25d6cab7dce7ac606b6c7bc8",
+    "source_commit": "ae74de77cb2c9e2bb312488290c33e00f449630b",
+    "source_tree": "52ecd38b0f363cdb89b73981a6150ebe00d376ab",
+    "status": "SEALED_STRUCTURAL_FAILURE_ZERO_ROLLOUT"
+  },
+  "source_binding": {
+    "implementation_source_commit": "03d7694771d3676654c994f833d7b50a5989795b",
+    "implementation_source_tree": "65a4d0ead7ba0ea9b50911a9bb6e1c6840c3a87a",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0"
+  },
+  "contract_bindings": {
+    "label_contract": {
+      "path": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_3.json",
+      "sha256": "1f339e16f8d245a737076e3a7c790b6b71572e2555c409b997e7b4a8a30e6fc3",
+      "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_3"
+    },
+    "canonical_execution_core": {
+      "path": "src/gripper_attack/stage_v_canonical_execution_core.py",
+      "sha256": "b994cf36c1243708ecb370fdfe348db7bc36609f938df6a7456e8a048fb029eb"
+    },
+    "phase_classifier": {
+      "path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py",
+      "sha256": "94f46e45aec00c96a18a86230c516b535511c21d2e6a068a9b7ac6bd455fc8e1"
+    },
+    "physical_taxonomy": {
+      "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+      "sha256": "ce45a1302d6acedc357a3a0669c49309c209fbcd6e635e41e92f840a93ab7aa8"
+    },
+    "probe_plan_builder": {
+      "path": "scripts/detector_v5/build_stage_v_m3_5_probe_plan.py",
+      "sha256": "f4a03685de6667b2d49218c3dc1e155f6e6e65c2776e2404a59add2abdac8eb9"
+    },
+    "selection_builder": {
+      "path": "scripts/detector_v5/select_stage_v_m3_5_diagnostic_manifest_v2.py",
+      "sha256": "b5686c71a541e10853ee0cbf9aeb6ab767c9720ec8bfdf368d8d1cbaff53b2e4"
+    },
+    "runner": {
+      "path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py",
+      "sha256": "88aee8d110b25e3f567da529bed196cdc49af5d5b074d354ad433302c4f95657"
+    },
+    "dynamic_parent_launcher": {
+      "path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py",
+      "sha256": "4baed14a2af8f36d7d1ef4165d96140f783a31163ca3f8da973cd846994e0f54"
+    },
+    "dynamic_dispatcher": {
+      "path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py",
+      "sha256": "8b77bc1afb94682f5904447f7fea4b008fe9ebb12d937717d629b44d708ded2f"
+    },
+    "dynamic_worker": {
+      "path": "scripts/detector_v5/run_stage_v_dynamic_worker.py",
+      "sha256": "45db2fbad5edca110b014fe4f3c8167d3e02c74d43e7a6688885bef182dab2fc"
+    },
+    "dynamic_common": {
+      "path": "scripts/detector_v5/stage_v_dynamic_common.py",
+      "sha256": "71148528005dc6c7c42ad814a7726412b1bce957a25579ef19fc2586275e9d51"
+    },
+    "resource_contract": {
+      "path": "scripts/detector_v5/stage_v_gpu_resource_contract.py",
+      "sha256": "d0e85f74269fc8588fdd342cdba59dd2099cf5ffdaaf5979b7017978e54b1d21"
+    },
+    "parent_supervisor": {
+      "path": "scripts/detector_v5/run_stage_v_parent_aware_supervisor.py",
+      "sha256": "f814c8cfae3821530ec8baebad9e3b99549a3cc8ad390ebb9c8489aeceed8501"
+    },
+    "queue_auditor": {
+      "path": "scripts/detector_v5/audit_stage_v_dynamic_queue.py",
+      "sha256": "c1d4320d5d63745f0b2ccbba61995836c4d165195ae84a02c7a1798ed5ea9934"
+    },
+    "runtime_auditor": {
+      "path": "scripts/detector_v5/audit_stage_v_m3_5_runtime_v1_3.py",
+      "sha256": "9348c48da9b68a3cc552e1ce860ffc5d86158f3b779712933d2e4196d83f1e94"
+    },
+    "static_auditor": {
+      "path": "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_3.py",
+      "sha256": "91aec793ef3f38886662aacd9f0d323733b2a19212ae8360ee3ab4af3dd39bc7"
+    },
+    "authorization_issuer": {
+      "path": "scripts/detector_v5/issue_stage_v_m3_5_runtime_authorization.py",
+      "sha256": "a3733f69195b2921c3dc531409abf9971b9806bdc1aa8ffe9a0da19ea552e910"
+    }
+  },
+  "freshness_bindings": {
+    "exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4_20260810T104027Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4.json",
+      "sha256": "b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612",
+      "branch_results_read": false
+    },
+    "taxonomy_eligibility_audit": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_SELECTION_TAXONOMY_ELIGIBILITY_AUDIT_V1_20260810T145500Z/STAGE_V_M3_5_SELECTION_TAXONOMY_ELIGIBILITY_AUDIT_V1.json",
+      "sha256": "e445883a6903da5db373bb06dfd5fc0a0ad0d612af5430f02da5d871a0b3a4d7",
+      "branch_results_read": false
+    },
+    "clean_coverage_roots": [
+      "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_CLEAN_PHASE_COVERAGE_CENSUS_V1_20260810T141343Z",
+      "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_CLEAN_PHASE_COVERAGE_CENSUS_CONTINUATION_V1_20260810T142645Z",
+      "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_CLEAN_PHASE_COVERAGE_CENSUS_CONTINUATION2_V1_20260810T142959Z"
+    ]
+  },
+  "diagnostic_parent_selection": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V2_20260810T174118Z/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V2.json",
+    "sha256": "ab265b4e74597c46b16361b4eeae39e7ab7ff66d9fb5d0e1c46eb1f709fd76a9",
+    "selected_count": 8,
+    "selected_counts_by_suite": {
+      "libero_10": 2,
+      "libero_goal": 2,
+      "libero_object": 2,
+      "libero_spatial": 2
+    },
+    "outcomes_read": false
+  },
+  "blinded_manual_taxonomy_audit": {
+    "selected_pairs": [
+      {
+        "canonical_parent_key": "libero_10/task_00/state_47",
+        "dose": "T3",
+        "probe_id": "Q13",
+        "repetition": 0
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_48",
+        "dose": "T5",
+        "probe_id": "Q10",
+        "repetition": 0
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_02/state_49",
+        "dose": "T5",
+        "probe_id": "Q22",
+        "repetition": 1
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_04/state_47",
+        "dose": "T10",
+        "probe_id": "Q01",
+        "repetition": 0
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_47",
+        "dose": "T5",
+        "probe_id": "Q02",
+        "repetition": 1
+      },
+      {
+        "canonical_parent_key": "libero_object/task_02/state_49",
+        "dose": "T3",
+        "probe_id": "Q11",
+        "repetition": 1
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_02/state_47",
+        "dose": "T3",
+        "probe_id": "Q20",
+        "repetition": 1
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_02/state_49",
+        "dose": "T5",
+        "probe_id": "Q14",
+        "repetition": 2
+      }
+    ],
+    "condition_identity_visible_to_reviewer": false,
+    "major_disagreement_rule": "manual FAILURE vs automatic NO_FAILURE, or reverse",
+    "pair_selection_algorithm": "minimum sha256 over all 24x3x3 pairs using M35_V1_3_MANUAL_PAIR, selection sha256, and parent key",
+    "public_packet_schema": "STAGE_V_M3_5_BLINDED_MANUAL_REVIEW_PACKET_V1",
+    "manual_review_schema": "STAGE_V_M3_5_BLINDED_MANUAL_REVIEW_V1",
+    "private_key_schema": "STAGE_V_M3_5_PRIVATE_BLINDING_KEY_V1",
+    "private_key_must_be_outside_public_root": true,
+    "private_key_mode": "0600",
+    "selected_sequences_per_parent": 2,
+    "any_major_disagreement": "FAIL_AND_SEAL"
+  },
+  "dose_sanity_contract": {
+    "delivered_steps": {
+      "T3": 3,
+      "T5": 5,
+      "T10": 10
+    },
+    "physical_failure_monotonicity_required": false,
+    "nonmonotonic_triplet_rate_hold_threshold": 0.25,
+    "role": "sanity HOLD only; not a monotonic efficacy assumption"
+  },
+  "runtime_input_binding_receipt": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_RUNTIME_INPUT_BINDINGS_V1_20260810T174258Z/STAGE_V_M3_5_RUNTIME_INPUT_BINDINGS_V1.json",
+    "sha256": "980c0c3de3b0250803b745c21eacdb039c199ad169ded57be13e94694664da7d",
+    "schema": "STAGE_V_M3_5_RUNTIME_INPUT_BINDINGS_V1",
+    "status": "PASS"
+  },
+  "runtime_inputs": {
+    "official_snapshot": {
+      "adapter_path": "/mnt/sdc/dty_user/openvla_attack_official_v3_20260716/src/gripper_attack/official_openvla_adapter.py",
+      "adapter_sha256": "38d2c272123002a6a6caaabefd0ce96f425ff5e06186199b3a2c4a96b05d0cf4",
+      "git_commit": "4d7a9daeb2bf9cf6b5d911f0ddcd93c254d0362b",
+      "git_tree": "cd5fe5263afd66d9131159d97bba1d1d660be5df",
+      "path": "/mnt/sdc/dty_user/openvla_attack_official_v3_20260716",
+      "worktree_status": ""
+    },
+    "upstream": {
+      "git_commit": "c8f03f48af692657d3060c19588038c7220e9af9",
+      "git_tree": "c326be57bb61629a3efd2b968ef141fa576a623f",
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4",
+      "worktree_status": ""
+    },
+    "runtime_environment": {
+      "packages": {
+        "Pillow": "10.3.0",
+        "accelerate": "0.28.0",
+        "libero": "0.1.0",
+        "mujoco": "3.9.0",
+        "numpy": "1.26.4",
+        "opencv-python": "4.9.0.80",
+        "robosuite": "1.4.1",
+        "safetensors": "0.5.3",
+        "tokenizers": "0.19.1",
+        "torch": "2.2.2+cu118",
+        "torchvision": "0.17.2+cu118",
+        "transformers": "4.40.1"
+      },
+      "python_version": "3.10.16"
+    },
+    "models": {
+      "libero_10": {
+        "algorithm": "sha256(canonical_json(sorted(relative_path,size,file_sha256,symlink_target)))",
+        "file_count": 18,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+        "total_bytes": 15085093727,
+        "tree_sha256": "4417b0f3c383f0b88c2f659471ada6b0d8ef138234441db43d180f9f963a5b9b"
+      },
+      "libero_goal": {
+        "algorithm": "sha256(canonical_json(sorted(relative_path,size,file_sha256,symlink_target)))",
+        "file_count": 19,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+        "total_bytes": 15085095390,
+        "tree_sha256": "210c088fc888700884cce76ea14155da1c113e21dc7cc3b7b425d3e22839ef62"
+      },
+      "libero_object": {
+        "algorithm": "sha256(canonical_json(sorted(relative_path,size,file_sha256,symlink_target)))",
+        "file_count": 19,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+        "total_bytes": 15085095882,
+        "tree_sha256": "6c8701d56115ef6ff534bc5cb779ec27f3dd69a06fd0bb535dbd1b2ac2780948"
+      },
+      "libero_spatial": {
+        "algorithm": "sha256(canonical_json(sorted(relative_path,size,file_sha256,symlink_target)))",
+        "file_count": 22,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620",
+        "total_bytes": 15085126761,
+        "tree_sha256": "462fc2f03b6cc6696e1bef0403670565148103e0264d8ff62e5548ff9fac459d"
+      }
+    },
+    "repo_bindings": {
+      "stage_v_canonical_execution_core": {
+        "path": "src/gripper_attack/stage_v_canonical_execution_core.py",
+        "sha256": "b994cf36c1243708ecb370fdfe348db7bc36609f938df6a7456e8a048fb029eb"
+      },
+      "stage_v_m3_5_phase_classifier": {
+        "path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py",
+        "sha256": "94f46e45aec00c96a18a86230c516b535511c21d2e6a068a9b7ac6bd455fc8e1"
+      },
+      "stage_v_m3_5_physical_taxonomy": {
+        "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+        "sha256": "ce45a1302d6acedc357a3a0669c49309c209fbcd6e635e41e92f840a93ab7aa8"
+      },
+      "build_stage_v_m3_5_probe_plan": {
+        "path": "scripts/detector_v5/build_stage_v_m3_5_probe_plan.py",
+        "sha256": "f4a03685de6667b2d49218c3dc1e155f6e6e65c2776e2404a59add2abdac8eb9"
+      },
+      "run_stage_v_m3_5_intervention_parent": {
+        "path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py",
+        "sha256": "88aee8d110b25e3f567da529bed196cdc49af5d5b074d354ad433302c4f95657"
+      },
+      "run_stage_v_m3_5_dynamic_parent": {
+        "path": "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py",
+        "sha256": "4baed14a2af8f36d7d1ef4165d96140f783a31163ca3f8da973cd846994e0f54"
+      },
+      "run_stage_v_dynamic_dispatcher": {
+        "path": "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py",
+        "sha256": "8b77bc1afb94682f5904447f7fea4b008fe9ebb12d937717d629b44d708ded2f"
+      },
+      "run_stage_v_dynamic_worker": {
+        "path": "scripts/detector_v5/run_stage_v_dynamic_worker.py",
+        "sha256": "45db2fbad5edca110b014fe4f3c8167d3e02c74d43e7a6688885bef182dab2fc"
+      },
+      "stage_v_dynamic_common": {
+        "path": "scripts/detector_v5/stage_v_dynamic_common.py",
+        "sha256": "71148528005dc6c7c42ad814a7726412b1bce957a25579ef19fc2586275e9d51"
+      },
+      "stage_v_gpu_resource_contract": {
+        "path": "scripts/detector_v5/stage_v_gpu_resource_contract.py",
+        "sha256": "d0e85f74269fc8588fdd342cdba59dd2099cf5ffdaaf5979b7017978e54b1d21"
+      },
+      "run_stage_v_parent_aware_supervisor": {
+        "path": "scripts/detector_v5/run_stage_v_parent_aware_supervisor.py",
+        "sha256": "f814c8cfae3821530ec8baebad9e3b99549a3cc8ad390ebb9c8489aeceed8501"
+      },
+      "audit_stage_v_dynamic_queue": {
+        "path": "scripts/detector_v5/audit_stage_v_dynamic_queue.py",
+        "sha256": "c1d4320d5d63745f0b2ccbba61995836c4d165195ae84a02c7a1798ed5ea9934"
+      },
+      "audit_stage_v_m3_5_runtime_v1_3": {
+        "path": "scripts/detector_v5/audit_stage_v_m3_5_runtime_v1_3.py",
+        "sha256": "9348c48da9b68a3cc552e1ce860ffc5d86158f3b779712933d2e4196d83f1e94"
+      }
+    }
+  },
+  "exact_a800_regression": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_3_2_20260810T190836Z/STAGE_V_M3_5_EXACT_A800_REGRESSION_RECEIPT_V1.json",
+    "sha256": "249793c2f24e92cc518aacb190593fe0bea683625c99a279487925b6a7052f82",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "source_commit": "03d7694771d3676654c994f833d7b50a5989795b",
+    "source_tree": "65a4d0ead7ba0ea9b50911a9bb6e1c6840c3a87a",
+    "expected_collected": 207,
+    "test_files": [
+      "tests/detector_v5/test_stage_v1_m1_visual_determinism.py",
+      "tests/detector_v5/test_stage_v2_teacher_enrichment.py",
+      "tests/detector_v5/test_stage_v2_upstream_provenance.py",
+      "tests/detector_v5/test_stage_v_canonical_execution_core.py",
+      "tests/detector_v5/test_stage_v_clean_replay_frozen.py",
+      "tests/detector_v5/test_stage_v_dynamic8.py",
+      "tests/detector_v5/test_stage_v_fresh_g10_pool.py",
+      "tests/detector_v5/test_stage_v_freshness_v4_v2.py",
+      "tests/detector_v5/test_stage_v_gpu_resource_contract.py",
+      "tests/detector_v5/test_stage_v_local_supervisor.py",
+      "tests/detector_v5/test_stage_v_m1_v2_8gpu.py",
+      "tests/detector_v5/test_stage_v_m3_5_intervention_parent.py",
+      "tests/detector_v5/test_stage_v_m3_5_phase_classifier.py",
+      "tests/detector_v5/test_stage_v_m3_5_physical_taxonomy.py",
+      "tests/detector_v5/test_stage_v_m3_5_runtime_audit_v1_3.py",
+      "tests/detector_v5/test_stage_v_m3_5_selection_v2.py",
+      "tests/detector_v5/test_stage_v_parent_split.py",
+      "tests/detector_v5/test_stage_v_r2b_decision.py",
+      "tests/detector_v5/test_stage_v_r2_q2.py",
+      "tests/detector_v5/test_stage_v_r2_qualification_manifest.py",
+      "tests/detector_v5/test_stage_v_rb1_runtime_equivalence.py",
+      "tests/detector_v5/test_stage_v_runner_binding_protocol.py"
+    ],
+    "tested_bindings": {
+      "scripts/detector_v5/analyze_stage_v_m1_v2_multigpu.py": "945b896140b14024db25e4cbf08dbbaacf6e3d538cfdb9490fdbcd9735b39c23",
+      "scripts/detector_v5/analyze_stage_v_m1_visual_divergence.py": "f86c1e4990c917c90de70b7488436a753133189ee21ad795e79510f9201d7bd8",
+      "scripts/detector_v5/audit_stage_v2_teacher_enrichment.py": "988312109d6d93f3fc02ac7a89aea1ddff8d51ad4ca4fffd2ff63a9a4415ac73",
+      "scripts/detector_v5/audit_stage_v_abort_postmortem.py": "5715f6a9f12de5f4c7dd4f15d37e93b311d13abe10033c6aeacc12fd27067a63",
+      "scripts/detector_v5/audit_stage_v_dynamic_queue.py": "c1d4320d5d63745f0b2ccbba61995836c4d165195ae84a02c7a1798ed5ea9934",
+      "scripts/detector_v5/audit_stage_v_local_supervisor.py": "cf7a1c2e96ca78ee64a60c4ca342d2eebb5855091b229b36aab12d25b4a304c9",
+      "scripts/detector_v5/audit_stage_v_m1_v2_8gpu.py": "6ae80ce45449c168abf5161b0192597c65429a6cc2a0bde0ee7b1d67c9ab88b1",
+      "scripts/detector_v5/audit_stage_v_m1_visual_determinism.py": "160b5792bc53c20e8509e7f0a1822c245f4728e63ae570cf91ec72774250ccda",
+      "scripts/detector_v5/audit_stage_v_m3_5_runtime_v1_3.py": "9348c48da9b68a3cc552e1ce860ffc5d86158f3b779712933d2e4196d83f1e94",
+      "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_1.py": "c454cc2e0141113861b272e6cb1df4dc850baade83dce8efc11770255dffd5cc",
+      "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_2.py": "2fbd5043cb81266cbfe21ba3560cd50d954d078eb3960f99228397ee4bfcfb49",
+      "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_3.py": "91aec793ef3f38886662aacd9f0d323733b2a19212ae8360ee3ab4af3dd39bc7",
+      "scripts/detector_v5/audit_stage_v_r2_control_qualification_v2.py": "8bef3decc4fcf3ce10a5ae7acc53915257c1672a9211346b1be16dc50bbc1449",
+      "scripts/detector_v5/audit_stage_v_r2b_decision.py": "6f1062b10513ce7fec88e81fea1bed1993c49989dfb18f0ad6fa21f25409540e",
+      "scripts/detector_v5/audit_stage_v_rb1_receipt.py": "6813e064b2e185a26f5bcf36a6bafa155eb7e2d904a1d95e2c37a8ed528654c8",
+      "scripts/detector_v5/build_stage_v_clean_attempt_exclusion.py": "e08b5ad81a55c552189a07bf3767e3155fc7a82a477b971cd9f20e948d048e2a",
+      "scripts/detector_v5/build_stage_v_clean_attempt_union_v2.py": "387131ebef0160c10d38126950dafad5dfef11844aadde19cd0eee1d65e7ed90",
+      "scripts/detector_v5/build_stage_v_exposure_manifest.py": "18068f9f1aae239a53694533637e85f68e6187357598f89a08d896164342debb",
+      "scripts/detector_v5/build_stage_v_exposure_union_v4.py": "bc03b3205d20fa9a0621d5944e9a9d99cc11e25b3983ba4837040a42f17b7a21",
+      "scripts/detector_v5/build_stage_v_g10_candidate_pool.py": "872f21592d1a6b30eea22dcd27e0e57d975cfbac41ac74dabe3f67f760a49175",
+      "scripts/detector_v5/build_stage_v_m3_5_probe_plan.py": "f4a03685de6667b2d49218c3dc1e155f6e6e65c2776e2404a59add2abdac8eb9",
+      "scripts/detector_v5/freeze_stage_v_parent_split.py": "a8fee4913532fff2a41dc3c36651b48b167a36da3b9ea8b75dcc3e6955f6e651",
+      "scripts/detector_v5/issue_stage_v_m3_5_runtime_authorization.py": "a3733f69195b2921c3dc531409abf9971b9806bdc1aa8ffe9a0da19ea552e910",
+      "scripts/detector_v5/prepare_stage_v2_upstream_provenance.py": "15be7dcd52c02b92c937408ff02206ee91416cc11bf771c42afb33f8692f302b",
+      "scripts/detector_v5/prepare_stage_v_r2_qualification_manifest.py": "70418be428da1ad86ddb9f3259c2ee989ea90cc343f0c6a51f6d32fdcc765529",
+      "scripts/detector_v5/prepare_stage_v_r2b_manifest.py": "5c6f94460484bbc39ef486aa37c1d58dd93e4c0fcbfadf68f812f065ab8871ae",
+      "scripts/detector_v5/run_stage_v2_teacher_enrichment.py": "915d5dc33c29e7981a5324b9d504c0145be5c6d095b48d3412097b9dd168c2db",
+      "scripts/detector_v5/run_stage_v_canonical_clean.py": "f967c527abb5ce3dffaa6223a564c80ec0b6b7a79befd416e24674dadd67884d",
+      "scripts/detector_v5/run_stage_v_clean_replay_frozen.py": "87b8ec5e161c6a1f64195dd29a49e990dcb3c8530e77cf7a14db1d95f6e26ec6",
+      "scripts/detector_v5/run_stage_v_control_qualification.py": "248218e99fe8dca9fad580099b2690f297d08771ef448060ec3e6e2bc7eb559d",
+      "scripts/detector_v5/run_stage_v_dynamic_control_canary.py": "85382f81c7a85426a79208fbed5cdaf6a6fbdfdc3abb34765e25a84cfc9f7bd0",
+      "scripts/detector_v5/run_stage_v_dynamic_dispatcher.py": "8b77bc1afb94682f5904447f7fea4b008fe9ebb12d937717d629b44d708ded2f",
+      "scripts/detector_v5/run_stage_v_dynamic_worker.py": "45db2fbad5edca110b014fe4f3c8167d3e02c74d43e7a6688885bef182dab2fc",
+      "scripts/detector_v5/run_stage_v_local_supervisor.py": "8416a46a0ece0c19c558f0b04da9737053f953bd4b072a90dac7d56313128633",
+      "scripts/detector_v5/run_stage_v_m1_v2_8gpu.py": "bc42690d870888b3ca6b71f3caebb726994aa44d63f75694931b16b6f69318bc",
+      "scripts/detector_v5/run_stage_v_m1_visual_repeatability.py": "5c08475922d620f83b48b7a562d77a8d69f9c14ba077b060fd3565ee68d36c22",
+      "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py": "4baed14a2af8f36d7d1ef4165d96140f783a31163ca3f8da973cd846994e0f54",
+      "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py": "88aee8d110b25e3f567da529bed196cdc49af5d5b074d354ad433302c4f95657",
+      "scripts/detector_v5/run_stage_v_parent_aware_supervisor.py": "f814c8cfae3821530ec8baebad9e3b99549a3cc8ad390ebb9c8489aeceed8501",
+      "scripts/detector_v5/run_stage_v_r2_q2_control_qualification.py": "684993bda3e99e2d2682cdc69541e2e92af8064d43418ab669ebf36d88798121",
+      "scripts/detector_v5/run_stage_v_r2_q2_supervisor.py": "921b5b405184b3ddb4c95f78dd9e31921015f57ece71853b424b7c8d23b50d21",
+      "scripts/detector_v5/run_stage_v_rb1a_diagnostic.py": "72a3f66b8fd34b1f43602db05be5a841753d082b72bd8ba69a9a706e16e671df",
+      "scripts/detector_v5/select_stage_v_exposure_clean_candidates.py": "d4829f6c6c6616eda596d7ab64d3cb5c9d984ae238d3060355b35ccbb6328b9b",
+      "scripts/detector_v5/select_stage_v_m3_5_diagnostic_manifest_v1.py": "efff25006ed3eb8df400bd160049b3462305bf4e9fcc12892a17e606e8bbcfa5",
+      "scripts/detector_v5/select_stage_v_m3_5_diagnostic_manifest_v2.py": "b5686c71a541e10853ee0cbf9aeb6ab767c9720ec8bfdf368d8d1cbaff53b2e4",
+      "scripts/detector_v5/stage_v2_teacher_enrichment.py": "875b5adcac413670d5384400468904797b0ff9ad38bf594d1ee82f00c4d7ca5a",
+      "scripts/detector_v5/stage_v_dynamic_canary_worker.py": "90966b99175e8662353ea3ebb4623f641c0b38033ab65c07fa04c47d5bcd084e",
+      "scripts/detector_v5/stage_v_dynamic_common.py": "71148528005dc6c7c42ad814a7726412b1bce957a25579ef19fc2586275e9d51",
+      "scripts/detector_v5/stage_v_gpu_resource_contract.py": "d0e85f74269fc8588fdd342cdba59dd2099cf5ffdaaf5979b7017978e54b1d21",
+      "scripts/detector_v5/stage_v_rb1_runtime_equivalence.py": "b3f1f3ca8154b560e596b3110d07d0f8f00f4b0af5a746dae2af378db257ce3c",
+      "scripts/detector_v5/stage_v_runner_binding_protocol.py": "095f7217ff500d74ca6c3f1d33ad994f7a600c981e21f9833a0ed50409e54df5",
+      "scripts/detector_v5/stage_v_science_core_provenance.py": "2be506dd8ac857f3700e07f042994cac7798395bf7b9a63301318eab68de3df4",
+      "src/gripper_attack/stage_v_canonical_execution_core.py": "b994cf36c1243708ecb370fdfe348db7bc36609f938df6a7456e8a048fb029eb",
+      "src/gripper_attack/stage_v_m3_5_phase_classifier.py": "94f46e45aec00c96a18a86230c516b535511c21d2e6a068a9b7ac6bd455fc8e1",
+      "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py": "ce45a1302d6acedc357a3a0669c49309c209fbcd6e635e41e92f840a93ab7aa8",
+      "tests/detector_v5/test_stage_v1_m1_visual_determinism.py": "2fa480f8731ec43b5479f7028ebcaa278e31c418011f8ecc801230c06d7a53cb",
+      "tests/detector_v5/test_stage_v2_teacher_enrichment.py": "d6360366a9b07dd5f1380337e429c09111b50bac0c6bce7e11a5f87bd56b752e",
+      "tests/detector_v5/test_stage_v2_upstream_provenance.py": "3ba6c6ce1a7068ac75566e1fde18345c04fe2f02e8b5344c87d957d2f844caa5",
+      "tests/detector_v5/test_stage_v_canonical_execution_core.py": "ff93fdd4699d0b4b4d0d75ba5db0075e608197ab9597ec2d08a3c6473aabd8ef",
+      "tests/detector_v5/test_stage_v_clean_replay_frozen.py": "3aa9def6843d95e4b19996906796516f52951f63f27b4686d482d08da1577d52",
+      "tests/detector_v5/test_stage_v_dynamic8.py": "70126f16939d4470bfbe5bf2c86426ab22672fa8e43c94eb4f4584b1403a1b1f",
+      "tests/detector_v5/test_stage_v_fresh_g10_pool.py": "312f3e4c13809d058b5b07c686e28d774b1fb0e5a48a31b445b6f5bbad80af53",
+      "tests/detector_v5/test_stage_v_freshness_v4_v2.py": "008b87db52cf827ea46f385cfe93c5947088ab01e00bb5cb687630d36f375a10",
+      "tests/detector_v5/test_stage_v_gpu_resource_contract.py": "1df22e7575d9136826e7986aa717783718e09474e4f78d0aba8044945b6412e3",
+      "tests/detector_v5/test_stage_v_local_supervisor.py": "aff82b4eafc79b7aa0ebced897d3cce1a51e74a9375e2b1841d8d88d27fdb6d3",
+      "tests/detector_v5/test_stage_v_m1_v2_8gpu.py": "53f67f6f686b561f6974b44858c38d3552dddf71e0a84a26f9a42446cb4fd80a",
+      "tests/detector_v5/test_stage_v_m3_5_intervention_parent.py": "a7c4431211a05809603bf39414e742590caec056f9998f25e84dd66cac143e8e",
+      "tests/detector_v5/test_stage_v_m3_5_phase_classifier.py": "4a60d3258334e6c30697158e9be1900444ef922bd69711d82c3d93d0a977ac31",
+      "tests/detector_v5/test_stage_v_m3_5_physical_taxonomy.py": "e7c962892cc46b8afc523ec8748e54f98b3fb084ca7e218639e233e08aacaf1c",
+      "tests/detector_v5/test_stage_v_m3_5_runtime_audit_v1_3.py": "592970d3ec03ad7aa8ed13f3c03ab82ed3ccd4fba6d92bc07f4d31455fff12d4",
+      "tests/detector_v5/test_stage_v_m3_5_selection_v2.py": "b0b91767fc98cdfce55166c376cbb1fb8d0c1a95474831bba4cfa6a1e072e1c4",
+      "tests/detector_v5/test_stage_v_parent_split.py": "44bb0679b383351d5afb26379825130d4b959e97c43b1c96cb19fe40d7a43aac",
+      "tests/detector_v5/test_stage_v_r2_q2.py": "b57cd5aef2aed43b31b79659cafa00b78c992b88560749583cb9d59b57f0ad16",
+      "tests/detector_v5/test_stage_v_r2_qualification_manifest.py": "aa8057e2b9a566b150df2a7da46088e28142f9a9ec98fc87266a4ba501bd16b1",
+      "tests/detector_v5/test_stage_v_r2b_decision.py": "6f8472435dd34026940aaf31a0735ec36b80eb4fb1933c3ecb0e45dfd77646e7",
+      "tests/detector_v5/test_stage_v_rb1_runtime_equivalence.py": "99fa5c2a97628d10f131dbc7dd20be71d5bc1241f04c8ad7149bab63e42e9c5d",
+      "tests/detector_v5/test_stage_v_runner_binding_protocol.py": "8102721838d2c4faaa51e74019e32099f379fa47ec685059fb19db55ae6b65d3"
+    }
+  },
+  "diagnostic_execution_accounting": {
+    "selected_parents": 8,
+    "probes_per_parent": 24,
+    "repetitions_per_probe": 3,
+    "conditions_per_probe_and_repetition": [
+      "CONTROL",
+      "T3",
+      "T5",
+      "T10"
+    ],
+    "physical_branches_per_parent": 288,
+    "physical_branches_total": 2304,
+    "treatment_observations_per_parent": 216,
+    "treatment_observations_total": 1728,
+    "collapsed_labels_per_parent": 72,
+    "collapsed_labels_total": 576,
+    "formal_m4_accounting_is_separate": true
+  },
+  "resource_contract": {
+    "resource_mode": "MODE_M35_DIAGNOSTIC",
+    "admitted_gpu_indices": [
+      0,
+      1,
+      2,
+      4,
+      5,
+      6,
+      7
+    ],
+    "excluded_gpu_indices": [
+      3
+    ],
+    "gpu_uuid_by_index": {
+      "0": "bf4309d3-8cba-437e-8d87-cee9f1e6d232",
+      "1": "f6910e5c-f41e-109e-43d0-f01f0d77dbf2",
+      "2": "7b06162a-27e4-2552-e891-d201e3fae6b9",
+      "3": "41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
+      "4": "e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
+      "5": "185b30c0-074c-6f07-aa8b-a67d00e8e4a9",
+      "6": "92963392-f77a-85ce-4ba7-7a8288429ca5",
+      "7": "bd2cfcc1-64ab-c2d0-9ae3-245fc8d21a76"
+    },
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "partial_fleet_allowed": true,
+    "foreign_workloads_allowed_if_admitted": true,
+    "gpu3_foreign_process_must_not_be_modified": true,
+    "parent_atomicity": "all registered branches for one parent stay on one physical GPU",
+    "cuda_visible_devices": "one admitted physical GPU per worker",
+    "torch_logical_device": 0,
+    "torch_device_uuid_binding": "torch property when available; otherwise CUDA_VISIBLE_DEVICES[0] plus nvidia-smi physical index",
+    "mujoco_egl_device_id": "admitted physical GPU index",
+    "env_render_gpu_device_id": "admitted physical GPU index",
+    "runtime_egl_files": {
+      "binding_utils": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/robosuite/utils/binding_utils.py",
+        "sha256": "5ac3c9da0cb9f85d694c6147103268df65151f751612a6c575ae0da4eb4988e4"
+      },
+      "egl_context": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/robosuite/renderers/context/egl_context.py",
+        "sha256": "fd5d6d8e4978477d0333f33315224e520245ebbedb5c27e50b0e13543893ffc1"
+      }
+    },
+    "lease_sequence": [
+      "check_free_memory",
+      "atomic_acquire",
+      "recheck_free_memory",
+      "verify_physical_uuid",
+      "launch",
+      "flush_artifacts",
+      "release"
+    ],
+    "dynamic_queue": "frozen parent order plus eligible-GPU claiming; one project worker per admitted physical GPU"
+  },
+  "runtime_prerequisites": {
+    "intervention_runner_status": "PASS",
+    "physical_taxonomy_status": "PASS",
+    "exact_a800_regression_status": "PASS",
+    "outcome_blind_selection_status": "FROZEN_FOR_VALIDATION",
+    "static_audit_receipt_required": true,
+    "runtime_authorization_receipt_required": true,
+    "no_gpu_launch_before_static_audit_and_authorization": true,
+    "non_rollout_egl_bootstrap_smoke": "REQUIRED_AFTER_V1_3_2_AUTHORIZATION_BEFORE_DISPATCHER",
+    "v7_and_m4_before_m3_5_pass": false
+  },
+  "static_audit_binding": {
+    "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_3.py",
+    "auditor_script_sha256": "91aec793ef3f38886662aacd9f0d323733b2a19212ae8360ee3ab4af3dd39bc7",
+    "authorization_issuer_script_path": "scripts/detector_v5/issue_stage_v_m3_5_runtime_authorization.py",
+    "authorization_issuer_script_sha256": "a3733f69195b2921c3dc531409abf9971b9806bdc1aa8ffe9a0da19ea552e910",
+    "receipt_schema": "STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1_3",
+    "authorization_receipt_schema": "STAGE_V_M3_5_RUNTIME_AUTHORIZATION_V1_3",
+    "receipt_status": "REQUIRED_AFTER_PROTOCOL_FREEZE"
+  },
+  "launch_policy": {
+    "runtime_authorized": true,
+    "non_rollout_egl_bootstrap_smoke_required": true,
+    "m3_5_pass_required_before_v7": true,
+    "eval160_allowed": false,
+    "outcome_informed_revision": "forbidden; any revision requires a new prospective version and fresh root",
+    "valid_scientific_failure": "seal current root and hard stop",
+    "structural_failure": "exit 2 and hard stop"
+  }
+}

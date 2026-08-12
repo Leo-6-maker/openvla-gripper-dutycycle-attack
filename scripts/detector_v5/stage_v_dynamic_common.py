@@ -33,7 +33,15 @@ def atomic_write_json(path: Path, value: Mapping[str, Any]) -> None:
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(tmp, path)
+        for attempt in range(8):
+            try:
+                os.replace(tmp, path)
+                break
+            except PermissionError:
+                if os.name != "nt" or attempt == 7:
+                    raise
+                # Windows readers can briefly hold the destination open.
+                time.sleep(0.01 * (attempt + 1))
         if os.name != "nt":
             directory_fd = os.open(path.parent, os.O_RDONLY)
             try:
@@ -148,6 +156,47 @@ def normalize_parent(row: Mapping[str, Any]) -> dict[str, Any]:
         }
     )
     return normalized
+
+
+def exposure_binding(parent_keys: Iterable[str], manifest: Path) -> dict[str, Any]:
+    """Bind a prospective parent set to the append-only exposure exclusion set."""
+    path = Path(manifest).resolve()
+    try:
+        value = read_json(path)
+        manifest_sha = sha256_file(path)
+    except OSError as exc:
+        return {
+            "schema": "STAGE_V_EXPOSURE_BINDING_V1", "status": "FAIL",
+            "manifest_path": str(path), "manifest_sha256": None,
+            "reason": f"EXPOSURE_MANIFEST_READ_FAIL:{type(exc).__name__}",
+            "excluded_parent_count": 0, "overlap_parent_count": 0,
+            "overlap_parent_keys": [],
+        }
+    excluded = value.get("excluded_parent_keys") if isinstance(value, Mapping) else None
+    if not isinstance(excluded, list) or any(not isinstance(key, str) or not key for key in excluded):
+        return {
+            "schema": "STAGE_V_EXPOSURE_BINDING_V1", "status": "FAIL",
+            "manifest_path": str(path), "manifest_sha256": manifest_sha,
+            "exposure_manifest_schema": value.get("schema") if isinstance(value, Mapping) else None,
+            "reason": "EXPOSURE_MANIFEST_EXCLUDED_KEYS_MISSING_OR_INVALID",
+            "excluded_parent_count": 0, "overlap_parent_count": 0,
+            "overlap_parent_keys": [],
+        }
+    excluded_keys = [str(key) for key in excluded]
+    reason = "EXPOSURE_MANIFEST_DUPLICATE_KEYS" if len(set(excluded_keys)) != len(excluded_keys) else None
+    overlap = sorted(set(str(key) for key in parent_keys) & set(excluded_keys))
+    if overlap and reason is None:
+        reason = "EXPOSURE_PARENT_OVERLAP"
+    return {
+        "schema": "STAGE_V_EXPOSURE_BINDING_V1",
+        "status": "PASS" if reason is None else "FAIL",
+        "manifest_path": str(path), "manifest_sha256": manifest_sha,
+        "exposure_manifest_schema": value.get("schema") if isinstance(value, Mapping) else None,
+        "reason": reason,
+        "excluded_parent_count": len(excluded_keys),
+        "overlap_parent_count": len(overlap),
+        "overlap_parent_keys": overlap,
+    }
 
 
 def sanitize_key(value: str) -> str:
@@ -451,8 +500,446 @@ def _strict_branch_errors(branch_rows: list[dict[str, Any]], parent_key: str) ->
     return sorted(set(errors))
 
 
-def science_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
+def _m35_coverage_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
+                                   expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    results = list(Path(output_dir).rglob("PARENT_RESULT.json"))
+    if len(results) != 1:
+        return {"valid": False, "reason": f"PARENT_RESULT_COUNT:{len(results)}", "result": None, "path": None}
+    result_path = results[0]
+    result = read_json(result_path, {})
+    if not isinstance(result, Mapping) or str(result.get("schema")) != "STAGE_V_M3_5_CLEAN_COVERAGE_RESULT_V1" or str(result.get("canonical_parent_key")) != parent_key:
+        return {"valid": False, "reason": "M35_COVERAGE_RESULT_SCHEMA_OR_IDENTITY_INVALID", "result": dict(result) if isinstance(result, Mapping) else None, "path": str(result_path)}
+    errors: list[str] = []
+    if result.get("status") != "PASS" or result.get("coverage_only") is not True or result.get("parent_atomic") is not True:
+        errors.append("M35_COVERAGE_RESULT_INVALID")
+    counts = result.get("phase_counts") if isinstance(result.get("phase_counts"), Mapping) else {}
+    if set(counts) != {"PRE_CONTACT", "CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY"} or any(not isinstance(counts.get(phase), int) or counts.get(phase) < 0 for phase in counts):
+        errors.append("M35_COVERAGE_PHASE_COUNTS_INVALID")
+    elif result.get("coverage_qualified") is not all(int(counts[phase]) >= 6 for phase in counts):
+        errors.append("M35_COVERAGE_QUALIFICATION_MISMATCH")
+    if result.get("protected_counters") != {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}:
+        errors.append("M35_COVERAGE_PROTECTED_COUNTERS_INVALID")
+    if expected_source_commit and result.get("source_commit") != expected_source_commit:
+        errors.append("SCIENCE_SOURCE_COMMIT_MISMATCH")
+    if expected_source_tree and result.get("source_tree") != expected_source_tree:
+        errors.append("SCIENCE_SOURCE_TREE_MISMATCH")
+    if expected_row is not None:
+        for field in ("suite", "task_index", "state_index"):
+            if result.get(field) != expected_row.get(field):
+                errors.append(f"PARENT_{field.upper()}_MISMATCH")
+    if len(list(result_path.parent.rglob("CLEAN_TRAJECTORY.json"))) != 1 or len(list(result_path.parent.rglob("PHASE_COVERAGE.json"))) != 1:
+        errors.append("M35_COVERAGE_INPUT_FILES_INVALID")
+    seal_ok, seal_reason = _verify_parent_seal(result_path.parent)
+    if not seal_ok:
+        errors.append(seal_reason)
+    if errors:
+        return {"valid": False, "reason": ";".join(sorted(set(errors))), "result": dict(result), "path": str(result_path)}
+    return {"valid": True, "reason": "PASS", "result": dict(result), "path": str(result_path), "artifact_sha256": sha256_file(result_path), "label_status": "COVERAGE_ONLY", "parent_seal": "PASS"}
+
+
+def _m35_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
+                         expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    results = list(Path(output_dir).rglob("PARENT_RESULT.json"))
+    if len(results) != 1:
+        return {"valid": False, "reason": f"PARENT_RESULT_COUNT:{len(results)}", "result": None, "path": None}
+    result_path = results[0]
+    result = read_json(result_path, {})
+    if not isinstance(result, Mapping):
+        return {"valid": False, "reason": "PARENT_RESULT_NOT_OBJECT", "result": None, "path": str(result_path)}
+    if str(result.get("schema")) != "STAGE_V_M3_5_PARENT_RESULT_V1" or str(result.get("canonical_parent_key")) != parent_key:
+        return {"valid": False, "reason": "M35_RESULT_SCHEMA_OR_IDENTITY_INVALID", "result": dict(result), "path": str(result_path)}
+    errors: list[str] = []
+    if result.get("status") != "PASS" or result.get("clean_success") is not True:
+        errors.append("M35_RESULT_NOT_PASS")
+    if result.get("parent_atomic") is not True or result.get("probe_count") != 24:
+        errors.append("M35_PARENT_ACCOUNTING_INVALID")
+    if result.get("expected_physical_branches") != 288 or result.get("actual_physical_branches") != 288:
+        errors.append("M35_PHYSICAL_BRANCH_COUNT_INVALID")
+    if result.get("expected_treatment_label_rows") != 216 or result.get("actual_treatment_label_rows") != 216:
+        errors.append("M35_LABEL_ROW_COUNT_INVALID")
+    if result.get("protected_counters") != {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}:
+        errors.append("M35_PROTECTED_COUNTERS_INVALID")
+    if expected_source_commit and result.get("source_commit") != expected_source_commit:
+        errors.append("SCIENCE_SOURCE_COMMIT_MISMATCH")
+    if expected_source_tree and result.get("source_tree") != expected_source_tree:
+        errors.append("SCIENCE_SOURCE_TREE_MISMATCH")
+    if expected_row is not None:
+        for field in ("suite", "task_index", "state_index"):
+            if result.get(field) != expected_row.get(field):
+                errors.append(f"PARENT_{field.upper()}_MISMATCH")
+    branches = list(Path(result_path.parent).rglob("COUNTERFACTUAL_BRANCHES.jsonl"))
+    if len(branches) != 1:
+        errors.append("M35_BRANCH_FILE_COUNT_INVALID")
+    else:
+        rows, parse_errors = _branch_rows(branches[0])
+        errors.extend(parse_errors)
+        if len(rows) != 288:
+            errors.append(f"M35_BRANCH_COUNT:{len(rows)}/288")
+        identities = set()
+        counts = {arm: 0 for arm in ("CONTROL", "T3", "T5", "T10")}
+        for row in rows:
+            identity = (row.get("canonical_parent_key"), row.get("probe_step"), row.get("repetition"), row.get("arm"))
+            if identity in identities:
+                errors.append("M35_DUPLICATE_BRANCH_IDENTITY")
+            identities.add(identity)
+            if row.get("canonical_parent_key") != parent_key:
+                errors.append("M35_BRANCH_PARENT_IDENTITY_MISMATCH")
+            arm = row.get("arm")
+            if arm not in counts:
+                errors.append("M35_BRANCH_ARM_INVALID")
+            else:
+                counts[arm] += 1
+            if row.get("eval160_reads", 0) != 0 or row.get("protected_eval_reads", 0) != 0 or row.get("attack_rollouts", 0) != 0:
+                errors.append("M35_BRANCH_BOUNDARY_VIOLATION")
+            if arm != "CONTROL" and not isinstance(row.get("pair"), Mapping):
+                errors.append("M35_TREATMENT_PAIR_MISSING")
+        if any(count != 72 for count in counts.values()):
+            errors.append("M35_BRANCH_ARM_BALANCE_INVALID")
+    seal_ok, seal_reason = _verify_parent_seal(result_path.parent)
+    if not seal_ok:
+        errors.append(seal_reason)
+    if errors:
+        return {"valid": False, "reason": ";".join(sorted(set(errors))), "result": dict(result), "path": str(result_path)}
+    return {
+        "valid": True, "reason": "PASS", "result": dict(result), "path": str(result_path),
+        "artifact_sha256": sha256_file(result_path), "label_status": "VALID", "parent_seal": "PASS",
+    }
+
+
+def _m35_v2_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
                             expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    root = Path(output_dir)
+    results = list(root.rglob("PARENT_RESULT.json"))
+    if len(results) != 1:
+        return {"valid": False, "reason": f"PARENT_RESULT_COUNT:{len(results)}", "result": None, "path": None}
+    result_path = results[0]
+    result = read_json(result_path, {})
+    if not isinstance(result, Mapping):
+        return {"valid": False, "reason": "PARENT_RESULT_NOT_OBJECT", "result": None, "path": str(result_path)}
+    errors: list[str] = []
+    counters = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
+    if result.get("schema") != "STAGE_V_M3_5_PARENT_RESULT_V2" or result.get("canonical_parent_key") != parent_key:
+        errors.append("M35_V2_RESULT_SCHEMA_OR_IDENTITY_INVALID")
+    if result.get("status") != "COMPLETE_VALID" or result.get("parent_atomic") is not True or result.get("probe_count") != 24:
+        errors.append("M35_V2_PARENT_COMPLETION_INVALID")
+    for field, value in (
+        ("expected_physical_executions", 288), ("actual_physical_executions", 288),
+        ("expected_treatment_repetition_observations", 216), ("actual_treatment_repetition_observations", 216),
+        ("expected_collapsed_probe_dose_labels", 72), ("actual_collapsed_probe_dose_labels", 72),
+    ):
+        if result.get(field) != value:
+            errors.append(f"M35_V2_ACCOUNTING_INVALID:{field}")
+    if result.get("protected_counters") != counters:
+        errors.append("M35_V2_PROTECTED_COUNTERS_INVALID")
+    if expected_source_commit and result.get("source_commit") != expected_source_commit:
+        errors.append("SCIENCE_SOURCE_COMMIT_MISMATCH")
+    if expected_source_tree and result.get("source_tree") != expected_source_tree:
+        errors.append("SCIENCE_SOURCE_TREE_MISMATCH")
+    if expected_row is not None:
+        for field in ("suite", "task_index", "state_index"):
+            if result.get(field) != expected_row.get(field):
+                errors.append(f"PARENT_{field.upper()}_MISMATCH")
+
+    paths: dict[str, Path] = {}
+    for name in ("COUNTERFACTUAL_BRANCHES.jsonl", "TREATMENT_REPETITION_OBSERVATIONS.jsonl", "COLLAPSED_PROBE_DOSE_LABELS.jsonl"):
+        matches = list(result_path.parent.rglob(name))
+        if len(matches) != 1:
+            errors.append(f"M35_V2_FILE_COUNT:{name}:{len(matches)}")
+        else:
+            paths[name] = matches[0]
+    required_json = {
+        "M35_RUNTIME_BINDING_RECEIPT.json": "STAGE_V_M3_5_RUNTIME_BINDING_RECEIPT_V1",
+        "CLEAN_TRAJECTORY.json": "STAGE_V_M3_5_CLEAN_TRAJECTORY_V1",
+        "PROBE_PLAN.json": "STAGE_V_M3_5_PROBE_PLAN_V2",
+        "CORRIDOR_COVERAGE.json": "STAGE_V_M3_5_CORRIDOR_COVERAGE_V2",
+        "REPEATABILITY_SUMMARY.json": "STAGE_V_M3_5_REPEATABILITY_SUMMARY_V2",
+        "BLINDED_TAXONOMY_EVIDENCE_MANIFEST.json": "STAGE_V_M3_5_BLINDED_TAXONOMY_EVIDENCE_MANIFEST_V1",
+        "PROGRESS.json": "STAGE_V_M3_5_PROGRESS_V1",
+    }
+    required_values: dict[str, Mapping[str, Any]] = {}
+    for name, schema in required_json.items():
+        matches = list(result_path.parent.rglob(name))
+        value = read_json(matches[0], {}) if len(matches) == 1 else {}
+        if len(matches) != 1 or not isinstance(value, Mapping) or value.get("schema") != schema:
+            errors.append(f"M35_V2_REQUIRED_OUTPUT_INVALID:{name}")
+        else:
+            required_values[name] = value
+    runtime_receipt = required_values.get("M35_RUNTIME_BINDING_RECEIPT.json", {})
+    if (
+        runtime_receipt.get("status") != "PASS" or runtime_receipt.get("parent_key") != parent_key
+        or runtime_receipt.get("source_commit") != result.get("source_commit")
+        or runtime_receipt.get("source_tree") != result.get("source_tree")
+    ):
+        errors.append("M35_V2_RUNTIME_BINDING_RECEIPT_INVALID")
+    clean = required_values.get("CLEAN_TRAJECTORY.json", {})
+    if clean.get("outcomes_read") is not False or clean.get("task_success") is not result.get("clean_success"):
+        errors.append("M35_V2_CLEAN_TRAJECTORY_INVALID")
+    probe_plan = required_values.get("PROBE_PLAN.json", {})
+    if probe_plan.get("outcomes_read") is not False or probe_plan.get("probe_count") != 24 or probe_plan.get("protected_counters") != counters:
+        errors.append("M35_V2_PROBE_PLAN_INVALID")
+    corridor = required_values.get("CORRIDOR_COVERAGE.json", {})
+    if corridor.get("outcomes_read") is not False or corridor.get("corridor_qualified") is not True or corridor.get("protected_counters") != counters:
+        errors.append("M35_V2_CORRIDOR_COVERAGE_INVALID")
+    blinded_evidence = required_values.get("BLINDED_TAXONOMY_EVIDENCE_MANIFEST.json", {})
+    if blinded_evidence.get("canonical_parent_key") != parent_key or blinded_evidence.get("protected_counters") != counters or not isinstance(blinded_evidence.get("complete"), bool):
+        errors.append("M35_V2_BLINDED_EVIDENCE_MANIFEST_INVALID")
+    progress = required_values.get("PROGRESS.json", {})
+    if progress.get("stage") != "COMPLETE" or progress.get("branch_progress") != 288 or progress.get("current_branch") is not None or progress.get("protected_counters") != counters:
+        errors.append("M35_V2_FINAL_PROGRESS_INVALID")
+    branches, branch_parse = _branch_rows(paths["COUNTERFACTUAL_BRANCHES.jsonl"]) if "COUNTERFACTUAL_BRANCHES.jsonl" in paths else ([], [])
+    observations, observation_parse = _branch_rows(paths["TREATMENT_REPETITION_OBSERVATIONS.jsonl"]) if "TREATMENT_REPETITION_OBSERVATIONS.jsonl" in paths else ([], [])
+    labels, label_parse = _branch_rows(paths["COLLAPSED_PROBE_DOSE_LABELS.jsonl"]) if "COLLAPSED_PROBE_DOSE_LABELS.jsonl" in paths else ([], [])
+    errors.extend(branch_parse + observation_parse + label_parse)
+    if len(branches) != 288:
+        errors.append(f"M35_V2_PHYSICAL_EXECUTION_COUNT:{len(branches)}/288")
+    if len(observations) != 216:
+        errors.append(f"M35_V2_TREATMENT_OBSERVATION_COUNT:{len(observations)}/216")
+    if len(labels) != 72:
+        errors.append(f"M35_V2_COLLAPSED_LABEL_COUNT:{len(labels)}/72")
+
+    branch_by_id: dict[str, dict[str, Any]] = {}
+    controls: dict[tuple[Any, Any], dict[str, Any]] = {}
+    treatments: dict[tuple[Any, Any, Any], dict[str, Any]] = {}
+    probe_steps: dict[Any, Any] = {}
+    arm_counts = {arm: 0 for arm in ("CONTROL", "T3", "T5", "T10")}
+    for row in branches:
+        branch_id = str(row.get("branch_id", ""))
+        arm = row.get("arm")
+        probe_id = row.get("probe_id")
+        repetition = row.get("repetition")
+        branch = row.get("branch")
+        if row.get("schema") != "STAGE_V_M3_5_PHYSICAL_EXECUTION_V2" or row.get("canonical_parent_key") != parent_key:
+            errors.append("M35_V2_BRANCH_SCHEMA_OR_PARENT_INVALID")
+        if not branch_id or branch_id in branch_by_id:
+            errors.append("M35_V2_BRANCH_ID_INVALID_OR_DUPLICATED")
+        else:
+            branch_by_id[branch_id] = row
+        expected_id = f"m35-{sha256_text(f'M35_V1_3::{parent_key}::{probe_id}::R{repetition}::{arm}')}"
+        if branch_id != expected_id:
+            errors.append("M35_V2_BRANCH_ID_HASH_MISMATCH")
+        if not isinstance(branch, Mapping) or row.get("branch_result_sha256") != sha256_json(branch):
+            errors.append("M35_V2_BRANCH_RESULT_SHA_MISMATCH")
+        if row.get("protected_counters") != counters:
+            errors.append("M35_V2_BRANCH_PROTECTED_COUNTERS_INVALID")
+        if arm not in arm_counts:
+            errors.append("M35_V2_BRANCH_ARM_INVALID")
+            continue
+        arm_counts[str(arm)] += 1
+        if probe_id in probe_steps and probe_steps[probe_id] != row.get("probe_step"):
+            errors.append("M35_V2_PROBE_STEP_INCONSISTENT")
+        probe_steps[probe_id] = row.get("probe_step")
+        if arm == "CONTROL":
+            identity = (probe_id, repetition)
+            if identity in controls or row.get("pair") is not None or row.get("shared_control_branch_id") is not None or row.get("shared_control_result_sha256") is not None:
+                errors.append("M35_V2_CONTROL_IDENTITY_OR_LINEAGE_INVALID")
+            controls[identity] = row
+        else:
+            identity = (probe_id, repetition, arm)
+            if identity in treatments or not isinstance(row.get("pair"), Mapping):
+                errors.append("M35_V2_TREATMENT_IDENTITY_OR_PAIR_INVALID")
+            treatments[identity] = row
+    if set(probe_steps) != {f"Q{index:02d}" for index in range(24)} or len(set(probe_steps.values())) != 24:
+        errors.append("M35_V2_PROBE_ID_OR_STEP_COVERAGE_INVALID")
+    if any(count != 72 for count in arm_counts.values()) or len(controls) != 72 or len(treatments) != 216:
+        errors.append("M35_V2_BRANCH_BALANCE_INVALID")
+    for (probe_id, repetition, _arm), treatment in treatments.items():
+        control = controls.get((probe_id, repetition))
+        pair = treatment.get("pair") if isinstance(treatment.get("pair"), Mapping) else {}
+        if control is None or any(
+            treatment.get(field) != control.get(control_field)
+            for field, control_field in (
+                ("shared_control_branch_id", "branch_id"),
+                ("shared_control_result_sha256", "branch_result_sha256"),
+            )
+        ):
+            errors.append("M35_V2_MATCHED_CONTROL_LINEAGE_INVALID")
+        elif pair.get("shared_control_branch_id") != control.get("branch_id") or pair.get("shared_control_result_sha256") != control.get("branch_result_sha256"):
+            errors.append("M35_V2_PAIR_CONTROL_LINEAGE_INVALID")
+
+    observation_by_id: dict[str, dict[str, Any]] = {}
+    observation_by_treatment: dict[str, dict[str, Any]] = {}
+    for row in observations:
+        observation_id = str(row.get("observation_id", ""))
+        treatment_id = str(row.get("treatment_branch_id", ""))
+        identity = {
+            "canonical_parent_key": row.get("canonical_parent_key"), "probe_id": row.get("probe_id"),
+            "repetition": row.get("repetition"), "dose": row.get("dose"),
+        }
+        treatment = branch_by_id.get(treatment_id)
+        control = branch_by_id.get(str(row.get("shared_control_branch_id", "")))
+        if row.get("schema") != "STAGE_V_M3_5_TREATMENT_REPETITION_OBSERVATION_V1" or row.get("canonical_parent_key") != parent_key:
+            errors.append("M35_V2_OBSERVATION_SCHEMA_OR_PARENT_INVALID")
+        if observation_id != f"m35-observation-{sha256_json(identity)}" or observation_id in observation_by_id:
+            errors.append("M35_V2_OBSERVATION_ID_INVALID_OR_DUPLICATED")
+        observation_by_id[observation_id] = row
+        if treatment_id in observation_by_treatment:
+            errors.append("M35_V2_TREATMENT_OBSERVATION_DUPLICATED")
+        observation_by_treatment[treatment_id] = row
+        if treatment is None or control is None or treatment.get("arm") != row.get("dose"):
+            errors.append("M35_V2_OBSERVATION_BRANCH_REFERENCE_INVALID")
+        elif (
+            row.get("treatment_result_sha256") != treatment.get("branch_result_sha256")
+            or row.get("shared_control_result_sha256") != control.get("branch_result_sha256")
+            or treatment.get("shared_control_branch_id") != control.get("branch_id")
+            or row.get("label_class") != treatment.get("pair", {}).get("label_class")
+        ):
+            errors.append("M35_V2_OBSERVATION_LINEAGE_OR_LABEL_INVALID")
+        if row.get("protected_counters") != counters:
+            errors.append("M35_V2_OBSERVATION_PROTECTED_COUNTERS_INVALID")
+    if set(observation_by_treatment) != {str(row.get("branch_id")) for row in treatments.values()}:
+        errors.append("M35_V2_TREATMENT_OBSERVATION_COVERAGE_INVALID")
+
+    referenced_observations: set[str] = set()
+    label_identities: set[tuple[Any, Any]] = set()
+    all_binary = True
+    for row in labels:
+        identity = (row.get("probe_id"), row.get("dose"))
+        if row.get("schema") != "STAGE_V_M3_5_COLLAPSED_PROBE_DOSE_LABEL_V1" or row.get("canonical_parent_key") != parent_key or identity in label_identities:
+            errors.append("M35_V2_COLLAPSED_LABEL_SCHEMA_OR_IDENTITY_INVALID")
+        label_identities.add(identity)
+        expected_label_id = f"m35-label-{sha256_json({'parent': parent_key, 'probe': identity[0], 'dose': identity[1]})}"
+        if row.get("collapsed_label_id") != expected_label_id:
+            errors.append("M35_V2_COLLAPSED_LABEL_ID_HASH_MISMATCH")
+        ids = row.get("treatment_observation_ids")
+        selected = [observation_by_id.get(str(item)) for item in ids] if isinstance(ids, list) else []
+        if len(selected) != 3 or any(item is None for item in selected):
+            errors.append("M35_V2_COLLAPSED_OBSERVATION_LINEAGE_INVALID")
+            continue
+        selected = sorted((item for item in selected if item is not None), key=lambda item: int(item.get("repetition", -1)))
+        if [item.get("repetition") for item in selected] != [0, 1, 2] or any((item.get("probe_id"), item.get("dose")) != identity for item in selected):
+            errors.append("M35_V2_COLLAPSED_REPETITION_IDENTITY_INVALID")
+        referenced_observations.update(str(item) for item in ids)
+        classes = [str(item.get("label_class")) for item in selected]
+        if len(set(classes)) != 1:
+            repeat_status, collapsed = "HOLD_STOCHASTIC_INTERVENTION_OUTCOME", None
+        elif classes[0].endswith("_ABSTAIN") or classes[0] in {"UNKNOWN", "HORIZON_CENSORED"}:
+            repeat_status, collapsed = "STABLE_ABSTAIN", classes[0]
+        elif not all(item.get("treatment_compliant") is True for item in selected):
+            repeat_status, collapsed = "TREATMENT_NONCOMPLIANCE_ABSTAIN", None
+        else:
+            repeat_status, collapsed = "PASS_REPEATABILITY_3_OF_3", classes[0]
+        binary = repeat_status == "PASS_REPEATABILITY_3_OF_3" and collapsed in {"V_PHYS", "NO_PHYSICAL_VULNERABILITY"}
+        all_binary = all_binary and binary
+        treatment_lineage = [{"branch_id": item.get("treatment_branch_id"), "result_sha256": item.get("treatment_result_sha256")} for item in selected]
+        control_lineage = [{"branch_id": item.get("shared_control_branch_id"), "result_sha256": item.get("shared_control_result_sha256")} for item in selected]
+        if (
+            row.get("repeatability_status") != repeat_status or row.get("collapsed_label_class") != collapsed
+            or row.get("binary_label_consumable") is not binary
+            or row.get("treatment_branch_lineage") != treatment_lineage
+            or row.get("matched_control_lineage") != control_lineage
+        ):
+            errors.append("M35_V2_COLLAPSED_LABEL_RECOMPUTE_MISMATCH")
+        if row.get("protected_counters") != counters:
+            errors.append("M35_V2_COLLAPSED_LABEL_PROTECTED_COUNTERS_INVALID")
+    expected_label_identities = {(f"Q{probe:02d}", dose) for probe in range(24) for dose in ("T3", "T5", "T10")}
+    if referenced_observations != set(observation_by_id) or label_identities != expected_label_identities:
+        errors.append("M35_V2_COLLAPSED_LABEL_COVERAGE_INVALID")
+    expected_label_status = "PASS" if result.get("clean_success") is True and blinded_evidence.get("complete") is True and all_binary and all(
+        isinstance(row.get("branch"), Mapping) and row["branch"].get("status") == "PASS" for row in branches
+    ) else "FAIL"
+    repeatability = required_values.get("REPEATABILITY_SUMMARY.json", {})
+    if repeatability.get("collapsed_label_count") != 72 or repeatability.get("collapsed_labels") != labels:
+        errors.append("M35_V2_REPEATABILITY_SUMMARY_INVALID")
+    if result.get("label_validation_status") != expected_label_status:
+        errors.append("M35_V2_LABEL_VALIDATION_STATUS_MISMATCH")
+    seal_ok, seal_reason = _verify_parent_seal(result_path.parent)
+    if not seal_ok:
+        errors.append(seal_reason)
+    if errors:
+        return {"valid": False, "reason": ";".join(sorted(set(errors))), "result": dict(result), "path": str(result_path)}
+    return {
+        "valid": True, "reason": "PASS", "result": dict(result), "path": str(result_path),
+        "artifact_sha256": sha256_file(result_path), "label_status": expected_label_status, "parent_seal": "PASS",
+    }
+
+
+def science_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
+                            expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None,
+                            artifact_schema: str = "STAGE_V_PARENT_RESULT_V2") -> dict[str, Any]:
+    if artifact_schema == "STAGE_V_M4_CORRIDOR_PREFLIGHT_V1":
+        result_paths = list(Path(output_dir).rglob("M4_CORRIDOR_PREFLIGHT.json"))
+        if len(result_paths) != 1:
+            return {"valid": False, "reason": f"M4_CORRIDOR_PREFLIGHT_COUNT:{len(result_paths)}", "result": None, "path": None}
+        result_path = result_paths[0]
+        result = read_json(result_path, {})
+        if not isinstance(result, Mapping):
+            return {"valid": False, "reason": "M4_CORRIDOR_PREFLIGHT_NOT_OBJECT", "result": None, "path": str(result_path)}
+        errors: list[str] = []
+        if result.get("schema") != "STAGE_V_M4_CORRIDOR_PREFLIGHT_V1" or result.get("canonical_parent_key") != parent_key:
+            errors.append("M4_CORRIDOR_SCHEMA_OR_IDENTITY_INVALID")
+        if result.get("status") not in {"PASS", "INELIGIBLE", "CLEAN_FAILURE"}:
+            errors.append("M4_CORRIDOR_STATUS_INVALID")
+        if result.get("outcomes_read") is not False or result.get("old_artifacts_reused") is not False or result.get("source_artifacts_modified") is not False:
+            errors.append("M4_CORRIDOR_PROVENANCE_INVALID")
+        if expected_source_commit and result.get("source_commit") != expected_source_commit:
+            errors.append("SCIENCE_SOURCE_COMMIT_MISMATCH")
+        if expected_source_tree and result.get("source_tree") != expected_source_tree:
+            errors.append("SCIENCE_SOURCE_TREE_MISMATCH")
+        if result.get("protected_counters") != {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}:
+            errors.append("M4_CORRIDOR_PROTECTED_COUNTERS_INVALID")
+        if errors:
+            return {"valid": False, "reason": ";".join(sorted(set(errors))), "result": dict(result), "path": str(result_path)}
+        return {"valid": True, "reason": "PASS", "result": dict(result), "path": str(result_path), "artifact_sha256": sha256_file(result_path), "label_status": "M4_CORRIDOR_QUALIFICATION"}
+    if artifact_schema == "STAGE_V_M3_5_COVERAGE_RESULT_V1":
+        return _m35_coverage_artifact_status(
+            output_dir, parent_key, expected_source_commit=expected_source_commit,
+            expected_source_tree=expected_source_tree, expected_row=expected_row,
+        )
+    if artifact_schema == "STAGE_V_M3_5_PARENT_RESULT_V1":
+        return _m35_artifact_status(
+            output_dir, parent_key, expected_source_commit=expected_source_commit,
+            expected_source_tree=expected_source_tree, expected_row=expected_row,
+        )
+    if artifact_schema == "STAGE_V_M3_5_PARENT_RESULT_V2":
+        try:
+            return _m35_v2_artifact_status(
+                output_dir, parent_key, expected_source_commit=expected_source_commit,
+                expected_source_tree=expected_source_tree, expected_row=expected_row,
+            )
+        except (IndexError, KeyError, OverflowError, TypeError, ValueError) as exc:
+            return {
+                "valid": False,
+                "reason": f"M35_V2_MALFORMED_ARTIFACT:{type(exc).__name__}:{exc}",
+                "result": None,
+                "path": None,
+            }
+    if artifact_schema == "STAGE_V_M4_PARENT_RESULT_V1":
+        result_paths = list(Path(output_dir).rglob("PARENT_RESULT.json"))
+        if len(result_paths) != 1:
+            return {"valid": False, "reason": f"M4_PARENT_RESULT_COUNT:{len(result_paths)}", "result": None, "path": None}
+        result_path = result_paths[0]
+        result = read_json(result_path, {})
+        if not isinstance(result, Mapping):
+            return {"valid": False, "reason": "M4_PARENT_RESULT_NOT_OBJECT", "result": None, "path": str(result_path)}
+        errors: list[str] = []
+        if result.get("schema") != "STAGE_V_M4_PARENT_RESULT_V1" or result.get("canonical_parent_key") != parent_key:
+            errors.append("M4_RESULT_SCHEMA_OR_IDENTITY_INVALID")
+        if result.get("status") != "PASS" or result.get("parent_atomic") is not True or result.get("probe_count") != 24:
+            errors.append("M4_RESULT_COMPLETION_INVALID")
+        if result.get("branch_count") != 96 or result.get("treatment_label_count") != 72:
+            errors.append("M4_RESULT_ACCOUNTING_INVALID")
+        if result.get("independent_audit_status") != "PASS_M4_PARENT_INDEPENDENT" or result.get("label_status") != "VALID":
+            errors.append("M4_INDEPENDENT_AUDIT_OR_LABEL_STATUS_INVALID")
+        if result.get("selection_outcomes_read") is not False or result.get("fresh_render_primary_consumption") is not False or result.get("native_policy_calls_in_primary_window") != 0:
+            errors.append("M4_PRIMARY_CONTRACT_INVALID")
+        if result.get("protected_counters") != {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}:
+            errors.append("M4_PROTECTED_COUNTERS_INVALID")
+        if expected_source_commit and result.get("source_commit") != expected_source_commit:
+            errors.append("SCIENCE_SOURCE_COMMIT_MISMATCH")
+        if expected_source_tree and result.get("source_tree") != expected_source_tree:
+            errors.append("SCIENCE_SOURCE_TREE_MISMATCH")
+        if expected_row is not None:
+            for field in ("suite", "task_index", "state_index"):
+                if result.get(field) != expected_row.get(field):
+                    errors.append(f"PARENT_{field.upper()}_MISMATCH")
+        required = ("M4_COUNTERFACTUAL_BRANCHES_V1.jsonl", "M4_TREATMENT_OBSERVATIONS_V1.jsonl", "M4_V_PHYS_LABELS_V1.jsonl", "M4_INDEPENDENT_AUDIT.json")
+        if any(len(list(result_path.parent.rglob(name))) != 1 for name in required):
+            errors.append("M4_REQUIRED_OUTPUT_COUNT_INVALID")
+        if not (result_path.parent / "SHA256SUMS").is_file() or not (result_path.parent / "SHA256SUMS.sha256").is_file():
+            errors.append("M4_PARENT_SEAL_MISSING")
+        if errors:
+            return {"valid": False, "reason": ";".join(sorted(set(errors))), "result": dict(result), "path": str(result_path)}
+        return {"valid": True, "reason": "PASS", "result": dict(result), "path": str(result_path), "artifact_sha256": sha256_file(result_path), "label_status": "VALID", "parent_seal": "PRESENT"}
     results = list(Path(output_dir).rglob("PARENT_RESULT.json"))
     if len(results) != 1:
         return {"valid": False, "reason": f"PARENT_RESULT_COUNT:{len(results)}", "result": None, "path": None}

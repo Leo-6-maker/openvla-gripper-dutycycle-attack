@@ -1,0 +1,122 @@
+{
+  "schema": "STAGE_V_MILESTONE_HANDOFF_V1",
+  "created_utc": "2026-08-10T20:22:51Z",
+  "milestone": "M3_5_LABEL_VALIDATION",
+  "status": "HOLD",
+  "classification": "HOLD_MEASUREMENT_CONTRACT",
+  "failure_class": "COUNTERFACTUAL_CAUSAL_INPUT_REPLAY",
+  "milestone_ledger": {
+    "M0_STATIC": "PASS",
+    "M1_RUNTIME_DETERMINISM": "PASS_CLASSIFIED_HETEROGENEOUS_MULTI_GPU_DIVERGENCE",
+    "M2_EXECUTION_EQUIVALENCE": "PASS_28_OF_28",
+    "M3_V6_RUNTIME_EXECUTION": "COMPLETE_VALID",
+    "M3_V6_FROZEN_QUALIFICATION": "FAIL_SEALED",
+    "M3_5_LABEL_VALIDATION": "HOLD_MEASUREMENT_CONTRACT",
+    "V7_FRESH_QUALIFICATION": "BLOCKED_NOT_STARTED",
+    "M4_FRESH_COUNTERFACTUAL_V_MAP": "BLOCKED_NOT_STARTED",
+    "M5_V_TEACHER": "BLOCKED_NOT_STARTED",
+    "M6_V_STUDENT": "BLOCKED_NOT_STARTED",
+    "M7_EVENT_SCHEDULER": "BLOCKED_NOT_STARTED",
+    "M8_STUDENT_TIME_CAUSAL": "BLOCKED_NOT_STARTED",
+    "M9_VIS_SELECTIVITY": "BLOCKED_NOT_STARTED",
+    "M10_FINAL_FREEZE": "NOT_STARTED",
+    "M11_READY_FOR_PROTECTED_EVAL": "NOT_STARTED"
+  },
+  "repository": {
+    "full_name": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "pull_request": 111,
+    "pull_request_state": "OPEN_DRAFT",
+    "pull_request_merge_state": "CLEAN",
+    "branch": "codex/stage-v-resource-contract-20260810",
+    "runtime_source_commit": "d104713027a82eeb858ba9036200d7ab010959cc",
+    "runtime_source_tree": "3f22ea412975f294b59bc569ef9fb896eff8d410",
+    "implementation_source_commit": "623bf99b6ff1eff37e5ca38b65ec5f6c2b03696a",
+    "implementation_source_tree": "fcb40bd6d5026bcdb7915b1ccec1869b00d2adf4",
+    "runtime_worktree": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m35-v1_3_4-protocol-d1047130",
+    "runtime_worktree_status": "CLEAN_DETACHED",
+    "ci": {
+      "source-registry": "SUCCESS",
+      "detector-v5-cpu": "SUCCESS",
+      "stageb-cpu": "SUCCESS"
+    }
+  },
+  "protocol": {
+    "path": "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_3_4.json",
+    "version": "V1.3.4",
+    "sha256": "2e3364e5e86894ff7b5b9300dbc03875d1e9b5acb10f923ec798b4d06babba41",
+    "runtime_authorized_for_sealed_run_only": true,
+    "reuse_prohibited": true
+  },
+  "evidence": {
+    "exact_a800_regression": {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EXACT_A800_REGRESSION_V1_3_4_20260810T200213Z",
+      "status": "PASS_209_OF_209",
+      "receipt_sha256": "f35213028f43e69b10f4d5a10adc6089d0597265fa1c6df35c6623d03a3054d8",
+      "root_sha256s_sha256": "76adca5edb2db607f2c1e147c94527c92f6b79f8206f5a536b1c740e5ebdb050"
+    },
+    "static_audit": {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1_3_4_20260810T200732Z",
+      "status": "PASS_98_OF_98",
+      "receipt_sha256": "39f8ebf093463cf42c80e89f6796a3534c41d30cec802cea9092f278c3a5f97c",
+      "root_sha256s_sha256": "f64403d43266272f8a493225f1bb5b0e14b61475092f8b162c83c363ac44508f"
+    },
+    "runtime_authorization": {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_RUNTIME_AUTHORIZATION_V1_3_4_20260810T200924Z",
+      "status": "PASS",
+      "receipt_sha256": "2b5aafde5af4571add27b4e62e81b04f14e619240ea85b43acb32ace770d7055",
+      "root_sha256s_sha256": "04908a4acc757e3840f13105141356cfee889e42b78d95f4634f1dba62ccb6e7"
+    },
+    "egl_pil_smoke": {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_EGL_BOOTSTRAP_SMOKE_V1_3_4_20260810T201304Z",
+      "status": "PASS_ZERO_RESET_ZERO_STEP_ZERO_MODEL",
+      "receipt_sha256": "a3488ec9b5799661eb092848d8fe499e67861d010d12ee1eca86ede9751fcba4",
+      "runtime_binding_sha256": "7c4e91f1e3e514ca8b4e5c3df4250f8d7a661b61f698cb8f58d9043b4dea3210",
+      "root_sha256s_sha256": "f8707ef3dff2360c131d63318a9bdb33c95c78c0f335ad6e9b8042b22b6121e1"
+    },
+    "formal_m3_5": {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_V1_3_4_20260810T201623Z",
+      "run_id": "stage-v-m35-v1_3_4-20260810T201623Z",
+      "status": "SEALED_STRUCTURAL_FAILURE_CAUSAL_INPUT_REPLAY",
+      "receipt": "STAGE_V_M3_5_STRUCTURAL_FAILURE_RECEIPT_V1.json",
+      "receipt_sha256": "13d6c5de2d138917ed6b5016b7d30970433193d52d9d17e3b6ba330e96fc556a",
+      "root_sha256s_sha256": "b5cb2b08531eb49ec44ad231b8b9388b3f486838de892606317b1116eee02c8e",
+      "error_signature": "M35RunnerError:PROBE_POLICY_RGB_BINDING_MISMATCH:53:T3"
+    }
+  },
+  "terminal_snapshot": {
+    "runtime_binding_receipts": 7,
+    "clean_trajectory_files": 4,
+    "probe_plan_files": 4,
+    "registered_completed_branches_from_progress": 2,
+    "parent_results": 0,
+    "physical_branch_files": 0,
+    "treatment_observation_files": 0,
+    "label_rows": 0,
+    "treatment_actions_may_have_been_applied_before_global_reap": true,
+    "all_project_workers_reaped": true,
+    "partial_root_consumable": false
+  },
+  "scientific_interpretation": {
+    "m1_fact": "Rendered policy inputs diverge in same-mode and cross-GPU repeats while actions remain stable.",
+    "m3_5_requirement": "Exact simulator state and exact policy-input binding are both required for causal replay.",
+    "observed_failure": "A CONTROL branch passed, then a fresh T3 branch restored the exact simulator-state hash but failed the policy-RGB hash gate before its treatment action passed the causal-input gate.",
+    "decision": "Do not remove or relax the exact input gate. M3.5 label validity is not established."
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0,
+    "foreign_processes_touched": false
+  },
+  "allowed_next_action": "Design-only review of a new prospective causal replay contract that can preserve exact policy-input identity without relaxing the gate; any runtime requires a new commit/tree, protocol, regression, static audit, authorization, smoke, and root.",
+  "forbidden_next_actions": [
+    "resume or reuse the sealed V1.3.4 queue/root",
+    "increase max attempts or rerun V1.3.4 to obtain a pass",
+    "remove, weaken, or tolerance-relax the policy-input equality gate",
+    "use partial control or treatment execution as labels",
+    "start V7, M4, Teacher, Student, scheduler, timing, or VIS",
+    "read Eval160 or any protected evaluation data",
+    "touch or terminate the foreign GPU3 process"
+  ]
+}

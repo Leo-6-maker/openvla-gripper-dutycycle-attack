@@ -1,0 +1,31 @@
+{
+  "schema": "STAGE_V_MODEL_STEP_STATELESS_RECEIPT_V1",
+  "status": "DESIGN_AUDIT_NOT_RUNTIME_AUTHORIZATION",
+  "claim": "NO_PERSISTENT_POLICY_STEP_STATE_OBSERVED_IN_PINNED_SOURCE_PATH",
+  "source_bindings": {
+    "official_openvla_adapter_sha256": "38d2c272123002a6a6caaabefd0ce96f425ff5e06186199b3a2c4a96b05d0cf4",
+    "official_libero_protocol_sha256": "da024de0243cc12926c90f2f53af4b70e36e9ff1c92cd691c2bd1e96d162ecfc",
+    "openvla_model_sha256": "5a54e9f2f7975b7e8fa8676ddfb6ce3320b397f0bdd3632167a7044dbeb9b47b",
+    "modeling_prismatic_sha256": "9ce241c5ca09a4bed73654d0ca509baaff0fc5887d0bdd62e360ca8254f7794a"
+  },
+  "checks": {
+    "model_eval": "CAPTURED_BY_CLEAN_RUNNER",
+    "do_sample_false": "CAPTURED_BY_OFFICIAL_ADAPTER",
+    "one_generation_per_step": "HARD_CHECKED_BY_ADAPTER",
+    "fresh_inputs_per_call": "SOURCE_AUDITED",
+    "persistent_kv_cache_across_steps": "NOT_OBSERVED_IN_PINNED_PATH",
+    "adapter_temporary_generate_hook_restored": "SOURCE_AUDITED",
+    "recurrent_hidden_state": "NOT_EXPOSED_BY_PINNED_OPENVLA_PATH"
+  },
+  "required_before_runtime_authorization": [
+    "bind this receipt to the new V1.4 source commit/tree",
+    "independent auditor verifies no persistent model/adapter step state",
+    "optional frozen-input model replay check only if exact tensors are consumed without reprocessing"
+  ],
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  }
+}

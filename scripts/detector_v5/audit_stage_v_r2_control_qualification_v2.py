@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import Any, Mapping
 
 try:
-    from .stage_v_dynamic_common import Q2_APPROVED_GPUS, atomic_write_json, normalize_parent, sha256_file, utc_now
+    from .stage_v_dynamic_common import Q2_APPROVED_GPUS, atomic_write_json, exposure_binding, normalize_parent, sha256_file, utc_now
 except ImportError:  # direct server execution
-    from stage_v_dynamic_common import Q2_APPROVED_GPUS, atomic_write_json, normalize_parent, sha256_file, utc_now
+    from stage_v_dynamic_common import Q2_APPROVED_GPUS, atomic_write_json, exposure_binding, normalize_parent, sha256_file, utc_now
 
 
 SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
@@ -225,12 +225,28 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         errors.append("ROW_COUNT_NOT_UNIQUE")
     _, prefix_errors = _expected_prefixes(universe_rows, rows)
     errors.extend(prefix_errors)
-    selected_by_suite = {suite: qualified[suite][:10] for suite in SUITES}
+    exposure_receipt = None
+    exposed_qualified: set[str] = set()
+    if getattr(args, "exposure_manifest", None):
+        qualified_keys = [str(row["canonical_parent_key"]) for suite in SUITES for row in qualified[suite]]
+        exposure_receipt = exposure_binding(qualified_keys, args.exposure_manifest)
+        exposed_qualified = set(exposure_receipt.get("overlap_parent_keys", []))
+        if exposure_receipt.get("reason") not in {None, "EXPOSURE_PARENT_OVERLAP"}:
+            errors.append("EXPOSURE_MANIFEST_BINDING_FAIL")
+    selected_by_suite = {
+        suite: [row for row in qualified[suite] if str(row["canonical_parent_key"]) not in exposed_qualified][:10]
+        for suite in SUITES
+    }
     if any(len(selected_by_suite[suite]) < 10 for suite in SUITES):
         errors.append("QUOTA_UNDERFILLED")
     selected_keys = [str(row["canonical_parent_key"]) for suite in SUITES for row in selected_by_suite[suite]]
     if len(selected_keys) != len(set(selected_keys)):
         errors.append("SELECTED_DUPLICATE_PARENT_KEYS")
+    selected_exposure_receipt = None
+    if exposure_receipt is not None:
+        selected_exposure_receipt = exposure_binding(selected_keys, args.exposure_manifest)
+        if selected_exposure_receipt.get("status") != "PASS":
+            errors.append("SELECTED_EXPOSURE_BINDING_FAIL")
     boundaries = {key: report.get(key, 0) for key in ("eval160_reads", "protected_eval_reads", "vis_pgd_attack_rollouts", "attack_rollouts")}
     if any(value != 0 for value in boundaries.values()):
         errors.append("REPORT_BOUNDARY_NONZERO")
@@ -248,6 +264,8 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         "remaining_horizon_complete_equal_count_descriptive": horizon_equal,
         "terminal_state_sha256_gate_used": False, "remaining_horizon_complete_gate_used": False,
         "selection_rule_verified": not any(item.startswith("NON_PREFIX") for item in errors),
+        "exposure_manifest_binding": exposure_receipt,
+        "selected_exposure_binding": selected_exposure_receipt,
         "boundaries": boundaries, "errors": sorted(set(errors)), "audited_utc": utc_now(),
     }
     atomic_write_json(args.output_dir / "Q2_CONTROL_QUALIFICATION_INDEPENDENT_AUDIT.json", audit_payload)
@@ -265,6 +283,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
                 for suite in SUITES for row in selected_by_suite[suite]
             ],
             "selected_count": len(selected_keys), "selected_by_suite": {suite: len(selected_by_suite[suite]) for suite in SUITES},
+            "exposure_manifest_binding": selected_exposure_receipt,
             "old_artifacts_reused": False, "source_artifacts_modified": False,
             "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
             "generated_utc": utc_now(),
@@ -279,6 +298,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             "q2_parent_manifest_a_sha256": sha256_file(args.output_dir / "Q2_PARENT_MANIFEST_A.json"),
             "candidate_universe_sha256": sha256_file(args.candidate_universe),
             "selected_parents": manifest["selected_parents"], "selected_count": len(selected_keys),
+            "exposure_manifest_binding": selected_exposure_receipt,
             "old_artifacts_reused": False, "source_artifacts_modified": False,
             "eval160_reads": 0, "protected_eval_reads": 0, "vis_pgd_attack_rollouts": 0, "attack_rollouts": 0,
             "generated_utc": utc_now(),
@@ -299,6 +319,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rows", type=Path, required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
+    parser.add_argument("--exposure-manifest", type=Path)
     args = parser.parse_args(argv)
     args.output_dir = args.output_dir.resolve()
     payload = audit(args)

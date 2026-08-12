@@ -53,13 +53,25 @@ jobs:
             scripts/detector_v5/validate_factorized_v2_handoff.py \
             scripts/detector_v5/audit_factorized_calibration_design_feasibility.py \
             scripts/detector_v5/audit_factorized_v3_1_production_readiness.py \
-            scripts/detector_v5/materialize_factorized_v2_offline_evaluation_bundle.py
-            scripts/detector_v5/audit_r3_contact_input.py
-            scripts/detector_v5/run_r3_v23_teacher.py
-            scripts/detector_v5/run_r3_learnability_smoke.py
-            src/gripper_attack/v5_r3_teacher.py
-            src/gripper_attack/v5_r3_student.py
+            scripts/detector_v5/materialize_factorized_v2_offline_evaluation_bundle.py \
+            scripts/detector_v5/audit_r3_contact_input.py \
+            scripts/detector_v5/run_r3_v23_teacher.py \
+            scripts/detector_v5/run_r3_learnability_smoke.py \
+            src/gripper_attack/v5_r3_teacher.py \
+            src/gripper_attack/v5_r3_student.py \
+            src/gripper_attack/stage_v_m3_5_physical_taxonomy.py \
+            src/gripper_attack/stage_v_m3_5_phase_classifier.py \
+            scripts/detector_v5/build_stage_v_m3_5_probe_plan.py \
+            scripts/detector_v5/select_stage_v_m3_5_diagnostic_manifest_v2.py \
+            scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py \
+            scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py \
+            scripts/detector_v5/stage_v_dynamic_common.py \
+            scripts/detector_v5/issue_stage_v_m3_5_runtime_authorization.py \
+            scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_3.py \
+            scripts/detector_v5/audit_stage_v_m3_5_runtime_v1_3.py
       - name: Run V5 CPU contract tests
         run: pytest -q tests/test_v5_contracts.py tests/test_v5_dataset.py tests/test_v5_window_geometry.py tests/test_v5_loss_v2.py tests/test_v5_online_evaluator.py tests/test_v5_baselines.py tests/test_v5_physics_decoder.py tests/test_v5_physics_teacher.py tests/test_clean2000_raw_asset_audit.py tests/test_official_v3_fit_sources.py tests/test_factorized_v3_contract.py tests/test_factorized_scheduler.py tests/test_factorized_runtime.py tests/test_factorized_scheduler_bridge.py tests/test_factorized_handoff.py tests/test_factorized_v3_1_contract.py tests/test_r3_dev_protocol.py tests/test_v5_r3_teacher_contract.py tests/test_v5_r3_student_controls.py tests/test_v5_r3_smoke_entrypoint.py tests/test_v5_r3_input_audit.py
+      - name: Run Stage V M3.5 CPU contract tests
+        run: pytest -q tests/detector_v5/test_stage_v_dynamic8.py tests/detector_v5/test_stage_v_gpu_resource_contract.py tests/detector_v5/test_stage_v_m3_5_phase_classifier.py tests/detector_v5/test_stage_v_m3_5_physical_taxonomy.py tests/detector_v5/test_stage_v_m3_5_intervention_parent.py tests/detector_v5/test_stage_v_m3_5_selection_v2.py tests/detector_v5/test_stage_v_m3_5_runtime_audit_v1_3.py
       - name: Check patch whitespace
         run: git diff --check
