@@ -1,0 +1,77 @@
+{
+  "schema": "STAGE_V_M4_PROBE_SUPPORT_AUDIT_V1",
+  "status": "PASS_NARROW_CORRIDOR_SUPPORT_ONLY",
+  "source_commit": "eb05ae20ead190e91221ede6ae6d18fca70c2b30",
+  "source_tree": "092f55c3fbce82421bfa8bca67cd192f321048d7",
+  "historical_protocol": {
+    "path": "configs/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1_3.json",
+    "sha256": "7f9d8ecf167c986edb49f603fda18d4f06dd40ccaf0038b2fa1d920a5ff58fb7",
+    "selection_version": "STAGE_V_M3_5_CORRIDOR_QUANTILES_V1",
+    "h_phys": 10,
+    "minimum_remaining_horizon": 20,
+    "outcomes_read": false
+  },
+  "current_preflight_evidence": {
+    "a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_PREFLIGHT_A_20260812T123000Z",
+    "a_run_manifest_sha256": "f99e896d6cdcb00ed6850f5f58f4a4dd0f0be9a8dd99d15a82f53067a0fe54e2",
+    "a_counts": {
+      "PASS": 29,
+      "INELIGIBLE": 6,
+      "CLEAN_FAILURE": 5
+    },
+    "b_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_PREFLIGHT_B_20260812T125000Z",
+    "b_run_manifest_sha256": "0f1b27c42bd62a2cf47e61ba11df4bb5254e2bed9c046b9005a185f476e97ce2",
+    "b_counts": {
+      "PASS": 33,
+      "INELIGIBLE": 4,
+      "CLEAN_FAILURE": 3
+    },
+    "stable_parent_count": 29,
+    "required_parent_count": 40,
+    "stable_probe_count": 696,
+    "formal_split_sha256": "0811bb0890756a9e5078f8282dd0f049991e17f8e4b3c0b55ee1f19c88952a9f",
+    "plan_status": "FROZEN_BEFORE_COUNTERFACTUAL_OUTCOMES"
+  },
+  "probe_support": {
+    "selection_rule": "clean valid nonterminal state with bound finite object/eef telemetry, explicit gripper-object contact, registered clean phase, remaining_horizon >= T10 + H_phys, and raw_gripper <= 0.5 for the full T10 + H_phys clean reference window",
+    "selection_algorithm": "sort eligible corridor by timestep; q=0..23 choose round_half_up(q*(N-1)/23); preserve order; deterministic dedup; fail if fewer than 24 unique",
+    "source_fields": ["clean trajectory rows", "clean-only contact/object telemetry", "remaining horizon", "clean reference gripper channel"],
+    "forbidden_fields": ["OPEN outcome", "CONTROL outcome", "V_phys", "V_task", "Teacher prediction", "Student prediction"],
+    "a_phase_counts_over_stable_parents": {
+      "CONTACT_MANIPULATION": 237,
+      "CARRY": 198,
+      "ENGAGED_LIFT": 261,
+      "PRE_CONTACT": 0
+    },
+    "object_gripper_contact_true_count": 696,
+    "object_gripper_contact_false_count": 0,
+    "safe_or_background_probe_count": 0,
+    "pre_contact_probe_count": 0
+  },
+  "independent_replicate_reconciliation": {
+    "stable_identity_set_aligned": true,
+    "probe_count_per_parent_aligned": true,
+    "exact_probe_step_mismatch_count": 12,
+    "exact_probe_step_mismatch_denominator": 29,
+    "interpretation": "A/B clean replicates agree on the stable parent corridor but do not universally bind the same exact probe snapshots; final formal M4 must bind one exact clean source and one frozen probe manifest, not average the two plans."
+  },
+  "identifiable_claim": "Within a prospectively defined clean gripper-critical opportunity corridor, matched OPEN interventions may reveal dose/state-dependent physical susceptibility if the future M4 taxonomy and outcomes are valid.",
+  "not_identifiable_from_current_probe_support": [
+    "P(V_phys=1 | critical) > P(V_phys=1 | safe)",
+    "high-risk versus low-risk enrichment",
+    "safe/background negative-control performance",
+    "visual exploitability E_t",
+    "Teacher or Student causal validity"
+  ],
+  "negative_control_policy": {
+    "additional_panel": "NOT_AUTHORIZED_NOT_LAUNCHED",
+    "requirement": "A separate prospective protocol is required before selecting or reading safe/background negative-control outcomes.",
+    "current_m4_launch": "BLOCKED_BY_FORMAL_CORRIDOR_HOLD"
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  }
+}
