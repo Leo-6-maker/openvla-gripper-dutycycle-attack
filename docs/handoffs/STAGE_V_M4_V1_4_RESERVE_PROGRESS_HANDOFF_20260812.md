@@ -14,7 +14,7 @@ evidence and still-unstarted causal-label production.
 - PR: [#111](https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/111)
 - PR state: `OPEN / DRAFT / UNMERGED`
 - Branch: `codex/stage-v-resource-contract-20260810`
-- Branch tip after this docs-only handoff commit: `b62dbe75206050968f4ac539176bdec32ee102c7`
+- Branch tip after this docs-only handoff commit: `6c1ab5407f5341b8ce39c36519ca37db1cd0f08c`
 - Runtime code baseline: HEAD `92ff4c2d43fb327b661552d483db6e1298c19833`, tree `72707afd011bb67fc5f759de3ab3cad2c517faa1`
 - A800 SSH alias: `dty-server` (do not use the unrelated `vla` alias)
 - Remote worktree: `/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-v7-terminal-gate-fix-20260812`
