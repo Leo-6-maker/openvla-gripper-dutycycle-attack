@@ -18,7 +18,6 @@
     "_write",
     "_write_runtime_binding_receipt",
     "add_argument",
-    "any",
     "aperture_metric",
     "append",
     "asarray",
@@ -60,6 +59,7 @@
     "resolve",
     "select_probe_steps",
     "sha256",
+    "sorted",
     "step",
     "str",
     "sum",
@@ -96,11 +96,11 @@
     "vis_pgd_attack_rollouts": 0
   },
   "protocol": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-resource-contract-20260810\\configs\\STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1.json",
-  "protocol_sha256": "38390c35760b5db7bed10eddab8219036dd9e3747de9d1e8ba9d1c19de0d7618",
-  "runner_sha256": "a78f1b56d8dd7a77e584fbb55a5d198b34405d27609506fda9f8e5a9329e5b8a",
+  "protocol_sha256": "1f3ccb178c815373539b1f9f3b543a907c3f4e27d50a2e3b61f9b8d3974dff09",
+  "runner_sha256": "fbab6a4b881df13e67ee178e62a081a3ea1fb4f07bce8fb8a95f3c86f8887a7c",
   "runtime_authorized": false,
   "schema": "STAGE_V_M4_CORRIDOR_STATIC_AUDIT_V1",
-  "source_commit": "d7e55de4b322421484726e80f0cd0c2fc0abc698",
-  "source_tree": "943117495d4ff8dcae11f5f05365505bfa9c2d2c",
+  "source_commit": "f298af0c5d2212952066d24fbcf2bed996b86253",
+  "source_tree": "7279a3574c33cbd64b5cd0931d759f7d34b28c7c",
   "status": "PASS_STATIC_DESIGN_ONLY"
 }

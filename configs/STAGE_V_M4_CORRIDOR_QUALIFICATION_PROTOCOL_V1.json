@@ -12,8 +12,8 @@
     "formal_m4_status": "HOLD_PROBE_CORRIDOR_22_OF_24"
   },
   "source_binding": {
-    "runtime_commit": "d7e55de4b322421484726e80f0cd0c2fc0abc698",
-    "runtime_tree": "943117495d4ff8dcae11f5f05365505bfa9c2d2c"
+    "runtime_commit": "f298af0c5d2212952066d24fbcf2bed996b86253",
+    "runtime_tree": "7279a3574c33cbd64b5cd0931d759f7d34b28c7c"
   },
   "inputs": {
     "v7_formal_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_QUALIFICATION_PASS_V1_20260812T113000Z/V7_FORMAL_QUALIFICATION_PASS_RECEIPT.json",
