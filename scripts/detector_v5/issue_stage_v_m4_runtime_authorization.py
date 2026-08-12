@@ -28,6 +28,14 @@ def _git(repo: Path, *args: str) -> str:
     return subprocess.check_output(["git", *args], cwd=repo, text=True).strip()
 
 
+def _source_file_unchanged(repo: Path, commit: str, relative: str) -> bool:
+    try:
+        expected = subprocess.check_output(["git", "show", f"{commit}:{relative}"], cwd=repo)
+    except subprocess.CalledProcessError:
+        return False
+    return expected == (repo / relative).read_bytes()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-root", type=Path, required=True)
@@ -60,8 +68,19 @@ def main(argv: list[str] | None = None) -> int:
     actual_commit = _git(repo, "rev-parse", "HEAD")
     actual_tree = _git(repo, "rev-parse", "HEAD^{tree}")
     actual_status = _git(repo, "status", "--porcelain")
-    if actual_commit != args.source_commit or actual_tree != args.source_tree or actual_status:
+    source_tree = _git(repo, "rev-parse", f"{args.source_commit}^{{tree}}")
+    if source_tree != args.source_tree or actual_status:
         raise SystemExit("SOURCE_COMMIT_OR_TREE_MISMATCH")
+    if subprocess.call(["git", "merge-base", "--is-ancestor", args.source_commit, "HEAD"], cwd=repo) != 0:
+        raise SystemExit("RUNTIME_SOURCE_NOT_ANCESTOR")
+    runtime_files = (
+        "scripts/detector_v5/run_stage_v_m4_matched_parent.py",
+        "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_a.py",
+        "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py",
+        "src/gripper_attack/stage_v_causal_observation_snapshot.py",
+    )
+    if not all(_source_file_unchanged(repo, args.source_commit, relative) for relative in runtime_files):
+        raise SystemExit("RUNTIME_SOURCE_FILE_DRIFT")
     source = protocol.get("source_binding", {})
     if source.get("runtime_commit") != args.source_commit or source.get("runtime_tree") != args.source_tree:
         raise SystemExit("PROTOCOL_SOURCE_BINDING_MISMATCH")
@@ -99,8 +118,10 @@ def main(argv: list[str] | None = None) -> int:
         "formal_parent_split_sha256": _sha(split_path),
         "formal_parent_split_audit": str(split_audit_path),
         "formal_parent_split_audit_sha256": _sha(split_audit_path),
-        "source_commit": actual_commit,
-        "source_tree": actual_tree,
+        "source_commit": args.source_commit,
+        "source_tree": args.source_tree,
+        "repository_head": actual_commit,
+        "repository_tree": actual_tree,
         "source_status": actual_status,
         "formal_parent_count": 40,
         "matrix": protocol.get("matrix"),
