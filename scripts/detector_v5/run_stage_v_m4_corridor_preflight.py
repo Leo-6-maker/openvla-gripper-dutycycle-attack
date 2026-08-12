@@ -99,6 +99,8 @@ def _run_clean(args: argparse.Namespace, parent: Mapping[str, Any], output: Path
     init_state = copy.deepcopy(suite_obj.get_task_init_states(task_index)[state_index])
     bddl = str(Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file)
     args.suite = suite
+    if args.model_root is not None:
+        args.model_path = args.model_root / suite
     adapter, model, _processor, _unnorm_key = _load_policy(args, get_processor, get_model, adapter_type)
     horizon = int(HORIZONS[suite])
     episode_rng = capture_rng_state()
@@ -177,13 +179,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--official-snapshot-root", type=Path, required=True)
     parser.add_argument("--upstream-root", type=Path, required=True)
-    parser.add_argument("--model-path", type=Path, required=True)
+    parser.add_argument("--model-path", type=Path)
+    parser.add_argument("--model-root", type=Path)
     parser.add_argument("--gpu", type=int, required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
     parser.add_argument("--replicate", choices=("A", "B"), default="A")
     args = parser.parse_args(argv)
     try:
+        if args.model_path is None and args.model_root is None:
+            raise ValueError("MODEL_PATH_OR_ROOT_REQUIRED")
         protocol = _load(args.protocol.resolve())
         authorization = _load(args.authorization.resolve())
         _validate(protocol, authorization, args)
