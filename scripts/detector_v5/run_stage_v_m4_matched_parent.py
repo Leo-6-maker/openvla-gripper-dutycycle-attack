@@ -192,7 +192,7 @@ def run(args: argparse.Namespace) -> int:
     parent = _parent_row(split, args.parent_key)
     output = args.output_dir.resolve()
     if output.exists():
-        allowed_worker_files = {"JOB.json", "RESOURCE_PRE.json"}
+        allowed_worker_files = {"JOB.json", "RESOURCE_PRE.json", "SCIENCE_RUNNER.log"}
         unexpected = [path.name for path in output.iterdir() if path.name not in allowed_worker_files]
         if unexpected:
             raise M35RunnerError(f"M4_OUTPUT_NOT_NEW:{output}:{sorted(unexpected)}")
