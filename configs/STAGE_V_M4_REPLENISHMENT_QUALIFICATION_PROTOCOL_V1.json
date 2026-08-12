@@ -12,8 +12,8 @@
     "old_m4_authorization_consumable": false
   },
   "source_binding": {
-    "runtime_commit": "6287521d6f63f2ee7c37a933bb6b683b07feab4d",
-    "runtime_tree": "8a1dd936b85b27985f98d8c775e9974ed98c6341",
+    "runtime_commit": "2990d432215013aa778801a6ef559470f61ae899",
+    "runtime_tree": "925fc041a92beae4b7228691528d75b2ea1b4a0a",
     "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
     "runner": {
       "path": "scripts/detector_v5/run_stage_v_clean_replay_frozen.py",
@@ -35,21 +35,22 @@
       "identity_count": 1200
     },
     "exposure_union": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V2_20260812T151500Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V6.json",
-      "sha256": "21636f7af1748bb21091c81b5ce46f62236595328fa41f46bba348726e9c25de",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V7.json",
+      "sha256": "efab2f0ebd8981628f7bb489fd6a6d58cf4254bbb30e8feabbbb83cb70d047c5",
       "excluded_count": 53,
       "clean_only_qualification_excluded": false
     },
     "clean_attempt_union": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V2_20260812T151500Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V9.json",
-      "sha256": "4d4ed7634af72304e9e871f17d7ab7a7960389dfae74d26468e52e406874f874",
-      "excluded_count": 957,
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V10.json",
+      "sha256": "369749925e09e58a3a6b0b96d59e4583cdbc34355a760f53a4e03659c5dda325",
+      "excluded_count": 958,
       "duplicate_count_across_sources": 47,
-      "corridor_roots_included": true
+      "corridor_roots_included": true,
+      "postprocess_failure_root_included": true
     },
     "candidate_pool": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V2_20260812T151500Z/STAGE_V_G10_FRESH_CANDIDATE_POOL_V9.json",
-      "sha256": "0551a555e6b8bafcc5e4828c881f221f2c3bca3d6fa50936209a2a6917e96eeb",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_G10_FRESH_CANDIDATE_POOL_V10.json",
+      "sha256": "44c78a28f15f08412d45e0ed30d587971c6fc13a78ebd762c86cf1e472461dd7",
       "candidate_count": 120,
       "candidate_counts_by_suite": {
         "libero_10": 30,
@@ -61,8 +62,8 @@
       "outcome_blind": true
     },
     "candidate_manifest": {
-      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V2_20260812T151500Z/STAGE_V_M4_REPLENISHMENT_CANDIDATE_MANIFEST_V1.json",
-      "sha256": "cc3b5a1ad30a8137e5e5e15e8ab4c287440c7146dd6ad63ae382b07bdbbe4969",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_M4_REPLENISHMENT_CANDIDATE_MANIFEST_V2.json",
+      "sha256": "d884026751e273efefa62ff4bfd10fc11c7bd9053ac5267140addf9499c3a294",
       "status": "FROZEN",
       "candidate_count": 120,
       "candidate_counts_by_suite": {
@@ -133,6 +134,17 @@
     "protected_eval160_reads_allowed": false,
     "attack_rollouts_allowed": false
   },
+  "non_consumable_attempts": [
+    {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_REPLENISHMENT_V7_QUALIFICATION_LIBERO10_20260812T144500Z",
+      "canonical_parent_key": "libero_10/task_02/state_37",
+      "status": "ENGINEERING_INVALID_POSTPROCESS_SOURCE_BINDING",
+      "source_commit": "4622f2d029509443965988f6a633b023ae07d95d",
+      "source_tree": "e9fc0f8f1e21f3f84ebbfafa60576ed57008b83",
+      "reason": "A/B clean results and independent audit completed, but the old orchestrator failed on its hard-coded formal-40 science-manifest finalizer; the run is excluded rather than mixed across source bindings.",
+      "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
+    }
+  ],
   "resource_contract": {
     "resource_contract_version": "STAGE_V_RESOURCE_CONTRACT_V2",
     "admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7],
