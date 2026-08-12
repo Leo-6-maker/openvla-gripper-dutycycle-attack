@@ -91,7 +91,6 @@ def main(argv: list[str] | None = None) -> int:
     args.protocol = args.protocol.resolve()
     args.authorization = args.authorization.resolve()
     args.split = args.split.resolve()
-    args.python = args.python.resolve()
     args.runner = args.runner.resolve()
     args.official_snapshot_root = args.official_snapshot_root.resolve()
     args.upstream_root = args.upstream_root.resolve()
