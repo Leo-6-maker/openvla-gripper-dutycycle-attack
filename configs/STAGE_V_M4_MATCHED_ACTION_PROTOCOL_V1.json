@@ -12,8 +12,8 @@
     "v7_m4_authorized": true
   },
   "source_binding": {
-    "runtime_commit": "31e3320326fcbdd209c86fc91cdfbd0b105354d5",
-    "runtime_tree": "425d20309f565ff2e95d26a51eccbc163c438104",
+    "runtime_commit": "7fd338d01a87cb9b95e71808862df8e358635660",
+    "runtime_tree": "cbe5f8e8604428ba8c5aceb43c3f724d655a68c1",
     "upstream_commit": "c8f03f48af692657d3060c19588038c7220e9af9",
     "upstream_tree": "c326be57bb61629a3efd2b968ef141fa576a623f",
     "attention_implementation": "eager"
@@ -34,7 +34,7 @@
     "outcomes_read": false,
     "old_artifacts_reused": false,
     "source_artifacts_modified": false,
-    "authorization_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_RUNTIME_AUTHORIZATION_V1_20260812T100500Z/STAGE_V_M4_RUNTIME_AUTHORIZATION.json"
+    "authorization_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_RUNTIME_AUTHORIZATION_V1_20260812T103000Z/STAGE_V_M4_RUNTIME_AUTHORIZATION.json"
   },
   "matrix": {
     "parents": 40,
