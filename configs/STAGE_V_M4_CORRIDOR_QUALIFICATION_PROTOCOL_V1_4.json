@@ -1,0 +1,97 @@
+{
+  "schema": "STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1",
+  "version": "M4-CORRIDOR-QUALIFICATION-V1.4-FINAL-CANDIDATE-CLEAN-ONLY",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "purpose": "Clean-only outcome-blind corridor preflight for the eleven final-corridor parents that have no exact M4 probe plan; this does not authorize M4 intervention, label generation, outcome reads, Teacher/Student training, or attack execution.",
+  "predecessor": {
+    "v1_3_immutable": true,
+    "predecessor_protocol_path": "configs/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1_3.json",
+    "predecessor_protocol_sha256": "7f9d8ecf167c986edb49f603fda18d4f06dd40ccaf0038b2fa1d920a5ff58fb7",
+    "final_identity_split_reconciliation_status": "PASS_IDENTITY_AND_SPLIT_RECONCILIATION_HOLD_EXACT_PROBE_MANIFEST"
+  },
+  "source_binding": {
+    "runtime_commit": "73bc7287a03457b105c035025a91dcb03883876f",
+    "runtime_tree": "763291b23174affe63296941efc4dc65ee7ec829"
+  },
+  "inputs": {
+    "v7_formal_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_QUALIFICATION_PASS_V1_20260812T113000Z/V7_FORMAL_QUALIFICATION_PASS_RECEIPT.json",
+    "v7_formal_receipt_sha256": "36af16ea9c79a7a6a6537d5be2de3b18a69fed2cce523b05c368009c99709118",
+    "formal_parent_split_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_CANDIDATE_V2_20260812T164812Z/STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V2.json",
+    "formal_parent_split_sha256": "a2c3efc753a6a6762570d49c40d1fe65d97cdec80c8b497661426bfea4d849a9",
+    "final_parent_manifest_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_CANDIDATE_V2_20260812T164812Z/STAGE_V_M4_FORMAL_PARENT_MANIFEST_V4.json",
+    "final_parent_manifest_sha256": "237c23eb639e96798decb6cad05206f1bfcb5bd3d43f3dd0c25a051c4ce9a021",
+    "historical_split_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_PARENT_SPLIT_V1_20260812T110000Z/STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V1.json",
+    "historical_split_sha256": "0811bb0890756a9e5078f8282dd0f049991e17f8e4b3c0b55ee1f19c88952a9f",
+    "outcomes_read": false,
+    "old_artifacts_reused": false,
+    "source_artifacts_modified": false
+  },
+  "qualification": {
+    "candidate_parent_count": 40,
+    "clean_replicates": [
+      "A",
+      "B"
+    ],
+    "minimum_corridor_candidates": 24,
+    "probe_count": 24,
+    "h_phys": 10,
+    "minimum_remaining_horizon": 20,
+    "selection_version": "STAGE_V_M3_5_CORRIDOR_QUANTILES_V1",
+    "selection_outcomes_read": false,
+    "preflight_scope": "ONLY_FINAL_CANDIDATE_PARENTS_WITHOUT_EXISTING_EXACT_PROBE_PLAN",
+    "preflight_parent_keys": [
+      "libero_10/task_08/state_28",
+      "libero_goal/task_02/state_34",
+      "libero_goal/task_04/state_38",
+      "libero_goal/task_05/state_21",
+      "libero_goal/task_05/state_26",
+      "libero_goal/task_07/state_41",
+      "libero_goal/task_08/state_20",
+      "libero_spatial/task_03/state_40",
+      "libero_spatial/task_06/state_29",
+      "libero_spatial/task_06/state_45",
+      "libero_spatial/task_07/state_39"
+    ],
+    "parent_selection_rule": "Run clean-only A/B preflight for exactly the listed final-candidate parents; record clean failure or corridor ineligibility as non-qualifying and never convert either into an M4 outcome."
+  },
+  "operation": {
+    "clean_only": true,
+    "intervention_executed": false,
+    "outcomes_read": false,
+    "fresh_render_primary_consumption": false,
+    "labels_generated": false,
+    "teacher_student_evidence_generated": false,
+    "attack_execution": false,
+    "selection_outcomes_read": false,
+    "failure_policy": "record clean failure or corridor ineligibility; do not treat as negative vulnerability"
+  },
+  "resource_contract": {
+    "resource_contract_version": "STAGE_V_RESOURCE_CONTRACT_V2",
+    "resource_mode": "MODE_B_THROUGHPUT_SCIENCE",
+    "admitted_gpu_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "foreign_workload_allowed": true,
+    "foreign_process_interference": false,
+    "partial_fleet_allowed": true
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "owner_authorization_basis": "Goal Mode continuation authorized the minimum clean-only preflight needed to close the exact-probe gate; no M4/attack/Teacher/Student runtime is authorized by this artifact.",
+  "failure_action": "seal_classify_handoff_stop"
+}
