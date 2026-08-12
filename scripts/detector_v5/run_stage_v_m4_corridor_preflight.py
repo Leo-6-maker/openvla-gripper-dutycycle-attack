@@ -195,9 +195,13 @@ def main(argv: list[str] | None = None) -> int:
         split = _load(Path(str(protocol["inputs"]["formal_parent_split_path"])).resolve())
         parent = next(row for row in split["parents"] if str(row["canonical_parent_key"]) == args.parent_key)
         output = args.output_dir.resolve()
-        if output.exists() and any(output.iterdir()):
-            raise ValueError(f"REFUSE_OVERWRITE:{output}")
-        output.mkdir(parents=True, exist_ok=False)
+        if output.exists():
+            allowed_worker_files = {"JOB.json", "RESOURCE_PRE.json", "SCIENCE_RUNNER.log"}
+            unexpected = [path.name for path in output.iterdir() if path.name not in allowed_worker_files]
+            if unexpected:
+                raise ValueError(f"M4_CORRIDOR_OUTPUT_NOT_NEW:{output}:{sorted(unexpected)}")
+        else:
+            output.mkdir(parents=True, exist_ok=False)
         result = _run_clean(args, parent, output)
         return 0
     except (OSError, KeyError, ValueError, RuntimeError, StopIteration) as exc:
