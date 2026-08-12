@@ -67,6 +67,32 @@ def _write(path: Path, value: Mapping[str, Any]) -> None:
     os.replace(temporary, path)
 
 
+def _write_clean_failure(args: argparse.Namespace, parent: Mapping[str, Any], output: Path, reason: str) -> None:
+    key = str(parent["canonical_parent_key"])
+    suite = str(parent["suite"])
+    _write(output / "M4_CORRIDOR_PREFLIGHT.json", {
+        "schema": "STAGE_V_M4_CORRIDOR_PREFLIGHT_V1",
+        "status": "CLEAN_FAILURE",
+        "reason": reason,
+        "canonical_parent_key": key,
+        "replicate": args.replicate,
+        "suite": suite,
+        "task_index": int(parent["task_index"]),
+        "state_index": int(parent["state_index"]),
+        "source_commit": args.source_commit,
+        "source_tree": args.source_tree,
+        "clean_success": False,
+        "corridor_candidate_count": 0,
+        "probe_count": 0,
+        "m4_probe_eligible": False,
+        "m4_primary_horizon_complete": False,
+        "outcomes_read": False,
+        "old_artifacts_reused": False,
+        "source_artifacts_modified": False,
+        "protected_counters": dict(COUNTERS),
+    })
+
+
 def _validate(protocol: Mapping[str, Any], authorization: Mapping[str, Any], args: argparse.Namespace) -> None:
     if protocol.get("schema") != "STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1" or protocol.get("status") != "FROZEN_RUNTIME_AUTHORIZED" or protocol.get("runtime_authorized") is not True:
         raise ValueError("M4_CORRIDOR_PROTOCOL_NOT_AUTHORIZED")
@@ -206,7 +232,13 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError(f"M4_CORRIDOR_OUTPUT_NOT_NEW:{output}:{sorted(unexpected)}")
         else:
             output.mkdir(parents=True, exist_ok=False)
-        result = _run_clean(args, parent, output)
+        try:
+            _run_clean(args, parent, output)
+        except RuntimeError as exc:
+            reason = str(exc)
+            if not reason.startswith("OBJECT_TAXONOMY_BINDING_"):
+                raise
+            _write_clean_failure(args, parent, output, reason)
         return 0
     except (OSError, KeyError, ValueError, RuntimeError, StopIteration) as exc:
         print(json.dumps({"status": "FAIL", "reason": f"{type(exc).__name__}:{exc}"}, sort_keys=True))

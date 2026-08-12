@@ -50,6 +50,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "runner_has_no_branch_execution": "_run_branch(" not in text and "_pair_label(" not in text,
         "runner_has_no_open_literal": "OPEN_T" not in text and "forced_open" not in text,
         "runner_writes_clean_only_receipt": "M4_CORRIDOR_PREFLIGHT_V1" in text,
+        "runner_records_registered_clean_failure": "OBJECT_TAXONOMY_BINDING_" in text and "CLEAN_FAILURE" in text,
         "runner_checks_frozen_split": "formal_parent_split_path" in text and "formal_parent_split_sha256" in text,
         "formal_split_bound": bool(inputs.get("formal_parent_split_path")) and bool(inputs.get("formal_parent_split_sha256")),
     }
