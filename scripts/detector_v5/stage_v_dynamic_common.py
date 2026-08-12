@@ -856,6 +856,30 @@ def _m35_v2_artifact_status(output_dir: Path, parent_key: str, *, expected_sourc
 def science_artifact_status(output_dir: Path, parent_key: str, *, expected_source_commit: str | None = None,
                             expected_source_tree: str | None = None, expected_row: Mapping[str, Any] | None = None,
                             artifact_schema: str = "STAGE_V_PARENT_RESULT_V2") -> dict[str, Any]:
+    if artifact_schema == "STAGE_V_M4_CORRIDOR_PREFLIGHT_V1":
+        result_paths = list(Path(output_dir).rglob("M4_CORRIDOR_PREFLIGHT.json"))
+        if len(result_paths) != 1:
+            return {"valid": False, "reason": f"M4_CORRIDOR_PREFLIGHT_COUNT:{len(result_paths)}", "result": None, "path": None}
+        result_path = result_paths[0]
+        result = read_json(result_path, {})
+        if not isinstance(result, Mapping):
+            return {"valid": False, "reason": "M4_CORRIDOR_PREFLIGHT_NOT_OBJECT", "result": None, "path": str(result_path)}
+        errors: list[str] = []
+        if result.get("schema") != "STAGE_V_M4_CORRIDOR_PREFLIGHT_V1" or result.get("canonical_parent_key") != parent_key:
+            errors.append("M4_CORRIDOR_SCHEMA_OR_IDENTITY_INVALID")
+        if result.get("status") not in {"PASS", "INELIGIBLE", "CLEAN_FAILURE"}:
+            errors.append("M4_CORRIDOR_STATUS_INVALID")
+        if result.get("outcomes_read") is not False or result.get("old_artifacts_reused") is not False or result.get("source_artifacts_modified") is not False:
+            errors.append("M4_CORRIDOR_PROVENANCE_INVALID")
+        if expected_source_commit and result.get("source_commit") != expected_source_commit:
+            errors.append("SCIENCE_SOURCE_COMMIT_MISMATCH")
+        if expected_source_tree and result.get("source_tree") != expected_source_tree:
+            errors.append("SCIENCE_SOURCE_TREE_MISMATCH")
+        if result.get("protected_counters") != {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}:
+            errors.append("M4_CORRIDOR_PROTECTED_COUNTERS_INVALID")
+        if errors:
+            return {"valid": False, "reason": ";".join(sorted(set(errors))), "result": dict(result), "path": str(result_path)}
+        return {"valid": True, "reason": "PASS", "result": dict(result), "path": str(result_path), "artifact_sha256": sha256_file(result_path), "label_status": "M4_CORRIDOR_QUALIFICATION"}
     if artifact_schema == "STAGE_V_M3_5_COVERAGE_RESULT_V1":
         return _m35_coverage_artifact_status(
             output_dir, parent_key, expected_source_commit=expected_source_commit,
