@@ -46,6 +46,7 @@ from scripts.detector_v5.run_stage_v_canonical_clean import (  # noqa: E402
     _write_runtime_binding_receipt,
 )
 from scripts.detector_v5.run_stage_v_m3_5_intervention_parent import _new_env  # noqa: E402
+from scripts.detector_v5.run_stage_v_m3_5_dynamic_parent import MODEL_RELATIVE  # noqa: E402
 
 
 def _sha(path: Path) -> str:
@@ -100,7 +101,10 @@ def _run_clean(args: argparse.Namespace, parent: Mapping[str, Any], output: Path
     bddl = str(Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file)
     args.suite = suite
     if args.model_root is not None:
-        args.model_path = args.model_root / suite
+        relative = MODEL_RELATIVE.get(suite)
+        if relative is None:
+            raise ValueError(f"UNKNOWN_SUITE:{suite}")
+        args.model_path = args.model_root / relative
     adapter, model, _processor, _unnorm_key = _load_policy(args, get_processor, get_model, adapter_type)
     horizon = int(HORIZONS[suite])
     episode_rng = capture_rng_state()
