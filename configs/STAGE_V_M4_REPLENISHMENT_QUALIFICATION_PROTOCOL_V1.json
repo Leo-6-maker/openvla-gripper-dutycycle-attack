@@ -1,0 +1,152 @@
+{
+  "schema": "STAGE_V_M4_REPLENISHMENT_QUALIFICATION_PROTOCOL_V1",
+  "version": "M4-REPLENISHMENT-V1",
+  "status": "FROZEN_OUTCOME_BLIND_PRE_ROLLOUT",
+  "purpose": "V7-style clean A/B qualification of a frozen fresh pool before any M4 corridor replacement.",
+  "predecessor": {
+    "formal_corridor_status": "HOLD_FORMAL_M4_CORRIDOR_INSUFFICIENT",
+    "formal_stable_parent_count": 29,
+    "formal_required_parent_count": 40,
+    "historical_split_immutable": true,
+    "historical_stable_parents_reused": true,
+    "old_m4_authorization_consumable": false
+  },
+  "source_binding": {
+    "runtime_commit": "6287521d6f63f2ee7c37a933bb6b683b07feab4d",
+    "runtime_tree": "8a1dd936b85b27985f98d8c775e9974ed98c6341",
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "runner": {
+      "path": "scripts/detector_v5/run_stage_v_clean_replay_frozen.py",
+      "sha256": "87b8ec5e161c6a1f64195dd29a49e990dcb3c8530e77cf7a14db1d95f6e26ec6"
+    },
+    "qualification_orchestrator": {
+      "path": "scripts/detector_v5/run_stage_v_control_qualification.py",
+      "sha256": "617093125a9b484165f3794da31ba087c9ece63b6355dec2017c5c59f1974496"
+    },
+    "dynamic_common": {
+      "path": "scripts/detector_v5/stage_v_dynamic_common.py",
+      "sha256": "c240611a690199930f3e7b0044317dcbb3e8c84d32fc7c61c0b1a89e28829102"
+    }
+  },
+  "freshness": {
+    "source_universe": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json",
+      "sha256": "06bd43fe5666b6bacb763e0ae7dbba12ef317911ba923b469dab8628cc8bb7ef",
+      "identity_count": 1200
+    },
+    "exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V2_20260812T151500Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V6.json",
+      "sha256": "21636f7af1748bb21091c81b5ce46f62236595328fa41f46bba348726e9c25de",
+      "excluded_count": 53,
+      "clean_only_qualification_excluded": false
+    },
+    "clean_attempt_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V2_20260812T151500Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V9.json",
+      "sha256": "4d4ed7634af72304e9e871f17d7ab7a7960389dfae74d26468e52e406874f874",
+      "excluded_count": 957,
+      "duplicate_count_across_sources": 47,
+      "corridor_roots_included": true
+    },
+    "candidate_pool": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V2_20260812T151500Z/STAGE_V_G10_FRESH_CANDIDATE_POOL_V9.json",
+      "sha256": "0551a555e6b8bafcc5e4828c881f221f2c3bca3d6fa50936209a2a6917e96eeb",
+      "candidate_count": 120,
+      "candidate_counts_by_suite": {
+        "libero_10": 30,
+        "libero_goal": 30,
+        "libero_object": 30,
+        "libero_spatial": 30
+      },
+      "selection_frozen_before_new_rollouts": true,
+      "outcome_blind": true
+    },
+    "candidate_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V2_20260812T151500Z/STAGE_V_M4_REPLENISHMENT_CANDIDATE_MANIFEST_V1.json",
+      "sha256": "cc3b5a1ad30a8137e5e5e15e8ab4c287440c7146dd6ad63ae382b07bdbbe4969",
+      "status": "FROZEN",
+      "candidate_count": 120,
+      "candidate_counts_by_suite": {
+        "libero_10": 30,
+        "libero_goal": 30,
+        "libero_object": 30,
+        "libero_spatial": 30
+      },
+      "overlap_with_clean_attempt_union": 0,
+      "overlap_with_exposure_union": 0
+    },
+    "selection_salt": "4a8b2c1d6e7f8091a2b3c4d5e6f70819",
+    "candidate_order": "candidate_manifest.candidates order; deterministic SHA rank then canonical_parent_key tie break",
+    "structural_filter": "G10 held-out membership plus canonical identity validity only; no outcome-derived filter"
+  },
+  "historical_split": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_PARENT_SPLIT_V1_20260812T110000Z/STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V1.json",
+    "sha256": "0811bb0890756a9e5078f8282dd0f049991e17f8e4b3c0b55ee1f19c88952a9f",
+    "counts": {"TRAIN": 24, "VAL": 8, "TEST": 8},
+    "per_suite": {"TRAIN": 6, "VAL": 2, "TEST": 2},
+    "stable_formal_reconciliation_sha256": "1de1d0d4ca1be7cb8e1acc82d5033f0c8521885525493381bc8ff065d831162"
+  },
+  "replenishment_deficit": {
+    "stable_parent_count": 29,
+    "required_parent_count": 40,
+    "stable_by_suite": {
+      "libero_10": 9,
+      "libero_goal": 4,
+      "libero_object": 10,
+      "libero_spatial": 6
+    },
+    "required_by_suite": {
+      "libero_10": 10,
+      "libero_goal": 10,
+      "libero_object": 10,
+      "libero_spatial": 10
+    },
+    "stable_by_slot": {
+      "libero_10": {"TRAIN": 5, "VAL": 2, "TEST": 2},
+      "libero_goal": {"TRAIN": 1, "VAL": 2, "TEST": 1},
+      "libero_object": {"TRAIN": 6, "VAL": 2, "TEST": 2},
+      "libero_spatial": {"TRAIN": 4, "VAL": 1, "TEST": 1}
+    },
+    "slot_deficit": {
+      "libero_10": {"TRAIN": 1, "VAL": 0, "TEST": 0},
+      "libero_goal": {"TRAIN": 5, "VAL": 0, "TEST": 1},
+      "libero_object": {"TRAIN": 0, "VAL": 0, "TEST": 0},
+      "libero_spatial": {"TRAIN": 2, "VAL": 1, "TEST": 1}
+    },
+    "stable_replenishment_target_by_suite": {
+      "libero_10": 1,
+      "libero_goal": 6,
+      "libero_object": 0,
+      "libero_spatial": 4
+    },
+    "stable_replenishment_target_total": 11
+  },
+  "qualification": {
+    "mode": "FRESH_CLEAN_AB_REPLAY",
+    "replicates": ["A", "B"],
+    "initial_state_identity_exact": true,
+    "clean_success_required_for_both": true,
+    "engineering_invalid_is_non_consumable": true,
+    "consume_order": "frozen candidate order within each requested suite",
+    "stopping_rule": "For each suite, consume the frozen order until its pre-registered stable target is reached or that suite's pool is exhausted; then seal PASS or HOLD. Never reseed, reorder, or replace from observed failures.",
+    "slot_assignment_after_qualification": "Retain the 29 historical stable parents; assign the first newly stable rows by frozen rank to the listed missing suite×TRAIN/VAL/TEST slots, in suite order libero_10, libero_goal, libero_object, libero_spatial and split order TRAIN, VAL, TEST.",
+    "labels_generated": false,
+    "protected_eval160_reads_allowed": false,
+    "attack_rollouts_allowed": false
+  },
+  "resource_contract": {
+    "resource_contract_version": "STAGE_V_RESOURCE_CONTRACT_V2",
+    "admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7],
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "foreign_workload_allowed": true,
+    "foreign_process_interference": false,
+    "partial_fleet_allowed": true
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "downstream_gate": "A new V7 qualification PASS plus independent audit is required before any replenishment identity may enter a new M4 corridor protocol; the supersession HOLD remains binding on the old formal protocol and authorization."
+}
