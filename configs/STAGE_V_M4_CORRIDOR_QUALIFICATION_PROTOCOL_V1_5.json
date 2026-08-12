@@ -1,0 +1,90 @@
+{
+  "schema": "STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1",
+  "version": "M4-CORRIDOR-QUALIFICATION-V1.5-FINAL-CANDIDATE-CURRENT-SOURCE-REQUALIFICATION",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "purpose": "Clean-only, outcome-blind A/B requalification of the exact replacement-bound final 40-parent corridor under one current runtime source; this does not authorize M4 intervention, label generation, outcome reads, Teacher/Student training, or attack execution.",
+  "predecessor": {
+    "v1_4_immutable": true,
+    "predecessor_protocol_path": "configs/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1_4.json",
+    "predecessor_protocol_sha256": "d2647a210747eebeae602b7aa2a96f3ed2122c1b95e6542270bb461ba172bcc6",
+    "predecessor_status": "HOLD_EXACT_PROBE_SUPPORT_37_OF_40_MIXED_SOURCE_PROVENANCE"
+  },
+  "source_binding": {
+    "runtime_commit": "73bc7287a03457b105c035025a91dcb03883876f",
+    "runtime_tree": "763291b23174affe63296941efc4dc65ee7ec829",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "source_binding_purpose": "Use one current code snapshot for every clean trajectory and exact probe plan; no historical 7d5 source output is reused."
+  },
+  "inputs": {
+    "v7_formal_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_QUALIFICATION_PASS_V1_20260812T113000Z/V7_FORMAL_QUALIFICATION_PASS_RECEIPT.json",
+    "v7_formal_receipt_sha256": "36af16ea9c79a7a6a6537d5be2de3b18a69fed2cce523b05c368009c99709118",
+    "formal_parent_split_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_CANDIDATE_V3_20260812T173000Z/STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V3.json",
+    "formal_parent_split_sha256": "b16a594ab509b9d89dfcd8182f1f033450248e27de3511c1195f603c60564d57",
+    "final_parent_manifest_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_CANDIDATE_V3_20260812T173000Z/STAGE_V_M4_FORMAL_PARENT_MANIFEST_V5.json",
+    "final_parent_manifest_sha256": "1fc3b07e170902b388db6dd441e0709f2118ab37d7a46a7891f8a59513c81b25",
+    "replacement_selection_binding_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_CANDIDATE_V3_20260812T173000Z/REPLACEMENT_SELECTION_BINDING_V1.json",
+    "replacement_selection_binding_sha256": "cd0ee7709045a481cf7d400ce93c87d6eb30469089b1628a010cb23e3d3d2989",
+    "v7_qualification_rows_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FRESH_QUALIFICATION_V1_4_20260812T094000Z/CONTROL_QUALIFICATION_ROWS.jsonl",
+    "v7_qualification_rows_sha256": "75beaeee27f91c5410d105c6fbec41655123a669cf00f91b81b42ca758fec72b",
+    "outcomes_read": false,
+    "old_artifacts_reused": false,
+    "source_artifacts_modified": false
+  },
+  "qualification": {
+    "candidate_parent_count": 40,
+    "clean_replicates": [
+      "A",
+      "B"
+    ],
+    "minimum_corridor_candidates": 24,
+    "probe_count": 24,
+    "h_phys": 10,
+    "minimum_remaining_horizon": 20,
+    "selection_version": "STAGE_V_M3_5_CORRIDOR_QUANTILES_V1",
+    "selection_outcomes_read": false,
+    "preflight_scope": "ALL_FINAL_40_PARENTS_CURRENT_SOURCE_A_B_REQUALIFICATION",
+    "preflight_parent_keys_source": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_CANDIDATE_V3_20260812T173000Z/STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V3.json",
+    "parent_selection_rule": "Run clean-only A/B preflight for every parent in the bound final split. This is a new current-source requalification, not a retry of the V1.4 missing-parent run; retain clean failure or corridor ineligibility as non-qualifying and never convert either into an M4 outcome.",
+    "source_unification_rule": "No V1.3/V1.4 historical trajectory or probe plan is consumed as current evidence; all 40 identities receive fresh current-source A/B receipts and plans."
+  },
+  "operation": {
+    "clean_only": true,
+    "intervention_executed": false,
+    "outcomes_read": false,
+    "fresh_render_primary_consumption": false,
+    "labels_generated": false,
+    "teacher_student_evidence_generated": false,
+    "attack_execution": false,
+    "selection_outcomes_read": false,
+    "failure_policy": "record clean failure or corridor ineligibility; do not treat as negative vulnerability"
+  },
+  "resource_contract": {
+    "resource_contract_version": "STAGE_V_RESOURCE_CONTRACT_V2",
+    "resource_mode": "MODE_B_THROUGHPUT_SCIENCE",
+    "admitted_gpu_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "foreign_workload_allowed": true,
+    "foreign_process_interference": false,
+    "partial_fleet_allowed": true
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "owner_authorization_basis": "Goal Mode continuation authorizes the minimum clean-only current-source requalification required to close the exact-probe provenance gate; no M4/attack/Teacher/Student runtime is authorized by this artifact.",
+  "failure_action": "seal_classify_handoff_stop"
+}
