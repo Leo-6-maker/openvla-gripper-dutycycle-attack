@@ -879,6 +879,43 @@ def science_artifact_status(output_dir: Path, parent_key: str, *, expected_sourc
                 "result": None,
                 "path": None,
             }
+    if artifact_schema == "STAGE_V_M4_PARENT_RESULT_V1":
+        result_paths = list(Path(output_dir).rglob("PARENT_RESULT.json"))
+        if len(result_paths) != 1:
+            return {"valid": False, "reason": f"M4_PARENT_RESULT_COUNT:{len(result_paths)}", "result": None, "path": None}
+        result_path = result_paths[0]
+        result = read_json(result_path, {})
+        if not isinstance(result, Mapping):
+            return {"valid": False, "reason": "M4_PARENT_RESULT_NOT_OBJECT", "result": None, "path": str(result_path)}
+        errors: list[str] = []
+        if result.get("schema") != "STAGE_V_M4_PARENT_RESULT_V1" or result.get("canonical_parent_key") != parent_key:
+            errors.append("M4_RESULT_SCHEMA_OR_IDENTITY_INVALID")
+        if result.get("status") != "PASS" or result.get("parent_atomic") is not True or result.get("probe_count") != 24:
+            errors.append("M4_RESULT_COMPLETION_INVALID")
+        if result.get("branch_count") != 96 or result.get("treatment_label_count") != 72:
+            errors.append("M4_RESULT_ACCOUNTING_INVALID")
+        if result.get("independent_audit_status") != "PASS_M4_PARENT_INDEPENDENT" or result.get("label_status") != "VALID":
+            errors.append("M4_INDEPENDENT_AUDIT_OR_LABEL_STATUS_INVALID")
+        if result.get("selection_outcomes_read") is not False or result.get("fresh_render_primary_consumption") is not False or result.get("native_policy_calls_in_primary_window") != 0:
+            errors.append("M4_PRIMARY_CONTRACT_INVALID")
+        if result.get("protected_counters") != {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}:
+            errors.append("M4_PROTECTED_COUNTERS_INVALID")
+        if expected_source_commit and result.get("source_commit") != expected_source_commit:
+            errors.append("SCIENCE_SOURCE_COMMIT_MISMATCH")
+        if expected_source_tree and result.get("source_tree") != expected_source_tree:
+            errors.append("SCIENCE_SOURCE_TREE_MISMATCH")
+        if expected_row is not None:
+            for field in ("suite", "task_index", "state_index"):
+                if result.get(field) != expected_row.get(field):
+                    errors.append(f"PARENT_{field.upper()}_MISMATCH")
+        required = ("M4_COUNTERFACTUAL_BRANCHES_V1.jsonl", "M4_TREATMENT_OBSERVATIONS_V1.jsonl", "M4_V_PHYS_LABELS_V1.jsonl", "M4_INDEPENDENT_AUDIT.json")
+        if any(len(list(result_path.parent.rglob(name))) != 1 for name in required):
+            errors.append("M4_REQUIRED_OUTPUT_COUNT_INVALID")
+        if not (result_path.parent / "SHA256SUMS").is_file() or not (result_path.parent / "SHA256SUMS.sha256").is_file():
+            errors.append("M4_PARENT_SEAL_MISSING")
+        if errors:
+            return {"valid": False, "reason": ";".join(sorted(set(errors))), "result": dict(result), "path": str(result_path)}
+        return {"valid": True, "reason": "PASS", "result": dict(result), "path": str(result_path), "artifact_sha256": sha256_file(result_path), "label_status": "VALID", "parent_seal": "PRESENT"}
     results = list(Path(output_dir).rglob("PARENT_RESULT.json"))
     if len(results) != 1:
         return {"valid": False, "reason": f"PARENT_RESULT_COUNT:{len(results)}", "result": None, "path": None}
