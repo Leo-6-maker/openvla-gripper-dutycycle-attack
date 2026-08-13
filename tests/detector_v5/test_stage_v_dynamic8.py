@@ -457,6 +457,36 @@ def test_worker_heartbeat_file_is_preferred_over_legacy_status(tmp_path: Path) -
     assert rows[0]["_heartbeat_file_present"] is True
 
 
+def test_starting_worker_gets_bounded_first_heartbeat_grace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    root = tmp_path / "run"
+    root.mkdir()
+    write_json(root / "worker_gpu0" / "WORKER_STATUS.json", {
+        "state": "STARTING", "worker_pid": os.getpid(), "child_pid": None,
+        "worker_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
+        "gpu_id": 0, "updated_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+    })
+    worker = sup.DynamicSupervisor(make_args(root))
+    _, errors = worker._resource_snapshot()
+    assert "WORKER_HEARTBEAT_MISSING" not in errors
+
+
+def test_starting_worker_without_heartbeat_fails_after_grace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_resources(monkeypatch)
+    root = tmp_path / "run"
+    root.mkdir()
+    old = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=10)).isoformat()
+    write_json(root / "worker_gpu0" / "WORKER_STATUS.json", {
+        "state": "STARTING", "worker_pid": os.getpid(), "child_pid": None,
+        "worker_pgid": os.getpgid(0) if hasattr(os, "getpgid") else os.getpid(),
+        "gpu_id": 0, "updated_utc": old,
+    })
+    worker = sup.DynamicSupervisor(make_args(root))
+    worker.args.heartbeat_stale_seconds = 1
+    _, errors = worker._resource_snapshot()
+    assert "WORKER_HEARTBEAT_MISSING" in errors
+
+
 def test_dead_worker_timeout_is_parent_bound(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_resources(monkeypatch)
     root = tmp_path / "run"
