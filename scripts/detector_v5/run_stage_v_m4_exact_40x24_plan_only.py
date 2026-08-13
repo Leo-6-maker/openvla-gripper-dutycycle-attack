@@ -183,9 +183,11 @@ def _validate_authorization(root: Path, protocol: Mapping[str, Any], authorizati
         if authorization.get(key) != value:
             raise PlanGateError(f"PLAN_AUTHORIZATION_BINDING_INVALID:{key}")
     runtime = authorization.get("runtime", {})
-    for key in ("official_snapshot_root", "upstream_root", "model_root", "python_executable"):
+    for key in ("official_snapshot_root", "upstream_root", "model_root", "python_executable", "python_executable_resolved"):
         if not runtime.get(key):
             raise PlanGateError(f"PLAN_RUNTIME_BINDING_MISSING:{key}")
+    if not Path(str(runtime["python_executable"])).is_file() or str(Path(str(runtime["python_executable"])).resolve()) != str(runtime["python_executable_resolved"]):
+        raise PlanGateError("PLAN_PYTHON_BINDING_INVALID")
     if authorization.get("matrix") != {"parents": 40, "probes_per_parent": 24, "probe_count_total": 960, "planned_branch_authorities_total": 3840}:
         raise PlanGateError("PLAN_AUTHORIZATION_MATRIX_INVALID")
     _validate_protocol(protocol)
@@ -232,7 +234,10 @@ def _prepare(args: argparse.Namespace) -> int:
     _write(root / "SELECTION_MANIFEST.json", {"schema": "STAGE_V_M4_EXACT_40X24_PLAN_SELECTION_MANIFEST_V1", "status": "FROZEN_BEFORE_PLAN_RUNTIME", "selection_reads": {"branch_results_read": False, "counterfactual_outcomes_read": False, "v_phys_read": False}, "selected_parents": selected, "parent_count": 40, "final_manifest_sha256": final_sha, "final_split_sha256": split_sha, "protected_counters": COUNTERS})
     gate_a_protocol = {"schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_A", "version": "V1.4.2-GATE-A", "status": "FROZEN_RUNTIME_AUTHORIZED", "runtime_authorized": True, "source_binding": {"runtime_commit": source_commit, "runtime_tree": source_tree}, "probe_plan_selection_version": "STAGE_V_M3_5_CORRIDOR_QUANTILES_V1", "operation": {"fresh_render_primary_consumption": "HARD_STOP", "fresh_render_equality_gate_used": False, "intervention_executed": False}, "protected_counters": COUNTERS}
     _write(root / "GATE_A_PROTOCOL.json", gate_a_protocol)
-    runtime = {"official_snapshot_root": str(args.official_snapshot_root.resolve()), "upstream_root": str(args.upstream_root.resolve()), "model_root": str(args.model_root.resolve()), "python_executable": str(Path(sys.executable).resolve()), "model_paths": {suite: str(_model_path(args.model_root.resolve(), suite)) for suite in MODEL_RELATIVE_PATHS}}
+    python_executable = args.python_executable.resolve()
+    if not python_executable.is_file():
+        raise PlanGateError(f"PYTHON_EXECUTABLE_MISSING:{python_executable}")
+    runtime = {"official_snapshot_root": str(args.official_snapshot_root.resolve()), "upstream_root": str(args.upstream_root.resolve()), "model_root": str(args.model_root.resolve()), "python_executable": str(args.python_executable), "python_executable_resolved": str(python_executable), "model_paths": {suite: str(_model_path(args.model_root.resolve(), suite)) for suite in MODEL_RELATIVE_PATHS}}
     authorization = {"schema": "STAGE_V_M4_EXACT_40X24_PLAN_AUTHORIZATION_V1", "status": "PASS_PRELAUNCH", "scope": "EXACT_40X24_PLAN_AND_SNAPSHOT_ONLY", "protocol_sha256": _sha_file(root / "PLAN_PROTOCOL.json"), "final_manifest_sha256": final_sha, "final_split_sha256": split_sha, "attempt_registry_sha256": _sha_file(root / "inputs/EXACT55_ATTEMPT_REGISTRY.json"), "source_commit": source_commit, "source_tree": source_tree, "gate_a_runner_sha256": _sha_file(GATE_A_RUNNER), "runtime": runtime, "matrix": {"parents": 40, "probes_per_parent": 24, "probe_count_total": 960, "planned_branch_authorities_total": 3840}, "intervention_executed": False, "outcomes_read": False, "protected_counters": COUNTERS, "failure_action": "HOLD_SEALED_NO_RESERVE_SUBSTITUTION_NO_RERUN"}
     _write(root / "PLAN_AUTHORIZATION.json", authorization)
     _write(root / "PREPARE_RECEIPT.json", {"schema": "STAGE_V_M4_EXACT_40X24_PLAN_PREPARE_RECEIPT_V1", "status": "PASS_PRELAUNCH_READY", "root": str(root), "source_commit": source_commit, "source_tree": source_tree, "protocol_sha256": _sha_file(root / "PLAN_PROTOCOL.json"), "final_manifest_sha256": final_sha, "final_split_sha256": split_sha, "attempt_registry_sha256": _sha_file(root / "inputs/EXACT55_ATTEMPT_REGISTRY.json"), "protected_counters": COUNTERS})
@@ -374,6 +379,7 @@ def main(argv: list[str] | None = None) -> int:
     prep.add_argument("--official-snapshot-root", type=Path, required=True)
     prep.add_argument("--upstream-root", type=Path, required=True)
     prep.add_argument("--model-root", type=Path, required=True)
+    prep.add_argument("--python-executable", type=Path, required=True)
     prep.add_argument("--output-root", type=Path, required=True)
     run = sub.add_parser("run")
     run.add_argument("--output-root", type=Path, required=True)
