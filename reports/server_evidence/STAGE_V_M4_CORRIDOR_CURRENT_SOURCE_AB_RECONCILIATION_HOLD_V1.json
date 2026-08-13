@@ -1,0 +1,987 @@
+{
+  "schema": "STAGE_V_M4_CORRIDOR_CURRENT_SOURCE_AB_RECONCILIATION_V1",
+  "status": "HOLD_FORMAL_M4_CORRIDOR_INSUFFICIENT",
+  "terminal": true,
+  "sealed": true,
+  "immutable": true,
+  "retry_forbidden": true,
+  "created_utc": "2026-08-12T23:00:41Z",
+  "gate": {
+    "name": "M4_FORMAL_CORRIDOR_REQUALIFICATION",
+    "first_non_passing_scientific_gate": "CURRENT_SOURCE_FINAL40_CORRIDOR_AB_STABILITY",
+    "criterion": "all 40 final parent identities must have PASS in both independent clean-only replicates",
+    "observed_stable_parent_count": 32,
+    "required_stable_parent_count": 40,
+    "failure_action": "HOLD_AND_DO_NOT_LAUNCH_FORMAL_M4"
+  },
+  "source_binding": {
+    "science_commit": "3b2ffdb5809710e3c7f2e0a529600c8d7a79b9b2",
+    "science_tree": "2492a075e782a112d1e857248956b2647e751039",
+    "official_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "corridor_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z",
+    "launch_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/LAUNCH_MANIFEST.json",
+      "sha256": "7fcd777bf6b912d1ccbc3b292dd434c0be6100dc55d8bb1750856328f9c80a60",
+      "status": "COMPLETED_NO_M4_OUTCOMES"
+    }
+  },
+  "protocol_inputs": {
+    "supersession_hold": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-governed-20260812/configs/STAGE_V_M4_FORMAL_AUTHORIZATION_SUPERSESSION_HOLD_V1.json",
+      "sha256": "6677d3e847b4913944afa008a9d32f17ba8893dd6ff03e0ab3d5a04a31fd4f13",
+      "status": "HOLD_FORMAL_M4_CORRIDOR_INSUFFICIENT"
+    },
+    "corridor_protocol": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V2.json",
+      "sha256": "2f9c7115602504ade82d64cd7394adb8b09f9840184e856ec35f5a35bba96073",
+      "status": "FROZEN_RUNTIME_AUTHORIZED"
+    },
+    "corridor_static_audit": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_STATIC_AUDIT_V2.json",
+      "sha256": "db6ebba2572f779be888c48874abae49fd59f103a20656095c0836f53901d35a",
+      "status": "PASS_STATIC_DESIGN_ONLY"
+    },
+    "corridor_runtime_authorization": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_RUNTIME_AUTHORIZATION_V2.json",
+      "sha256": "1ba4a56e7e33a31d227814e7042c94e03ea7f884b4f9f136fca25b4f127924e6",
+      "status": "PASS"
+    },
+    "prelaunch_independent_audit": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PRELAUNCH_INDEPENDENT_AUDIT_V1.json",
+      "sha256": "52c532fafa10b8d6d8e8b10b11092c09d3bb40c70d77c357bc65156f373e8832",
+      "status": "PASS_PRELAUNCH_CLEAN_ONLY_CORRIDOR"
+    },
+    "selection_binding": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_FINAL_CORRIDOR_SELECTION_BINDING_V1.json",
+      "sha256": "8565a2af8ac3dcb941159e614206671ebd4d9896772d38dfa32d90a3214d7bab",
+      "status": "FROZEN_OUTCOME_BLIND_PRE_CORRIDOR_REQUALIFICATION"
+    },
+    "final_parent_split": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V1_20260813.json",
+      "sha256": "f76ababf0750a78ee7adb3c81e0d15b945275d7210e2d0e41de1a623c6549cc4",
+      "status": "FROZEN"
+    },
+    "formal_parent_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_FORMAL_PARENT_MANIFEST_V6.json",
+      "sha256": "f2c142b7c140b8412113e14a52d243eb8d9dafa9f9c4970456a91f2e41a479fa",
+      "status": "FROZEN_PRE_CORRIDOR_REQUALIFICATION"
+    },
+    "cumulative_clean_attempt_exclusion": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V14.json",
+      "sha256": "c1f3bfa2bedc86ff7249a511f971b8d77e9316c659dd60dd1ff1e587896efab0",
+      "status": "PASS"
+    },
+    "counterfactual_exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V6.json",
+      "sha256": "d84b5cf5f9cdeeaff0ddeec0b13fc0f0b703566b68996033bb93122988d968d9",
+      "status": "PASS"
+    }
+  },
+  "population_contract": {
+    "candidate_parent_count": 40,
+    "replicates": [
+      "A",
+      "B"
+    ],
+    "receipt_count": 80,
+    "keys_observed": 40,
+    "keys_match_final_split": true,
+    "keys_match_formal_manifest": true,
+    "suite_counts": {
+      "libero_10": 10,
+      "libero_goal": 10,
+      "libero_object": 10,
+      "libero_spatial": 10
+    },
+    "split_counts": {
+      "TEST": 8,
+      "TRAIN": 24,
+      "VAL": 8
+    },
+    "per_suite_split_counts": {
+      "libero_10": {
+        "TEST": 2,
+        "TRAIN": 6,
+        "VAL": 2
+      },
+      "libero_goal": {
+        "TEST": 2,
+        "TRAIN": 6,
+        "VAL": 2
+      },
+      "libero_object": {
+        "TEST": 2,
+        "TRAIN": 6,
+        "VAL": 2
+      },
+      "libero_spatial": {
+        "TEST": 2,
+        "TRAIN": 6,
+        "VAL": 2
+      }
+    }
+  },
+  "qualification": {
+    "status_pairs": {
+      "CLEAN_FAILURE/CLEAN_FAILURE": 4,
+      "INELIGIBLE/INELIGIBLE": 1,
+      "PASS/CLEAN_FAILURE": 3,
+      "PASS/PASS": 32
+    },
+    "pass_A_count": 35,
+    "pass_B_count": 32,
+    "stable_parent_count": 32,
+    "stable_by_suite": {
+      "libero_10": 9,
+      "libero_goal": 7,
+      "libero_object": 10,
+      "libero_spatial": 6
+    },
+    "stable_parent_keys": [
+      "libero_10/task_00/state_34",
+      "libero_10/task_01/state_29",
+      "libero_10/task_01/state_42",
+      "libero_10/task_02/state_32",
+      "libero_10/task_05/state_39",
+      "libero_10/task_05/state_42",
+      "libero_10/task_06/state_30",
+      "libero_10/task_06/state_39",
+      "libero_10/task_07/state_29",
+      "libero_goal/task_01/state_41",
+      "libero_goal/task_02/state_44",
+      "libero_goal/task_04/state_25",
+      "libero_goal/task_05/state_23",
+      "libero_goal/task_05/state_25",
+      "libero_goal/task_05/state_41",
+      "libero_goal/task_08/state_33",
+      "libero_object/task_00/state_23",
+      "libero_object/task_01/state_45",
+      "libero_object/task_04/state_32",
+      "libero_object/task_04/state_41",
+      "libero_object/task_04/state_43",
+      "libero_object/task_06/state_26",
+      "libero_object/task_06/state_46",
+      "libero_object/task_07/state_23",
+      "libero_object/task_07/state_26",
+      "libero_object/task_09/state_29",
+      "libero_spatial/task_01/state_25",
+      "libero_spatial/task_01/state_42",
+      "libero_spatial/task_04/state_36",
+      "libero_spatial/task_07/state_24",
+      "libero_spatial/task_09/state_23",
+      "libero_spatial/task_09/state_44"
+    ],
+    "nonpassing_parents": [
+      {
+        "canonical_parent_key": "libero_10/task_02/state_35",
+        "A_status": "CLEAN_FAILURE",
+        "B_status": "CLEAN_FAILURE",
+        "A_reason": null,
+        "B_reason": null,
+        "A_receipt_sha256": "4d4a5577551170209e8e350a454fc7b36c5ca591b28bea35b77a58adfe46d6fb",
+        "B_receipt_sha256": "2e2b7bdcfd51378fa5557e7a96de7a5cc42c92b8407a3e87808d79f43aff671c"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_03/state_45",
+        "A_status": "CLEAN_FAILURE",
+        "B_status": "CLEAN_FAILURE",
+        "A_reason": null,
+        "B_reason": null,
+        "A_receipt_sha256": "26ab4fb969940d191790a20c54fee30504acd408cd18c5a906f764b23415347a",
+        "B_receipt_sha256": "7a60447b28ab51c29010d37c947f6b155caf2510380b3f06a55bb876dfd4593d"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_07/state_28",
+        "A_status": "CLEAN_FAILURE",
+        "B_status": "CLEAN_FAILURE",
+        "A_reason": "OBJECT_TAXONOMY_BINDING_UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+        "B_reason": "OBJECT_TAXONOMY_BINDING_UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+        "A_receipt_sha256": "f25e6e1d7ee60ae9567c14a1d343b5637bc5a10c1e64c950749b20988df659e9",
+        "B_receipt_sha256": "10f2c89dbb0e62f42cba51d9e72bdcc8ad9c51d70a3d29506b0c985c9c91e0dc"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_07/state_39",
+        "A_status": "CLEAN_FAILURE",
+        "B_status": "CLEAN_FAILURE",
+        "A_reason": "OBJECT_TAXONOMY_BINDING_UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+        "B_reason": "OBJECT_TAXONOMY_BINDING_UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+        "A_receipt_sha256": "36176ea40e984e3b33f76ac2a3f310e44ee7c0e780d36c631c575bc7902469b8",
+        "B_receipt_sha256": "4213cd2fec594163205fde2990273d41b6d844b44b6ab63a32bd89c32db900b8"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_02/state_45",
+        "A_status": "PASS",
+        "B_status": "CLEAN_FAILURE",
+        "A_reason": "M4_CORRIDOR_24_EXACT",
+        "B_reason": null,
+        "A_receipt_sha256": "20649cb48c2389c0db3285e05ac2e99f0debe2b7f9cea419c38604cc536af3da",
+        "B_receipt_sha256": "33bfe74dc75713ffcc47c7f33964049bb9f17af359ffe8ed69c26d123b484a90"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_03/state_20",
+        "A_status": "INELIGIBLE",
+        "B_status": "INELIGIBLE",
+        "A_reason": "PROBE_PLAN_INSUFFICIENT_CORRIDOR:9/24",
+        "B_reason": "PROBE_PLAN_INSUFFICIENT_CORRIDOR:9/24",
+        "A_receipt_sha256": "3aeed1fecb0baa57eada9e33dc10a4397ec7b5ee9a5de1102e5473e0f0c685fa",
+        "B_receipt_sha256": "989a5b781adce19ca92443acc21a7e5af97b9860669cc76f17087fb49673e1c3"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_22",
+        "A_status": "PASS",
+        "B_status": "CLEAN_FAILURE",
+        "A_reason": "M4_CORRIDOR_24_EXACT",
+        "B_reason": null,
+        "A_receipt_sha256": "70bec3dc60df21d0cc970817fac850458dec8b0c051b95d9e06a4143b1e2cce4",
+        "B_receipt_sha256": "55e01d8a88e35b5d7cdcf8746489dc61871d4687d612d62fc03b62d2e71966e4"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_32",
+        "A_status": "PASS",
+        "B_status": "CLEAN_FAILURE",
+        "A_reason": "M4_CORRIDOR_24_EXACT",
+        "B_reason": null,
+        "A_receipt_sha256": "b2fd77129b7fdca02a650afc0d287cd1782ae586576181281a9fa89ac0592c7c",
+        "B_receipt_sha256": "26de245be5b5ce0752b9511c7ea93aabffb6ac37ec2340e216f1e3c388de6f7e"
+      }
+    ]
+  },
+  "independent_audit": {
+    "method": "direct JSON parse of all receipt files; no launch-manifest status used as scientific PASS",
+    "receipt_field_error_count": 0,
+    "receipt_field_errors": [],
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0
+    },
+    "outcomes_read": false,
+    "labels_generated": false,
+    "formal_m4_authorization_issued": false,
+    "v_phys_map_generated": false,
+    "receipt_rows": [
+      {
+        "canonical_parent_key": "libero_10/task_00/state_34",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "4956c8779847bd80e617fdd9445000d658c4e26c71b0e02d7e98dad5e6ec26fb",
+        "receipt_sha256": "820753633806f90e8e1bd9c962fc31fc55e64203dad3619fb29ea787805d8442",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_00__state_34/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_00/state_34",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "4956c8779847bd80e617fdd9445000d658c4e26c71b0e02d7e98dad5e6ec26fb",
+        "receipt_sha256": "72c7161793f35a021c39835fd2d29ca538864d446f37c7fd59f9129e1f684ec3",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_00__state_34/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_29",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "a2a0d155fe4e890a62d62a043b9ef40144cac555cbcc3221ed32d9253c5bf15b",
+        "receipt_sha256": "7a7debf9731575982e122a5c7fd224df2f4b0e22c129c0356c48f48f057af53a",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_01__state_29/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_29",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "a2a0d155fe4e890a62d62a043b9ef40144cac555cbcc3221ed32d9253c5bf15b",
+        "receipt_sha256": "d51467cdd615b52683eb001225cd62e69582b2a452cd55b02103f6c09f8abf49",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_01__state_29/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_42",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "9da75b1180e558027793a38eb56772f8db21bb8e318ce15a969fa63c24d60879",
+        "receipt_sha256": "b75d6cf44f178244163982e793c5b4d306f7fed6d3a3509f6fa99ab983a4bd81",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_01__state_42/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_42",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "9da75b1180e558027793a38eb56772f8db21bb8e318ce15a969fa63c24d60879",
+        "receipt_sha256": "26059dc428504fb1a37417ad51578318ccc09c1c6705d5f0f81f244a8d289dd0",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_01__state_42/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_02/state_32",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "d1bc14f323ccfe72a3dc3b4fe83e525df984d9a96af83e2cda972fa53a168622",
+        "receipt_sha256": "87d5be0190046c9486f49c2ebddc717922e03b53ee9c6bbac9f5d4f497cfa811",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_02__state_32/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_02/state_32",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "21e7de790b8c5ecfedbb6dbf041e03d240f721ac53732806b3e6479672aff430",
+        "receipt_sha256": "f593a021e50ffe0784674f5ac12071c59079d605ef4249086c2a22e9cd2f7657",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_02__state_32/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_02/state_35",
+        "replicate": "A",
+        "status": "CLEAN_FAILURE",
+        "reason": null,
+        "trajectory_sha256": null,
+        "receipt_sha256": "4d4a5577551170209e8e350a454fc7b36c5ca591b28bea35b77a58adfe46d6fb",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_02__state_35/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_02/state_35",
+        "replicate": "B",
+        "status": "CLEAN_FAILURE",
+        "reason": null,
+        "trajectory_sha256": null,
+        "receipt_sha256": "2e2b7bdcfd51378fa5557e7a96de7a5cc42c92b8407a3e87808d79f43aff671c",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_02__state_35/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_39",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "f3ed22dc987096fc4656f2fe98758e7b037c41e760511a85471cfd94ad1bc9ed",
+        "receipt_sha256": "ef19b1ecff470c9b143fafffa23e9c2a9d7d49ae851b44c9942266a147946590",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_05__state_39/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_39",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "f3ed22dc987096fc4656f2fe98758e7b037c41e760511a85471cfd94ad1bc9ed",
+        "receipt_sha256": "cef8dedabb10940675bd9e0a667964aafbb94e7e13416245f98659b902a41da8",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_05__state_39/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_42",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "f4f33d6cd72ff4f5f4f4b308228419f37fd74f9a39a3be655563fdad80791b6e",
+        "receipt_sha256": "0eb0426a457c5fb244f7ae4e8f0e8ec938f2629981374c57336a076109c1294f",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_05__state_42/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_42",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "f4f33d6cd72ff4f5f4f4b308228419f37fd74f9a39a3be655563fdad80791b6e",
+        "receipt_sha256": "79bfa78c77d575bd0b48f72a611807ce654a7115a536a97566fdc44e322819e0",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_05__state_42/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_30",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "4757abaa9392a093f03b7eec82ab0c1ca6b2c6c683afb75d96f50e9fa6af0ec7",
+        "receipt_sha256": "8744ed6f5dea48f8be74ac26462fc5fb6f335bcba360d58ac96e33b926e7fb51",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_06__state_30/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_30",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "4757abaa9392a093f03b7eec82ab0c1ca6b2c6c683afb75d96f50e9fa6af0ec7",
+        "receipt_sha256": "d1cf40f8b842c85dfe8f7e7b1b153765a4f774226616e1d1fd92569cadb8091a",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_06__state_30/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_39",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "5b55797071770e6c83fb8149fdb7c785df8db5b746f43fe3e27a4960c4a264c0",
+        "receipt_sha256": "c292c8ce3b7e8aad19185062e5fff1f1d3e5131c68433d4968fee3e5f0a64c36",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_06__state_39/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_39",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "5b55797071770e6c83fb8149fdb7c785df8db5b746f43fe3e27a4960c4a264c0",
+        "receipt_sha256": "accc96c3a95947021b913cfdc2f8d018050422959433632016bc0ba7b67eae1d",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_06__state_39/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_07/state_29",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "75c30c2933e5569550ca6fd0b27f149fa27bbf62aa18b99cb74912078c288a15",
+        "receipt_sha256": "aeeda2cdb1e452f13318060ada1e27023b4990417218e928d5ba45695e630eb8",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_07__state_29/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_07/state_29",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "75c30c2933e5569550ca6fd0b27f149fa27bbf62aa18b99cb74912078c288a15",
+        "receipt_sha256": "f4b32f8d65d224808e074bad7d4f2e7817e849fd43f0eef71723346fd5bcca0e",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_10__task_07__state_29/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_01/state_41",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "d0c216cbb1276642fe30a4c6fc63eb04d1ca91895c81b86fa81480d1deb1ce36",
+        "receipt_sha256": "fd25304dab1fed8ceaddaf3b3647539e1ae671ac95a5de8b231298caed71f33e",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_01__state_41/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_01/state_41",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "f8111c3a0c32635cb03c6633b2cd30797dd099469066efa7c061b47d7e7c177d",
+        "receipt_sha256": "c4ac68ee68b74048ed5c902ef26ca066ed25f4bd7c4c40c5a55603b0748bbeb2",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_01__state_41/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_02/state_44",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "164b9016c64525acab73fc1ee2f32c51cc1b9ca7fdd0e070286fe47936c390a8",
+        "receipt_sha256": "5f7e98eeeb2dc33fe49c22827f83ad4057be911716d3cfe24d9c700e6ec88b88",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_02__state_44/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_02/state_44",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "534f7bedbcb48af57d1b940830cbd9cafc651469c9b66b657739417b26170f92",
+        "receipt_sha256": "d071e86b69811700fcad2a6d558d33306403f1bfaee02bf24d932785956bc4c0",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_02__state_44/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_03/state_45",
+        "replicate": "A",
+        "status": "CLEAN_FAILURE",
+        "reason": null,
+        "trajectory_sha256": null,
+        "receipt_sha256": "26ab4fb969940d191790a20c54fee30504acd408cd18c5a906f764b23415347a",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_03__state_45/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_03/state_45",
+        "replicate": "B",
+        "status": "CLEAN_FAILURE",
+        "reason": null,
+        "trajectory_sha256": null,
+        "receipt_sha256": "7a60447b28ab51c29010d37c947f6b155caf2510380b3f06a55bb876dfd4593d",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_03__state_45/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_04/state_25",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "e2780520b70ce9694efd7c185e1e742ae3bd2e8c05ff55328490ecb77f1d23ab",
+        "receipt_sha256": "a1145e9355f8fbd9a18e6d448fa84a36af830025fee594f35e576232b0622866",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_04__state_25/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_04/state_25",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "360318730c224d23b89ba416d04914fc67ad2812d40a0eba48cd83f9ad04004d",
+        "receipt_sha256": "f3018d83c386b66d96a9d6f765a38544e5ab3d0cf9231c05e8f62461c08bd0d8",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_04__state_25/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_23",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "7895b102b367d9d06f70801ca0273fa28d4fb7b6aa008c775fccff7995fa190d",
+        "receipt_sha256": "086839ff685bc1003a6e7b103de9ac5d5ee98a9c129ac93e8faaad431421b53d",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_05__state_23/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_23",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "1c79cbfcf6d8b1a7c8591a90cceaa624308396d889b301a3d045c6027a33289a",
+        "receipt_sha256": "1546deb89163292cf70f9d421029813b3dfd69bc978ec462436d974cec6ac7a9",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_05__state_23/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_25",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "2ab10c55c6cc880d6ccd0907ebdadcc1bf24310809e49dca171c4497176d9c2d",
+        "receipt_sha256": "2cf49f1aeeddb8f0a4a25ee89c8433fd3ebc82a400081e91c743b3feb22b9606",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_05__state_25/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_25",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "17c426b109bcc0f4b50096a3d08e3934a51bf0e9a015cdd6581148b99e5b4a46",
+        "receipt_sha256": "648f6a3105b4709735212623572ed3907527254f58de03ea3d06b3c33c90748b",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_05__state_25/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_41",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "811ddb928c388994a74da74526eb9240b326af1ad1f51aff30b4531462e7af9d",
+        "receipt_sha256": "827c34e2290a41e857d1dcb25566b8c71f141039b612c4da007a73b3ce7646c0",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_05__state_41/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_41",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "c67152425c2734ce3c95635a865a531410c0bed75714215021e08b14e1d41679",
+        "receipt_sha256": "81cc24f9b84313af4a1dd6858f73c83a50638bbb6f93184ee1e78a1d0bc0c1fc",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_05__state_41/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_07/state_28",
+        "replicate": "A",
+        "status": "CLEAN_FAILURE",
+        "reason": "OBJECT_TAXONOMY_BINDING_UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+        "trajectory_sha256": null,
+        "receipt_sha256": "f25e6e1d7ee60ae9567c14a1d343b5637bc5a10c1e64c950749b20988df659e9",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_07__state_28/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_07/state_28",
+        "replicate": "B",
+        "status": "CLEAN_FAILURE",
+        "reason": "OBJECT_TAXONOMY_BINDING_UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+        "trajectory_sha256": null,
+        "receipt_sha256": "10f2c89dbb0e62f42cba51d9e72bdcc8ad9c51d70a3d29506b0c985c9c91e0dc",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_07__state_28/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_07/state_39",
+        "replicate": "A",
+        "status": "CLEAN_FAILURE",
+        "reason": "OBJECT_TAXONOMY_BINDING_UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+        "trajectory_sha256": null,
+        "receipt_sha256": "36176ea40e984e3b33f76ac2a3f310e44ee7c0e780d36c631c575bc7902469b8",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_07__state_39/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_07/state_39",
+        "replicate": "B",
+        "status": "CLEAN_FAILURE",
+        "reason": "OBJECT_TAXONOMY_BINDING_UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+        "trajectory_sha256": null,
+        "receipt_sha256": "4213cd2fec594163205fde2990273d41b6d844b44b6ab63a32bd89c32db900b8",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_07__state_39/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_08/state_33",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "0186eb50615babfac9d1ef066c0063fc2f8ca31294ade1327353bf243859e877",
+        "receipt_sha256": "b4c2bb21996e862313d82b76ce84946ee7df24ab24bcb647085cbee3cf4baead",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_08__state_33/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_08/state_33",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "781967ed2c0a55acf5cc34a7daca1196bbda7b0a2b56e6511f453464a4919d69",
+        "receipt_sha256": "625493077a7bcaaee901e113e4866a6434a58c1c52037176d48fdfdab3e5dbaa",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_goal__task_08__state_33/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_00/state_23",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "0ced7dd5ed8c853248d72a4808e8bbeb2e030f935b824d4580f28d4399b1b855",
+        "receipt_sha256": "dc6c1933fa06aae77e5c3b2a4e8049173a07bdf37940e9abaa46aaf4e0383336",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_00__state_23/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_00/state_23",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "0ced7dd5ed8c853248d72a4808e8bbeb2e030f935b824d4580f28d4399b1b855",
+        "receipt_sha256": "429dfa21ca75cce80d35b1a45a8280a56a8cb8b4bc71e30923007bb196fb4d70",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_00__state_23/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_01/state_45",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "9f7cdf9145200418a91e659de139b1c58c40378fb0cb82404243d97bc11773e8",
+        "receipt_sha256": "b363332580f46fa0f06b6f3ef00a198110996403a7830747a64c63c69bb7e89d",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_01__state_45/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_01/state_45",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "9f7cdf9145200418a91e659de139b1c58c40378fb0cb82404243d97bc11773e8",
+        "receipt_sha256": "4429f85d94b3ce91d15c8ab46bc7a933b7378a3dafdcaac29ecbe5abf2b55d1f",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_01__state_45/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_32",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "251562daa6277e50c79f2a02a455c24cd63788a6cbe038d135e0f4e6bd315d53",
+        "receipt_sha256": "28ff9777bc470acf567f66db5d77726df1b836386e7b4aea66d0908790ca50d8",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_04__state_32/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_32",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "251562daa6277e50c79f2a02a455c24cd63788a6cbe038d135e0f4e6bd315d53",
+        "receipt_sha256": "64a7095d1418aa78ab4b6ee43d7663f37812d264ef6188dd920d05acd1e935a0",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_04__state_32/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_41",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "c3cd71830a449fd5720226e32e8fe61f42973be4dc744d2ba27078f44b133921",
+        "receipt_sha256": "04ed1d123bd1535779c2ddda2090ed2b9066ac41ff026dd8a14e8271ad52935a",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_04__state_41/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_41",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "c3cd71830a449fd5720226e32e8fe61f42973be4dc744d2ba27078f44b133921",
+        "receipt_sha256": "e1f75af36fce2666acf4a5526e4902962f5bfcc1b9e1ccc1d4949b67b0c4b86a",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_04__state_41/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_43",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "8487a6d5c254b364788ed4cafbe430d980ee6a65832efdfb558a2f656a7a3c9f",
+        "receipt_sha256": "bdff55be61ca20931d6cc4ebad722ca523d82c7c2c00d81263d2bf84cfe09c2b",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_04__state_43/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_43",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "8487a6d5c254b364788ed4cafbe430d980ee6a65832efdfb558a2f656a7a3c9f",
+        "receipt_sha256": "fbeaef761b4056b4459b923c9c45c08d34e0e884659dcfbbe91fbe6e83c2c208",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_04__state_43/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_26",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "15d679d53a71e76aed756a315b08c1678d380ca72e17f1c33d08d567ea888cd9",
+        "receipt_sha256": "704679958c17a5bf359ff5b70b3d6236d84f68ed8356b7a3af4a6de18e2dd02a",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_06__state_26/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_26",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "15d679d53a71e76aed756a315b08c1678d380ca72e17f1c33d08d567ea888cd9",
+        "receipt_sha256": "a699d841bdd82a4f62b0d9843534842e079343a03854897be8d90c968e209dcc",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_06__state_26/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_46",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "edaf646415e3f414670412cd46b7a46bf02a002e8f7c18c28b83cbb6c83ce367",
+        "receipt_sha256": "e37c65d14df7b250b1d76ef87b7c07bfce7529144c251094afa30474c65090e9",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_06__state_46/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_46",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "edaf646415e3f414670412cd46b7a46bf02a002e8f7c18c28b83cbb6c83ce367",
+        "receipt_sha256": "dd5d2d6080cf3de0774a1d38d8b816eeb1eddc804b13c499f69b9c4738989fb0",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_06__state_46/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_23",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "34df69f80ed02b39d6881ac7c441a761b77b2f7835b12f9deddbdc6ae659a42e",
+        "receipt_sha256": "7ce4d67b3b840e21ac69a909ec9279c9e703aebef322c50ca42b8a8fbdfe275a",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_07__state_23/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_23",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "34df69f80ed02b39d6881ac7c441a761b77b2f7835b12f9deddbdc6ae659a42e",
+        "receipt_sha256": "1a25263deb8dc73d9674de9a02a0370f65a01e0b6314ab4df85e62af7187e7a1",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_07__state_23/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_26",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "76a02caa96a763d9a28ce675e85e101003d809aa3e0e4fcc5b83a0de394813fc",
+        "receipt_sha256": "89f93766b9393077b26341bce8bf44f4c61d0a1feb7799688c5e7b01445a1e62",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_07__state_26/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_26",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "76a02caa96a763d9a28ce675e85e101003d809aa3e0e4fcc5b83a0de394813fc",
+        "receipt_sha256": "8eb9dffefb634c435427c97a9e03a4bbd3b34cb855437e768ecef8f976e74a4c",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_07__state_26/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_09/state_29",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "d82cca0356bfcdae5f8aa8be07a323998e6447f620d8d4827c82a2c6fe95fc1b",
+        "receipt_sha256": "f1bbae57e1a854d144bc46df187ecf21d6f39ea0f0728e162225fad1d752ab2a",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_09__state_29/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_09/state_29",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "d82cca0356bfcdae5f8aa8be07a323998e6447f620d8d4827c82a2c6fe95fc1b",
+        "receipt_sha256": "b10a78695252f52c4c9a501eda43b508d233225df86a16e066305596e5f036fe",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_object__task_09__state_29/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_25",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "f20173903c51abdebb541d077fe2e8189fbb9827fe6aa887e36bf06a2c27fb8e",
+        "receipt_sha256": "15e4ce08065a4014a6124cb018a4fa822eede18ec18a1552f081af858487b288",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_01__state_25/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_25",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "09cc081418ba95fba75ddbeff1a7d103ac9a3ffe02a4c34b9bb9a9225fcc04bf",
+        "receipt_sha256": "840f7c7b8ef693c01eda633cabdf9c28eb2d1419ed0b1e8807590c71f7430c43",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_01__state_25/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_42",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "195d035fd7783ba74c981dbcc6b68c46e503c933bb54f1492cfcc99bce56ac1f",
+        "receipt_sha256": "3f7f5cedf9314711efef068c69be0ced9df3eed6db47f027fb194f92ccdb9861",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_01__state_42/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_42",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "37b501f5f6137d7a8a652020211f732f00e37767a818632eb91538b769b5b3d7",
+        "receipt_sha256": "5ff7e884fa8d683c22a0e051d7929fc303a2d04c0d09dda3bca9ebc32cbc73b7",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_01__state_42/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_02/state_45",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "37a95242f0ea8899b9aedc359ac7c6cdd0003613e7b08c609b3555d2eebe86c7",
+        "receipt_sha256": "20649cb48c2389c0db3285e05ac2e99f0debe2b7f9cea419c38604cc536af3da",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_02__state_45/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_02/state_45",
+        "replicate": "B",
+        "status": "CLEAN_FAILURE",
+        "reason": null,
+        "trajectory_sha256": null,
+        "receipt_sha256": "33bfe74dc75713ffcc47c7f33964049bb9f17af359ffe8ed69c26d123b484a90",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_02__state_45/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_03/state_20",
+        "replicate": "A",
+        "status": "INELIGIBLE",
+        "reason": "PROBE_PLAN_INSUFFICIENT_CORRIDOR:9/24",
+        "trajectory_sha256": "9cfd6ca05f8bb5a161caf0727c8d458d59af711336d02e995c3ad7c0792e36a1",
+        "receipt_sha256": "3aeed1fecb0baa57eada9e33dc10a4397ec7b5ee9a5de1102e5473e0f0c685fa",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_03__state_20/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_03/state_20",
+        "replicate": "B",
+        "status": "INELIGIBLE",
+        "reason": "PROBE_PLAN_INSUFFICIENT_CORRIDOR:9/24",
+        "trajectory_sha256": "468f79b84f23f353bd9537aa77ac3cbc280b9f9e056584aeafa341aa9903e6e6",
+        "receipt_sha256": "989a5b781adce19ca92443acc21a7e5af97b9860669cc76f17087fb49673e1c3",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_03__state_20/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_04/state_36",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "cd02fdebb607a599a0bab2ee88f1495ef5278303f864881fe1a40d1e152eca88",
+        "receipt_sha256": "b9fb442a91faa57c3d52e3af584fba542db4464e7579d445fee75129677c9dd1",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_04__state_36/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_04/state_36",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "5a541c76918586bb772404b2f3be3c7702861b448ee369dfd9dbe23beaaf9837",
+        "receipt_sha256": "2499fa3cd299ee43d667248b52f47160190d1f051fce4fb7502ec9598775895f",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_04__state_36/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_07/state_24",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "4ede35aec8092ac9b38610b384cebecdfd06b32c67c8aa76379c3d2dc50e3713",
+        "receipt_sha256": "5bdd9d25ce78233046b77067641c2631eaac3d1a8a311b4a9bd966077ce379b4",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_07__state_24/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_07/state_24",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "bee0e9dd9a517d10ac633702d66492ee6eadc493134c547a40a6eca6dccecea9",
+        "receipt_sha256": "b39b5abd096c5ae02dbf194254c9313e70423fb090bec3e181715965111b0c62",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_07__state_24/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_22",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "71bcbfa9e85043a3cb5d6e8e36947fdcaa34b6d2dbb42157e33377ef385a79f0",
+        "receipt_sha256": "70bec3dc60df21d0cc970817fac850458dec8b0c051b95d9e06a4143b1e2cce4",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_09__state_22/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_22",
+        "replicate": "B",
+        "status": "CLEAN_FAILURE",
+        "reason": null,
+        "trajectory_sha256": null,
+        "receipt_sha256": "55e01d8a88e35b5d7cdcf8746489dc61871d4687d612d62fc03b62d2e71966e4",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_09__state_22/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_23",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "552bd243187e10589be2865fba32d6716c2538484e07867a5ceb913df8e3198f",
+        "receipt_sha256": "52c4e9f01c31feb2b3eff2972b47234c3e879cd3d816e4f594686db1fe544596",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_09__state_23/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_23",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "17eaf28324a0c5e4a9925cbdf1f6d767f1e8b6c9f2218bd16f6cb193bece203f",
+        "receipt_sha256": "a505578c369df43db0507d6276a25d0e7d52430bac1fd0598fea95373f454de0",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_09__state_23/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_32",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "fdc110bc4b3067501a2c8a3c2295ca587fc8ab697c906a66a24353c25a10846f",
+        "receipt_sha256": "b2fd77129b7fdca02a650afc0d287cd1782ae586576181281a9fa89ac0592c7c",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_09__state_32/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_32",
+        "replicate": "B",
+        "status": "CLEAN_FAILURE",
+        "reason": null,
+        "trajectory_sha256": null,
+        "receipt_sha256": "26de245be5b5ce0752b9511c7ea93aabffb6ac37ec2340e216f1e3c388de6f7e",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_09__state_32/B/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_44",
+        "replicate": "A",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "8b20f9b16781aa28a6aaf03fc0647917a910639fe0e6e610130e8623d5a90c5f",
+        "receipt_sha256": "173b05ef75ffb2be7aca429b041821c34f08fb39ca0fbf0133178919d4867a8c",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_09__state_44/A/M4_CORRIDOR_PREFLIGHT.json"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_44",
+        "replicate": "B",
+        "status": "PASS",
+        "reason": "M4_CORRIDOR_24_EXACT",
+        "trajectory_sha256": "eb149b761418f510f9a381f7891c1341d772ab35a9dfb927dd3c8e3ff9f2f84d",
+        "receipt_sha256": "3c28cd32ab934b6a22476b8a88c237e21b80eb1a8ef1c31e07bacf5de0fb45b7",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/parents/libero_spatial__task_09__state_44/B/M4_CORRIDOR_PREFLIGHT.json"
+      }
+    ]
+  },
+  "next_action": "STOP. Do not rerun failed or replicate-mismatched parents; do not issue formal M4 authorization; do not launch formal M4; do not generate V_phys/V_t labels; hand off sealed HOLD."
+}
