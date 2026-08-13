@@ -127,8 +127,8 @@ def seal(*, firewall_root: Path, final_manifest: Path, final_split: Path, exact_
         raise ValueError("Teacher package is not clean-only and closed")
     if coverage.get("status") != "HOLD_COVERAGE" or coverage.get("identity_count") != 670 or coverage.get("step_count") != 196483 or coverage.get("protected_reads") != 0:
         raise ValueError("Teacher coverage package is not the expected closed HOLD")
-    eligible = [head for head in coverage.get("coverage", {}) if coverage["coverage"][head].get("pass") is True]
-    if eligible != ACTIVE_HEADS or coverage.get("coverage", {}).get("safe_release", {}).get("pass") is not False:
+    eligible = {head for head in coverage.get("coverage", {}) if coverage["coverage"][head].get("pass") is True}
+    if eligible != set(ACTIVE_HEADS) or coverage.get("coverage", {}).get("safe_release", {}).get("pass") is not False:
         raise ValueError("Teacher coverage head set is not the frozen four-head boundary")
     if t4.get("status") != "PASS_DEVELOPMENT_ELIGIBLE_HEADS" or t4.get("eligible_heads") != ACTIVE_HEADS or t4.get("formal_training_authorized") is not False or t4.get("attack_authorized") is not False:
         raise ValueError("T4 is not the four-head development transition")
