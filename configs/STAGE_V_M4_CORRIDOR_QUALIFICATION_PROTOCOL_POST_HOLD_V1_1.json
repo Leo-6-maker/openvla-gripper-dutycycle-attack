@@ -7,7 +7,7 @@
   "purpose": "Runner-compatible clean-only A/B qualification of the 22 frozen post-HOLD V1.1 reserve parents. This does not authorize intervention, M4 outcome read, labels, Teacher/Student, attack, VIS, or Eval160.",
   "outer_protocol": {
     "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_REPLENISHMENT_POST_32_OF_40_HOLD_V1_1.json",
-    "sha256": "ee3f5f06a847b4973118f1476f18cf3953e26528c8a37aa2375bf65cc7ac625c"
+    "sha256": "dac39bf54007b6ae99de74cf8d5c9f44eeb5175b3411a4bc1615015a36ac7abf"
   },
   "source_binding": {
     "runtime_commit": "3b2ffdb5809710e3c7f2e0a529600c8d7a79b9b2",

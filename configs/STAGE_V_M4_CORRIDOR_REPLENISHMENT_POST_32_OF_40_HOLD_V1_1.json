@@ -148,6 +148,13 @@
     "gpu_count_is_not_sample_size": true
   },
   "governance": {
+    "source_files": {
+      "scripts/detector_v5/prepare_stage_v_m4_post_hold_v1_1.py": "81abeaf10e13d6193457085a403978163aa69c403f4e65e99ca368443da5e79b",
+      "scripts/detector_v5/run_stage_v_m4_post_hold_sequential.py": "63279e6ffef6968ac576ccd781599535f5ce1443b3ffc5dffef1f1ba1a268e01",
+      "scripts/detector_v5/audit_stage_v_m4_corridor_predecessor_compatibility.py": "935ee737a7a25174a0f4cdcf6bd2726fa4dd29602af89b8faa2fc5dc007108b9"
+    },
+    "immutable_science_auditor_sha256": "c96914c04565e046820f2506b83412bb903f2893ac68f57690f98be2cab715de",
+    "immutable_science_authorization_issuer_sha256": "14f2344e48b5aad3cc551d129b7bcb5022b725536642b583bd7eb13d66c8f01a",
     "inner_protocol_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_POST_HOLD_V1_1.json",
     "inner_static_audit_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_STATIC_AUDIT_POST_HOLD_V1_1.json",
     "inner_authorization_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_RUNTIME_AUTHORIZATION_POST_HOLD_V1_1.json",
