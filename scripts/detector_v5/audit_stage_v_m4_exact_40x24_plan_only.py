@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
@@ -100,8 +101,24 @@ def _audit(root: Path) -> dict[str, Any]:
         errors.append("IDENTITY_SET_INVALID")
     if Counter(str(row.get("suite")) for row in final_rows) != Counter({"libero_10": 10, "libero_goal": 10, "libero_object": 10, "libero_spatial": 10}):
         errors.append("FINAL40_SUITE_COUNTS_INVALID")
-    if run_registry.get("parent_count") != 40 or len(run_registry.get("results", [])) != 40 or any(row.get("return_code") != 0 for row in run_registry.get("results", []) if isinstance(row, Mapping)):
+    run_rows = [row for row in run_registry.get("results", []) if isinstance(row, Mapping)]
+    if run_registry.get("parent_count") != 40 or len(run_rows) != 40 or any(row.get("return_code") != 0 for row in run_rows):
         errors.append("PARENT_RUN_REGISTRY_INVALID")
+    by_gpu: dict[str, list[tuple[datetime, datetime, str]]] = {}
+    for row in run_rows:
+        try:
+            start = datetime.fromisoformat(str(row["started_utc"]))
+            finish = datetime.fromisoformat(str(row["finished_utc"]))
+            if finish <= start:
+                raise ValueError("NONPOSITIVE_INTERVAL")
+            by_gpu.setdefault(str(row["gpu"]), []).append((start, finish, str(row["canonical_parent_key"])))
+        except (KeyError, TypeError, ValueError) as exc:
+            errors.append(f"RESOURCE_INTERVAL_INVALID:{row.get('canonical_parent_key')}:{exc}")
+    for gpu, intervals in by_gpu.items():
+        intervals.sort()
+        for previous, current in zip(intervals, intervals[1:]):
+            if current[0] < previous[1]:
+                errors.append(f"RESOURCE_GPU_OVERLAP:{gpu}:{previous[2]}:{current[2]}")
 
     global_probes = {(str(row.get("canonical_parent_key")), str(row.get("probe_id"))): row for row in manifest.get("probe_authorities", []) if isinstance(row, Mapping)}
     global_branches = {(str(row.get("canonical_parent_key")), str(row.get("probe_id")), str(row.get("arm"))): row for row in manifest.get("branch_authorities", []) if isinstance(row, Mapping)}

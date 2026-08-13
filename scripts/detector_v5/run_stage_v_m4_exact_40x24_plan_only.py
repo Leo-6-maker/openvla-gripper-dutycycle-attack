@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -255,9 +256,10 @@ def _run_one(root: Path, parent: Mapping[str, Any], gpu: int, runtime: Mapping[s
     command_path = log_dir / f"{slug}.COMMAND.json"
     log_path = log_dir / f"{slug}.log"
     _write(command_path, {"schema": "STAGE_V_M4_EXACT_40X24_PLAN_COMMAND_V1", "canonical_parent_key": key, "gpu": gpu, "command": command, "intervention_executed": False, "outcomes_read": False, "protected_counters": COUNTERS})
+    started_utc = datetime.now(timezone.utc).isoformat()
     with log_path.open("w", encoding="utf-8") as log:
         process = subprocess.run(command, cwd=REPO_ROOT, stdout=log, stderr=subprocess.STDOUT, check=False, text=True)
-    return {"canonical_parent_key": key, "suite": parent["suite"], "split": parent["split"], "gpu": gpu, "return_code": process.returncode, "output_dir": str(output_dir.relative_to(root).as_posix()), "log": str(log_path.relative_to(root).as_posix()), "outcomes_read": False, "intervention_executed": False, "protected_counters": COUNTERS}
+    return {"canonical_parent_key": key, "suite": parent["suite"], "split": parent["split"], "gpu": gpu, "started_utc": started_utc, "finished_utc": datetime.now(timezone.utc).isoformat(), "return_code": process.returncode, "output_dir": str(output_dir.relative_to(root).as_posix()), "log": str(log_path.relative_to(root).as_posix()), "outcomes_read": False, "intervention_executed": False, "protected_counters": COUNTERS}
 
 
 def _build_manifest(root: Path, parents: list[dict[str, Any]], source_commit: str, source_tree: str, runtime: Mapping[str, Any]) -> dict[str, Any]:
@@ -336,12 +338,26 @@ def _run(args: argparse.Namespace) -> int:
         raise PlanGateError("NO_GPU_FREE_MEMORY_ABOVE_20G")
     parents = [dict(row) for row in final_manifest["parents"]]
     max_workers = min(int(args.max_workers or len(eligible)), len(eligible))
-    assignments = [eligible[index % len(eligible)] for index in range(len(parents))]
     results: list[dict[str, Any]] = []
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = [pool.submit(_run_one, root, parent, assignments[index], runtime, source_commit, source_tree) for index, parent in enumerate(parents)]
-        for future in as_completed(futures):
-            results.append(future.result())
+        pending = iter(parents)
+        active: dict[Any, int] = {}
+        for gpu in eligible[:max_workers]:
+            try:
+                parent = next(pending)
+            except StopIteration:
+                break
+            active[pool.submit(_run_one, root, parent, gpu, runtime, source_commit, source_tree)] = gpu
+        while active:
+            done, _ = wait(tuple(active), return_when=FIRST_COMPLETED)
+            for future in done:
+                gpu = active.pop(future)
+                results.append(future.result())
+                try:
+                    parent = next(pending)
+                except StopIteration:
+                    continue
+                active[pool.submit(_run_one, root, parent, gpu, runtime, source_commit, source_tree)] = gpu
     results.sort(key=lambda row: str(row["canonical_parent_key"]))
     _write(root / "PARENT_RUN_REGISTRY.json", {"schema": "STAGE_V_M4_EXACT_40X24_PLAN_PARENT_RUN_REGISTRY_V1", "status": "COMPLETE" if all(row["return_code"] == 0 for row in results) else "HOLD", "parent_count": len(results), "results": results, "outcomes_read": False, "intervention_executed": False, "protected_counters": COUNTERS})
     manifest = _build_manifest(root, parents, source_commit, source_tree, runtime)
