@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 from datetime import datetime, timezone
@@ -17,6 +18,7 @@ COUNTERS = {
     "vis_pgd_attack_rollouts": 0,
 }
 ARMS = ("CONTROL", "T3", "T5", "T10")
+HISTORICAL_GATE_B_SHA256 = "aa98cd25b9f1a37ae747dcc95ddcf2a7b270d135997a741590958d309e65b972"
 
 
 def _sha(path: Path) -> str:
@@ -131,10 +133,25 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, gate_b_runner: 
     labels = _jsonl(label_path)
     observations = _jsonl(observation_path)
     errors: list[str] = []
+    gate_b_runner_sha256 = _sha(gate_b_runner)
+    if gate_b_runner_sha256 != HISTORICAL_GATE_B_SHA256:
+        errors.append("GATE_B_SHA_MISMATCH")
     summaries = [_branch_summary(row, errors) for row in branches]
 
-    identities = {(item["probe_id"], item["arm"]) for item in summaries}
+    identity_rows = [(item["probe_id"], item["arm"]) for item in summaries]
+    identities = set(identity_rows)
     expected_identities = {(f"Q{i:02d}", arm) for i in range(24) for arm in ARMS}
+    for identity, count in sorted(Counter(identity_rows).items()):
+        if count > 1:
+            errors.append(f"DUPLICATE_BRANCH_IDENTITY:{identity[0]}/{identity[1]}")
+    for identity in sorted(expected_identities - identities):
+        errors.append(f"MISSING_BRANCH_IDENTITY:{identity[0]}/{identity[1]}")
+    for identity in sorted(identities - expected_identities):
+        errors.append(f"UNEXPECTED_BRANCH_IDENTITY:{identity[0]}/{identity[1]}")
+    branch_ids = [item["branch_id"] for item in summaries]
+    for branch_id, count in sorted(Counter(branch_ids).items()):
+        if branch_id and count > 1:
+            errors.append(f"DUPLICATE_BRANCH_ID:{branch_id}")
     if len(branches) != expected_branch_count:
         errors.append(f"BRANCH_COUNT:{len(branches)}")
     if identities != expected_identities:
@@ -151,6 +168,8 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, gate_b_runner: 
     treatment = [item for item in summaries if item["arm"] != "CONTROL"]
     control = [item for item in summaries if item["arm"] == "CONTROL"]
     physical_intervention_evidence = any(item["physical_intervention_evidence"] for item in summaries)
+    physical_step_evidence = any(item["physical_step_evidence"] for item in summaries)
+    treatment_compliance_evidence = any(item["treatment_compliant"] for item in summaries)
     all_failed_before_action = bool(summaries) and all(
         item["arm"] in ARMS
         and item["status"] == "FAIL"
@@ -163,8 +182,10 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, gate_b_runner: 
         and item["causal_input_binding_pass"] is False
         for item in summaries
     )
-    if physical_intervention_evidence:
+    if physical_step_evidence:
         status = "HOLD_PHYSICAL_ACTION_EVIDENCE_NONZERO"
+    elif binary_labels or valid_v_phys or treatment_compliance_evidence:
+        status = "HOLD_CONSUMABLE_OUTCOME_EVIDENCE"
     elif not all_failed_before_action or errors:
         status = "HOLD_CLOSURE_INCOMPLETE"
     else:
@@ -185,7 +206,8 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, gate_b_runner: 
         "parent_root": str(parent_root),
         "parent_root_inputs_sha256": parent_files,
         "gate_b_runner_path": str(gate_b_runner),
-        "gate_b_runner_sha256": _sha(gate_b_runner),
+        "gate_b_runner_sha256": gate_b_runner_sha256,
+        "historical_gate_b_runner_sha256": HISTORICAL_GATE_B_SHA256,
         "branch_records_materialized": True,
         "branch_record_count": len(branches),
         "observation_record_count": len(observations),

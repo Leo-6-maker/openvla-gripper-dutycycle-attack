@@ -18,6 +18,7 @@ from scripts.detector_v5.run_stage_v_m4_formal_parent_with_resource_gate import 
     LAUNCH_GATE_FILES,
 )
 from scripts.detector_v5.stage_v_m4_governance import COUNTERS  # noqa: E402
+from scripts.detector_v5.stage_v_gpu_resource_contract import MIN_FREE_MEMORY_MIB  # noqa: E402
 
 
 def _sha(path: Path) -> str:
@@ -73,8 +74,10 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("M4_V2_PROTOCOL_SHA_MISMATCH")
     if not str(args.owner_basis).strip():
         raise SystemExit("EXPLICIT_OWNER_AUTHORIZATION_BASIS_REQUIRED")
-    if args.minimum_free_mib < 19 * 1024:
-        raise SystemExit("RESOURCE_THRESHOLD_BELOW_OWNER_MINIMUM")
+    protocol_contract = _load(protocol).get("resource_contract", {})
+    if (args.minimum_free_mib != MIN_FREE_MEMORY_MIB
+            or int(protocol_contract.get("minimum_free_memory_mib", -1)) != MIN_FREE_MEMORY_MIB):
+        raise SystemExit("RESOURCE_THRESHOLD_MUST_EQUAL_SUCCESSOR_CONTRACT")
     if _git(repo, "status", "--porcelain"):
         raise SystemExit("RUNTIME_SOURCE_WORKTREE_NOT_CLEAN")
 

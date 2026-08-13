@@ -177,7 +177,10 @@ def _verify_launch_gate_binding(args: argparse.Namespace, authorization: Mapping
     if binding.get("protected_counters") != COUNTERS or authorization.get("protected_counters") != COUNTERS:
         raise ValueError("M4_OUTER_PROTECTED_BOUNDARY_INVALID")
     minimum_free_mib = int(binding.get("minimum_free_memory_mib", -1))
-    if minimum_free_mib < 19 * 1024 or args.minimum_free_mib != minimum_free_mib:
+    protocol_contract = _load(args.protocol).get("resource_contract", {})
+    if (minimum_free_mib != MIN_FREE_MEMORY_MIB
+            or int(protocol_contract.get("minimum_free_memory_mib", -1)) != MIN_FREE_MEMORY_MIB
+            or args.minimum_free_mib != minimum_free_mib):
         raise ValueError("M4_OUTER_RESOURCE_THRESHOLD_MISMATCH")
     if binding.get("intervention_executed") is not False or binding.get("outcomes_read") is not False or binding.get("v_phys_generated") is not False:
         raise ValueError("M4_OUTER_OUTCOME_BOUNDARY_INVALID")

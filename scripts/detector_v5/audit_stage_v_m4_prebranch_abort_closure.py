@@ -68,7 +68,7 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, auditor_source_
         errors.append("RELEASE_BOUNDARY")
 
     science = parent_root / "science"
-    present = {path.name for path in science.iterdir()} if science.is_dir() else set()
+    present = {path.name for path in science.rglob("*") if path.is_file()} if science.is_dir() else set()
     forbidden_present = sorted(present & FORBIDDEN_SCIENCE_ARTIFACTS)
     if forbidden_present:
         errors.append("SCIENCE_ARTIFACTS_PRESENT")

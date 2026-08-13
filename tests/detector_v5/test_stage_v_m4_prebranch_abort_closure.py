@@ -48,3 +48,12 @@ def test_prebranch_closure_rejects_branch_artifact(tmp_path):
     (root / "science" / "M4_COUNTERFACTUAL_BRANCHES_V1.jsonl").write_text("{}\n", encoding="utf-8")
     report = audit(root, tmp_path / "audit", "libero_10/task_06/state_30")
     assert report["status"] == "HOLD_PREBRANCH_CLOSURE_INVALID"
+
+
+def test_prebranch_closure_rejects_nested_science_artifact(tmp_path):
+    root = _root(tmp_path)
+    nested = root / "science" / "nested"
+    nested.mkdir()
+    (nested / "M4_V_PHYS_LABELS_V1.jsonl").write_text("{}\n", encoding="utf-8")
+    report = audit(root, tmp_path / "audit", "libero_10/task_06/state_30")
+    assert report["status"] == "HOLD_PREBRANCH_CLOSURE_INVALID"

@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+import shutil
 
 from scripts.detector_v5.audit_stage_v_m4_preintervention_closure import audit
 
@@ -41,8 +43,9 @@ def _make_root(tmp_path, branches, labels=None, observations=None):
 
 
 def _gate_b(tmp_path):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     path = tmp_path / "run_stage_v_m3_5_v1_4_gate_b.py"
-    path.write_text("# immutable test runner\n", encoding="utf-8")
+    shutil.copy2(Path(__file__).resolve().parents[2] / "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py", path)
     return path
 
 
@@ -69,3 +72,42 @@ def test_any_treatment_receipt_blocks_preintervention_reexecution_claim(tmp_path
     report = audit(_make_root(tmp_path, branches, [{} for _ in range(72)], [{} for _ in range(72)]), tmp_path / "audit", "libero_10/task_01/state_42", _gate_b(tmp_path))
     assert report["status"] == "HOLD_PHYSICAL_ACTION_EVIDENCE_NONZERO"
     assert report["physical_intervention_executed"] is True
+
+
+def test_consumable_label_or_treatment_compliance_is_hold(tmp_path):
+    arms = ("CONTROL", "T3", "T5", "T10")
+    branches = [_branch(f"Q{i:02d}", arm) for i in range(24) for arm in arms]
+    branches[0]["branch"]["treatment_compliant"] = True
+    labels = [{"binary_label_consumable": False, "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}} for _ in range(72)]
+    labels[0]["binary_label_consumable"] = True
+    labels[1]["label_class"] = "V_PHYS"
+    report = audit(_make_root(tmp_path, branches, labels, [{} for _ in range(72)]), tmp_path / "audit", "libero_10/task_01/state_42", _gate_b(tmp_path))
+    assert report["status"] == "HOLD_CONSUMABLE_OUTCOME_EVIDENCE"
+    assert report["binary_label_consumable_count"] == 1
+    assert report["valid_v_phys_count"] == 1
+
+
+def test_any_row_or_action_is_hold(tmp_path):
+    arms = ("CONTROL", "T3", "T5", "T10")
+    for index, evidence in enumerate(("rows", "actions")):
+        case_root = tmp_path / str(index)
+        case_root.mkdir()
+        branches = [_branch(f"Q{i:02d}", arm) for i in range(24) for arm in arms]
+        branches[0]["branch"][evidence] = [{"relative_step": 0}]
+        report = audit(_make_root(case_root, branches, [{} for _ in range(72)], [{} for _ in range(72)]), tmp_path / "audit" / str(index), "libero_10/task_01/state_42", _gate_b(case_root))
+        assert report["status"] == "HOLD_PHYSICAL_ACTION_EVIDENCE_NONZERO"
+
+
+def test_gate_b_hash_and_branch_identity_are_bound(tmp_path):
+    arms = ("CONTROL", "T3", "T5", "T10")
+    branches = [_branch(f"Q{i:02d}", arm) for i in range(24) for arm in arms]
+    branches[1]["probe_id"] = branches[0]["probe_id"]
+    branches[1]["arm"] = branches[0]["arm"]
+    branches[1]["branch_id"] = branches[0]["branch_id"]
+    gate_b = _gate_b(tmp_path)
+    gate_b.write_text(gate_b.read_text(encoding="utf-8") + "\nchanged\n", encoding="utf-8")
+    report = audit(_make_root(tmp_path, branches, [{} for _ in range(72)], [{} for _ in range(72)]), tmp_path / "audit", "libero_10/task_01/state_42", gate_b)
+    assert report["status"].startswith("HOLD_")
+    assert "GATE_B_SHA_MISMATCH" in report["errors"]
+    assert any(error.startswith("DUPLICATE_BRANCH_IDENTITY:") for error in report["errors"])
+    assert any(error.startswith("MISSING_BRANCH_IDENTITY:") for error in report["errors"])
