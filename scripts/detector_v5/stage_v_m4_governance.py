@@ -241,7 +241,8 @@ def validate_formal_m4_v2_authority(
     firewall = _load(firewall_path)
     if firewall_path.parent != firewall_root or firewall.get("schema") != "STAGE_V_PRIMARY_DATA_FIREWALL_OVERLAP_AUDIT_V3" or firewall.get("status") != "PASS_PRIMARY_DATA_FIREWALL_EXACT55" or firewall.get("source_artifacts_modified") is not False:
         raise M4GovernanceError("M4_V2_PRIMARY_FIREWALL_INVALID")
-    _require_current_boundary(firewall, name="PRIMARY_FIREWALL")
+    if firewall.get("protected_counters") != COUNTERS or firewall.get("architecture", {}).get("formal_training_authorized") is not False or firewall.get("architecture", {}).get("formal_inference_authorized") is not False or firewall.get("architecture", {}).get("m4_outcomes_read") is not False:
+        raise M4GovernanceError("M4_V2_PRIMARY_FIREWALL_FORMAL_BOUNDARY_INVALID")
     if firewall.get("exact_plan", {}).get("manifest_sha256") != exact_manifest_sha or firewall.get("final40", {}).get("sha256") != manifest_sha or firewall.get("final_split", {}).get("sha256") != split_sha or firewall.get("primary_identity_firewall", {}).get("attempted_overlap_count") != 0 or firewall.get("primary_identity_firewall", {}).get("final40_overlap_count") != 0:
         raise M4GovernanceError("M4_V2_PRIMARY_FIREWALL_BINDING_INVALID")
 
