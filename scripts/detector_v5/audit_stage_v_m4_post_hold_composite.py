@@ -189,7 +189,8 @@ def audit_all(root: Path, args: argparse.Namespace) -> dict[str, bool]:
     final_map = {str(row["canonical_parent_key"]): row for row in final_rows}
     require(set(final_map) == predecessor_keys | set(EXPECTED_NEW["libero_10"] + EXPECTED_NEW["libero_goal"] + EXPECTED_NEW["libero_spatial"]), "FINAL40_KEY_SET_INVALID")
     for row in final_rows:
-        key, suite, task, state = parse_key(str(row["canonical_parent_key"]))
+        key = str(row["canonical_parent_key"])
+        suite, task, state = parse_key(key)
         require(row.get("suite") == suite and row.get("task_index") == task and row.get("state_index") == state and row.get("status_pair") == "PASS/PASS", f"FINAL_ROW_ID_INVALID:{key}")
         for rep in ("A", "B"):
             path = Path(str(row[f"{rep}_receipt_path"]))
