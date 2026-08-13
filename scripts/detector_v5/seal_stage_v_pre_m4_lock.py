@@ -45,6 +45,31 @@ def _sealed(root: Path, name: str) -> tuple[dict[str, Any], str]:
     return _json(path), seal
 
 
+def _sealed_exact_plan(root: Path, name: str) -> tuple[dict[str, Any], str]:
+    root = _root(root)
+    sums = root / "SHA256SUMS"
+    pointer = root / "ROOT_SEAL.sha256"
+    if not sums.is_file() or not pointer.is_file():
+        raise ValueError(f"exact-plan seal missing: {root}")
+    digest = sha256_file(sums)
+    if pointer.read_text(encoding="utf-8").strip() != f"{digest}  SHA256SUMS":
+        raise ValueError(f"exact-plan seal pointer mismatch: {root}")
+    listed: set[str] = set()
+    for line in sums.read_text(encoding="utf-8").splitlines():
+        item, separator, relative_name = line.partition("  ")
+        if not separator or len(item) != 64 or relative_name in listed or relative_name in {"SHA256SUMS", "ROOT_SEAL.sha256"}:
+            raise ValueError(f"invalid exact-plan seal row: {line!r}")
+        relative = Path(relative_name)
+        if relative.is_absolute() or ".." in relative.parts or not (root / relative).is_file() or sha256_file(root / relative) != item:
+            raise ValueError(f"invalid exact-plan sealed file: {relative_name}")
+        listed.add(relative_name)
+    actual = {path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file() and path.name not in {"SHA256SUMS", "ROOT_SEAL.sha256"}}
+    if actual != listed:
+        raise ValueError(f"exact-plan seal closure mismatch: missing={sorted(actual - listed)} extra={sorted(listed - actual)}")
+    path = _file(root / name)
+    return _json(path), digest
+
+
 def _seal(root: Path) -> str:
     files = sorted(path for path in root.rglob("*") if path.is_file() and path.name not in {"SHA256SUMS", "SHA256SUMS.sha256"})
     (root / "SHA256SUMS").write_text("".join(f"{sha256_file(path)}  {path.relative_to(root).as_posix()}\n" for path in files), encoding="utf-8")
@@ -59,8 +84,8 @@ def seal(*, freeze_root: Path, firewall_root: Path, final_manifest: Path, final_
     final_manifest = _file(final_manifest); final_split = _file(final_split)
     final = _json(final_manifest); split = _json(final_split)
     plan_root = _root(exact_plan_root)
-    plan, plan_seal = _sealed(plan_root, "PLAN_RESULT.json")
-    plan_manifest, _ = _sealed(plan_root, "EXACT_PROBE_AND_SNAPSHOT_MANIFEST.json")
+    plan, plan_seal = _sealed_exact_plan(plan_root, "PLAN_RESULT.json")
+    plan_manifest, _ = _sealed_exact_plan(plan_root, "EXACT_PROBE_AND_SNAPSHOT_MANIFEST.json")
     if freeze.get("status") != "PASS_PRIMARY_TEACHER_STUDENT_FREEZE" or freeze.get("m4_outcomes_read") is not False or freeze.get("formal_m4_authorized") is not False or freeze.get("protected_counters") != COUNTERS:
         raise ValueError("Teacher/Student freeze is not a clean pre-M4 PASS")
     if freeze.get("student", {}).get("seal_sha256sums_sha256") == "" or freeze.get("primary_data_firewall", {}).get("seal_sha256sums_sha256") != firewall_seal:
