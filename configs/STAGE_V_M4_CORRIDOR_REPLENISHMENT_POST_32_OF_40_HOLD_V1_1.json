@@ -1,0 +1,171 @@
+{
+  "schema": "STAGE_V_M4_CORRIDOR_REPLENISHMENT_POST_32_OF_40_HOLD_V1_1",
+  "version": "POST-32-OF-40-HOLD-V1.1",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "purpose": "Prospective clean-only A/B corridor qualification of the frozen remaining reserve queues; V2 remains an immutable 32/40 HOLD and the invalid V1 launch remains nonconsumable.",
+  "owner_authorization_basis": "Goal Mode continuation plus owner resource rule: use any of GPUs 0-7 only when free memory is strictly greater than 20 GiB; no M4, attack, VIS, Teacher, Student, or protected runtime.",
+  "predecessor": {
+    "v2_status": "HOLD_FORMAL_M4_CORRIDOR_INSUFFICIENT",
+    "v2_immutable": true,
+    "terminal_report": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_CURRENT_SOURCE_AB_RECONCILIATION_HOLD_V1.json",
+      "sha256": "866ce90f73cd542584c4db3fca4b590ebc014e7e7e9dbd2a91adcdee210c7fd9"
+    },
+    "pass_pass_inventory": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_PREDECESSOR_PASS_PASS_INVENTORY_V1.json",
+      "sha256": "4020a3f45efefb704c7110fd20e243adf84594a2c0920c413ee44928284baf14",
+      "parent_count": 32,
+      "receipt_count": 64
+    },
+    "historical_protocol": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V2.json",
+      "sha256": "2f9c7115602504ade82d64cd7394adb8b09f9840184e856ec35f5a35bba96073"
+    },
+    "historical_authorization": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_RUNTIME_AUTHORIZATION_V2.json",
+      "sha256": "1ba4a56e7e33a31d227814e7042c94e03ea7f884b4f9f136fca25b4f127924e6"
+    },
+    "historical_launch_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_PREFLIGHT_CURRENT_SOURCE_FINAL40_AB_20260813T000000Z/LAUNCH_MANIFEST.json",
+      "sha256": "7fcd777bf6b912d1ccbc3b292dd434c0be6100dc55d8bb1750856328f9c80a60",
+      "command_count": 80
+    }
+  },
+  "invalid_v1_launch": {
+    "status": "HOLD_ENGINEERING_INVALID_PRELAUNCH_GOVERNANCE_INCOMPLETE",
+    "consumable": false,
+    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_POST_32_OF_40_HOLD_V1_20260813T000000Z",
+    "hold_report_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_POST_32_OF_40_HOLD_V1_20260813T000000Z/STAGE_V_M4_POST_HOLD_V1_ENGINEERING_INVALID_HOLD_20260813.json",
+    "hold_report_sha256": "2e2863ff9c84c2b004df32d258dadc9dba320b2ff9a6ed42f0873d6bc36843e0",
+    "attempted_identity_count": 3,
+    "receipts_reused": false,
+    "rerun_forbidden": true
+  },
+  "source_binding": {
+    "science_worktree": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-governed-20260812",
+    "science_commit": "3b2ffdb5809710e3c7f2e0a529600c8d7a79b9b2",
+    "science_tree": "2492a075e782a112d1e857248956b2647e751039",
+    "worktree_must_be_clean": true,
+    "corridor_runner_path": "scripts/detector_v5/run_stage_v_m4_corridor_preflight.py",
+    "corridor_runner_sha256": "26ceed23646177ce675e32eba6617ade7b02804a3c372a756b1ebe098ef72279",
+    "science_files": {
+      "src/gripper_attack/stage_v_causal_observation_snapshot.py": "2b3f5e9bf360505cd2d24f14c567dc891656dca03414c8824f3c84d40231f1cd",
+      "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py": "ac1d8936bf6a705cec18904e97b56f24571f0f60a3e39f18f02ae58d7e735dac",
+      "src/gripper_attack/stage_v_m3_5_phase_classifier.py": "94f46e45aec00c96a18a86230c516b535511c21d2e6a068a9b7ac6bd455fc8e1",
+      "scripts/detector_v5/build_stage_v_m3_5_probe_plan.py": "71e4deb9e34e55f80aef301a93500628deb560986fe3c77593dad923d10f8e11",
+      "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_a.py": "2d031465645d38a83c52ea3bdb6059090e6eefd73e5dc73d2674003910f07497",
+      "scripts/detector_v5/run_stage_v_m4_matched_parent.py": "73034cf8186210676c9b6e57e744b3d16b0d4f1cc399ad73746c2402c799a6c4",
+      "scripts/detector_v5/run_stage_v_canonical_clean.py": "5a877de2d04bcebf84b4c511bd9f585714edad161ab73859e6402ebb2923aa31",
+      "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py": "d8e618b2306d6c7e3e209ccb3635fccfa304525c2475a2e3b34a28a9208f8d59",
+      "scripts/detector_v5/run_stage_v_m3_5_dynamic_parent.py": "4baed14a2af8f36d7d1ef4165d96140f783a31163ca3f8da973cd846994e0f54"
+    }
+  },
+  "runtime_binding": {
+    "python_path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "python_resolved_path": "/home/sz/miniconda3/envs/hallo/bin/python3.10",
+    "python_executable_sha256": "65985bd811a03dc934e83a100bac8ff6e5ab6adc462ad6de7d3ed9ea4e11ca57",
+    "python_version": "3.10.16",
+    "official_snapshot": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_official_v3_20260716",
+      "git_commit": "4d7a9daeb2bf9cf6b5d911f0ddcd93c254d0362b",
+      "git_tree": "cd5fe5263afd66d9131159d97bba1d1d660be5df",
+      "worktree_must_be_clean": true,
+      "adapter_path": "src/gripper_attack/official_openvla_adapter.py",
+      "adapter_sha256": "38d2c272123002a6a6caaabefd0ce96f425ff5e06186199b3a2c4a96b05d0cf4"
+    },
+    "upstream": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4",
+      "git_commit": "c8f03f48af692657d3060c19588038c7220e9af9",
+      "git_tree": "c326be57bb61629a3efd2b968ef141fa576a623f",
+      "worktree_must_be_clean": true
+    },
+    "model_root": "/mnt/sdc/dty_user/openvla_attack/models",
+    "model_tree_algorithm": "sha256(canonical_json(sorted(relative_path,size,file_sha256,symlink_target)))",
+    "models": {
+      "libero_10": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10", "tree_sha256": "4417b0f3c383f0b88c2f659471ada6b0d8ef138234441db43d180f9f963a5b9b", "file_count": 18, "total_bytes": 15085093727},
+      "libero_goal": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal", "tree_sha256": "210c088fc888700884cce76ea14155da1c113e21dc7cc3b7b425d3e22839ef62", "file_count": 19, "total_bytes": 15085095390},
+      "libero_object": {"path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object", "tree_sha256": "6c8701d56115ef6ff534bc5cb779ec27f3dd69a06fd0bb535dbd1b2ac2780948", "file_count": 19, "total_bytes": 15085095882},
+      "libero_spatial": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620", "tree_sha256": "462fc2f03b6cc6696e1bef0403670565148103e0264d8ff62e5548ff9fac459d", "file_count": 22, "total_bytes": 15085126761}
+    },
+    "required_packages": {"Pillow": "10.3.0", "accelerate": "0.28.0", "libero": "0.1.0", "mujoco": "3.9.0", "numpy": "1.26.4", "opencv-python": "4.9.0.80", "robosuite": "1.4.1", "safetensors": "0.5.3", "tokenizers": "0.19.1", "torch": "2.2.2+cu118", "torchvision": "0.17.2+cu118", "transformers": "4.40.1"}
+  },
+  "reserve_sources": {
+    "v7_candidate_manifest": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_REPLENISHMENT_V7_CANDIDATE_MANIFEST_V1.json", "sha256": "70e8c491f1e1a4e77ca8752520dcad54102ec013f4150edf6bff5a5912a5c6fa"},
+    "v7_formal_receipt": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_QUALIFICATION_PASS_V1_20260812T113000Z/V7_FORMAL_QUALIFICATION_PASS_RECEIPT.json", "sha256": "36af16ea9c79a7a6a6537d5be2de3b18a69fed2cce523b05c368009c99709118"},
+    "exposure_union": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V6.json", "sha256": "d84b5cf5f9cdeeaff0ddeec0b13fc0f0b703566b68996033bb93122988d968d9"},
+    "cumulative_clean_attempt_exclusion": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V14.json", "sha256": "c1f3bfa2bedc86ff7249a511f971b8d77e9316c659dd60dd1ff1e587896efab0"},
+    "v7_qualification": {
+      "libero_10": {"rows_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/V7_QUALIFICATION_LIBERO10_20260813T002000Z/CONTROL_QUALIFICATION_ROWS.jsonl", "rows_sha256": "3f3d94831cbfa19c5a6b2ccd3a7c9af21561277afb0f92e942e0dd096d3a6d2e", "report_sha256": "0da8127f24fd94adb9916fb5fbf0d8bed30a835ca06ec75f270aacffdee9e90d", "audit_sha256": "65e647faa42f1c76f79072e25a716eeb1303ac035ecff3f111fce243c796c0ea", "manifest_sha256": "0fac3028c6776a574d47ff0e4142b827ba39d1366c71a9ed70d08139346d9cc2"},
+      "libero_goal": {"rows_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/V7_QUALIFICATION_LIBERO_GOAL_20260812T205700Z/CONTROL_QUALIFICATION_ROWS.jsonl", "rows_sha256": "37e1527782e22c6c359c91fe55e7bdcfdc0576b9ed71d169601acc5d24efd2ff", "report_sha256": "adf522d48e0b34aeeca9943f251375bb1a89f0ab3ccb4da703a638bd0a802625", "audit_sha256": "55e3fa8889205b6ba080e05c2fd3e405fdc1518ee66a092ca54c4da282e2fa6f", "manifest_sha256": "1e3fa4058ac784c2f751a4476dfd9dae990d9e7cec8f559ac6e3b56606f7775d"},
+      "libero_spatial": {"rows_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/V7_QUALIFICATION_LIBERO_SPATIAL_20260812T214100Z/CONTROL_QUALIFICATION_ROWS.jsonl", "rows_sha256": "18cee3c5c7e0c8aee47114d77b8f954bcfb90869fae0876f29e0fe6edfaca1d7", "report_sha256": "007cc6d012b381a1ab56d8f2731ef3ac5a85f0d204d8c5a0eba414786ac388d2", "audit_sha256": "60217d6f20c471493a96691e6857c458c93768e941196b3e8b686867c980037a", "manifest_sha256": "267016a48318be3ab7c16d193287630d4dab8cdf4149dbacaa8a69fdc282cc5f"}
+    },
+    "compact_qualified_rows": {"path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_POST_HOLD_V7_QUALIFIED_ROWS_V1_1.jsonl", "sha256": "809d8ae739c67e90e856677a2249127b383ccb885dcbab680ee5c4e9840d2c6c"},
+    "taxonomy_audit": {"path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_POST_HOLD_STATIC_TAXONOMY_AUDIT_V1.json", "sha256": "6e86158e9c830daa85311636138a01b6e0142bd6d7f989ac51ca7d3a0c900912", "counts": {"SUPPORTED": 25, "UNSUPPORTED_TAXONOMY": 1, "ABSTAIN_STATIC": 0}},
+    "attempt_registry": {"path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_V1_1.json", "sha256": "7d5cfd1b3396f6af4ecd6f3de9b9d6ef454bb927c14a6619a90f14b27a273968", "attempted_identity_count": 43},
+    "candidate_manifest": {"path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_POST_HOLD_CANDIDATE_PARENT_MANIFEST_V1_1.json", "sha256": "8f13e8427d19118cf7988be57a46c19fd1226af1941e00156b626e42f1c88be3", "candidate_count": 22}
+  },
+  "qualification": {
+    "clean_only": true,
+    "candidate_parent_count": 22,
+    "replicates": ["A", "B"],
+    "probe_count": 24,
+    "selection_version": "STAGE_V_M3_5_CORRIDOR_QUANTILES_V1",
+    "h_phys": 10,
+    "dose_steps": {"T3": 3, "T5": 5, "T10": 10},
+    "minimum_remaining_horizon": 20,
+    "suite_horizons": {"libero_10": 520, "libero_goal": 300, "libero_object": 280, "libero_spatial": 220},
+    "minimum_corridor_candidates": 24,
+    "clean_success_required": true,
+    "stable_rule": "A_STATUS_PASS_AND_B_STATUS_PASS",
+    "target_stable_by_suite": {"libero_10": 1, "libero_goal": 3, "libero_spatial": 4},
+    "suite_order": ["libero_10", "libero_goal", "libero_spatial"],
+    "slot_order": {"libero_10": ["VAL"], "libero_goal": ["TRAIN", "TRAIN", "TEST"], "libero_spatial": ["TRAIN", "TRAIN", "TRAIN", "VAL"]},
+    "queues": {
+      "libero_10": ["libero_10/task_09/state_42", "libero_10/task_00/state_27", "libero_10/task_07/state_37", "libero_10/task_01/state_37", "libero_10/task_08/state_22", "libero_10/task_06/state_31", "libero_10/task_07/state_40", "libero_10/task_04/state_22"],
+      "libero_goal": ["libero_goal/task_03/state_36", "libero_goal/task_03/state_41", "libero_goal/task_02/state_45", "libero_goal/task_02/state_40", "libero_goal/task_05/state_33", "libero_goal/task_04/state_23"],
+      "libero_spatial": ["libero_spatial/task_08/state_44", "libero_spatial/task_09/state_34", "libero_spatial/task_06/state_24", "libero_spatial/task_06/state_34", "libero_spatial/task_00/state_45", "libero_spatial/task_04/state_44", "libero_spatial/task_08/state_41", "libero_spatial/task_05/state_37"]
+    },
+    "execution_rule": "For each suite, launch only the current candidate A/B concurrently; reconcile and seal both before the next candidate. Suites may advance independently. Stop immediately at the fixed suite target or pool exhaustion.",
+    "attempt_mark": "Write CORRIDOR_ATTEMPTED before launching either replicate.",
+    "no_speculative_launch": true,
+    "no_fallback": true,
+    "no_rerun": true,
+    "pool_exhaustion_status": "HOLD_POST_HOLD_CORRIDOR_POOL_EXHAUSTED"
+  },
+  "resource_contract": {
+    "resource_contract_version": "STAGE_V_RESOURCE_CONTRACT_V2_OWNER_20260813",
+    "admitted_gpu_pool": [0, 1, 2, 3, 4, 5, 6, 7],
+    "gpu_uuid_by_index": {"0": "bf4309d3-8cba-437e-8d87-cee9f1e6d232", "1": "f6910e5c-f41e-109e-43d0-f01f0d77dbf2", "2": "7b06162a-27e4-2552-e891-d201e3fae6b9", "3": "41cd4b75-e3d4-92b8-ec37-ddca13e3761a", "4": "e85ed586-ba64-a9e3-8fa9-07f16f84dcda", "5": "185b30c0-074c-6f07-aa8b-a67d00e8e4a9", "6": "92963392-f77a-85ce-4ba7-7a8288429ca5", "7": "bd2cfcc1-64ab-c2d0-9ae3-245fc8d21a76"},
+    "free_memory_rule": "STRICTLY_GREATER_THAN_20480_MIB_AT_LEASE",
+    "minimum_free_memory_mib_exclusive": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "maximum_concurrent_replicates": 6,
+    "partial_fleet_allowed": true,
+    "foreign_workload_allowed": true,
+    "foreign_process_interference": false,
+    "gpu_count_is_not_sample_size": true
+  },
+  "governance": {
+    "inner_protocol_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_POST_HOLD_V1_1.json",
+    "inner_static_audit_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_STATIC_AUDIT_POST_HOLD_V1_1.json",
+    "inner_authorization_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_RUNTIME_AUTHORIZATION_POST_HOLD_V1_1.json",
+    "predecessor_compatibility_audit_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_PREDECESSOR_COMPATIBILITY_AUDIT_V1.json",
+    "all_must_pass_before_first_receipt": true
+  },
+  "output": {
+    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_POST_32_OF_40_HOLD_V1_1_20260813T030000Z",
+    "must_not_exist_before_launch": true,
+    "pair_reconciliation_required": true,
+    "terminal_root_seal_required": true
+  },
+  "firewall": {
+    "all_corridor_attempted_identities_quarantined": true,
+    "exclude_from_primary_teacher_student_fit_cal_check_threshold_checkpoint_feature_model_selection": true,
+    "invalid_v1_receipts_consumable": false
+  },
+  "operation": {"intervention_executed": false, "outcomes_read": false, "labels_generated": false, "teacher_started": false, "student_started": false, "attack_executed": false, "vis_executed": false},
+  "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0},
+  "failure_action": "SEAL_CLASSIFY_HANDOFF_STOP_NO_RETRY"
+}
