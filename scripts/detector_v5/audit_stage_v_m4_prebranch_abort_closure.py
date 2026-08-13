@@ -36,7 +36,7 @@ def _load(path: Path) -> dict[str, Any]:
     return dict(value)
 
 
-def audit(parent_root: Path, output_root: Path, parent_key: str) -> dict[str, Any]:
+def audit(parent_root: Path, output_root: Path, parent_key: str, auditor_source_commit: str = "") -> dict[str, Any]:
     parent_root = parent_root.resolve()
     output_root = output_root.resolve()
     if not parent_root.is_dir():
@@ -80,6 +80,7 @@ def audit(parent_root: Path, output_root: Path, parent_key: str) -> dict[str, An
         "sealed": True,
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "parent_key": parent_key,
+        "auditor_source_commit": auditor_source_commit,
         "parent_root": str(parent_root),
         "input_sha256": input_hashes,
         "parent_status_sha256": _sha(status_path),
@@ -111,9 +112,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--parent-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--parent-key", required=True)
+    parser.add_argument("--auditor-source-commit", required=True)
     args = parser.parse_args(argv)
     try:
-        report = audit(args.parent_root, args.output_root, args.parent_key)
+        report = audit(args.parent_root, args.output_root, args.parent_key, args.auditor_source_commit)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(json.dumps({"status": "HOLD_PREBRANCH_CLOSURE_ERROR", "error": f"{type(exc).__name__}:{exc}"}, sort_keys=True))
         return 2
