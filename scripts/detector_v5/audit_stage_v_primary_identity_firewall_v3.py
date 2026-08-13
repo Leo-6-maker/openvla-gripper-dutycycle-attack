@@ -45,7 +45,11 @@ def _identity(value: Any) -> str | None:
 def extract_identities(value: Any) -> set[str]:
     """Collect only canonical identity fields, including episode-binding keys."""
     found: set[str] = set()
-    if isinstance(value, Mapping):
+    if isinstance(value, str):
+        item = _identity(value)
+        if item is not None:
+            found.add(item)
+    elif isinstance(value, Mapping):
         for key, child in value.items():
             if key in IDENTITY_FIELDS:
                 item = _identity(child)

@@ -49,3 +49,7 @@ def test_exact55_firewall_fails_closed_on_overlap(tmp_path: Path) -> None:
     exact55, final, split, plan, plan_manifest, specs = _fixture(tmp_path, overlap=True)
     with pytest.raises(ValueError, match="primary identity overlap"):
         firewall.audit(exact55_registry=exact55, final_manifest=final, final_split=split, exact_plan_result=plan, exact_plan_manifest=plan_manifest, primary_manifests=specs, historical_quarantine=None, output_root=tmp_path / "out")
+
+
+def test_identity_extractor_accepts_string_lists() -> None:
+    assert firewall.extract_identities({"identities": ["libero_10/task_00/state_01"]}) == {"libero_10/task_00/state_01"}
