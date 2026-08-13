@@ -161,8 +161,34 @@ def _claim(root: Path, parent_index: int, parent_key: str) -> Path:
     return path
 
 
+LEGACY_CONTROLLER_TOKENS = (
+    "monitor_stage_v_goal.py",
+    "run_stage_v_r2_plan_controller.py",
+    "run_stage_v_dynamic_dispatcher.py",
+)
+
+
 def _project_tokens(args: argparse.Namespace) -> tuple[str, ...]:
     return (str(args.source_worktree.resolve()), str(args.runner.resolve()), str(Path(__file__).resolve()))
+
+
+def _legacy_controller_rows() -> list[dict[str, Any]]:
+    result = subprocess.run(["ps", "-eo", "pid=,args="], capture_output=True, text=True, check=False, timeout=10)
+    if result.returncode != 0:
+        raise ResourceContractError(f"CONTROLLER_QUERY_FAILED:{result.returncode}")
+    rows: list[dict[str, Any]] = []
+    for raw in result.stdout.splitlines():
+        values = raw.strip().split(None, 1)
+        if len(values) != 2:
+            continue
+        try:
+            pid = int(values[0])
+        except ValueError:
+            continue
+        command = values[1]
+        if pid != os.getpid() and any(token in command for token in LEGACY_CONTROLLER_TOKENS):
+            rows.append({"pid": pid, "command": command})
+    return rows
 
 
 def _target(inventory: list[dict[str, Any]], gpu: int, *, minimum: int, leased: list[int], tokens: tuple[str, ...]) -> dict[str, Any]:
@@ -261,6 +287,16 @@ def run(args: argparse.Namespace) -> int:
         inventory, query_error = query_inventory()
         if query_error:
             raise ResourceContractError(f"GPU_INVENTORY_QUERY_FAILED:{query_error}")
+        controllers = _legacy_controller_rows()
+        _write(args.output_root / "CONTROLLER_AUDIT.json", {
+            "schema": "STAGE_V_M4_FORMAL_CONTROLLER_AUDIT_V1",
+            "status": "HOLD_LEGACY_CONTROLLER_PRESENT" if controllers else "PASS_NO_CONFLICTING_LEGACY_CONTROLLER",
+            "controllers": controllers,
+            "outcomes_read": False,
+            "protected_counters": dict(COUNTERS),
+        })
+        if controllers:
+            raise ResourceContractError("LEGACY_CONTROLLER_PRESENT")
         target = _target(inventory, args.gpu, minimum=args.minimum_free_mib, leased=[int(row["gpu_id"]) for row in lease_store.active()], tokens=_project_tokens(args))
         admission = target["admission"]
         _write(args.output_root / "RESOURCE_ADMISSION.json", {"schema": "STAGE_V_M4_FORMAL_RESOURCE_ADMISSION_V1", "status": "PASS", "gpu": target["row"], "admission": admission, "partial_fleet_allowed": True, "foreign_workload_allowed": True, "outcomes_read": False, "protected_counters": dict(COUNTERS)})

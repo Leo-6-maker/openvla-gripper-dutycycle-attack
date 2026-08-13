@@ -7,6 +7,7 @@ import pytest
 
 from scripts.detector_v5.audit_stage_v_m4_matched_parent import _truth_label
 from scripts.detector_v5.audit_stage_v_m4_static import audit
+from scripts.detector_v5.run_stage_v_m4_formal_parent_with_resource_gate import LEGACY_CONTROLLER_TOKENS
 from scripts.detector_v5.stage_v_m4_governance import M4GovernanceError, validate_formal_m4_corridor_gate, validate_formal_m4_v2_authority
 
 
@@ -63,3 +64,8 @@ def test_current_authority_rejects_historical_v1_deterministically() -> None:
             source_commit=protocol["source_binding"]["runtime_commit"],
             source_tree=protocol["source_binding"]["runtime_tree"],
         )
+
+
+def test_formal_m4_gate_declares_legacy_controller_tokens() -> None:
+    assert "monitor_stage_v_goal.py" in LEGACY_CONTROLLER_TOKENS
+    assert "run_stage_v_r2_plan_controller.py" in LEGACY_CONTROLLER_TOKENS
