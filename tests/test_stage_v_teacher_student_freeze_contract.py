@@ -30,3 +30,10 @@ def test_pre_m4_accepts_exact_plan_root_seal_format() -> None:
     source = (ROOT / "scripts/detector_v5/seal_stage_v_pre_m4_lock.py").read_text(encoding="utf-8")
     assert "ROOT_SEAL.sha256" in source
     assert "_sealed_exact_plan" in source
+
+
+def test_v1_supersession_preserves_historical_authority() -> None:
+    source = (ROOT / "scripts/detector_v5/seal_stage_v_m4_v1_supersession.py").read_text(encoding="utf-8")
+    assert "HISTORICAL_NONCONSUMABLE_FOR_CURRENT_MAINLINE" in source
+    assert '"old_artifacts_modified": False' in source
+    assert '"formal_m4_authorized": False' in source
