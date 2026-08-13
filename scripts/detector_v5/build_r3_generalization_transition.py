@@ -303,6 +303,7 @@ def build(*, t4_root: Path, g0_root: Path, g1_root: Path, protocol_path: Path, o
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
     _validate_protocol_contract(protocol)
     protocol_sha = sha256_file(protocol_path)
+    protocol_rel = protocol_path.relative_to(ROOT).as_posix()
     t4_root = _input_root(t4_root, "T4 root")
     g0_root = _input_root(g0_root, "G0 root")
     g1_root = _input_root(g1_root, "G1 root")
@@ -365,13 +366,13 @@ def build(*, t4_root: Path, g0_root: Path, g1_root: Path, protocol_path: Path, o
         "transition_builder": {"path": "scripts/detector_v5/build_r3_generalization_transition.py", "sha256": sha256_file(Path(__file__))},
         "student_trainer_reference": {"path": "scripts/detector_v5/run_r3_heldout_development.py", "sha256": sha256_file(ROOT / "scripts/detector_v5/run_r3_heldout_development.py")},
         "feature_binding": {"path": "configs/R3_SC5_FEATURE_BINDING_V1.json", "sha256": feature_sha},
-        "generalization_protocol": {"path": "configs/R3_GENERALIZATION_PROTOCOL_V1.json", "sha256": protocol_sha},
+        "generalization_protocol": {"path": protocol_rel, "sha256": protocol_sha},
     }
     payload: dict[str, Any] = {
         "schema": "TEACHER_TO_STUDENT_GENERALIZATION_TRANSITION_V1",
         "status": "PASS_G2_DEVELOPMENT_TRANSITION",
         "code_snapshot": {"commit": commit, "tree": tree},
-        "protocol": {"path": "configs/R3_GENERALIZATION_PROTOCOL_V1.json", "sha256": protocol_sha},
+        "protocol": {"path": protocol_rel, "sha256": protocol_sha},
         "t4": {"root": str(t4_root), "seal_sha256sums_sha256": t4_seal, "manifest": {"path": "TEACHER_STUDENT_TRANSITION.json", "sha256": t4_transition_sha}},
         "g0": {"root": str(g0_root), "seal_sha256sums_sha256": g0_seal, "report": {"path": "G0_LABEL_BASELINE_AUDIT.json", "sha256": g0_report_sha}},
         "g1": {"root": str(g1_root), "seal_sha256sums_sha256": verify_seal(g1_root)["sha256sums_sha256"], **g1_binding},
@@ -421,7 +422,7 @@ def build(*, t4_root: Path, g0_root: Path, g1_root: Path, protocol_path: Path, o
                 "feature_order_sha256": feature_order_sha,
                 "eligible_heads": list(ACTIVE_HEADS),
             },
-            "threshold_protocol": {"path": "configs/R3_GENERALIZATION_PROTOCOL_V1.json", "sha256": protocol_sha, "selection_split": "validation_only", "test_read_before_selection": False},
+            "threshold_protocol": {"path": protocol_rel, "sha256": protocol_sha, "selection_split": "validation_only", "test_read_before_selection": False},
             "gpu_allowlist": {"physical_ids": list(range(8)), "one_process_per_gpu": True, "ddp": False, "idle_only": True},
             "output_parent": str(output_root.parent.resolve()),
             "official_environment": {"path": protocol.get("official_environment"), "python_executable": sys.executable, "python_version": platform.python_version(), "platform": platform.platform()},
