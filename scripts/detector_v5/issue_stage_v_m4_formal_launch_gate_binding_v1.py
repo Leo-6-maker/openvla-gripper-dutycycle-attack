@@ -54,6 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--protocol", type=Path, required=True)
     parser.add_argument("--authorization", type=Path, required=True)
     parser.add_argument("--owner-basis", required=True)
+    parser.add_argument("--minimum-free-mib", type=int, default=20_480)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
 
@@ -72,6 +73,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("M4_V2_PROTOCOL_SHA_MISMATCH")
     if not str(args.owner_basis).strip():
         raise SystemExit("EXPLICIT_OWNER_AUTHORIZATION_BASIS_REQUIRED")
+    if args.minimum_free_mib < 19 * 1024:
+        raise SystemExit("RESOURCE_THRESHOLD_BELOW_OWNER_MINIMUM")
     if _git(repo, "status", "--porcelain"):
         raise SystemExit("RUNTIME_SOURCE_WORKTREE_NOT_CLEAN")
 
@@ -104,7 +107,12 @@ def main(argv: list[str] | None = None) -> int:
         "repository_tree": actual_tree,
         "runtime_file_sha256": runtime_files,
         "owner_authorization_basis": str(args.owner_basis),
-        "minimum_free_memory_mib": 20480,
+        "minimum_free_memory_mib": args.minimum_free_mib,
+        "resource_threshold_override": {
+            "default_minimum_free_memory_mib": 20_480,
+            "authorized_minimum_free_memory_mib": args.minimum_free_mib,
+            "owner_basis": str(args.owner_basis),
+        },
         "partial_fleet_allowed": True,
         "foreign_workload_allowed": True,
         "formal_m4_authorized": True,

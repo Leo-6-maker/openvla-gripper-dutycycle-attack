@@ -114,6 +114,7 @@ def test_launch_binding_rejects_authorization_hash_mismatch(tmp_path: Path) -> N
         "schema": "STAGE_V_M4_FORMAL_LAUNCH_GATE_BINDING_V1", "status": "PASS", "launch_gate_authorized": True,
         "formal_m4_authorized": True, "runtime_authorized": True,
         "authorization_sha256": "wrong", "protocol_sha256": gate.sha256(protocol),
+        "minimum_free_memory_mib": MIN_FREE_MEMORY_MIB,
         "protected_counters": dict(gate.COUNTERS), "intervention_executed": False, "outcomes_read": False,
         "v_phys_generated": False, "repository_head": "head", "repository_tree": "tree",
         "authorization_repository_head": "auth-head", "authorization_repository_tree": "auth-tree",
@@ -124,6 +125,7 @@ def test_launch_binding_rejects_authorization_hash_mismatch(tmp_path: Path) -> N
     )
     monkey = SimpleNamespace(
         launch_gate_binding=binding, authorization=authorization, protocol=protocol, source_worktree=tmp_path,
+        minimum_free_mib=MIN_FREE_MEMORY_MIB,
     )
     original_git = gate._git
     gate._git = lambda _root, *args: "head" if args[-1] == "HEAD" else "tree"
