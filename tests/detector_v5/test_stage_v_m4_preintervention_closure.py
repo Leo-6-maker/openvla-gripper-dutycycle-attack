@@ -18,6 +18,7 @@ def _branch(probe, arm, *, rows=None, actions=None, receipts=None):
             "status": "FAIL",
             "arm": arm,
             "dose_steps": 3 if arm == "T3" else 0,
+            "error": "CausalSnapshotError:EXACT_BINDING_MISMATCH:runtime_state",
             "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0},
             "rows": rows or [],
             "actions": actions or [],
@@ -39,22 +40,30 @@ def _make_root(tmp_path, branches, labels=None, observations=None):
     return root
 
 
+def _gate_b(tmp_path):
+    path = tmp_path / "run_stage_v_m3_5_v1_4_gate_b.py"
+    path.write_text("# immutable test runner\n", encoding="utf-8")
+    return path
+
+
 def test_closure_passes_only_when_all_96_failed_before_action(tmp_path):
     arms = ("CONTROL", "T3", "T5", "T10")
     branches = [_branch(f"Q{i:02d}", arm) for i in range(24) for arm in arms]
     labels = [{"binary_label_consumable": False, "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}} for _ in range(72)]
     observations = [{"protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}} for _ in range(72)]
-    report = audit(_make_root(tmp_path, branches, labels, observations), tmp_path / "audit", "libero_10/task_01/state_42")
+    report = audit(_make_root(tmp_path, branches, labels, observations), tmp_path / "audit", "libero_10/task_01/state_42", _gate_b(tmp_path))
     assert report["status"] == "PASS_PREINTERVENTION_STRUCTURAL_INVALIDATION"
     assert report["rows_total"] == report["actions_total"] == report["treatment_receipts_total"] == 0
     assert report["binary_label_consumable_count"] == 0
     assert report["physical_intervention_executed"] is False
+    assert report["pre_primary_restore_failure_count"] == 96
+    assert report["post_snapshot_primary_window_steps_total"] == 0
 
 
 def test_any_treatment_receipt_blocks_preintervention_reexecution_claim(tmp_path):
     arms = ("CONTROL", "T3", "T5", "T10")
     branches = [_branch(f"Q{i:02d}", arm) for i in range(24) for arm in arms]
     branches[1]["branch"]["treatment_receipts"] = [{"relative_step": 0}]
-    report = audit(_make_root(tmp_path, branches, [{} for _ in range(72)], [{} for _ in range(72)]), tmp_path / "audit", "libero_10/task_01/state_42")
+    report = audit(_make_root(tmp_path, branches, [{} for _ in range(72)], [{} for _ in range(72)]), tmp_path / "audit", "libero_10/task_01/state_42", _gate_b(tmp_path))
     assert report["status"] == "HOLD_PHYSICAL_ACTION_EVIDENCE_NONZERO"
     assert report["physical_intervention_executed"] is True

@@ -79,11 +79,22 @@ def _branch_summary(row: Mapping[str, Any], errors: list[str]) -> dict[str, Any]
                     errors.append(f"ROW_RELATIVE_STEP_INVALID:{branch_id}")
     nonzero_physical_evidence = bool(rows or actions or receipts)
     treatment_compliant = branch.get("treatment_compliant") is True
+    error = str(branch.get("error", ""))
+    if error == "CausalSnapshotError:EXACT_BINDING_MISMATCH:runtime_state":
+        failure_stage = "PRE_PRIMARY_WINDOW_RUNTIME_EXACTNESS"
+    elif branch.get("status") == "FAIL" and nonzero_physical_evidence:
+        failure_stage = "PRIMARY_WINDOW_OR_POST_FAILURE"
+    elif branch.get("status") == "FAIL":
+        failure_stage = "PRE_PRIMARY_WINDOW_UNKNOWN"
+    else:
+        failure_stage = "PRIMARY_WINDOW_EXECUTED_OR_NONFAIL"
     return {
         "branch_id": branch_id,
         "probe_id": str(row.get("probe_id", branch.get("probe_id", ""))),
         "arm": arm,
         "status": branch.get("status"),
+        "error": error,
+        "failure_stage": failure_stage,
         "rows_count": len(rows),
         "actions_count": len(actions),
         "treatment_receipts_count": len(receipts),
@@ -97,11 +108,14 @@ def _branch_summary(row: Mapping[str, Any], errors: list[str]) -> dict[str, Any]
     }
 
 
-def audit(parent_root: Path, output_root: Path, parent_key: str, expected_branch_count: int = 96) -> dict[str, Any]:
+def audit(parent_root: Path, output_root: Path, parent_key: str, gate_b_runner: Path, expected_branch_count: int = 96) -> dict[str, Any]:
     parent_root = parent_root.resolve()
     output_root = output_root.resolve()
     if not parent_root.is_dir():
         raise FileNotFoundError(parent_root)
+    gate_b_runner = gate_b_runner.resolve()
+    if not gate_b_runner.is_file():
+        raise FileNotFoundError(f"GATE_B_RUNNER_MISSING:{gate_b_runner}")
     if output_root.exists():
         raise FileExistsError(f"OUTPUT_ROOT_EXISTS:{output_root}")
 
@@ -139,6 +153,7 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, expected_branch
     all_failed_before_action = bool(summaries) and all(
         item["arm"] in ARMS
         and item["status"] == "FAIL"
+        and item["failure_stage"] == "PRE_PRIMARY_WINDOW_RUNTIME_EXACTNESS"
         and item["rows_count"] == 0
         and item["actions_count"] == 0
         and item["treatment_receipts_count"] == 0
@@ -167,6 +182,8 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, expected_branch
         "parent_key": parent_key,
         "parent_root": str(parent_root),
         "parent_root_inputs_sha256": parent_files,
+        "gate_b_runner_path": str(gate_b_runner),
+        "gate_b_runner_sha256": _sha(gate_b_runner),
         "branch_records_materialized": True,
         "branch_record_count": len(branches),
         "observation_record_count": len(observations),
@@ -179,6 +196,10 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, expected_branch
         "treatment_window_env_steps_evidenced_total": sum(item["treatment_window_rows_count"] for item in treatment),
         "delivered_treatment_step_count": sum(item["treatment_window_rows_count"] for item in treatment),
         "treatment_action_rows_total": sum(item["actions_count"] for item in treatment),
+        "post_snapshot_primary_window_steps_total": sum(item["rows_count"] for item in summaries),
+        "forced_open_steps_total": sum(item["treatment_window_rows_count"] for item in treatment),
+        "control_primary_window_steps_total": sum(item["rows_count"] for item in control),
+        "treatment_primary_window_steps_total": sum(item["rows_count"] for item in treatment),
         "treatment_compliant_branch_count": sum(item["treatment_compliant"] for item in treatment),
         "binary_label_consumable_count": len(binary_labels),
         "control_rows_total": sum(item["rows_count"] for item in control),
@@ -194,6 +215,13 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, expected_branch
             "binary_label_rule": "only binary_label_consumable=true is counted as consumable",
         },
         "all_branches_failed_before_action": all_failed_before_action,
+        "pass_branch_count": sum(item["status"] == "PASS" for item in summaries),
+        "fail_branch_count": sum(item["status"] == "FAIL" for item in summaries),
+        "pre_primary_restore_failure_count": sum(item["failure_stage"] == "PRE_PRIMARY_WINDOW_RUNTIME_EXACTNESS" for item in summaries),
+        "failure_stage_counts": {
+            stage: sum(item["failure_stage"] == stage for item in summaries)
+            for stage in sorted({item["failure_stage"] for item in summaries})
+        },
         "errors": sorted(set(errors)),
         "branches": summaries,
     }
@@ -212,14 +240,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--parent-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--parent-key", required=True)
+    parser.add_argument("--gate-b-runner", type=Path, required=True)
     parser.add_argument("--expected-branch-count", type=int, default=96)
     args = parser.parse_args(argv)
     try:
-        report = audit(args.parent_root, args.output_root, args.parent_key, args.expected_branch_count)
+        report = audit(args.parent_root, args.output_root, args.parent_key, args.gate_b_runner, args.expected_branch_count)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(json.dumps({"status": "HOLD_CLOSURE_AUDIT_ERROR", "error": f"{type(exc).__name__}:{exc}"}, sort_keys=True))
         return 2
-    print(json.dumps({key: report[key] for key in ("status", "rows_total", "actions_total", "treatment_receipts_total", "physical_env_steps_total", "delivered_treatment_step_count", "treatment_action_rows_total", "successful_env_steps_evidenced_total", "treatment_window_env_steps_evidenced_total", "treatment_compliant_branch_count", "binary_label_consumable_count", "physical_intervention_executed", "errors")}, sort_keys=True))
+    print(json.dumps({key: report[key] for key in ("status", "rows_total", "actions_total", "treatment_receipts_total", "physical_env_steps_total", "delivered_treatment_step_count", "treatment_action_rows_total", "post_snapshot_primary_window_steps_total", "forced_open_steps_total", "control_primary_window_steps_total", "treatment_primary_window_steps_total", "successful_env_steps_evidenced_total", "treatment_window_env_steps_evidenced_total", "treatment_compliant_branch_count", "binary_label_consumable_count", "physical_intervention_executed", "pre_primary_restore_failure_count", "failure_stage_counts", "errors")}, sort_keys=True))
     return 0 if report["status"] == "PASS_PREINTERVENTION_STRUCTURAL_INVALIDATION" else 2
 
 
