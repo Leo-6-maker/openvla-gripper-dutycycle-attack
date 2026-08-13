@@ -77,7 +77,8 @@ def run(g2_root: Path, development_root: Path, output_root: Path, *, split_famil
         raise ValueError("development report is not the expected sealed R3 output")
     if report.get("test_payload_read") is not False or report.get("test_evaluation_performed") is not False or report.get("threshold_selection_split") != "validation_only":
         raise ValueError("test was read before G7 or threshold provenance is not closed")
-    if report.get("protected_reads") != 0 or report.get("permissions", {}).get("protected_reads") != 0:
+    permissions = report.get("permissions")
+    if not isinstance(permissions, Mapping) or permissions.get("protected_reads") != 0 or ("protected_reads" in report and report.get("protected_reads") != 0):
         raise ValueError("development protected boundary is not zero")
     threshold_data = _json(development_root / "thresholds.json")
     if any(not isinstance(threshold_data.get(head), Mapping) or threshold_data[head].get("status") != "SELECTED_VALIDATION_ONLY" or threshold_data[head].get("threshold") is None for head in dev.ACTIVE_HEADS):
