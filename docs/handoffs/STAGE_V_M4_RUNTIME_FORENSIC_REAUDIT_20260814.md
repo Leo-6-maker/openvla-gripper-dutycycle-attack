@@ -104,9 +104,9 @@ local py_compile and direct self-checks: PASS
 server official-environment targeted suite: 22 passed
 GitHub detector-v5-cpu/source-registry/stageb-cpu: PASS
 server provenance root:
-  /mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_EXTERNAL_RUNTIME_PROVENANCE_READONLY_1B4C7A53_20260814
+  /mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_EXTERNAL_RUNTIME_PROVENANCE_READONLY_244CFDAE_20260814
 receipt SHA256:
-  6867f8f89a87b40293ab5e0b42545d6bf67ce6bb795610a7180c3edd66a89eea
+  e1b955936961816b8d5510997746a64a870ffe1c5443c103c8cb927fe2099d74
 student checkpoint SHA256: e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227
 official snapshot commit/tree: 4d7a9daeb2bf9cf6b5d911f0ddcd93c254d0362b / cd5fe5263afd66d9131159d97bba1d1d660be5df
 upstream commit/tree: c8f03f48af692657d3060c19588038c7220e9af9 / c326be57bb61629a3efd2b968ef141fa576a623f
