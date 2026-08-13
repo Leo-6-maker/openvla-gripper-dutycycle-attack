@@ -131,7 +131,7 @@ def audit_all(root: Path, args: argparse.Namespace) -> dict[str, bool]:
     require(sha256_file(args.predecessor_inventory.resolve()) == "4020a3f45efefb704c7110fd20e243adf84594a2c0920c413ee44928284baf14", "INVENTORY_SHA_INVALID")
     require(sha256_file(args.old_split.resolve()) == "f76ababf0750a78ee7adb3c81e0d15b945275d7210e2d0e41de1a623c6549cc4", "OLD_SPLIT_SHA_INVALID")
     require(outer.get("source_binding", {}).get("science_commit") == SOURCE_COMMIT and outer.get("source_binding", {}).get("science_tree") == SOURCE_TREE and outer.get("source_binding", {}).get("corridor_runner_sha256") == RUNNER_SHA256, "OUTER_SOURCE_INVALID")
-    require(runtime.get("status") == "PASS_POST_HOLD_CORRIDOR_TARGETS_REACHED" and runtime.get("sealed") is True and runtime.get("outcomes_read") is False and runtime.get("intervention_executed") is False and runtime.get("protected_counters") == COUNTERS, "RUNTIME_BOUNDARY_INVALID")
+    require(runtime.get("schema") == "STAGE_V_M4_POST_HOLD_V1_1_RUNTIME_RECONCILIATION_V1" and runtime.get("status") == "PASS_POST_HOLD_CORRIDOR_TARGETS_REACHED" and runtime.get("sealed") is True and runtime.get("outcomes_read") is False and runtime.get("intervention_executed") is False and runtime.get("protected_counters") == COUNTERS, "RUNTIME_BOUNDARY_INVALID")
     require(candidate.get("schema") == "STAGE_V_M4_CORRIDOR_RESERVE_PARENT_MANIFEST_V1" and candidate.get("candidate_count") == 22 and candidate.get("status") == "FROZEN", "CANDIDATE_SOURCE_INVALID")
     candidate_map = {str(row.get("canonical_parent_key")): row for row in candidate.get("parents", [])}
     require(len(candidate_map) == 22, "CANDIDATE_KEY_SET_INVALID")

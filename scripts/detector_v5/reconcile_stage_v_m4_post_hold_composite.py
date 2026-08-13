@@ -153,7 +153,7 @@ def validate_outer(outer: Mapping[str, Any]) -> None:
 
 
 def new_runtime_pairs(runtime: Mapping[str, Any], candidate: Mapping[str, Any], outer: Mapping[str, Any], runtime_sha: str) -> dict[str, dict[str, Any]]:
-    require(runtime.get("schema") == "STAGE_V_M4_POST_HOLD_V1_1_RUNTIME_RECONCILIATION", "RUNTIME_SCHEMA_INVALID")
+    require(runtime.get("schema") == "STAGE_V_M4_POST_HOLD_V1_1_RUNTIME_RECONCILIATION_V1", "RUNTIME_SCHEMA_INVALID")
     require(runtime.get("status") == "PASS_POST_HOLD_CORRIDOR_TARGETS_REACHED", "RUNTIME_NOT_TERMINAL_PASS")
     require(runtime.get("terminal") is True and runtime.get("sealed") is True and runtime.get("immutable") is True, "RUNTIME_NOT_SEALED_IMMUTABLE")
     require(runtime.get("retry_forbidden") is True and runtime.get("intervention_executed") is False and runtime.get("outcomes_read") is False, "RUNTIME_BOUNDARY_INVALID")
