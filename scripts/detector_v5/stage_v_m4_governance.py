@@ -125,6 +125,12 @@ def _bound_root(inputs: Mapping[str, Any], protocol_path: Path, name: str, *, ex
     return root
 
 
+def _require_exact_plan_source_binding(exact_manifest: Mapping[str, Any], source_commit: str, source_tree: str) -> None:
+    downstream = exact_manifest.get("downstream_source")
+    if not isinstance(downstream, Mapping) or downstream.get("commit") != source_commit or downstream.get("tree") != source_tree:
+        raise M4GovernanceError("M4_V2_EXACT_PLAN_SOURCE_BINDING_INVALID")
+
+
 def _path_matches(value: Any, expected: Path) -> bool:
     try:
         return Path(str(value)).resolve() == expected.resolve()
@@ -231,6 +237,7 @@ def validate_formal_m4_v2_authority(
     exact_result = _load(exact_result_path)
     if exact_manifest.get("schema") != "STAGE_V_M4_EXACT_PROBE_AND_SNAPSHOT_MANIFEST_V1" or exact_manifest.get("status") != "PASS_EXACT_40X24_PLAN_ONLY" or exact_manifest.get("parent_count") != 40 or exact_manifest.get("probe_count_per_parent") != 24 or exact_manifest.get("probe_count_total") != 960 or exact_manifest.get("planned_branch_authority_count") != 3840:
         raise M4GovernanceError("M4_V2_EXACT_PLAN_MANIFEST_INVALID")
+    _require_exact_plan_source_binding(exact_manifest, source_commit, source_tree)
     if exact_manifest.get("independent_audit_sha256") != exact_audit_sha or exact_audit.get("status") != "PASS" or exact_result.get("status") != "PASS" or exact_result.get("manifest_status") != "PASS_EXACT_40X24_PLAN_ONLY" or exact_result.get("audit_sha256") != exact_audit_sha or exact_manifest.get("final40_manifest_sha256") != manifest_sha or exact_manifest.get("final_split_sha256") != split_sha:
         raise M4GovernanceError("M4_V2_EXACT_PLAN_UPSTREAM_BINDING_INVALID")
     if exact_manifest.get("selection_outcomes_read") is not False or exact_manifest.get("intervention_executed") is not False or exact_manifest.get("v_phys_generated") is not False or exact_manifest.get("teacher_predictions_read") is not False or exact_manifest.get("student_predictions_read") is not False or exact_manifest.get("protected_counters") != COUNTERS:

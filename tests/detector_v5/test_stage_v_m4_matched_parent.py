@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from scripts.detector_v5.audit_stage_v_m4_matched_parent import _truth_label
 from scripts.detector_v5.audit_stage_v_m4_static import audit
 from scripts.detector_v5.run_stage_v_m4_formal_parent_with_resource_gate import LEGACY_CONTROLLER_TOKENS
-from scripts.detector_v5.stage_v_m4_governance import M4GovernanceError, validate_formal_m4_corridor_gate, validate_formal_m4_v2_authority
+from scripts.detector_v5.stage_v_m4_governance import M4GovernanceError, _require_exact_plan_source_binding, validate_formal_m4_corridor_gate, validate_formal_m4_v2_authority
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -72,3 +72,10 @@ def test_current_authority_rejects_historical_v1_deterministically() -> None:
 def test_formal_m4_gate_declares_legacy_controller_tokens() -> None:
     assert "monitor_stage_v_goal.py" in LEGACY_CONTROLLER_TOKENS
     assert "run_stage_v_r2_plan_controller.py" in LEGACY_CONTROLLER_TOKENS
+
+
+def test_exact_plan_source_plane_must_match_formal_runtime() -> None:
+    manifest = {"downstream_source": {"commit": "commit", "tree": "tree"}}
+    _require_exact_plan_source_binding(manifest, "commit", "tree")
+    with pytest.raises(M4GovernanceError, match="EXACT_PLAN_SOURCE_BINDING_INVALID"):
+        _require_exact_plan_source_binding(manifest, "other", "tree")
