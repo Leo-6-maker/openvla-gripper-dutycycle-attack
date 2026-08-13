@@ -41,3 +41,12 @@ def test_stale_protocol_and_pass_authorization_fail_under_corridor_governance() 
     )
     assert static["status"] == "FAIL_STATIC_CONTRACT"
     assert static["checks"]["formal_corridor_gate_bound"] is False
+
+
+def test_formal_runner_consumes_frozen_exact_plan_without_runtime_selection() -> None:
+    runner = (REPO_ROOT / "scripts/detector_v5/run_stage_v_m4_matched_parent.py").read_text(encoding="utf-8")
+    assert "_load_exact_plan_authority" in runner
+    assert "--exact-plan-root" in runner
+    assert "select_probe_steps" not in runner
+    assert "write_snapshot" not in runner
+    assert '"probe_selection_recomputed": False' in runner
