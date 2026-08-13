@@ -273,7 +273,7 @@ def validate_formal_m4_v2_authority(
     thresholds_path, thresholds_sha = files["student_thresholds"]
     feature_path, feature_sha = files["feature_schema"]
     thresholds = _load(thresholds_path)
-    if set(thresholds) != set(ACTIVE_STUDENT_HEADS):
+    if set(thresholds) != set(ACTIVE_STUDENT_HEADS) | {"safe_release"} or thresholds.get("safe_release", {}).get("status") != "HOLD_COVERAGE" or thresholds.get("safe_release", {}).get("threshold") is not None or any(thresholds.get(head, {}).get("status") != "SELECTED_VALIDATION_ONLY" or thresholds.get(head, {}).get("threshold") is None for head in ACTIVE_STUDENT_HEADS):
         raise M4GovernanceError("M4_V2_STUDENT_THRESHOLD_HEADS_INVALID")
     feature = _load(feature_path)
     if feature.get("schema") != "V5_R3_SC5_FEATURE_BINDING_V1" or feature.get("status") != "FROZEN_ENGINEERING_BINDING" or len(feature.get("feature_order", [])) != 25 or feature.get("future_fields_used") is not False or feature.get("teacher_fields_used") is not False or feature.get("outcome_fields_used") is not False or feature.get("attack_enabled") is not False or feature.get("feature_order_sha256") != inputs.get("feature_order_sha256"):
