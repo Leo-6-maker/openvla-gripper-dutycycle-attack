@@ -70,6 +70,65 @@ def _safe_key(value: str) -> str:
     return value.replace("/", "__")
 
 
+def _parent_paths(root: Path, parent_index: int, parent_key: str) -> tuple[Path, Path, Path]:
+    """Return isolated parent, gate-receipt, and science-output roots."""
+    parent_root = root / "parents" / f"{parent_index:02d}_{_safe_key(parent_key)}"
+    return parent_root, parent_root / "gate", parent_root / "science"
+
+
+def _create_only(path: Path, value: Mapping[str, Any]) -> bool:
+    """Create a receipt without allowing a concurrent worker to clobber it."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    except FileExistsError:
+        return False
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(json.dumps(dict(value), indent=2, sort_keys=True, ensure_ascii=False) + "\n")
+    return True
+
+
+def _next_receipt_path(root: Path, name: str) -> Path:
+    """Keep retries append-only while retaining a stable first-attempt name."""
+    target = root / f"{name}.json"
+    if not target.exists():
+        return target
+    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    return root / f"{name}_{stamp}_{os.getpid()}.json"
+
+
+def _runtime_evidence(output: Path, *, child_process_started: bool, child_process_completed: bool,
+                      independent_audit_pass: bool) -> dict[str, Any]:
+    """Derive execution provenance from materialized artifacts, never from final status."""
+    branches = (output / "M4_COUNTERFACTUAL_BRANCHES_V1.jsonl").is_file()
+    labels = (output / "M4_V_PHYS_LABELS_V1.jsonl").is_file()
+    observations = (output / "M4_TREATMENT_OBSERVATIONS_V1.jsonl").is_file()
+    materialized = branches or labels or observations
+    if not child_process_started:
+        state = "NOT_STARTED"
+    elif not materialized:
+        state = "CHILD_STARTED_NO_INTERVENTION_MARKER"
+    elif child_process_completed:
+        state = "INTERVENTION_COMPLETED_WITH_ARTIFACTS"
+    else:
+        state = "INTERVENTION_STARTED_PARTIAL"
+    return {
+        "child_process_started": child_process_started,
+        "intervention_started": materialized,
+        "intervention_completed": child_process_completed and materialized,
+        "branch_artifacts_materialized": branches,
+        "v_phys_artifacts_materialized": labels,
+        "m4_outcomes_materialized": materialized,
+        "outcomes_read": materialized,
+        "outcomes_used_for_selection": False,
+        "scheduler_outcomes_read": False,
+        "investigator_outcomes_read": False,
+        "outcomes_read_uncertain": child_process_started and not materialized,
+        "independent_audit_pass": independent_audit_pass,
+        "intervention_state": state,
+    }
+
+
 def _git(root: Path, *args: str) -> str:
     return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
 
@@ -102,6 +161,35 @@ def _verify_runtime_snapshot(args: argparse.Namespace, authorization: Mapping[st
     protocol_path = args.protocol.resolve()
     if sha256(protocol_path) != authorization.get("protocol_sha256"):
         raise ValueError("M4_PROTOCOL_SHA_MISMATCH")
+
+
+def _verify_launch_gate_binding(args: argparse.Namespace, authorization: Mapping[str, Any]) -> None:
+    binding_path = args.launch_gate_binding.resolve()
+    binding = _load(binding_path)
+    if binding.get("schema") != "STAGE_V_M4_FORMAL_LAUNCH_GATE_BINDING_V1" or binding.get("status") != "PASS" or binding.get("launch_gate_authorized") is not True or binding.get("formal_m4_authorized") is not True or binding.get("runtime_authorized") is not True:
+        raise ValueError("M4_OUTER_LAUNCH_GATE_BINDING_INVALID")
+    sidecar = binding_path.with_name(binding_path.name + ".sha256")
+    tokens = sidecar.read_text(encoding="utf-8").split() if sidecar.is_file() else []
+    if not tokens or tokens[0] != sha256(binding_path):
+        raise ValueError("M4_OUTER_LAUNCH_GATE_BINDING_SEAL_INVALID")
+    if binding.get("authorization_sha256") != sha256(args.authorization) or binding.get("protocol_sha256") != sha256(args.protocol):
+        raise ValueError("M4_OUTER_AUTHORITY_SHA_MISMATCH")
+    if binding.get("protected_counters") != COUNTERS or authorization.get("protected_counters") != COUNTERS:
+        raise ValueError("M4_OUTER_PROTECTED_BOUNDARY_INVALID")
+    if binding.get("intervention_executed") is not False or binding.get("outcomes_read") is not False or binding.get("v_phys_generated") is not False:
+        raise ValueError("M4_OUTER_OUTCOME_BOUNDARY_INVALID")
+    worktree = args.source_worktree.resolve()
+    if binding.get("repository_head") != _git(worktree, "rev-parse", "HEAD") or binding.get("repository_tree") != _git(worktree, "rev-parse", "HEAD^{tree}"):
+        raise ValueError("M4_OUTER_REPOSITORY_SNAPSHOT_MISMATCH")
+    runtime_files = binding.get("runtime_file_sha256")
+    if not isinstance(runtime_files, Mapping) or set(runtime_files) != set(LAUNCH_GATE_FILES):
+        raise ValueError("M4_OUTER_RUNTIME_FILE_BINDING_INVALID")
+    for relative in LAUNCH_GATE_FILES:
+        path = worktree / relative
+        if not path.is_file() or sha256(path) != str(runtime_files.get(relative)):
+            raise ValueError(f"M4_OUTER_RUNTIME_FILE_SHA_MISMATCH:{relative}")
+    if binding.get("authorization_repository_head") != authorization.get("repository_head") or binding.get("authorization_repository_tree") != authorization.get("repository_tree"):
+        raise ValueError("M4_OUTER_AUTHORIZATION_SNAPSHOT_MISMATCH")
 
 
 def _frozen_queue(manifest: Mapping[str, Any], *, manifest_sha: str, split_sha: str, exact_sha: str, protocol_sha: str, authorization_sha: str) -> dict[str, Any]:
@@ -144,15 +232,17 @@ def _ensure_queue(root: Path, queue: Mapping[str, Any]) -> None:
 
 
 def _claim(root: Path, parent_index: int, parent_key: str) -> Path:
-    path = root / f"CLAIM_{parent_index:02d}.json"
+    path = root / "CLAIM.json"
     try:
         with path.open("x", encoding="utf-8") as handle:
             json.dump({
                 "schema": "STAGE_V_M4_FORMAL_PARENT_CLAIM_V1",
                 "parent_index": parent_index,
                 "canonical_parent_key": parent_key,
+                "status": "CLAIMED_FOR_LAUNCH",
                 "claimed_utc": _utc(),
                 "outcomes_read": False,
+                "outcomes_used_for_selection": False,
                 "protected_counters": dict(COUNTERS),
             }, handle, indent=2, sort_keys=True)
             handle.write("\n")
@@ -165,6 +255,16 @@ LEGACY_CONTROLLER_TOKENS = (
     "monitor_stage_v_goal.py",
     "run_stage_v_r2_plan_controller.py",
     "run_stage_v_dynamic_dispatcher.py",
+)
+
+LAUNCH_GATE_FILES = (
+    "scripts/detector_v5/run_stage_v_m4_formal_parent_with_resource_gate.py",
+    "scripts/detector_v5/stage_v_gpu_resource_contract.py",
+    "scripts/detector_v5/run_stage_v_m4_matched_parent.py",
+    "scripts/detector_v5/stage_v_m4_governance.py",
+    "scripts/detector_v5/audit_stage_v_m4_matched_parent.py",
+    "scripts/detector_v5/audit_stage_v_m4_static.py",
+    "scripts/detector_v5/issue_stage_v_m4_runtime_authorization_v2.py",
 )
 
 
@@ -231,9 +331,84 @@ def _verify_parent(output: Path, return_code: int) -> list[str]:
     return reasons
 
 
+def _admit_before_claim(args: argparse.Namespace, gate_root: Path, lease_store: GpuLeaseStore,
+                        job_id: str, parent_index: int, parent_key: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Complete controller/admission/lease/recheck before creating a claim."""
+    lease: dict[str, Any] | None = None
+    try:
+        inventory, query_error = query_inventory()
+        if query_error:
+            raise ResourceContractError(f"GPU_INVENTORY_QUERY_FAILED:{query_error}")
+        controllers = _legacy_controller_rows()
+        _write(_next_receipt_path(gate_root, "CONTROLLER_AUDIT"), {
+            "schema": "STAGE_V_M4_FORMAL_CONTROLLER_AUDIT_V1",
+            "status": "HOLD_LEGACY_CONTROLLER_PRESENT" if controllers else "PASS_NO_CONFLICTING_LEGACY_CONTROLLER",
+            "controllers": controllers, "outcomes_read": False,
+            "outcomes_used_for_selection": False, "protected_counters": dict(COUNTERS),
+        })
+        if controllers:
+            raise ResourceContractError("LEGACY_CONTROLLER_PRESENT")
+        target = _target(inventory, args.gpu, minimum=args.minimum_free_mib,
+                         leased=[int(row["gpu_id"]) for row in lease_store.active()],
+                         tokens=_project_tokens(args))
+        _write(_next_receipt_path(gate_root, "RESOURCE_ADMISSION"), {
+            "schema": "STAGE_V_M4_FORMAL_RESOURCE_ADMISSION_V1", "status": "PASS",
+            "gpu": target["row"], "admission": target["admission"],
+            "partial_fleet_allowed": True, "foreign_workload_allowed": True,
+            "outcomes_read": False, "outcomes_used_for_selection": False,
+            "protected_counters": dict(COUNTERS),
+        })
+        lease = lease_store.acquire(
+            gpu_id=args.gpu, gpu_uuid=str(target["row"]["gpu_uuid"]),
+            worker_id=f"formal-m4-parent-{parent_index:02d}", worker_pid=os.getpid(),
+            stage="FORMAL_M4_V2", atomic_job_id=job_id,
+            source_commit=args.source_commit, source_tree=args.source_tree,
+            runtime_root=args.output_root, launch_snapshot=target["row"],
+        )
+        _write(_next_receipt_path(gate_root, "LEASE_ACQUIRED"), {
+            "schema": "STAGE_V_M4_FORMAL_GPU_LEASE_ACQUIRED_V1", "status": "PASS",
+            "lease_id": lease["lease_id"], "gpu": target["row"],
+            "atomic_job_id": job_id, "protected_counters": dict(COUNTERS),
+        })
+        rechecked_inventory, query_error = query_inventory()
+        if query_error:
+            raise ResourceContractError(f"GPU_RECHECK_QUERY_FAILED:{query_error}")
+        rechecked = next((item for item in rechecked_inventory if int(item.get("gpu_id", -1)) == args.gpu), None)
+        if rechecked is None:
+            raise ResourceContractError("GPU_RECHECK_ID_MISSING")
+        verify_recheck(rechecked, expected_gpu_id=args.gpu,
+                       expected_gpu_uuid=str(target["row"]["gpu_uuid"]),
+                       minimum_free_mib=args.minimum_free_mib)
+        if not _strict_free(rechecked, args.minimum_free_mib):
+            raise ResourceContractError(f"GPU_RECHECK_FREE_NOT_STRICTLY_GREATER_THAN_{args.minimum_free_mib}")
+        rechecked_target = _target(rechecked_inventory, args.gpu, minimum=args.minimum_free_mib,
+                                   leased=[], tokens=_project_tokens(args))
+        _write(_next_receipt_path(gate_root, "RESOURCE_RECHECK"), {
+            "schema": "STAGE_V_M4_FORMAL_RESOURCE_RECHECK_V1", "status": "PASS",
+            "gpu": rechecked_target["row"], "admission": rechecked_target["admission"],
+            "outcomes_read": False, "outcomes_used_for_selection": False,
+            "protected_counters": dict(COUNTERS),
+        })
+        write_resource_receipt(_next_receipt_path(gate_root, "RESOURCE_PRE"), phase="PRE_LAUNCH_RECHECK",
+                               gpu_snapshot=rechecked, lease=lease, atomic_job_id=job_id)
+        return target, lease
+    except Exception:
+        if lease is not None:
+            released = lease_store.release(lease, reason="PRELAUNCH_HOLD")
+            _write(_next_receipt_path(gate_root, "RESOURCE_RELEASE"), {
+                "schema": "STAGE_V_M4_FORMAL_RESOURCE_RELEASE_V1",
+                "status": "PASS" if released else "HOLD_RELEASE_FAILED", "release_ok": released,
+                "lease_id": lease["lease_id"], "atomic_job_id": job_id,
+                "reason": "PRELAUNCH_HOLD", "outcomes_read": False,
+                "outcomes_used_for_selection": False, "protected_counters": dict(COUNTERS),
+            })
+        raise
+
+
 def run(args: argparse.Namespace) -> int:
     args.protocol = args.protocol.resolve()
     args.authorization = args.authorization.resolve()
+    args.launch_gate_binding = args.launch_gate_binding.resolve()
     args.final_manifest = args.final_manifest.resolve()
     args.final_split = args.final_split.resolve()
     args.exact_plan_root = args.exact_plan_root.resolve()
@@ -249,6 +424,7 @@ def run(args: argparse.Namespace) -> int:
     if authorization.get("runtime_authorized") is not True or authorization.get("outcomes_read") is not False or authorization.get("intervention_executed") is not False:
         raise ValueError("M4_AUTHORIZATION_BOUNDARY_INVALID")
     _verify_runtime_snapshot(args, authorization)
+    _verify_launch_gate_binding(args, authorization)
     authority = validate_formal_m4_v2_authority(
         protocol,
         protocol_path=args.protocol,
@@ -274,100 +450,170 @@ def run(args: argparse.Namespace) -> int:
     _ensure_queue(args.output_root, queue)
     if (args.output_root / "GLOBAL_HOLD.json").exists():
         raise ValueError("GLOBAL_M4_HOLD_ALREADY_SEALED")
-    claim_path = _claim(args.output_root, args.parent_index, parent_key)
-    parent_output = args.output_root / "parents" / _safe_key(parent_key)
-    log_path = args.output_root / "logs" / f"{_safe_key(parent_key)}.log"
+
+    parent_root, gate_root, parent_output = _parent_paths(args.output_root, args.parent_index, parent_key)
+    gate_root.mkdir(parents=True, exist_ok=True)
+    claim_path = gate_root / "CLAIM.json"
+    if claim_path.exists():
+        raise ValueError(f"PARENT_ALREADY_CLAIMED_NO_RERUN:{args.parent_index}")
     job_id = f"FORMAL_M4_V2:{args.parent_index:02d}:{parent_key}"
     lease_store = GpuLeaseStore(args.output_root / "GPU_LEASES.sqlite")
     lease: dict[str, Any] | None = None
-    release_ok: bool | None = None
-    failure_reasons: list[str] = []
-    admission: dict[str, Any] | None = None
+
+    # Admission is intentionally completed before _claim.  A resource/controller
+    # hold therefore leaves no attempted-parent identity behind and can be retried
+    # after the external condition changes.
     try:
-        inventory, query_error = query_inventory()
-        if query_error:
-            raise ResourceContractError(f"GPU_INVENTORY_QUERY_FAILED:{query_error}")
-        controllers = _legacy_controller_rows()
-        _write(args.output_root / "CONTROLLER_AUDIT.json", {
-            "schema": "STAGE_V_M4_FORMAL_CONTROLLER_AUDIT_V1",
-            "status": "HOLD_LEGACY_CONTROLLER_PRESENT" if controllers else "PASS_NO_CONFLICTING_LEGACY_CONTROLLER",
-            "controllers": controllers,
-            "outcomes_read": False,
-            "protected_counters": dict(COUNTERS),
+        target, lease = _admit_before_claim(args, gate_root, lease_store, job_id,
+                                            args.parent_index, parent_key)
+    except Exception as exc:
+        hold = {
+            "schema": "STAGE_V_M4_FORMAL_PRELAUNCH_HOLD_V1",
+            "status": "HOLD_PRELAUNCH_RETRYABLE", "parent_index": args.parent_index,
+            "canonical_parent_key": parent_key, "claim_created": False,
+            "child_process_started": False, "intervention_started": False,
+            "reason": f"{type(exc).__name__}:{exc}", "no_rerun_to_pass": False,
+            "outcomes_read": False, "outcomes_used_for_selection": False,
+            "protected_counters": dict(COUNTERS), "created_utc": _utc(),
+        }
+        _write(_next_receipt_path(gate_root, "PRELAUNCH_HOLD"), hold)
+        print(json.dumps(hold, sort_keys=True))
+        return 75
+
+    try:
+        claim_path = _claim(gate_root, args.parent_index, parent_key)
+    except Exception as exc:
+        released = lease_store.release(lease, reason="CLAIM_CONFLICT")
+        _write(_next_receipt_path(gate_root, "RESOURCE_RELEASE"), {
+            "schema": "STAGE_V_M4_FORMAL_RESOURCE_RELEASE_V1",
+            "status": "PASS" if released else "HOLD_RELEASE_FAILED", "release_ok": released,
+            "lease_id": lease["lease_id"], "atomic_job_id": job_id,
+            "reason": "CLAIM_CONFLICT", "outcomes_read": False,
+            "outcomes_used_for_selection": False, "protected_counters": dict(COUNTERS),
         })
-        if controllers:
-            raise ResourceContractError("LEGACY_CONTROLLER_PRESENT")
-        target = _target(inventory, args.gpu, minimum=args.minimum_free_mib, leased=[int(row["gpu_id"]) for row in lease_store.active()], tokens=_project_tokens(args))
-        admission = target["admission"]
-        _write(args.output_root / "RESOURCE_ADMISSION.json", {"schema": "STAGE_V_M4_FORMAL_RESOURCE_ADMISSION_V1", "status": "PASS", "gpu": target["row"], "admission": admission, "partial_fleet_allowed": True, "foreign_workload_allowed": True, "outcomes_read": False, "protected_counters": dict(COUNTERS)})
-        lease = lease_store.acquire(
-            gpu_id=args.gpu,
-            gpu_uuid=str(target["row"]["gpu_uuid"]),
-            worker_id=f"formal-m4-parent-{args.parent_index:02d}",
-            worker_pid=os.getpid(),
-            stage="FORMAL_M4_V2",
-            atomic_job_id=job_id,
-            source_commit=args.source_commit,
-            source_tree=args.source_tree,
-            runtime_root=args.output_root,
-            launch_snapshot=target["row"],
-        )
-        rechecked_inventory, query_error = query_inventory()
-        if query_error:
-            raise ResourceContractError(f"GPU_RECHECK_QUERY_FAILED:{query_error}")
-        rechecked = next((item for item in rechecked_inventory if int(item.get("gpu_id", -1)) == args.gpu), None)
-        if rechecked is None:
-            raise ResourceContractError("GPU_RECHECK_ID_MISSING")
-        verify_recheck(rechecked, expected_gpu_id=args.gpu, expected_gpu_uuid=str(target["row"]["gpu_uuid"]), minimum_free_mib=args.minimum_free_mib)
-        if not _strict_free(rechecked, args.minimum_free_mib):
-            raise ResourceContractError(f"GPU_RECHECK_FREE_NOT_STRICTLY_GREATER_THAN_{args.minimum_free_mib}")
-        rechecked_target = _target(rechecked_inventory, args.gpu, minimum=args.minimum_free_mib, leased=[], tokens=_project_tokens(args))
-        _write(args.output_root / "RESOURCE_RECHECK.json", {"schema": "STAGE_V_M4_FORMAL_RESOURCE_RECHECK_V1", "status": "PASS", "gpu": rechecked_target["row"], "admission": rechecked_target["admission"], "outcomes_read": False, "protected_counters": dict(COUNTERS)})
-        write_resource_receipt(args.output_root / "RESOURCE_PRE.json", phase="PRE_LAUNCH_RECHECK", gpu_snapshot=rechecked, lease=lease, atomic_job_id=job_id)
-        command = [
-            str(args.python), str(args.runner),
-            "--protocol", str(args.protocol),
-            "--output-dir", str(parent_output),
-            "--official-snapshot-root", str(args.official_snapshot_root),
-            "--upstream-root", str(args.upstream_root),
-            "--model-path", str(args.model_path),
-            "--authorization-receipt", str(args.authorization),
-            "--exact-plan-root", str(args.exact_plan_root),
-            "--parent-key", parent_key,
-            "--gpu", str(args.gpu),
-            "--source-commit", args.source_commit,
-            "--source-tree", args.source_tree,
-            "--exact-plan-manifest-sha256", exact_sha,
-            "--enable-runtime",
-        ]
-        _write(args.output_root / "JOB.json", {"schema": "STAGE_V_M4_FORMAL_PARENT_JOB_V1", "status": "LAUNCHED", "parent_index": args.parent_index, "canonical_parent_key": parent_key, "command": command, "claim": str(claim_path), "outcomes_read": False, "protected_counters": dict(COUNTERS)})
+        hold = {
+            "schema": "STAGE_V_M4_FORMAL_CLAIM_CONFLICT_HOLD_V1",
+            "status": "HOLD_CLAIM_CONFLICT", "parent_index": args.parent_index,
+            "canonical_parent_key": parent_key, "claim_created": False,
+            "child_process_started": False, "intervention_started": False,
+            "reason": f"{type(exc).__name__}:{exc}", "lease_released": released,
+            "outcomes_read": False, "outcomes_used_for_selection": False,
+            "protected_counters": dict(COUNTERS), "created_utc": _utc(),
+        }
+        _write(_next_receipt_path(gate_root, "CLAIM_CONFLICT_HOLD"), hold)
+        print(json.dumps(hold, sort_keys=True))
+        return 75
+    _write(gate_root / "CLAIM_METADATA.json", {
+        "schema": "STAGE_V_M4_FORMAL_PARENT_CLAIM_METADATA_V1",
+        "status": "CLAIMED_FOR_LAUNCH", "claim": str(claim_path),
+        "parent_index": args.parent_index, "canonical_parent_key": parent_key,
+        "outcomes_read": False, "outcomes_used_for_selection": False,
+        "protected_counters": dict(COUNTERS),
+    })
+    command = [
+        str(args.python), str(args.runner), "--protocol", str(args.protocol),
+        "--output-dir", str(parent_output), "--official-snapshot-root", str(args.official_snapshot_root),
+        "--upstream-root", str(args.upstream_root), "--model-path", str(args.model_path),
+        "--authorization-receipt", str(args.authorization), "--exact-plan-root", str(args.exact_plan_root),
+        "--parent-key", parent_key, "--gpu", str(args.gpu), "--source-commit", args.source_commit,
+        "--source-tree", args.source_tree, "--exact-plan-manifest-sha256", exact_sha, "--enable-runtime",
+    ]
+    _write(gate_root / "JOB.json", {
+        "schema": "STAGE_V_M4_FORMAL_PARENT_JOB_V1", "status": "LAUNCH_PENDING",
+        "parent_index": args.parent_index, "canonical_parent_key": parent_key,
+        "command": command, "claim": str(claim_path), "outcomes_read": False,
+        "outcomes_used_for_selection": False, "protected_counters": dict(COUNTERS),
+    })
+    log_path = gate_root / "SCIENCE_RUNNER.log"
+    failure_reasons: list[str] = []
+    child_process_started = False
+    child_process_completed = False
+    return_code: int | None = None
+    process: subprocess.Popen[str] | None = None
+    try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         with log_path.open("w", encoding="utf-8") as log:
-            process = subprocess.Popen(command, cwd=args.source_worktree, stdout=log, stderr=subprocess.STDOUT, text=True)
+            process = subprocess.Popen(command, cwd=args.source_worktree, stdout=log,
+                                       stderr=subprocess.STDOUT, text=True)
+            child_process_started = True
+            _write(gate_root / "CHILD_STARTED.json", {
+                "schema": "STAGE_V_M4_FORMAL_CHILD_STARTED_V1", "status": "PASS",
+                "pid": process.pid, "parent_index": args.parent_index,
+                "canonical_parent_key": parent_key, "outcomes_read": False,
+                "outcomes_used_for_selection": False, "protected_counters": dict(COUNTERS),
+            })
             return_code = process.wait()
-        failure_reasons.extend(_verify_parent(parent_output, return_code))
-        post_inventory, query_error = query_inventory()
-        if query_error:
-            failure_reasons.append(f"GPU_POST_QUERY_FAILED:{query_error}")
-        else:
-            post = next((item for item in post_inventory if int(item.get("gpu_id", -1)) == args.gpu), None)
-            if post is None or str(post.get("gpu_uuid")) != str(target["row"]["gpu_uuid"]):
-                failure_reasons.append("GPU_POST_IDENTITY_INVALID")
+            child_process_completed = True
+    except OSError as exc:
+        failure_reasons.append(f"CHILD_NOT_STARTED:{type(exc).__name__}:{exc}")
+    if child_process_started and not child_process_completed and process is not None:
+        try:
+            return_code = process.wait()
+            child_process_completed = True
+        except OSError as exc:
+            failure_reasons.append(f"CHILD_WAIT_FAILED:{type(exc).__name__}:{exc}")
+    evidence = _runtime_evidence(parent_output, child_process_started=child_process_started,
+                                 child_process_completed=child_process_completed,
+                                 independent_audit_pass=False)
+    independent_audit_pass = False
+    try:
+        if child_process_started:
+            failure_reasons.extend(_verify_parent(parent_output, return_code if return_code is not None else -1))
+            audit_path = parent_output / "M4_INDEPENDENT_AUDIT.json"
+            audit = _load(audit_path) if audit_path.is_file() else {}
+            independent_audit_pass = audit.get("status") == "PASS_M4_PARENT_INDEPENDENT"
+            evidence = _runtime_evidence(parent_output, child_process_started=True,
+                                         child_process_completed=child_process_completed,
+                                         independent_audit_pass=independent_audit_pass)
+            post_inventory, query_error = query_inventory()
+            if query_error:
+                failure_reasons.append(f"GPU_POST_QUERY_FAILED:{query_error}")
             else:
-                write_resource_receipt(args.output_root / "RESOURCE_POST.json", phase="POST_PARENT", gpu_snapshot=post, lease=lease, atomic_job_id=job_id)
+                post = next((item for item in post_inventory if int(item.get("gpu_id", -1)) == args.gpu), None)
+                if post is None or str(post.get("gpu_uuid")) != str(lease["gpu_uuid"]):
+                    failure_reasons.append("GPU_POST_IDENTITY_INVALID")
+                else:
+                    write_resource_receipt(gate_root / "RESOURCE_POST.json", phase="POST_PARENT",
+                                           gpu_snapshot=post, lease=lease, atomic_job_id=job_id)
+        else:
+            evidence["intervention_state"] = "NOT_STARTED"
     except Exception as exc:
-        failure_reasons.append(f"{type(exc).__name__}:{exc}")
-    finally:
-        if lease is not None:
-            release_ok = lease_store.release(lease, reason="PARENT_PASS" if not failure_reasons else "STRUCTURAL_FAILURE")
-            _write(args.output_root / "RESOURCE_RELEASE.json", {"schema": "STAGE_V_M4_FORMAL_RESOURCE_RELEASE_V1", "status": "PASS" if release_ok else "HOLD_RELEASE_FAILED", "release_ok": release_ok, "lease_id": lease["lease_id"], "atomic_job_id": job_id, "reason": "PARENT_PASS" if not failure_reasons else "STRUCTURAL_FAILURE", "outcomes_read": False, "protected_counters": dict(COUNTERS)})
-            if not release_ok:
-                failure_reasons.append("GPU_LEASE_RELEASE_FAILED")
+        failure_reasons.append(f"POST_CLAIM_GATE_EXCEPTION:{type(exc).__name__}:{exc}")
+        evidence = _runtime_evidence(parent_output, child_process_started=child_process_started,
+                                     child_process_completed=child_process_completed,
+                                     independent_audit_pass=independent_audit_pass)
+    try:
+        release_ok = lease_store.release(lease, reason="PARENT_PASS" if not failure_reasons else "STRUCTURAL_FAILURE")
+    except Exception as exc:
+        release_ok = False
+        failure_reasons.append(f"GPU_LEASE_RELEASE_EXCEPTION:{type(exc).__name__}:{exc}")
+    _write(gate_root / "RESOURCE_RELEASE.json", {
+        "schema": "STAGE_V_M4_FORMAL_RESOURCE_RELEASE_V1", "status": "PASS" if release_ok else "HOLD_RELEASE_FAILED",
+        "release_ok": release_ok, "lease_id": lease["lease_id"], "atomic_job_id": job_id,
+        "reason": "PARENT_PASS" if not failure_reasons else "STRUCTURAL_FAILURE",
+        "outcomes_read": evidence["outcomes_read"], "outcomes_used_for_selection": False,
+        "protected_counters": dict(COUNTERS),
+    })
+    if not release_ok:
+        failure_reasons.append("GPU_LEASE_RELEASE_FAILED")
     status = "PASS_FORMAL_M4_PARENT_ATOMIC" if not failure_reasons else "HOLD_FORMAL_M4_STRUCTURAL_FAILURE"
-    status_payload = {"schema": "STAGE_V_M4_FORMAL_PARENT_STATUS_V1", "status": status, "parent_index": args.parent_index, "canonical_parent_key": parent_key, "gpu": args.gpu, "failure_reasons": failure_reasons, "outcomes_read": False, "intervention_executed": status.startswith("PASS_"), "v_phys_generated": status.startswith("PASS_"), "protected_counters": dict(COUNTERS), "completed_utc": _utc()}
-    _write(args.output_root / f"PARENT_{args.parent_index:02d}_STATUS.json", status_payload)
+    status_payload = {
+        "schema": "STAGE_V_M4_FORMAL_PARENT_STATUS_V2", "status": status,
+        "parent_index": args.parent_index, "canonical_parent_key": parent_key,
+        "gpu": args.gpu, "failure_reasons": failure_reasons, "claim_created": True,
+        **evidence, "intervention_executed": evidence["intervention_started"],
+        "v_phys_generated": evidence["v_phys_artifacts_materialized"],
+        "no_rerun_to_pass": evidence["child_process_started"],
+        "protected_counters": dict(COUNTERS), "completed_utc": _utc(),
+    }
+    _write(gate_root / "PARENT_STATUS.json", status_payload)
     if failure_reasons:
-        _write(args.output_root / "GLOBAL_HOLD.json", {"schema": "STAGE_V_M4_FORMAL_GLOBAL_HOLD_V1", "status": "HOLD_STOP_GLOBAL_SCHEDULING", "trigger_parent_index": args.parent_index, "trigger_parent_key": parent_key, "reasons": failure_reasons, "no_rerun_to_pass": True, "outcomes_read": False, "protected_counters": dict(COUNTERS), "created_utc": _utc()})
+        _create_only(args.output_root / "GLOBAL_HOLD.json", {
+            "schema": "STAGE_V_M4_FORMAL_GLOBAL_HOLD_V2", "status": "HOLD_STOP_GLOBAL_SCHEDULING",
+            "trigger_parent_index": args.parent_index, "trigger_parent_key": parent_key,
+            "reasons": failure_reasons, "no_rerun_to_pass": status_payload["no_rerun_to_pass"],
+            "claim_created": True, **evidence, "protected_counters": dict(COUNTERS), "created_utc": _utc(),
+        })
     print(json.dumps(status_payload, sort_keys=True))
     return 0 if status.startswith("PASS_") else 2
 
@@ -376,6 +622,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--protocol", type=Path, required=True)
     parser.add_argument("--authorization", type=Path, required=True)
+    parser.add_argument("--launch-gate-binding", type=Path, required=True)
     parser.add_argument("--final-manifest", type=Path, required=True)
     parser.add_argument("--final-split", type=Path, required=True)
     parser.add_argument("--exact-plan-root", type=Path, required=True)

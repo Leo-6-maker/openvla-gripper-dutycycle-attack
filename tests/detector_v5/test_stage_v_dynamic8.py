@@ -34,6 +34,28 @@ def write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _dynamic_failure_diagnostics(root: Path, result: subprocess.CompletedProcess[str]) -> str:
+    files = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
+    details: dict[str, object] = {
+        "returncode": result.returncode,
+        "stdout": result.stdout[-4000:],
+        "stderr": result.stderr[-4000:],
+        "files": files[:200],
+    }
+    names = {
+        "ABORTED_INCOMPLETE.json", "DISPATCHER_FAILURE.json", "DISPATCHER_STDOUT.log",
+        "AUDITOR_STDOUT.txt", "RUN_MANIFEST.json", "QUEUE_STATE.json",
+    }
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or (path.name not in names and not path.name.startswith("WORKER_STATUS")):
+            continue
+        try:
+            details[path.relative_to(root).as_posix()] = path.read_text(encoding="utf-8", errors="replace")[-4000:]
+        except OSError as exc:
+            details[path.relative_to(root).as_posix()] = f"READ_ERROR:{type(exc).__name__}:{exc}"
+    return json.dumps(details, sort_keys=True)
+
+
 def make_args(root: Path) -> SimpleNamespace:
     return SimpleNamespace(
         run_root=root, approved_gpus=[0, 1, 2, 3, 4, 6, 7, 8], excluded_gpus=[5],
@@ -724,7 +746,8 @@ def test_dynamic8_end_to_end_accepts_all_parents(tmp_path: Path) -> None:
     worker_command = f"{sys.executable} {canary_worker} --parent-key {{parent_key}} --output-dir {{output_dir}} --source-commit {commit} --source-tree {tree}"
     command = [sys.executable, str(supervisor), "--run-root", str(root), "--repo-root", str(repo), "--parent-manifest", str(manifest), "--queue-db", str(queue_db), "--run-id", "e2e", "--expected-parent-count", "8", "--expected-source-commit", commit, "--expected-source-tree", tree, "--lock-path", str(lock), "--approved-gpus", "0,1,2,3,4,6,7,8", "--preflight-file", str(preflight), "--dispatcher-script", str(dispatcher), "--auditor-script", str(auditor), "--worker-command", worker_command, "--skip-resource-checks", "--poll-seconds", "0.1", "--worker-heartbeat-seconds", "0.1", "--heartbeat-stale-seconds", "5", "--min-available-ram-gib", "0"]
     result = subprocess.run(command, cwd=repo, capture_output=True, text=True, timeout=60)
-    assert result.returncode == 0, result.stdout + result.stderr
+    if result.returncode != 0:
+        raise AssertionError(_dynamic_failure_diagnostics(root, result))
     assert json.loads((root / "SUPERVISOR_COMPLETE.json").read_text(encoding="utf-8"))["status"] == "PASS"
     assert json.loads((root / "STAGE_V_COUNTERFACTUAL_AUDIT.json").read_text(encoding="utf-8"))["verdict"] == "PASS"
 
