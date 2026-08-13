@@ -43,7 +43,7 @@ from scripts.detector_v5.run_stage_v_m3_5_v1_4_gate_b import (  # noqa: E402
 )
 from scripts.detector_v5.stage_v_m4_governance import (  # noqa: E402
     M4GovernanceError,
-    validate_formal_m4_corridor_gate,
+    validate_formal_m4_v2_authority,
 )
 
 
@@ -131,7 +131,7 @@ def _load_exact_plan_authority(root: Path, parent_key: str, expected_manifest_sh
     gate_a_root = _inside(root, parent.get("output_dir"))
     gate_a_receipt = _load(gate_a_root / "M3_5_V1_4_GATE_A_RECEIPT.json")
     canaries = gate_a_receipt.get("canary_receipts")
-    if gate_a_receipt.get("status") != "PASS" or not isinstance(canaries, list) or len(canaries) != 24 or any(row.get("status") != "PASS" for row in canaries if isinstance(row, Mapping)):
+    if gate_a_receipt.get("status") != "PASS" or not isinstance(canaries, list) or len(canaries) != 24 or not all(isinstance(row, Mapping) and row.get("status") == "PASS" for row in canaries):
         raise M35RunnerError("EXACT_PLAN_PARENT_CANARY_INVALID")
     for probe in probes:
         snapshot_root = _inside(root, probe.get("snapshot_path"))
@@ -182,22 +182,8 @@ def _seal(root: Path) -> None:
 
 
 def _validate(protocol: Mapping[str, Any], authorization: Mapping[str, Any], *, protocol_path: Path, authorization_path: Path, split_path: Path, args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any]]:
-    if protocol.get("schema") != "STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V1" or protocol.get("status") != "FROZEN_RUNTIME_AUTHORIZED" or protocol.get("runtime_authorized") is not True:
-        raise M35RunnerError("M4_PROTOCOL_NOT_FROZEN_OR_AUTHORIZED")
-    source = protocol.get("source_binding", {})
-    if source.get("runtime_commit") != args.source_commit or source.get("runtime_tree") != args.source_tree:
-        raise M35RunnerError("M4_SOURCE_BINDING_MISMATCH")
-    matrix = protocol.get("matrix", {})
-    if matrix.get("parents") != 40 or matrix.get("probes_per_parent") != 24 or matrix.get("repetitions") != 1 or matrix.get("conditions") != ["CONTROL", "T3", "T5", "T10"]:
-        raise M35RunnerError("M4_MATRIX_INVALID")
-    if protocol.get("protected_counters") != COUNTERS or protocol.get("operation", {}).get("fresh_render_primary_consumption") is not False or protocol.get("operation", {}).get("native_policy_calls_in_primary_window") != 0:
-        raise M35RunnerError("M4_PRIMARY_CONTRACT_INVALID")
-    if not split_path.is_file() or _sha(split_path) != protocol.get("inputs", {}).get("formal_parent_split_sha256"):
-        raise M35RunnerError("M4_SPLIT_BINDING_INVALID")
-    if authorization.get("status") != "PASS" or authorization.get("protocol_sha256") != _sha(protocol_path) or authorization.get("formal_parent_split_sha256") != _sha(split_path) or authorization.get("source_commit") != args.source_commit or authorization.get("source_tree") != args.source_tree:
-        raise M35RunnerError("M4_AUTHORIZATION_BINDING_INVALID")
     try:
-        corridor_gate = validate_formal_m4_corridor_gate(
+        authority = validate_formal_m4_v2_authority(
             protocol,
             protocol_path=protocol_path,
             split_path=split_path,
@@ -207,7 +193,7 @@ def _validate(protocol: Mapping[str, Any], authorization: Mapping[str, Any], *, 
         )
     except M4GovernanceError as exc:
         raise M35RunnerError(str(exc)) from exc
-    return _load(split_path), corridor_gate
+    return _load(split_path), authority
 
 
 def _parent_row(split: Mapping[str, Any], parent_key: str) -> Mapping[str, Any]:
@@ -290,7 +276,7 @@ def run(args: argparse.Namespace) -> int:
         output.mkdir(parents=True, exist_ok=False)
     shutil.copy2(protocol_path, output / "M4_PROTOCOL.json")
     shutil.copy2(authorization_path, output / "M4_AUTHORIZATION.json")
-    shutil.copy2(corridor_gate["receipt_path"], output / "M4_CORRIDOR_PASS_RECEIPT.json")
+    shutil.copy2(corridor_gate["manifest_path"], output / "M4_FINAL_PARENT_MANIFEST.json")
     suite, task_part, state_part = args.parent_key.split("/")
     args.suite = suite
     task_index = int(task_part.removeprefix("task_"))

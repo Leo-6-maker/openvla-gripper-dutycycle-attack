@@ -46,13 +46,37 @@ def _called_names(node: ast.AST) -> set[str]:
     return names
 
 
+def _current_authority_binding_complete(protocol: Mapping[str, Any]) -> bool:
+    inputs = protocol.get("inputs")
+    if not isinstance(inputs, Mapping):
+        return False
+    files = (
+        "v1_supersession_receipt",
+        "formal_parent_manifest",
+        "formal_parent_split",
+        "exact_plan_manifest",
+        "exact_plan_audit",
+        "exact_plan_result",
+        "primary_firewall_report",
+        "teacher_student_freeze_report",
+        "pre_m4_lock_report",
+        "student_checkpoint",
+        "student_thresholds",
+        "feature_schema",
+        "architecture_addendum",
+    )
+    return all(isinstance(inputs.get(f"{name}_{suffix}"), str) and inputs[f"{name}_{suffix}"] for name in files for suffix in ("path", "sha256")) and all(isinstance(inputs.get(f"{name}_root"), str) and inputs[f"{name}_root"] and isinstance(inputs.get(f"{name}_root_seal_sha256"), str) and inputs[f"{name}_root_seal_sha256"] for name in ("exact_plan", "primary_firewall", "teacher_student_freeze", "pre_m4_lock")) and isinstance(inputs.get("feature_order_sha256"), str) and bool(inputs["feature_order_sha256"])
+
+
 def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[str, Any]:
     protocol = _load(protocol_path)
+    is_v2 = protocol.get("schema") == "STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V2"
     runner_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m4_matched_parent.py"
     gate_a_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_a.py"
     gate_b_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py"
     auditor_path = REPO_ROOT / "scripts/detector_v5/audit_stage_v_m4_matched_parent.py"
-    authorization_issuer_path = REPO_ROOT / "scripts/detector_v5/issue_stage_v_m4_runtime_authorization.py"
+    governance_path = REPO_ROOT / "scripts/detector_v5/stage_v_m4_governance.py"
+    authorization_issuer_path = REPO_ROOT / ("scripts/detector_v5/issue_stage_v_m4_runtime_authorization_v2.py" if is_v2 else "scripts/detector_v5/issue_stage_v_m4_runtime_authorization.py")
     snapshot_path = REPO_ROOT / "src/gripper_attack/stage_v_causal_observation_snapshot.py"
     runner_tree = ast.parse(runner_path.read_text(encoding="utf-8"), filename=str(runner_path))
     gate_a_tree = ast.parse(gate_a_path.read_text(encoding="utf-8"), filename=str(gate_a_path))
@@ -60,6 +84,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     runner_text = runner_path.read_text(encoding="utf-8")
     gate_b_text = gate_b_path.read_text(encoding="utf-8")
     auditor_text = auditor_path.read_text(encoding="utf-8")
+    governance_text = governance_path.read_text(encoding="utf-8")
     authorization_issuer_text = authorization_issuer_path.read_text(encoding="utf-8")
     snapshot_text = snapshot_path.read_text(encoding="utf-8")
     replay = _function(gate_a_tree, "_replay_canary")
@@ -70,9 +95,10 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     operation = protocol.get("operation", {})
     source = protocol.get("source_binding", {})
     checks = {
-        "protocol_schema": protocol.get("schema") == "STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V1",
-        "protocol_frozen_authorized": protocol.get("status") == "FROZEN_RUNTIME_AUTHORIZED" and protocol.get("runtime_authorized") is True,
-        "formal_corridor_gate_bound": protocol_declares_corridor_gate(protocol),
+        "protocol_schema": protocol.get("schema") == ("STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V2" if is_v2 else "STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V1"),
+        "protocol_frozen_authorized": (protocol.get("status") == "FROZEN_PROSPECTIVE_NOT_AUTHORIZED" and protocol.get("runtime_authorized") is False) if is_v2 else (protocol.get("status") == "FROZEN_RUNTIME_AUTHORIZED" and protocol.get("runtime_authorized") is True),
+        "formal_corridor_gate_bound": protocol_declares_corridor_gate(protocol) if not is_v2 else _current_authority_binding_complete(protocol),
+        "current_authority_binding_complete": _current_authority_binding_complete(protocol) if is_v2 else True,
         "source_binding": source.get("runtime_commit") == source_commit and source.get("runtime_tree") == source_tree,
         "matrix_exact": matrix == {
             "parents": 40, "probes_per_parent": 24, "repetitions": 1,
@@ -93,14 +119,14 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "runner_never_recomputes_probe_selection": 'select_probe_steps' not in runner_text and 'write_snapshot' not in runner_text and '"probe_selection_recomputed": False' in runner_text,
         "runner_emits_protected_counters": '"protected_counters": dict(COUNTERS)' in runner_text,
         "independent_auditor_is_producer_free": "run_stage_v_m4_matched_parent" not in auditor_text,
-        "runner_requires_formal_corridor_gate": "validate_formal_m4_corridor_gate" in runner_text,
-        "authorization_issuer_requires_formal_corridor_gate": "validate_formal_m4_corridor_gate" in authorization_issuer_text,
+        "runner_requires_formal_corridor_gate": "validate_formal_m4_corridor_gate" in runner_text if not is_v2 else "validate_formal_m4_v2_authority" in runner_text and "M4_PROTOCOL_V1_SUPERSEDED_CURRENT_MAINLINE" in governance_text and "validate_formal_m4_corridor_gate" not in runner_text,
+        "authorization_issuer_requires_formal_corridor_gate": "validate_formal_m4_corridor_gate" in authorization_issuer_text if not is_v2 else "validate_formal_m4_v2_authority" in authorization_issuer_text and "STAGE_V_M4_RUNTIME_AUTHORIZATION_V2" in authorization_issuer_text,
         "snapshot_module_has_exact_binding": all(token in snapshot_text for token in ("CAUSAL_PROBE_SNAPSHOT_V2", "assert_primary_observation_exact", "write_snapshot", "load_snapshot")),
         "protected_counters_zero": protocol.get("protected_counters") == COUNTERS,
     }
     status = "PASS_STATIC_DESIGN_ONLY" if all(checks.values()) else "FAIL_STATIC_CONTRACT"
     return {
-        "schema": "STAGE_V_M4_STATIC_AUDIT_V1",
+        "schema": "STAGE_V_M4_STATIC_AUDIT_V2" if is_v2 else "STAGE_V_M4_STATIC_AUDIT_V1",
         "status": status,
         "runtime_authorized": False,
         "runtime_executed": False,
@@ -113,11 +139,12 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "gate_b_sha256": _sha(gate_b_path),
         "independent_auditor_sha256": _sha(auditor_path),
         "authorization_issuer_sha256": _sha(authorization_issuer_path),
+        "governance_sha256": _sha(governance_path),
         "checks": checks,
         "primary_replay_calls": sorted(replay_calls),
         "primary_branch_calls": sorted(branch_calls),
         "protected_counters": dict(COUNTERS),
-        "next_action": "AUTHORIZE_AND_LAUNCH_M4" if status == "PASS_STATIC_DESIGN_ONLY" else "HOLD_AND_REPAIR",
+        "next_action": "ISSUE_FORMAL_M4_V2_AUTHORIZATION" if is_v2 and status == "PASS_STATIC_DESIGN_ONLY" else "AUTHORIZE_AND_LAUNCH_M4" if status == "PASS_STATIC_DESIGN_ONLY" else "HOLD_AND_REPAIR",
     }
 
 

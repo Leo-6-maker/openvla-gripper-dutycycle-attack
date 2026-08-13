@@ -7,7 +7,7 @@ import pytest
 
 from scripts.detector_v5.audit_stage_v_m4_matched_parent import _truth_label
 from scripts.detector_v5.audit_stage_v_m4_static import audit
-from scripts.detector_v5.stage_v_m4_governance import M4GovernanceError, validate_formal_m4_corridor_gate
+from scripts.detector_v5.stage_v_m4_governance import M4GovernanceError, validate_formal_m4_corridor_gate, validate_formal_m4_v2_authority
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -50,3 +50,16 @@ def test_formal_runner_consumes_frozen_exact_plan_without_runtime_selection() ->
     assert "select_probe_steps" not in runner
     assert "write_snapshot" not in runner
     assert '"probe_selection_recomputed": False' in runner
+
+
+def test_current_authority_rejects_historical_v1_deterministically() -> None:
+    protocol_path = REPO_ROOT / "configs/STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V1.json"
+    protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
+    with pytest.raises(M4GovernanceError, match="M4_PROTOCOL_V1_SUPERSEDED_CURRENT_MAINLINE"):
+        validate_formal_m4_v2_authority(
+            protocol,
+            protocol_path=protocol_path,
+            split_path=Path("/nonexistent/formal_split.json"),
+            source_commit=protocol["source_binding"]["runtime_commit"],
+            source_tree=protocol["source_binding"]["runtime_tree"],
+        )
