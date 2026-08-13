@@ -159,7 +159,7 @@ def _audit(root: Path) -> dict[str, Any]:
                 probe_id = str(probe["probe_id"])
                 snapshot_row = snapshot_rows[index] if index < len(snapshot_rows) else {}
                 snapshot_root = parent_root / str(snapshot_row.get("path"))
-                loaded = load_snapshot(snapshot_root, materialize_torch=False)
+                loaded = load_snapshot(snapshot_root, materialize_torch=True)
                 snapshot_manifest = loaded["manifest"]
                 payload = loaded["payload"]
                 if not REQUIRED_PAYLOAD.issubset(payload):

@@ -290,7 +290,7 @@ def _build_manifest(root: Path, parents: list[dict[str, Any]], source_commit: st
             for probe, snapshot_row in zip(probes, receipt.get("snapshots", [])):
                 probe_id = str(probe["probe_id"])
                 snapshot_path = parent_root / str(snapshot_row["path"])
-                loaded = load_snapshot(snapshot_path, materialize_torch=False)
+                loaded = load_snapshot(snapshot_path, materialize_torch=True)
                 payload = loaded["payload"]
                 snapshot_manifest = loaded["manifest"]
                 if snapshot_manifest.get("binding", {}).get("parent_key") != key or snapshot_manifest.get("binding", {}).get("source_commit") != source_commit or snapshot_manifest.get("binding", {}).get("source_tree") != source_tree:
