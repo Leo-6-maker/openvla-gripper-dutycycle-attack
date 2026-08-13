@@ -11,11 +11,11 @@
     "claim_boundary": "HISTORICAL_NONCONSUMABLE_FOR_CURRENT_MAINLINE"
   },
   "source_binding": {
-    "runtime_commit": "6b480a4efe1e00ac265bcc240d91ed3fa0abcc31",
-    "runtime_tree": "ecbd568849090386ade8b9be0c3e9c91a884e74a",
+    "runtime_commit": "3b1c6ed1255cf6dbd76ac63bf0617579cd5b55eb",
+    "runtime_tree": "45458f269a9b9aa57157fe9b2ac715a3e2e5754b",
     "runtime_file_sha256": {
       "scripts/detector_v5/run_stage_v_m4_matched_parent.py": "0665b8adf3e910ff8e6e5cd7eae69694bbc31ad5d5cce60c1e27d1db12fdee77",
-      "scripts/detector_v5/stage_v_m4_governance.py": "f19b86954070c83227a43b482cf25644596fc0b175d52583973c543a27b933dd",
+      "scripts/detector_v5/stage_v_m4_governance.py": "dafbc125fd898d3c6dd2ce463e9105a86ebdc5db2b729d57983e8ebf35cd76b5",
       "scripts/detector_v5/audit_stage_v_m4_static.py": "31974172e7bb1cd79c151e4746f6b96602bc7110e64de3265e16ed081b73685b",
       "scripts/detector_v5/issue_stage_v_m4_runtime_authorization_v2.py": "f1522ebb586c121d7b30eb59d8a11f562fdaeafbcd3a4b5a58cfbd993db8c7d3",
       "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_a.py": "e872608fb975ba77143eb3cc557de8c6b0a06c4e4ff65f6ffc3416ae2771edc9",
