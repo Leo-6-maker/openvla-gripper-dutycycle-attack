@@ -1,0 +1,37 @@
+{
+  "authorization_kind": "RESERVE_CANDIDATE",
+  "candidate_parent_count": 22,
+  "candidate_parent_manifest": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_POST_HOLD_CANDIDATE_PARENT_MANIFEST_V1_1.json",
+  "candidate_parent_manifest_sha256": "8f13e8427d19118cf7988be57a46c19fd1226af1941e00156b626e42f1c88be3",
+  "clean_replicates": [
+    "A",
+    "B"
+  ],
+  "foreign_workload_allowed": true,
+  "formal_parent_count": null,
+  "formal_parent_split": null,
+  "formal_parent_split_sha256": null,
+  "intervention_executed": false,
+  "minimum_corridor_candidates": 24,
+  "minimum_free_memory_mib": 20480,
+  "outcomes_read": false,
+  "owner_authorization_basis": "POST_HOLD_V1_1_OWNER_AUTHORIZED_CLEAN_ONLY_GPU_GT_20GIB",
+  "protected_counters": {
+    "attack_rollouts": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "protocol": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_POST_HOLD_V1_1.json",
+  "protocol_sha256": "b4a52ad87ce4fcd39a619ec8512cef377e51ad64296d0dd92153b40f833393c8",
+  "repository_head": "3b2ffdb5809710e3c7f2e0a529600c8d7a79b9b2",
+  "repository_tree": "2492a075e782a112d1e857248956b2647e751039",
+  "schema": "STAGE_V_M4_CORRIDOR_RUNTIME_AUTHORIZATION_V1",
+  "source_commit": "3b2ffdb5809710e3c7f2e0a529600c8d7a79b9b2",
+  "source_tree": "2492a075e782a112d1e857248956b2647e751039",
+  "static_audit": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_STATIC_AUDIT_POST_HOLD_V1_1.json",
+  "static_audit_sha256": "511b471286eee67a90f84edde9c3623e1e68aa5fda672fbe29566e0dd07d95f1",
+  "status": "PASS",
+  "v7_formal_receipt": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_QUALIFICATION_PASS_V1_20260812T113000Z/V7_FORMAL_QUALIFICATION_PASS_RECEIPT.json",
+  "v7_formal_receipt_sha256": "36af16ea9c79a7a6a6537d5be2de3b18a69fed2cce523b05c368009c99709118"
+}
