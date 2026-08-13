@@ -438,7 +438,7 @@ def main(argv: list[str] | None = None) -> int:
     terminal = terminal_receipts(report)
     require(sum(1 for pair in terminal.values() if pair["A"].get("status") == "PASS" and pair["B"].get("status") == "PASS") == 32, "V2_PASS_PASS_COUNT_INVALID")
     candidate = load_json(args.candidate_manifest.resolve())
-    require(candidate.get("schema") == "STAGE_V_M4_POST_HOLD_CANDIDATE_PARENT_MANIFEST_V1_1" and candidate.get("status") == "FROZEN" and candidate.get("candidate_count") == 22 and candidate.get("outcomes_read") is False, "CANDIDATE_MANIFEST_INVALID")
+    require(candidate.get("schema") == "STAGE_V_M4_CORRIDOR_RESERVE_PARENT_MANIFEST_V1" and candidate.get("status") == "FROZEN" and candidate.get("candidate_count") == 22 and candidate.get("outcomes_read") is False, "CANDIDATE_MANIFEST_INVALID")
     runtime = load_json(args.runtime_reconciliation.resolve())
     require(bindings["runtime_reconciliation"]["sha256"] == "6fce4411d737f16be7e01b76475d714bbef28006c51e667dec93afca22191a6a", "RUNTIME_RECONCILIATION_SHA_MISMATCH")
     require(sidecar_matches(args.runtime_reconciliation.resolve()), "RUNTIME_RECONCILIATION_SIDECAR_INVALID")
