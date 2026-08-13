@@ -41,6 +41,34 @@ def _sealed(root: Path, name: str) -> tuple[dict[str, Any], str]:
     return _json(path), seal
 
 
+def _sealed_exact_plan(root: Path, name: str) -> tuple[dict[str, Any], str]:
+    """Verify the exact-plan producer's ROOT_SEAL format."""
+    root = _root(root)
+    sums = root / "SHA256SUMS"
+    pointer = root / "ROOT_SEAL.sha256"
+    if not sums.is_file() or not pointer.is_file():
+        raise ValueError(f"exact-plan seal missing: {root}")
+    digest = sha256_file(sums)
+    if pointer.read_text(encoding="utf-8").strip() != f"{digest}  SHA256SUMS":
+        raise ValueError(f"exact-plan seal pointer mismatch: {root}")
+    listed: set[str] = set()
+    for line in sums.read_text(encoding="utf-8").splitlines():
+        item, separator, relative_name = line.partition("  ")
+        if not separator or len(item) != 64 or relative_name in listed or relative_name in {"SHA256SUMS", "ROOT_SEAL.sha256"}:
+            raise ValueError(f"invalid exact-plan seal row: {line!r}")
+        relative = Path(relative_name)
+        if relative.is_absolute() or ".." in relative.parts or not (root / relative).is_file() or sha256_file(root / relative) != item:
+            raise ValueError(f"invalid exact-plan sealed file: {relative_name}")
+        listed.add(relative_name)
+    actual = {path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file() and path.name not in {"SHA256SUMS", "ROOT_SEAL.sha256"}}
+    if actual != listed:
+        raise ValueError(f"exact-plan seal closure mismatch: missing={sorted(actual - listed)} extra={sorted(listed - actual)}")
+    path = root / name
+    if not path.is_file() or path.is_symlink():
+        raise ValueError(f"missing sealed file: {path}")
+    return _json(path), digest
+
+
 def _file(path: Path) -> Path:
     value = path.resolve(strict=True)
     if not value.is_file() or value.is_symlink():
@@ -80,8 +108,8 @@ def seal(*, firewall_root: Path, final_manifest: Path, final_split: Path, exact_
     _require_boundary(split, "final split")
 
     exact_root = _root(exact_plan_root)
-    plan, plan_seal = _sealed(exact_root, "PLAN_RESULT.json")
-    exact_manifest, _ = _sealed(exact_root, "EXACT_PROBE_AND_SNAPSHOT_MANIFEST.json")
+    plan, plan_seal = _sealed_exact_plan(exact_root, "PLAN_RESULT.json")
+    exact_manifest, _ = _sealed_exact_plan(exact_root, "EXACT_PROBE_AND_SNAPSHOT_MANIFEST.json")
     if plan.get("status") != "PASS" or plan.get("manifest_status") != "PASS_EXACT_40X24_PLAN_ONLY" or plan.get("parent_count") != 40 or plan.get("probe_count_total") != 960 or plan.get("planned_branch_authority_count") != 3840 or plan.get("outcomes_read") is not False or plan.get("intervention_executed") is not False or plan.get("protected_counters") != COUNTERS:
         raise ValueError("exact 40x24 plan is not a PASS")
     if exact_manifest.get("status") != "PASS_EXACT_40X24_PLAN_ONLY" or exact_manifest.get("final40_manifest_sha256") != _sha(final_manifest) or exact_manifest.get("final_split_sha256") != _sha(final_split):

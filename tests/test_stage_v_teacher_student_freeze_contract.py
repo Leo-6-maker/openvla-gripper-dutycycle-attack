@@ -18,3 +18,9 @@ def test_pre_m4_lock_binds_freeze_and_exact_plan() -> None:
     assert '"planned_branch_count": 3840' in source
     assert '"teacher_predictions_read": False' in source
     assert '"student_predictions_read": False' in source
+
+
+def test_freeze_accepts_exact_plan_root_seal_format() -> None:
+    source = (ROOT / "scripts/detector_v5/seal_stage_v_primary_teacher_student_freeze.py").read_text(encoding="utf-8")
+    assert "ROOT_SEAL.sha256" in source
+    assert "_sealed_exact_plan" in source
