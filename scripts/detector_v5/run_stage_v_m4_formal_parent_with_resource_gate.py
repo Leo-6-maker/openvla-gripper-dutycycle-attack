@@ -289,7 +289,17 @@ def _legacy_controller_rows() -> list[dict[str, Any]]:
         except ValueError:
             continue
         command = values[1]
-        if pid != os.getpid() and any(token in command for token in LEGACY_CONTROLLER_TOKENS):
+        if pid == os.getpid() or not any(token in command for token in LEGACY_CONTROLLER_TOKENS):
+            continue
+        try:
+            executable = Path(os.readlink(f"/proc/{pid}/exe")).name
+        except OSError:
+            executable = ""
+        # ponytail: shared tmux/bash wrappers retain historical argv; only a live
+        # Python controller process is an authority conflict.
+        if executable and not executable.startswith("python"):
+            continue
+        if any(token in command for token in LEGACY_CONTROLLER_TOKENS):
             rows.append({"pid": pid, "command": command})
     return rows
 

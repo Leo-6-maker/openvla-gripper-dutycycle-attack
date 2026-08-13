@@ -71,6 +71,18 @@ def test_legacy_controller_hold_happens_before_claim_and_lease(tmp_path: Path, m
     assert store.active() == []
 
 
+def test_legacy_scan_ignores_shared_tmux_wrapper(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(gate.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(
+        returncode=0,
+        stdout="101 tmux new-session monitor_stage_v_goal.py\n202 python -u run_stage_v_r2_plan_controller.py\n",
+    ))
+    real_readlink = gate.os.readlink
+    monkeypatch.setattr(gate.os, "readlink", lambda path: "/usr/bin/tmux" if "/101/" in path else "/usr/bin/python")
+    rows = gate._legacy_controller_rows()
+    monkeypatch.setattr(gate.os, "readlink", real_readlink)
+    assert rows == [{"pid": 202, "command": "python -u run_stage_v_r2_plan_controller.py"}]
+
+
 def test_two_workers_use_independent_parent_receipts_and_atomic_leases(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(gate, "query_inventory", lambda: (_inventory(), None))
     monkeypatch.setattr(gate, "_legacy_controller_rows", lambda: [])
