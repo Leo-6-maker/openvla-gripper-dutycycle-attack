@@ -55,9 +55,11 @@ def test_closure_passes_only_when_all_96_failed_before_action(tmp_path):
     assert report["status"] == "PASS_PREINTERVENTION_STRUCTURAL_INVALIDATION"
     assert report["rows_total"] == report["actions_total"] == report["treatment_receipts_total"] == 0
     assert report["binary_label_consumable_count"] == 0
+    assert report["valid_v_phys_count"] == 0
     assert report["physical_intervention_executed"] is False
     assert report["pre_primary_restore_failure_count"] == 96
     assert report["post_snapshot_primary_window_steps_total"] == 0
+    assert report["clean_prefix_replay_steps_counted"] is False
 
 
 def test_any_treatment_receipt_blocks_preintervention_reexecution_claim(tmp_path):

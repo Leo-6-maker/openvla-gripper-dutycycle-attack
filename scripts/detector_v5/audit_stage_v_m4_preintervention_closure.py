@@ -147,6 +147,7 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, gate_b_runner: 
         errors.append("PROTECTED_COUNTERS")
 
     binary_labels = [row for row in labels if row.get("binary_label_consumable") is True]
+    valid_v_phys = [row for row in labels if row.get("label_class") in {"V_PHYS", "NO_PHYSICAL_VULNERABILITY"}]
     treatment = [item for item in summaries if item["arm"] != "CONTROL"]
     control = [item for item in summaries if item["arm"] == "CONTROL"]
     physical_intervention_evidence = any(item["physical_intervention_evidence"] for item in summaries)
@@ -192,8 +193,7 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, gate_b_runner: 
         "rows_total": sum(item["rows_count"] for item in summaries),
         "actions_total": sum(item["actions_count"] for item in summaries),
         "treatment_receipts_total": sum(item["treatment_receipts_count"] for item in treatment),
-        "successful_env_steps_evidenced_total": sum(item["rows_count"] for item in summaries),
-        "physical_env_steps_total": sum(item["rows_count"] for item in summaries),
+        "primary_window_rows_evidenced_total": sum(item["rows_count"] for item in summaries),
         "treatment_window_env_steps_evidenced_total": sum(item["treatment_window_rows_count"] for item in treatment),
         "delivered_treatment_step_count": sum(item["treatment_window_rows_count"] for item in treatment),
         "treatment_action_rows_total": sum(item["actions_count"] for item in treatment),
@@ -203,6 +203,9 @@ def audit(parent_root: Path, output_root: Path, parent_key: str, gate_b_runner: 
         "treatment_primary_window_steps_total": sum(item["rows_count"] for item in treatment),
         "treatment_compliant_branch_count": sum(item["treatment_compliant"] for item in treatment),
         "binary_label_consumable_count": len(binary_labels),
+        "valid_v_phys_count": len(valid_v_phys),
+        "clean_prefix_replay_steps_counted": False,
+        "post_snapshot_step_scope": "rows/actions/receipts emitted by Gate-B after snapshot restore; clean-prefix replay is excluded",
         "control_rows_total": sum(item["rows_count"] for item in control),
         "treatment_rows_total": sum(item["rows_count"] for item in treatment),
         "physical_intervention_executed": physical_intervention_evidence,
@@ -250,7 +253,7 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(json.dumps({"status": "HOLD_CLOSURE_AUDIT_ERROR", "error": f"{type(exc).__name__}:{exc}"}, sort_keys=True))
         return 2
-    print(json.dumps({key: report[key] for key in ("status", "rows_total", "actions_total", "treatment_receipts_total", "physical_env_steps_total", "delivered_treatment_step_count", "treatment_action_rows_total", "post_snapshot_primary_window_steps_total", "forced_open_steps_total", "control_primary_window_steps_total", "treatment_primary_window_steps_total", "successful_env_steps_evidenced_total", "treatment_window_env_steps_evidenced_total", "treatment_compliant_branch_count", "binary_label_consumable_count", "physical_intervention_executed", "pre_primary_restore_failure_count", "failure_stage_counts", "errors")}, sort_keys=True))
+    print(json.dumps({key: report[key] for key in ("status", "rows_total", "actions_total", "treatment_receipts_total", "delivered_treatment_step_count", "treatment_action_rows_total", "post_snapshot_primary_window_steps_total", "forced_open_steps_total", "control_primary_window_steps_total", "treatment_primary_window_steps_total", "primary_window_rows_evidenced_total", "treatment_window_env_steps_evidenced_total", "treatment_compliant_branch_count", "binary_label_consumable_count", "valid_v_phys_count", "physical_intervention_executed", "pre_primary_restore_failure_count", "failure_stage_counts", "errors")}, sort_keys=True))
     return 0 if report["status"] == "PASS_PREINTERVENTION_STRUCTURAL_INVALIDATION" else 2
 
 
