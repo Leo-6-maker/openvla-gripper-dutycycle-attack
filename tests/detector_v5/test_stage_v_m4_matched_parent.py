@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.detector_v5.audit_stage_v_m4_matched_parent import _truth_label
 from scripts.detector_v5.audit_stage_v_m4_static import audit
