@@ -67,7 +67,7 @@ def _current_authority_binding_complete(protocol: Mapping[str, Any]) -> bool:
     )
     complete = all(isinstance(inputs.get(f"{name}_{suffix}"), str) and inputs[f"{name}_{suffix}"] for name in files for suffix in ("path", "sha256")) and all(isinstance(inputs.get(f"{name}_root"), str) and inputs[f"{name}_root"] and isinstance(inputs.get(f"{name}_root_seal_sha256"), str) and inputs[f"{name}_root_seal_sha256"] for name in ("exact_plan", "primary_firewall", "teacher_student_freeze", "pre_m4_lock")) and isinstance(inputs.get("feature_order_sha256"), str) and bool(inputs["feature_order_sha256"])
     if protocol.get("successor_protocol") is True:
-        complete = complete and all(isinstance(inputs.get(f"{name}_{suffix}"), str) and inputs[f"{name}_{suffix}"] for name in ("snapshot_rebind_receipt", "compatibility_q00_result", "compatibility_q00_audit", "compatibility_fleet_preflight", "compatibility_fleet_authority", "compatibility_fleet_result", "compatibility_runtime_provenance") for suffix in ("path", "sha256"))
+        complete = complete and all(isinstance(inputs.get(f"{name}_{suffix}"), str) and inputs[f"{name}_{suffix}"] for name in ("snapshot_rebind_receipt", "compatibility_q00_result", "compatibility_q00_audit", "compatibility_fleet_preflight", "compatibility_fleet_authority", "compatibility_fleet_result", "compatibility_runtime_provenance", "successor_runtime_provenance") for suffix in ("path", "sha256"))
         complete = complete and isinstance(inputs.get("compatibility_audit_root"), str) and bool(inputs["compatibility_audit_root"]) and isinstance(inputs.get("compatibility_audit_root_seal_sha256"), str) and bool(inputs["compatibility_audit_root_seal_sha256"])
     return complete
 
@@ -131,6 +131,8 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     protocol = _load(protocol_path)
     is_v2 = protocol.get("schema") == "STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V2"
     runner_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m4_matched_parent.py"
+    formal_gate_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m4_formal_parent_with_resource_gate.py"
+    scheduler_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m4_formal_scheduler.py"
     gate_a_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_a.py"
     gate_b_path = REPO_ROOT / "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py"
     auditor_path = REPO_ROOT / "scripts/detector_v5/audit_stage_v_m4_matched_parent.py"
@@ -141,6 +143,8 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     gate_a_tree = ast.parse(gate_a_path.read_text(encoding="utf-8"), filename=str(gate_a_path))
     gate_b_tree = ast.parse(gate_b_path.read_text(encoding="utf-8"), filename=str(gate_b_path))
     runner_text = runner_path.read_text(encoding="utf-8")
+    formal_gate_text = formal_gate_path.read_text(encoding="utf-8")
+    scheduler_text = scheduler_path.read_text(encoding="utf-8")
     gate_b_text = gate_b_path.read_text(encoding="utf-8")
     auditor_text = auditor_path.read_text(encoding="utf-8")
     governance_text = governance_path.read_text(encoding="utf-8")
@@ -178,6 +182,13 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "runner_loads_exact_frozen_plan": all(token in runner_text for token in ('_load_exact_plan_authority', '--exact-plan-root', 'EXACT_FROZEN_PLAN_MANIFEST')),
         "runner_never_recomputes_probe_selection": 'select_probe_steps' not in runner_text and 'write_snapshot' not in runner_text and '"probe_selection_recomputed": False' in runner_text,
         "runner_emits_protected_counters": '"protected_counters": dict(COUNTERS)' in runner_text,
+        "global_atomic_parent_scheduler": scheduler_path.is_file() and all(token in scheduler_text for token in ("_scheduler_lock", "_pending", "_eligible_gpus", "_write_progress", "rolling_replenishment")) and protocol.get("resource_contract", {}).get("atomic_global_queue") is True,
+        "scheduler_claims_frozen_40_only": all(token in scheduler_text for token in ("_frozen_queue", '"parent_keys"', "parent_count")),
+        "scheduler_dynamic_admission": all(token in scheduler_text for token in ("query_inventory", "admit_mode_b_or_c", "MIN_FREE_MEMORY_MIB", "_reservation_gpu_ids")),
+        "scheduler_rolling_replenishment": all(token in scheduler_text for token in ("active", "process.poll", "assigned.discard", "subprocess.Popen")),
+        "claim_identity_binding": all(token in formal_gate_text for token in ("physical_gpu_index", "gpu_uuid", "cuda_visible_devices", "worker_pid", "authority_sha256", "protocol_sha256", "runtime_provenance_sha256", "attempt_ordinal")),
+        "claim_atomic_exclusion": "path.open(\"x\"" in formal_gate_text,
+        "scheduler_source_binding": source.get("runtime_file_sha256", {}).get("scripts/detector_v5/run_stage_v_m4_formal_scheduler.py") == _sha(scheduler_path),
         "independent_auditor_is_producer_free": "run_stage_v_m4_matched_parent" not in auditor_text,
         "runner_requires_formal_corridor_gate": "validate_formal_m4_corridor_gate" in runner_text if not is_v2 else "validate_formal_m4_v2_authority" in runner_text and "M4_PROTOCOL_V1_SUPERSEDED_CURRENT_MAINLINE" in governance_text and "validate_formal_m4_corridor_gate" not in runner_text,
         "authorization_issuer_requires_formal_corridor_gate": "validate_formal_m4_corridor_gate" in authorization_issuer_text if not is_v2 else "validate_formal_m4_v2_authority" in authorization_issuer_text and "STAGE_V_M4_RUNTIME_AUTHORIZATION_V2" in authorization_issuer_text,
@@ -195,6 +206,8 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "source_commit": source_commit,
         "source_tree": source_tree,
         "runner_sha256": _sha(runner_path),
+        "formal_gate_sha256": _sha(formal_gate_path),
+        "scheduler_sha256": _sha(scheduler_path),
         "gate_a_sha256": _sha(gate_a_path),
         "gate_b_sha256": _sha(gate_b_path),
         "independent_auditor_sha256": _sha(auditor_path),

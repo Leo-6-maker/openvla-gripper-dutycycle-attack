@@ -226,6 +226,9 @@ def _validate_successor_snapshot_rebind(
     successor_files = protocol.get("source_binding", {}).get("runtime_file_sha256")
     if bridge.get("successor_runtime_file_sha256") != successor_files or bridge.get("execution_runtime_files_unchanged") is not True:
         raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_RUNTIME_FILES_INVALID")
+    successor_provenance_sha = inputs.get("successor_runtime_provenance_sha256")
+    if not isinstance(successor_provenance_sha, str) or not successor_provenance_sha or bridge.get("successor_runtime_provenance_sha256") != successor_provenance_sha:
+        raise M4GovernanceError("M4_V2_SUCCESSOR_PROVENANCE_BINDING_INVALID")
     modules = provenance.get("imported_modules")
     if not isinstance(modules, list) or bridge.get("imported_modules") != modules:
         raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_MODULE_BINDING_INVALID")
@@ -296,6 +299,7 @@ def validate_formal_m4_v2_authority(
             "compatibility_fleet_authority",
             "compatibility_fleet_result",
             "compatibility_runtime_provenance",
+            "successor_runtime_provenance",
         )
     files = {name: _bound_file(inputs, protocol_path, name) for name in required_files}
     if not _path_matches(inputs.get("formal_parent_split_path"), split_path):
@@ -392,6 +396,11 @@ def validate_formal_m4_v2_authority(
             compatibility_hashes=compatibility_hashes,
             provenance=provenance,
         )
+        successor_provenance_path, successor_provenance_sha = files["successor_runtime_provenance"]
+        successor_provenance = _load(successor_provenance_path)
+        successor_source = successor_provenance.get("source_worktree", {})
+        if successor_provenance.get("schema") != "STAGE_V_EXTERNAL_RUNTIME_PROVENANCE_V1" or successor_provenance.get("status") != "PASS_RUNTIME_PROVENANCE_CAPTURED" or successor_provenance.get("runtime_authorized") is not False or successor_provenance.get("outcomes_read") is not False or successor_provenance.get("intervention_executed") is not False or successor_provenance.get("protected_counters") != COUNTERS or successor_source.get("commit") != source_commit or successor_source.get("tree") != source_tree or successor_source.get("status_porcelain") not in ("", None):
+            raise M4GovernanceError("M4_V2_SUCCESSOR_PROVENANCE_INVALID")
 
     firewall_root = _bound_root(inputs, protocol_path, "primary_firewall")
     firewall_path, firewall_sha = files["primary_firewall_report"]
@@ -444,7 +453,7 @@ def validate_formal_m4_v2_authority(
         raise M4GovernanceError("M4_V2_ARCHITECTURE_ADDENDUM_INVALID")
 
     if authorization is not None:
-        if authorization.get("schema") != "STAGE_V_M4_RUNTIME_AUTHORIZATION_V2" or authorization.get("status") != "PASS" or authorization.get("authorization_kind") != "FORMAL_M4_V2" or authorization.get("runtime_authorized") is not True or authorization.get("protocol_sha256") != sha256(protocol_path) or authorization.get("source_commit") != source_commit or authorization.get("source_tree") != source_tree or authorization.get("protected_counters") != COUNTERS or authorization.get("intervention_executed") is not False or authorization.get("outcomes_read") is not False or authorization.get("v_phys_generated") is not False:
+        if authorization.get("schema") != "STAGE_V_M4_RUNTIME_AUTHORIZATION_V2" or authorization.get("status") != "PASS" or authorization.get("authorization_kind") != "FORMAL_M4_V2" or authorization.get("runtime_authorized") is not True or authorization.get("formal_m4_authorized") is not True or authorization.get("owner_authorized") is not True or authorization.get("protocol_sha256") != sha256(protocol_path) or authorization.get("source_commit") != source_commit or authorization.get("source_tree") != source_tree or authorization.get("protected_counters") != COUNTERS or authorization.get("intervention_executed") is not False or authorization.get("outcomes_read") is not False or authorization.get("v_phys_generated") is not False:
             raise M4GovernanceError("M4_V2_RUNTIME_AUTHORIZATION_INVALID")
         bindings = authorization.get("authority_bindings")
         if not isinstance(bindings, Mapping) or bindings.get("formal_parent_manifest_sha256") != manifest_sha or bindings.get("formal_parent_split_sha256") != split_sha or bindings.get("exact_plan_manifest_sha256") != exact_manifest_sha or bindings.get("primary_firewall_report_sha256") != firewall_sha or bindings.get("teacher_student_freeze_report_sha256") != freeze_sha or bindings.get("pre_m4_lock_report_sha256") != lock_sha or bindings.get("student_checkpoint_sha256") != checkpoint_sha or bindings.get("student_thresholds_sha256") != thresholds_sha or bindings.get("feature_schema_sha256") != feature_sha or bindings.get("feature_order_sha256") != inputs.get("feature_order_sha256"):

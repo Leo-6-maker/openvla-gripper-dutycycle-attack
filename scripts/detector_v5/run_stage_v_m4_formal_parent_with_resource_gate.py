@@ -237,11 +237,20 @@ def _ensure_queue(root: Path, queue: Mapping[str, Any]) -> None:
     _write(path, queue)
 
 
-def _claim(root: Path, parent_index: int, parent_key: str) -> Path:
+def _claim(root: Path, parent_index: int, parent_key: str, *, claim_metadata: Mapping[str, Any] | None = None) -> Path:
+    root.mkdir(parents=True, exist_ok=True)
+    metadata = dict(claim_metadata or {})
+    if metadata:
+        required = ("worker_id", "physical_gpu_index", "gpu_uuid", "cuda_visible_devices", "worker_pid", "source_commit", "source_tree", "authority_sha256", "protocol_sha256", "runtime_provenance_sha256", "attempt_ordinal")
+        missing = [key for key in required if key not in metadata]
+        if missing:
+            raise ValueError(f"CLAIM_IDENTITY_BINDING_MISSING:{','.join(missing)}")
+        if int(metadata["attempt_ordinal"]) < 1:
+            raise ValueError("CLAIM_ATTEMPT_ORDINAL_INVALID")
     path = root / "CLAIM.json"
     try:
         with path.open("x", encoding="utf-8") as handle:
-            json.dump({
+            payload = {
                 "schema": "STAGE_V_M4_FORMAL_PARENT_CLAIM_V1",
                 "parent_index": parent_index,
                 "canonical_parent_key": parent_key,
@@ -250,7 +259,9 @@ def _claim(root: Path, parent_index: int, parent_key: str) -> Path:
                 "outcomes_read": False,
                 "outcomes_used_for_selection": False,
                 "protected_counters": dict(COUNTERS),
-            }, handle, indent=2, sort_keys=True)
+            }
+            payload.update(metadata)
+            json.dump(payload, handle, indent=2, sort_keys=True)
             handle.write("\n")
     except FileExistsError as exc:
         raise ValueError(f"PARENT_ALREADY_CLAIMED_NO_RERUN:{parent_index}") from exc
@@ -265,6 +276,7 @@ LEGACY_CONTROLLER_TOKENS = (
 
 LAUNCH_GATE_FILES = (
     "scripts/detector_v5/run_stage_v_m4_formal_parent_with_resource_gate.py",
+    "scripts/detector_v5/run_stage_v_m4_formal_scheduler.py",
     "scripts/detector_v5/stage_v_gpu_resource_contract.py",
     "scripts/detector_v5/run_stage_v_m4_matched_parent.py",
     "scripts/detector_v5/stage_v_m4_governance.py",
@@ -435,7 +447,7 @@ def run(args: argparse.Namespace) -> int:
     if not 0 <= args.gpu <= 7:
         raise ValueError("GPU_INDEX_OUT_OF_AUTHORIZED_POOL")
     protocol, authorization = _load(args.protocol), _load(args.authorization)
-    if authorization.get("formal_m4_authorized") is not True:
+    if authorization.get("formal_m4_authorized") is not True or authorization.get("owner_authorized") is not True:
         raise ValueError("FORMAL_M4_AUTHORIZATION_FLAG_FALSE")
     if authorization.get("runtime_authorized") is not True or authorization.get("outcomes_read") is not False or authorization.get("intervention_executed") is not False:
         raise ValueError("M4_AUTHORIZATION_BOUNDARY_INVALID")
@@ -454,6 +466,14 @@ def run(args: argparse.Namespace) -> int:
     manifest = _load(args.final_manifest)
     manifest_sha, split_sha, exact_sha = sha256(args.final_manifest), sha256(args.final_split), authority["exact_plan_manifest_sha256"]
     protocol_sha, authorization_sha = sha256(args.protocol), sha256(args.authorization)
+    runtime_provenance_sha = str(
+        getattr(args, "runtime_provenance_sha256", "")
+        or authorization.get("runtime_provenance_sha256", "")
+        or authorization.get("authority_bindings", {}).get("runtime_provenance_sha256", "")
+        or authorization.get("authority_bindings", {}).get("successor_runtime_provenance_sha256", "")
+    )
+    if not runtime_provenance_sha:
+        raise ValueError("RUNTIME_PROVENANCE_BINDING_MISSING")
     queue = _frozen_queue(manifest, manifest_sha=manifest_sha, split_sha=split_sha, exact_sha=exact_sha, protocol_sha=protocol_sha, authorization_sha=authorization_sha)
     if not 0 <= args.parent_index < 40:
         raise ValueError("PARENT_INDEX_OUT_OF_QUEUE")
@@ -497,7 +517,26 @@ def run(args: argparse.Namespace) -> int:
         return 75
 
     try:
-        claim_path = _claim(gate_root, args.parent_index, parent_key)
+        claim_path = _claim(
+            gate_root,
+            args.parent_index,
+            parent_key,
+            claim_metadata={
+                "worker_id": lease["worker_id"],
+                "physical_gpu_index": lease["gpu_id"],
+                "gpu_id": lease["gpu_id"],
+                "gpu_uuid": lease["gpu_uuid"],
+                "cuda_visible_devices": str(args.gpu),
+                "worker_pid": lease["worker_pid"],
+                "source_commit": args.source_commit,
+                "source_tree": args.source_tree,
+                "authority_sha256": authorization_sha,
+                "protocol_sha256": protocol_sha,
+                "authorization_sha256": authorization_sha,
+                "runtime_provenance_sha256": runtime_provenance_sha,
+                "attempt_ordinal": args.attempt_ordinal,
+            },
+        )
     except Exception as exc:
         released = lease_store.release(lease, reason="CLAIM_CONFLICT")
         _write(_next_receipt_path(gate_root, "RESOURCE_RELEASE"), {
@@ -549,8 +588,10 @@ def run(args: argparse.Namespace) -> int:
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         with log_path.open("w", encoding="utf-8") as log:
+            child_env = os.environ.copy()
+            child_env["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
             process = subprocess.Popen(command, cwd=args.source_worktree, stdout=log,
-                                       stderr=subprocess.STDOUT, text=True)
+                                       stderr=subprocess.STDOUT, text=True, env=child_env)
             child_process_started = True
             _write(gate_root / "CHILD_STARTED.json", {
                 "schema": "STAGE_V_M4_FORMAL_CHILD_STARTED_V1", "status": "PASS",
@@ -653,6 +694,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source-tree", required=True)
     parser.add_argument("--parent-index", type=int, default=0)
     parser.add_argument("--gpu", type=int, required=True)
+    parser.add_argument("--attempt-ordinal", type=int, default=1)
+    parser.add_argument("--runtime-provenance-sha256", default="")
     parser.add_argument("--minimum-free-mib", type=int, default=MIN_FREE_MEMORY_MIB)
     args = parser.parse_args(argv)
     try:

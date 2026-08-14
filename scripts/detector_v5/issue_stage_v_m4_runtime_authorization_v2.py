@@ -26,6 +26,8 @@ RUNTIME_FILES = (
     "scripts/detector_v5/stage_v_m4_governance.py",
     "scripts/detector_v5/audit_stage_v_m4_static.py",
     "scripts/detector_v5/issue_stage_v_m4_runtime_authorization_v2.py",
+    "scripts/detector_v5/run_stage_v_m4_formal_scheduler.py",
+    "scripts/detector_v5/run_stage_v_m4_formal_parent_with_resource_gate.py",
     "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_a.py",
     "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py",
     "src/gripper_attack/stage_v_causal_observation_snapshot.py",
@@ -102,6 +104,7 @@ def _authority_bindings(protocol: Mapping[str, Any], authority: Mapping[str, Any
                 "compatibility_fleet_authority_sha256": inputs["compatibility_fleet_authority_sha256"],
                 "compatibility_fleet_result_sha256": inputs["compatibility_fleet_result_sha256"],
                 "compatibility_runtime_provenance_sha256": inputs["compatibility_runtime_provenance_sha256"],
+                "successor_runtime_provenance_sha256": inputs["successor_runtime_provenance_sha256"],
             }
         )
     return result
@@ -164,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
         "authorization_kind": "FORMAL_M4_V2",
         "runtime_authorized": True,
         "formal_m4_authorized": True,
+        "owner_authorized": True,
         "protocol": str(protocol_path),
         "protocol_sha256": _sha(protocol_path),
         "static_audit": str(audit_path),
@@ -173,6 +177,7 @@ def main(argv: list[str] | None = None) -> int:
         "repository_head": actual_commit,
         "repository_tree": actual_tree,
         "runtime_file_sha256": {relative: _sha(repo / relative) for relative in RUNTIME_FILES},
+        "runtime_provenance_sha256": protocol["inputs"]["successor_runtime_provenance_sha256"],
         "authority_bindings": _authority_bindings(protocol, authority),
         "formal_parent_count": 40,
         "matrix": protocol.get("matrix"),
