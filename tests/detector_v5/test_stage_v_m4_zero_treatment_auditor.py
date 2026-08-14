@@ -30,3 +30,9 @@ def test_zero_treatment_auditor_has_no_intervention_or_label_import_boundary():
     }
     assert not imported_modules & forbidden_modules
     assert not (names | attributes) & forbidden_names
+    assert any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "validate_q00_authority"
+        for node in ast.walk(tree)
+    )

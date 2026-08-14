@@ -26,6 +26,7 @@ from gripper_attack.stage_v_causal_observation_snapshot import (
     restore_runtime_state,
 )
 
+from scripts.detector_v5.stage_v_m4_q00_authority import validate_q00_authority
 from scripts.detector_v5.stage_v_runtime_diff import diff as runtime_diff
 
 
@@ -80,6 +81,7 @@ def audit_probe(
     close_env: Callable[[Any], None] | None = None,
     model: Any | None = None,
     adapter: Any | None = None,
+    authority: Mapping[str, Any] | None = None,
     context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     snapshot_root = Path(snapshot_root).resolve()
@@ -91,10 +93,24 @@ def audit_probe(
     replayed = 0
     current_observation: Any = None
     observation_hashes: Mapping[str, Any] | None = None
+    authority_result: Mapping[str, Any] | None = None
     try:
+        authority_result = validate_q00_authority(authority or {}, require_launch=True)
         loaded = load_snapshot(snapshot_root, materialize_torch=True)
         payload = loaded["payload"]
-        receipt_context = _context(snapshot_root, loaded["manifest"], payload, context)
+        receipt_context = _context(
+            snapshot_root,
+            loaded["manifest"],
+            payload,
+            {
+                "current_runtime_commit": authority_result["runtime_commit"],
+                "current_runtime_tree": authority_result["runtime_tree"],
+                "exact_plan_manifest_sha256": authority_result["exact_plan_manifest_sha256"],
+                "runtime_provenance_receipt_sha256": authority_result.get("runtime_provenance_receipt_sha256"),
+                "q00_authority_sha256": authority_result["authority_sha256"],
+                **dict(context or {}),
+            },
+        )
         observation_hashes = assert_primary_observation_exact(payload)
         probe = payload.get("probe") if isinstance(payload.get("probe"), Mapping) else {}
         step = int(probe.get("step", -1))
@@ -154,6 +170,7 @@ def audit_probe(
         "protected_counters": dict(COUNTERS),
         "runtime_diff_count": len(diffs),
         "runtime_diffs": diffs,
+        "q00_authority_validation": dict(authority_result or {}),
         "errors": sorted(set(errors)),
     }
 
