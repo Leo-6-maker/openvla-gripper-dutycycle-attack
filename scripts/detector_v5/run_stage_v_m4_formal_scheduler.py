@@ -240,6 +240,7 @@ def run(args: argparse.Namespace) -> int:
     authority = parent_gate._load(args.authorization)
     _queue_contract(protocol)
     parent_gate._verify_runtime_snapshot(args, authority)
+    args.minimum_free_mib = MIN_FREE_MEMORY_MIB
     parent_gate._verify_launch_gate_binding(args, authority)
     formal = parent_gate.validate_formal_m4_v2_authority(
         protocol, protocol_path=args.protocol, split_path=args.final_split,
