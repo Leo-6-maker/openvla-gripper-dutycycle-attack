@@ -64,7 +64,12 @@ def _authority(tmp_path: Path) -> dict:
         "student_predictions_read": False, "protected_counters": COUNTERS,
         "probe_authorities": [
             {"canonical_parent_key": q00["parent_key"], "probe_id": "Q00", "probe_step": 46,
-             "snapshot_manifest_sha256": q00["snapshot_manifest_sha256"], "arm": arm}
+             "snapshot_manifest_sha256": q00["snapshot_manifest_sha256"], "arm": None}
+        ],
+        "branch_authorities": [
+            {"canonical_parent_key": q00["parent_key"], "probe_id": "Q00", "probe_step": 46,
+             "snapshot_manifest_sha256": q00["snapshot_manifest_sha256"], "arm": arm,
+             "branch_id": f"branch-{arm}"}
             for arm in ("CONTROL", "T3", "T5", "T10")
         ],
     }
@@ -154,13 +159,57 @@ def test_q00_authority_rejects_boundary_bypass(tmp_path: Path, path: tuple[str, 
         validate_q00_authority(authority)
 
 
-def test_q00_authority_rejects_missing_arm_identity(tmp_path: Path) -> None:
-    authority = _authority(tmp_path)
+def _rewrite_plan(authority: dict, mutate) -> None:
     plan_path = Path(authority["bindings"]["exact_plan_manifest"]["path"])
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
-    plan["probe_authorities"] = plan["probe_authorities"][:-1]
+    mutate(plan)
     plan_sha = _write(plan_path, plan)
     authority["bindings"]["exact_plan_manifest"]["sha256"] = plan_sha
     authority["q00"]["exact_plan_manifest_sha256"] = plan_sha
-    with pytest.raises(Q00AuthorityError, match="Q00_EXACT_PLAN_ARM_CLOSURE_INVALID"):
+
+
+def test_q00_authority_rejects_arm_rows_only_in_probe_authorities(tmp_path: Path) -> None:
+    authority = _authority(tmp_path)
+    def mutate(plan: dict) -> None:
+        plan["probe_authorities"] = [dict(plan["probe_authorities"][0], arm=arm) for arm in ("CONTROL", "T3", "T5", "T10")]
+        plan["branch_authorities"] = []
+
+    _rewrite_plan(authority, mutate)
+    with pytest.raises(Q00AuthorityError, match="Q00_EXACT_PLAN_PROBE_CLOSURE_INVALID"):
+        validate_q00_authority(authority)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "error"),
+    [
+        (lambda plan: plan.update(branch_authorities=[]), "Q00_EXACT_PLAN_ARM_CLOSURE_INVALID"),
+        (lambda plan: plan.update(branch_authorities=plan["branch_authorities"][:3]), "Q00_EXACT_PLAN_ARM_CLOSURE_INVALID"),
+        (lambda plan: plan.update(branch_authorities=plan["branch_authorities"] + [dict(plan["branch_authorities"][0])]), "Q00_EXACT_PLAN_ARM_CLOSURE_INVALID"),
+        (lambda plan: plan["branch_authorities"].__setitem__(1, dict(plan["branch_authorities"][1], arm="CONTROL")), "Q00_EXACT_PLAN_ARM_CLOSURE_INVALID"),
+        (lambda plan: plan["branch_authorities"].__setitem__(2, dict(plan["branch_authorities"][2], arm="T20")), "Q00_EXACT_PLAN_ARM_CLOSURE_INVALID"),
+        (lambda plan: plan["branch_authorities"].__setitem__(2, dict(plan["branch_authorities"][2], arm="T10")), "Q00_EXACT_PLAN_ARM_CLOSURE_INVALID"),
+        (lambda plan: plan["branch_authorities"].__setitem__(0, dict(plan["branch_authorities"][0], probe_step=47)), "Q00_EXACT_PLAN_STEP_MISMATCH"),
+        (lambda plan: plan["branch_authorities"].__setitem__(0, dict(plan["branch_authorities"][0], snapshot_manifest_sha256="x")), "Q00_EXACT_PLAN_SNAPSHOT_MISMATCH"),
+        (lambda plan: plan["branch_authorities"].__setitem__(0, dict(plan["branch_authorities"][0], canonical_parent_key="libero_10/task_01/state_43")), "Q00_EXACT_PLAN_ARM_CLOSURE_INVALID"),
+        (lambda plan: plan["branch_authorities"].__setitem__(0, dict(plan["branch_authorities"][0], probe_id="Q01")), "Q00_EXACT_PLAN_ARM_CLOSURE_INVALID"),
+        (lambda plan: plan["probe_authorities"].append(dict(plan["probe_authorities"][0])), "Q00_EXACT_PLAN_PROBE_CLOSURE_INVALID"),
+        (lambda plan: plan.update(probe_authorities=[]), "Q00_EXACT_PLAN_PROBE_CLOSURE_INVALID"),
+    ],
+    ids=[
+        "zero-branches", "three-branches", "five-branches", "duplicate-control", "unknown-t20",
+        "missing-t5", "wrong-branch-step", "wrong-branch-snapshot", "wrong-parent", "wrong-probe",
+        "duplicate-probe", "missing-probe",
+    ],
+)
+def test_q00_authority_rejects_incomplete_or_mismatched_manifest(tmp_path: Path, mutate, error: str) -> None:
+    authority = _authority(tmp_path)
+    _rewrite_plan(authority, mutate)
+    with pytest.raises(Q00AuthorityError, match=error):
+        validate_q00_authority(authority)
+
+
+def test_q00_authority_rejects_duplicate_branch_id(tmp_path: Path) -> None:
+    authority = _authority(tmp_path)
+    _rewrite_plan(authority, lambda plan: plan["branch_authorities"].__setitem__(1, dict(plan["branch_authorities"][1], branch_id="branch-CONTROL")))
+    with pytest.raises(Q00AuthorityError, match="Q00_EXACT_PLAN_BRANCH_ID_CLOSURE_INVALID"):
         validate_q00_authority(authority)

@@ -130,18 +130,38 @@ def _check_exact_plan(path: Path, q00: Mapping[str, Any]) -> None:
         ("protected_counters", COUNTERS),
     ):
         _require(plan.get(name), value, f"EXACT_PLAN_{name.upper()}")
-    rows = [
+    probe_rows = [
         row for row in plan.get("probe_authorities", [])
         if isinstance(row, Mapping)
         and row.get("canonical_parent_key") == q00.get("parent_key")
         and row.get("probe_id") == q00.get("probe_id")
     ]
-    if {row.get("arm") for row in rows} != set(Q00_ARMS) or len(rows) != len(Q00_ARMS):
-        raise Q00AuthorityError("Q00_EXACT_PLAN_ARM_CLOSURE_INVALID")
-    if any(row.get("probe_step") != q00.get("probe_step") for row in rows):
+    if len(probe_rows) != 1:
+        raise Q00AuthorityError("Q00_EXACT_PLAN_PROBE_CLOSURE_INVALID")
+    probe_row = probe_rows[0]
+    if probe_row.get("probe_step") != q00.get("probe_step"):
         raise Q00AuthorityError("Q00_EXACT_PLAN_STEP_MISMATCH")
-    if any(row.get("snapshot_manifest_sha256") != q00.get("snapshot_manifest_sha256") for row in rows):
+    if probe_row.get("snapshot_manifest_sha256") != q00.get("snapshot_manifest_sha256"):
         raise Q00AuthorityError("Q00_EXACT_PLAN_SNAPSHOT_MISMATCH")
+
+    branch_rows = [
+        row for row in plan.get("branch_authorities", [])
+        if isinstance(row, Mapping)
+        and row.get("canonical_parent_key") == q00.get("parent_key")
+        and row.get("probe_id") == q00.get("probe_id")
+    ]
+    if len(branch_rows) != len(Q00_ARMS):
+        raise Q00AuthorityError("Q00_EXACT_PLAN_ARM_CLOSURE_INVALID")
+    if any(row.get("probe_step") != q00.get("probe_step") for row in branch_rows):
+        raise Q00AuthorityError("Q00_EXACT_PLAN_STEP_MISMATCH")
+    if any(row.get("snapshot_manifest_sha256") != q00.get("snapshot_manifest_sha256") for row in branch_rows):
+        raise Q00AuthorityError("Q00_EXACT_PLAN_SNAPSHOT_MISMATCH")
+    arms = [row.get("arm") for row in branch_rows]
+    if len(set(arms)) != len(arms) or set(arms) != set(Q00_ARMS):
+        raise Q00AuthorityError("Q00_EXACT_PLAN_ARM_CLOSURE_INVALID")
+    branch_ids = [row.get("branch_id") for row in branch_rows if "branch_id" in row]
+    if branch_ids and (len(branch_ids) != len(branch_rows) or len(set(branch_ids)) != len(branch_ids)):
+        raise Q00AuthorityError("Q00_EXACT_PLAN_BRANCH_ID_CLOSURE_INVALID")
 
 
 def _check_snapshot(path: Path, q00: Mapping[str, Any]) -> None:
