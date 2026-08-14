@@ -41,9 +41,23 @@
     "q00_worktree_observed_git_tree": "401a355940f03b52077a258904f1bc6b69c55932",
     "handoff_declared_runtime_tree": "99e8976e348145d6603470f629cfae1d4a291b5e",
     "source_binding_result": "HOLD_SOURCE_TREE_MISMATCH",
-    "q00_provenance_result": "MISSING_Q00_RUNTIME_PROVENANCE_RECEIPT",
+    "q00_provenance_result": "PASS_LIVE_PROVENANCE_CAPTURED_BUT_NOT_AUTHORITY_BOUND",
     "independent_owner_receipt_found": false,
     "gpu_canary_launched": false
+  },
+  "live_provenance_candidate": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_EXTERNAL_RUNTIME_PROVENANCE_Q00_CANDIDATE_20260814T015643Z_3403804/EXTERNAL_RUNTIME_PROVENANCE.json",
+    "sha256": "9fe18c7a29ca8443832e6eda9c0cdb10131369da0a37df809457759291708a0a",
+    "status": "PASS_RUNTIME_PROVENANCE_CAPTURED",
+    "runtime_authorized": false,
+    "source_worktree_commit": "f087f4060cd6f191de25ffddf45edd8037b1eadd",
+    "source_worktree_tree": "401a355940f03b52077a258904f1bc6b69c55932",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0
+    }
   },
   "resource_contract": {
     "minimum_free_memory_mib": 20480,
@@ -85,9 +99,9 @@
       "sha256": "cc01c01cd87c5394af531db7618027e91735c2a78f2f1aee835c58bbfe729b20"
     },
     "runtime_provenance_receipt": {
-      "path": "",
-      "sha256": "",
-      "status": "MISSING_Q00_RECEIPT"
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_EXTERNAL_RUNTIME_PROVENANCE_Q00_CANDIDATE_20260814T015643Z_3403804/EXTERNAL_RUNTIME_PROVENANCE.json",
+      "sha256": "9fe18c7a29ca8443832e6eda9c0cdb10131369da0a37df809457759291708a0a",
+      "status": "LIVE_CANDIDATE_NOT_AUTHORITY_BOUND"
     },
     "zero_treatment_auditor": {
       "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/codex-stage-v-q00-auth-99e8976e/scripts/detector_v5/run_stage_v_m4_zero_treatment_auditor.py",
@@ -109,7 +123,7 @@
   "blockers": [
     "INDEPENDENT_MACHINE_READABLE_OWNER_Q00_AUTHORITY_RECEIPT_NOT_FOUND",
     "LIVE_Q00_GIT_TREE_DIFFERS_FROM_HANDOFF_RUNTIME_TREE",
-    "Q00_RUNTIME_PROVENANCE_RECEIPT_FOR_LIVE_SOURCE_NOT_FOUND"
+    "LIVE_RUNTIME_PROVENANCE_DOES_NOT_MATCH_HANDOFF_RUNTIME_TREE"
   ],
   "next_legal_action": "Owner review must resolve the source-tree binding and issue a separate PASS_Q00_ZERO_TREATMENT_AUTHORITY receipt with owner_authorized=true, runtime_authorized=true, and canary_authorized=true. Until then do not acquire a lease or launch a worker."
 }
