@@ -65,7 +65,66 @@ def _current_authority_binding_complete(protocol: Mapping[str, Any]) -> bool:
         "feature_schema",
         "architecture_addendum",
     )
-    return all(isinstance(inputs.get(f"{name}_{suffix}"), str) and inputs[f"{name}_{suffix}"] for name in files for suffix in ("path", "sha256")) and all(isinstance(inputs.get(f"{name}_root"), str) and inputs[f"{name}_root"] and isinstance(inputs.get(f"{name}_root_seal_sha256"), str) and inputs[f"{name}_root_seal_sha256"] for name in ("exact_plan", "primary_firewall", "teacher_student_freeze", "pre_m4_lock")) and isinstance(inputs.get("feature_order_sha256"), str) and bool(inputs["feature_order_sha256"])
+    complete = all(isinstance(inputs.get(f"{name}_{suffix}"), str) and inputs[f"{name}_{suffix}"] for name in files for suffix in ("path", "sha256")) and all(isinstance(inputs.get(f"{name}_root"), str) and inputs[f"{name}_root"] and isinstance(inputs.get(f"{name}_root_seal_sha256"), str) and inputs[f"{name}_root_seal_sha256"] for name in ("exact_plan", "primary_firewall", "teacher_student_freeze", "pre_m4_lock")) and isinstance(inputs.get("feature_order_sha256"), str) and bool(inputs["feature_order_sha256"])
+    if protocol.get("successor_protocol") is True:
+        complete = complete and all(isinstance(inputs.get(f"{name}_{suffix}"), str) and inputs[f"{name}_{suffix}"] for name in ("snapshot_rebind_receipt", "compatibility_q00_result", "compatibility_q00_audit", "compatibility_fleet_preflight", "compatibility_fleet_authority", "compatibility_fleet_result", "compatibility_runtime_provenance") for suffix in ("path", "sha256"))
+        complete = complete and isinstance(inputs.get("compatibility_audit_root"), str) and bool(inputs["compatibility_audit_root"]) and isinstance(inputs.get("compatibility_audit_root_seal_sha256"), str) and bool(inputs["compatibility_audit_root_seal_sha256"])
+    return complete
+
+
+def _snapshot_inventory_sha256(manifest: Mapping[str, Any]) -> str:
+    rows = []
+    for raw in manifest.get("probe_authorities", []):
+        if not isinstance(raw, Mapping):
+            return ""
+        row = {key: raw.get(key) for key in ("canonical_parent_key", "probe_id", "probe_step", "snapshot_path", "snapshot_manifest_sha256")}
+        try:
+            row["probe_step"] = int(row["probe_step"])
+        except (TypeError, ValueError):
+            return ""
+        if any(not row[key] for key in row if key != "probe_step"):
+            return ""
+        rows.append(row)
+    identities = {(row["canonical_parent_key"], row["probe_id"]) for row in rows}
+    if len(rows) != 960 or len(identities) != 960:
+        return ""
+    payload = json.dumps(sorted(rows, key=lambda row: (row["canonical_parent_key"], row["probe_id"])), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _successor_snapshot_rebind_complete(protocol: Mapping[str, Any], *, source_commit: str, source_tree: str) -> bool:
+    if protocol.get("successor_protocol") is not True:
+        return True
+    inputs = protocol.get("inputs")
+    source = protocol.get("source_binding")
+    if not isinstance(inputs, Mapping) or not isinstance(source, Mapping):
+        return False
+    try:
+        def bound(name: str) -> Path:
+            path = Path(str(inputs[f"{name}_path"]))
+            return path.resolve()
+
+        bridge_path = bound("snapshot_rebind_receipt")
+        exact_path = bound("exact_plan_manifest")
+        bridge = _load(bridge_path)
+        exact = _load(exact_path)
+        if _sha(bridge_path) != inputs.get("snapshot_rebind_receipt_sha256") or _sha(exact_path) != inputs.get("exact_plan_manifest_sha256"):
+            return False
+        if bridge.get("schema") != "STAGE_V_M4_SNAPSHOT_REBIND_RECEIPT_V1" or bridge.get("status") != "PASS_SNAPSHOT_REBIND_AUTHORITY" or bridge.get("compatibility_only") is not True:
+            return False
+        if bridge.get("successor_runtime_source") != {"commit": source_commit, "tree": source_tree} or bridge.get("exact_plan_manifest_sha256") != inputs.get("exact_plan_manifest_sha256") or bridge.get("snapshot_inventory_sha256") != _snapshot_inventory_sha256(exact):
+            return False
+        if bridge.get("successor_runtime_file_sha256") != source.get("runtime_file_sha256") or bridge.get("execution_runtime_files_unchanged") is not True:
+            return False
+        for name in ("compatibility_q00_result", "compatibility_q00_audit", "compatibility_fleet_preflight", "compatibility_fleet_authority", "compatibility_fleet_result", "compatibility_runtime_provenance"):
+            path = bound(name)
+            if _sha(path) != inputs.get(f"{name}_sha256"):
+                return False
+        q00 = _load(bound("compatibility_q00_result"))
+        fleet = _load(bound("compatibility_fleet_result"))
+        return q00.get("status") == "PASS_ZERO_TREATMENT_COMPATIBILITY" and fleet.get("status") == "PASS_960_ZERO_TREATMENT_COMPATIBILITY" and fleet.get("probe_count") == 960 and fleet.get("runtime_diff_count") == 0 and fleet.get("protected_counters") == COUNTERS
+    except (KeyError, OSError, TypeError, ValueError):
+        return False
 
 
 def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[str, Any]:
@@ -99,6 +158,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "protocol_frozen_authorized": (protocol.get("status") == "FROZEN_PROSPECTIVE_NOT_AUTHORIZED" and protocol.get("runtime_authorized") is False) if is_v2 else (protocol.get("status") == "FROZEN_RUNTIME_AUTHORIZED" and protocol.get("runtime_authorized") is True),
         "formal_corridor_gate_bound": protocol_declares_corridor_gate(protocol) if not is_v2 else _current_authority_binding_complete(protocol),
         "current_authority_binding_complete": _current_authority_binding_complete(protocol) if is_v2 else True,
+        "successor_snapshot_rebind": _successor_snapshot_rebind_complete(protocol, source_commit=source_commit, source_tree=source_tree),
         "source_binding": source.get("runtime_commit") == source_commit and source.get("runtime_tree") == source_tree,
         "matrix_exact": matrix == {
             "parents": 40, "probes_per_parent": 24, "repetitions": 1,

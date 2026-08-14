@@ -89,6 +89,21 @@ def _authority_bindings(protocol: Mapping[str, Any], authority: Mapping[str, Any
             "feature_schema_sha256": authority["feature_schema_sha256"],
         }
     )
+    if protocol.get("successor_protocol") is True:
+        inputs = protocol["inputs"]
+        result.update(
+            {
+                "successor_protocol": True,
+                "snapshot_rebind_receipt_sha256": inputs["snapshot_rebind_receipt_sha256"],
+                "compatibility_audit_root_seal_sha256": inputs["compatibility_audit_root_seal_sha256"],
+                "compatibility_q00_result_sha256": inputs["compatibility_q00_result_sha256"],
+                "compatibility_q00_audit_sha256": inputs["compatibility_q00_audit_sha256"],
+                "compatibility_fleet_preflight_sha256": inputs["compatibility_fleet_preflight_sha256"],
+                "compatibility_fleet_authority_sha256": inputs["compatibility_fleet_authority_sha256"],
+                "compatibility_fleet_result_sha256": inputs["compatibility_fleet_result_sha256"],
+                "compatibility_runtime_provenance_sha256": inputs["compatibility_runtime_provenance_sha256"],
+            }
+        )
     return result
 
 
@@ -171,6 +186,8 @@ def main(argv: list[str] | None = None) -> int:
         "eval160_reads": 0,
         "attack_rollouts": 0,
         "outcome_informed_revision": False,
+        "successor_protocol": protocol.get("successor_protocol") is True,
+        "compatibility_only_evidence_bound": protocol.get("successor_protocol") is True,
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(receipt, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")

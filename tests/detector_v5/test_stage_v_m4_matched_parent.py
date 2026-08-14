@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from scripts.detector_v5.audit_stage_v_m4_matched_parent import _truth_label
 from scripts.detector_v5.audit_stage_v_m4_static import audit
 from scripts.detector_v5.run_stage_v_m4_formal_parent_with_resource_gate import LEGACY_CONTROLLER_TOKENS
-from scripts.detector_v5.stage_v_m4_governance import M4GovernanceError, _require_exact_plan_source_binding, validate_formal_m4_corridor_gate, validate_formal_m4_v2_authority
+from scripts.detector_v5.stage_v_m4_governance import M4GovernanceError, _require_exact_plan_source_binding, _snapshot_inventory_sha256, validate_formal_m4_corridor_gate, validate_formal_m4_v2_authority
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -79,3 +79,21 @@ def test_exact_plan_source_plane_must_match_formal_runtime() -> None:
     _require_exact_plan_source_binding(manifest, "commit", "tree")
     with pytest.raises(M4GovernanceError, match="EXACT_PLAN_SOURCE_BINDING_INVALID"):
         _require_exact_plan_source_binding(manifest, "other", "tree")
+
+
+def test_successor_snapshot_inventory_is_stable_and_byte_bound() -> None:
+    rows = [
+        {
+            "canonical_parent_key": f"libero_10/task_{index // 24:02d}/state_{index}",
+            "probe_id": f"Q{index:03d}",
+            "probe_step": index + 1,
+            "snapshot_path": f"parents/p{index}/CAUSAL_SNAPSHOTS/Q{index:03d}",
+            "snapshot_manifest_sha256": f"{index:064x}"[-64:],
+        }
+        for index in range(960)
+    ]
+    manifest = {"probe_authorities": rows}
+    first = _snapshot_inventory_sha256(manifest)
+    assert first == _snapshot_inventory_sha256(manifest)
+    rows[0]["snapshot_manifest_sha256"] = "f" * 64
+    assert _snapshot_inventory_sha256(manifest) != first

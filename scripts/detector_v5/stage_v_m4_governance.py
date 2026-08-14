@@ -147,6 +147,99 @@ def _require_current_boundary(value: Mapping[str, Any], *, name: str) -> None:
         raise M4GovernanceError(f"M4_V2_{name}_OUTCOME_BOUNDARY_INVALID")
 
 
+def _snapshot_inventory_sha256(exact_manifest: Mapping[str, Any]) -> str:
+    """Hash the immutable probe-to-snapshot byte bindings without selecting probes."""
+    fields = (
+        "canonical_parent_key",
+        "probe_id",
+        "probe_step",
+        "snapshot_path",
+        "snapshot_manifest_sha256",
+    )
+    rows = []
+    for raw in exact_manifest.get("probe_authorities", []):
+        if not isinstance(raw, Mapping):
+            raise M4GovernanceError("M4_V2_SNAPSHOT_INVENTORY_ROW_INVALID")
+        row = {field: raw.get(field) for field in fields}
+        if not all(isinstance(row[field], str) and row[field] for field in fields if field != "probe_step"):
+            raise M4GovernanceError("M4_V2_SNAPSHOT_INVENTORY_BINDING_INVALID")
+        try:
+            row["probe_step"] = int(raw["probe_step"])
+        except (TypeError, ValueError) as exc:
+            raise M4GovernanceError("M4_V2_SNAPSHOT_INVENTORY_STEP_INVALID") from exc
+        rows.append(row)
+    identities = [(row["canonical_parent_key"], row["probe_id"]) for row in rows]
+    if len(rows) != 960 or len(set(identities)) != 960:
+        raise M4GovernanceError("M4_V2_SNAPSHOT_INVENTORY_COUNT_INVALID")
+    payload = json.dumps(sorted(rows, key=lambda row: (row["canonical_parent_key"], row["probe_id"])), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _validate_successor_snapshot_rebind(
+    bridge: Mapping[str, Any],
+    *,
+    protocol: Mapping[str, Any],
+    inputs: Mapping[str, Any],
+    exact_manifest: Mapping[str, Any],
+    exact_manifest_sha: str,
+    source_commit: str,
+    source_tree: str,
+    compatibility_hashes: Mapping[str, str],
+    provenance: Mapping[str, Any],
+) -> dict[str, Any]:
+    if bridge.get("schema") != "STAGE_V_M4_SNAPSHOT_REBIND_RECEIPT_V1" or bridge.get("status") != "PASS_SNAPSHOT_REBIND_AUTHORITY":
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_STATUS_INVALID")
+    if bridge.get("rebind_kind") != "IMMUTABLE_EXACT_PLAN_SNAPSHOT_BYTES_TO_SUCCESSOR_RUNTIME_V1" or bridge.get("compatibility_only") is not True:
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_KIND_INVALID")
+    if bridge.get("formal_m4_authorized") is not False or bridge.get("runtime_authorized") is not False or bridge.get("intervention_executed") is not False or bridge.get("outcomes_read") is not False or bridge.get("v_phys_generated") is not False or bridge.get("protected_counters") != COUNTERS:
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_BOUNDARY_INVALID")
+    if bridge.get("exact_plan_manifest_sha256") != exact_manifest_sha or bridge.get("exact_plan_root_seal_sha256") != inputs.get("exact_plan_root_seal_sha256"):
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_EXACT_PLAN_BINDING_INVALID")
+    old_source = exact_manifest.get("downstream_source")
+    if not isinstance(old_source, Mapping) or bridge.get("immutable_snapshot_source") != {"commit": old_source.get("commit"), "tree": old_source.get("tree")}:
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_OLD_SOURCE_INVALID")
+    if bridge.get("successor_runtime_source") != {"commit": source_commit, "tree": source_tree}:
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_SUCCESSOR_SOURCE_INVALID")
+    if bridge.get("snapshot_inventory_sha256") != _snapshot_inventory_sha256(exact_manifest) or bridge.get("snapshot_manifest_count") != 960:
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_SNAPSHOT_BYTES_INVALID")
+    expected_frozen = {
+        "formal_parent_manifest_sha256": inputs.get("formal_parent_manifest_sha256"),
+        "formal_parent_split_sha256": inputs.get("formal_parent_split_sha256"),
+        "exact_plan_manifest_sha256": exact_manifest_sha,
+        "exact_plan_audit_sha256": inputs.get("exact_plan_audit_sha256"),
+        "exact_plan_result_sha256": inputs.get("exact_plan_result_sha256"),
+        "primary_firewall_report_sha256": inputs.get("primary_firewall_report_sha256"),
+        "teacher_student_freeze_report_sha256": inputs.get("teacher_student_freeze_report_sha256"),
+        "pre_m4_lock_report_sha256": inputs.get("pre_m4_lock_report_sha256"),
+        "student_checkpoint_sha256": inputs.get("student_checkpoint_sha256"),
+        "student_thresholds_sha256": inputs.get("student_thresholds_sha256"),
+        "feature_schema_sha256": inputs.get("feature_schema_sha256"),
+        "feature_order_sha256": inputs.get("feature_order_sha256"),
+    }
+    if bridge.get("frozen_authority_bindings") != expected_frozen:
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_FROZEN_BINDINGS_INVALID")
+    if bridge.get("compatibility_artifact_sha256") != dict(compatibility_hashes):
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_COMPATIBILITY_BINDING_INVALID")
+    compatibility_source = bridge.get("compatibility_runtime_source")
+    if not isinstance(compatibility_source, Mapping) or compatibility_source.get("commit") != provenance.get("source_worktree", {}).get("commit") or compatibility_source.get("tree") != provenance.get("source_worktree", {}).get("tree"):
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_COMPATIBILITY_SOURCE_INVALID")
+    successor_files = protocol.get("source_binding", {}).get("runtime_file_sha256")
+    if bridge.get("successor_runtime_file_sha256") != successor_files or bridge.get("execution_runtime_files_unchanged") is not True:
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_RUNTIME_FILES_INVALID")
+    modules = provenance.get("imported_modules")
+    if not isinstance(modules, list) or bridge.get("imported_modules") != modules:
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_MODULE_BINDING_INVALID")
+    official_python = provenance.get("official_python")
+    if bridge.get("official_python") != official_python:
+        raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_PYTHON_BINDING_INVALID")
+    return {
+        "bridge_status": bridge.get("status"),
+        "bridge_sha256": compatibility_hashes.get("snapshot_rebind_receipt"),
+        "snapshot_inventory_sha256": bridge.get("snapshot_inventory_sha256"),
+        "compatibility_runtime_source": dict(compatibility_source),
+    }
+
+
 def validate_formal_m4_v2_authority(
     protocol: Mapping[str, Any],
     *,
@@ -194,6 +287,17 @@ def validate_formal_m4_v2_authority(
         "feature_schema",
         "architecture_addendum",
     )
+    successor = protocol.get("successor_protocol") is True
+    if successor:
+        required_files += (
+            "snapshot_rebind_receipt",
+            "compatibility_q00_result",
+            "compatibility_q00_audit",
+            "compatibility_fleet_preflight",
+            "compatibility_fleet_authority",
+            "compatibility_fleet_result",
+            "compatibility_runtime_provenance",
+        )
     files = {name: _bound_file(inputs, protocol_path, name) for name in required_files}
     if not _path_matches(inputs.get("formal_parent_split_path"), split_path):
         raise M4GovernanceError("M4_V2_FORMAL_SPLIT_PATH_MISMATCH")
@@ -237,11 +341,59 @@ def validate_formal_m4_v2_authority(
     exact_result = _load(exact_result_path)
     if exact_manifest.get("schema") != "STAGE_V_M4_EXACT_PROBE_AND_SNAPSHOT_MANIFEST_V1" or exact_manifest.get("status") != "PASS_EXACT_40X24_PLAN_ONLY" or exact_manifest.get("parent_count") != 40 or exact_manifest.get("probe_count_per_parent") != 24 or exact_manifest.get("probe_count_total") != 960 or exact_manifest.get("planned_branch_authority_count") != 3840:
         raise M4GovernanceError("M4_V2_EXACT_PLAN_MANIFEST_INVALID")
-    _require_exact_plan_source_binding(exact_manifest, source_commit, source_tree)
+    if not successor:
+        _require_exact_plan_source_binding(exact_manifest, source_commit, source_tree)
     if exact_manifest.get("independent_audit_sha256") != exact_audit_sha or exact_audit.get("status") != "PASS" or exact_result.get("status") != "PASS" or exact_result.get("manifest_status") != "PASS_EXACT_40X24_PLAN_ONLY" or exact_result.get("audit_sha256") != exact_audit_sha or exact_manifest.get("final40_manifest_sha256") != manifest_sha or exact_manifest.get("final_split_sha256") != split_sha:
         raise M4GovernanceError("M4_V2_EXACT_PLAN_UPSTREAM_BINDING_INVALID")
     if exact_manifest.get("selection_outcomes_read") is not False or exact_manifest.get("intervention_executed") is not False or exact_manifest.get("v_phys_generated") is not False or exact_manifest.get("teacher_predictions_read") is not False or exact_manifest.get("student_predictions_read") is not False or exact_manifest.get("protected_counters") != COUNTERS:
         raise M4GovernanceError("M4_V2_EXACT_PLAN_BOUNDARY_INVALID")
+
+    successor_bridge = None
+    if successor:
+        compatibility_root = _bound_root(inputs, protocol_path, "compatibility_audit")
+        compatibility_names = (
+            "compatibility_q00_result",
+            "compatibility_q00_audit",
+            "compatibility_fleet_preflight",
+            "compatibility_fleet_authority",
+            "compatibility_fleet_result",
+            "compatibility_runtime_provenance",
+        )
+        if any(files[name][0].parent != compatibility_root for name in compatibility_names):
+            raise M4GovernanceError("M4_V2_COMPATIBILITY_ROOT_BINDING_INVALID")
+        compatibility_hashes = {name: files[name][1] for name in compatibility_names}
+        compatibility_hashes["snapshot_rebind_receipt"] = files["snapshot_rebind_receipt"][1]
+        provenance = _load(files["compatibility_runtime_provenance"][0])
+        if provenance.get("schema") != "STAGE_V_EXTERNAL_RUNTIME_PROVENANCE_V1" or provenance.get("status") != "PASS_RUNTIME_PROVENANCE_CAPTURED" or provenance.get("runtime_authorized") is not False or provenance.get("outcomes_read") is not False or provenance.get("intervention_executed") is not False or provenance.get("protected_counters") != COUNTERS:
+            raise M4GovernanceError("M4_V2_COMPATIBILITY_PROVENANCE_INVALID")
+        if provenance.get("source_worktree", {}).get("commit") != "c61b53d42124ef093fe8946be8c87e68ad55845c" or provenance.get("source_worktree", {}).get("tree") != "f2f9a226e39058d480778727df2dc960aa768e25":
+            raise M4GovernanceError("M4_V2_COMPATIBILITY_SOURCE_EXPECTATION_INVALID")
+        q00_result = _load(files["compatibility_q00_result"][0])
+        q00_audit = _load(files["compatibility_q00_audit"][0])
+        fleet_preflight = _load(files["compatibility_fleet_preflight"][0])
+        fleet_authority = _load(files["compatibility_fleet_authority"][0])
+        fleet_result = _load(files["compatibility_fleet_result"][0])
+        if q00_result.get("schema") != "STAGE_V_M4_Q00_ZERO_TREATMENT_CANARY_RESULT_V1" or q00_result.get("status") != "PASS_ZERO_TREATMENT_COMPATIBILITY" or q00_result.get("exactly_one_canary") is not True or q00_result.get("treatment_steps") != 0 or q00_result.get("label_records") != 0 or q00_result.get("outcomes_read") is not False or q00_result.get("v_phys_generated") is not False or q00_result.get("protected_counters") != COUNTERS:
+            raise M4GovernanceError("M4_V2_Q00_COMPATIBILITY_INVALID")
+        if q00_audit.get("schema") != "STAGE_V_M4_ZERO_TREATMENT_AUDIT_RECEIPT_V1" or q00_audit.get("status") != "PASS_ZERO_TREATMENT_COMPATIBILITY" or q00_audit.get("runtime_diff_count") != 0 or q00_audit.get("treatment_steps") != 0 or q00_audit.get("label_records") != 0 or q00_audit.get("outcomes_read") is not False or q00_audit.get("v_phys_generated") is not False or q00_audit.get("protected_counters") != COUNTERS or q00_audit.get("current_runtime_commit") != provenance.get("source_worktree", {}).get("commit") or q00_audit.get("current_runtime_tree") != provenance.get("source_worktree", {}).get("tree"):
+            raise M4GovernanceError("M4_V2_Q00_AUDIT_INVALID")
+        if fleet_preflight.get("schema") != "STAGE_V_M4_960_ZERO_TREATMENT_PREFLIGHT_V1" or fleet_preflight.get("status") != "PASS" or fleet_preflight.get("task_count") != 960 or fleet_preflight.get("protected_counters") != COUNTERS:
+            raise M4GovernanceError("M4_V2_960_PREFLIGHT_INVALID")
+        if fleet_authority.get("schema") != "STAGE_V_M4_960_ZERO_TREATMENT_AUTHORITY_V1" or fleet_authority.get("status") != "PASS_960_ZERO_TREATMENT_AUTHORITY" or fleet_authority.get("formal_m4_authorized") is not False or fleet_authority.get("owner_authorized") is not True or fleet_authority.get("runtime_authorized") is not True or fleet_authority.get("protected_counters") != COUNTERS or fleet_authority.get("exact_plan_binding", {}).get("manifest_sha256") != exact_manifest_sha:
+            raise M4GovernanceError("M4_V2_960_AUTHORITY_INVALID")
+        if fleet_result.get("schema") != "STAGE_V_M4_960_ZERO_TREATMENT_RESULT_V1" or fleet_result.get("status") != "PASS_960_ZERO_TREATMENT_COMPATIBILITY" or fleet_result.get("probe_count") != 960 or fleet_result.get("expected_probe_count") != 960 or fleet_result.get("runtime_diff_count") != 0 or fleet_result.get("treatment_steps") != 0 or fleet_result.get("label_records") != 0 or fleet_result.get("outcomes_read") is not False or fleet_result.get("v_phys_generated") is not False or fleet_result.get("protected_counters") != COUNTERS or fleet_result.get("source_commit") != provenance.get("source_worktree", {}).get("commit") or fleet_result.get("source_tree") != provenance.get("source_worktree", {}).get("tree"):
+            raise M4GovernanceError("M4_V2_960_RESULT_INVALID")
+        successor_bridge = _validate_successor_snapshot_rebind(
+            _load(files["snapshot_rebind_receipt"][0]),
+            protocol=protocol,
+            inputs=inputs,
+            exact_manifest=exact_manifest,
+            exact_manifest_sha=exact_manifest_sha,
+            source_commit=source_commit,
+            source_tree=source_tree,
+            compatibility_hashes=compatibility_hashes,
+            provenance=provenance,
+        )
 
     firewall_root = _bound_root(inputs, protocol_path, "primary_firewall")
     firewall_path, firewall_sha = files["primary_firewall_report"]
@@ -316,6 +468,7 @@ def validate_formal_m4_v2_authority(
         "student_checkpoint_sha256": checkpoint_sha,
         "student_thresholds_sha256": thresholds_sha,
         "feature_schema_sha256": feature_sha,
+        "successor_snapshot_rebind": successor_bridge,
     }
 
 
