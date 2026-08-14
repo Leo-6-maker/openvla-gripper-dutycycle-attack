@@ -371,6 +371,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source-tree", required=True)
     parser.add_argument("--reservation-root", type=Path, action="append", default=[])
     parser.add_argument("--poll-seconds", type=float, default=5.0)
+    parser.add_argument("--minimum-free-mib", type=int, default=MIN_FREE_MEMORY_MIB)
     args = parser.parse_args(argv)
     try:
         return run(args)
