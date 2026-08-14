@@ -15,6 +15,8 @@ def test_runtime_provenance_receipt_binds_python_source_modules_and_artifact(tmp
         files=(artifact,),
     )
     assert receipt["status"] == "PASS_RUNTIME_PROVENANCE_CAPTURED"
+    assert receipt["official_python"]["path"] == str(Path(sys.executable))
+    assert receipt["official_python"]["resolved_path"] == str(Path(sys.executable).resolve())
     assert receipt["official_python"]["version"]
     assert receipt["source_worktree"]["commit"]
     assert receipt["imported_modules"][0]["origin_sha256"]

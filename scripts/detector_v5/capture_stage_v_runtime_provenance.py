@@ -78,7 +78,8 @@ def module_binding(name: str) -> dict[str, Any]:
 
 
 def _python_binding(python_path: Path) -> dict[str, Any]:
-    python_path = python_path.resolve()
+    requested_path = Path(python_path)
+    python_path = requested_path.resolve()
     try:
         version = subprocess.check_output(
             [str(python_path), "-c", "import platform; print(platform.python_version())"],
@@ -90,7 +91,7 @@ def _python_binding(python_path: Path) -> dict[str, Any]:
     else:
         error = None
     return {
-        "path": str(python_path),
+        "path": str(requested_path),
         "resolved_path": str(python_path),
         "exists": python_path.is_file(),
         "sha256": sha256_file(python_path) if python_path.is_file() else None,
