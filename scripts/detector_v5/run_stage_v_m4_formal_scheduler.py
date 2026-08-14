@@ -163,12 +163,15 @@ def _verify_claim(path: Path, *, index: int, key: str, gpu: int, gpu_uuid: str, 
         and claim.get("source_commit") == args.source_commit and claim.get("source_tree") == args.source_tree
         and claim.get("authority_sha256") == authority_sha and claim.get("protocol_sha256") == protocol_sha
         and claim.get("runtime_provenance_sha256") == runtime_provenance_sha and int(claim.get("attempt_ordinal", 0)) >= 1
+        and isinstance(claim.get("claim_timestamp"), str) and bool(claim.get("claim_timestamp"))
         and claim.get("outcomes_read") is False and claim.get("protected_counters") == COUNTERS
     )
 
 
 def _write_progress(root: Path, queue: Mapping[str, Any], active: Mapping[int, Mapping[str, Any]], eligible: list[int]) -> None:
     claimed = completed = hold = unclaimed = 0
+    parent_states: dict[str, str] = {}
+    active_indices = {int(row["parent_index"]) for row in active.values()}
     for index, key in enumerate(queue["parent_keys"]):
         _, gate_root, _ = parent_gate._parent_paths(root, index, str(key))
         claim = gate_root / "CLAIM.json"
@@ -180,15 +183,20 @@ def _write_progress(root: Path, queue: Mapping[str, Any], active: Mapping[int, M
                 state = "HOLD"
             if state == "PASS_FORMAL_M4_PARENT_ATOMIC":
                 completed += 1
+                parent_states[str(key)] = "COMPLETED"
             else:
                 hold += 1
-        elif claim.is_file() or index in {int(row["parent_index"]) for row in active.values()}:
+                parent_states[str(key)] = "HOLD"
+        elif claim.is_file() or index in active_indices:
             claimed += 1
+            parent_states[str(key)] = "CLAIMED"
         else:
             unclaimed += 1
+            parent_states[str(key)] = "UNCLAIMED"
     parent_gate._write(root / "PROGRESS.json", {
         "schema": "STAGE_V_M4_FORMAL_GLOBAL_PROGRESS_V1", "total_parents": len(queue["parent_keys"]),
         "unclaimed": unclaimed, "claimed": claimed, "completed": completed, "hold": hold,
+        "parent_states": parent_states,
         "active_workers": [{key: value for key, value in row.items() if key != "process"} for row in active.values()],
         "eligible_gpus": eligible, "completed_branches": completed * 96,
         "accounted_treatment_branches": completed * 72, "outcomes_read": False,
@@ -321,13 +329,15 @@ def run(args: argparse.Namespace) -> int:
                 with log_path.open("w", encoding="utf-8") as log:
                     process = subprocess.Popen(_child_command(args, index, gpu, attempt, runtime_provenance_sha), cwd=args.source_worktree, stdout=log, stderr=subprocess.STDOUT, text=True)
                 dispatch = gate_root / f"DISPATCH_{attempt:03d}.json"
+                dispatched_at = _utc()
                 if not _write_create_only(dispatch, {
                     "schema": "STAGE_V_M4_FORMAL_GLOBAL_TASK_DISPATCH_V1", "status": "ASSIGNED",
                     "parent_index": index, "canonical_parent_key": key, "worker_id": f"formal-m4-parent-{index:02d}",
                     "physical_gpu_index": gpu, "gpu_uuid": gpu_uuid, "cuda_visible_devices": str(gpu), "gpu_id": gpu,
                     "worker_pid": process.pid, "source_commit": args.source_commit, "source_tree": args.source_tree,
                     "authority_sha256": authority_sha, "protocol_sha256": protocol_sha, "runtime_provenance_sha256": runtime_provenance_sha,
-                    "attempt_ordinal": attempt, "outcomes_read": False, "protected_counters": dict(COUNTERS), "created_utc": _utc(),
+                    "attempt_ordinal": attempt, "outcomes_read": False, "protected_counters": dict(COUNTERS), "created_utc": dispatched_at,
+                    "dispatch_timestamp": dispatched_at,
                 }):
                     _global_hold(root, reason=f"DISPATCH_CLAIM_CONFLICT:{index}", active=active)
                     return 2

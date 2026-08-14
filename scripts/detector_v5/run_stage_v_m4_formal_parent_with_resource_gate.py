@@ -250,12 +250,14 @@ def _claim(root: Path, parent_index: int, parent_key: str, *, claim_metadata: Ma
     path = root / "CLAIM.json"
     try:
         with path.open("x", encoding="utf-8") as handle:
+            claimed_at = _utc()
             payload = {
                 "schema": "STAGE_V_M4_FORMAL_PARENT_CLAIM_V1",
                 "parent_index": parent_index,
                 "canonical_parent_key": parent_key,
                 "status": "CLAIMED_FOR_LAUNCH",
-                "claimed_utc": _utc(),
+                "claimed_utc": claimed_at,
+                "claim_timestamp": claimed_at,
                 "outcomes_read": False,
                 "outcomes_used_for_selection": False,
                 "protected_counters": dict(COUNTERS),

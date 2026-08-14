@@ -186,7 +186,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "scheduler_claims_frozen_40_only": all(token in scheduler_text for token in ("_frozen_queue", '"parent_keys"', "parent_count")),
         "scheduler_dynamic_admission": all(token in scheduler_text for token in ("query_inventory", "admit_mode_b_or_c", "MIN_FREE_MEMORY_MIB", "_reservation_gpu_ids")),
         "scheduler_rolling_replenishment": all(token in scheduler_text for token in ("active", "process.poll", "assigned.discard", "subprocess.Popen")),
-        "claim_identity_binding": all(token in formal_gate_text for token in ("physical_gpu_index", "gpu_uuid", "cuda_visible_devices", "worker_pid", "authority_sha256", "protocol_sha256", "runtime_provenance_sha256", "attempt_ordinal")),
+        "claim_identity_binding": all(token in formal_gate_text for token in ("physical_gpu_index", "gpu_uuid", "cuda_visible_devices", "worker_pid", "authority_sha256", "protocol_sha256", "runtime_provenance_sha256", "attempt_ordinal", "claim_timestamp")),
         "claim_atomic_exclusion": "path.open(\"x\"" in formal_gate_text,
         "scheduler_source_binding": source.get("runtime_file_sha256", {}).get("scripts/detector_v5/run_stage_v_m4_formal_scheduler.py") == _sha(scheduler_path),
         "independent_auditor_is_producer_free": "run_stage_v_m4_matched_parent" not in auditor_text,

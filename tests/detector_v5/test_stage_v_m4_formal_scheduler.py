@@ -68,6 +68,7 @@ def test_concurrent_claim_race_has_one_winner_and_full_binding(tmp_path: Path) -
     value = json.loads((gate_root / "CLAIM.json").read_text(encoding="utf-8"))
     for key, expected in _metadata().items():
         assert value[key] == expected
+    assert value["claim_timestamp"] == value["claimed_utc"]
 
 
 def test_claim_rejects_incomplete_identity_binding(tmp_path: Path) -> None:
@@ -113,6 +114,14 @@ def test_preexecution_failure_is_requeueable_but_claimed_parent_is_not(tmp_path:
     parent_gate._claim(gate_root, 0, queue["parent_keys"][0], claim_metadata=_metadata())
     with pytest.raises(scheduler.ResourceContractError, match="ORPHANED_PARENT_CLAIM"):
         scheduler._pending(queue, tmp_path, set())
+
+
+def test_completed_parent_releases_next_atomic_claim(tmp_path: Path) -> None:
+    queue = _queue()
+    _, gate_root, _ = parent_gate._parent_paths(tmp_path, 0, queue["parent_keys"][0])
+    parent_gate._claim(gate_root, 0, queue["parent_keys"][0], claim_metadata=_metadata())
+    (gate_root / "PARENT_STATUS.json").write_text(json.dumps({"status": "PASS_FORMAL_M4_PARENT_ATOMIC"}), encoding="utf-8")
+    assert scheduler._pending(queue, tmp_path, set())[0] == (1, queue["parent_keys"][1])
 
 
 def test_queue_order_does_not_depend_on_outcomes(tmp_path: Path) -> None:
