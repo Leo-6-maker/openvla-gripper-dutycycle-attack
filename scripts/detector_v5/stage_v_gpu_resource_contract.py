@@ -201,7 +201,9 @@ def _admission_row(
     if project_processes:
         reasons.append("PROJECT_WORKER_PRESENT")
     free = row.get("memory_free_mib")
-    if free is None or float(free) < minimum_free_mib:
+    if minimum_free_mib < MIN_FREE_MEMORY_MIB:
+        reasons.append("RESOURCE_THRESHOLD_BELOW_CONTRACT")
+    if free is None or float(free) <= minimum_free_mib:
         reasons.append("INSUFFICIENT_FREE_MEMORY")
     # Foreign work is explicitly allowed in MODE_B/C/M35; it is telemetry, not a
     # scheduler veto.  Project ownership is vetoed by the lease table above.
@@ -387,8 +389,10 @@ def verify_recheck(snapshot: Mapping[str, Any], *, expected_gpu_id: int, expecte
         raise ResourceContractError("GPU_RECHECK_ID_MISMATCH")
     if canonical_uuid(snapshot.get("gpu_uuid")) != canonical_uuid(expected_gpu_uuid):
         raise ResourceContractError("GPU_RECHECK_UUID_MISMATCH")
+    if minimum_free_mib < MIN_FREE_MEMORY_MIB:
+        raise ResourceContractError("GPU_RECHECK_THRESHOLD_BELOW_CONTRACT")
     free = snapshot.get("memory_free_mib")
-    if free is None or float(free) < minimum_free_mib:
+    if free is None or float(free) <= minimum_free_mib:
         raise ResourceContractError("GPU_RECHECK_MEMORY_INSUFFICIENT")
 
 

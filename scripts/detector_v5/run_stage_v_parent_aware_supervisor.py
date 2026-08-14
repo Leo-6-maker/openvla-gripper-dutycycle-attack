@@ -304,7 +304,10 @@ class DynamicSupervisor:
         for row in active:
             worker_pid = int(row.get("worker_pid") or 0)
             child_pid = int(row.get("child_pid") or 0)
-            if not row.get("_heartbeat_file_present"):
+            updated = row.get("updated_utc")
+            age = time.time() - (_datetime.datetime.fromisoformat(str(updated).replace("Z", "+00:00")).timestamp() if updated else self.start_epoch)
+            startup_grace = row.get("state") == "STARTING" and age <= self.args.heartbeat_stale_seconds
+            if not row.get("_heartbeat_file_present") and not startup_grace:
                 errors.append("WORKER_HEARTBEAT_MISSING")
             worker_root = Path(str(row.get("_worker_root") or self.root))
             pid_receipt = read_json(self.root / f"{worker_root.name}.pid.json", {})
@@ -317,8 +320,6 @@ class DynamicSupervisor:
                 accepted_transition = any(task.get("parent_id") == parent and task.get("state") in {"DONE", "DONE_VALID", "DONE_CLASSIFIED_TC"} for task in tasks)
                 if (len(matching) != 1 or matching[0].get("lease_owner") != row.get("worker_id")) and not accepted_transition:
                     errors.append("WORKER_PARENT_IDENTITY_MISMATCH")
-            updated = row.get("updated_utc")
-            age = time.time() - (_datetime.datetime.fromisoformat(str(updated).replace("Z", "+00:00")).timestamp() if updated else self.start_epoch)
             if age > self.args.heartbeat_stale_seconds and not pid_alive(worker_pid) and not pid_alive(child_pid):
                 if row.get("current_parent"):
                     self._write_timeout_receipt(row, "WORKER_HEARTBEAT_LOST")

@@ -651,7 +651,9 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
         normalization_source = "G1_R2_recomputed"
         normal = r2_train
     train_ids = split_ids[f"{family}_train"]; mean = np.asarray(normal["mean"], dtype=np.float64); std = np.asarray(normal["std"], dtype=np.float64)
-    recomputed_train = np.concatenate([records_by_id[identity]["features"] for identity in train_ids], axis=0)
+    # G1 seals normalization in float64; recompute in the same precision so the
+    # audit tests numeric provenance rather than float32 accumulation noise.
+    recomputed_train = np.concatenate([np.asarray(records_by_id[identity]["features"], dtype=np.float64) for identity in train_ids], axis=0)
     rmean = recomputed_train.mean(axis=0).astype(np.float64)
     rstd = np.maximum(recomputed_train.std(axis=0, ddof=0), 1e-8).astype(np.float64)
     max_mean_diff = float(np.abs(rmean - mean).max())

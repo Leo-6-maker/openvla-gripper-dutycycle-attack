@@ -1,0 +1,142 @@
+{
+  "schema": "STAGE_V_M4_Q00_ZERO_TREATMENT_AUTHORITY_V1",
+  "request_kind": "PROSPECTIVE_OWNER_AUTHORITY_REQUEST_V2",
+  "status": "FROZEN_PROSPECTIVE_NOT_AUTHORIZED",
+  "decision": "HOLD_Q00_VALIDATOR_MANIFEST_FIELD_MISMATCH",
+  "scope": "ZERO_TREATMENT_Q00_ONLY",
+  "authorization_kind": "Q00_ZERO_TREATMENT_CANARY",
+  "canary_authorized": false,
+  "runtime_authorized": false,
+  "owner_authorized": false,
+  "requires_explicit_owner_authorization": true,
+  "owner_authorization_basis": "",
+  "formal_m4_authorized": false,
+  "q00": {
+    "parent_key": "libero_10/task_01/state_42",
+    "probe_id": "Q00",
+    "probe_step": 46,
+    "snapshot_manifest_sha256": "cc01c01cd87c5394af531db7618027e91735c2a78f2f1aee835c58bbfe729b20",
+    "snapshot_source_commit": "3bb52975f2f48bb8250d02aa00d7f2fbcc633a65",
+    "snapshot_source_tree": "7d9870d4897a6314fdb8169ea7d0b5d998ec73b4",
+    "exact_plan_manifest_sha256": "0c6caa4dd6638a5d06dfb5f36cc3a7270000b988b3e16e97e7008dd017a3fdf0",
+    "clean_prefix_replay_allowed": true,
+    "post_snapshot_primary_window_steps": 0
+  },
+  "source_binding": {
+    "runtime_commit": "f087f4060cd6f191de25ffddf45edd8037b1eadd",
+    "runtime_tree": "401a355940f03b52077a258904f1bc6b69c55932",
+    "snapshot_source_commit": "3bb52975f2f48bb8250d02aa00d7f2fbcc633a65",
+    "snapshot_source_tree": "7d9870d4897a6314fdb8169ea7d0b5d998ec73b4"
+  },
+  "live_reverification": {
+    "pr_number": 112,
+    "pr_head": "045bc61436c5a58f3bb69d7c2068195c3b8126b2",
+    "pr_head_tree": "1bd93d6b9ce30b96374cdb9749490501940afbeb",
+    "q00_worktree_head": "f087f4060cd6f191de25ffddf45edd8037b1eadd",
+    "q00_worktree_observed_git_tree": "401a355940f03b52077a258904f1bc6b69c55932",
+    "canonical_runtime_binding": "PASS_F087_401A",
+    "independent_owner_receipt_found": false,
+    "gpu_canary_launched": false
+  },
+  "provenance_seal": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_EXTERNAL_RUNTIME_PROVENANCE_Q00_V2_20260814T020229Z_3405739/EXTERNAL_RUNTIME_PROVENANCE.json",
+    "sha256": "1ffeae0a41d98a542ee825f524e0080dda65141f3c812048ec432608f00055ca",
+    "status": "PASS_RUNTIME_PROVENANCE_CAPTURED",
+    "runtime_authorized": false,
+    "student_checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0
+    }
+  },
+  "design_validation": {
+    "validator": "validate_q00_authority(require_launch=False)",
+    "result": "HOLD_Q00_EXACT_PLAN_ARM_CLOSURE_INVALID",
+    "exact_plan_modified": false,
+    "runtime_code_modified": false,
+    "observed_arm_location": "branch_authorities",
+    "observed_q00_branch_rows": 4,
+    "observed_q00_branch_arms": ["CONTROL", "T10", "T3", "T5"],
+    "observed_q00_branch_step": 46,
+    "observed_q00_branch_snapshot_sha256": "cc01c01cd87c5394af531db7618027e91735c2a78f2f1aee835c58bbfe729b20",
+    "validator_checked_location": "probe_authorities",
+    "observed_q00_probe_rows": 1,
+    "observed_q00_probe_arm_values": [null],
+    "independent_audit_receipt": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_Q00_PLAN_ARM_LOCATION_AUDIT_20260814T020951Z_3409193/Q00_PLAN_ARM_LOCATION_AUDIT.json",
+      "sha256": "50d27f37beb33c7033fd2838c991a5a8e6203d0c4d0792680a49565a9d7dcc70",
+      "status": "PASS_Q00_BRANCH_AUTHORITY_ARM_CLOSURE"
+    }
+  },
+  "resource_contract": {
+    "minimum_free_memory_mib": 20480,
+    "strict_comparison": "free_memory_mib > minimum_free_memory_mib",
+    "maximum_project_workers_per_gpu": 1,
+    "foreign_workload_allowed": true,
+    "foreign_process_interference": false,
+    "partial_fleet_allowed": true,
+    "user_allocation_scope": "ALL_GPUS_MEETING_STRICT_THRESHOLD"
+  },
+  "zero_treatment": {
+    "post_snapshot_primary_window_steps": 0,
+    "treatment_steps": 0,
+    "forced_open_steps": 0,
+    "label_records": 0,
+    "v_phys_generated": false,
+    "intervention_executed": false,
+    "outcomes_read": false,
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0
+    },
+    "primary_input_authority": "loaded_frozen_canonical_bytes",
+    "fresh_render_primary_consumption": false
+  },
+  "bindings": {
+    "m4_v2_protocol": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/codex-stage-v-q00-auth-99e8976e/configs/STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V2.json",
+      "sha256": "f21e8b689357e6269b0fe78c379d937a68c9bc0bcf3102fc085b29fabebc20a4"
+    },
+    "exact_plan_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_EXACT_40X24_PLAN_ONLY_V1_20260813T064532Z/EXACT_PROBE_AND_SNAPSHOT_MANIFEST.json",
+      "sha256": "0c6caa4dd6638a5d06dfb5f36cc3a7270000b988b3e16e97e7008dd017a3fdf0"
+    },
+    "snapshot_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_EXACT_40X24_PLAN_ONLY_V1_20260813T064532Z/parents/libero_10__task_01__state_42/CAUSAL_SNAPSHOTS/Q00/CAUSAL_PROBE_SNAPSHOT_V2.json",
+      "sha256": "cc01c01cd87c5394af531db7618027e91735c2a78f2f1aee835c58bbfe729b20"
+    },
+    "runtime_provenance_receipt": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_EXTERNAL_RUNTIME_PROVENANCE_Q00_V2_20260814T020229Z_3405739/EXTERNAL_RUNTIME_PROVENANCE.json",
+      "sha256": "1ffeae0a41d98a542ee825f524e0080dda65141f3c812048ec432608f00055ca"
+    },
+    "zero_treatment_auditor": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/codex-stage-v-q00-auth-99e8976e/scripts/detector_v5/run_stage_v_m4_zero_treatment_auditor.py",
+      "sha256": "1e3614e6b2cb971216f5582ce08592d12608bd5eb7a157295833413c8d86d8da"
+    },
+    "runtime_diff": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/codex-stage-v-q00-auth-99e8976e/scripts/detector_v5/stage_v_runtime_diff.py",
+      "sha256": "a33342309bb53ab245c16a561cc678604a19e781a7ab103b1a76a8cbd468bd4a"
+    },
+    "resource_contract": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/codex-stage-v-q00-auth-99e8976e/scripts/detector_v5/stage_v_gpu_resource_contract.py",
+      "sha256": "dc92b4148dc2b568aa5c5826ade97eb25db78f753a075e4fa399c82a3ccbd404"
+    },
+    "q00_authority_validator": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/codex-stage-v-q00-auth-99e8976e/scripts/detector_v5/stage_v_m4_q00_authority.py",
+      "sha256": "32b394bc7f53dbdf7d1c23973ca4627cd8b84d608c6777036dcfa7db22c9c88a"
+    }
+  },
+  "supersedes_candidate": {
+    "commit": "3eb55c2b588672d1a079ebf2678222fa164ebd0c",
+    "reason": "metadata_misbinding_corrected_append_only"
+  },
+  "blockers": [
+    "INDEPENDENT_MACHINE_READABLE_OWNER_Q00_AUTHORITY_RECEIPT_NOT_FOUND",
+    "Q00_VALIDATOR_MANIFEST_ARM_FIELD_MISMATCH"
+  ],
+  "next_legal_action": "Resolve the validator-versus-frozen-plan schema mismatch by owner/GPT review without editing the exact plan or launching a worker. Only after validator design PASS and a separate owner receipt may require_launch=True be evaluated."
+}
