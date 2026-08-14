@@ -234,7 +234,6 @@ def _validate_successor_snapshot_rebind(
         raise M4GovernanceError("M4_V2_SNAPSHOT_REBIND_PYTHON_BINDING_INVALID")
     return {
         "bridge_status": bridge.get("status"),
-        "bridge_sha256": compatibility_hashes.get("snapshot_rebind_receipt"),
         "snapshot_inventory_sha256": bridge.get("snapshot_inventory_sha256"),
         "compatibility_runtime_source": dict(compatibility_source),
     }
@@ -362,7 +361,6 @@ def validate_formal_m4_v2_authority(
         if any(files[name][0].parent != compatibility_root for name in compatibility_names):
             raise M4GovernanceError("M4_V2_COMPATIBILITY_ROOT_BINDING_INVALID")
         compatibility_hashes = {name: files[name][1] for name in compatibility_names}
-        compatibility_hashes["snapshot_rebind_receipt"] = files["snapshot_rebind_receipt"][1]
         provenance = _load(files["compatibility_runtime_provenance"][0])
         if provenance.get("schema") != "STAGE_V_EXTERNAL_RUNTIME_PROVENANCE_V1" or provenance.get("status") != "PASS_RUNTIME_PROVENANCE_CAPTURED" or provenance.get("runtime_authorized") is not False or provenance.get("outcomes_read") is not False or provenance.get("intervention_executed") is not False or provenance.get("protected_counters") != COUNTERS:
             raise M4GovernanceError("M4_V2_COMPATIBILITY_PROVENANCE_INVALID")
