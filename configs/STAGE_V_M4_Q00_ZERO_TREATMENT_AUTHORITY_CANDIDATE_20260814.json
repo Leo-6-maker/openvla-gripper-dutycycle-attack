@@ -30,8 +30,13 @@
   },
   "live_reverification": {
     "pr_number": 112,
-    "pr_head": "ce66455abe217fabf084b4c536a91931bbf0625a",
-    "pr_head_tree": "8bc4a7ca4d83db761ed4de75d967063480e9d47e",
+    "pr_head": "3eb55c2b588672d1a079ebf2678222fa164ebd0c",
+    "pr_head_tree": "b059306879bd09afc2789b168aa3d9236346f03d",
+    "ci": {
+      "cpu-detector-v5": "SUCCESS",
+      "cpu-stageb": "SUCCESS",
+      "cpu-b3-official-v3": "SUCCESS"
+    },
     "q00_worktree_head": "f087f4060cd6f191de25ffddf45edd8037b1eadd",
     "q00_worktree_observed_git_tree": "401a355940f03b52077a258904f1bc6b69c55932",
     "handoff_declared_runtime_tree": "99e8976e348145d6603470f629cfae1d4a291b5e",
