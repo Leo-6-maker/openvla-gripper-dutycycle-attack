@@ -10,10 +10,14 @@ read, or protected evaluation was run.
 ```text
 PR: #112
 state: OPEN / DRAFT / mergeable
-head commit: f087f4060cd6f191de25ffddf45edd8037b1eadd
-head tree:   99e8976e348145d6603470f629cfae1d4a291b5e
+runtime implementation commit: f087f4060cd6f191de25ffddf45edd8037b1eadd
+runtime implementation tree:   99e8976e348145d6603470f629cfae1d4a291b5e
 branch: codex/m4-corridor-replenishment-post-32-of-40-hold-20260813
 ```
+
+This append-only handoff was added in docs commit
+`158e1a18` on top of that implementation commit; later docs-only commits do
+not change the runtime bindings above.
 
 The three Actions for the final head are successful:
 
