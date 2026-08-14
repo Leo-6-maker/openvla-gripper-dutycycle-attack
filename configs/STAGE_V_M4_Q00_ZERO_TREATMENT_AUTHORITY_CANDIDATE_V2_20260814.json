@@ -63,7 +63,12 @@
     "observed_q00_branch_snapshot_sha256": "cc01c01cd87c5394af531db7618027e91735c2a78f2f1aee835c58bbfe729b20",
     "validator_checked_location": "probe_authorities",
     "observed_q00_probe_rows": 1,
-    "observed_q00_probe_arm_values": [null]
+    "observed_q00_probe_arm_values": [null],
+    "independent_audit_receipt": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_Q00_PLAN_ARM_LOCATION_AUDIT_20260814T020951Z_3409193/Q00_PLAN_ARM_LOCATION_AUDIT.json",
+      "sha256": "50d27f37beb33c7033fd2838c991a5a8e6203d0c4d0792680a49565a9d7dcc70",
+      "status": "PASS_Q00_BRANCH_AUTHORITY_ARM_CLOSURE"
+    }
   },
   "resource_contract": {
     "minimum_free_memory_mib": 20480,
