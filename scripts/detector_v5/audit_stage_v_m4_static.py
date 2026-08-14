@@ -157,6 +157,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
     matrix = protocol.get("matrix", {})
     operation = protocol.get("operation", {})
     source = protocol.get("source_binding", {})
+    model_paths = protocol.get("inputs", {}).get("model_paths", {}) if isinstance(protocol.get("inputs"), Mapping) else {}
     checks = {
         "protocol_schema": protocol.get("schema") == ("STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V2" if is_v2 else "STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V1"),
         "protocol_frozen_authorized": (protocol.get("status") == "FROZEN_PROSPECTIVE_NOT_AUTHORIZED" and protocol.get("runtime_authorized") is False) if is_v2 else (protocol.get("status") == "FROZEN_RUNTIME_AUTHORIZED" and protocol.get("runtime_authorized") is True),
@@ -186,6 +187,7 @@ def audit(protocol_path: Path, *, source_commit: str, source_tree: str) -> dict[
         "scheduler_claims_frozen_40_only": all(token in scheduler_text for token in ("_frozen_queue", '"parent_keys"', "parent_count")),
         "scheduler_dynamic_admission": all(token in scheduler_text for token in ("query_inventory", "admit_mode_b_or_c", "MIN_FREE_MEMORY_MIB", "_reservation_gpu_ids")),
         "scheduler_rolling_replenishment": all(token in scheduler_text for token in ("active", "process.poll", "assigned.discard", "subprocess.Popen")),
+        "scheduler_suite_model_binding": protocol.get("successor_protocol") is not True or (set(model_paths) == {"libero_10", "libero_goal", "libero_object", "libero_spatial"} and all(isinstance(path, str) and Path(path).is_dir() for path in model_paths.values()) and "_model_path_for_parent" in scheduler_text),
         "claim_identity_binding": all(token in formal_gate_text for token in ("physical_gpu_index", "gpu_uuid", "cuda_visible_devices", "worker_pid", "authority_sha256", "protocol_sha256", "runtime_provenance_sha256", "attempt_ordinal", "claim_timestamp")),
         "claim_atomic_exclusion": "path.open(\"x\"" in formal_gate_text,
         "scheduler_source_binding": source.get("runtime_file_sha256", {}).get("scripts/detector_v5/run_stage_v_m4_formal_scheduler.py") == _sha(scheduler_path),

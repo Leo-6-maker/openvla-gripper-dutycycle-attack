@@ -23,11 +23,13 @@ from scripts.detector_v5.stage_v_m4_governance import (  # noqa: E402
 COUNTERS = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
 RUNTIME_FILES = (
     "scripts/detector_v5/run_stage_v_m4_matched_parent.py",
+    "scripts/detector_v5/audit_stage_v_m4_matched_parent.py",
     "scripts/detector_v5/stage_v_m4_governance.py",
     "scripts/detector_v5/audit_stage_v_m4_static.py",
     "scripts/detector_v5/issue_stage_v_m4_runtime_authorization_v2.py",
     "scripts/detector_v5/run_stage_v_m4_formal_scheduler.py",
     "scripts/detector_v5/run_stage_v_m4_formal_parent_with_resource_gate.py",
+    "scripts/detector_v5/stage_v_gpu_resource_contract.py",
     "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_a.py",
     "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py",
     "src/gripper_attack/stage_v_causal_observation_snapshot.py",

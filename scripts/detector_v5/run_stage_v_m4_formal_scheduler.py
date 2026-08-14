@@ -76,6 +76,20 @@ def _reservation_paths(protocol: Mapping[str, Any], args: argparse.Namespace) ->
     return [Path(str(item)).resolve() for item in values]
 
 
+def _model_path_for_parent(protocol: Mapping[str, Any], parent_key: str, args: argparse.Namespace) -> Path:
+    mapping = protocol.get("inputs", {}).get("model_paths") if isinstance(protocol.get("inputs"), Mapping) else None
+    if not isinstance(mapping, Mapping):
+        return args.model_path
+    suite = str(parent_key).split("/", 1)[0]
+    value = mapping.get(suite)
+    if not isinstance(value, str) or not value:
+        raise ResourceContractError(f"MODEL_PATH_BINDING_MISSING:{suite}")
+    path = Path(value).resolve()
+    if not path.is_dir():
+        raise ResourceContractError(f"MODEL_PATH_MISSING:{suite}:{path}")
+    return path
+
+
 @contextmanager
 def _scheduler_lock(path: Path) -> Iterator[None]:
     if fcntl is None:
@@ -135,7 +149,7 @@ def _eligible_gpus(args: argparse.Namespace, inventory: list[dict[str, Any]], *,
     return [int(row["gpu_id"]) for row in admission["gpu_decisions"] if row.get("safe") and row.get("memory_free_mib") is not None and float(row["memory_free_mib"]) > MIN_FREE_MEMORY_MIB]
 
 
-def _child_command(args: argparse.Namespace, index: int, gpu: int, attempt: int, runtime_provenance_sha: str) -> list[str]:
+def _child_command(args: argparse.Namespace, index: int, gpu: int, attempt: int, runtime_provenance_sha: str, model_path: Path) -> list[str]:
     return [
         str(args.python), str(args.parent_gate),
         "--protocol", str(args.protocol), "--authorization", str(args.authorization),
@@ -143,7 +157,7 @@ def _child_command(args: argparse.Namespace, index: int, gpu: int, attempt: int,
         "--final-split", str(args.final_split), "--exact-plan-root", str(args.exact_plan_root),
         "--source-worktree", str(args.source_worktree), "--runner", str(args.runner),
         "--python", str(args.python), "--official-snapshot-root", str(args.official_snapshot_root),
-        "--upstream-root", str(args.upstream_root), "--model-path", str(args.model_path),
+        "--upstream-root", str(args.upstream_root), "--model-path", str(model_path),
         "--output-root", str(args.output_root), "--source-commit", args.source_commit,
         "--source-tree", args.source_tree, "--parent-index", str(index), "--gpu", str(gpu),
         "--attempt-ordinal", str(attempt), "--minimum-free-mib", str(MIN_FREE_MEMORY_MIB),
@@ -326,14 +340,16 @@ def run(args: argparse.Namespace) -> int:
                 log_path = gate_root / f"SCHEDULER_CHILD_{attempt:03d}.log"
                 gpu_row = next((row for row in inventory if int(row.get("gpu_id", -1)) == gpu), {})
                 gpu_uuid = str(gpu_row.get("gpu_uuid", ""))
+                model_path = _model_path_for_parent(protocol, key, args)
                 with log_path.open("w", encoding="utf-8") as log:
-                    process = subprocess.Popen(_child_command(args, index, gpu, attempt, runtime_provenance_sha), cwd=args.source_worktree, stdout=log, stderr=subprocess.STDOUT, text=True)
+                    process = subprocess.Popen(_child_command(args, index, gpu, attempt, runtime_provenance_sha, model_path), cwd=args.source_worktree, stdout=log, stderr=subprocess.STDOUT, text=True)
                 dispatch = gate_root / f"DISPATCH_{attempt:03d}.json"
                 dispatched_at = _utc()
                 if not _write_create_only(dispatch, {
                     "schema": "STAGE_V_M4_FORMAL_GLOBAL_TASK_DISPATCH_V1", "status": "ASSIGNED",
                     "parent_index": index, "canonical_parent_key": key, "worker_id": f"formal-m4-parent-{index:02d}",
                     "physical_gpu_index": gpu, "gpu_uuid": gpu_uuid, "cuda_visible_devices": str(gpu), "gpu_id": gpu,
+                    "model_path": str(model_path),
                     "worker_pid": process.pid, "source_commit": args.source_commit, "source_tree": args.source_tree,
                     "authority_sha256": authority_sha, "protocol_sha256": protocol_sha, "runtime_provenance_sha256": runtime_provenance_sha,
                     "attempt_ordinal": attempt, "outcomes_read": False, "protected_counters": dict(COUNTERS), "created_utc": dispatched_at,
@@ -341,7 +357,7 @@ def run(args: argparse.Namespace) -> int:
                 }):
                     _global_hold(root, reason=f"DISPATCH_CLAIM_CONFLICT:{index}", active=active)
                     return 2
-                active[gpu] = {"process": process, "parent_index": index, "parent_key": key, "gpu_id": gpu, "gpu_uuid": gpu_uuid, "worker_pid": process.pid, "attempt_ordinal": attempt}
+                active[gpu] = {"process": process, "parent_index": index, "parent_key": key, "gpu_id": gpu, "gpu_uuid": gpu_uuid, "worker_pid": process.pid, "attempt_ordinal": attempt, "model_path": str(model_path)}
                 assigned.add(index)
             time.sleep(args.poll_seconds)
 

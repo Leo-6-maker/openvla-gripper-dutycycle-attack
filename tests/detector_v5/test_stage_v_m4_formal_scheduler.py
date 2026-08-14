@@ -129,3 +129,13 @@ def test_queue_order_does_not_depend_on_outcomes(tmp_path: Path) -> None:
     first = scheduler._pending(queue, tmp_path, set())
     (tmp_path / "outcome-like.json").write_text(json.dumps({"status": "PASS", "label": True}), encoding="utf-8")
     assert scheduler._pending(queue, tmp_path, set()) == first
+
+
+def test_model_path_is_bound_by_frozen_parent_suite(tmp_path: Path) -> None:
+    model = tmp_path / "libero-10"
+    model.mkdir()
+    args = SimpleNamespace(model_path=tmp_path / "fallback")
+    protocol = {"inputs": {"model_paths": {"libero_10": str(model)}}}
+    assert scheduler._model_path_for_parent(protocol, "libero_10/task_00/state_48", args) == model.resolve()
+    with pytest.raises(scheduler.ResourceContractError, match="MODEL_PATH_BINDING_MISSING"):
+        scheduler._model_path_for_parent(protocol, "libero_goal/task_00/state_48", args)
