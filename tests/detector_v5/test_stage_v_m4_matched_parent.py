@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from scripts.detector_v5.audit_stage_v_m4_matched_parent import _truth_label
 from scripts.detector_v5.audit_stage_v_m4_static import audit
-from scripts.detector_v5.stage_v_m4_governance import M4GovernanceError, validate_formal_m4_corridor_gate
+from scripts.detector_v5.run_stage_v_m4_formal_parent_with_resource_gate import LEGACY_CONTROLLER_TOKENS
+from scripts.detector_v5.stage_v_m4_governance import M4GovernanceError, _require_exact_plan_source_binding, _snapshot_inventory_sha256, validate_formal_m4_corridor_gate, validate_formal_m4_v2_authority
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -41,3 +45,55 @@ def test_stale_protocol_and_pass_authorization_fail_under_corridor_governance() 
     )
     assert static["status"] == "FAIL_STATIC_CONTRACT"
     assert static["checks"]["formal_corridor_gate_bound"] is False
+
+
+def test_formal_runner_consumes_frozen_exact_plan_without_runtime_selection() -> None:
+    runner = (REPO_ROOT / "scripts/detector_v5/run_stage_v_m4_matched_parent.py").read_text(encoding="utf-8")
+    assert "_load_exact_plan_authority" in runner
+    assert "--exact-plan-root" in runner
+    assert "select_probe_steps" not in runner
+    assert "write_snapshot" not in runner
+    assert '"probe_selection_recomputed": False' in runner
+
+
+def test_current_authority_rejects_historical_v1_deterministically() -> None:
+    protocol_path = REPO_ROOT / "configs/STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V1.json"
+    protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
+    with pytest.raises(M4GovernanceError, match="M4_PROTOCOL_V1_SUPERSEDED_CURRENT_MAINLINE"):
+        validate_formal_m4_v2_authority(
+            protocol,
+            protocol_path=protocol_path,
+            split_path=Path("/nonexistent/formal_split.json"),
+            source_commit=protocol["source_binding"]["runtime_commit"],
+            source_tree=protocol["source_binding"]["runtime_tree"],
+        )
+
+
+def test_formal_m4_gate_declares_legacy_controller_tokens() -> None:
+    assert "monitor_stage_v_goal.py" in LEGACY_CONTROLLER_TOKENS
+    assert "run_stage_v_r2_plan_controller.py" in LEGACY_CONTROLLER_TOKENS
+
+
+def test_exact_plan_source_plane_must_match_formal_runtime() -> None:
+    manifest = {"downstream_source": {"commit": "commit", "tree": "tree"}}
+    _require_exact_plan_source_binding(manifest, "commit", "tree")
+    with pytest.raises(M4GovernanceError, match="EXACT_PLAN_SOURCE_BINDING_INVALID"):
+        _require_exact_plan_source_binding(manifest, "other", "tree")
+
+
+def test_successor_snapshot_inventory_is_stable_and_byte_bound() -> None:
+    rows = [
+        {
+            "canonical_parent_key": f"libero_10/task_{index // 24:02d}/state_{index}",
+            "probe_id": f"Q{index:03d}",
+            "probe_step": index + 1,
+            "snapshot_path": f"parents/p{index}/CAUSAL_SNAPSHOTS/Q{index:03d}",
+            "snapshot_manifest_sha256": f"{index:064x}"[-64:],
+        }
+        for index in range(960)
+    ]
+    manifest = {"probe_authorities": rows}
+    first = _snapshot_inventory_sha256(manifest)
+    assert first == _snapshot_inventory_sha256(manifest)
+    rows[0]["snapshot_manifest_sha256"] = "f" * 64
+    assert _snapshot_inventory_sha256(manifest) != first

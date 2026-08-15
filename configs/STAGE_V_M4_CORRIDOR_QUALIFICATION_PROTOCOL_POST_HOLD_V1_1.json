@@ -1,0 +1,66 @@
+{
+  "schema": "STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1",
+  "version": "POST-HOLD-V1.1-IMMUTABLE-SCIENCE-PLANE",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "purpose": "Runner-compatible clean-only A/B qualification of the 22 frozen post-HOLD V1.1 reserve parents. This does not authorize intervention, M4 outcome read, labels, Teacher/Student, attack, VIS, or Eval160.",
+  "outer_protocol": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_REPLENISHMENT_POST_32_OF_40_HOLD_V1_1.json",
+    "sha256": "dac39bf54007b6ae99de74cf8d5c9f44eeb5175b3411a4bc1615015a36ac7abf"
+  },
+  "source_binding": {
+    "runtime_commit": "3b2ffdb5809710e3c7f2e0a529600c8d7a79b9b2",
+    "runtime_tree": "2492a075e782a112d1e857248956b2647e751039",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "corridor_runner_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-governed-20260812/scripts/detector_v5/run_stage_v_m4_corridor_preflight.py",
+    "corridor_runner_sha256": "26ceed23646177ce675e32eba6617ade7b02804a3c372a756b1ebe098ef72279"
+  },
+  "inputs": {
+    "candidate_parent_manifest_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_POST_HOLD_CANDIDATE_PARENT_MANIFEST_V1_1.json",
+    "candidate_parent_manifest_sha256": "8f13e8427d19118cf7988be57a46c19fd1226af1941e00156b626e42f1c88be3",
+    "v7_control_qualification_rows_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_POST_HOLD_V7_QUALIFIED_ROWS_V1_1.jsonl",
+    "v7_control_qualification_rows_sha256": "809d8ae739c67e90e856677a2249127b383ccb885dcbab680ee5c4e9840d2c6c",
+    "v7_formal_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_QUALIFICATION_PASS_V1_20260812T113000Z/V7_FORMAL_QUALIFICATION_PASS_RECEIPT.json",
+    "v7_formal_receipt_sha256": "36af16ea9c79a7a6a6537d5be2de3b18a69fed2cce523b05c368009c99709118",
+    "static_taxonomy_audit_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_POST_HOLD_STATIC_TAXONOMY_AUDIT_V1.json",
+    "static_taxonomy_audit_sha256": "6e86158e9c830daa85311636138a01b6e0142bd6d7f989ac51ca7d3a0c900912",
+    "attempt_registry_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-post-32-of-40-hold-20260813/configs/STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_V1_1.json",
+    "attempt_registry_sha256": "7d5cfd1b3396f6af4ecd6f3de9b9d6ef454bb927c14a6619a90f14b27a273968",
+    "outcomes_read": false,
+    "old_artifacts_reused": false
+  },
+  "qualification": {
+    "candidate_parent_count": 22,
+    "clean_replicates": ["A", "B"],
+    "probe_count": 24,
+    "selection_version": "STAGE_V_M3_5_CORRIDOR_QUANTILES_V1",
+    "h_phys": 10,
+    "minimum_remaining_horizon": 20,
+    "minimum_corridor_candidates": 24,
+    "clean_success_required": true,
+    "pass_pair_rule": "PASS/PASS",
+    "parent_selection_rule": "Frozen per-suite V1.1 rank with prospective target-or-pool-exhausted stopping; no fallback and no rerun.",
+    "selection_outcomes_read": false
+  },
+  "operation": {
+    "clean_only": true,
+    "intervention_executed": false,
+    "outcomes_read": false,
+    "labels_generated": false,
+    "teacher_student_evidence_generated": false,
+    "failure_policy": "Preserve CLEAN_FAILURE or INELIGIBLE for the identity, reconcile A/B, never rerun, and never interpret as a vulnerability label."
+  },
+  "resource_contract": {
+    "admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7],
+    "minimum_free_memory_mib": 20480,
+    "free_memory_comparator": ">",
+    "maximum_project_workers_per_gpu": 1,
+    "partial_fleet_allowed": true,
+    "foreign_workload_allowed": true,
+    "foreign_process_interference": false
+  },
+  "owner_authorization_basis": "Goal Mode continuation plus owner resource rule: use any of GPUs 0-7 only when free memory is strictly greater than 20 GiB; no M4, attack, VIS, Teacher, Student, or protected runtime.",
+  "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0},
+  "failure_action": "SEAL_CLASSIFY_HANDOFF_STOP_NO_RETRY"
+}

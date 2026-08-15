@@ -48,6 +48,7 @@ from scripts.detector_v5.build_stage_v_m3_5_probe_plan import (  # noqa: E402
     select_probe_steps,
 )
 from scripts.detector_v5.stage_v_gpu_resource_contract import (  # noqa: E402
+    MIN_FREE_MEMORY_MIB,
     ResourceContractError,
     canonical_uuid,
     query_inventory,
@@ -1036,8 +1037,8 @@ def _verify_runtime_contract(args: argparse.Namespace, protocol: Mapping[str, An
     expected_uuid = protocol.get("resource_contract", {}).get("gpu_uuid_by_index", {}).get(str(int(args.gpu)))
     if gpu_row is None or not expected_uuid or canonical_uuid(gpu_row.get("gpu_uuid")) != canonical_uuid(expected_uuid):
         raise M35RunnerError("RUNTIME_GPU_UUID_MISMATCH")
-    minimum_free = int(protocol.get("resource_contract", {}).get("minimum_free_memory_mib", 20_480))
-    if float(gpu_row.get("memory_free_mib") or -1) < minimum_free:
+    minimum_free = int(protocol.get("resource_contract", {}).get("minimum_free_memory_mib", MIN_FREE_MEMORY_MIB))
+    if minimum_free != MIN_FREE_MEMORY_MIB or float(gpu_row.get("memory_free_mib") or -1) <= minimum_free:
         raise M35RunnerError("RUNTIME_GPU_FREE_MEMORY_INSUFFICIENT")
     input_binding["gpu"] = {
         "physical_gpu_index": int(args.gpu), "gpu_uuid": canonical_uuid(gpu_row.get("gpu_uuid")),

@@ -21,19 +21,10 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from gripper_attack.stage_v_causal_observation_snapshot import (  # noqa: E402
     CausalSnapshotError,
-    capture_rng_state,
-    capture_runtime_state,
-    capture_simulator_state,
+    assert_primary_observation_exact,
     load_snapshot,
-    write_snapshot,
 )
-from gripper_attack.stage_v_canonical_execution_core import canonical_sha256  # noqa: E402
-from gripper_attack.stage_v_m3_5_phase_classifier import classify_trajectory  # noqa: E402
-from scripts.detector_v5.build_stage_v_m3_5_probe_plan import (  # noqa: E402
-    H_PHYS,
-    PROBE_COUNT,
-    select_probe_steps,
-)
+from gripper_attack.stage_v_canonical_execution_core import canonical_sha256, canonical_value  # noqa: E402
 from scripts.detector_v5.run_stage_v_canonical_clean import (  # noqa: E402
     _load_external_modules,
     _load_policy,
@@ -44,20 +35,16 @@ from scripts.detector_v5.run_stage_v_m3_5_intervention_parent import (  # noqa: 
     M35RunnerError,
     _new_env,
 )
-from scripts.detector_v5.run_stage_v_m3_5_v1_4_gate_a import (  # noqa: E402
-    _clean_row,
-    _policy_capture,
-    _replay_canary,
-    _snapshot_payload,
-)
 from scripts.detector_v5.run_stage_v_m3_5_v1_4_gate_b import (  # noqa: E402
     DOSES,
+    H_PHYS,
+    HORIZON_CONTRACT,
     _pair_label,
     _run_branch,
 )
 from scripts.detector_v5.stage_v_m4_governance import (  # noqa: E402
     M4GovernanceError,
-    validate_formal_m4_corridor_gate,
+    validate_formal_m4_v2_authority,
 )
 
 
@@ -86,6 +73,95 @@ def _load(path: Path) -> dict[str, Any]:
     return dict(value)
 
 
+def _sha_json(value: Any) -> str:
+    return canonical_sha256(canonical_value(value))
+
+
+def _inside(root: Path, relative: Any) -> Path:
+    path = (root / str(relative)).resolve()
+    path.relative_to(root.resolve())
+    return path
+
+
+def _load_exact_plan_authority(root: Path, parent_key: str, expected_manifest_sha256: str) -> dict[str, Any]:
+    """Load the plan-only authority; formal runtime never selects probes."""
+    root = root.resolve()
+    manifest_path = root / "EXACT_PROBE_AND_SNAPSHOT_MANIFEST.json"
+    audit_path = root / "EXACT_40X24_PLAN_ONLY_INDEPENDENT_AUDIT.json"
+    result_path = root / "PLAN_RESULT.json"
+    seal_path = root / "ROOT_SEAL.sha256"
+    sums_path = root / "SHA256SUMS"
+    if not root.is_dir() or not all(path.is_file() for path in (manifest_path, audit_path, result_path, seal_path, sums_path)):
+        raise M35RunnerError("EXACT_PLAN_ROOT_INCOMPLETE")
+    if _sha(manifest_path) != expected_manifest_sha256:
+        raise M35RunnerError("EXACT_PLAN_MANIFEST_HASH_MISMATCH")
+    seal_tokens = seal_path.read_text(encoding="utf-8").split()
+    if not seal_tokens or seal_tokens[0] != _sha(sums_path):
+        raise M35RunnerError("EXACT_PLAN_ROOT_SEAL_INVALID")
+    manifest = _load(manifest_path)
+    audit = _load(audit_path)
+    result = _load(result_path)
+    if manifest.get("schema") != "STAGE_V_M4_EXACT_PROBE_AND_SNAPSHOT_MANIFEST_V1" or manifest.get("status") != "PASS_EXACT_40X24_PLAN_ONLY":
+        raise M35RunnerError("EXACT_PLAN_MANIFEST_NOT_PASS")
+    if audit.get("status") != "PASS" or result.get("status") != "PASS" or result.get("manifest_status") != "PASS_EXACT_40X24_PLAN_ONLY":
+        raise M35RunnerError("EXACT_PLAN_AUDIT_NOT_PASS")
+    if result.get("audit_sha256") != _sha(audit_path) or manifest.get("independent_audit_sha256") != _sha(audit_path):
+        raise M35RunnerError("EXACT_PLAN_AUDIT_HASH_MISMATCH")
+    if manifest.get("parent_count") != 40 or manifest.get("probe_count_per_parent") != 24 or manifest.get("probe_count_total") != 960 or manifest.get("planned_branch_authority_count") != 3840:
+        raise M35RunnerError("EXACT_PLAN_MATRIX_INVALID")
+    if manifest.get("selection_outcomes_read") is not False or manifest.get("intervention_executed") is not False or manifest.get("v_phys_generated") is not False or manifest.get("teacher_predictions_read") is not False or manifest.get("student_predictions_read") is not False or manifest.get("protected_counters") != COUNTERS:
+        raise M35RunnerError("EXACT_PLAN_BOUNDARY_INVALID")
+    parent = next((row for row in manifest.get("parents", []) if isinstance(row, Mapping) and str(row.get("canonical_parent_key")) == parent_key), None)
+    if not isinstance(parent, Mapping) or parent.get("status") != "PASS" or parent.get("probe_count") != 24:
+        raise M35RunnerError("EXACT_PLAN_PARENT_NOT_PASS")
+    probes = sorted([row for row in manifest.get("probe_authorities", []) if isinstance(row, Mapping) and str(row.get("canonical_parent_key")) == parent_key], key=lambda row: str(row.get("probe_id")))
+    if len(probes) != 24 or len({str(row.get("probe_id")) for row in probes}) != 24:
+        raise M35RunnerError("EXACT_PLAN_PROBE_AUTHORITY_INVALID")
+    branches = [row for row in manifest.get("branch_authorities", []) if isinstance(row, Mapping) and str(row.get("canonical_parent_key")) == parent_key]
+    if len(branches) != 96 or any(row.get("execution_status") != "PLANNED_NOT_EXECUTED" or row.get("outcomes_read") is not False or row.get("protected_counters") != COUNTERS for row in branches):
+        raise M35RunnerError("EXACT_PLAN_BRANCH_AUTHORITY_INVALID")
+    clean_path = _inside(root, parent.get("clean_trajectory_path"))
+    if _sha(clean_path) != parent.get("clean_trajectory_sha256"):
+        raise M35RunnerError("EXACT_PLAN_CLEAN_TRAJECTORY_HASH_MISMATCH")
+    clean = _load(clean_path)
+    if clean.get("outcomes_read") is not False or not isinstance(clean.get("task_success"), bool) or not isinstance(clean.get("rows"), list):
+        raise M35RunnerError("EXACT_PLAN_CLEAN_TRAJECTORY_INVALID")
+    actions = [{"step": int(row["step"]), "raw": row["raw_action"], "env": row["env_action"]} for row in clean["rows"]]
+    if _sha_json(actions) != parent.get("clean_reference_action_sequence_sha256"):
+        raise M35RunnerError("EXACT_PLAN_CLEAN_ACTION_SEQUENCE_HASH_MISMATCH")
+    gate_a_root = _inside(root, parent.get("output_dir"))
+    gate_a_receipt = _load(gate_a_root / "M3_5_V1_4_GATE_A_RECEIPT.json")
+    canaries = gate_a_receipt.get("canary_receipts")
+    if gate_a_receipt.get("status") != "PASS" or not isinstance(canaries, list) or len(canaries) != 24 or not all(isinstance(row, Mapping) and row.get("status") == "PASS" for row in canaries):
+        raise M35RunnerError("EXACT_PLAN_PARENT_CANARY_INVALID")
+    for probe in probes:
+        snapshot_root = _inside(root, probe.get("snapshot_path"))
+        snapshot_manifest_path = snapshot_root / "CAUSAL_PROBE_SNAPSHOT_V2.json"
+        if not snapshot_manifest_path.is_file() or _sha(snapshot_manifest_path) != probe.get("snapshot_manifest_sha256"):
+            raise M35RunnerError(f"EXACT_PLAN_SNAPSHOT_HASH_MISMATCH:{probe.get('probe_id')}")
+        loaded = load_snapshot(snapshot_root, materialize_torch=True)
+        snapshot_manifest = loaded["manifest"]
+        payload = loaded["payload"]
+        hashes = assert_primary_observation_exact(payload)
+        if snapshot_manifest.get("binding", {}).get("parent_key") != parent_key or snapshot_manifest.get("binding", {}).get("probe_id") != probe.get("probe_id") or snapshot_manifest.get("primary_input_authority") != "loaded_frozen_canonical_bytes" or snapshot_manifest.get("fresh_render_equality_gate_used") is not False:
+            raise M35RunnerError(f"EXACT_PLAN_SNAPSHOT_BINDING_INVALID:{probe.get('probe_id')}")
+        if payload.get("probe", {}).get("probe_id") != probe.get("probe_id") or int(payload.get("probe", {}).get("step")) != int(probe.get("probe_step")):
+            raise M35RunnerError(f"EXACT_PLAN_SNAPSHOT_IDENTITY_INVALID:{probe.get('probe_id')}")
+        if hashes.get("raw_observation_sha256") != probe.get("raw_observation_sha256") or hashes.get("policy_rgb_224_sha256") != probe.get("policy_rgb_224_sha256") or hashes.get("policy_input_sha256") != probe.get("policy_input_sha256"):
+            raise M35RunnerError(f"EXACT_PLAN_SNAPSHOT_INPUT_HASH_INVALID:{probe.get('probe_id')}")
+        state = payload.get("full_simulator_state", {}).get("registered_flat_state")
+        if state is None or hashlib.sha256(np.asarray(state).tobytes(order="C")).hexdigest() != probe.get("sim_state_sha256"):
+            raise M35RunnerError(f"EXACT_PLAN_SNAPSHOT_STATE_HASH_INVALID:{probe.get('probe_id')}")
+        if _sha_json(payload.get("clean_reference_action_window")) != probe.get("clean_reference_action_window_sha256"):
+            raise M35RunnerError(f"EXACT_PLAN_SNAPSHOT_ACTION_WINDOW_INVALID:{probe.get('probe_id')}")
+    normalized_probes = []
+    for row in probes:
+        normalized = dict(row)
+        normalized["step"] = int(normalized["probe_step"])
+        normalized_probes.append(normalized)
+    return {"root": root, "manifest": manifest, "manifest_sha256": expected_manifest_sha256, "audit_sha256": _sha(audit_path), "parent": dict(parent), "probes": normalized_probes, "clean": clean, "clean_path": clean_path, "probe_plan_path": _inside(root, parent.get("probe_plan_path")), "canaries": [dict(row) for row in canaries]}
+
+
 def _write(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
@@ -107,22 +183,8 @@ def _seal(root: Path) -> None:
 
 
 def _validate(protocol: Mapping[str, Any], authorization: Mapping[str, Any], *, protocol_path: Path, authorization_path: Path, split_path: Path, args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any]]:
-    if protocol.get("schema") != "STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V1" or protocol.get("status") != "FROZEN_RUNTIME_AUTHORIZED" or protocol.get("runtime_authorized") is not True:
-        raise M35RunnerError("M4_PROTOCOL_NOT_FROZEN_OR_AUTHORIZED")
-    source = protocol.get("source_binding", {})
-    if source.get("runtime_commit") != args.source_commit or source.get("runtime_tree") != args.source_tree:
-        raise M35RunnerError("M4_SOURCE_BINDING_MISMATCH")
-    matrix = protocol.get("matrix", {})
-    if matrix.get("parents") != 40 or matrix.get("probes_per_parent") != 24 or matrix.get("repetitions") != 1 or matrix.get("conditions") != ["CONTROL", "T3", "T5", "T10"]:
-        raise M35RunnerError("M4_MATRIX_INVALID")
-    if protocol.get("protected_counters") != COUNTERS or protocol.get("operation", {}).get("fresh_render_primary_consumption") is not False or protocol.get("operation", {}).get("native_policy_calls_in_primary_window") != 0:
-        raise M35RunnerError("M4_PRIMARY_CONTRACT_INVALID")
-    if not split_path.is_file() or _sha(split_path) != protocol.get("inputs", {}).get("formal_parent_split_sha256"):
-        raise M35RunnerError("M4_SPLIT_BINDING_INVALID")
-    if authorization.get("status") != "PASS" or authorization.get("protocol_sha256") != _sha(protocol_path) or authorization.get("formal_parent_split_sha256") != _sha(split_path) or authorization.get("source_commit") != args.source_commit or authorization.get("source_tree") != args.source_tree:
-        raise M35RunnerError("M4_AUTHORIZATION_BINDING_INVALID")
     try:
-        corridor_gate = validate_formal_m4_corridor_gate(
+        authority = validate_formal_m4_v2_authority(
             protocol,
             protocol_path=protocol_path,
             split_path=split_path,
@@ -132,7 +194,9 @@ def _validate(protocol: Mapping[str, Any], authorization: Mapping[str, Any], *, 
         )
     except M4GovernanceError as exc:
         raise M35RunnerError(str(exc)) from exc
-    return _load(split_path), corridor_gate
+    if protocol.get("horizon_contract") != HORIZON_CONTRACT:
+        raise M35RunnerError("M4_HORIZON_CONTRACT_REQUIRED")
+    return _load(split_path), authority
 
 
 def _parent_row(split: Mapping[str, Any], parent_key: str) -> Mapping[str, Any]:
@@ -150,6 +214,7 @@ def _branch_record(parent_key: str, probe: Mapping[str, Any], arm: str, branch: 
     branch_id = f"m4-v1-{hashlib.sha256(f'M4_V1::{parent_key}::{probe_id}::R0::{arm}'.encode()).hexdigest()}"
     return {
         "schema": "STAGE_V_M4_PHYSICAL_EXECUTION_V1",
+        "horizon_contract": HORIZON_CONTRACT,
         "canonical_parent_key": parent_key,
         "probe_id": probe_id,
         "probe_step": int(probe["step"]),
@@ -170,6 +235,7 @@ def _label(parent_key: str, probe: Mapping[str, Any], dose: str, treatment: Mapp
     label_class = str(pair["label_class"])
     return {
         "schema": "STAGE_V_M4_V_PHYS_LABEL_V1",
+        "horizon_contract": HORIZON_CONTRACT,
         "label_id": f"m4-label-{hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(',', ':')).encode()).hexdigest()}",
         "canonical_parent_key": parent_key,
         "probe_id": probe["probe_id"],
@@ -190,6 +256,7 @@ def _label(parent_key: str, probe: Mapping[str, Any], dose: str, treatment: Mapp
         "control_result_sha256": control["branch_result_sha256"],
         "treatment_result_sha256": treatment["branch_result_sha256"],
         "treatment_compliant": treatment["branch"].get("treatment_compliant") is True,
+        "censoring_class": pair.get("censoring_class"),
         "matched_action_window": "T+H_phys",
         "protected_counters": dict(COUNTERS),
     }
@@ -215,7 +282,7 @@ def run(args: argparse.Namespace) -> int:
         output.mkdir(parents=True, exist_ok=False)
     shutil.copy2(protocol_path, output / "M4_PROTOCOL.json")
     shutil.copy2(authorization_path, output / "M4_AUTHORIZATION.json")
-    shutil.copy2(corridor_gate["receipt_path"], output / "M4_CORRIDOR_PASS_RECEIPT.json")
+    shutil.copy2(corridor_gate["manifest_path"], output / "M4_FINAL_PARENT_MANIFEST.json")
     suite, task_part, state_part = args.parent_key.split("/")
     args.suite = suite
     task_index = int(task_part.removeprefix("task_"))
@@ -231,99 +298,52 @@ def run(args: argparse.Namespace) -> int:
     bddl = str(Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file)
     adapter, model, _processor, _unnorm_key = _load_policy(args, get_processor, get_model, adapter_type)
     horizon = int(HORIZONS[suite])
-    episode_rng = capture_rng_state()
-    first_env, first_obs = _new_env(OffScreenRenderEnv, bddl, horizon, args.gpu, init_state, args, output)
-    _write_runtime_binding_receipt(args, first_env, output)
-    captures: dict[int, dict[str, Any]] = {}
-    clean_rows: list[dict[str, Any]] = []
-    clean_actions: list[list[float]] = []
-    task_success = False
-    terminal_seen = False
-    baseline_z: float | None = None
+    exact = _load_exact_plan_authority(args.exact_plan_root, args.parent_key, args.exact_plan_manifest_sha256)
+    if exact["parent"].get("split") != parent.get("split"):
+        raise M35RunnerError("EXACT_PLAN_SPLIT_BINDING_INVALID")
+    shutil.copy2(exact["clean_path"], output / "CLEAN_TRAJECTORY_V1_4.json")
+    shutil.copy2(exact["probe_plan_path"], output / "PROBE_PLAN_V1_4.json")
+    _write(output / "EXACT_PLAN_BINDING.json", {
+        "schema": "STAGE_V_M4_EXACT_PLAN_RUNTIME_BINDING_V1",
+        "status": "PASS_EXACT_FROZEN_AUTHORITY_LOADED",
+        "exact_plan_root": str(exact["root"]),
+        "exact_plan_manifest_sha256": exact["manifest_sha256"],
+        "exact_plan_audit_sha256": exact["audit_sha256"],
+        "canonical_parent_key": args.parent_key,
+        "probe_count": len(exact["probes"]),
+        "probe_selection_recomputed": False,
+        "snapshots_loaded_frozen": True,
+        "outcomes_read": False,
+        "protected_counters": dict(COUNTERS),
+    })
+    clean_actions = [list(row["env_action"]) for row in exact["clean"]["rows"]]
+    probes = exact["probes"]
+    snapshot_rows = [{"probe_id": str(probe["probe_id"]), "step": int(probe["step"]), "path": str(probe["snapshot_path"]), "manifest_sha256": str(probe["snapshot_manifest_sha256"])} for probe in probes]
+    binding_env, _binding_obs = _new_env(OffScreenRenderEnv, bddl, horizon, args.gpu, init_state, args, output)
     try:
-        from gripper_attack.stage_v_m3_5_physical_taxonomy import bind_object_taxonomy, aperture_metric, telemetry_from_env
-        taxonomy = bind_object_taxonomy(first_env, Path(bddl))
-        if taxonomy.get("status") != "PASS":
-            raise M35RunnerError("M4_OBJECT_TAXONOMY_BINDING_FAIL")
-        for step in range(horizon):
-            simulator = capture_simulator_state(first_env)
-            runtime = capture_runtime_state(first_env, model=model, adapter=adapter)
-            capture = _policy_capture(adapter, get_image, first_obs, str(task.language))
-            captures[step] = {**capture, "simulator": simulator, "runtime": runtime}
-            aperture = None
-            if isinstance(first_obs, Mapping):
-                for key in ("robot0_gripper_qpos", "gripper_qpos"):
-                    if key in first_obs:
-                        aperture = aperture_metric(first_obs[key])
-                        if aperture is not None:
-                            break
-            telemetry = telemetry_from_env(first_env, taxonomy)
-            row, baseline_z = _clean_row(step, horizon, capture, telemetry, aperture, baseline_z)
-            row["state_sha256"] = hashlib.sha256(np.asarray(simulator["registered_flat_state"]).tobytes(order="C")).hexdigest()
-            row["clean_terminal"] = terminal_seen
-            clean_rows.append(row)
-            clean_actions.append(list(capture["env_action"]))
-            first_obs, _reward, done, _info = first_env.step(capture["env_action"])
-            try:
-                current_success = bool(first_env.check_success())
-            except Exception:
-                current_success = False
-            task_success = task_success or current_success
-            if current_success or bool(done):
-                terminal_seen = True
-                row["clean_terminal"] = True
-            if bool(done):
-                break
+        _write_runtime_binding_receipt(args, binding_env, output)
     finally:
-        first_env.close()
-    if not task_success:
-        raise M35RunnerError("M4_CLEAN_PARENT_NOT_SUCCESSFUL")
-    for index, row in enumerate(clean_rows):
-        row["remaining_horizon"] = len(clean_rows) - index
-    for row, label in zip(clean_rows, classify_trajectory(clean_rows)):
-        row.update(label)
-    _write(output / "CLEAN_TRAJECTORY_V1_4.json", {"schema": "STAGE_V_M4_CLEAN_TRAJECTORY_V1", "outcomes_read": False, "rows": clean_rows, "task_success": True, "protected_counters": dict(COUNTERS)})
-    plan = select_probe_steps(clean_rows, args.parent_key)
-    probes = plan.get("probe_steps")
-    if not isinstance(probes, list) or len(probes) != PROBE_COUNT:
-        raise M35RunnerError("M4_PROBE_PLAN_INVALID")
-    _write(output / "PROBE_PLAN_V1_4.json", {**plan, "outcomes_read": False, "protected_counters": dict(COUNTERS)})
-    snapshot_rows = []
-    for probe in probes:
-        step = int(probe["step"])
-        capture = captures[step]
-        if str(probe.get("policy_input_sha256")) != str(capture["policy_input_sha256"]) or str(probe.get("policy_rgb_224_sha256")) != str(capture["policy_rgb_224_sha256"]):
-            raise M35RunnerError(f"M4_PROBE_INPUT_BINDING_MISMATCH:{probe['probe_id']}")
-        if str(probe.get("state_sha256")) != str(capture["clean_state_sha256"] if "clean_state_sha256" in capture else clean_rows[step]["state_sha256"]):
-            raise M35RunnerError(f"M4_PROBE_STATE_BINDING_MISMATCH:{probe['probe_id']}")
-        snapshot_root = output / "CAUSAL_SNAPSHOTS" / str(probe["probe_id"])
-        manifest = write_snapshot(snapshot_root, _snapshot_payload(capture, probe=probe, simulator=capture["simulator"], runtime=capture["runtime"], episode_rng=episode_rng, action_rows=clean_rows), binding={"parent_key": args.parent_key, "probe_id": probe["probe_id"], "step": step, "object_identity": probe.get("object_identity"), "source_commit": args.source_commit, "source_tree": args.source_tree})
-        snapshot_rows.append({"probe_id": probe["probe_id"], "step": step, "path": snapshot_root.relative_to(output).as_posix(), "manifest_sha256": manifest["manifest_sha256"]})
-    canaries = []
-    for row in snapshot_rows:
-        canaries.append(_replay_canary(output / row["path"], OffScreenRenderEnv=OffScreenRenderEnv, bddl=bddl, horizon=horizon, init_state=init_state, args=args, output_dir=output, clean_actions=clean_actions, model=model, adapter=adapter))
-    if len(canaries) != PROBE_COUNT or any(item.get("status") != "PASS" for item in canaries):
-        raise M35RunnerError("M4_CAUSAL_SNAPSHOT_CANARY_FAIL")
-    _write(output / "M4_CAUSAL_SNAPSHOT_CANARY.json", {"schema": "STAGE_V_M4_CAUSAL_SNAPSHOT_CANARY_V1", "status": "PASS", "snapshots": snapshot_rows, "canaries": canaries, "fresh_render_equality_gate_used": False, "protected_counters": dict(COUNTERS)})
+        binding_env.close()
+    _write(output / "M4_CAUSAL_SNAPSHOT_CANARY.json", {"schema": "STAGE_V_M4_CAUSAL_SNAPSHOT_CANARY_V1", "status": "PASS", "source": "EXACT_40X24_PLAN_ONLY_INDEPENDENT_AUDIT", "snapshots": snapshot_rows, "canaries": exact["canaries"], "fresh_render_equality_gate_used": False, "intervention_executed": False, "protected_counters": dict(COUNTERS)})
     branches: list[dict[str, Any]] = []
     labels: list[dict[str, Any]] = []
     observations: list[dict[str, Any]] = []
     for probe in probes:
-        snapshot_root = output / "CAUSAL_SNAPSHOTS" / str(probe["probe_id"])
-        control = _run_branch(snapshot_root=snapshot_root, gate_a_root=output, OffScreenRenderEnv=OffScreenRenderEnv, bddl=bddl, horizon=horizon, init_state=init_state, args=args, output_dir=output, clean_actions=clean_actions, model=model, adapter=adapter, arm="CONTROL", dose=0, probe_id=str(probe["probe_id"]), repetition=0)
+        snapshot_root = _inside(exact["root"], probe["snapshot_path"])
+        control = _run_branch(snapshot_root=snapshot_root, gate_a_root=exact["root"], OffScreenRenderEnv=OffScreenRenderEnv, bddl=bddl, horizon=horizon, init_state=init_state, args=args, output_dir=output, clean_actions=clean_actions, model=model, adapter=adapter, arm="CONTROL", dose=0, probe_id=str(probe["probe_id"]), repetition=0, allow_horizon_censoring=True)
         control_record = _branch_record(args.parent_key, probe, "CONTROL", control)
         branches.append(control_record)
         for dose_name, dose_steps in DOSES.items():
-            treatment = _run_branch(snapshot_root=snapshot_root, gate_a_root=output, OffScreenRenderEnv=OffScreenRenderEnv, bddl=bddl, horizon=horizon, init_state=init_state, args=args, output_dir=output, clean_actions=clean_actions, model=model, adapter=adapter, arm=dose_name, dose=dose_steps, probe_id=str(probe["probe_id"]), repetition=0)
+            treatment = _run_branch(snapshot_root=snapshot_root, gate_a_root=exact["root"], OffScreenRenderEnv=OffScreenRenderEnv, bddl=bddl, horizon=horizon, init_state=init_state, args=args, output_dir=output, clean_actions=clean_actions, model=model, adapter=adapter, arm=dose_name, dose=dose_steps, probe_id=str(probe["probe_id"]), repetition=0, allow_horizon_censoring=True)
             pair = _pair_label(control, treatment, dose_steps)
             treatment_record = _branch_record(args.parent_key, probe, dose_name, treatment, pair=pair, control=control_record)
             branches.append(treatment_record)
             labels.append(_label(args.parent_key, probe, dose_name, treatment_record, control_record, pair))
-            observations.append({"schema": "STAGE_V_M4_TREATMENT_OBSERVATION_V1", "canonical_parent_key": args.parent_key, "probe_id": probe["probe_id"], "dose": dose_name, **{key: pair[key] for key in ("label_class", "control_valid", "treatment_valid", "f_control", "f_open", "control_physical_class", "treatment_physical_class")}, "treatment_compliant": treatment.get("treatment_compliant") is True, "treatment_branch_id": treatment_record["branch_id"], "control_branch_id": control_record["branch_id"], "protected_counters": dict(COUNTERS)})
+            observations.append({"schema": "STAGE_V_M4_TREATMENT_OBSERVATION_V1", "horizon_contract": HORIZON_CONTRACT, "canonical_parent_key": args.parent_key, "probe_id": probe["probe_id"], "dose": dose_name, **{key: pair[key] for key in ("label_class", "control_valid", "treatment_valid", "f_control", "f_open", "control_physical_class", "treatment_physical_class", "censoring_class")}, "treatment_compliant": treatment.get("treatment_compliant") is True, "treatment_branch_id": treatment_record["branch_id"], "control_branch_id": control_record["branch_id"], "protected_counters": dict(COUNTERS)})
     _write_jsonl(output / "M4_COUNTERFACTUAL_BRANCHES_V1.jsonl", branches)
     _write_jsonl(output / "M4_TREATMENT_OBSERVATIONS_V1.jsonl", observations)
     _write_jsonl(output / "M4_V_PHYS_LABELS_V1.jsonl", labels)
-    result = {"schema": "STAGE_V_M4_PARENT_RESULT_V1", "status": "PASS", "parent_atomic": True, "canonical_parent_key": args.parent_key, "suite": suite, "task_index": task_index, "state_index": state_index, "split": parent["split"], "source_commit": args.source_commit, "source_tree": args.source_tree, "runner_sha256": _sha(Path(__file__)), "protocol_sha256": _sha(protocol_path), "authorization_receipt_sha256": _sha(authorization_path), "clean_success": True, "probe_count": len(probes), "branch_count": len(branches), "treatment_label_count": len(labels), "expected_physical_executions": 96, "expected_treatment_labels": 72, "primary_estimand": "V_phys@T5", "primary_window": "MATCHED_CANONICAL_ACTION_T_PLUS_H_PHYS", "native_policy_calls_in_primary_window": 0, "fresh_render_equality_gate_used": False, "fresh_render_primary_consumption": False, "selection_outcomes_read": False, "causal_snapshot_canary_status": "PASS", "label_status": "VALID", "independent_audit_status": "PENDING", "protected_counters": dict(COUNTERS)}
+    result = {"schema": "STAGE_V_M4_PARENT_RESULT_V1", "horizon_contract": HORIZON_CONTRACT, "status": "PASS", "parent_atomic": True, "canonical_parent_key": args.parent_key, "suite": suite, "task_index": task_index, "state_index": state_index, "split": parent["split"], "source_commit": args.source_commit, "source_tree": args.source_tree, "runner_sha256": _sha(Path(__file__)), "protocol_sha256": _sha(protocol_path), "authorization_receipt_sha256": _sha(authorization_path), "exact_plan_manifest_sha256": exact["manifest_sha256"], "clean_success": bool(exact["clean"].get("task_success")), "probe_count": len(probes), "branch_count": len(branches), "treatment_label_count": len(labels), "expected_physical_executions": 96, "expected_treatment_labels": 72, "primary_estimand": "V_phys@T5", "primary_window": "MATCHED_CANONICAL_ACTION_T_PLUS_H_PHYS", "native_policy_calls_in_primary_window": 0, "fresh_render_equality_gate_used": False, "fresh_render_primary_consumption": False, "selection_outcomes_read": False, "probe_selection_source": "EXACT_FROZEN_PLAN_MANIFEST", "probe_selection_recomputed": False, "causal_snapshot_canary_status": "PASS", "label_status": "VALID", "independent_audit_status": "PENDING", "protected_counters": dict(COUNTERS), "censored_branch_count": sum(1 for row in branches if row.get("branch", {}).get("horizon_censored") is True), "censored_label_count": sum(1 for row in labels if row.get("censoring_class") != "NONE"), "binary_label_count": sum(1 for row in labels if row.get("binary_label_consumable") is True), "abstention_map_frozen": True}
     _write(output / "PARENT_RESULT.json", result)
     _seal(output)
     audit_path = output / "M4_INDEPENDENT_AUDIT.json"
@@ -344,10 +364,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     for name in ("protocol", "output_dir", "official_snapshot_root", "upstream_root", "model_path", "authorization_receipt"):
         parser.add_argument(f"--{name.replace('_', '-')}", type=Path, required=True)
+    parser.add_argument("--exact-plan-root", type=Path, required=True)
     parser.add_argument("--parent-key", required=True)
     parser.add_argument("--gpu", type=int, required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
+    parser.add_argument("--exact-plan-manifest-sha256", required=True)
     parser.add_argument("--enable-runtime", action="store_true")
     args = parser.parse_args(argv)
     try:

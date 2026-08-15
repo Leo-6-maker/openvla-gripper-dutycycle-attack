@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from gripper_attack.stage_v_causal_observation_snapshot import matched_action
 from scripts.detector_v5.audit_stage_v_m3_5_v1_4_gate_b import _compliant
-from scripts.detector_v5.run_stage_v_m3_5_v1_4_gate_b import _pair_label, _physical_outcome, _validate_protocol
+from scripts.detector_v5.run_stage_v_m3_5_v1_4_gate_b import HORIZON_CONTRACT, _pair_label, _physical_outcome, _validate_protocol
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_matched_open_keeps_arm_exact() -> None:
@@ -41,6 +46,39 @@ def test_gate_b_matched_contact_loss_uses_control_reference() -> None:
     control = {"status": "PASS", "state_restore_exact": True, "causal_input_binding_pass": True, "available_horizon_steps": 2, "rows": [{"post_contact_telemetry_valid": True, "post_object_gripper_contact": True, "post_object_position": [0.0, 0.0, 0.0]}, {"post_contact_telemetry_valid": True, "post_object_gripper_contact": True, "post_object_position": [0.0, 0.0, 0.0]}]}
     treatment = {"status": "PASS", "state_restore_exact": True, "causal_input_binding_pass": True, "available_horizon_steps": 2, "rows": [{"post_contact_telemetry_valid": True, "post_object_gripper_contact": False, "post_object_position": [0.0, 0.0, 0.0]}, {"post_contact_telemetry_valid": True, "post_object_gripper_contact": False, "post_object_position": [0.0, 0.0, 0.0]}]}
     assert _physical_outcome(treatment, required_steps=2, reference=control)["class"] == "GRIPPER_CONTACT_LOSS"
+
+
+def _censor_branch(steps: int, *, compliant: bool, delivered: int) -> dict:
+    rows = [{"post_contact_telemetry_valid": True, "post_object_gripper_contact": True, "post_object_position": [0.0, 0.0, 0.0]} for _ in range(steps)]
+    return {
+        "status": "PASS",
+        "state_restore_exact": True,
+        "causal_input_binding_pass": True,
+        "control_action_reference_exact": True,
+        "available_horizon_steps": steps,
+        "rows": rows,
+        "treatment_compliant": compliant,
+        "treatment_compliance": {"treatment_compliant": compliant, "delivered_open_steps": delivered},
+    }
+
+
+def test_gate_b_full_dose_with_short_follow_up_is_horizon_censored() -> None:
+    pair = _pair_label(_censor_branch(15, compliant=True, delivered=0), _censor_branch(14, compliant=True, delivered=5), 5)
+    assert pair["treatment_valid"] is False
+    assert pair["censoring_class"] == "HORIZON_CENSORED_ABSTAIN"
+    assert pair["label_class"] == "TREATMENT_INVALID_ABSTAIN"
+
+
+def test_gate_b_incomplete_open_dose_is_treatment_invalid_censored() -> None:
+    pair = _pair_label(_censor_branch(15, compliant=True, delivered=0), _censor_branch(4, compliant=False, delivered=4), 5)
+    assert pair["censoring_class"] == "TREATMENT_INVALID_CENSORED_ABSTAIN"
+    assert pair["label_class"] == "TREATMENT_INVALID_ABSTAIN"
+
+
+def test_m4_runner_binds_censor_aware_contract_and_opt_in() -> None:
+    runner = (REPO_ROOT / "scripts/detector_v5/run_stage_v_m4_matched_parent.py").read_text(encoding="utf-8")
+    assert "HORIZON_CONTRACT" in runner
+    assert "allow_horizon_censoring=True" in runner
 
 
 def test_gate_b_protocol_requires_per_parent_gate_a_binding() -> None:
