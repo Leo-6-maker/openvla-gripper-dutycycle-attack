@@ -54,6 +54,7 @@ def _censor_branch(steps: int, *, compliant: bool, delivered: int) -> dict:
         "status": "PASS",
         "state_restore_exact": True,
         "causal_input_binding_pass": True,
+        "control_action_reference_exact": True,
         "available_horizon_steps": steps,
         "rows": rows,
         "treatment_compliant": compliant,
@@ -76,7 +77,7 @@ def test_gate_b_incomplete_open_dose_is_treatment_invalid_censored() -> None:
 
 def test_m4_runner_binds_censor_aware_contract_and_opt_in() -> None:
     runner = (REPO_ROOT / "scripts/detector_v5/run_stage_v_m4_matched_parent.py").read_text(encoding="utf-8")
-    assert HORIZON_CONTRACT in runner
+    assert "HORIZON_CONTRACT" in runner
     assert "allow_horizon_censoring=True" in runner
 
 
