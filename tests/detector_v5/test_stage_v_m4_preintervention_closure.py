@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import shutil
+import subprocess
 
 from scripts.detector_v5.audit_stage_v_m4_preintervention_closure import audit
 
@@ -45,7 +46,13 @@ def _make_root(tmp_path, branches, labels=None, observations=None):
 def _gate_b(tmp_path):
     tmp_path.mkdir(parents=True, exist_ok=True)
     path = tmp_path / "run_stage_v_m3_5_v1_4_gate_b.py"
-    shutil.copy2(Path(__file__).resolve().parents[2] / "scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py", path)
+    source = Path(__file__).resolve().parents[2]
+    historical = subprocess.check_output(
+        ["git", "show", "c5d81130854cc06f581409f35ffa76e500f0a214:scripts/detector_v5/run_stage_v_m3_5_v1_4_gate_b.py"],
+        cwd=source,
+        text=True,
+    )
+    path.write_text(historical, encoding="utf-8")
     return path
 
 
