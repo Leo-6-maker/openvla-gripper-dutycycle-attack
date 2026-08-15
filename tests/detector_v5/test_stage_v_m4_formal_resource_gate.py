@@ -116,6 +116,11 @@ def test_formal_child_requires_exact_official_environment_entrypoint() -> None:
         gate._verify_official_environment_python(Path("/home/sz/miniconda3/envs/hallo/bin/python3.10"))
 
 
+def test_formal_child_command_preserves_exact_official_entrypoint() -> None:
+    path = Path(gate.OFFICIAL_ENVIRONMENT_PYTHON)
+    assert gate._official_environment_python_path(path) == gate.OFFICIAL_ENVIRONMENT_PYTHON
+
+
 def test_launch_binding_rejects_authorization_hash_mismatch(tmp_path: Path) -> None:
     protocol = tmp_path / "protocol.json"
     authorization = tmp_path / "authorization.json"

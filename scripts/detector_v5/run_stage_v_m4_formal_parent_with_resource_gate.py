@@ -147,6 +147,11 @@ def _verify_official_environment_python(path: Path) -> None:
         raise ValueError("OFFICIAL_ENVIRONMENT_PYTHON_PATH_MISMATCH")
 
 
+def _official_environment_python_path(path: Path) -> str:
+    _verify_official_environment_python(path)
+    return str(path).replace("\\", "/")
+
+
 def _verify_runtime_snapshot(args: argparse.Namespace, authorization: Mapping[str, Any]) -> None:
     worktree = args.source_worktree.resolve()
     if _git(worktree, "status", "--porcelain"):
@@ -453,8 +458,7 @@ def run(args: argparse.Namespace) -> int:
     args.exact_plan_root = args.exact_plan_root.resolve()
     args.source_worktree = args.source_worktree.resolve()
     args.runner = args.runner.resolve()
-    _verify_official_environment_python(args.python)
-    args.python = args.python.resolve()
+    child_python = _official_environment_python_path(args.python)
     args.output_root = args.output_root.resolve()
     if not 0 <= args.gpu <= 7:
         raise ValueError("GPU_INDEX_OUT_OF_AUTHORIZED_POOL")
@@ -578,7 +582,7 @@ def run(args: argparse.Namespace) -> int:
         "protected_counters": dict(COUNTERS),
     })
     command = [
-        str(args.python), str(args.runner), "--protocol", str(args.protocol),
+        child_python, str(args.runner), "--protocol", str(args.protocol),
         "--output-dir", str(parent_output), "--official-snapshot-root", str(args.official_snapshot_root),
         "--upstream-root", str(args.upstream_root), "--model-path", str(args.model_path),
         "--authorization-receipt", str(args.authorization), "--exact-plan-root", str(args.exact_plan_root),
