@@ -83,6 +83,7 @@ def seal_output(root: Path) -> str:
     files = sorted(path for path in root.iterdir() if path.is_file() and path.name not in {"SHA256SUMS", "ROOT_SEAL.json"})
     (root / "SHA256SUMS").write_text("".join(f"{base.sha256_file(path)}  {path.name}\n" for path in files), encoding="utf-8")
     digest = base.sha256_file(root / "SHA256SUMS")
+    (root / "SHA256SUMS.sha256").write_text(f"{digest}  SHA256SUMS\n", encoding="utf-8")
     base_json = {"schema": "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC_M4_R3_RECONSTRUCTED_ROOT_SEAL_V1", "status": "PASS_READ_ONLY_RECONSTRUCTED_M4_DIAGNOSTIC", "sha256sums_sha256": digest, "protected_counters": dict(base.COUNTERS), "eval160_status": "UNREAD"}
     (root / "ROOT_SEAL.json").write_text(json.dumps(base_json, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return digest
