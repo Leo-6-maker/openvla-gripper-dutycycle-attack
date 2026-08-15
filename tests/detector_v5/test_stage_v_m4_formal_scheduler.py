@@ -152,6 +152,7 @@ def test_scheduler_child_uses_literal_official_python_entrypoint(tmp_path: Path)
         final_split=tmp_path / "split.json",
         exact_plan_root=tmp_path / "exact",
         source_worktree=tmp_path / "source",
+        runner=tmp_path / "runner.py",
         official_snapshot_root=tmp_path / "snapshot",
         upstream_root=tmp_path / "upstream",
         output_root=tmp_path / "output",
