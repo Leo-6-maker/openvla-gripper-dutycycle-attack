@@ -422,7 +422,7 @@ def matrix_diagnostic() -> dict[str, Any]:
     for path in parent_paths:
         parent = read_json(path)
         identity = str(parent["canonical_parent_key"])
-        if parent.get("outcomes_read") is not False or parent.get("protected_counters") != COUNTERS:
+        if parent.get("outcomes_read") is not True or parent.get("protected_counters") != COUNTERS:
             raise ValueError(f"MATRIX_BOUNDARY:{identity}")
         observations[identity] = {}
         for branch in parent["branches"]:
