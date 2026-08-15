@@ -33,7 +33,8 @@ M4_REPLACEMENT_ROOT = BASE / "STAGE_V_M4_CENSOR_AWARE_FORMAL_REPLACEMENT_ATTEMPT
 CLEAN_ROOT = BASE / "STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z"
 M4_STUDENT_ROOT = BASE / "STAGE_V_M4_CENSOR_AWARE_STUDENT_VPHYS_HELDOUT_F696F582_20260816T031500Z"
 MATRIX_AGGREGATE = BASE / "STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_AGGREGATE_6D39860_20260815T190500Z"
-OUTPUT_ROOT = BASE / "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC_COVERAGE_AUDIT_20260816T120000Z"
+MATRIX_EXECUTION = BASE / "STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_EXECUTION_6D39860_20260815T184500Z"
+OUTPUT_ROOT = BASE / "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC_M4_COVERAGE_AUDIT_20260816T140000Z"
 COUNTERS = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
 STUDENT_HEADS = ("physical_criticality", "k10_feasibility", "instability", "gripper_closing_state")
 TEACHER_HEADS = STUDENT_HEADS + ("safe_release",)
@@ -410,70 +411,81 @@ def information_probes(features: dict[tuple[str, int], np.ndarray], privileged_f
 
 
 def matrix_diagnostic() -> dict[str, Any]:
-    outcomes = read_jsonl(MATRIX_AGGREGATE / "MATRIX_OUTCOMES.jsonl")
-    condition = {arm: {"branch_count": 0, "no_emit": 0, "intervention_executed": 0, "compliant": 0, "paired_count": 0, "paired_failure": 0, "paired_no_failure": 0, "paired_abstain": 0} for arm in ("C0", "C1", "C2", "C3")}
-    for path in sorted((BASE / "STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_EXECUTION_6D39860_20260815T184500Z/parents").glob("*/PARENT_RESULT.json")):
+    # The aggregate JSONL is empty in this frozen matrix.  The authoritative
+    # pair rows live inside each immutable PARENT_RESULT.json.
+    condition = {arm: {"branch_count": 0, "no_emit": 0, "abstain": 0, "intervention_executed": 0, "compliant": 0, "physical_failure": 0, "paired_count": 0, "paired_failure": 0, "paired_no_failure": 0, "paired_abstain": 0} for arm in ("C0", "C1", "C2", "C3")}
+    observations: dict[str, dict[str, dict[str, Any]]] = {}
+    pair_rows: list[dict[str, Any]] = []
+    parent_paths = sorted((MATRIX_EXECUTION / "parents").glob("*/PARENT_RESULT.json"))
+    if len(parent_paths) != 8:
+        raise ValueError(f"MATRIX_PARENT_COUNT:{len(parent_paths)}")
+    for path in parent_paths:
         parent = read_json(path)
+        identity = str(parent["canonical_parent_key"])
+        if parent.get("outcomes_read") is not False or parent.get("protected_counters") != COUNTERS:
+            raise ValueError(f"MATRIX_BOUNDARY:{identity}")
+        observations[identity] = {}
         for branch in parent["branches"]:
-            condition[branch["arm"]]["branch_count"] += 1
-            if branch["status"] == "ABSTAIN_NO_STUDENT_EMIT":
-                condition[branch["arm"]]["no_emit"] += 1
-            elif branch.get("intervention_executed"):
-                condition[branch["arm"]]["intervention_executed"] += 1
-                branch_data = read_json(path.parent / f"{branch['arm']}.json")
-                if branch_data.get("treatment_compliant") is True:
-                    condition[branch["arm"]]["compliant"] += 1
-    for row in outcomes:
-        treatment, control = row["arm"], row["control_arm"]
-        condition[treatment]["paired_count"] += 1
-        condition[control]["paired_count"] += 1
-        if row["treatment_physical_class"] in FAILURE_CLASSES:
-            condition[treatment]["paired_failure"] += 1
-        elif row["treatment_physical_class"] == "NO_PHYSICAL_FAILURE":
-            condition[treatment]["paired_no_failure"] += 1
-        if row["control_physical_class"] in FAILURE_CLASSES:
-            condition[control]["paired_failure"] += 1
-        elif row["control_physical_class"] == "NO_PHYSICAL_FAILURE":
-            condition[control]["paired_no_failure"] += 1
-        if row["matrix_outcome"] == "ABSTAIN":
-            condition[treatment]["paired_abstain"] += 1
-            condition[control]["paired_abstain"] += 1
-    by_parent = {}
-    for row in outcomes:
-        by_parent.setdefault(row["canonical_parent_key"], {})[row["arm"]] = row
+            arm = str(branch["arm"])
+            if arm not in condition:
+                raise ValueError(f"MATRIX_ARM:{identity}:{arm}")
+            data = read_json(path.parent / f"{arm}.json")
+            physical = data.get("physical_outcome") if isinstance(data.get("physical_outcome"), dict) else {}
+            physical_class = physical.get("class")
+            status = str(branch.get("status"))
+            observations[identity][arm] = {"physical_class": physical_class, "valid": None, "status": status}
+            condition[arm]["branch_count"] += 1
+            if status == "ABSTAIN_NO_STUDENT_EMIT":
+                condition[arm]["no_emit"] += 1
+                condition[arm]["abstain"] += 1
+            if status.startswith("ABSTAIN"):
+                condition[arm]["abstain"] += int(status != "ABSTAIN_NO_STUDENT_EMIT")
+            if bool(branch.get("intervention_executed")):
+                condition[arm]["intervention_executed"] += 1
+                condition[arm]["compliant"] += int(data.get("treatment_compliant") is True)
+                condition[arm]["physical_failure"] += int(physical_class in FAILURE_CLASSES)
+        for paired in parent.get("paired_results", []):
+            pair = paired.get("pair") if isinstance(paired.get("pair"), dict) else {}
+            treatment, control = str(paired["arm"]), str(paired["control_arm"])
+            treatment_class = pair.get("treatment_physical_class")
+            control_class = pair.get("control_physical_class")
+            treatment_valid = bool(pair.get("treatment_valid"))
+            control_valid = bool(pair.get("control_valid"))
+            observations[identity].setdefault(treatment, {}).update({"physical_class": treatment_class, "valid": treatment_valid})
+            observations[identity].setdefault(control, {}).update({"physical_class": control_class, "valid": control_valid})
+            for arm, physical_class in ((treatment, treatment_class), (control, control_class)):
+                condition[arm]["paired_count"] += 1
+                condition[arm]["paired_failure"] += int(physical_class in FAILURE_CLASSES)
+                condition[arm]["paired_no_failure"] += int(physical_class == "NO_PHYSICAL_FAILURE")
+                condition[arm]["paired_abstain"] += int(paired.get("matrix_outcome") == "ABSTAIN")
+            pair_rows.append({"identity": identity, "arm": treatment, "control_arm": control, "matrix_outcome": paired.get("matrix_outcome")})
 
     def contrast(name: str, pairs: list[tuple[str, str, str]]) -> dict[str, Any]:
         raw = []
         for identity, left, right in pairs:
-            left_row = by_parent.get(identity, {}).get(left)
-            right_row = by_parent.get(identity, {}).get(right)
-            if right == "C2":
-                right_row = left_row
-                right_class = left_row["control_physical_class"] if left_row else None
-                right_valid = left_row["control_valid"] if left_row else False
-            elif right == "C0":
-                right_class = right_row["control_physical_class"] if right_row else None
-                right_valid = right_row["control_valid"] if right_row else False
-            else:
-                right_class = right_row["treatment_physical_class"] if right_row else None
-                right_valid = right_row["treatment_valid"] if right_row else False
-            if left_row is None or right_class is None:
+            left_row = observations.get(identity, {}).get(left)
+            right_row = observations.get(identity, {}).get(right)
+            if not left_row or not right_row or left_row.get("physical_class") is None or right_row.get("physical_class") is None:
                 continue
-            left_class = left_row["treatment_physical_class"]
-            valid = bool(left_row["treatment_valid"] and right_valid)
-            raw.append({"identity": identity, "left_failure": left_class in FAILURE_CLASSES, "right_failure": right_class in FAILURE_CLASSES, "valid": valid, "left_class": left_class, "right_class": right_class})
+            left_class, right_class = left_row["physical_class"], right_row["physical_class"]
+            valid = bool(left_row.get("valid") and right_row.get("valid"))
+            raw.append({"identity": identity, "left_failure": left_class in FAILURE_CLASSES, "right_failure": right_class in FAILURE_CLASSES, "valid": valid, "left_class": left_class, "right_class": right_class, "left_valid": bool(left_row.get("valid")), "right_valid": bool(right_row.get("valid"))})
         valid = [row for row in raw if row["valid"]]
         left_rate = float(np.mean([row["left_failure"] for row in valid])) if valid else None
         right_rate = float(np.mean([row["right_failure"] for row in valid])) if valid else None
         return {"name": name, "raw_pair_count": len(raw), "valid_pair_count": len(valid), "invalid_or_abstain_count": len(raw) - len(valid), "left_failure_count": int(sum(row["left_failure"] for row in valid)), "right_failure_count": int(sum(row["right_failure"] for row in valid)), "left_failure_rate": left_rate, "right_failure_rate": right_rate, "risk_difference_left_minus_right": (left_rate - right_rate) if left_rate is not None and right_rate is not None else None, "pairs": raw}
 
-    emitted = sorted({identity for identity, arms in by_parent.items() if "C1" in arms})
-    c1_vs_c2 = [(identity, "C1", "C2") for identity in emitted]
-    c1_vs_c3 = [(identity, "C1", "C3") for identity in emitted if "C3" in by_parent[identity]]
-    c1_vs_c0 = [(identity, "C1", "C0") for identity in emitted if "C3" in by_parent[identity]]
+    c1_c2 = sorted((row["identity"], "C1", "C2") for row in pair_rows if row["arm"] == "C1" and row["control_arm"] == "C2")
+    c1_ids = sorted(identity for identity, arms in observations.items() if observations[identity].get("C1", {}).get("physical_class") is not None)
+    c1_c3 = [(identity, "C1", "C3") for identity in c1_ids if observations[identity].get("C3", {}).get("physical_class") is not None]
+    c1_c0 = [(identity, "C1", "C0") for identity in c1_ids if observations[identity].get("C0", {}).get("physical_class") is not None]
     branch_total = sum(value["branch_count"] for value in condition.values())
     actual_interventions = sum(value["intervention_executed"] for value in condition.values())
-    return {"conditions": condition, "branch_count": branch_total, "no_emit_rate": 4 / branch_total, "compliant_intervention_rate": 1.0 if actual_interventions else None, "physical_failure_rate_among_intervention_branches": 10 / actual_interventions if actual_interventions else None, "contrasts": {"C1_vs_C0": contrast("C1_vs_C0", c1_vs_c0), "C1_vs_C2": contrast("C1_vs_C2", c1_vs_c2), "C1_vs_C3": contrast("C1_vs_C3", c1_vs_c3)}, "timing_specificity_claim": "C1_GT_C3_NOT_ESTABLISHED_FROM_COUNT_ONLY"}
+    compliant = sum(value["compliant"] for value in condition.values())
+    failures = sum(value["physical_failure"] for value in condition.values())
+    aggregate_path = MATRIX_AGGREGATE / "MATRIX_OUTCOMES.jsonl"
+    aggregate_rows = read_jsonl(aggregate_path) if aggregate_path.exists() and aggregate_path.stat().st_size else []
+    return {"conditions": condition, "branch_count": branch_total, "parent_count": len(parent_paths), "no_emit_rate": sum(value["no_emit"] for value in condition.values()) / branch_total, "abstain_rate": sum(value["abstain"] for value in condition.values()) / branch_total, "paired_abstain_count": sum(value["paired_abstain"] for value in condition.values()) // 2, "compliant_intervention_rate": compliant / actual_interventions if actual_interventions else None, "physical_failure_rate_among_intervention_branches": failures / actual_interventions if actual_interventions else None, "contrasts": {"C1_vs_C0": contrast("C1_vs_C0", c1_c0), "C1_vs_C2": contrast("C1_vs_C2", c1_c2), "C1_vs_C3": contrast("C1_vs_C3", c1_c3)}, "matrix_outcome_source": {"parent_result_count": len(parent_paths), "embedded_pair_count": len(pair_rows), "aggregate_file": str(aggregate_path), "aggregate_file_rows": len(aggregate_rows)}, "timing_specificity_claim": "REPORT_CONTRAST_ONLY_NO_AUTOMATIC_PROMOTION"}
 
 
 def classify(teacher_result: dict[str, Any], student_result: dict[str, Any], probe_result: dict[str, Any]) -> dict[str, Any]:
