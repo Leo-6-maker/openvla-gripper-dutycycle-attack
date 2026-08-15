@@ -34,7 +34,7 @@ CLEAN_ROOT = BASE / "STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T02
 M4_STUDENT_ROOT = BASE / "STAGE_V_M4_CENSOR_AWARE_STUDENT_VPHYS_HELDOUT_F696F582_20260816T031500Z"
 MATRIX_AGGREGATE = BASE / "STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_AGGREGATE_6D39860_20260815T190500Z"
 MATRIX_EXECUTION = BASE / "STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_EXECUTION_6D39860_20260815T184500Z"
-OUTPUT_ROOT = BASE / "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC_M4_COVERAGE_AUDIT_20260816T150000Z"
+OUTPUT_ROOT = BASE / "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC_M4_COVERAGE_AUDIT_20260816T160000Z"
 COUNTERS = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
 STUDENT_HEADS = ("physical_criticality", "k10_feasibility", "instability", "gripper_closing_state")
 TEACHER_HEADS = STUDENT_HEADS + ("safe_release",)
@@ -497,21 +497,31 @@ def classify(teacher_result: dict[str, Any], student_result: dict[str, Any], pro
     privileged = probe_result["probe_B_privileged_m4_features"]["overall"]["auroc"] or 0.5
     temporal = probe_result["probe_C_25D_causal_16_step_window"]["overall"]["auroc"] or 0.5
     if teacher_auc is None:
-        case, path = "D", "STAGE_VI_HOLD_M4_TEACHER_COVERAGE_REQUIRED"
+        case, path = None, "STAGE_VI_HOLD_M4_TEACHER_COVERAGE_REQUIRED"
         interpretation = "NOT_IDENTIFIABLE_DATA_GAP_NOT_A_NEGATIVE_SCIENTIFIC_CONCLUSION"
+        classification_status = "NOT_IDENTIFIABLE_M4_TEACHER_COVERAGE_HOLD"
+        bottleneck = "M4_TEACHER_COVERAGE_NOT_IDENTIFIABLE"
     elif teacher_auc >= METRIC_THRESHOLD and student_test_auc <= teacher_auc - TEMPORAL_GAIN:
         case, path = "A", "STUDENT_V2_DEVELOPMENT"
         interpretation = "SCIENTIFIC_CASE_A"
+        classification_status = "SCIENTIFIC_CASE_CLASSIFIED"
+        bottleneck = "STUDENT_DISTILLATION_OR_CAPACITY_FAILURE"
     elif teacher_auc < METRIC_THRESHOLD and privileged >= METRIC_THRESHOLD:
         case, path = "B", "VULNERABILITY_TEACHER_V2"
         interpretation = "SCIENTIFIC_CASE_B"
+        classification_status = "SCIENTIFIC_CASE_CLASSIFIED"
+        bottleneck = "TEACHER_TARGET_MISMATCH"
     elif instantaneous < METRIC_THRESHOLD and temporal >= METRIC_THRESHOLD and temporal - instantaneous >= TEMPORAL_GAIN:
         case, path = "C", "CAUSAL_TEMPORAL_STUDENT_V2"
         interpretation = "SCIENTIFIC_CASE_C"
+        classification_status = "SCIENTIFIC_CASE_CLASSIFIED"
+        bottleneck = "TEMPORAL_LOCALIZATION_MISALIGNMENT"
     else:
         case, path = "D", "STAGE_VI_PREDICTABILITY_NOT_ESTABLISHED_STOP_OWNER_REVIEW"
         interpretation = "SCIENTIFIC_CASE_D"
-    return {"case": case, "interpretation": interpretation, "primary_bottleneck": {"A": "STUDENT_DISTILLATION_OR_CAPACITY_FAILURE", "B": "TEACHER_TARGET_MISMATCH", "C": "TEMPORAL_LOCALIZATION_MISALIGNMENT", "D": "VULNERABILITY_NOT_PREDICTABLE_OR_NOT_IDENTIFIABLE_FROM_ALLOWED_INPUTS"}[case], "next_path": path, "rule": {"meaningful_auroc": METRIC_THRESHOLD, "material_temporal_gain": TEMPORAL_GAIN, "teacher_t5_auroc": teacher_auc, "student_test_auroc": student_test_auc, "probe_A_auroc": instantaneous, "probe_B_privileged_m4_auroc": privileged, "probe_C_auroc": temporal}, "teacher_coverage_status": teacher_result["coverage"]["status"], "non_teacher_probe_signal_is_not_a_teacher_result": True}
+        classification_status = "SCIENTIFIC_CASE_CLASSIFIED"
+        bottleneck = "VULNERABILITY_NOT_PREDICTABLE_OR_NOT_IDENTIFIABLE_FROM_ALLOWED_INPUTS"
+    return {"case": case, "scientific_case": case, "classification_status": classification_status, "interpretation": interpretation, "primary_bottleneck": bottleneck, "next_path": path, "rule": {"meaningful_auroc": METRIC_THRESHOLD, "material_temporal_gain": TEMPORAL_GAIN, "teacher_t5_auroc": teacher_auc, "student_test_auroc": student_test_auc, "probe_A_auroc": instantaneous, "probe_B_privileged_m4_auroc": privileged, "probe_C_auroc": temporal}, "teacher_coverage_status": teacher_result["coverage"]["status"], "non_teacher_probe_signal_is_not_a_teacher_result": True}
 
 
 def main() -> int:
@@ -538,7 +548,7 @@ def main() -> int:
     source_commit = subprocess.check_output(("git", "rev-parse", "HEAD"), cwd=REPO, text=True).strip()
     source_tree = subprocess.check_output(("git", "rev-parse", "HEAD^{tree}"), cwd=REPO, text=True).strip()
     diagnostic_status = "HOLD_M4_TEACHER_COVERAGE_REQUIRED" if teacher_result["coverage"]["status"] != "PASS" else "PASS_READ_ONLY_DIAGNOSTIC"
-    diagnostic = {"schema": "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC_V1", "status": diagnostic_status, "stage_v": {"bundle_root": str(STAGE_V_ROOT), "bundle_root_seal_sha256": stage_v_seal["sha256sums_sha256"], "conclusion_preserved": stage_v_bundle["scientific_conclusion"]}, "inputs": {"teacher_root": str(TEACHER_ROOT), "student_root": str(STUDENT_ROOT), "m4_aggregate": str(M4_AGGREGATE), "m4_student_root": str(M4_STUDENT_ROOT), "clean_replay_root": str(CLEAN_ROOT), "m4_formal_root": str(M4_FORMAL_ROOT), "m4_replacement_root": str(M4_REPLACEMENT_ROOT), "matrix_aggregate": str(MATRIX_AGGREGATE), "feature_schema": list(FEATURE_NAMES), "privileged_feature_schema": list(PRIVILEGED_FEATURE_NAMES)}, "teacher_to_v_phys": teacher_result, "student_to_teacher": fidelity, "student_to_v_phys": student_result, "temporal_alignment_offsets_minus16_plus16": temporal, "information_content_probes": probes, "privileged_feature_provenance": privileged_provenance, "matrix_forensics": matrix, "classification": classification, "diagnostic_only": True, "outcome_informed_model_selection": False, "protected_counters": dict(COUNTERS), "eval160_status": "UNREAD", "source_commit": source_commit, "source_tree": source_tree}
+    diagnostic = {"schema": "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC_V1", "status": diagnostic_status, "stage_v": {"bundle_root": str(STAGE_V_ROOT), "bundle_root_seal_sha256": stage_v_seal["sha256sums_sha256"], "conclusion_preserved": stage_v_bundle["scientific_conclusion"]}, "inputs": {"teacher_root": str(TEACHER_ROOT), "student_root": str(STUDENT_ROOT), "m4_aggregate": str(M4_AGGREGATE), "m4_student_root": str(M4_STUDENT_ROOT), "clean_replay_root": str(CLEAN_ROOT), "m4_formal_root": str(M4_FORMAL_ROOT), "m4_replacement_root": str(M4_REPLACEMENT_ROOT), "matrix_aggregate": str(MATRIX_AGGREGATE), "matrix_execution": str(MATRIX_EXECUTION), "feature_schema": list(FEATURE_NAMES), "privileged_feature_schema": list(PRIVILEGED_FEATURE_NAMES)}, "teacher_to_v_phys": teacher_result, "student_to_teacher": fidelity, "student_to_v_phys": student_result, "temporal_alignment_offsets_minus16_plus16": temporal, "information_content_probes": probes, "privileged_feature_provenance": privileged_provenance, "matrix_forensics": matrix, "classification": classification, "diagnostic_only": True, "outcome_informed_model_selection": False, "protected_counters": dict(COUNTERS), "eval160_status": "UNREAD", "source_commit": source_commit, "source_tree": source_tree}
     OUTPUT_ROOT.mkdir(parents=True)
     (OUTPUT_ROOT / "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC.json").write_text(json.dumps(diagnostic, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
     provenance = {"schema": "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC_PROVENANCE_V1", "source_commit": source_commit, "source_tree": source_tree, "diagnostic_code_sha256": sha256_file(Path(__file__)), "stage_v_bundle_root": str(STAGE_V_ROOT), "stage_v_bundle_seal_sha256": stage_v_seal["sha256sums_sha256"], "teacher_records_sha256": sha256_file(TEACHER_ROOT / "teacher_records.jsonl"), "student_predictions_sha256": sha256_file(STUDENT_ROOT / "predictions.jsonl"), "m4_labels_sha256": sha256_file(M4_AGGREGATE / "M4_ALL_LABELS_V1.jsonl"), "m4_student_scores_sha256": sha256_file(M4_STUDENT_ROOT / "STUDENT_M4_PROBE_SCORES_V1.jsonl"), "protected_counters": dict(COUNTERS), "eval160_status": "UNREAD"}
