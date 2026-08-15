@@ -238,6 +238,9 @@ def load_privileged_features(m4_labels: list[dict[str, Any]]) -> tuple[dict[tupl
         data = _valid_clean_trajectory(path)
         sources[identity] = str(path)
         for row in data["rows"]:
+            key = (identity, int(row["step"]))
+            if key not in target_keys:
+                continue
             evidence = row.get("evidence") if isinstance(row.get("evidence"), dict) else {}
             phase = str(row.get("clean_only_phase_label") or "UNKNOWN")
             if phase not in PRIVILEGED_PHASES:
@@ -260,7 +263,7 @@ def load_privileged_features(m4_labels: list[dict[str, Any]]) -> tuple[dict[tupl
                 raise ValueError(f"PRIVILEGED_FEATURE_INVALID:{identity}:{row.get('step')}") from None
             if not np.isfinite(vector).all():
                 raise ValueError(f"PRIVILEGED_FEATURE_NONFINITE:{identity}:{row.get('step')}")
-            result[(identity, int(row["step"]))] = np.asarray(vector, dtype=np.float64)
+            result[key] = np.asarray(vector, dtype=np.float64)
     missing = sorted(target_keys - set(result))
     if missing:
         raise ValueError(f"PRIVILEGED_FEATURE_JOIN:{missing[0][0]}:{missing[0][1]}")
