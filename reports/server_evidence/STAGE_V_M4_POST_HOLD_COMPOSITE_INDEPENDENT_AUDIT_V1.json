@@ -1,0 +1,31 @@
+{
+  "checks": {
+    "exact55_reverified": true,
+    "final40_reverified": true,
+    "final_split_reverified": true,
+    "protected_boundary_reverified": true,
+    "queue_prefix_reverified": true,
+    "source_receipts_reverified": true
+  },
+  "errors": [],
+  "exact55_firewall": "FROZEN",
+  "exact_40x24_plan_gate": "NOT_STARTED",
+  "failure_count": 0,
+  "final40": "FROZEN",
+  "final_split": "FROZEN",
+  "formal_m4": "NOT_AUTHORIZED",
+  "independent_of_producer": true,
+  "intervention_executed": false,
+  "next_action": "STOP_BEFORE_EXACT_40X24",
+  "outcomes_read": false,
+  "protected_counters": {
+    "attack_rollouts": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "root_seal": "REQUIRED_AFTER_AUDIT_WRITE",
+  "schema": "STAGE_V_M4_POST_HOLD_COMPOSITE_INDEPENDENT_AUDIT_V1",
+  "sealed": true,
+  "status": "PASS_INDEPENDENT_EXACT55_FINAL40_SPLIT"
+}

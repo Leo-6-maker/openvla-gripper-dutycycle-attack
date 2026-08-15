@@ -25,7 +25,7 @@ from scripts.detector_v5.stage_v_gpu_resource_contract import (
 UUID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
 
-def inventory(*, free: int = MIN_FREE_MEMORY_MIB, process_rows=()):
+def inventory(*, free: int = MIN_FREE_MEMORY_MIB + 1, process_rows=()):
     return combine_inventory(
         [{
             "gpu_id": 2,
@@ -67,6 +67,14 @@ def test_mode_b_rejects_memory_below_contract_even_with_idle_utilization() -> No
     assert decision["status"] == "HOLD_NO_ELIGIBLE_GPU"
     assert decision["eligible_gpu_ids"] == []
     assert "INSUFFICIENT_FREE_MEMORY" in decision["gpu_decisions"][0]["reasons"]
+
+
+def test_memory_threshold_is_strictly_greater_than_contract() -> None:
+    decision = admit_mode_b_or_c(inventory(free=MIN_FREE_MEMORY_MIB), mode=MODE_B)
+    assert decision["status"] == "HOLD_NO_ELIGIBLE_GPU"
+    with pytest.raises(ResourceContractError, match="MEMORY_INSUFFICIENT"):
+        verify_recheck({"gpu_id": 2, "gpu_uuid": UUID, "memory_free_mib": MIN_FREE_MEMORY_MIB},
+                       expected_gpu_id=2, expected_gpu_uuid=UUID)
 
 
 def test_project_lease_blocks_gpu_but_unknown_foreign_work_is_only_telemetry() -> None:

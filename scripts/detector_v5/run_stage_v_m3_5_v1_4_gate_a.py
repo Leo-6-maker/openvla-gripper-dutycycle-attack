@@ -377,6 +377,7 @@ def run(args: argparse.Namespace) -> int:
         taxonomy = bind_object_taxonomy(first_env, Path(bddl))
         if taxonomy.get("status") != "PASS":
             raise M35RunnerError(f"OBJECT_TAXONOMY_BINDING_{taxonomy.get('reason', 'ABSTAIN')}")
+        _write_json(output_dir / "TAXONOMY_BINDING.json", taxonomy)
         for step in range(horizon):
             simulator = capture_simulator_state(first_env)
             runtime = capture_runtime_state(first_env, model=model, adapter=adapter)
@@ -458,6 +459,7 @@ def run(args: argparse.Namespace) -> int:
         "fresh_render_equality_gate_used": False,
         "primary_input_authority": "loaded_frozen_canonical_bytes",
         "protected_counters": dict(PROTECTED_COUNTERS),
+        "taxonomy_binding_sha256": _sha256_file(output_dir / "TAXONOMY_BINDING.json"),
     }
     _write_json(output_dir / "M3_5_V1_4_GATE_A_RECEIPT.json", receipt)
     auditor = REPO_ROOT / "scripts/detector_v5/audit_stage_v_m3_5_v1_4_gate_a.py"

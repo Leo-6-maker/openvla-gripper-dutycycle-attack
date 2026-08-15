@@ -1,0 +1,123 @@
+{
+  "schema": "STAGE_V_M4_POST_HOLD_ENGINEERING_INVALID_HOLD_V1",
+  "status": "HOLD_ENGINEERING_INVALID_PRELAUNCH_GOVERNANCE_INCOMPLETE",
+  "terminal": true,
+  "sealed": true,
+  "immutable": true,
+  "retry_forbidden": true,
+  "consumable": false,
+  "classification": "ENGINEERING_HISTORY_NONCONSUMABLE",
+  "scientific_interpretation": "No receipt from this root is eligible for the post-HOLD corridor composite. This is an engineering-governance invalidation, not a corridor-science failure and not a change to the immutable V2 32/40 HOLD.",
+  "created_utc": "2026-08-13T02:17:44.187725Z",
+  "output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_POST_32_OF_40_HOLD_V1_20260813T000000Z",
+  "launch_binding": {
+    "governance_commit": "280dba8dec66adbdd50dc213983adfae392ae707",
+    "governance_tree": "a0f0c21ba2f59884a6270f4075fd318b505cad8d",
+    "outer_protocol_path": "configs/STAGE_V_M4_CORRIDOR_REPLENISHMENT_POST_32_OF_40_HOLD_V1.json",
+    "outer_protocol_sha256": "81cf3918139da00d0b2be65c6edfbd5fb34faf97abc94a94e19755ac3a40538a",
+    "candidate_manifest_path": "configs/STAGE_V_M4_POST_HOLD_CANDIDATE_PARENT_MANIFEST_V1.json",
+    "candidate_manifest_sha256": "8f00180e0d6a626f72e9e430ca0942bee98ff5337ae46e89d2b52a67a176e223",
+    "outer_runner_path": "scripts/detector_v5/run_stage_v_m4_post_hold_sequential.py",
+    "outer_runner_sha256": "6a76b21733471c77b03ad2973849cef30b50cd2c8bcb1b9904e973c65571e23d",
+    "science_commit": "3b2ffdb5809710e3c7f2e0a529600c8d7a79b9b2",
+    "science_tree": "2492a075e782a112d1e857248956b2647e751039",
+    "science_runner_sha256": "26ceed23646177ce675e32eba6617ade7b02804a3c372a756b1ebe098ef72279",
+    "inner_manifest_sha256": "f7648207fc58e5c28d2a7f6409959bb8bfa9f7ac29795d384c520d67463e812e",
+    "inner_protocol_sha256": "6615b0ad6965fe3de9ef3de0c11eb545e726d10bfa2309f8e8428d663cf8ecbb",
+    "inner_authorization_sha256": "d0fbc717df0b3fb0da2434b4b3c750a92b3d36e28baf5add83cc84eed4014e58",
+    "launch_manifest_sha256": "4095bf4482370c7dc76c246160f8056e62ae48456ac85cc370143fabe70a6c85"
+  },
+  "invalidation_reasons": [
+    "PREDECESSOR_32_RECEIPT_PAIR_INVENTORY_NOT_FROZEN_BEFORE_FIRST_RECEIPT",
+    "PREDECESSOR_COMPATIBILITY_AUDIT_NOT_FROZEN_BEFORE_FIRST_RECEIPT",
+    "BATCH_STATIC_TAXONOMY_AUDIT_NOT_FROZEN_BEFORE_FIRST_RECEIPT",
+    "CORRIDOR_ATTEMPT_REGISTRY_NOT_FROZEN_BEFORE_FIRST_RECEIPT",
+    "EXACT_DEFICIT_SLOT_ORDER_NOT_FROZEN_BEFORE_FIRST_RECEIPT",
+    "RUNNER_COMPATIBILITY_PROTOCOL_AND_AUTHORIZATION_CREATED_INSIDE_OUTPUT_ROOT_AT_LAUNCH",
+    "COMPLETE_RUNTIME_MODEL_AND_IMPORT_CLOSURE_NOT_BOUND_BY_PRELAUNCH_AUTHORIZATION"
+  ],
+  "termination": {
+    "controller_terminated": true,
+    "child_workers_terminated": true,
+    "worker_processes_observed_after_termination": 0,
+    "last_partial_log_mtime_utc": "2026-08-13T02:06:38.046538Z",
+    "note": "A preliminary stop signal did not prevent the controller from advancing to the next Goal identity; the controller and child were then terminated. The additional identity is conservatively classified CORRIDOR_ATTEMPTED."
+  },
+  "attempted_identities": [
+    {
+      "canonical_parent_key": "libero_10/task_06/state_38",
+      "suite": "libero_10",
+      "frozen_rank_v1": 1,
+      "attempt_status": "CORRIDOR_ATTEMPTED_NONCONSUMABLE",
+      "A": {
+        "status": "PASS",
+        "receipt_sha256": "cd7a14d24bc62631a5f7580b043e80d0f8ed70b55611853903e462381eb61585",
+        "trajectory_sha256": "0d123d37f19901635750385dcfa2054c206c5b7c10f2a397f24aa5590aacd352"
+      },
+      "B": {
+        "status": "PASS",
+        "receipt_sha256": "5ad0d43447b985bbbfd865ca186eb813c5d8f9b87b31fcc393e9a3dc5a39ca9b",
+        "trajectory_sha256": "0d123d37f19901635750385dcfa2054c206c5b7c10f2a397f24aa5590aacd352"
+      },
+      "pair_status": "PASS/PASS_NONCONSUMABLE"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_04/state_39",
+      "suite": "libero_goal",
+      "frozen_rank_v1": 1,
+      "attempt_status": "CORRIDOR_ATTEMPTED_NONCONSUMABLE",
+      "A": {
+        "status": "PASS",
+        "receipt_sha256": "e336505be3f647a4f0b23b672d0b3ce6b72a3724e5715db2df6360dd67409d56",
+        "trajectory_sha256": "0eee899d9d0500e5ba0cbcbeebe57e473fac83a159325ce967449f78c7ae1e6e"
+      },
+      "B": {
+        "status": "PASS",
+        "receipt_sha256": "ea97b4aa6514c546c02b0f341c291f3203b2973799afc44dac0d12e99356dc80",
+        "trajectory_sha256": "3acf86009ba5b744cec5f6ad9cead623d79bcaa1e90369f58da7106e771c0880"
+      },
+      "pair_status": "PASS/PASS_NONCONSUMABLE"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_04/state_43",
+      "suite": "libero_goal",
+      "frozen_rank_v1": 2,
+      "attempt_status": "CORRIDOR_ATTEMPTED_NONCONSUMABLE",
+      "A": {
+        "status": "PASS",
+        "receipt_sha256": "7c7e7f55343c57ff1c12434bcfe42e28ac67159f100929a8a082072760d3122e",
+        "trajectory_sha256": "bb4615c7eae304764cc8078c4d28a1cea417275b1bfd7e04e2f80a1cd8aa28de"
+      },
+      "B": {
+        "status": "STARTED_ABORTED_NO_SCIENCE_RECEIPT",
+        "runtime_binding_receipt_sha256": "e714002c0289ae6e0fc35a20e516295e921a03c417b88e87db5dcb3729028cb6",
+        "log_sha256": "e0a5bb64b062a17d7f857e872e0ea06e79ffd7116fe4dc21ee58fb85521dac06"
+      },
+      "pair_status": "INCOMPLETE_NONCONSUMABLE"
+    }
+  ],
+  "accounting": {
+    "corridor_attempted_identity_count": 3,
+    "complete_receipt_count": 5,
+    "complete_pair_count": 2,
+    "consumable_pair_count": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0,
+    "formal_m4_authorization_issued": false,
+    "formal_m4_interventions": 0,
+    "outcomes_read": false,
+    "labels_generated": false,
+    "v_phys_map_generated": false,
+    "teacher_started": false,
+    "student_started": false
+  },
+  "firewall": {
+    "exclude_from_all_future_corridor_qualification": true,
+    "exclude_from_primary_teacher_fit_cal_check": true,
+    "exclude_from_primary_student_fit_cal_check": true,
+    "exclude_from_threshold_checkpoint_feature_model_selection": true
+  },
+  "next_legal_action": "Create a prospectively frozen V1.1 protocol from the remaining unattempted pool only, complete every required prelaunch audit and authorization, and use a new output root."
+}

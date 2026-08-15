@@ -103,7 +103,27 @@ def _episode_seal_digest(bindings: Mapping[str, Any]) -> str:
     return hashlib.sha256(json.dumps(values, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def build(parent_transition: Path, input_audit_root: Path, teacher_contract: Path, teacher_runner: Path, protocol: Path, formal_root: Path, output_root: Path, *, expected_parent_seal: str, expected_audit_seal: str, runner_commit: str, runner_tree: str, environment_fingerprint: Mapping[str, Any] | None = None) -> dict[str, Any]:
+def _validate_primary_firewall(report_path: Path, expected_seal: str) -> dict[str, Any]:
+    report_path = report_path.resolve()
+    root_seal = verify_seal(report_path.parent)
+    if root_seal["sha256sums_sha256"] != expected_seal:
+        raise ValueError("primary firewall seal mismatch")
+    report = _read_json(report_path)
+    if report.get("schema") != "STAGE_V_PRIMARY_DATA_FIREWALL_OVERLAP_AUDIT_V3" or report.get("status") != "PASS_PRIMARY_DATA_FIREWALL_EXACT55":
+        raise ValueError("primary firewall is not PASS_PRIMARY_DATA_FIREWALL_EXACT55")
+    if report.get("exact55_registry", {}).get("identity_count") != 55 or report.get("final40", {}).get("identity_count") != 40:
+        raise ValueError("primary firewall cardinality mismatch")
+    if report.get("exact_plan", {}).get("status") != "PASS_EXACT_40X24_PLAN_ONLY" or report.get("exact_plan", {}).get("probe_count_total") != 960:
+        raise ValueError("primary firewall exact-plan binding mismatch")
+    overlap = report.get("primary_identity_firewall", {})
+    if overlap.get("zero_overlap") is not True or overlap.get("attempted_overlap_count") != 0 or overlap.get("final40_overlap_count") != 0:
+        raise ValueError("primary firewall overlap is not zero")
+    if report.get("architecture", {}).get("m4_outcomes_read") is not False or report.get("protected_counters", {}).get("protected_reads") != 0:
+        raise ValueError("primary firewall outcome boundary is not closed")
+    return {"report_path": str(report_path), "report_sha256": sha256_file(report_path), "seal_sha256sums_sha256": root_seal["sha256sums_sha256"], "schema": report["schema"], "status": report["status"]}
+
+
+def build(parent_transition: Path, input_audit_root: Path, teacher_contract: Path, teacher_runner: Path, protocol: Path, formal_root: Path, output_root: Path, *, expected_parent_seal: str, expected_audit_seal: str, runner_commit: str, runner_tree: str, environment_fingerprint: Mapping[str, Any] | None = None, primary_firewall_report: Path | None = None, primary_firewall_seal: str | None = None) -> dict[str, Any]:
     parent_transition = parent_transition.resolve()
     input_audit_root = _safe_root(input_audit_root)
     formal_root = _safe_root(formal_root)
@@ -115,6 +135,9 @@ def build(parent_transition: Path, input_audit_root: Path, teacher_contract: Pat
     output_root = output_root.resolve()
     if output_root.parent != formal_root.parent:
         raise ValueError("FIT_TO_TEACHER output must be a new sibling of the formal input root")
+    if (primary_firewall_report is None) != (primary_firewall_seal is None):
+        raise ValueError("primary firewall report and seal must be supplied together")
+    primary_firewall = _validate_primary_firewall(primary_firewall_report, primary_firewall_seal) if primary_firewall_report is not None and primary_firewall_seal is not None else None
     try:
         parent_seal = verify_seal(parent_transition.parent)
     except ValueError as exc:
@@ -214,6 +237,8 @@ def build(parent_transition: Path, input_audit_root: Path, teacher_contract: Pat
         "attack_authorized": False,
         "parent_chronology": {"parent_created_at": parent_created_at, "child_created_at": created_at.isoformat()},
     }
+    if primary_firewall is not None:
+        report["primary_data_firewall"] = primary_firewall
     staging = output_root.with_name(f".{output_root.name}.staging")
     if staging.exists() or output_root.exists():
         raise FileExistsError("transition output already exists")
@@ -244,9 +269,11 @@ def main() -> int:
     parser.add_argument("--runner-commit", required=True)
     parser.add_argument("--runner-tree", required=True)
     parser.add_argument("--environment-fingerprint-json", type=Path)
+    parser.add_argument("--primary-firewall-report", type=Path)
+    parser.add_argument("--primary-firewall-seal")
     args = parser.parse_args()
     fingerprint = _read_json(args.environment_fingerprint_json) if args.environment_fingerprint_json else {}
-    print(json.dumps(build(args.parent_transition, args.input_audit_root, args.teacher_contract, args.teacher_runner, args.protocol, args.formal_root, args.output_root, expected_parent_seal=args.expected_parent_seal, expected_audit_seal=args.expected_audit_seal, runner_commit=args.runner_commit, runner_tree=args.runner_tree, environment_fingerprint=fingerprint), indent=2, sort_keys=True))
+    print(json.dumps(build(args.parent_transition, args.input_audit_root, args.teacher_contract, args.teacher_runner, args.protocol, args.formal_root, args.output_root, expected_parent_seal=args.expected_parent_seal, expected_audit_seal=args.expected_audit_seal, runner_commit=args.runner_commit, runner_tree=args.runner_tree, environment_fingerprint=fingerprint, primary_firewall_report=args.primary_firewall_report, primary_firewall_seal=args.primary_firewall_seal), indent=2, sort_keys=True))
     return 0
 
 
