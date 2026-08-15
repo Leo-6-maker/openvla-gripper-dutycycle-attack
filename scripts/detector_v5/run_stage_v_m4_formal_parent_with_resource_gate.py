@@ -12,6 +12,9 @@ import subprocess
 import sys
 from typing import Any, Mapping
 
+
+OFFICIAL_ENVIRONMENT_PYTHON = "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python"
+
 try:
     from .stage_v_gpu_resource_contract import (
         MODE_B,
@@ -136,6 +139,12 @@ def _git(root: Path, *args: str) -> str:
 def _strict_free(row: Mapping[str, Any], minimum: int) -> bool:
     value = row.get("memory_free_mib")
     return value is not None and float(value) > minimum
+
+
+def _verify_official_environment_python(path: Path) -> None:
+    """Require the exact user-authorized environment entrypoint, not its target."""
+    if str(path).replace("\\", "/") != OFFICIAL_ENVIRONMENT_PYTHON:
+        raise ValueError("OFFICIAL_ENVIRONMENT_PYTHON_PATH_MISMATCH")
 
 
 def _verify_runtime_snapshot(args: argparse.Namespace, authorization: Mapping[str, Any]) -> None:
@@ -444,6 +453,7 @@ def run(args: argparse.Namespace) -> int:
     args.exact_plan_root = args.exact_plan_root.resolve()
     args.source_worktree = args.source_worktree.resolve()
     args.runner = args.runner.resolve()
+    _verify_official_environment_python(args.python)
     args.python = args.python.resolve()
     args.output_root = args.output_root.resolve()
     if not 0 <= args.gpu <= 7:

@@ -110,6 +110,12 @@ def test_intervention_provenance_survives_independent_audit_failure(tmp_path: Pa
     assert evidence["independent_audit_pass"] is False
 
 
+def test_formal_child_requires_exact_official_environment_entrypoint() -> None:
+    gate._verify_official_environment_python(Path(gate.OFFICIAL_ENVIRONMENT_PYTHON))
+    with pytest.raises(ValueError, match="OFFICIAL_ENVIRONMENT_PYTHON_PATH_MISMATCH"):
+        gate._verify_official_environment_python(Path("/home/sz/miniconda3/envs/hallo/bin/python3.10"))
+
+
 def test_launch_binding_rejects_authorization_hash_mismatch(tmp_path: Path) -> None:
     protocol = tmp_path / "protocol.json"
     authorization = tmp_path / "authorization.json"
