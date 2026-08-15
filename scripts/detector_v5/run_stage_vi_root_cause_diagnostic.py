@@ -34,7 +34,7 @@ CLEAN_ROOT = BASE / "STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T02
 M4_STUDENT_ROOT = BASE / "STAGE_V_M4_CENSOR_AWARE_STUDENT_VPHYS_HELDOUT_F696F582_20260816T031500Z"
 MATRIX_AGGREGATE = BASE / "STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_AGGREGATE_6D39860_20260815T190500Z"
 MATRIX_EXECUTION = BASE / "STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_EXECUTION_6D39860_20260815T184500Z"
-OUTPUT_ROOT = BASE / "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC_M4_COVERAGE_AUDIT_20260816T140000Z"
+OUTPUT_ROOT = BASE / "STAGE_VI_ROOT_CAUSE_DIAGNOSTIC_M4_COVERAGE_AUDIT_20260816T150000Z"
 COUNTERS = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
 STUDENT_HEADS = ("physical_criticality", "k10_feasibility", "instability", "gripper_closing_state")
 TEACHER_HEADS = STUDENT_HEADS + ("safe_release",)
@@ -443,7 +443,7 @@ def matrix_diagnostic() -> dict[str, Any]:
             if bool(branch.get("intervention_executed")):
                 condition[arm]["intervention_executed"] += 1
                 condition[arm]["compliant"] += int(data.get("treatment_compliant") is True)
-                condition[arm]["physical_failure"] += int(physical_class in FAILURE_CLASSES)
+                observations[identity][arm]["intervention_executed"] = True
         for paired in parent.get("paired_results", []):
             pair = paired.get("pair") if isinstance(paired.get("pair"), dict) else {}
             treatment, control = str(paired["arm"]), str(paired["control_arm"])
@@ -458,6 +458,8 @@ def matrix_diagnostic() -> dict[str, Any]:
                 condition[arm]["paired_failure"] += int(physical_class in FAILURE_CLASSES)
                 condition[arm]["paired_no_failure"] += int(physical_class == "NO_PHYSICAL_FAILURE")
                 condition[arm]["paired_abstain"] += int(paired.get("matrix_outcome") == "ABSTAIN")
+                if observations[identity].get(arm, {}).get("intervention_executed"):
+                    condition[arm]["physical_failure"] += int(physical_class in FAILURE_CLASSES)
             pair_rows.append({"identity": identity, "arm": treatment, "control_arm": control, "matrix_outcome": paired.get("matrix_outcome")})
 
     def contrast(name: str, pairs: list[tuple[str, str, str]]) -> dict[str, Any]:
