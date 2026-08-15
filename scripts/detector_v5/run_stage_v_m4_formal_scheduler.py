@@ -150,13 +150,16 @@ def _eligible_gpus(args: argparse.Namespace, inventory: list[dict[str, Any]], *,
 
 
 def _child_command(args: argparse.Namespace, index: int, gpu: int, attempt: int, runtime_provenance_sha: str, model_path: Path) -> list[str]:
+    # Keep the user-authorized entrypoint literal; Path.resolve() turns the symlink
+    # into a different path that the formal gate must reject.
+    official_python = parent_gate.OFFICIAL_ENVIRONMENT_PYTHON
     return [
-        str(args.python), str(args.parent_gate),
+        official_python, str(args.parent_gate),
         "--protocol", str(args.protocol), "--authorization", str(args.authorization),
         "--launch-gate-binding", str(args.launch_gate_binding), "--final-manifest", str(args.final_manifest),
         "--final-split", str(args.final_split), "--exact-plan-root", str(args.exact_plan_root),
         "--source-worktree", str(args.source_worktree), "--runner", str(args.runner),
-        "--python", str(args.python), "--official-snapshot-root", str(args.official_snapshot_root),
+        "--python", official_python, "--official-snapshot-root", str(args.official_snapshot_root),
         "--upstream-root", str(args.upstream_root), "--model-path", str(model_path),
         "--output-root", str(args.output_root), "--source-commit", args.source_commit,
         "--source-tree", args.source_tree, "--parent-index", str(index), "--gpu", str(gpu),

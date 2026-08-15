@@ -139,3 +139,25 @@ def test_model_path_is_bound_by_frozen_parent_suite(tmp_path: Path) -> None:
     assert scheduler._model_path_for_parent(protocol, "libero_10/task_00/state_48", args) == model.resolve()
     with pytest.raises(scheduler.ResourceContractError, match="MODEL_PATH_BINDING_MISSING"):
         scheduler._model_path_for_parent(protocol, "libero_goal/task_00/state_48", args)
+
+
+def test_scheduler_child_uses_literal_official_python_entrypoint(tmp_path: Path) -> None:
+    args = SimpleNamespace(
+        python=Path("/home/sz/miniconda3/envs/hallo/bin/python3.10"),
+        parent_gate=tmp_path / "parent_gate.py",
+        protocol=tmp_path / "protocol.json",
+        authorization=tmp_path / "authorization.json",
+        launch_gate_binding=tmp_path / "launch.json",
+        final_manifest=tmp_path / "manifest.json",
+        final_split=tmp_path / "split.json",
+        exact_plan_root=tmp_path / "exact",
+        source_worktree=tmp_path / "source",
+        official_snapshot_root=tmp_path / "snapshot",
+        upstream_root=tmp_path / "upstream",
+        output_root=tmp_path / "output",
+        source_commit="commit",
+        source_tree="tree",
+    )
+    command = scheduler._child_command(args, 0, 1, 1, "provenance", tmp_path / "model")
+    assert command[0] == parent_gate.OFFICIAL_ENVIRONMENT_PYTHON
+    assert command[command.index("--python") + 1] == parent_gate.OFFICIAL_ENVIRONMENT_PYTHON
