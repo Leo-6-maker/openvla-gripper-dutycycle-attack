@@ -153,11 +153,22 @@ def _validate_population(final_manifest: Mapping[str, Any], split: Mapping[str, 
     manifest_split_path = Path(str(final_manifest.get("final_split_path", "")))
     if manifest_split_path.is_file() and _sha_file(manifest_split_path) != split_sha:
         raise PlanGateError("FINAL_MANIFEST_SPLIT_PATH_HASH_INVALID")
-    if attempt_registry.get("schema") != "STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_EXACT55_V1" or attempt_registry.get("status") != "FROZEN_EXACT55_CORRIDOR_ATTEMPT_FIREWALL" or attempt_registry.get("attempted_identity_count") != 55 or attempt_registry.get("unique_identity_count") != 55 or attempt_registry.get("duplicate_count") != 0 or attempt_registry.get("outcomes_read") is not False or attempt_registry.get("protected_counters") != COUNTERS:
+    attempt_schema = attempt_registry.get("schema")
+    successor_registry = attempt_schema == "STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_SUCCESSOR_V1"
+    valid_attempt_schema = (
+        (attempt_schema == "STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_EXACT55_V1" and attempt_registry.get("status") == "FROZEN_EXACT55_CORRIDOR_ATTEMPT_FIREWALL" and attempt_registry.get("attempted_identity_count") == 55)
+        or (successor_registry and attempt_registry.get("status") == "FROZEN_EXACT55_PLUS_RESERVE_CORRIDOR_ATTEMPT_FIREWALL" and attempt_registry.get("attempted_identity_count") == 56 and attempt_registry.get("base_attempted_identity_count") == 55 and attempt_registry.get("appended_reserve_identity_count") == 1 and attempt_registry.get("historical_attempt_registry_sha256") == "7d5cfd1b3396f6af4ecd6f3de9b9d6ef454bb927c14a6619a90f14b27a273968")
+    )
+    if not valid_attempt_schema or attempt_registry.get("unique_identity_count") != attempt_registry.get("attempted_identity_count") or attempt_registry.get("duplicate_count") != 0 or attempt_registry.get("outcomes_read") is not False or attempt_registry.get("protected_counters") != COUNTERS:
         raise PlanGateError("EXACT55_FIREWALL_INVALID")
     attempted = {str(row.get("canonical_parent_key")) for row in attempt_registry.get("attempted_identities", []) if isinstance(row, Mapping)}
-    if len(attempted) != 55 or not set(parent_keys).issubset(attempted):
+    if len(attempted) != int(attempt_registry.get("attempted_identity_count", -1)) or not set(parent_keys).issubset(attempted):
         raise PlanGateError("EXACT55_FINAL40_UNION_INVALID")
+    if successor_registry:
+        appended = attempt_registry.get("appended_reserve_identities")
+        replacement = final_manifest.get("replacement_binding", {})
+        if not isinstance(appended, list) or len(appended) != 1 or not isinstance(replacement, Mapping) or str(appended[0].get("canonical_parent_key")) != str(replacement.get("replacement_parent")):
+            raise PlanGateError("SUCCESSOR_RESERVE_BINDING_INVALID")
     source = final_manifest.get("source_binding", {})
     if source.get("science_commit") != CORRIDOR_COMMIT or source.get("science_tree") != CORRIDOR_TREE or source.get("runner_sha256") != CORRIDOR_RUNNER_SHA:
         raise PlanGateError("FINAL40_CORRIDOR_SOURCE_BINDING_INVALID")

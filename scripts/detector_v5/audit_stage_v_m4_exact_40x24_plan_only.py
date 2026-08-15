@@ -91,14 +91,25 @@ def _audit(root: Path) -> dict[str, Any]:
         errors.append("FINAL40_INPUT_INVALID")
     if split.get("schema") != "STAGE_V_M4_FINAL_PARENT_SPLIT_V2" or split.get("status") != "FROZEN" or split.get("final_manifest_sha256") != final_sha or split.get("counts") != {"TRAIN": 24, "VAL": 8, "TEST": 8}:
         errors.append("FINAL_SPLIT_INPUT_INVALID")
-    if attempt.get("schema") != "STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_EXACT55_V1" or attempt.get("status") != "FROZEN_EXACT55_CORRIDOR_ATTEMPT_FIREWALL" or attempt.get("attempted_identity_count") != 55 or attempt.get("unique_identity_count") != 55 or attempt.get("duplicate_count") != 0 or attempt.get("outcomes_read") is not False or attempt.get("protected_counters") != COUNTERS:
+    attempt_schema = attempt.get("schema")
+    successor_registry = attempt_schema == "STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_SUCCESSOR_V1"
+    valid_attempt_schema = (
+        (attempt_schema == "STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_EXACT55_V1" and attempt.get("status") == "FROZEN_EXACT55_CORRIDOR_ATTEMPT_FIREWALL" and attempt.get("attempted_identity_count") == 55)
+        or (successor_registry and attempt.get("status") == "FROZEN_EXACT55_PLUS_RESERVE_CORRIDOR_ATTEMPT_FIREWALL" and attempt.get("attempted_identity_count") == 56 and attempt.get("base_attempted_identity_count") == 55 and attempt.get("appended_reserve_identity_count") == 1 and attempt.get("historical_attempt_registry_sha256") == "7d5cfd1b3396f6af4ecd6f3de9b9d6ef454bb927c14a6619a90f14b27a273968")
+    )
+    if not valid_attempt_schema or attempt.get("unique_identity_count") != attempt.get("attempted_identity_count") or attempt.get("duplicate_count") != 0 or attempt.get("outcomes_read") is not False or attempt.get("protected_counters") != COUNTERS:
         errors.append("EXACT55_INPUT_INVALID")
     final_rows = [row for row in final.get("parents", []) if isinstance(row, Mapping)]
     final_keys = {str(row.get("canonical_parent_key")) for row in final_rows}
     split_keys = {str(row.get("canonical_parent_key")) for row in split.get("parents", []) if isinstance(row, Mapping)}
     attempted_keys = {str(row.get("canonical_parent_key")) for row in attempt.get("attempted_identities", []) if isinstance(row, Mapping)}
-    if len(final_rows) != 40 or len(final_keys) != 40 or final_keys != split_keys or len(attempted_keys) != 55 or not final_keys.issubset(attempted_keys):
+    if len(final_rows) != 40 or len(final_keys) != 40 or final_keys != split_keys or len(attempted_keys) != int(attempt.get("attempted_identity_count", -1)) or not final_keys.issubset(attempted_keys):
         errors.append("IDENTITY_SET_INVALID")
+    if successor_registry:
+        appended = attempt.get("appended_reserve_identities")
+        replacement = final.get("replacement_binding", {})
+        if not isinstance(appended, list) or len(appended) != 1 or not isinstance(replacement, Mapping) or str(appended[0].get("canonical_parent_key")) != str(replacement.get("replacement_parent")):
+            errors.append("SUCCESSOR_RESERVE_BINDING_INVALID")
     if Counter(str(row.get("suite")) for row in final_rows) != Counter({"libero_10": 10, "libero_goal": 10, "libero_object": 10, "libero_spatial": 10}):
         errors.append("FINAL40_SUITE_COUNTS_INVALID")
     run_rows = [row for row in run_registry.get("results", []) if isinstance(row, Mapping)]
