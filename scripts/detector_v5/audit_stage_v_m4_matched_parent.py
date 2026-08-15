@@ -13,6 +13,7 @@ COUNTERS = {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis
 ARMS = ("CONTROL", "T3", "T5", "T10")
 DOSES = {"T3": 3, "T5": 5, "T10": 10}
 BINARY = {"V_PHYS", "NO_PHYSICAL_VULNERABILITY"}
+HORIZON_CONTRACT = "STAGE_V_M4_CENSOR_AWARE_HORIZON_V1"
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -54,6 +55,7 @@ def audit(root: Path, parent_key: str, source_commit: str, source_tree: str) -> 
     result_path = root / "PARENT_RESULT.json"
     result = _load(result_path) if result_path.is_file() else {}
     if result.get("schema") != "STAGE_V_M4_PARENT_RESULT_V1": errors.append("RESULT_SCHEMA")
+    if result.get("horizon_contract") != HORIZON_CONTRACT: errors.append("HORIZON_CONTRACT")
     if result.get("status") != "PASS": errors.append("RESULT_STATUS")
     if result.get("canonical_parent_key") != parent_key: errors.append("PARENT_IDENTITY")
     if result.get("source_commit") != source_commit: errors.append("SOURCE_COMMIT")
@@ -81,24 +83,44 @@ def audit(root: Path, parent_key: str, source_commit: str, source_tree: str) -> 
     for row in branches:
         probe = str(row.get("probe_id")); arm = str(row.get("arm")); branch = row.get("branch") if isinstance(row.get("branch"), Mapping) else {}
         key = (probe, arm)
-        if row.get("schema") != "STAGE_V_M4_PHYSICAL_EXECUTION_V1" or key in by_identity: errors.append("BRANCH_SCHEMA_OR_DUPLICATE")
+        if row.get("schema") != "STAGE_V_M4_PHYSICAL_EXECUTION_V1" or row.get("horizon_contract") != HORIZON_CONTRACT or key in by_identity: errors.append("BRANCH_SCHEMA_OR_DUPLICATE")
         by_identity[key] = row
         if arm not in ARMS or not probe: errors.append("BRANCH_IDENTITY")
         if row.get("protected_counters") != COUNTERS or branch.get("status") != "PASS": errors.append("BRANCH_STATUS_OR_COUNTERS")
         if branch.get("state_restore_exact") is not True or branch.get("runtime_state_exact") is not True or branch.get("causal_input_binding_pass") is not True: errors.append("BRANCH_EXACT_BINDING")
         if branch.get("primary_input_authority") != "loaded_frozen_canonical_bytes" or branch.get("fresh_render_equality_gate_used") is not False or branch.get("fresh_render_primary_consumption") is not False or branch.get("native_policy_calls_in_primary_window") != 0: errors.append("BRANCH_PRIMARY_AUTHORITY")
         if branch.get("reference_action_exact") is not True or branch.get("control_action_reference_exact") is not True: errors.append("REFERENCE_ACTION_BINDING")
+        try:
+            available = int(branch.get("available_horizon_steps", -1))
+            required = int(branch.get("required_physical_steps", -1))
+            expected_censored = available < required
+        except (TypeError, ValueError):
+            expected_censored = False
+            errors.append("HORIZON_ACCOUNTING")
+        if branch.get("horizon_censored") is not expected_censored: errors.append("HORIZON_CENSOR_FLAG")
+        if expected_censored and branch.get("termination") != "HORIZON_CENSORED": errors.append("HORIZON_CENSOR_TERMINATION")
+        if not expected_censored and branch.get("termination") != "PHYSICAL_WINDOW_COMPLETE": errors.append("HORIZON_COMPLETE_TERMINATION")
         if arm != "CONTROL":
             dose = DOSES.get(arm)
             compliance = branch.get("treatment_compliance") if isinstance(branch.get("treatment_compliance"), Mapping) else {}
             receipts = branch.get("treatment_receipts") if isinstance(branch.get("treatment_receipts"), list) else []
-            if branch.get("treatment_compliant") is not True or compliance.get("treatment_compliant") is not True or compliance.get("delivered_open_steps") != dose or len(receipts) != dose: errors.append("TREATMENT_COMPLIANCE")
+            full_dose = compliance.get("delivered_open_steps") == dose and len(receipts) == dose
+            if full_dose:
+                if branch.get("treatment_compliant") is not True or compliance.get("treatment_compliant") is not True: errors.append("TREATMENT_COMPLIANCE")
+                expected_censoring = "HORIZON_CENSORED_ABSTAIN" if expected_censored else "NONE"
+            else:
+                if branch.get("treatment_compliant") is not False or compliance.get("treatment_compliant") is not False: errors.append("TREATMENT_COMPLIANCE")
+                expected_censoring = "TREATMENT_INVALID_CENSORED_ABSTAIN" if expected_censored else "STRUCTURAL_INVALID_ABSTAIN"
+            if branch.get("censoring_status") != expected_censoring: errors.append("CENSORING_STATUS")
             if any(float(item.get("arm_delta_linf", 1.0)) != 0.0 for item in receipts): errors.append("ARM_ISOLATION")
+        elif branch.get("censoring_status") != ("HORIZON_CENSORED_ABSTAIN" if expected_censored else "NONE"):
+            errors.append("CENSORING_STATUS")
     probes = {f"Q{i:02d}" for i in range(24)}
     if {(probe, arm) for probe in probes for arm in ARMS} != set(by_identity): errors.append("BRANCH_COVERAGE")
     label_ids: set[tuple[str, str]] = set()
     for row in labels:
         probe, dose = str(row.get("probe_id")), str(row.get("dose")); key = (probe, dose)
+        if row.get("horizon_contract") != HORIZON_CONTRACT: errors.append("LABEL_HORIZON_CONTRACT")
         if key in label_ids or probe not in probes or dose not in DOSES: errors.append("LABEL_IDENTITY")
         label_ids.add(key)
         expected = _truth_label(row.get("control_valid"), row.get("treatment_valid"), row.get("f_control"), row.get("f_open"))
@@ -110,10 +132,17 @@ def audit(root: Path, parent_key: str, source_commit: str, source_tree: str) -> 
         else:
             if row.get("control_branch_id") != control.get("branch_id") or row.get("treatment_branch_id") != treatment.get("branch_id"): errors.append("LABEL_BRANCH_REFERENCE")
             if row.get("control_result_sha256") != control.get("branch_result_sha256") or row.get("treatment_result_sha256") != treatment.get("branch_result_sha256"): errors.append("LABEL_RESULT_REFERENCE")
+            pair = treatment.get("pair") if isinstance(treatment.get("pair"), Mapping) else {}
+            if row.get("censoring_class") != pair.get("censoring_class"): errors.append("LABEL_CENSORING_MAP")
+            if pair.get("censoring_class") != "NONE" and row.get("binary_label_consumable") is not False: errors.append("CENSORED_BINARY_LABEL")
         if row.get("protected_counters") != COUNTERS: errors.append("LABEL_COUNTERS")
     if label_ids != {(probe, dose) for probe in probes for dose in DOSES}: errors.append("LABEL_COVERAGE")
+    if any(row.get("horizon_contract") != HORIZON_CONTRACT or row.get("protected_counters") != COUNTERS for row in observations): errors.append("OBSERVATION_CONTRACT_OR_COUNTERS")
+    censored_branches = sum(1 for row in branches if row.get("branch", {}).get("horizon_censored") is True)
+    censored_labels = sum(1 for row in labels if row.get("censoring_class") != "NONE")
+    binary_labels = sum(1 for row in labels if row.get("binary_label_consumable") is True)
     status = "PASS_M4_PARENT_INDEPENDENT" if not errors else "FAIL_M4_PARENT_INDEPENDENT"
-    audit_result = {"schema": "STAGE_V_M4_PARENT_INDEPENDENT_AUDIT_V1", "status": status, "verdict": "PASS" if not errors else "FAIL", "canonical_parent_key": parent_key, "source_commit": source_commit, "source_tree": source_tree, "branch_count": len(branches), "label_count": len(labels), "observation_count": len(observations), "errors": sorted(set(errors)), "protected_counters": dict(COUNTERS), "parent_result_sha256": _sha(result_path) if result_path.is_file() else None}
+    audit_result = {"schema": "STAGE_V_M4_PARENT_INDEPENDENT_AUDIT_V1", "horizon_contract": HORIZON_CONTRACT, "status": status, "verdict": "PASS" if not errors else "FAIL", "canonical_parent_key": parent_key, "source_commit": source_commit, "source_tree": source_tree, "branch_count": len(branches), "label_count": len(labels), "observation_count": len(observations), "censored_branch_count": censored_branches, "censored_label_count": censored_labels, "binary_label_count": binary_labels, "abstention_label_count": len(labels) - binary_labels, "errors": sorted(set(errors)), "protected_counters": dict(COUNTERS), "parent_result_sha256": _sha(result_path) if result_path.is_file() else None}
     (root / "M4_INDEPENDENT_AUDIT.json").write_text(json.dumps(audit_result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return audit_result
 

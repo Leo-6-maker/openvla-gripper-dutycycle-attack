@@ -38,6 +38,7 @@ from scripts.detector_v5.run_stage_v_m3_5_intervention_parent import (  # noqa: 
 from scripts.detector_v5.run_stage_v_m3_5_v1_4_gate_b import (  # noqa: E402
     DOSES,
     H_PHYS,
+    HORIZON_CONTRACT,
     _pair_label,
     _run_branch,
 )
@@ -193,6 +194,8 @@ def _validate(protocol: Mapping[str, Any], authorization: Mapping[str, Any], *, 
         )
     except M4GovernanceError as exc:
         raise M35RunnerError(str(exc)) from exc
+    if protocol.get("horizon_contract") != HORIZON_CONTRACT:
+        raise M35RunnerError("M4_HORIZON_CONTRACT_REQUIRED")
     return _load(split_path), authority
 
 
@@ -211,6 +214,7 @@ def _branch_record(parent_key: str, probe: Mapping[str, Any], arm: str, branch: 
     branch_id = f"m4-v1-{hashlib.sha256(f'M4_V1::{parent_key}::{probe_id}::R0::{arm}'.encode()).hexdigest()}"
     return {
         "schema": "STAGE_V_M4_PHYSICAL_EXECUTION_V1",
+        "horizon_contract": HORIZON_CONTRACT,
         "canonical_parent_key": parent_key,
         "probe_id": probe_id,
         "probe_step": int(probe["step"]),
@@ -231,6 +235,7 @@ def _label(parent_key: str, probe: Mapping[str, Any], dose: str, treatment: Mapp
     label_class = str(pair["label_class"])
     return {
         "schema": "STAGE_V_M4_V_PHYS_LABEL_V1",
+        "horizon_contract": HORIZON_CONTRACT,
         "label_id": f"m4-label-{hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(',', ':')).encode()).hexdigest()}",
         "canonical_parent_key": parent_key,
         "probe_id": probe["probe_id"],
@@ -251,6 +256,7 @@ def _label(parent_key: str, probe: Mapping[str, Any], dose: str, treatment: Mapp
         "control_result_sha256": control["branch_result_sha256"],
         "treatment_result_sha256": treatment["branch_result_sha256"],
         "treatment_compliant": treatment["branch"].get("treatment_compliant") is True,
+        "censoring_class": pair.get("censoring_class"),
         "matched_action_window": "T+H_phys",
         "protected_counters": dict(COUNTERS),
     }
@@ -324,20 +330,20 @@ def run(args: argparse.Namespace) -> int:
     observations: list[dict[str, Any]] = []
     for probe in probes:
         snapshot_root = _inside(exact["root"], probe["snapshot_path"])
-        control = _run_branch(snapshot_root=snapshot_root, gate_a_root=exact["root"], OffScreenRenderEnv=OffScreenRenderEnv, bddl=bddl, horizon=horizon, init_state=init_state, args=args, output_dir=output, clean_actions=clean_actions, model=model, adapter=adapter, arm="CONTROL", dose=0, probe_id=str(probe["probe_id"]), repetition=0)
+        control = _run_branch(snapshot_root=snapshot_root, gate_a_root=exact["root"], OffScreenRenderEnv=OffScreenRenderEnv, bddl=bddl, horizon=horizon, init_state=init_state, args=args, output_dir=output, clean_actions=clean_actions, model=model, adapter=adapter, arm="CONTROL", dose=0, probe_id=str(probe["probe_id"]), repetition=0, allow_horizon_censoring=True)
         control_record = _branch_record(args.parent_key, probe, "CONTROL", control)
         branches.append(control_record)
         for dose_name, dose_steps in DOSES.items():
-            treatment = _run_branch(snapshot_root=snapshot_root, gate_a_root=exact["root"], OffScreenRenderEnv=OffScreenRenderEnv, bddl=bddl, horizon=horizon, init_state=init_state, args=args, output_dir=output, clean_actions=clean_actions, model=model, adapter=adapter, arm=dose_name, dose=dose_steps, probe_id=str(probe["probe_id"]), repetition=0)
+            treatment = _run_branch(snapshot_root=snapshot_root, gate_a_root=exact["root"], OffScreenRenderEnv=OffScreenRenderEnv, bddl=bddl, horizon=horizon, init_state=init_state, args=args, output_dir=output, clean_actions=clean_actions, model=model, adapter=adapter, arm=dose_name, dose=dose_steps, probe_id=str(probe["probe_id"]), repetition=0, allow_horizon_censoring=True)
             pair = _pair_label(control, treatment, dose_steps)
             treatment_record = _branch_record(args.parent_key, probe, dose_name, treatment, pair=pair, control=control_record)
             branches.append(treatment_record)
             labels.append(_label(args.parent_key, probe, dose_name, treatment_record, control_record, pair))
-            observations.append({"schema": "STAGE_V_M4_TREATMENT_OBSERVATION_V1", "canonical_parent_key": args.parent_key, "probe_id": probe["probe_id"], "dose": dose_name, **{key: pair[key] for key in ("label_class", "control_valid", "treatment_valid", "f_control", "f_open", "control_physical_class", "treatment_physical_class")}, "treatment_compliant": treatment.get("treatment_compliant") is True, "treatment_branch_id": treatment_record["branch_id"], "control_branch_id": control_record["branch_id"], "protected_counters": dict(COUNTERS)})
+            observations.append({"schema": "STAGE_V_M4_TREATMENT_OBSERVATION_V1", "horizon_contract": HORIZON_CONTRACT, "canonical_parent_key": args.parent_key, "probe_id": probe["probe_id"], "dose": dose_name, **{key: pair[key] for key in ("label_class", "control_valid", "treatment_valid", "f_control", "f_open", "control_physical_class", "treatment_physical_class", "censoring_class")}, "treatment_compliant": treatment.get("treatment_compliant") is True, "treatment_branch_id": treatment_record["branch_id"], "control_branch_id": control_record["branch_id"], "protected_counters": dict(COUNTERS)})
     _write_jsonl(output / "M4_COUNTERFACTUAL_BRANCHES_V1.jsonl", branches)
     _write_jsonl(output / "M4_TREATMENT_OBSERVATIONS_V1.jsonl", observations)
     _write_jsonl(output / "M4_V_PHYS_LABELS_V1.jsonl", labels)
-    result = {"schema": "STAGE_V_M4_PARENT_RESULT_V1", "status": "PASS", "parent_atomic": True, "canonical_parent_key": args.parent_key, "suite": suite, "task_index": task_index, "state_index": state_index, "split": parent["split"], "source_commit": args.source_commit, "source_tree": args.source_tree, "runner_sha256": _sha(Path(__file__)), "protocol_sha256": _sha(protocol_path), "authorization_receipt_sha256": _sha(authorization_path), "exact_plan_manifest_sha256": exact["manifest_sha256"], "clean_success": True, "probe_count": len(probes), "branch_count": len(branches), "treatment_label_count": len(labels), "expected_physical_executions": 96, "expected_treatment_labels": 72, "primary_estimand": "V_phys@T5", "primary_window": "MATCHED_CANONICAL_ACTION_T_PLUS_H_PHYS", "native_policy_calls_in_primary_window": 0, "fresh_render_equality_gate_used": False, "fresh_render_primary_consumption": False, "selection_outcomes_read": False, "probe_selection_source": "EXACT_FROZEN_PLAN_MANIFEST", "probe_selection_recomputed": False, "causal_snapshot_canary_status": "PASS", "label_status": "VALID", "independent_audit_status": "PENDING", "protected_counters": dict(COUNTERS)}
+    result = {"schema": "STAGE_V_M4_PARENT_RESULT_V1", "horizon_contract": HORIZON_CONTRACT, "status": "PASS", "parent_atomic": True, "canonical_parent_key": args.parent_key, "suite": suite, "task_index": task_index, "state_index": state_index, "split": parent["split"], "source_commit": args.source_commit, "source_tree": args.source_tree, "runner_sha256": _sha(Path(__file__)), "protocol_sha256": _sha(protocol_path), "authorization_receipt_sha256": _sha(authorization_path), "exact_plan_manifest_sha256": exact["manifest_sha256"], "clean_success": True, "probe_count": len(probes), "branch_count": len(branches), "treatment_label_count": len(labels), "expected_physical_executions": 96, "expected_treatment_labels": 72, "primary_estimand": "V_phys@T5", "primary_window": "MATCHED_CANONICAL_ACTION_T_PLUS_H_PHYS", "native_policy_calls_in_primary_window": 0, "fresh_render_equality_gate_used": False, "fresh_render_primary_consumption": False, "selection_outcomes_read": False, "probe_selection_source": "EXACT_FROZEN_PLAN_MANIFEST", "probe_selection_recomputed": False, "causal_snapshot_canary_status": "PASS", "label_status": "VALID", "independent_audit_status": "PENDING", "protected_counters": dict(COUNTERS), "censored_branch_count": sum(1 for row in branches if row.get("branch", {}).get("horizon_censored") is True), "censored_label_count": sum(1 for row in labels if row.get("censoring_class") != "NONE"), "binary_label_count": sum(1 for row in labels if row.get("binary_label_consumable") is True), "abstention_map_frozen": True}
     _write(output / "PARENT_RESULT.json", result)
     _seal(output)
     audit_path = output / "M4_INDEPENDENT_AUDIT.json"

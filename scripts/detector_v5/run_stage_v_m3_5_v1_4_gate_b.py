@@ -59,6 +59,7 @@ from scripts.detector_v5.run_stage_v_m3_5_intervention_parent import (  # noqa: 
 DOSES = {"T3": 3, "T5": 5, "T10": 10}
 H_PHYS = 10
 REPETITIONS = 3
+HORIZON_CONTRACT = "STAGE_V_M4_CENSOR_AWARE_HORIZON_V1"
 EXPECTED_COUNTERS = {
     "protected_reads": 0,
     "eval160_reads": 0,
@@ -237,6 +238,25 @@ def _pair_label(control: Mapping[str, Any], treatment: Mapping[str, Any], dose: 
     treatment_valid = treatment.get("treatment_compliant") is True and treatment_class in FAILURE_CLASSES | {"NO_PHYSICAL_FAILURE"}
     f_control = 1 if control_class in FAILURE_CLASSES else (0 if control_valid else None)
     f_open = 1 if treatment_class in FAILURE_CLASSES else (0 if treatment_valid else None)
+    delivered = treatment.get("treatment_compliance", {}).get("delivered_open_steps") if isinstance(treatment.get("treatment_compliance"), Mapping) else None
+    control_censored = (
+        control.get("status") == "PASS"
+        and control.get("state_restore_exact") is True
+        and control.get("causal_input_binding_pass") is True
+        and int(control.get("available_horizon_steps", -1)) < required
+    )
+    treatment_censored = (
+        treatment.get("status") == "PASS"
+        and treatment.get("state_restore_exact") is True
+        and treatment.get("causal_input_binding_pass") is True
+        and int(treatment.get("available_horizon_steps", -1)) < required
+    )
+    if treatment_censored and delivered != int(dose):
+        censoring_class = "TREATMENT_INVALID_CENSORED_ABSTAIN"
+    elif control_censored or treatment_censored:
+        censoring_class = "HORIZON_CENSORED_ABSTAIN"
+    else:
+        censoring_class = "NONE"
     return {
         "control_valid": control_valid,
         "treatment_valid": treatment_valid,
@@ -247,6 +267,8 @@ def _pair_label(control: Mapping[str, Any], treatment: Mapping[str, Any], dose: 
         "f_control": f_control,
         "f_open": f_open,
         "label_class": v_phys_label(control_valid=control_valid, treatment_valid=treatment_valid, f_control=f_control, f_open=f_open),
+        "horizon_contract": HORIZON_CONTRACT,
+        "censoring_class": censoring_class,
         "dose_steps": int(dose),
         "H_phys": H_PHYS,
         "required_horizon_steps": required,
@@ -295,11 +317,12 @@ def _restore_probe_env(*, snapshot_root: Path, gate_a_root: Path, OffScreenRende
     }
 
 
-def _run_branch(*, snapshot_root: Path, gate_a_root: Path, OffScreenRenderEnv: Any, bddl: str, horizon: int, init_state: Any, args: argparse.Namespace, output_dir: Path, clean_actions: Sequence[Sequence[float]], model: Any, adapter: Any, arm: str, dose: int, probe_id: str, repetition: int) -> dict[str, Any]:
+def _run_branch(*, snapshot_root: Path, gate_a_root: Path, OffScreenRenderEnv: Any, bddl: str, horizon: int, init_state: Any, args: argparse.Namespace, output_dir: Path, clean_actions: Sequence[Sequence[float]], model: Any, adapter: Any, arm: str, dose: int, probe_id: str, repetition: int, allow_horizon_censoring: bool = False) -> dict[str, Any]:
     env = None
     rows: list[dict[str, Any]] = []
     actions: list[dict[str, Any]] = []
     treatment_receipts: list[dict[str, Any]] = []
+    termination = "HORIZON_CENSORED"
     try:
         env, obs, payload, runtime_receipt = _restore_probe_env(snapshot_root=snapshot_root, gate_a_root=gate_a_root, OffScreenRenderEnv=OffScreenRenderEnv, bddl=bddl, horizon=horizon, init_state=init_state, args=args, output_dir=output_dir, clean_actions=clean_actions, model=model, adapter=adapter)
         reference_window = payload.get("clean_reference_action_window")
@@ -364,8 +387,21 @@ def _run_branch(*, snapshot_root: Path, gate_a_root: Path, OffScreenRenderEnv: A
             rows.append(row)
             actions.append({key: value for key, value in action.items()})
             if bool(done) and len(rows) < required_steps:
-                raise M35RunnerError("HORIZON_CENSORED_PRIMARY_WINDOW")
+                if not allow_horizon_censoring:
+                    raise M35RunnerError("HORIZON_CENSORED_PRIMARY_WINDOW")
+                termination = "HORIZON_CENSORED"
+                break
+        if len(rows) >= required_steps:
+            termination = "PHYSICAL_WINDOW_COMPLETE"
         compliance = evaluate_treatment_compliance(treatment_receipts, expected_steps=int(dose)) if arm != "CONTROL" else {"treatment_compliant": True, "compliance_reason": "CONTROL", "delivered_open_steps": 0, "expected_open_steps": 0}
+        horizon_censored = len(rows) < required_steps
+        delivered_open_steps = int(compliance.get("delivered_open_steps", 0))
+        if arm != "CONTROL" and horizon_censored and delivered_open_steps < int(dose):
+            censoring_status = "TREATMENT_INVALID_CENSORED_ABSTAIN"
+        elif horizon_censored:
+            censoring_status = "HORIZON_CENSORED_ABSTAIN"
+        else:
+            censoring_status = "NONE"
         return {
             "status": "PASS",
             "schema": "STAGE_V_M3_5_V1_4_BRANCH_RESULT_V1",
@@ -392,6 +428,9 @@ def _run_branch(*, snapshot_root: Path, gate_a_root: Path, OffScreenRenderEnv: A
             "treatment_compliant": bool(compliance.get("treatment_compliant", False)),
             "available_horizon_steps": len(rows),
             "required_physical_steps": required_steps,
+            "termination": termination,
+            "horizon_censored": horizon_censored,
+            "censoring_status": censoring_status,
             "target_object_id": target_object_id,
             "runtime_state_sha256": canonical_sha256(canonical_value(runtime_receipt["bound_runtime"])),
             "natural_runtime_state_sha256": canonical_sha256(canonical_value(runtime_receipt["natural_runtime"])),
@@ -423,6 +462,9 @@ def _run_branch(*, snapshot_root: Path, gate_a_root: Path, OffScreenRenderEnv: A
             "treatment_compliant": False,
             "available_horizon_steps": len(rows),
             "required_physical_steps": int(dose) + H_PHYS if arm != "CONTROL" else max(DOSES.values()) + H_PHYS,
+            "termination": "ERROR",
+            "horizon_censored": False,
+            "censoring_status": "STRUCTURAL_INVALID_ABSTAIN",
             "protected_counters": dict(EXPECTED_COUNTERS),
         }
     finally:
