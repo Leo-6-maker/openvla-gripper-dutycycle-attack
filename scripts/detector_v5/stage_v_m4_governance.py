@@ -368,7 +368,12 @@ def validate_formal_m4_v2_authority(
         provenance = _load(files["compatibility_runtime_provenance"][0])
         if provenance.get("schema") != "STAGE_V_EXTERNAL_RUNTIME_PROVENANCE_V1" or provenance.get("status") != "PASS_RUNTIME_PROVENANCE_CAPTURED" or provenance.get("runtime_authorized") is not False or provenance.get("outcomes_read") is not False or provenance.get("intervention_executed") is not False or provenance.get("protected_counters") != COUNTERS:
             raise M4GovernanceError("M4_V2_COMPATIBILITY_PROVENANCE_INVALID")
-        if provenance.get("source_worktree", {}).get("commit") != "c61b53d42124ef093fe8946be8c87e68ad55845c" or provenance.get("source_worktree", {}).get("tree") != "f2f9a226e39058d480778727df2dc960aa768e25":
+        compatibility_source = protocol.get("source_binding", {})
+        expected_compatibility_source = {
+            "commit": compatibility_source.get("compatibility_runtime_commit", "c61b53d42124ef093fe8946be8c87e68ad55845c"),
+            "tree": compatibility_source.get("compatibility_runtime_tree", "f2f9a226e39058d480778727df2dc960aa768e25"),
+        }
+        if provenance.get("source_worktree", {}).get("commit") != expected_compatibility_source["commit"] or provenance.get("source_worktree", {}).get("tree") != expected_compatibility_source["tree"]:
             raise M4GovernanceError("M4_V2_COMPATIBILITY_SOURCE_EXPECTATION_INVALID")
         q00_result = _load(files["compatibility_q00_result"][0])
         q00_audit = _load(files["compatibility_q00_audit"][0])
