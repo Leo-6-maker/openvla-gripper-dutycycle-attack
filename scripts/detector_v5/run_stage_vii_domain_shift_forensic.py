@@ -297,9 +297,11 @@ def load_frozen_embeddings(root: Path) -> tuple[dict[tuple[str, str, int], tuple
     summary = read_json(root / "SUMMARY.json")
     if summary.get("schema") != "STAGE_VII_FROZEN_CONTEXT_EMBEDDINGS_V1" or summary.get("status") != "PASS_STAGE_VII_FROZEN_CONTEXT_EMBEDDINGS":
         raise ValueError("FROZEN_EMBEDDINGS_ROOT_INVALID")
-    if summary.get("labels_or_outcomes_read") is not False or summary.get("suite_or_task_id_input") is not False:
+    if summary.get("labels_or_outcomes_read") is not False or summary.get("suite_or_task_id_input") is not False or summary.get("formal_m4_executed") is not False:
         raise ValueError("FROZEN_EMBEDDINGS_INPUT_CONTRACT_VIOLATION")
-    safe_counters(summary.get("protected_counters"))
+    embedding_counters = summary.get("protected_counters")
+    if not isinstance(embedding_counters, dict) or any(value != 0 for value in embedding_counters.values()):
+        raise ValueError(f"FROZEN_EMBEDDING_PROTECTED_COUNTER_VIOLATION:{embedding_counters}")
     archive = np.load(root / "FROZEN_CONTEXT_EMBEDDINGS.npz", allow_pickle=False)
     visual = np.asarray(archive["visual"], dtype=np.float32)
     language = np.asarray(archive["language"], dtype=np.float32)
