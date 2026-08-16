@@ -1,5 +1,9 @@
 # Stage VII development split handoff
 
+> Historical pre-training snapshot. The current A/B/C candidate status is
+> sealed in `STAGE_VII_DEVELOPMENT_NEGATIVE_HANDOFF_20260816.md`; this file's
+> S7-A-only next-action statement must not be read as the final status.
+
 Status: `PASS_STAGE_VII_DEVELOPMENT_SPLIT`
 
 The split was frozen after the domain-shift forensic and before any Stage VII candidate training.

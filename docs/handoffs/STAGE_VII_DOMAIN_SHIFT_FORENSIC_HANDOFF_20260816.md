@@ -1,5 +1,10 @@
 # Stage VII domain-shift forensic handoff
 
+> Historical pre-training snapshot. The current A/B/C candidate status is
+> sealed in `STAGE_VII_DEVELOPMENT_NEGATIVE_HANDOFF_20260816.md`; the
+> S7-A-only next-gate text below records the state before S7-B/S7-C were
+> materialized and evaluated.
+
 Status: `PASS_STAGE_VII_DOMAIN_SHIFT_FORENSIC`
 
 The forensic is development-only. It did not train S7-A/B/C, modify Stage V or Stage VI-B2, launch M4, read Eval160, or read protected evaluation.
