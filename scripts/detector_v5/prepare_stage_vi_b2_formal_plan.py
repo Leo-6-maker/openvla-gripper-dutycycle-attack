@@ -82,6 +82,12 @@ def _stable_reserve_passes(paths: list[Path]) -> set[str]:
 
 
 def select_parents(config: dict[str, Any]) -> list[dict[str, Any]]:
+    if config.get("schema") not in {"STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V1", "STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V2_REPLACEMENT"}:
+        raise ValueError("B2_PARENT_MANIFEST_SCHEMA")
+    if config.get("schema") == "STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V2_REPLACEMENT":
+        replacements = config.get("replacement_of")
+        if not isinstance(replacements, list) or len(replacements) != 2 or len(set(map(str, replacements))) != 2:
+            raise ValueError("B2_REPLACEMENT_SET")
     inputs = config["inputs"]
     post_path = Path(inputs["post_hold_manifest_path"])
     old_path = Path(inputs["stable_reserve_manifest_path"])
@@ -108,9 +114,13 @@ def select_parents(config: dict[str, Any]) -> list[dict[str, Any]]:
         if row is None or (source == "post_hold" and key in prior_keys) or (source == "reserve_a_b_pass" and key not in stable):
             raise ValueError(f"B2_PARENT_INELIGIBLE:{key}")
         suite, task_part, state_part = key.split("/")
-        selected.append({"ordinal": int(frozen["ordinal"]), "canonical_parent_key": key, "suite": suite, "task_index": int(task_part.removeprefix("task_")), "state_index": int(state_part.removeprefix("state_")), "split": "TEST", "source": source, "source_rank": frozen.get("source_rank"), "taxonomy_status": row.get("taxonomy_status", "SUPPORTED"), "bddl_path": row.get("bddl_path")})
+        selected.append({"ordinal": int(frozen["ordinal"]), "canonical_parent_key": key, "suite": suite, "task_index": int(task_part.removeprefix("task_")), "state_index": int(state_part.removeprefix("state_")), "split": "TEST", "source": source, "source_rank": frozen.get("source_rank"), "replacement_for": frozen.get("replacement_for"), "taxonomy_status": row.get("taxonomy_status", "SUPPORTED"), "bddl_path": row.get("bddl_path")})
     if len(selected) != 16 or len({row["canonical_parent_key"] for row in selected}) != 16:
         raise ValueError("B2_PARENT_SELECTION_COUNT")
+    if config.get("schema") == "STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V2_REPLACEMENT":
+        selected_replacements = {str(row.get("replacement_for")) for row in config["parents"] if row.get("replacement_for") is not None}
+        if selected_replacements != {str(item) for item in config["replacement_of"]}:
+            raise ValueError("B2_REPLACEMENT_LINEAGE")
     return selected
 
 
