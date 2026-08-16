@@ -1,0 +1,61 @@
+{
+  "schema": "STAGE_VI_B2_PRE_HOLDOUT_LOCK_V1",
+  "status": "FROZEN_PRE_HOLDOUT_LOCK",
+  "scientific_scope": {
+    "stage": "STAGE_VI_B2",
+    "target": "V_phys@T5",
+    "teacher_student_original_frozen": true,
+    "original_stage_v_teacher_or_student_replaced": false,
+    "fresh_m4_required_before_causal_claim": true,
+    "outcome_informed_tuning_after_lock": false,
+    "eval160_status": "UNREAD",
+    "protected_boundary": "UNREAD"
+  },
+  "selected_candidate": {
+    "candidate_id": "B2-C_SOFT_TV_DISTILL_DIRECT_VPHYS",
+    "selection_rule": "highest_TEST_auprc_lift_then_TEST_auroc_then_candidate_id among candidates passing the frozen B2 gate",
+    "selected_threshold": 0.69,
+    "input": "16x25D_causal_window",
+    "deployment_privileged_features": false,
+    "hard_teacher_threshold": null,
+    "weights_and_thresholds_frozen": true
+  },
+  "development_evidence": {
+    "candidate_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_CANDIDATE_DEVELOPMENT_20260816T013030Z",
+    "candidate_root_sha256sums_sha256": "4a01c709893e5ab6e5d12d8ba32d51c2ab75235753633406743609d076dfeb0d",
+    "results_sha256": "3f0e40f8c2e68577498eada4eae79f7d58aa2e34b21be3465744e8a9848ae998",
+    "selected_student_model_sha256": "fc047fd8b1b2d118c3275d51b56cec7306725e4c41aff020121312e6a4daca8b",
+    "privileged_teacher_fit_artifact_sha256": "9d0344dae3d8cd55b3f7dcbd87a9f85fa9ac41b88de1bf387f1d8ebc528acda4",
+    "development_split": "Stage-V M4 TEST parent split used as development-check; not fresh holdout",
+    "test_auroc": 0.9316666666666666,
+    "test_auprc": 0.9727988542060894,
+    "test_auprc_lift": 1.3781317101252932,
+    "test_auroc_gain_vs_frozen_student": 0.41633333333333333,
+    "all_three_candidates_passed_frozen_gate": true
+  },
+  "formal_m4_contract": {
+    "parent_manifest_path": "configs/STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V1.json",
+    "parent_manifest_sha256": "b2dead56bf24e555ffec950ed84fc20198f8759b319d536ea8c13e55621af58e",
+    "parent_count": 16,
+    "probes_per_parent": 24,
+    "arms_per_probe": ["CONTROL", "T3", "T5", "T10"],
+    "planned_branch_count": 1536,
+    "primary_endpoint": "V_phys@T5",
+    "censoring_policy": "registered HORIZON_CENSORED_ABSTAIN; preserve abstains and exclude from binary V_phys consumption",
+    "model_or_threshold_changes_after_lock": false,
+    "fresh_m4_outcomes_may_not_retrain_or_tune": true
+  },
+  "source_bindings": {
+    "development_source_commit": "3ce094c219721962edd3970e21f64c4e2df83266",
+    "development_source_tree": "fc363f60576a39ebfcc9020d51a91fc6368c5d24",
+    "future_formal_source_must_be_new_immutable_github_ref": true,
+    "future_formal_source_commit": "PENDING_SUCCESSOR_SOURCE_FREEZE",
+    "future_formal_source_tree": "PENDING_SUCCESSOR_SOURCE_FREEZE"
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  }
+}
