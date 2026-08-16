@@ -10,7 +10,15 @@
       "inputs": ["16x25D_causal_history"],
       "targets": ["V_phys@T3", "V_phys@T5", "V_phys@T10"],
       "primary_target": "V_phys@T5",
-      "role": "deployment_safe_control"
+      "role": "deployment_safe_control",
+      "model": "small_causal_tcn",
+      "supervision": [
+        "direct_multidose_V_phys",
+        "class_balanced_BCE",
+        "within_parent_pairwise_ranking_auxiliary_loss"
+      ],
+      "sampling": "suite_balanced_parent_balanced",
+      "uncertainty": "required_if_promoted"
     },
     {
       "id": "S7-B",

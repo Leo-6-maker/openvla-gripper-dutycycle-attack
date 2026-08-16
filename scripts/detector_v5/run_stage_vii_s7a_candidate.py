@@ -26,6 +26,7 @@ from run_stage_vii_domain_shift_forensic import (
     read_json,
     summarize_scores,
 )
+from run_stage_vi_b2_candidates import ranking_loss
 
 
 SEED = 20260816
@@ -78,7 +79,7 @@ def standardization(rows: list[dict[str, Any]], streams: dict[str, dict[str, Any
     return mean.astype(np.float32), std.astype(np.float32)
 
 
-def dataset(rows: list[dict[str, Any]], mean: np.ndarray, std: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def dataset(rows: list[dict[str, Any]], mean: np.ndarray, std: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     usable = [row for row in rows if row["consumable"]]
     if not usable:
         raise ValueError("NO_CONSUMABLE_CANDIDATE_ROWS")
@@ -86,7 +87,18 @@ def dataset(rows: list[dict[str, Any]], mean: np.ndarray, std: np.ndarray) -> tu
     x = (x - mean) / std
     y = np.asarray([row["y"] for row in usable], dtype=np.float32)
     dose = np.asarray([DOSES.index(row["dose"]) for row in usable], dtype=np.int64)
-    return x, y, dose
+    groups = np.asarray([f"{row['stage']}::{row['canonical_parent_key']}::{row['dose']}" for row in usable])
+    parent_counts = defaultdict(int)
+    suite_parents: defaultdict[str, set[str]] = defaultdict(set)
+    for row in usable:
+        parent_counts[f"{row['stage']}::{row['canonical_parent_key']}"] += 1
+        suite_parents[row["suite"]].add(f"{row['stage']}::{row['canonical_parent_key']}")
+    weights = np.asarray([
+        1.0 / (len(suite_parents[row["suite"]]) * parent_counts[f"{row['stage']}::{row['canonical_parent_key']}"])
+        for row in usable
+    ], dtype=np.float32)
+    weights /= weights.mean()
+    return x, y, dose, groups, weights
 
 
 def seed_all() -> None:
@@ -99,7 +111,7 @@ def seed_all() -> None:
 def fit_model(rows: list[dict[str, Any]], streams: dict[str, dict[str, Any]], epochs: int = 120) -> tuple[MultiDoseCausalTCN, np.ndarray, np.ndarray]:
     seed_all()
     mean, std = standardization(rows, streams)
-    x, y, dose = dataset(rows, mean, std)
+    x, y, dose, groups, sample_weights = dataset(rows, mean, std)
     model = MultiDoseCausalTCN()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
     x_tensor = torch.as_tensor(x, dtype=torch.float32)
@@ -111,14 +123,27 @@ def fit_model(rows: list[dict[str, Any]], streams: dict[str, dict[str, Any]], ep
         positives = max(1, int(y[mask].sum()))
         negatives = max(1, int(mask.sum()) - positives)
         pos_weight.append(float(negatives / positives))
-    weights = torch.as_tensor(pos_weight, dtype=torch.float32)
+    class_weights = torch.as_tensor(pos_weight, dtype=torch.float32)
+    sample_weight_tensor = torch.as_tensor(sample_weights, dtype=torch.float32)
     model.train()
     for _ in range(epochs):
         optimizer.zero_grad(set_to_none=True)
         logits = model(x_tensor)
         selected = logits[torch.arange(len(logits)), dose_tensor]
-        loss_weights = weights[dose_tensor]
-        loss = F.binary_cross_entropy_with_logits(selected, y_tensor, pos_weight=loss_weights)
+        bce_terms = []
+        for dose_index in range(3):
+            mask = dose_tensor == dose_index
+            if not bool(mask.any()):
+                continue
+            bce_terms.append(F.binary_cross_entropy_with_logits(
+                selected[mask],
+                y_tensor[mask],
+                weight=sample_weight_tensor[mask],
+                pos_weight=class_weights[dose_index],
+            ))
+        bce = torch.stack(bce_terms).mean()
+        ranking = ranking_loss(selected, y_tensor, groups) if len(set(groups.tolist())) else selected.sum() * 0.0
+        loss = bce + 0.25 * ranking
         loss.backward()
         optimizer.step()
     model.eval()
@@ -272,8 +297,15 @@ def main() -> int:
         "candidate": "S7-A",
         "candidate_training_performed": True,
         "input": "16x25D_causal_history",
+        "model": "small_causal_tcn",
         "targets": list(DOSES),
         "primary_target": "T5",
+        "loss": {
+            "class_balanced_bce": True,
+            "within_parent_pairwise_ranking_auxiliary": True,
+            "ranking_weight": 0.25
+        },
+        "sampling": "suite_balanced_parent_balanced_inverse_row_weight",
         "threshold": THRESHOLD,
         "abstains_masked_never_negative": True,
         "split_root": str(args.split_root.resolve()),
