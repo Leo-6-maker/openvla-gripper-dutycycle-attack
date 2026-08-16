@@ -41,7 +41,7 @@ def sha_json(value: Any) -> str:
     return m4.canonical_sha256(m4.canonical_value(value))
 
 
-def validate_authority(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any], Path, str]:
+def validate_authority(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any], Path, str, dict[str, str]]:
     protocol = load(args.protocol.resolve())
     authority = load(args.authority.resolve())
     source_commit = args.source_commit
@@ -84,10 +84,16 @@ def validate_authority(args: argparse.Namespace) -> tuple[dict[str, Any], dict[s
     split = load(Path(str(inputs["formal_parent_split_path"])))
     if sha(Path(str(inputs["formal_parent_split_path"]))) != inputs.get("formal_parent_split_sha256") or split.get("schema") != "STAGE_VI_B2_FORMAL_PARENT_SPLIT_V1" or split.get("status") != "FROZEN" or split.get("parent_count") != 16 or split.get("outcomes_read") is not False:
         raise ValueError("B2_FORMAL_SPLIT_BINDING")
-    return protocol, authority, plan_root, sha(plan_manifest)
+    snapshot_source = inputs.get("snapshot_producer_source_binding")
+    if not isinstance(snapshot_source, Mapping) or not snapshot_source.get("commit") or not snapshot_source.get("tree"):
+        raise ValueError("B2_SNAPSHOT_PRODUCER_SOURCE_BINDING")
+    snapshot_gate_runner_sha = inputs.get("snapshot_producer_gate_a_runner_sha256")
+    if snapshot_gate_runner_sha and plan_manifest.get("downstream_source", {}).get("gate_a_runner_sha256") != snapshot_gate_runner_sha:
+        raise ValueError("B2_SNAPSHOT_PRODUCER_GATE_A_RUNNER")
+    return protocol, authority, plan_root, sha(plan_manifest), {"commit": str(snapshot_source["commit"]), "tree": str(snapshot_source["tree"])}
 
 
-def load_exact(plan_root: Path, parent_key: str, expected_manifest_sha: str, source_commit: str, source_tree: str) -> dict[str, Any]:
+def load_exact(plan_root: Path, parent_key: str, expected_manifest_sha: str, source_commit: str, source_tree: str, snapshot_source: Mapping[str, str]) -> dict[str, Any]:
     manifest_path = plan_root / "B2_EXACT_PROBE_AND_SNAPSHOT_MANIFEST.json"
     manifest = load(manifest_path)
     if sha(manifest_path) != expected_manifest_sha:
@@ -105,7 +111,7 @@ def load_exact(plan_root: Path, parent_key: str, expected_manifest_sha: str, sou
     if sha_json(actions) != parent.get("clean_reference_action_sequence_sha256"):
         raise ValueError("B2_CLEAN_ACTION_SHA")
     receipt = load(parent_root / "M3_5_V1_4_GATE_A_RECEIPT.json")
-    if receipt.get("status") != "PASS" or receipt.get("outcomes_read") is not False or receipt.get("intervention_executed") is not False or receipt.get("protected_counters") != COUNTERS or len(receipt.get("canary_receipts", [])) != 24 or any(row.get("status") != "PASS" for row in receipt["canary_receipts"]):
+    if receipt.get("status") != "PASS" or receipt.get("source_commit") != snapshot_source["commit"] or receipt.get("source_tree") != snapshot_source["tree"] or receipt.get("outcomes_read") is not False or receipt.get("intervention_executed") is not False or receipt.get("protected_counters") != COUNTERS or len(receipt.get("canary_receipts", [])) != 24 or any(row.get("status") != "PASS" for row in receipt["canary_receipts"]):
         raise ValueError("B2_GATE_A_RECEIPT")
     probes = sorted([dict(row) for row in manifest["probe_authorities"] if str(row.get("canonical_parent_key")) == parent_key], key=lambda row: str(row["probe_id"]))
     if len(probes) != 24 or len({row["probe_id"] for row in probes}) != 24:
@@ -119,7 +125,7 @@ def load_exact(plan_root: Path, parent_key: str, expected_manifest_sha: str, sou
         payload = loaded["payload"]
         hashes = m4.assert_primary_observation_exact(payload)
         binding = loaded["manifest"].get("binding", {})
-        if binding.get("parent_key") != parent_key or binding.get("probe_id") != probe["probe_id"] or binding.get("source_commit") != source_commit or binding.get("source_tree") != source_tree or loaded["manifest"].get("primary_input_authority") != "loaded_frozen_canonical_bytes" or loaded["manifest"].get("fresh_render_equality_gate_used") is not False:
+        if binding.get("parent_key") != parent_key or binding.get("probe_id") != probe["probe_id"] or binding.get("source_commit") != snapshot_source["commit"] or binding.get("source_tree") != snapshot_source["tree"] or loaded["manifest"].get("primary_input_authority") != "loaded_frozen_canonical_bytes" or loaded["manifest"].get("fresh_render_equality_gate_used") is not False:
             raise ValueError(f"B2_SNAPSHOT_BINDING:{probe['probe_id']}")
         if hashes.get("raw_observation_sha256") != probe.get("raw_observation_sha256") or hashes.get("policy_rgb_224_sha256") != probe.get("policy_rgb_224_sha256") or hashes.get("policy_input_sha256") != probe.get("policy_input_sha256"):
             raise ValueError(f"B2_SNAPSHOT_INPUT:{probe['probe_id']}")
@@ -135,9 +141,9 @@ def load_exact(plan_root: Path, parent_key: str, expected_manifest_sha: str, sou
 def run(args: argparse.Namespace) -> int:
     if not args.enable_runtime:
         raise ValueError("B2_FORMAL_RUNTIME_DISABLED")
-    protocol, authority, plan_root, plan_sha = validate_authority(args)
+    protocol, authority, plan_root, plan_sha, snapshot_source = validate_authority(args)
     parent_key = args.parent_key
-    exact = load_exact(plan_root, parent_key, plan_sha, args.source_commit, args.source_tree)
+    exact = load_exact(plan_root, parent_key, plan_sha, args.source_commit, args.source_tree, snapshot_source)
     parent = exact["parent"]
     output = args.output_dir.resolve()
     if output.exists():
@@ -150,7 +156,7 @@ def run(args: argparse.Namespace) -> int:
     shutil.copy2(args.authority.resolve(), output / "M4_AUTHORITY.json")
     shutil.copy2(exact["clean_path"], output / "CLEAN_TRAJECTORY_V1_4.json")
     shutil.copy2(inside(plan_root, parent["probe_plan_path"]), output / "PROBE_PLAN_V1_4.json")
-    m4._write(output / "EXACT_PLAN_BINDING.json", {"schema": "STAGE_VI_B2_EXACT_PLAN_RUNTIME_BINDING_V1", "status": "PASS_EXACT_FROZEN_AUTHORITY_LOADED", "exact_plan_root": str(plan_root), "exact_plan_manifest_sha256": plan_sha, "canonical_parent_key": parent_key, "probe_count": 24, "probe_selection_recomputed": False, "snapshots_loaded_frozen": True, "outcomes_read": False, "protected_counters": COUNTERS})
+    m4._write(output / "EXACT_PLAN_BINDING.json", {"schema": "STAGE_VI_B2_EXACT_PLAN_RUNTIME_BINDING_V1", "status": "PASS_EXACT_FROZEN_AUTHORITY_LOADED", "exact_plan_root": str(plan_root), "exact_plan_manifest_sha256": plan_sha, "canonical_parent_key": parent_key, "probe_count": 24, "probe_selection_recomputed": False, "snapshots_loaded_frozen": True, "snapshot_producer_source_binding": snapshot_source, "outcomes_read": False, "protected_counters": COUNTERS})
     suite, task_part, state_part = parent_key.split("/")
     args.suite = suite
     args.parent_key = parent_key
