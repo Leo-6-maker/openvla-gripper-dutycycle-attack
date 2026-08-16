@@ -1,0 +1,45 @@
+{
+  "schema": "STAGE_VII_DEVELOPMENT_PROMOTION_CRITERIA_V1",
+  "stage": "STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR",
+  "status": "FROZEN_BEFORE_CANDIDATE_TRAINING",
+  "candidate_training_authorized_by_this_file": false,
+  "primary_endpoint": "V_phys@T5",
+  "secondary_endpoints": ["V_phys@T3", "V_phys@T10"],
+  "abstains": "MASKED_NEVER_NEGATIVES",
+  "evaluation": {
+    "parent_grouped_oof": true,
+    "leave_one_suite_out": true,
+    "row_level_random_split": false,
+    "threshold_selection": "FROZEN_BEFORE_HOLDOUT_ONLY",
+    "emission_threshold": 0.69
+  },
+  "promotion_gate": {
+    "overall_parent_grouped_oof": {
+      "minimum_auroc": 0.75,
+      "minimum_auprc_lift": 1.25,
+      "minimum_top_decile_lift": 1.5,
+      "maximum_ece_10bin": 0.2,
+      "emission_rate_minimum": 0.05,
+      "emission_rate_maximum": 0.8
+    },
+    "identifiable_suite": {
+      "minimum_auroc": 0.65,
+      "minimum_auprc_lift": 1.05,
+      "emission_rate_minimum": 0.05,
+      "emission_rate_maximum": 0.9
+    },
+    "multimodal_vs_s7_a_loso": {
+      "minimum_mean_auroc_improvement": 0.05
+    },
+    "near_saturation_definition": {
+      "minimum_emission_rate": 0.95,
+      "maximum_emission_rate": 0.05
+    }
+  },
+  "failure_seal": "STAGE_VII_DEVELOPMENT_NO_GENERALIZABLE_DETECTOR",
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters_must_remain_zero": true
+  }
+}

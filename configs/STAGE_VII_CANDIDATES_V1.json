@@ -1,0 +1,40 @@
+{
+  "schema": "STAGE_VII_CANDIDATES_V1",
+  "stage": "STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR",
+  "status": "FROZEN_BEFORE_CANDIDATE_TRAINING",
+  "maximum_candidate_count": 3,
+  "candidates": [
+    {
+      "id": "S7-A",
+      "name": "multidose_25d_control",
+      "inputs": ["16x25D_causal_history"],
+      "targets": ["V_phys@T3", "V_phys@T5", "V_phys@T10"],
+      "primary_target": "V_phys@T5",
+      "role": "deployment_safe_control"
+    },
+    {
+      "id": "S7-B",
+      "name": "25d_plus_language_plus_policy_intent",
+      "inputs": ["16x25D_causal_history", "frozen_task_language_embedding", "clean_policy_intent"],
+      "targets": ["V_phys@T3", "V_phys@T5", "V_phys@T10"],
+      "primary_target": "V_phys@T5",
+      "role": "context_conditioned_candidate"
+    },
+    {
+      "id": "S7-C",
+      "name": "s7_b_plus_frozen_visual",
+      "inputs": ["16x25D_causal_history", "frozen_task_language_embedding", "clean_policy_intent", "frozen_clean_rgb_embedding"],
+      "targets": ["V_phys@T3", "V_phys@T5", "V_phys@T10"],
+      "primary_target": "V_phys@T5",
+      "role": "conditional_multimodal_candidate",
+      "authorization_condition": "forensic_visual_gain_before_candidate_training"
+    }
+  ],
+  "not_authorized": [
+    "Teacher_or_Student_retraining",
+    "threshold_retuning_of_B2_C",
+    "post_outcome_candidate_addition",
+    "suite_specific_candidate_family",
+    "large_architecture_sweep"
+  ]
+}
