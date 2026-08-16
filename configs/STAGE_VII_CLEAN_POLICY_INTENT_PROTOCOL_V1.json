@@ -1,0 +1,51 @@
+{
+  "schema": "STAGE_VII_CLEAN_POLICY_INTENT_PROTOCOL_V1",
+  "status": "FROZEN_BEFORE_MATERIALIZATION",
+  "purpose": "Materialize clean decoded policy intent from sealed causal snapshots without a new environment rollout.",
+  "input_authority": {
+    "source": "SEALED_PROSPECTIVE_CAUSAL_PROBE_SNAPSHOT_V2",
+    "fields": ["input_ids", "pixel_values", "attention_mask", "decode_config"],
+    "labels_or_outcomes_read": false,
+    "privileged_state_consumed": false,
+    "attacked_state_consumed": false
+  },
+  "generation": {
+    "model_inputs": "exact_saved_snapshot_tensors",
+    "do_sample": false,
+    "generation_passes_per_step": 1,
+    "captured_score_count": 7,
+    "single_generation_action_parity_tolerance": 1e-6,
+    "attention_implementation": "eager",
+    "attention_mask_rule": "append_one_mask_token_if_pinned_predict_action_appends_empty_action_token"
+  },
+  "policy_features": {
+    "schema": "n4_p9d_policy_intent_v1",
+    "fields": [
+      "clean_open_probability_mass",
+      "clean_close_probability_mass",
+      "clean_open_minus_close_log_mass",
+      "clean_action_token_entropy_normalized",
+      "clean_top1_probability",
+      "clean_top1_is_open",
+      "clean_top1_is_close",
+      "clean_best_open_rank_normalized",
+      "clean_best_close_rank_normalized"
+    ]
+  },
+  "source_binding": {
+    "official_source_root": "/mnt/sdc/dty_user/openvla_attack_official_v3_legacy_20260716",
+    "official_source_commit": "943b02749dce4414ec6791b15ceec87dbd3be1ba",
+    "official_source_tree": "07a4efa9663edf415c957374e86d12db30854fbe",
+    "files": {
+      "scripts/official_clean_worker.py": "a8e230f1ef10f51ee61c847c49969b444ab57697ac7312100b06e64d03491311",
+      "src/gripper_attack/official_openvla_adapter.py": "0e8c1c2476b50609627cee2000467966fb1cbf68b01050147471867f13710aae",
+      "src/gripper_attack/official_libero_protocol.py": "72f58fd8e5b06ce2c0d4c0bf93fd33ea30bc52b6384cc1b721f608d573dff5fa",
+      "src/gripper_attack/official_detector_features.py": "6bb24b689c0e8ac7547e911f1b05f2a18fad1e4a31b0a8e5b9b4f225a7f9e78f"
+    }
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters_must_remain_zero": true
+  }
+}
