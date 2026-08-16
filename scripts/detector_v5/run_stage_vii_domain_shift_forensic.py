@@ -22,7 +22,6 @@ import torch
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
-from sklearn.random_projection import GaussianRandomProjection
 from sklearn.preprocessing import StandardScaler
 
 REPO = Path(__file__).resolve().parents[2]
@@ -525,21 +524,15 @@ def diagnose_suite_shift(stage_v_rows: list[dict[str, Any]], stage_vi_rows: list
 
 
 def fit_probe(X: np.ndarray, y: np.ndarray, groups: np.ndarray, suites: np.ndarray) -> dict[str, Any]:
-    projection_applied = X.shape[1] > 1000
-    probe_X = (
-        GaussianRandomProjection(n_components=128, random_state=SEED).fit_transform(X)
-        if projection_applied else X
-    )
-
     def fit_predict(train: np.ndarray, test: np.ndarray) -> np.ndarray | None:
         if len(np.unique(y[train])) < 2:
             return None
         estimator = make_pipeline(
             StandardScaler(),
-            LogisticRegression(class_weight="balanced", max_iter=1000, random_state=SEED),
+            LogisticRegression(class_weight="balanced", max_iter=200, random_state=SEED, solver="liblinear"),
         )
-        estimator.fit(probe_X[train], y[train])
-        return estimator.predict_proba(probe_X[test])[:, 1]
+        estimator.fit(X[train], y[train])
+        return estimator.predict_proba(X[test])[:, 1]
 
     oof_scores = np.full(len(y), np.nan, dtype=np.float64)
     for group in sorted(set(groups.tolist())):
@@ -562,12 +555,18 @@ def fit_probe(X: np.ndarray, y: np.ndarray, groups: np.ndarray, suites: np.ndarr
         "status": "PASS_DIAGNOSTIC_PROBE",
         "rows": int(len(y)),
         "parent_group_count": int(len(set(groups.tolist()))),
-        "projection_policy": "gaussian_random_projection_128_if_features_gt_1000_else_identity",
+        "estimator_policy": "standard_scaler_balanced_liblinear_max_iter_200",
         "parent_grouped_oof": oof,
         "leave_one_suite_out": loso,
         "loso_identifiable_suite_mean_auroc": float(np.mean(identified)) if identified else None,
         "final_candidate_authorized": False,
     }
+
+
+def fixed_mean_pool(values: np.ndarray, dimensions: int) -> np.ndarray:
+    if values.ndim != 2 or dimensions <= 0 or dimensions > values.shape[1]:
+        raise ValueError(f"FIXED_POOL_SHAPE:{values.shape}:{dimensions}")
+    return np.stack([values[:, index].mean(axis=1) for index in np.array_split(np.arange(values.shape[1]), dimensions)], axis=1)
 
 
 def context_probes(
@@ -612,18 +611,22 @@ def context_probes(
             embeddings[(row["stage"], row["canonical_parent_key"], row["probe_step"])][1]
             for row in embedding_rows
         ], dtype=np.float32)
+        visual_compact = fixed_mean_pool(visual, 32)
+        language_compact = fixed_mean_pool(language, 16)
         coverage = float(len(embedding_rows) / len(usable))
         result["P1_25D_plus_language"] = {
             "status": "PASS_DIAGNOSTIC_PROBE",
             "embedding_join_rows": len(embedding_rows),
             "embedding_join_coverage": coverage,
-            "probe": fit_probe(np.concatenate([embedding_p0, language], axis=1), embedding_y, embedding_groups, embedding_suites),
+            "feature_dimensions": int(embedding_p0.shape[1] + language_compact.shape[1]),
+            "probe": fit_probe(np.concatenate([embedding_p0, language_compact], axis=1), embedding_y, embedding_groups, embedding_suites),
         }
         result["P4_25D_plus_frozen_visual"] = {
             "status": "PASS_DIAGNOSTIC_PROBE",
             "embedding_join_rows": len(embedding_rows),
             "embedding_join_coverage": coverage,
-            "probe": fit_probe(np.concatenate([embedding_p0, visual], axis=1), embedding_y, embedding_groups, embedding_suites),
+            "feature_dimensions": int(embedding_p0.shape[1] + visual_compact.shape[1]),
+            "probe": fit_probe(np.concatenate([embedding_p0, visual_compact], axis=1), embedding_y, embedding_groups, embedding_suites),
         }
     policy_rows = [row for row in usable if (row["canonical_parent_key"], row["probe_step"]) in policy]
     if not policy_rows:
@@ -661,6 +664,8 @@ def context_probes(
                 embeddings[(row["stage"], row["canonical_parent_key"], row["probe_step"])][1]
                 for row in multimodal_rows
             ], dtype=np.float32)
+            multi_visual_compact = fixed_mean_pool(multi_visual, 32)
+            multi_language_compact = fixed_mean_pool(multi_language, 16)
             multi_policy = np.asarray([
                 policy[(row["canonical_parent_key"], row["probe_step"])] for row in multimodal_rows
             ], dtype=np.float32)
@@ -670,14 +675,16 @@ def context_probes(
                 "embedding_join_rows": len(multimodal_rows),
                 "embedding_join_coverage": multi_coverage,
                 "policy_join_coverage": multi_coverage,
-                "probe": fit_probe(np.concatenate([multi_p0, multi_language, multi_policy], axis=1), multi_y, multi_groups, multi_suites),
+                "feature_dimensions": int(multi_p0.shape[1] + multi_language_compact.shape[1] + multi_policy.shape[1]),
+                "probe": fit_probe(np.concatenate([multi_p0, multi_language_compact, multi_policy], axis=1), multi_y, multi_groups, multi_suites),
             }
             result["P5_P3_plus_frozen_visual"] = {
                 "status": "PASS_DIAGNOSTIC_PROBE",
                 "embedding_join_rows": len(multimodal_rows),
                 "embedding_join_coverage": multi_coverage,
                 "policy_join_coverage": multi_coverage,
-                "probe": fit_probe(np.concatenate([multi_p0, multi_language, multi_policy, multi_visual], axis=1), multi_y, multi_groups, multi_suites),
+                "feature_dimensions": int(multi_p0.shape[1] + multi_language_compact.shape[1] + multi_policy.shape[1] + multi_visual_compact.shape[1]),
+                "probe": fit_probe(np.concatenate([multi_p0, multi_language_compact, multi_policy, multi_visual_compact], axis=1), multi_y, multi_groups, multi_suites),
             }
     oracle_suites = sorted(set(suites.tolist()))
     oracle_tasks = sorted({identity_parts(row["canonical_parent_key"])[1] for row in usable})
