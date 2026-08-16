@@ -1,0 +1,37 @@
+{
+  "schema": "STAGE_VII_DOMAIN_SHIFT_FORENSIC_PROTOCOL_V1",
+  "stage": "STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR",
+  "status": "FROZEN_BEFORE_FORENSIC_RERUN",
+  "reference_population": "STAGE_V_DEVELOPMENT_EVIDENCE",
+  "comparison_population": "STAGE_VI_B2_DEVELOPMENT_EVIDENCE",
+  "diagnostic_tags": {
+    "RANKING_FAILURE": {
+      "auroc_below": 0.65,
+      "auprc_lift_below": 1.05
+    },
+    "CALIBRATION_FAILURE": {
+      "ece_above": 0.2,
+      "emission_below": 0.05,
+      "emission_above": 0.9
+    },
+    "LABEL_PREVALENCE_SHIFT": {
+      "absolute_prevalence_delta_at_least": 0.1
+    },
+    "REPRESENTATION_SHIFT": {
+      "mean_abs_smd_at_least": 0.1,
+      "max_psi_at_least": 0.2
+    },
+    "NON_IDENTIFIABLE": {
+      "consumable_positive_or_negative_count": 0
+    }
+  },
+  "emission_focus": {
+    "libero_10_expected_failure_pattern": "0_PERCENT_EMISSION",
+    "libero_spatial_expected_failure_pattern": "APPROX_95_8_PERCENT_EMISSION"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters_must_remain_zero": true
+  }
+}

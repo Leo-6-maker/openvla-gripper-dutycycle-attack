@@ -412,6 +412,8 @@ def feature_shift(reference: dict[str, np.ndarray], comparison: dict[str, np.nda
             "comparison_rows": int(len(comp)),
             "reference_mean": ref_mean.tolist(),
             "comparison_mean": comp_mean.tolist(),
+            "reference_std": np.sqrt(ref_var).tolist(),
+            "comparison_std": np.sqrt(comp_var).tolist(),
             "mean_delta": delta.tolist(),
             "smd": smd.tolist(),
             "mean_abs_smd": float(np.mean(smd)),
@@ -419,6 +421,10 @@ def feature_shift(reference: dict[str, np.ndarray], comparison: dict[str, np.nda
             "mahalanobis_mean_delta": mahalanobis,
             "pca_explained_variance_ratio": pca.explained_variance_ratio_.tolist(),
             "pca_mean_delta": (comp_pca.mean(axis=0) - ref_pca.mean(axis=0)).tolist(),
+            "pca_reference_projection_mean": ref_pca.mean(axis=0).tolist(),
+            "pca_reference_projection_std": ref_pca.std(axis=0).tolist(),
+            "pca_comparison_projection_mean": comp_pca.mean(axis=0).tolist(),
+            "pca_comparison_projection_std": comp_pca.std(axis=0).tolist(),
             "psi": psi,
             "mean_psi": float(np.mean(psi)),
             "max_psi": float(np.max(psi)),
@@ -428,6 +434,57 @@ def feature_shift(reference: dict[str, np.ndarray], comparison: dict[str, np.nda
     result = {"overall": one(flatten(reference), flatten(comparison))}
     result["per_suite"] = {suite: one(flatten(reference, suite), flatten(comparison, suite)) for suite in suites}
     result["feature_order"] = list(FEATURE_ORDER)
+    return result
+
+
+def diagnose_suite_shift(stage_v_rows: list[dict[str, Any]], stage_vi_rows: list[dict[str, Any]], shifts: dict[str, Any]) -> dict[str, Any]:
+    def by_suite(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+        grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for row in rows:
+            grouped[row["suite"]].append(row)
+        return grouped
+
+    reference = by_suite(stage_v_rows)
+    comparison = by_suite(stage_vi_rows)
+    result = {}
+    for suite in sorted(set(reference) | set(comparison)):
+        ref_summary = summarize_scores(reference.get(suite, []))
+        cmp_summary = summarize_scores(comparison.get(suite, []))
+        ref_metric = ref_summary["consumable_metrics"]
+        cmp_metric = cmp_summary["consumable_metrics"]
+        tags = []
+        if not cmp_metric["count"] or not cmp_metric["positive"] or not cmp_metric["negative"]:
+            tags.append("NON_IDENTIFIABLE")
+        else:
+            if cmp_metric.get("auroc") is not None and cmp_metric["auroc"] < 0.65 or cmp_metric.get("auprc_lift") is not None and cmp_metric["auprc_lift"] < 1.05:
+                tags.append("RANKING_FAILURE")
+            if cmp_metric.get("ece_10bin") is not None and cmp_metric["ece_10bin"] > 0.20 or cmp_metric.get("emission_rate") is not None and (cmp_metric["emission_rate"] < 0.05 or cmp_metric["emission_rate"] > 0.90):
+                tags.append("CALIBRATION_FAILURE")
+        prevalence_delta = None
+        if ref_metric.get("prevalence") is not None and cmp_metric.get("prevalence") is not None:
+            prevalence_delta = float(cmp_metric["prevalence"] - ref_metric["prevalence"])
+            if abs(prevalence_delta) >= 0.10:
+                tags.append("LABEL_PREVALENCE_SHIFT")
+        shift = shifts["per_suite"].get(suite, {})
+        if shift.get("status") == "PASS" and (shift.get("mean_abs_smd", 0.0) >= 0.10 or shift.get("max_psi", 0.0) >= 0.20):
+            tags.append("REPRESENTATION_SHIFT")
+        result[suite] = {
+            "tags": sorted(set(tags)),
+            "stage_v": ref_summary,
+            "stage_vi_b2": cmp_summary,
+            "prevalence_delta_stage_vi_minus_stage_v": prevalence_delta,
+            "feature_shift_summary": {
+                key: shift.get(key)
+                for key in ("mean_abs_smd", "max_smd", "mahalanobis_mean_delta", "mean_psi", "max_psi")
+                if key in shift
+            },
+            "emission_diagnosis": {
+                "stage_v_emission_rate": ref_metric.get("emission_rate"),
+                "stage_vi_b2_emission_rate": cmp_metric.get("emission_rate"),
+                "stage_vi_b2_zero_percent": cmp_metric.get("emission_rate") == 0.0,
+                "stage_vi_b2_near_saturation_percent": cmp_metric.get("emission_rate") is not None and cmp_metric["emission_rate"] >= 0.90,
+            },
+        }
     return result
 
 
@@ -566,6 +623,7 @@ def main() -> int:
     parser.add_argument("--stage-vi-snapshot-root", required=True, type=Path)
     parser.add_argument("--b2c-model", required=True, type=Path)
     parser.add_argument("--policy-root", required=True, type=Path)
+    parser.add_argument("--protocol", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
     args = parser.parse_args()
     output = args.output_root.resolve()
@@ -580,11 +638,15 @@ def main() -> int:
         args.stage_vi_snapshot_root,
         args.b2c_model,
         args.policy_root,
+        args.protocol,
     ):
         if not path.exists():
             raise SystemExit(f"MISSING_INPUT:{path}")
 
     seed_all(SEED)
+    protocol = read_json(args.protocol.resolve())
+    if protocol.get("schema") != "STAGE_VII_DOMAIN_SHIFT_FORENSIC_PROTOCOL_V1" or protocol.get("status") != "FROZEN_BEFORE_FORENSIC_RERUN":
+        raise SystemExit("FORENSIC_PROTOCOL_NOT_FROZEN")
     stage_v_streams = load_clean_streams(args.stage_v_clean_root.resolve(), "stage_v")
     stage_vi_streams = load_clean_streams(args.stage_vi_clean_root.resolve(), "stage_vi")
     stage_v_labels = attach_windows(load_labels(args.stage_v_labels.resolve(), "STAGE_V"), stage_v_streams)
@@ -601,6 +663,7 @@ def main() -> int:
     stage_vi_features = {key: value["features"] for key, value in stage_vi_streams.items()}
     stage_v_score = [row for row in score_rows if row["stage"] == "STAGE_V"]
     stage_vi_score = [row for row in score_rows if row["stage"] == "STAGE_VI_B2"]
+    shifts = feature_shift(stage_v_features, stage_vi_features)
     context_rows = [row for row in all_labels if row["dose"] == "T5"]
     score_file_rows = []
     for row in score_rows:
@@ -634,6 +697,7 @@ def main() -> int:
             "stage_vi_snapshot": root_binding(args.stage_vi_snapshot_root.resolve()),
             "b2c_model": root_binding(args.b2c_model.resolve()),
             "policy_root": root_binding(args.policy_root.resolve()),
+            "protocol": root_binding(args.protocol.resolve()),
         },
         "population": {
             "stage_v_parent_count": len(stage_v_streams),
@@ -658,7 +722,8 @@ def main() -> int:
                 "per_parent": grouped_score_summary(stage_vi_score, "canonical_parent_key"),
             },
         },
-        "feature_distribution_shift": feature_shift(stage_v_features, stage_vi_features),
+        "feature_distribution_shift": shifts,
+        "suite_failure_diagnosis": diagnose_suite_shift(stage_v_score, stage_vi_score, shifts),
         "policy_intent_inventory": policy_meta,
         "snapshot_inventory": snapshots,
         "context_probes": context_probes(context_rows, policy),
@@ -675,6 +740,7 @@ def main() -> int:
     write_json(output / "INPUT_BINDINGS.json", summary["input_bindings"])
     write_json(output / "SNAPSHOT_INVENTORY.json", snapshots)
     write_json(output / "FEATURE_DISTRIBUTION_SHIFT.json", summary["feature_distribution_shift"])
+    write_json(output / "SUITE_FAILURE_DIAGNOSIS.json", summary["suite_failure_diagnosis"])
     write_json(output / "CONTEXT_PROBES_DIAGNOSTIC.json", summary["context_probes"])
     with (output / "B2_C_T5_SCORE_ROWS.jsonl").open("w", encoding="utf-8") as handle:
         for row in score_file_rows:
