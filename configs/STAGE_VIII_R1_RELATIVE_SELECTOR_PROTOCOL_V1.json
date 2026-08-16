@@ -1,0 +1,128 @@
+{
+  "schema": "STAGE_VIII_R1_RELATIVE_SELECTOR_PROTOCOL_V1",
+  "status": "FROZEN_BEFORE_R1_TRAINING",
+  "namespace": "STAGE_VIII_RELATIVE_TIMING_SELECTOR",
+  "scientific_question": "Can a frozen causal selector rank V_phys moments relative to less vulnerable moments within an unseen parent trajectory?",
+  "r0_binding": {
+    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VIII_RELATIVE_TIMING_SELECTOR/STAGE_VIII_R0_RELATIVE_TIMING_IDENTIFIABILITY_20260816T154705Z",
+    "sha256sums_sha256": "b9c6d9f597b19166735ca0e975cd3ca1b8d5b94347dbc1ffce747671fcbf9e2e",
+    "status": "STAGE_VIII_RELATIVE_TIMING_IDENTIFIABILITY_ESTABLISHED",
+    "r1_authorized": true,
+    "passing_sources": ["S7-A", "S7-B", "S7-C"]
+  },
+  "population": {
+    "stage_v_clean_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z",
+    "stage_v_clean_consumed_file_count": 40,
+    "stage_v_clean_consumed_manifest_sha256": "995b78b9b247b82877453edcd81cc1678236e6903079ce5653b03e2c3ad45ee5",
+    "stage_v_labels": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_FORMAL_M4_AGGREGATE_F696F582_20260815T175500Z/M4_ALL_LABELS_V1.jsonl",
+    "stage_v_labels_sha256": "cf4ece1b0c864289f6dcf318d91ff59fbb3aecbb65d8482f11ad509e3ff59cea",
+    "stage_vi_clean_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FRESH_M4_R3_CLEAN_RECONSTRUCTION_V3_20260816T063900Z",
+    "stage_vi_clean_consumed_file_count": 16,
+    "stage_vi_clean_consumed_manifest_sha256": "c1e3db0ac82f998f41e8bce965c53badb79279ed9a938afae05f43a83a1a3474",
+    "stage_vi_labels": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FORMAL_M4_AGGREGATE_V3_DUAL_SOURCE_20260816T061432Z/B2_ALL_LABELS.jsonl",
+    "stage_vi_labels_sha256": "3817648b3a3ac4de236a48a1377dc252ac6dd54d5fdf254f0753392b3b7c7106",
+    "primary_dose": "T5",
+    "binary_classes": ["V_PHYS", "NO_PHYSICAL_VULNERABILITY"],
+    "abstains": "masked_not_negative",
+    "join_key": ["stage", "canonical_parent_key", "probe_id", "probe_step", "dose"],
+    "parent_key": "canonical_parent_key",
+    "same_parent_pairs_only": true
+  },
+  "frozen_clean_context": {
+    "split_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_DEVELOPMENT_SPLIT_20260816T075626Z",
+    "split_sha256s_sha256": "6a1190c7bd3b601745c5942e25c2eef91e7856995a2be90d42017d990e18a23c",
+    "split_selection_inputs": ["canonical_parent_key", "suite"],
+    "split_forbidden_inputs": ["Student_score", "Teacher_score", "V_phys", "attack_outcome", "horizon_behavior"],
+    "frozen_embeddings_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_FROZEN_CONTEXT_ENCODER_EMBEDDINGS_20260816T083224Z",
+    "frozen_embeddings_sha256s_sha256": "c78a4c4ad38875ee98e5184e4599510f3ea8c95688b7684861310f8f23900513",
+    "clean_policy_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_CLEAN_POLICY_INTENT_20260816T182000Z",
+    "clean_policy_sha256s_sha256": "718e106db983df7fa0314bc07abe2114185b874e8992dc4178f2c35a2559914e",
+    "context_inputs": ["frozen_clean_language_embedding", "frozen_clean_visual_embedding", "clean_policy_intent_9d"],
+    "forbidden_inputs": ["suite_id", "task_id", "privileged_state", "intervention_outcome", "Eval160", "protected_evaluation"]
+  },
+  "candidates": {
+    "R1-A": {
+      "name": "causal_temporal_pairwise_selector",
+      "input": "16x25D_causal_history",
+      "context": "none",
+      "architecture": "two_block_causal_tcn_25_to_32_to_32_scalar_head",
+      "loss": "pairwise_logistic_same_parent_only"
+    },
+    "R1-B": {
+      "name": "contextual_causal_pairwise_selector",
+      "input": "16x25D_causal_history",
+      "context": "language16_visual16_policy9",
+      "architecture": "two_block_causal_tcn_to_32_plus_context_projection_32_late_concat_scalar_head",
+      "loss": "pairwise_logistic_same_parent_only",
+      "context_projection": "train_parent_only_standardization_and_pca",
+      "context_pca": {"language": 16, "visual": 16, "policy": "standardized_9d"}
+    }
+  },
+  "training": {
+    "train_split": "TRAIN",
+    "evaluation_splits": ["VAL", "DEVTEST"],
+    "loso_unit": "suite",
+    "seed": 20260816,
+    "epochs": 120,
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "channels": [32, 32],
+    "kernel_size": 3,
+    "standardization": "TRAIN_PARENTS_ONLY",
+    "row_random_split": false,
+    "threshold_selection": "NONE_PAIRWISE_RANKING"
+  },
+  "metrics": {
+    "primary_evaluation": "DEVTEST",
+    "within_parent_auc": "tie_aware_positive_negative_pair_fraction",
+    "parent_macro_auc": "unweighted_mean_over_pair_eligible_parents",
+    "top_k": [1, 3, 5],
+    "top_k_lift": "macro_selected_positive_rate_over_same_parent_random_prevalence",
+    "zero_regret": "argmax_score_is_V_PHYS",
+    "bootstrap": {"replicates": 2000, "seed": 20260816, "use": "report_only"},
+    "global_auc": "secondary_only",
+    "per_suite": true,
+    "loso": "within_parent_metrics_on_held_out_suite"
+  },
+  "promotion_gate": {
+    "name": "R1_RELATIVE_SELECTOR_GATE_V1",
+    "parent_macro_auc_min": 0.72,
+    "top_1_lift_min": 1.50,
+    "top_3_lift_min": 1.30,
+    "zero_regret_min": 0.70,
+    "every_suite_auc_min": 0.62,
+    "loso_mean_auc_min": 0.62,
+    "loso_worst_suite_auc_min": 0.55,
+    "primary_split": "DEVTEST"
+  },
+  "candidate_decision": {
+    "context_replacement_macro_gain_min": 0.03,
+    "context_replacement_worst_suite_gain_min": 0.05,
+    "tie_rule": "prefer_simpler_R1-A",
+    "no_pass_status": "STAGE_VIII_R1_NO_GENERALIZABLE_RELATIVE_SELECTOR"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0
+    }
+  },
+  "forbidden": [
+    "Teacher_or_Student_modification",
+    "B2-C_threshold_or_weight_changes",
+    "new_M4",
+    "intervention",
+    "PGD_rollout",
+    "protected_read",
+    "Eval160_read",
+    "outcome_informed_parent_selection",
+    "row_random_split",
+    "abstain_as_negative",
+    "suite_or_task_id_input"
+  ]
+}
