@@ -1,5 +1,8 @@
 # Stage VIII R0 relative timing identifiability handoff
 
+Historical R0 handoff. Superseded for current Stage VIII status by
+`STAGE_VIII_R1_RELATIVE_SELECTOR_NEGATIVE_HANDOFF_20260817.md`.
+
 Status: `STAGE_VIII_RELATIVE_TIMING_IDENTIFIABILITY_ESTABLISHED`
 
 R0 was a read-only audit over consumed Stage V/VI development evidence. It
