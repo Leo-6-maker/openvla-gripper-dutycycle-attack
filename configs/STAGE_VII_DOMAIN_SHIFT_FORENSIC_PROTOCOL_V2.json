@@ -37,7 +37,7 @@
     "P4": "25D_plus_frozen_visual",
     "P5": "25D_plus_frozen_language_plus_clean_policy_intent_plus_frozen_visual",
     "fit": "parent_grouped_oof_and_leave_one_suite_out",
-    "solver_policy": "saga_if_features_gt_training_rows_else_lbfgs",
+    "projection_policy": "gaussian_random_projection_128_if_features_gt_1000_else_identity",
     "final_candidate_authorized": false
   },
   "protected_boundary": {

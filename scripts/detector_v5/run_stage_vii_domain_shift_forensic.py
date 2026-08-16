@@ -22,6 +22,7 @@ import torch
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
+from sklearn.random_projection import GaussianRandomProjection
 from sklearn.preprocessing import StandardScaler
 
 REPO = Path(__file__).resolve().parents[2]
@@ -524,24 +525,21 @@ def diagnose_suite_shift(stage_v_rows: list[dict[str, Any]], stage_vi_rows: list
 
 
 def fit_probe(X: np.ndarray, y: np.ndarray, groups: np.ndarray, suites: np.ndarray) -> dict[str, Any]:
+    projection_applied = X.shape[1] > 1000
+    probe_X = (
+        GaussianRandomProjection(n_components=128, random_state=SEED).fit_transform(X)
+        if projection_applied else X
+    )
+
     def fit_predict(train: np.ndarray, test: np.ndarray) -> np.ndarray | None:
         if len(np.unique(y[train])) < 2:
             return None
-        high_dimensional = X.shape[1] > len(train)
-        classifier = LogisticRegression(
-            class_weight="balanced",
-            max_iter=200 if high_dimensional else 1000,
-            n_jobs=-1 if high_dimensional else None,
-            random_state=SEED,
-            solver="saga" if high_dimensional else "lbfgs",
-            tol=1e-2 if high_dimensional else 1e-4,
-        )
         estimator = make_pipeline(
             StandardScaler(),
-            classifier,
+            LogisticRegression(class_weight="balanced", max_iter=1000, random_state=SEED),
         )
-        estimator.fit(X[train], y[train])
-        return estimator.predict_proba(X[test])[:, 1]
+        estimator.fit(probe_X[train], y[train])
+        return estimator.predict_proba(probe_X[test])[:, 1]
 
     oof_scores = np.full(len(y), np.nan, dtype=np.float64)
     for group in sorted(set(groups.tolist())):
@@ -564,7 +562,7 @@ def fit_probe(X: np.ndarray, y: np.ndarray, groups: np.ndarray, suites: np.ndarr
         "status": "PASS_DIAGNOSTIC_PROBE",
         "rows": int(len(y)),
         "parent_group_count": int(len(set(groups.tolist()))),
-        "solver_policy": "saga_if_features_gt_training_rows_else_lbfgs",
+        "projection_policy": "gaussian_random_projection_128_if_features_gt_1000_else_identity",
         "parent_grouped_oof": oof,
         "leave_one_suite_out": loso,
         "loso_identifiable_suite_mean_auroc": float(np.mean(identified)) if identified else None,
