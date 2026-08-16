@@ -178,6 +178,19 @@ def score_snapshot(package: dict[str, Any], model: Any, device: Any, adapter: An
     scores = list(getattr(generation, "scores", []) or [])
     if captured.get("count") != 1 or len(scores) != 7 or action_error > 1e-6:
         raise ValueError(f"GENERATION_PARITY_FAIL:{package['path']}:{captured.get('count')}:{len(scores)}:{action_error}")
+    reference_window = payload.get("clean_reference_action_window") or []
+    if not reference_window or int(reference_window[0].get("step", -1)) != int(package["manifest"]["binding"]["step"]):
+        raise ValueError(f"REFERENCE_ACTION_WINDOW_INVALID:{package['path']}")
+    expected_raw = np.asarray(reference_window[0].get("raw_policy_action", []), dtype=np.float32)
+    expected_env = np.asarray(reference_window[0].get("env_action", []), dtype=np.float32)
+    from gripper_attack.official_libero_protocol import postprocess_official_action
+
+    reference_error = max(
+        float(np.max(np.abs(score_action - expected_raw))) if expected_raw.shape == score_action.shape else float("inf"),
+        float(np.max(np.abs(postprocess_official_action(score_action) - expected_env))) if expected_env.shape == score_action.shape else float("inf"),
+    )
+    if reference_error > 1e-6:
+        raise ValueError(f"REFERENCE_ACTION_PARITY_FAIL:{package['path']}:{reference_error}")
     intent, top_ids, top_logits = adapter.detector_policy_features(generation)
     score_summary = []
     for score in scores:
@@ -206,6 +219,7 @@ def score_snapshot(package: dict[str, Any], model: Any, device: Any, adapter: An
         "score_head_summary": score_summary,
         "score_adapter_parity_pass": True,
         "single_generation_parity_pass": True,
+        "reference_action_parity_pass": True,
         "generation_passes_per_step": 1,
         "labels_or_outcomes_read": False,
         "privileged_state_consumed": False,
@@ -297,6 +311,7 @@ def main() -> int:
         "all_generation_passes_one": all(row["generation_passes_per_step"] == 1 for row in rows),
         "all_single_generation_parity": all(row["single_generation_parity_pass"] is True for row in rows),
         "all_score_adapter_parity": all(row["score_adapter_parity_pass"] is True for row in rows),
+        "all_reference_action_parity": all(row["reference_action_parity_pass"] is True for row in rows),
         "labels_or_outcomes_read": False,
         "privileged_state_consumed": False,
         "formal_m4_executed": False,
