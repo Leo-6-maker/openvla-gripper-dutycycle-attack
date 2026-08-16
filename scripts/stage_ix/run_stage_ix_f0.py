@@ -468,7 +468,7 @@ def metric_bundle(items: list[dict[str, Any]], score_key: str, outcome_key: str)
         "row_count": len([item for item in items if item.get(score_key) is not None and item.get(outcome_key) is not None]),
         "auroc": pair_auc(items, score_key, outcome_key),
         "auprc": average_precision(items, score_key, outcome_key),
-        "parent_macro_auc": None if not parent else float(np.mean(list(parent.values))),
+        "parent_macro_auc": None if not parent else float(np.mean(list(parent.values()))),
         "pair_eligible_parent_count": len(parent),
         "top": top_metrics(items, score_key, outcome_key),
         "per_suite": suite,
