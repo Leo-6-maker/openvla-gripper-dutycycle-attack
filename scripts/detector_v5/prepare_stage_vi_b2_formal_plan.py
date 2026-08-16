@@ -89,7 +89,9 @@ def select_parents(config: dict[str, Any]) -> list[dict[str, Any]]:
     post, old, prior = load_json(post_path), load_json(old_path), load_json(prior_path)
     if sha(post_path) != inputs["post_hold_manifest_sha256"] or sha(old_path) != inputs["stable_reserve_manifest_sha256"] or sha(prior_path) != inputs["prior_formal_split_sha256"]:
         raise ValueError("B2_PARENT_SOURCE_SHA_MISMATCH")
-    if post.get("status") != "FROZEN" or post.get("outcomes_read") is not False or old.get("status") != "FROZEN" or old.get("outcomes_read") is not False:
+    reserve_rows = old.get("parents", []) if isinstance(old.get("parents"), list) else []
+    reserve_clean = all(isinstance(row, Mapping) and row.get("source_artifact_read") is False and row.get("old_artifacts_reused") is False for row in reserve_rows)
+    if post.get("status") != "FROZEN" or post.get("outcomes_read") is not False or old.get("status") != "FROZEN" or old.get("outcomes_read", False) is not False or not reserve_clean:
         raise ValueError("B2_PARENT_SOURCE_NOT_CLEAN_ONLY")
     prior_keys = {str(row["canonical_parent_key"]) for row in prior["parents"]}
     post_rows = {str(row["canonical_parent_key"]): dict(row) for row in post["parents"]}
