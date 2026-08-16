@@ -84,13 +84,11 @@ def main() -> int:
     }
     declared_valid_keys = {k for k, v in declared_seals.items() if is_64char_hex(v)}
     if declared_valid_keys:
-        if declared_valid_keys != REQUIRED_SEAL_KEYS:
-            missing = REQUIRED_SEAL_KEYS - declared_valid_keys
-            extra = declared_valid_keys - REQUIRED_SEAL_KEYS
-            parts: list[str] = []
-            if missing: parts.append(f"missing={sorted(missing)}")
-            if extra: parts.append(f"extra={sorted(extra)}")
-            raise SystemExit("SEAL_DECLARATION_INCOMPLETE: " + "; ".join(parts))
+        missing = REQUIRED_SEAL_KEYS - declared_valid_keys
+        if missing:
+            raise SystemExit(
+                "SEAL_DECLARATION_INCOMPLETE: "
+                f"missing={sorted(missing)}")
         for key in REQUIRED_SEAL_KEYS:
             if declared_seals[key] != actual_seals[key]:
                 binding_errors.append(
