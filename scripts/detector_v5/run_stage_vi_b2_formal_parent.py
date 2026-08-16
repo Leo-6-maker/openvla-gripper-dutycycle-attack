@@ -88,7 +88,7 @@ def validate_authority(args: argparse.Namespace) -> tuple[dict[str, Any], dict[s
     if not isinstance(snapshot_source, Mapping) or not snapshot_source.get("commit") or not snapshot_source.get("tree"):
         raise ValueError("B2_SNAPSHOT_PRODUCER_SOURCE_BINDING")
     snapshot_gate_runner_sha = inputs.get("snapshot_producer_gate_a_runner_sha256")
-    if snapshot_gate_runner_sha and plan_manifest.get("downstream_source", {}).get("gate_a_runner_sha256") != snapshot_gate_runner_sha:
+    if snapshot_gate_runner_sha and manifest.get("downstream_source", {}).get("gate_a_runner_sha256") != snapshot_gate_runner_sha:
         raise ValueError("B2_SNAPSHOT_PRODUCER_GATE_A_RUNNER")
     return protocol, authority, plan_root, sha(plan_manifest), {"commit": str(snapshot_source["commit"]), "tree": str(snapshot_source["tree"])}
 
