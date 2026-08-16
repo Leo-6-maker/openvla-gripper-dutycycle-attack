@@ -1,0 +1,38 @@
+{
+  "schema": "STAGE_VII_DEVELOPMENT_SPLIT_PROTOCOL_V1",
+  "stage": "STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR",
+  "status": "FROZEN_BEFORE_CANDIDATE_TRAINING",
+  "population": "STAGE_V_AND_STAGE_VI_B2_DEVELOPMENT_EVIDENCE_ONLY",
+  "parent_grouped": true,
+  "suite_stratified": true,
+  "identity_order": "SHA256(seed || canonical_parent_key)",
+  "seed": "STAGE_VII_SPLIT_V1_20260816",
+  "fractions": {
+    "TRAIN": 0.6,
+    "VAL": 0.2,
+    "DEVTEST": 0.2
+  },
+  "loso": {
+    "enabled": true,
+    "unit": "suite",
+    "suites": ["libero_10", "libero_goal", "libero_object", "libero_spatial"]
+  },
+  "selection_inputs": [
+    "canonical_parent_key",
+    "suite"
+  ],
+  "selection_forbidden_inputs": [
+    "Student_score",
+    "Teacher_score",
+    "V_phys",
+    "attack_outcome",
+    "horizon_behavior",
+    "label_class",
+    "protected_identity"
+  ],
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters_must_remain_zero": true
+  }
+}
