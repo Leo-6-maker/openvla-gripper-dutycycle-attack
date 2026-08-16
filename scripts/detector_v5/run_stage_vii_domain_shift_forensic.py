@@ -527,9 +527,18 @@ def fit_probe(X: np.ndarray, y: np.ndarray, groups: np.ndarray, suites: np.ndarr
     def fit_predict(train: np.ndarray, test: np.ndarray) -> np.ndarray | None:
         if len(np.unique(y[train])) < 2:
             return None
+        high_dimensional = X.shape[1] > len(train)
+        classifier = LogisticRegression(
+            class_weight="balanced",
+            max_iter=500 if high_dimensional else 1000,
+            random_state=SEED,
+            solver="liblinear" if high_dimensional else "lbfgs",
+            dual=high_dimensional,
+            tol=1e-3 if high_dimensional else 1e-4,
+        )
         estimator = make_pipeline(
             StandardScaler(),
-            LogisticRegression(class_weight="balanced", max_iter=1000, random_state=SEED),
+            classifier,
         )
         estimator.fit(X[train], y[train])
         return estimator.predict_proba(X[test])[:, 1]
@@ -555,6 +564,7 @@ def fit_probe(X: np.ndarray, y: np.ndarray, groups: np.ndarray, suites: np.ndarr
         "status": "PASS_DIAGNOSTIC_PROBE",
         "rows": int(len(y)),
         "parent_group_count": int(len(set(groups.tolist()))),
+        "solver_policy": "liblinear_dual_if_features_gt_training_rows_else_lbfgs",
         "parent_grouped_oof": oof,
         "leave_one_suite_out": loso,
         "loso_identifiable_suite_mean_auroc": float(np.mean(identified)) if identified else None,
