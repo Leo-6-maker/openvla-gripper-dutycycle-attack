@@ -25,6 +25,32 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def write_seal(root: Path, summary: dict[str, Any]) -> None:
+    excluded = {"SHA256SUMS", "SHA256SUMS.sha256", "ROOT_SEAL.json", "ROOT_SEAL.sha256"}
+    entries = [
+        f"{sha256_file(path)}  {path.relative_to(root).as_posix()}"
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and path.name not in excluded
+    ]
+    sums = "\n".join(entries) + "\n"
+    (root / "SHA256SUMS").write_text(sums, encoding="utf-8")
+    sums_sha = sha256_file(root / "SHA256SUMS")
+    (root / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
+    seal = {
+        "schema": "STAGE_VII_FROZEN_CONTEXT_EMBEDDINGS_ROOT_SEAL_V1",
+        "status": "PASS_STAGE_VII_FROZEN_CONTEXT_EMBEDDINGS",
+        "summary_sha256": hashlib.sha256(json.dumps(summary, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+        "sha256sums_sha256": sums_sha,
+        "snapshot_count": summary["snapshot_count"],
+        "formal_m4_executed": False,
+        "protected_counters": summary["protected_counters"],
+        "eval160": "UNREAD",
+        "protected_evaluation": "UNREAD",
+    }
+    (root / "ROOT_SEAL.json").write_text(json.dumps(seal, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (root / "ROOT_SEAL.sha256").write_text(f"{sha256_file(root / 'ROOT_SEAL.json')}  ROOT_SEAL.json\n", encoding="utf-8")
+
+
 def load_json(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
@@ -174,6 +200,7 @@ def main() -> int:
         "protected_evaluation": "UNREAD",
     }
     (args.output_root / "SUMMARY.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_seal(args.output_root, summary)
     print(json.dumps({"status": summary["status"], "output_root": str(args.output_root), "snapshot_count": len(metadata), "visual_shape": visual.shape, "language_shape": language.shape}, sort_keys=True))
     return 0
 
