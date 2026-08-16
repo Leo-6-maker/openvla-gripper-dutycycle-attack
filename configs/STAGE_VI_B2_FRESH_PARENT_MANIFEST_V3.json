@@ -1,0 +1,86 @@
+{
+  "schema": "STAGE_VI_B2_FRESH_PARENT_MANIFEST_V3",
+  "status": "FROZEN_OUTCOME_BLIND_FRESH_SPATIAL_RESERVE",
+  "selection_status": "PASS_TWO_CLEAN_ONLY_GATE_A_IDENTITIES",
+  "selection_rule": "Retain the 14 valid V1 identities and replace only the two pre-intervention PROBE_PLAN_INSUFFICIENT_CORRIDOR identities with the first two unused identities in the frozen non-protected spatial order that pass complete clean-only Gate-A. No Student score, Teacher score, V_phys, attack result, horizon behavior, or intervention outcome is consulted.",
+  "replacement_of": [
+    "libero_spatial/task_00/state_45",
+    "libero_spatial/task_05/state_37"
+  ],
+  "rejected_candidate": {
+    "path": "configs/STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V2_REPLACEMENT.json",
+    "status": "REJECTED_OVERLAP_PRIOR_FORMAL_OR_INTERVENTION_REGISTRY",
+    "identities_remain_excluded": true
+  },
+  "target": {
+    "parent_count": 16,
+    "probes_per_parent": 24,
+    "arms_per_probe": 4,
+    "branch_count": 1536,
+    "primary_dose": "T5",
+    "secondary_doses": ["T3", "T10"],
+    "h_phys": 10,
+    "censor_aware": true
+  },
+  "population_freeze": {
+    "protocol": "configs/STAGE_VI_B2_FRESH_SPATIAL_POPULATION_PROTOCOL_V1.json",
+    "manifest_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FRESH_SPATIAL_POPULATION_FREEZE_V3_20260816T033000Z/FRESH_SPATIAL_POPULATION_MANIFEST.json",
+    "manifest_sha256": "70415ce04c491359068174874f674471eef62923ce06b239f79ee7e301d7d8be",
+    "seal_sha256": "3a4c8428cf95702a9f8b4e1e000b5619b3e9e9f0bac758d0ab0f17a1f9e69cc6",
+    "source_binding": {
+      "commit": "63362e87c7ea05d2bfe2744866cd59bf98b6cc02",
+      "tree": "b823b8b8ab93d2ffc004135fcba232b8ab9fd92f"
+    },
+    "fresh_spatial_candidate_count": 70,
+    "clean_rollouts_started_after_freeze": true,
+    "selection_outcomes_read": false
+  },
+  "firewall": {
+    "outcome_blind": true,
+    "student_fit_cal_check_overlap_required": 0,
+    "stage_v_formal_overlap": 0,
+    "stage_v_physical_matrix_overlap": 0,
+    "prior_physical_intervention_overlap": 0,
+    "eval160_status": "UNREAD",
+    "protected_status": "UNREAD",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0
+    }
+  },
+  "detector_binding": {
+    "candidate": "B2-C_SOFT_TV_DISTILL_DIRECT_VPHYS",
+    "checkpoint_unchanged": true,
+    "weights_changed": false,
+    "input": "16x25D_causal_window",
+    "threshold": 0.69,
+    "threshold_changed": false,
+    "development_retraining": false
+  },
+  "parents": [
+    {"ordinal": 1, "canonical_parent_key": "libero_10/task_09/state_42", "suite": "libero_10", "source": "retained_v1", "source_rank": 1},
+    {"ordinal": 2, "canonical_parent_key": "libero_10/task_07/state_37", "suite": "libero_10", "source": "retained_v1", "source_rank": 3},
+    {"ordinal": 3, "canonical_parent_key": "libero_10/task_01/state_37", "suite": "libero_10", "source": "retained_v1", "source_rank": 4},
+    {"ordinal": 4, "canonical_parent_key": "libero_10/task_08/state_22", "suite": "libero_10", "source": "retained_v1", "source_rank": 5},
+    {"ordinal": 5, "canonical_parent_key": "libero_10/task_06/state_31", "suite": "libero_10", "source": "retained_v1", "source_rank": 6},
+    {"ordinal": 6, "canonical_parent_key": "libero_10/task_07/state_40", "suite": "libero_10", "source": "retained_v1", "source_rank": 7},
+    {"ordinal": 7, "canonical_parent_key": "libero_10/task_04/state_22", "suite": "libero_10", "source": "retained_v1", "source_rank": 8},
+    {"ordinal": 8, "canonical_parent_key": "libero_goal/task_02/state_45", "suite": "libero_goal", "source": "retained_v1", "source_rank": 3},
+    {"ordinal": 9, "canonical_parent_key": "libero_goal/task_05/state_33", "suite": "libero_goal", "source": "retained_v1", "source_rank": 5},
+    {"ordinal": 10, "canonical_parent_key": "libero_goal/task_04/state_23", "suite": "libero_goal", "source": "retained_v1", "source_rank": 6},
+    {"ordinal": 11, "canonical_parent_key": "libero_spatial/task_08/state_44", "suite": "libero_spatial", "source": "retained_v1", "source_rank": 1},
+    {"ordinal": 12, "canonical_parent_key": "libero_spatial/task_00/state_36", "suite": "libero_spatial", "source": "fresh_spatial_v3", "fresh_spatial_order": 2, "replacement_for": "libero_spatial/task_00/state_45"},
+    {"ordinal": 13, "canonical_parent_key": "libero_spatial/task_08/state_41", "suite": "libero_spatial", "source": "retained_v1", "source_rank": 7},
+    {"ordinal": 14, "canonical_parent_key": "libero_spatial/task_02/state_39", "suite": "libero_spatial", "source": "fresh_spatial_v3", "fresh_spatial_order": 3, "replacement_for": "libero_spatial/task_05/state_37"},
+    {"ordinal": 15, "canonical_parent_key": "libero_object/task_03/state_28", "suite": "libero_object", "source": "retained_v1", "source_rank": null},
+    {"ordinal": 16, "canonical_parent_key": "libero_object/task_06/state_27", "suite": "libero_object", "source": "retained_v1", "source_rank": null}
+  ],
+  "suite_counts": {
+    "libero_10": 7,
+    "libero_goal": 3,
+    "libero_object": 2,
+    "libero_spatial": 4
+  }
+}
