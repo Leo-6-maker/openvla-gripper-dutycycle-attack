@@ -141,7 +141,7 @@ def run(args: argparse.Namespace) -> int:
     parent = exact["parent"]
     output = args.output_dir.resolve()
     if output.exists():
-        unexpected = [path.name for path in output.iterdir() if path.name not in {"CLAIM.json", "RESOURCE_PRE.json", "JOB.json"}]
+        unexpected = [path.name for path in output.iterdir() if path.name not in {"CLAIM.json", "RESOURCE_PRE.json", "JOB.json", "SCIENCE_RUNNER.log"}]
         if unexpected:
             raise ValueError(f"B2_OUTPUT_NOT_NEW:{sorted(unexpected)}")
     else:
