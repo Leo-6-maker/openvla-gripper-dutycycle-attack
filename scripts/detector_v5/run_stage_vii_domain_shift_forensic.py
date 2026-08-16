@@ -293,6 +293,39 @@ def snapshot_inventory(root: Path) -> dict[str, Any]:
     }
 
 
+def load_frozen_embeddings(root: Path) -> tuple[dict[tuple[str, str, int], tuple[np.ndarray, np.ndarray]], dict[str, Any]]:
+    summary = read_json(root / "SUMMARY.json")
+    if summary.get("schema") != "STAGE_VII_FROZEN_CONTEXT_EMBEDDINGS_V1" or summary.get("status") != "PASS_STAGE_VII_FROZEN_CONTEXT_EMBEDDINGS":
+        raise ValueError("FROZEN_EMBEDDINGS_ROOT_INVALID")
+    if summary.get("labels_or_outcomes_read") is not False or summary.get("suite_or_task_id_input") is not False:
+        raise ValueError("FROZEN_EMBEDDINGS_INPUT_CONTRACT_VIOLATION")
+    safe_counters(summary.get("protected_counters"))
+    archive = np.load(root / "FROZEN_CONTEXT_EMBEDDINGS.npz", allow_pickle=False)
+    visual = np.asarray(archive["visual"], dtype=np.float32)
+    language = np.asarray(archive["language"], dtype=np.float32)
+    rows = read_jsonl(root / "ROWS.jsonl")
+    if len(rows) != int(summary.get("snapshot_count", -1)) or visual.shape[0] != len(rows) or language.shape[0] != len(rows):
+        raise ValueError("FROZEN_EMBEDDINGS_ROW_COUNT_MISMATCH")
+    if visual.ndim != 2 or language.ndim != 2 or not np.isfinite(visual).all() or not np.isfinite(language).all():
+        raise ValueError("FROZEN_EMBEDDINGS_VALUES_INVALID")
+    result: dict[tuple[str, str, int], tuple[np.ndarray, np.ndarray]] = {}
+    for index, row in enumerate(rows):
+        key = (str(row["stage"]), str(row["canonical_parent_key"]), int(row["probe_step"]))
+        if key in result:
+            raise ValueError(f"FROZEN_EMBEDDINGS_DUPLICATE:{key}")
+        result[key] = (visual[index], language[index])
+    return result, {
+        "root": str(root),
+        "snapshot_count": len(rows),
+        "visual_shape": list(visual.shape),
+        "language_shape": list(language.shape),
+        "summary_sha256": sha256_file(root / "SUMMARY.json"),
+        "root_seal_sha256": sha256_file(root / "ROOT_SEAL.json"),
+        "source_commit": summary.get("source_commit"),
+        "source_tree": summary.get("source_tree"),
+    }
+
+
 def score_stats(scores: np.ndarray) -> dict[str, float] | None:
     if not len(scores):
         return None
@@ -527,7 +560,11 @@ def fit_probe(X: np.ndarray, y: np.ndarray, groups: np.ndarray, suites: np.ndarr
     }
 
 
-def context_probes(rows: list[dict[str, Any]], policy: dict[tuple[str, int], np.ndarray]) -> dict[str, Any]:
+def context_probes(
+    rows: list[dict[str, Any]],
+    policy: dict[tuple[str, int], np.ndarray],
+    embeddings: dict[tuple[str, str, int], tuple[np.ndarray, np.ndarray]] | None = None,
+) -> dict[str, Any]:
     usable = [row for row in rows if row["consumable"] and row["dose"] == "T5"]
     if not usable:
         raise ValueError("NO_CONSUMABLE_T5_FOR_CONTEXT_PROBES")
@@ -546,6 +583,38 @@ def context_probes(rows: list[dict[str, Any]], policy: dict[tuple[str, int], np.
         "P4_25D_plus_frozen_visual": {"status": "UNAVAILABLE_NO_FROZEN_VISUAL_EMBEDDING"},
         "P5_P3_plus_frozen_visual": {"status": "UNAVAILABLE_P3_OR_P4"},
     }
+    embedding_rows = [
+        row for row in usable
+        if embeddings is not None and (row["stage"], row["canonical_parent_key"], row["probe_step"]) in embeddings
+    ]
+    if embeddings is not None and len(embedding_rows) != len(usable):
+        raise ValueError(f"FROZEN_EMBEDDING_JOIN_INCOMPLETE:{len(embedding_rows)}/{len(usable)}")
+    if embeddings is not None:
+        embedding_groups = np.asarray([f"{row['stage']}::{row['canonical_parent_key']}" for row in embedding_rows])
+        embedding_suites = np.asarray([row["suite"] for row in embedding_rows])
+        embedding_y = np.asarray([row["y"] for row in embedding_rows], dtype=np.int64)
+        embedding_p0 = np.asarray([row["window"].reshape(-1) for row in embedding_rows], dtype=np.float32)
+        visual = np.asarray([
+            embeddings[(row["stage"], row["canonical_parent_key"], row["probe_step"])][0]
+            for row in embedding_rows
+        ], dtype=np.float32)
+        language = np.asarray([
+            embeddings[(row["stage"], row["canonical_parent_key"], row["probe_step"])][1]
+            for row in embedding_rows
+        ], dtype=np.float32)
+        coverage = float(len(embedding_rows) / len(usable))
+        result["P1_25D_plus_language"] = {
+            "status": "PASS_DIAGNOSTIC_PROBE",
+            "embedding_join_rows": len(embedding_rows),
+            "embedding_join_coverage": coverage,
+            "probe": fit_probe(np.concatenate([embedding_p0, language], axis=1), embedding_y, embedding_groups, embedding_suites),
+        }
+        result["P4_25D_plus_frozen_visual"] = {
+            "status": "PASS_DIAGNOSTIC_PROBE",
+            "embedding_join_rows": len(embedding_rows),
+            "embedding_join_coverage": coverage,
+            "probe": fit_probe(np.concatenate([embedding_p0, visual], axis=1), embedding_y, embedding_groups, embedding_suites),
+        }
     policy_rows = [row for row in usable if (row["canonical_parent_key"], row["probe_step"]) in policy]
     if not policy_rows:
         result["P2_25D_plus_policy_intent"] = {"status": "UNAVAILABLE_NO_POLICY_JOIN"}
@@ -563,6 +632,43 @@ def context_probes(rows: list[dict[str, Any]], policy: dict[tuple[str, int], np.
             "policy_join_coverage": float(len(policy_rows) / len(usable)),
             "probe": fit_probe(policy_x, policy_y, policy_groups, policy_suites),
         }
+        if embeddings is not None:
+            multimodal_rows = [
+                row for row in policy_rows
+                if (row["stage"], row["canonical_parent_key"], row["probe_step"]) in embeddings
+            ]
+            if len(multimodal_rows) != len(policy_rows):
+                raise ValueError(f"FROZEN_EMBEDDING_POLICY_JOIN_INCOMPLETE:{len(multimodal_rows)}/{len(policy_rows)}")
+            multi_groups = np.asarray([f"{row['stage']}::{row['canonical_parent_key']}" for row in multimodal_rows])
+            multi_suites = np.asarray([row["suite"] for row in multimodal_rows])
+            multi_y = np.asarray([row["y"] for row in multimodal_rows], dtype=np.int64)
+            multi_p0 = np.asarray([row["window"].reshape(-1) for row in multimodal_rows], dtype=np.float32)
+            multi_visual = np.asarray([
+                embeddings[(row["stage"], row["canonical_parent_key"], row["probe_step"])][0]
+                for row in multimodal_rows
+            ], dtype=np.float32)
+            multi_language = np.asarray([
+                embeddings[(row["stage"], row["canonical_parent_key"], row["probe_step"])][1]
+                for row in multimodal_rows
+            ], dtype=np.float32)
+            multi_policy = np.asarray([
+                policy[(row["canonical_parent_key"], row["probe_step"])] for row in multimodal_rows
+            ], dtype=np.float32)
+            multi_coverage = float(len(multimodal_rows) / len(usable))
+            result["P3_P1_plus_policy_intent"] = {
+                "status": "PASS_DIAGNOSTIC_PROBE",
+                "embedding_join_rows": len(multimodal_rows),
+                "embedding_join_coverage": multi_coverage,
+                "policy_join_coverage": multi_coverage,
+                "probe": fit_probe(np.concatenate([multi_p0, multi_language, multi_policy], axis=1), multi_y, multi_groups, multi_suites),
+            }
+            result["P5_P3_plus_frozen_visual"] = {
+                "status": "PASS_DIAGNOSTIC_PROBE",
+                "embedding_join_rows": len(multimodal_rows),
+                "embedding_join_coverage": multi_coverage,
+                "policy_join_coverage": multi_coverage,
+                "probe": fit_probe(np.concatenate([multi_p0, multi_language, multi_policy, multi_visual], axis=1), multi_y, multi_groups, multi_suites),
+            }
     oracle_suites = sorted(set(suites.tolist()))
     oracle_tasks = sorted({identity_parts(row["canonical_parent_key"])[1] for row in usable})
     oracle_x = []
@@ -624,6 +730,7 @@ def main() -> int:
     parser.add_argument("--b2c-model", required=True, type=Path)
     parser.add_argument("--policy-root", required=True, type=Path)
     parser.add_argument("--protocol", required=True, type=Path)
+    parser.add_argument("--frozen-embeddings", type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
     args = parser.parse_args()
     output = args.output_root.resolve()
@@ -645,8 +752,10 @@ def main() -> int:
 
     seed_all(SEED)
     protocol = read_json(args.protocol.resolve())
-    if protocol.get("schema") != "STAGE_VII_DOMAIN_SHIFT_FORENSIC_PROTOCOL_V1" or protocol.get("status") != "FROZEN_BEFORE_FORENSIC_RERUN":
+    if protocol.get("schema") not in {"STAGE_VII_DOMAIN_SHIFT_FORENSIC_PROTOCOL_V1", "STAGE_VII_DOMAIN_SHIFT_FORENSIC_PROTOCOL_V2"} or protocol.get("status") != "FROZEN_BEFORE_FORENSIC_RERUN":
         raise SystemExit("FORENSIC_PROTOCOL_NOT_FROZEN")
+    if protocol.get("schema") == "STAGE_VII_DOMAIN_SHIFT_FORENSIC_PROTOCOL_V2" and args.frozen_embeddings is None:
+        raise SystemExit("FORENSIC_V2_EMBEDDINGS_REQUIRED")
     stage_v_streams = load_clean_streams(args.stage_v_clean_root.resolve(), "stage_v")
     stage_vi_streams = load_clean_streams(args.stage_vi_clean_root.resolve(), "stage_vi")
     stage_v_labels = attach_windows(load_labels(args.stage_v_labels.resolve(), "STAGE_V"), stage_v_streams)
@@ -654,6 +763,9 @@ def main() -> int:
     all_labels = stage_v_labels + stage_vi_labels
     score_rows = score_b2c(all_labels, args.b2c_model.resolve())
     policy, policy_meta = load_policy_intent(args.policy_root.resolve())
+    embeddings, embedding_meta = (None, None)
+    if args.frozen_embeddings is not None:
+        embeddings, embedding_meta = load_frozen_embeddings(args.frozen_embeddings.resolve())
     snapshots = {
         "stage_v": snapshot_inventory(args.stage_v_snapshot_root.resolve()),
         "stage_vi_b2": snapshot_inventory(args.stage_vi_snapshot_root.resolve()),
@@ -673,7 +785,7 @@ def main() -> int:
         })
 
     summary = {
-        "schema": "STAGE_VII_DOMAIN_SHIFT_FORENSIC_V1",
+        "schema": "STAGE_VII_DOMAIN_SHIFT_FORENSIC_V2" if embeddings is not None else "STAGE_VII_DOMAIN_SHIFT_FORENSIC_V1",
         "status": "PASS_STAGE_VII_DOMAIN_SHIFT_FORENSIC",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "stage": "STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR",
@@ -698,6 +810,7 @@ def main() -> int:
             "b2c_model": root_binding(args.b2c_model.resolve()),
             "policy_root": root_binding(args.policy_root.resolve()),
             "protocol": root_binding(args.protocol.resolve()),
+            "frozen_embeddings": None if args.frozen_embeddings is None else root_binding(args.frozen_embeddings.resolve()),
         },
         "population": {
             "stage_v_parent_count": len(stage_v_streams),
@@ -726,10 +839,12 @@ def main() -> int:
         "suite_failure_diagnosis": diagnose_suite_shift(stage_v_score, stage_vi_score, shifts),
         "policy_intent_inventory": policy_meta,
         "snapshot_inventory": snapshots,
-        "context_probes": context_probes(context_rows, policy),
+        "context_probes": context_probes(context_rows, policy, embeddings),
+        "frozen_embedding_inventory": embedding_meta,
         "interpretation_boundary": [
             "Stage V and Stage VI are development evidence for Stage VII, not Stage VII held-out evidence.",
-            "Raw clean RGB and input_ids are not treated as frozen embeddings.",
+            "Raw clean RGB and input_ids are not treated as frozen embeddings; any embedding is produced only by the bound frozen clean encoder.",
+            "All P1/P3/P4/P5 context probes remain diagnostic-only and cannot authorize candidate training.",
             "Diagnostic probe metrics do not authorize candidate training, M4, timing, or protected evaluation.",
             "Abstains are masked and never converted to negatives.",
         ],

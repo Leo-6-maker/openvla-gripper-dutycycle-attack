@@ -1,0 +1,47 @@
+{
+  "schema": "STAGE_VII_DOMAIN_SHIFT_FORENSIC_PROTOCOL_V2",
+  "stage": "STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR",
+  "status": "FROZEN_BEFORE_FORENSIC_RERUN",
+  "reference_population": "STAGE_V_DEVELOPMENT_EVIDENCE",
+  "comparison_population": "STAGE_VI_B2_DEVELOPMENT_EVIDENCE",
+  "context_embedding_binding": {
+    "protocol_schema": "STAGE_VII_FROZEN_CONTEXT_ENCODER_PROTOCOL_V1",
+    "required_fields": ["visual", "language"],
+    "diagnostic_only": true,
+    "labels_and_outcomes_not_used_for_materialization": true
+  },
+  "diagnostic_tags": {
+    "RANKING_FAILURE": {
+      "auroc_below": 0.65,
+      "auprc_lift_below": 1.05
+    },
+    "CALIBRATION_FAILURE": {
+      "ece_above": 0.2,
+      "emission_below": 0.05,
+      "emission_above": 0.9
+    },
+    "LABEL_PREVALENCE_SHIFT": {
+      "absolute_prevalence_delta_at_least": 0.1
+    },
+    "REPRESENTATION_SHIFT": {
+      "mean_abs_smd_at_least": 0.1,
+      "max_psi_at_least": 0.2
+    },
+    "NON_IDENTIFIABLE": {
+      "consumable_positive_or_negative_count": 0
+    }
+  },
+  "context_probes": {
+    "P1": "25D_plus_frozen_language",
+    "P3": "25D_plus_frozen_language_plus_clean_policy_intent",
+    "P4": "25D_plus_frozen_visual",
+    "P5": "25D_plus_frozen_language_plus_clean_policy_intent_plus_frozen_visual",
+    "fit": "parent_grouped_oof_and_leave_one_suite_out",
+    "final_candidate_authorized": false
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters_must_remain_zero": true
+  }
+}
