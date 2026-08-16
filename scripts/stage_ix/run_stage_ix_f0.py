@@ -146,7 +146,7 @@ def verify_inputs(protocol: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[
                 "probe_id": probe,
                 "probe_step": step,
                 "suite": parent.split("/", 1)[0],
-                "snapshot_path": str(path),
+                "snapshot_path": str(path.parent),
                 "parent_root": str(path.parents[2]),
                 "snapshot_manifest_sha256": sha256_file(path),
                 "label": label_map.get(key),
