@@ -1,0 +1,138 @@
+{
+  "schema": "STAGE_VIII_R0_RELATIVE_TIMING_IDENTIFIABILITY_PROTOCOL_V1",
+  "status": "FROZEN_BEFORE_R0_EXECUTION",
+  "namespace": "STAGE_VIII_RELATIVE_TIMING_SELECTOR",
+  "scientific_question": "Can immutable runtime-observable scores rank V_phys moments relative to less vulnerable moments within the same parent trajectory despite unstable global calibration?",
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0
+    }
+  },
+  "primary_population": {
+    "label_files": {
+      "STAGE_V": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_FORMAL_M4_AGGREGATE_F696F582_20260815T175500Z/M4_ALL_LABELS_V1.jsonl",
+        "sha256": "cf4ece1b0c864289f6dcf318d91ff59fbb3aecbb65d8482f11ad509e3ff59cea"
+      },
+      "STAGE_VI_B2": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FORMAL_M4_AGGREGATE_V3_DUAL_SOURCE_20260816T061432Z/B2_ALL_LABELS.jsonl",
+        "sha256": "3817648b3a3ac4de236a48a1377dc252ac6dd54d5fdf254f0753392b3b7c7106"
+      }
+    },
+    "dose": "T5",
+    "binary_label_classes": [
+      "V_PHYS",
+      "NO_PHYSICAL_VULNERABILITY"
+    ],
+    "excluded_label_classes": [
+      "TREATMENT_INVALID_ABSTAIN",
+      "CONTROL_CONTAMINATION_ABSTAIN",
+      "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+    ],
+    "join_key": [
+      "stage",
+      "canonical_parent_key",
+      "probe_id",
+      "probe_step",
+      "dose"
+    ],
+    "parent_key": "canonical_parent_key",
+    "same_parent_only_primary": true,
+    "top_k_and_zero_regret_parent_population": "same_pair_eligible_parent_population",
+    "abstain_masked_not_negative": true
+  },
+  "score_sources": {
+    "B2-C": {
+      "status": "IMMUTABLE_EXACT_PARTIAL_COVERAGE",
+      "scope": "STAGE_VI_B2_T5_ONLY",
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FRESH_HOLDOUT_B2C_VALIDATION_V1_20260816T064700Z",
+      "predictions": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FRESH_HOLDOUT_B2C_VALIDATION_V1_20260816T064700Z/B2_FRESH_T5_B2C_PREDICTIONS.jsonl",
+      "predictions_sha256": "1beb0f05fb39886cc762725ad5fff3a525e296f907e228b0e013e14e6aca668a",
+      "expected_exact_rows": 333,
+      "requires_stage_join": "STAGE_VI_B2"
+    },
+    "S7-A": {
+      "status": "IMMUTABLE_EXACT",
+      "scope": "STAGE_V_AND_STAGE_VI_B2_T5",
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_S7A_CORRECTED_CANDIDATE_DEVELOPMENT_20260816T081039Z",
+      "predictions": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_S7A_CORRECTED_CANDIDATE_DEVELOPMENT_20260816T081039Z/S7_A_T5_PREDICTIONS.jsonl",
+      "predictions_sha256": "61d3e3a3cc5cbfffad332bd233e486b561560c42b27c14d3ccecd46b5b7cd0ea",
+      "requires_stage_join": "PREDICTION_STAGE"
+    },
+    "S7-B": {
+      "status": "IMMUTABLE_EXACT",
+      "scope": "STAGE_V_AND_STAGE_VI_B2_T5",
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_S7B_CANDIDATE_DEVELOPMENT_20260816T182500Z",
+      "predictions": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_S7B_CANDIDATE_DEVELOPMENT_20260816T182500Z/S7_B_PREDICTIONS.jsonl",
+      "predictions_sha256": "15c5fd0762d9d24318e14e58cfa9034a715a6a0b47e4d03952b6ecc01d56f95a",
+      "requires_stage_join": "PREDICTION_STAGE"
+    },
+    "S7-C": {
+      "status": "IMMUTABLE_EXACT",
+      "scope": "STAGE_V_AND_STAGE_VI_B2_T5",
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_S7C_CANDIDATE_DEVELOPMENT_20260816T184000Z",
+      "predictions": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_S7C_CANDIDATE_DEVELOPMENT_20260816T184000Z/S7_C_PREDICTIONS.jsonl",
+      "predictions_sha256": "202776025da67551545915a437177c8f582e1bb7b83d3415f8c39f177b8994de",
+      "requires_stage_join": "PREDICTION_STAGE"
+    }
+  },
+  "metric_definitions": {
+    "score_order": "descending_score_then_probe_id_then_probe_step",
+    "within_parent_auc": "(positive_score_greater_negative_count + 0.5 * exact_tie_count) / all_positive_negative_pairs",
+    "parent_macro_auc": "unweighted_mean_of_eligible_parent_within_parent_auc",
+    "pooled_pair_weighted_auc": "sum_correct_pair_weights / sum_all_parent_pairs",
+    "top_k": "select the highest K eligible probes per parent; parents with fewer than K eligible probes are excluded from that K metric",
+    "random_baseline": "unweighted_mean of each eligible parent's positive prevalence",
+    "top_k_lift": "macro_selected_positive_rate / macro_random_baseline",
+    "zero_regret": "selected_argmax_probe_is_V_PHYS; best_available is one for every pair-eligible parent",
+    "bootstrap": {
+      "type": "parent_resampling_with_replacement",
+      "replicates": 2000,
+      "seed": 20260816,
+      "interval": "percentile_2.5_97.5",
+      "use": "report_only_not_gate"
+    },
+    "global_auroc": "pooled_tie_aware_binary_auc_over_all_source_rows_within_primary_population",
+    "global_vs_relative_reference": {
+      "global_signal_auroc": 0.65,
+      "global_suite_auroc": 0.55,
+      "relative_signal_parent_macro_auc": 0.60,
+      "relative_signal_suite_auc": 0.55,
+      "classification_only": true
+    }
+  },
+  "promotion_gate": {
+    "name": "R0_RELATIVE_TIMING_IDENTIFIABILITY_GATE_V1",
+    "at_least_one_source": true,
+    "parent_macro_within_parent_auc_min": 0.65,
+    "every_identifiable_suite_within_parent_auc_min": 0.58,
+    "top_1_lift_min": 1.30,
+    "top_3_lift_min": 1.20,
+    "zero_regret_parent_rate_margin_over_random_min": 0.15,
+    "bootstrap_ci_is_not_gate": true
+  },
+  "decision_rule": {
+    "A": "at least one exact score source passes every frozen promotion gate",
+    "B": "no source passes the promotion gate, but at least one identifiable source meets both relative_signal_parent_macro_auc and relative_signal_suite_auc references",
+    "C": "no identifiable source meets the frozen relative-signal references",
+    "D": "no score source can be exactly aligned to the primary population"
+  },
+  "forbidden": [
+    "new_model_training",
+    "threshold_retuning",
+    "new_M4",
+    "intervention",
+    "PGD_rollout",
+    "protected_read",
+    "Eval160_read",
+    "row_random_split",
+    "abstain_as_negative",
+    "manual_spatial_score_reversal",
+    "outcome_driven_source_or_parent_selection"
+  ]
+}
