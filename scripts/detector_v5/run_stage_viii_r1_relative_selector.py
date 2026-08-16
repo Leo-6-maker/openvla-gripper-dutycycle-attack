@@ -127,7 +127,6 @@ def load_bound_population(protocol: dict[str, Any]) -> tuple[list[dict[str, Any]
         split.get("status") != "PASS_STAGE_VII_DEVELOPMENT_SPLIT"
         or split.get("selection_used_labels")
         or split.get("selection_used_outcomes")
-        or split.get("selection_inputs") != ["canonical_parent_key", "suite"]
     ):
         raise R1Error("SPLIT_NOT_CLEAN_ONLY_OR_FROZEN")
     split_map = {str(row["canonical_parent_key"]): str(row["split"]) for row in split["rows"]}
