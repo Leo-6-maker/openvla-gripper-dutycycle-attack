@@ -153,7 +153,7 @@ def run(args: argparse.Namespace) -> int:
     old_root = args.s6c_root.resolve()
     with (old_root / "T_V_T5_PRIVILEGED_LOGISTIC.pkl").open("rb") as handle:
         old_teacher = pickle.load(handle)
-    with (old_root / "S6_C_STUDENT.pkl").open("rb") as handle:
+    with (old_root / "S6_C_CAUSAL_STUDENT.pkl").open("rb") as handle:
         old_student = pickle.load(handle)
     old_teacher_scores = old_teacher.predict_proba(xprivileged)[:, 1]
     old_student_scores = old_student.predict_proba(xwindow)[:, 1]
