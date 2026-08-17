@@ -39,6 +39,12 @@
     "no_emit_retained": true,
     "one_shot_reset_required": true
   },
+  "attack_load_authority": {
+    "status": "HOLD_ATTACK_LOAD_AUTHORITY",
+    "pgd_authorized": false,
+    "reason": "historical Stage IX, FEC, and SC5 contracts bind different budgets/objectives and no X1R suite-matched prospective load is frozen",
+    "owner_review_required": true
+  },
   "route_contract": {
     "strict_route": true,
     "allow_fallback": false,
