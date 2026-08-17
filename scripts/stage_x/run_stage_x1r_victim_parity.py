@@ -141,6 +141,7 @@ def token_semantics(model: Any, processor: Any, suite: str) -> dict[str, Any]:
 
 def parity_one(model: Any, processor: Any, snapshot_root: Path, suite: str, model_path: Path, tolerance: float) -> dict[str, Any]:
     import torch
+    from gripper_attack.attack_adapter import TokenPrefixPGDAttacker
     from gripper_attack.openvla_libero_exec_spec import raw_gripper_to_env_gripper
     from gripper_attack.stage_v_causal_observation_snapshot import assert_primary_observation_exact, load_snapshot
 
