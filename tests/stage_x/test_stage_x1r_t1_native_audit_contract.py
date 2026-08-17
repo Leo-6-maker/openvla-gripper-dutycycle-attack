@@ -12,4 +12,3 @@ def test_native_audit_is_not_an_attack_or_environment_runner():
     assert ".attack(" not in text
     assert "pgd_calls" in text
     assert "vphys_reads" in text
-
