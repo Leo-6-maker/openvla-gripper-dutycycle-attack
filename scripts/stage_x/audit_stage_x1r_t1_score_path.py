@@ -229,7 +229,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     nocache_adapter = TokenPrefixPGDAttacker(model, processor, nocache_cfg, device=device)
     arm_prefix = generated[:-1].view(1, -1)
 
-    official_rows = [score[0, -1, :].detach() for score in generated_out.scores]
+    official_rows = [
+        (score[0, -1, :] if score.ndim == 3 else score[0, :]).detach()
+        for score in generated_out.scores
+    ]
     with torch.no_grad():
         manual_rows = cached_rows(model, prompt_ids, pixel_base, generated)
         full_ids = torch.cat([prompt_ids, generated.view(1, -1)], dim=1)
