@@ -178,6 +178,22 @@ def arm_cached_loss(rows: Iterable[Any], generated: Any) -> Any:
     return torch.stack(losses).mean()
 
 
+def rehydrate_model_for_autograd(model: Any) -> int:
+    """Clone inference tensors without changing their values or checkpoint identity."""
+    import torch
+
+    count = 0
+    for module in model.modules():
+        for name, parameter in list(module._parameters.items()):
+            if parameter is not None and bool(getattr(parameter, "is_inference", lambda: False)()):
+                module._parameters[name] = torch.nn.Parameter(parameter.detach().clone(), requires_grad=False)
+                count += 1
+        for name, buffer in list(module._buffers.items()):
+            if buffer is not None and bool(getattr(buffer, "is_inference", lambda: False)()):
+                module._buffers[name] = buffer.detach().clone()
+    return count
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
     import torch
     from gripper_attack.attack_adapter import TokenPrefixPGDAttacker
@@ -186,6 +202,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     device = str(args.device)
     model_path = Path(args.model_path)
     model, processor = load_model_and_processor(model_path, device)
+    rehydrated_parameter_count = rehydrate_model_for_autograd(model)
     package = load_snapshot(Path(args.snapshot), materialize_torch=True)
     manifest, payload = package["manifest"], package["payload"]
     processed = processor(payload["prompt"], payload["processed_image"], return_tensors="pt")
@@ -294,6 +311,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "dtype": str(dtype),
             "torch_version": torch.__version__,
             "use_cache": {"cached": True, "nocache": False},
+            "model_parameter_rehydrated_for_autograd": int(rehydrated_parameter_count),
         },
         "processor_parity": {"input_ids_exact": input_exact, "attention_mask_exact": attention_exact, "pixel_values_exact": pixel_exact},
         "authority": authority.receipt(),
