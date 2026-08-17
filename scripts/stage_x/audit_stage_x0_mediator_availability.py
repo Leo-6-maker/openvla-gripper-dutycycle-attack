@@ -32,6 +32,14 @@ TASK_KEYS = (
 )
 
 
+def normalized_counters(value: Any) -> dict[str, int] | None:
+    if not isinstance(value, dict):
+        return None
+    known = {key: int(value.get(key, 0) or 0) for key in COUNTERS}
+    extra_nonzero = [key for key, item in value.items() if key not in COUNTERS and item not in (0, False, None)]
+    return None if extra_nonzero else known
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -214,6 +222,7 @@ def audit_branch(record: dict[str, Any], path: Path) -> dict[str, Any]:
         "relative_steps": relative_steps,
         "relative_step_complete": relative_step_complete,
         "task_keys_present": task_keys,
+        "protected_counters": nested(record, "protected_counters"),
         "required_horizon": branch.get("required_physical_steps"),
         "available_horizon": branch.get("available_horizon_steps"),
     }
@@ -257,6 +266,7 @@ def audit_labels(protocol: dict[str, Any]) -> dict[str, Any]:
         protected: list[dict[str, Any]] = []
         for row in rows:
             collect_protected(row, protected)
+        normalized = [normalized_counters(item["counters"]) for item in protected]
         result[name] = {
             "path": str(path),
             "sha256": sha256_file(path),
@@ -264,7 +274,7 @@ def audit_labels(protocol: dict[str, Any]) -> dict[str, Any]:
             "expected_row_count": spec["rows"],
             "schema_values": sorted({str(row.get("schema")) for row in rows}),
             "protected_counter_records": len(protected),
-            "protected_counters": sorted({json.dumps(item["counters"], sort_keys=True) for item in protected}),
+            "protected_counters": sorted({json.dumps(item, sort_keys=True) for item in normalized}),
         }
         if len(rows) != int(spec["rows"]):
             raise ValueError(f"label row count mismatch: {path}")
@@ -399,7 +409,7 @@ def main() -> int:
     protected: list[dict[str, Any]] = []
     for record in records:
         collect_protected(record, protected)
-    counters = [item["counters"] for item in protected]
+    counters = [normalized_counters(item["counters"]) for item in protected]
     protected_ok = all(counters_item == COUNTERS for counters_item in counters) if counters else True
     stage_v_parent_count = len({record["canonical_parent_key"] for record in stage_v_records})
     stage_vi_parent_count = len({record["canonical_parent_key"] for record in stage_vi_records})

@@ -25,6 +25,7 @@ from audit_stage_x0_mediator_availability import (
     identity,
     load_json,
     load_jsonl,
+    normalized_counters,
     sha256_file,
 )
 
@@ -437,7 +438,7 @@ def main() -> int:
 
     groups, branch_protected = load_raw_groups(protocol)
     labels, label_protected = load_labels(protocol)
-    if any(item.get("counters") != COUNTERS for item in branch_protected + label_protected):
+    if any(normalized_counters(item.get("counters")) != COUNTERS for item in branch_protected + label_protected):
         raise ValueError("protected counter violation in input evidence")
     if not all(all(arm in groups[key] for arm in ARMS) for key in groups):
         raise ValueError("incomplete four-arm group")
