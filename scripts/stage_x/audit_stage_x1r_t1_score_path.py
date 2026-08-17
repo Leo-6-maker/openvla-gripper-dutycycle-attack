@@ -231,7 +231,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             output_scores=True,
         )
     prompt_len = int(prompt_ids.shape[1])
-    generated = generated_out.sequences[0, prompt_len:].detach().to(dtype=torch.long)
+    # generate() ran under inference_mode; clone the target IDs into ordinary
+    # tensors before any gradient loss saves them for backward.
+    generated = generated_out.sequences[0, prompt_len:].detach().clone().to(dtype=torch.long)
+    if generated.is_inference():
+        raise RuntimeError("CLEAN_GENERATED_IDS_REMAIN_INFERENCE_TENSOR")
     if int(generated.numel()) != action_dim:
         raise RuntimeError(f"CLEAN_GENERATION_LENGTH_FAIL:{generated.numel()}:{action_dim}")
     authority = build_authority(model, processor, args.suite, model_path)
