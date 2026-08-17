@@ -528,6 +528,22 @@ def main() -> int:
     }
     (root / "X0_MECHANISM_ROWS.jsonl").write_text("".join(json.dumps(row, sort_keys=True, ensure_ascii=False) + "\n" for row in mechanism_rows), encoding="utf-8")
     (root / "STAGE_X_X0_RESULT.json").write_text(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+    (root / "PROVENANCE.json").write_text(json.dumps({
+        "schema": "STAGE_X_X0_RESULT_PROVENANCE_V1",
+        "source_commit": summary["source_commit"],
+        "source_tree": summary["source_tree"],
+        "source_script_sha256": summary["source_script_sha256"],
+        "protocol_path": str(args.protocol),
+        "protocol_sha256": summary["protocol_sha256"],
+        "availability_root": str(availability_root),
+        "availability_summary_sha256": summary["availability_summary_sha256"],
+        "availability_root_seal_sha256": summary["availability_root_seal_sha256"],
+        "physical_intervention": False,
+        "new_env_steps": 0,
+        "protected_counters": COUNTERS,
+        "eval160": "UNREAD",
+        "protected_evaluation": "UNREAD",
+    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (root / "EXECUTION_MANIFEST.json").write_text(json.dumps({
         "schema": "STAGE_X_X0_RESULT_EXECUTION_MANIFEST_V1",
         "protocol": str(args.protocol),
