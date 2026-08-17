@@ -1,0 +1,74 @@
+{
+  "schema": "STAGE_X_X1R_T1_PROSPECTIVE_DETECTOR_PGD_PROTOCOL_V1",
+  "status": "FROZEN_T1_PREAUTHORITY_AUDIT",
+  "stage": "STAGE_X_X1R_T1",
+  "base_pr": 122,
+  "base_commit": "6160d3b47138166a9159453d463ac062f8df4f95",
+  "base_tree": "fdd9e10acc42c1c3cc8b7c17fc3456577f6c5033",
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "scope": {
+    "historical_t0_artifacts_immutable": true,
+    "historical_generated_token_ids": "NOT_IDENTIFIABLE",
+    "prospective_token_authority": "STAGE_X_X1R_T1_NATIVE_ACTION_TOKEN_AUTHORITY_V2",
+    "legacy_action_to_token_helper": "HISTORICAL_COMPATIBILITY_ONLY",
+    "no_outcome_informed_selection": true
+  },
+  "score_path_audit": {
+    "required_routes": [
+      "official_greedy_autoregressive_generation",
+      "manual_cached_autoregressive_past_key_values",
+      "no_cache_full_teacher_forced_rows",
+      "target_token_objective_score_and_gradient",
+      "arm_preservation_score_and_gradient"
+    ],
+    "semantic_equivalence_required": true,
+    "top1_equality_alone_is_insufficient": true,
+    "route_decision": "PENDING_CLEAN_ONLY_A2_AUDIT",
+    "hold_state_if_unresolved": "STAGE_X_X1R_T1_HOLD_SCORE_PATH_AUTHORITY"
+  },
+  "iterate_selection": {
+    "rule": "final_iterate_only",
+    "frozen_before_prospective_outcome": true,
+    "outcome_informed_selection": false
+  },
+  "route_contract": {
+    "strict_route": true,
+    "allow_fallback": false,
+    "direct_actuator_edit": false,
+    "postprocess_gripper": true,
+    "target_token_is_per_suite": true
+  },
+  "resource_contract": {
+    "free_memory_mib_strictly_greater_than": 20480,
+    "maximum_project_workers_per_physical_gpu": 1,
+    "foreign_workloads_must_be_untouched": true,
+    "partial_fleet_allowed": true
+  },
+  "forbidden_before_t1_a_b_c_pass": [
+    "actual_pgd_optimization",
+    "adversarial_images",
+    "attacked_actions",
+    "env.step",
+    "physical_intervention",
+    "vphys_read",
+    "attack_outcome_read",
+    "x2",
+    "timing_matrix",
+    "eval160",
+    "protected_evaluation"
+  ],
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters": {
+      "pgd_calls": 0,
+      "env_step_calls": 0,
+      "physical_interventions": 0,
+      "vphys_reads": 0,
+      "attack_outcome_reads": 0,
+      "protected_reads": 0,
+      "eval160_reads": 0
+    }
+  },
+  "stop_state_if_any_gate_fails": "STAGE_X_X1R_T1_HOLD_<EXPLICIT_REASON>"
+}
