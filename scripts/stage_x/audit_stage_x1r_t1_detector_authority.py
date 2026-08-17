@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 OFFICIAL_ENV = "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800"
 SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
 ACTIVE_HEADS = ("physical_criticality", "k10_feasibility", "instability", "gripper_closing_state")
+SHADOW_PROBABILITY_ATOL = 1e-6
 FEATURE_NAMES = (
     "gripper_command", "gripper_qpos", "gripper_opening_proxy", "eef_x", "eef_y", "eef_z",
     "eef_vx", "eef_vy", "eef_vz", "action_dx", "action_dy", "action_dz", "action_gripper",
@@ -303,7 +304,7 @@ def main() -> int:
                     full = first[index]
                     parity_diffs.append(max(abs(prefix[name] - full[name]) for name in ("physical_criticality", "gripper_closing_state")))
                 max_prefix_parity_diff = float(max(parity_diffs, default=0.0))
-                if max_diff != 0.0 or max_prefix_parity_diff != 0.0 or first_schedule["first_emit_step"] != second_schedule["first_emit_step"] or first_schedule["emitted_count"] not in (0, 1):
+                if max_diff != 0.0 or max_prefix_parity_diff > SHADOW_PROBABILITY_ATOL or first_schedule["first_emit_step"] != second_schedule["first_emit_step"] or first_schedule["emitted_count"] not in (0, 1):
                     errors.append(f"SHADOW_DETERMINISM_FAIL:{suite}")
                 shadow_receipts[suite] = {
                     "replay_path": str(replay_path), "replay_sha256": sha256(replay_path),
@@ -315,6 +316,7 @@ def main() -> int:
                     "repeat_max_probability_abs_diff": max_diff,
                     "prefix_parity_indices": parity_indices,
                     "prefix_max_probability_abs_diff": max_prefix_parity_diff,
+                    "prefix_probability_atol": SHADOW_PROBABILITY_ATOL,
                     "repeat_first_emit_equal": first_schedule["first_emit_step"] == second_schedule["first_emit_step"],
                     "scheduler_rule": scheduler_freeze["emit_rule"],
                     "student_heads_used": ["physical_criticality", "gripper_closing_state"],

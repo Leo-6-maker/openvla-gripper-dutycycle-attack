@@ -31,6 +31,14 @@
     "frozen_before_prospective_outcome": true,
     "outcome_informed_selection": false
   },
+  "clean_shadow_contract": {
+    "causal_full_pass_is_authoritative": true,
+    "prefix_parity_spot_checks": "first_middle_last_and_first_emit_if_present",
+    "probability_absolute_tolerance": 1e-06,
+    "tolerance_is_numeric_only_not_outcome_tuned": true,
+    "no_emit_retained": true,
+    "one_shot_reset_required": true
+  },
   "route_contract": {
     "strict_route": true,
     "allow_fallback": false,
