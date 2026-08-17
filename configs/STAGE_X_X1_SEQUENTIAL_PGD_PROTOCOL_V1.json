@@ -1,0 +1,129 @@
+{
+  "schema": "STAGE_X_X1_SEQUENTIAL_PGD_PROTOCOL_V1",
+  "stage": "STAGE_X_SEQUENTIAL_PGD_REALIZABILITY",
+  "namespace": "STAGE_X_X1_SEQUENTIAL_PGD_20260817",
+  "status": "FROZEN_BEFORE_CLEAN_SEQUENCE_AUDIT",
+  "purpose": "development-only clean-observation sequential PGD persistence audit; no environment steps or physical intervention",
+  "x0_binding": {
+    "protocol": "configs/STAGE_X_X0_DUTY_CYCLE_MECHANISM_PROTOCOL_V1.json",
+    "required_status": "STAGE_X_PHYSICAL_DUTY_CYCLE_MECHANISM_SUPPORTED",
+    "x0_result_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_DUTY_CYCLE_MECHANISM/STAGE_X0_RESULT_20260817T095900Z",
+    "outcome_used_for_selection": false
+  },
+  "canonical_pgd_contract": {
+    "path": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
+    "sha256": "bf27a237ba9fd9be255d5371d160705cc3c55e000e119062934deb4c2a6dee38",
+    "semantic_changes": false,
+    "hyperparameter_changes": false,
+    "strict_route": true,
+    "allow_fallback": false
+  },
+  "stage_ix_negative_reference": {
+    "protocol": "configs/STAGE_IX_F0_VIS_EXPLOITABILITY_PROTOCOL_V1.json",
+    "protocol_sha256": "4ef53e5cd78f11b1a8abfce3d0f88eb48130825c9915b5538100a378e1c12eb5",
+    "result_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_IX_FACTORIZED_PGD_TIMING_UTILITY/STAGE_IX_F0_VIS_EXPLOITABILITY_20260816T172453Z",
+    "status": "STAGE_IX_NO_MODEL_SIDE_TIMING_SIGNAL",
+    "f0_rows": 1344,
+    "reused_as_x1_result": false
+  },
+  "population": {
+    "sources": [
+      {
+        "stage": "STAGE_V",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/EXACT_40X24_CLEAN_PLAN",
+        "snapshot_count": 960,
+        "source_kind": "frozen clean causal probe snapshots"
+      },
+      {
+        "stage": "STAGE_VI_B2",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FRESH_ZERO_TREATMENT_PLAN_V3_DUAL_SOURCE_20260816T052000Z",
+        "snapshot_count": 384,
+        "source_kind": "frozen clean zero-treatment causal probe snapshots"
+      }
+    ],
+    "unit": "stage + canonical_parent_key + probe_id + probe_step + clean_sequence_offset",
+    "expected_probe_count": 1344,
+    "primary_dose": "T5",
+    "supporting_doses": ["T3", "T10"],
+    "selection_inputs": ["clean snapshot validity", "exact absolute step", "exact clean image/processor tensor identity"],
+    "selection_forbidden_inputs": ["Student score", "Teacher score", "V_phys", "PGD success", "attack effect", "protected identity"]
+  },
+  "clean_sequence": {
+    "source": "recorded clean trajectory or deterministic zero-treatment clean replay only",
+    "max_consecutive_observations": 10,
+    "offsets": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "absolute_step_rule": "probe absolute step + offset",
+    "required_fields": ["canonical_policy_rgb_224", "processed_image or pixel_values", "clean reference action", "exact snapshot binding"],
+    "no_repeated_frame_padding": true,
+    "no_attacked_frames": true,
+    "no_env_step_during_x1": true,
+    "short_sequence_rule": "retain observed offsets; Q3 metric is NOT_IDENTIFIABLE when fewer than d clean observations exist",
+    "censoring_rule": "short or missing clean sequence is abstention/NOT_IDENTIFIABLE, never zero PGD success"
+  },
+  "pgd_per_frame": {
+    "contract": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
+    "target": "same-frame clean reference action with final gripper action set to canonical OPEN target",
+    "record": ["clean_margin", "attacked_margin", "target_rank", "targeted_OPEN_success", "decoded_gripper_action", "pixel_linf_norm", "iterations", "sequence_offset", "absolute_step", "pid", "gpu", "CUDA_VISIBLE_DEVICES", "GPU_UUID"],
+    "success": "target gripper token rank 1 and target margin nonnegative",
+    "no_fallback": true,
+    "no_env_step": true
+  },
+  "metrics": {
+    "Q1_PGD_OPEN_FRACTION_d": "number of targeted OPEN-success frames in first d clean frames divided by d, for d in {3,5,10}; NOT_IDENTIFIABLE if fewer than d frames",
+    "Q2_PGD_LONGEST_OPEN_STREAK_d": "longest consecutive targeted OPEN-success streak in the observed clean sequence, capped at d",
+    "Q3_PGD_FULL_STREAK_d": "1 only when d consecutive clean frames all achieve targeted OPEN success; NOT_IDENTIFIABLE if fewer than d frames",
+    "primary": "T5",
+    "secondary": ["T3", "T10"],
+    "comparison": "corresponding consumable V_phys@Td; abstain/censored labels masked, never negative"
+  },
+  "evaluation": {
+    "global": ["AUROC", "AUPRC"],
+    "parent_macro": ["within_parent_AUC", "top1_lift", "top3_lift"],
+    "per_suite": true,
+    "loso": true,
+    "conditional_probabilities": ["P(V_phys|Q1)", "P(V_phys|Q2)", "P(V_phys|Q3)"],
+    "bootstrap": {"unit": "parent", "replicates": 2000, "seed": 20260817, "iid_row_ci": false},
+    "stage_ix_reference": ["F0 E1", "F0 E3"],
+    "f0_modification": false
+  },
+  "promotion_gate": {
+    "at_least_one_sequential_metric": true,
+    "devtest_parent_macro_auc_min": 0.65,
+    "devtest_top1_lift_min": 1.25,
+    "devtest_top3_lift_min": 1.15,
+    "worst_identifiable_suite_auc_min": 0.55,
+    "mean_loso_auc_min": 0.60,
+    "parent_macro_improvement_over_corresponding_stage_ix_single_frame_min": 0.10,
+    "primary_endpoint": "T5",
+    "failure_statuses": ["STAGE_X_SEQUENTIAL_PGD_SIGNAL_WEAK", "STAGE_X_NO_SEQUENTIAL_PGD_REALIZABILITY_SIGNAL"],
+    "input_unavailability_status": "STAGE_X_X1_CLEAN_SEQUENCE_UNAVAILABLE"
+  },
+  "resource_contract": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7],
+    "strict_free_memory_rule_mib": "> 20480",
+    "maximum_project_workers_per_gpu": 1,
+    "foreign_workload_interference": false,
+    "partial_fleet_allowed": true,
+    "atomic_unit": "parent",
+    "gpu_required_for_sequence_audit": false
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0,
+      "env_steps_with_perturbed_action": 0
+    }
+  },
+  "decision": {
+    "A": "STAGE_X_SEQUENTIAL_PGD_REALIZABILITY_SIGNAL_ESTABLISHED",
+    "B": "STAGE_X_SEQUENTIAL_PGD_SIGNAL_WEAK",
+    "C": "STAGE_X_NO_SEQUENTIAL_PGD_REALIZABILITY_SIGNAL",
+    "x2_requires": ["X0=A", "X1=A", "fresh non-protected X2 population", "new X2 authority"],
+    "x2_not_authorized_by_this_protocol": true
+  }
+}
