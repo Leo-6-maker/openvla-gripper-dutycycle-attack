@@ -2,15 +2,21 @@
 
 X1 status: `STAGE_X_SEQUENTIAL_PGD_SIGNAL_WEAK` (protocol outcome `X1=C`).
 
-The sealed result root is:
+The final sealed result root is:
 
-`/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_DUTY_CYCLE_MECHANISM/STAGE_X1_SEQUENTIAL_PGD_20260817T101200Z`
+`/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_DUTY_CYCLE_MECHANISM/STAGE_X1_SEQUENTIAL_PGD_20260817T101200Z_RESEALED_V1`
 
 The root seal binds:
 
 - result summary SHA256 `0677a2488d409beb5e5d7f590f1765413e8a8536bed7b97cd668eb453fa91808`;
-- `SHA256SUMS` SHA256 `36268e52b9f70a27a88d50e8c4856d85eac674edf46413f0f162b9c49e97a56d`;
-- `ROOT_SEAL.json` SHA256 `1a75bbcc15260034ebfedcaaf3aaa4f6231592ff6f60b7090a8fda1201009f5d`.
+- `SHA256SUMS` SHA256 `eb389626222c763ab9a7d397c6b481919dedac6ecdf604cab2e9493f4fe36a7e`;
+- `ROOT_SEAL.json` SHA256 `d83c4dc71817c39403829176578e574a9290834502d8928daf68e057e19eb680`.
+
+The initial execution root
+`.../STAGE_X1_SEQUENTIAL_PGD_20260817T101200Z` is preserved as a superseded
+sealing diagnostic. Its scientific files matched, but its live aggregate log
+was still being appended when the first `SHA256SUMS` was produced. No worker
+evidence was changed or rerun; the re-sealed root excludes that live log.
 
 The frozen X1 protocol and exact source binding are unchanged:
 
@@ -51,5 +57,6 @@ All worker and aggregate protected counters are zero:
 
 `physical_intervention=false`, `Eval160=UNREAD`, and
 `protected evaluation=UNREAD`. Therefore X2 physical PGD is not authorized,
-and no physical timing/selectivity matrix is authorized. Preserve this X1
-root as the terminal Stage X diagnostic evidence pending owner review.
+and no physical timing/selectivity matrix is authorized. Preserve this
+re-sealed X1 root as the terminal Stage X diagnostic evidence pending owner
+review.
