@@ -397,7 +397,7 @@ def run_numerical_audit() -> dict[str, Any]:
     from gripper_attack.execution_target import target_token_cw_loss_and_stats
     from gripper_attack.m3_controls import project_and_cast_processor_values
 
-    row = torch.tensor([1.0, 0.0], requires_grad=True)
+    row = torch.tensor([0.0, 1.0], requires_grad=True)
     loss, _ = target_token_cw_loss_and_stats(row, target_token_id=0, margin=0.0)
     gradient = torch.autograd.grad(loss, row)[0]
     descent = row.detach() - 0.1 * gradient.sign()

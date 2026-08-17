@@ -24,6 +24,7 @@ from scripts.stage_x.audit_stage_x1r_pgd_alignment import (  # noqa: E402
     _TokenizerStubModel,
     action_token_logit_row_index,
     canonical_token_ids,
+    run_numerical_audit,
     run_causal_row_toy,
 )
 
@@ -59,6 +60,13 @@ def test_processor_projection_respects_budget_for_fp16_and_bfloat16():
         candidate = original.float() + torch.tensor([0.1, -0.1])
         projected, _ = project_and_cast_processor_values(original, candidate, epsilon=0.1, candidate_is_delta=False)
         assert float((projected.float() - original.float()).abs().max()) <= 0.1000001
+
+
+def test_numerical_audit_exercises_nonzero_cw_descent():
+    report = run_numerical_audit()
+    assert report["pass"] is True
+    assert report["cw"]["initial_loss"] > 0.0
+    assert report["cw"]["loss_after_sign_descent"] < report["cw"]["initial_loss"]
 
 
 def test_strict_route_rejects_fallback():
