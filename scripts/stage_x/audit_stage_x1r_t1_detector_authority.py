@@ -102,18 +102,32 @@ def clean_shadow_rows(replay_path: Path) -> tuple[list[dict[str, Any]], list[boo
 
 
 def student_predictions(model: torch.nn.Module, features: list[dict[str, Any]], mean: np.ndarray, std: np.ndarray) -> list[dict[str, float]]:
-    predictions: list[dict[str, float]] = []
-    for end in range(1, len(features) + 1):
-        raw = np.stack([row["feature"] for row in features[:end]], axis=0)
-        x = torch.from_numpy(((raw - mean) / std).astype(np.float32))[None, ...]
-        mask = torch.ones((1, end), dtype=torch.bool)
-        with torch.no_grad():
-            logits = model(x, timestep_mask=mask)
-        predictions.append({
-            "physical_criticality": float(torch.sigmoid(logits["physical_criticality"][0, -1]).item()),
-            "gripper_closing_state": float(torch.sigmoid(logits["gripper_closing_state"][0, -1]).item()),
-        })
-    return predictions
+    # The bound N5 encoder trims every convolution to its left-causal prefix;
+    # one full pass is therefore the exact online result for every timestep.
+    raw = np.stack([row["feature"] for row in features], axis=0)
+    x = torch.from_numpy(((raw - mean) / std).astype(np.float32))[None, ...]
+    mask = torch.ones((1, len(features)), dtype=torch.bool)
+    with torch.no_grad():
+        logits = model(x, timestep_mask=mask)
+    return [
+        {
+            "physical_criticality": float(torch.sigmoid(logits["physical_criticality"][0, i]).item()),
+            "gripper_closing_state": float(torch.sigmoid(logits["gripper_closing_state"][0, i]).item()),
+        }
+        for i in range(len(features))
+    ]
+
+
+def student_prediction_at_prefix(model: torch.nn.Module, features: list[dict[str, Any]], mean: np.ndarray, std: np.ndarray, end: int) -> dict[str, float]:
+    raw = np.stack([row["feature"] for row in features[:end]], axis=0)
+    x = torch.from_numpy(((raw - mean) / std).astype(np.float32))[None, ...]
+    mask = torch.ones((1, end), dtype=torch.bool)
+    with torch.no_grad():
+        logits = model(x, timestep_mask=mask)
+    return {
+        "physical_criticality": float(torch.sigmoid(logits["physical_criticality"][0, -1]).item()),
+        "gripper_closing_state": float(torch.sigmoid(logits["gripper_closing_state"][0, -1]).item()),
+    }
 
 
 def schedule(predictions: list[dict[str, float]], candidates: list[bool], *, t5: int, h_phys: int, physical_threshold: float, closing_threshold: float) -> dict[str, Any]:
@@ -279,7 +293,17 @@ def main() -> int:
                 first_array = np.asarray([[p["physical_criticality"], p["gripper_closing_state"]] for p in first])
                 second_array = np.asarray([[p["physical_criticality"], p["gripper_closing_state"]] for p in second])
                 max_diff = float(np.max(np.abs(first_array - second_array)))
-                if max_diff != 0.0 or first_schedule["first_emit_step"] != second_schedule["first_emit_step"] or first_schedule["emitted_count"] != 1 and first_schedule["emitted_count"] != 0:
+                parity_indices = sorted({0, len(features) // 2, len(features) - 1})
+                if first_schedule["first_emit_step"] is not None:
+                    parity_indices.append(first_schedule["first_emit_step"])
+                parity_indices = sorted(set(parity_indices))
+                parity_diffs = []
+                for index in parity_indices:
+                    prefix = student_prediction_at_prefix(model, features, mean, std, index + 1)
+                    full = first[index]
+                    parity_diffs.append(max(abs(prefix[name] - full[name]) for name in ("physical_criticality", "gripper_closing_state")))
+                max_prefix_parity_diff = float(max(parity_diffs, default=0.0))
+                if max_diff != 0.0 or max_prefix_parity_diff != 0.0 or first_schedule["first_emit_step"] != second_schedule["first_emit_step"] or first_schedule["emitted_count"] not in (0, 1):
                     errors.append(f"SHADOW_DETERMINISM_FAIL:{suite}")
                 shadow_receipts[suite] = {
                     "replay_path": str(replay_path), "replay_sha256": sha256(replay_path),
@@ -289,6 +313,8 @@ def main() -> int:
                     "emitted_count": first_schedule["emitted_count"],
                     "no_emit_retained": first_schedule["first_emit_step"] is None,
                     "repeat_max_probability_abs_diff": max_diff,
+                    "prefix_parity_indices": parity_indices,
+                    "prefix_max_probability_abs_diff": max_prefix_parity_diff,
                     "repeat_first_emit_equal": first_schedule["first_emit_step"] == second_schedule["first_emit_step"],
                     "scheduler_rule": scheduler_freeze["emit_rule"],
                     "student_heads_used": ["physical_criticality", "gripper_closing_state"],
