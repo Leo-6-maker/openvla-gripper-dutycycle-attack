@@ -74,7 +74,8 @@
     "Q3_PGD_FULL_STREAK_d": "1 only when d consecutive clean frames all achieve targeted OPEN success; NOT_IDENTIFIABLE if fewer than d frames",
     "primary": "T5",
     "secondary": ["T3", "T10"],
-    "comparison": "corresponding consumable V_phys@Td; abstain/censored labels masked, never negative"
+    "comparison": "corresponding consumable V_phys@Td; abstain/censored labels masked, never negative",
+    "short_sequence_metric_rule": "Q1 and Q3 require at least d exact frames; Q2 is reportable for any nonempty exact sequence and is capped at d"
   },
   "evaluation": {
     "global": ["AUROC", "AUPRC"],
@@ -84,6 +85,11 @@
     "conditional_probabilities": ["P(V_phys|Q1)", "P(V_phys|Q2)", "P(V_phys|Q3)"],
     "bootstrap": {"unit": "parent", "replicates": 2000, "seed": 20260817, "iid_row_ci": false},
     "stage_ix_reference": ["F0 E1", "F0 E3"],
+    "baseline_score_map": {"Q1": "E1", "Q2": "E3", "Q3": "E3"},
+    "stage_ix_split": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_IX_FACTORIZED_PGD_TIMING_UTILITY/STAGE_IX_F0_VIS_EXPLOITABILITY_20260816T172453Z/F0_SPLIT.json",
+      "sha256": "d29bb580c0978c748f57b6ae2e29df145b0eced6ba78e0991768a403524236ed"
+    },
     "f0_modification": false
   },
   "promotion_gate": {
