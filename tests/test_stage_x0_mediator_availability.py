@@ -10,3 +10,4 @@ def test_stage_x0_protocol_is_frozen_and_protected_boundary_is_closed():
     assert protocol["protected_boundary"]["protected_evaluation"] == "UNREAD"
     assert all(value == 0 for value in protocol["protected_boundary"]["protected_counters"].values())
     assert protocol["scientific_scope"]["outcome_data_used_for_selection"] is False
+    assert "exact intersection of relative_step" in protocol["population"]["observation_window"]

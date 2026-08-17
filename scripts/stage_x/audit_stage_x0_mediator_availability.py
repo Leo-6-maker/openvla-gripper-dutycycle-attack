@@ -179,6 +179,8 @@ def audit_branch(record: dict[str, Any], path: Path) -> dict[str, Any]:
     object_position_complete = bool(rows) and all(
         isinstance(row, dict) and finite_vector(row.get("post_object_position"), 3) for row in rows
     )
+    relative_steps = [row.get("relative_step") if isinstance(row, dict) else None for row in rows]
+    relative_step_complete = bool(rows) and all(isinstance(step, int) for step in relative_steps)
     treatment_receipt_complete = branch_arm == "CONTROL" or (
         "treatment_compliance" in branch
         and isinstance(branch.get("treatment_compliance"), dict)
@@ -202,6 +204,8 @@ def audit_branch(record: dict[str, Any], path: Path) -> dict[str, Any]:
         "aperture_complete": aperture_field is not None,
         "contact_complete": contact_complete,
         "object_position_complete": object_position_complete,
+        "relative_steps": relative_steps,
+        "relative_step_complete": relative_step_complete,
         "task_keys_present": task_keys,
         "required_horizon": branch.get("required_physical_steps"),
         "available_horizon": branch.get("available_horizon_steps"),
@@ -279,11 +283,19 @@ def availability(records: list[dict[str, Any]]) -> dict[str, Any]:
         if len({int(group[arm_name]["row_count"]) for arm_name in ARMS}) == 1
         and len({int(group[arm_name]["action_count"]) for arm_name in ARMS}) == 1
     ]
+    aligned_overlap_groups = [
+        group for group in complete_groups
+        if all(group[arm_name]["relative_step_complete"] for arm_name in ARMS)
+        and all(
+            set(group["CONTROL"]["relative_steps"]).intersection(group[dose]["relative_steps"])
+            for dose in DOSES
+        )
+    ]
     m1_records = [record for record in records if record["command_fields_complete"] and record["treatment_receipt_complete"]]
     m2_records = [record for record in records if record["aperture_complete"]]
     m3_records = [record for record in records if record["contact_complete"]]
     m4_records = [record for record in records if record["object_position_complete"]]
-    pair_complete = len(equal_horizon_groups) == len(groups) and bool(groups)
+    pair_complete = len(aligned_overlap_groups) == len(groups) and bool(groups)
     task_keys = sorted({key for record in records for key in record["task_keys_present"]})
     return {
         "record_count": len(records),
@@ -294,7 +306,8 @@ def availability(records: list[dict[str, Any]]) -> dict[str, Any]:
         "action_count_distribution": dict(sorted(Counter(record["action_count"] for record in records).items())),
         "complete_four_arm_groups": len(complete_groups),
         "equal_horizon_four_arm_groups": len(equal_horizon_groups),
-        "all_four_arm_groups_equal_horizon": pair_complete,
+        "aligned_overlap_four_arm_groups": len(aligned_overlap_groups),
+        "all_four_arm_groups_have_exact_overlap": pair_complete,
         "m1": {
             "name": "commanded_open_fraction",
             "exact_record_count": len(m1_records),
@@ -307,19 +320,19 @@ def availability(records: list[dict[str, Any]]) -> dict[str, Any]:
             "exact_record_count": len(m2_records),
             "available": len(m2_records) == len(records) and pair_complete,
             "fallback_available": len(m2_records) == len(records) and bool(groups),
-            "required_fields": ["gripper_aperture or post_aperture", "matched CONTROL", "equal physical-window rows"],
+            "required_fields": ["gripper_aperture or post_aperture", "relative_step", "matched CONTROL", "nonempty exact overlap"],
         },
         "m3": {
             "name": "any_contact_loss",
             "exact_record_count": len(m3_records),
             "available": len(m3_records) == len(records) and pair_complete,
-            "required_fields": ["post_contact_telemetry_valid", "post_object_gripper_contact", "post_object_support_contact"],
+            "required_fields": ["relative_step", "post_contact_telemetry_valid", "post_object_gripper_contact", "post_object_support_contact"],
         },
         "m4": {
             "name": "object_displacement",
             "exact_record_count": len(m4_records),
             "available": len(m4_records) == len(records) and pair_complete,
-            "required_fields": ["post_object_position"],
+            "required_fields": ["relative_step", "post_object_position"],
         },
         "task_failure": {
             "name": "frozen_exact_task_failure_taxonomy",

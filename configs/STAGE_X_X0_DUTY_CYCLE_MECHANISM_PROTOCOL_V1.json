@@ -64,6 +64,7 @@
     "primary_endpoint": "V_phys",
     "secondary_endpoint": "frozen downstream physical-failure taxonomy only when present exactly",
     "pairing": "same stage, parent, probe, and probe_step; matched CONTROL with each dose",
+    "observation_window": "exact intersection of relative_step values between matched CONTROL and dose branches; no padding or extrapolation; shorter observed horizons remain censored",
     "censoring": {
       "abstain_classes": ["HORIZON_CENSORED_ABSTAIN", "TREATMENT_INVALID_CENSORED_ABSTAIN", "ABSTAIN"],
       "rule": "retain in accounting and censoring map; exclude from binary-positive/binary-negative comparisons",
@@ -86,17 +87,17 @@
       },
       "M2_aperture_excess_auc_vs_control": {
         "layer": "realized gripper motion",
-        "metric": "paired physical-window area of treatment aperture minus matched CONTROL aperture",
+        "metric": "paired area of treatment aperture minus matched CONTROL aperture over the exact overlapping relative_step window",
         "fallback": "paired max aperture delta versus CONTROL when complete AUC coverage is unavailable"
       },
       "M3_any_contact_loss": {
         "layer": "contact/support",
-        "metric": "any exact valid treatment-window loss of gripper or support contact relative to the matched CONTROL trajectory",
+        "metric": "any exact valid overlapping-window loss of gripper or support contact relative to the matched CONTROL trajectory",
         "fallback": "NOT_AVAILABLE"
       },
       "M4_object_displacement": {
         "layer": "object/task consequence",
-        "metric": "exact paired object-position displacement in the registered physical window",
+        "metric": "exact paired object-position displacement in the registered overlapping physical window",
         "fallback": "NOT_AVAILABLE; do not substitute inferred release/drop/task failure"
       },
       "task_failure": {
