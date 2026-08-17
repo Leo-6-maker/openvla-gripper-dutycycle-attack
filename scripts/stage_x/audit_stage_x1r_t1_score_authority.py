@@ -31,7 +31,8 @@ def git() -> dict[str, str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=Path, default=Path("/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x_t1_detector_authority_20260818T034500Z"))
+    parser.add_argument("--root", "--score-root", dest="score_root", type=Path, default=Path("/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x_t1_pre_pgd_20260818_v2"))
+    parser.add_argument("--native-root", type=Path, default=Path("/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x_t1_detector_authority_20260818T034500Z"))
     parser.add_argument("--protocol", type=Path, default=ROOT / "configs/STAGE_X_X1R_T1_PROSPECTIVE_DETECTOR_PGD_PROTOCOL_V1.json")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -44,7 +45,7 @@ def main() -> int:
     if protocol.get("iterate_selection", {}).get("rule") != "final_iterate_only":
         errors.append("ITERATE_RULE_NOT_FROZEN")
 
-    natives = sorted(args.root.glob("NATIVE_ACTION_TOKEN_AUTHORITY_AUDIT_V1.json"))
+    natives = sorted(args.native_root.glob("NATIVE_ACTION_TOKEN_AUTHORITY_AUDIT_V1.json"))
     if len(natives) != 1:
         errors.append("NATIVE_RECEIPT_COUNT_NOT_ONE")
         native = None
@@ -62,7 +63,7 @@ def main() -> int:
                 errors.append(f"LEGACY_HELPER_NOT_DIAGNOSTIC_ONLY:{suite}")
 
     reports = []
-    for path in sorted(args.root.glob("SCORE_PATH_*_V2.json")):
+    for path in sorted(args.score_root.glob("SCORE_PATH_*_V2.json")):
         report = load(path)
         if report.get("suite") in SUITES:
             reports.append((path, report))
@@ -112,6 +113,7 @@ def main() -> int:
         "schema": "STAGE_X_X1R_T1_SCORE_PATH_AUTHORITY_RECEIPT_V1",
         "status": "PASS_T1_A_CLEAN_ONLY_SCORE_AUTHORITY" if not errors else "HOLD_T1_A_SCORE_PATH_AUTHORITY",
         "source": source,
+        "score_root": str(args.score_root), "native_root": str(args.native_root),
         "protocol": {"path": str(args.protocol), "sha256": sha256(args.protocol), "iterate_rule": protocol.get("iterate_selection", {}).get("rule")},
         "native_receipt": {"path": str(natives[0]) if natives else None, "sha256": sha256(natives[0]) if native else None, "status": native.get("status") if native else None},
         "score_reports": report_receipts,
