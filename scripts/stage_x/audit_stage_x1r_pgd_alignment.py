@@ -563,12 +563,22 @@ def aggregate_clean(args: argparse.Namespace) -> None:
         if len(entries) < 3:
             failures.append(f"replicate_count:{suite}:{len(entries)}")
         suites[suite] = suite_result
+    token_failures = [failure for failure in failures if failure.startswith("token_nondeterminism:")]
+    teacher_failures = [failure for failure in failures if failure.startswith("teacher_forced_row_mismatch:")]
+    if token_failures:
+        status = "STAGE_X_X1R_T0_HOLD_CLEAN_FORWARD_NONDETERMINISM"
+    elif teacher_failures:
+        status = "STAGE_X_X1R_T0_HOLD_TEACHER_FORCED_ROW_PARITY"
+    else:
+        status = "PASS_CLEAN_FORWARD_DETERMINISM"
     report = {
         "schema": "STAGE_X_X1R_T0_CLEAN_FORWARD_DETERMINISM_V1",
-        "status": "PASS_CLEAN_FORWARD_DETERMINISM" if not failures else "STAGE_X_X1R_T0_HOLD_CLEAN_FORWARD_NONDETERMINISM",
+        "status": status,
         "suites": suites,
         "worker_files": [str(path) for path in paths],
         "failures": failures,
+        "token_determinism_failures": token_failures,
+        "teacher_forced_parity_failures": teacher_failures,
         "protected_counters": dict(COUNTERS),
         "eval160": "UNREAD",
         "protected_evaluation": "UNREAD",
