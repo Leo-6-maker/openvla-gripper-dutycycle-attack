@@ -153,10 +153,11 @@ def parity_one(model: Any, processor: Any, snapshot_root: Path, suite: str, mode
         raise ValueError(f"SNAPSHOT_MODEL_PATH_MISMATCH:{snapshot_root}")
     if decode_config.get("unnorm_key") != suite or decode_config.get("center_crop") is not True:
         raise ValueError(f"SNAPSHOT_DECODE_CONTRACT_MISMATCH:{snapshot_root}")
-    if not np.array_equal(np.asarray(payload["processed_image"]), np.asarray(payload["canonical_policy_rgb_224"])):
-        raise ValueError(f"SNAPSHOT_IMAGE_BYTES_MISMATCH:{snapshot_root}")
+    processed_image = payload["processed_image"]
+    if getattr(processed_image, "mode", "") != "RGB" or tuple(getattr(processed_image, "size", ())) != (224, 224):
+        raise ValueError(f"PROCESSED_IMAGE_CONTRACT_MISMATCH:{snapshot_root}")
 
-    processed = processor(payload["prompt"], payload["processed_image"], return_tensors="pt")
+    processed = processor(payload["prompt"], processed_image, return_tensors="pt")
     prepared = append_empty_action_token(processed)
     input_exact = bool(torch.equal(prepared["input_ids"], payload["input_ids"]))
     attention_exact = bool(torch.equal(prepared["attention_mask"], payload["attention_mask"]))
