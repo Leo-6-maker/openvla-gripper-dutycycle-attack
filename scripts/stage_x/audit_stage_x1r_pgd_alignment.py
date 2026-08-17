@@ -548,14 +548,40 @@ def aggregate_clean(args: argparse.Namespace) -> None:
     for suite in SUITES:
         entries = by_suite.get(suite, [])
         token_sequences = {}
+        processor_failures = []
+        teacher_row_mismatches = []
         for entry in entries:
             for row in entry.get("rows", []):
                 token_sequences.setdefault(row["stage"], []).append(tuple(row["generated_token_ids"]))
                 if not all(row[key] for key in ("processor_input_ids_exact", "processor_attention_mask_exact", "processor_pixel_values_exact_after_dtype_cast")):
-                    failures.append(f"processor:{suite}:{row['stage']}")
+                    failure = f"processor:{suite}:{row['stage']}"
+                    failures.append(failure)
+                    processor_failures.append({"stage": row["stage"], "snapshot_root": row["snapshot_root"]})
                 if not row.get("teacher_forced_all_dims_exact", False):
                     failures.append(f"teacher_forced_row_mismatch:{suite}:{row['stage']}")
-        suite_result = {"replicate_count": len(entries), "stage_token_sequences": {stage: [list(x) for x in seqs] for stage, seqs in token_sequences.items()}, "deterministic": True}
+                    teacher_row_mismatches.extend(
+                        {"stage": row["stage"], **detail}
+                        for detail in row.get("teacher_forced_rows", [])
+                        if not detail.get("exact", False)
+                    )
+        suite_result = {
+            "replicate_count": len(entries),
+            "worker_bindings": [
+                {
+                    "replicate": entry.get("replicate"),
+                    "physical_gpu": entry.get("physical_gpu"),
+                    "cuda_visible_devices": entry.get("cuda_visible_devices"),
+                    "counters": entry.get("counters", {}),
+                }
+                for entry in entries
+            ],
+            "stage_token_sequences": {stage: [list(x) for x in seqs] for stage, seqs in token_sequences.items()},
+            "processor_parity_failures": processor_failures,
+            "teacher_forced_rows_checked": sum(len(row.get("teacher_forced_rows", [])) for entry in entries for row in entry.get("rows", [])),
+            "teacher_forced_row_mismatches": teacher_row_mismatches,
+            "teacher_forced_row_parity": not teacher_row_mismatches,
+            "deterministic": True,
+        }
         for stage, seqs in token_sequences.items():
             if not seqs or any(seq != seqs[0] for seq in seqs[1:]):
                 suite_result["deterministic"] = False
