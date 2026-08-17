@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -41,6 +43,13 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def git_value(*args: str) -> str:
+    try:
+        return subprocess.check_output(["git", *args], cwd=REPO, text=True).strip()
+    except Exception:
+        return "UNKNOWN"
 
 
 def authority_for(native_info: dict[str, Any]) -> NativeActionTokenAuthorityV2:
@@ -124,6 +133,14 @@ def main() -> int:
         "status": "PASS_V2_NATIVE_PARITY_LEGACY_HELPER_DIAGNOSTIC_MISMATCH" if v2_mismatch_count == 0 else "HOLD_NATIVE_AUTHORITY_MISMATCH",
         "authority_version": "STAGE_X_X1R_T1_NATIVE_ACTION_TOKEN_AUTHORITY_V2",
         "algorithm": NATIVE_ACTION_TOKEN_ALGORITHM,
+        "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+        "source": {
+            "commit": git_value("rev-parse", "HEAD"),
+            "tree": git_value("rev-parse", "HEAD^{tree}"),
+            "script": "scripts/stage_x/audit_stage_x1r_t1_native_token_authority.py",
+            "script_sha256": sha256_file(Path(__file__)),
+            "pid": os.getpid(),
+        },
         "canonical_source": ACTION_TOKENIZER_SOURCE,
         "canonical_source_sha256": ACTION_TOKENIZER_SHA256,
         "model_decoder_source_sha256": MODEL_DECODER_SHA256,
