@@ -335,7 +335,7 @@ def action_token_logit_row_index(dim: int, action_dim: int) -> int:
     return -(int(action_dim) - int(dim) + 1)
 
 
-def teacher_forced_rows(model: Any, input_ids: Any, pixel_values: Any, token_ids: np.ndarray, action_dim: int) -> list[dict[str, Any]]:
+def teacher_forced_rows(model: Any, input_ids: Any, pixel_values: Any, token_ids: np.ndarray, action_dim: int, autoregressive_scores: Any = None) -> list[dict[str, Any]]:
     import torch
 
     generated = torch.as_tensor(token_ids, dtype=torch.long, device=input_ids.device).view(1, -1)
@@ -349,14 +349,30 @@ def teacher_forced_rows(model: Any, input_ids: Any, pixel_values: Any, token_ids
     for dim in range(int(action_dim)):
         row_index = action_token_logit_row_index(dim, action_dim)
         expected = int(generated[0, dim].item())
-        argmax = int(torch.argmax(logits[row_index]).item())
-        rows.append({
+        row_logits = logits[row_index].float()
+        top = torch.topk(row_logits, k=2)
+        item = {
             "dim": dim,
             "row_index": row_index,
             "expected_autoregressive_token": expected,
-            "teacher_forced_argmax_token": argmax,
-            "exact": argmax == expected,
-        })
+            "teacher_forced_argmax_token": int(top.indices[0].item()),
+            "teacher_forced_top1_logit": float(top.values[0].item()),
+            "teacher_forced_top2_token": int(top.indices[1].item()),
+            "teacher_forced_top2_logit": float(top.values[1].item()),
+            "teacher_forced_expected_logit": float(row_logits[expected].item()),
+        }
+        if autoregressive_scores is not None:
+            ar = autoregressive_scores[dim][0].float().detach().cpu()
+            ar_top = torch.topk(ar, k=2)
+            item.update({
+                "autoregressive_top1_token": int(ar_top.indices[0].item()),
+                "autoregressive_top1_logit": float(ar_top.values[0].item()),
+                "autoregressive_top2_token": int(ar_top.indices[1].item()),
+                "autoregressive_top2_logit": float(ar_top.values[1].item()),
+                "autoregressive_expected_logit": float(ar[expected].item()),
+            })
+        item["exact"] = item["teacher_forced_argmax_token"] == expected
+        rows.append(item)
     return rows
 
 
@@ -484,7 +500,7 @@ def clean_forward_worker(args: argparse.Namespace) -> None:
         with torch.inference_mode():
             generated = model.generate(**model_inputs, max_new_tokens=action_dim, do_sample=False, return_dict_in_generate=True, output_scores=True)
         token_ids = generated.sequences[0, -action_dim:].detach().cpu().numpy().astype(np.int64)
-        teacher_rows = teacher_forced_rows(model, model_inputs["input_ids"], model_inputs["pixel_values"], token_ids, action_dim)
+        teacher_rows = teacher_forced_rows(model, model_inputs["input_ids"], model_inputs["pixel_values"], token_ids, action_dim, generated.scores)
         score = generated.scores[-1][0].float().detach().cpu()
         top = torch.topk(score, k=2)
         rows.append({
