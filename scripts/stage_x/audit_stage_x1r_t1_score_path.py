@@ -272,22 +272,23 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     cached_pixels = pixel_base.detach().clone().requires_grad_(True)
     nocache_pixels = pixel_base.detach().clone().requires_grad_(True)
-    cached_target_loss, cached_target_stats, cached_target_grad = grad_target(cached_adapter, cached_pixels)
-    nocache_target_loss, nocache_target_stats, nocache_target_grad = grad_target(nocache_adapter, nocache_pixels)
+    with torch.inference_mode(False):
+        cached_target_loss, cached_target_stats, cached_target_grad = grad_target(cached_adapter, cached_pixels)
+        nocache_target_loss, nocache_target_stats, nocache_target_grad = grad_target(nocache_adapter, nocache_pixels)
 
-    cached_arm_pixels = pixel_base.detach().clone().requires_grad_(True)
-    nocache_arm_pixels = pixel_base.detach().clone().requires_grad_(True)
-    cached_arm_rows = cached_rows(model, prompt_ids, cached_arm_pixels, generated)
-    cached_arm_loss = arm_cached_loss(cached_arm_rows, generated)
-    cached_arm_grad = torch.autograd.grad(cached_arm_loss, cached_arm_pixels, retain_graph=False, create_graph=False)[0].detach()
-    nocache_arm_loss, nocache_arm_stats, nocache_arm_grad = nocache_adapter._clean_generated_arm_preservation_loss_and_stats(
-        prompt_ids,
-        generated.view(1, -1),
-        nocache_arm_pixels,
-        action_dim,
-        arm_preserve_weight=1.0,
-    )
-    nocache_arm_grad = torch.autograd.grad(nocache_arm_loss, nocache_arm_pixels, retain_graph=False, create_graph=False)[0].detach()
+        cached_arm_pixels = pixel_base.detach().clone().requires_grad_(True)
+        nocache_arm_pixels = pixel_base.detach().clone().requires_grad_(True)
+        cached_arm_rows = cached_rows(model, prompt_ids, cached_arm_pixels, generated)
+        cached_arm_loss = arm_cached_loss(cached_arm_rows, generated)
+        cached_arm_grad = torch.autograd.grad(cached_arm_loss, cached_arm_pixels, retain_graph=False, create_graph=False)[0].detach()
+        nocache_arm_loss, nocache_arm_stats, nocache_arm_grad = nocache_adapter._clean_generated_arm_preservation_loss_and_stats(
+            prompt_ids,
+            generated.view(1, -1),
+            nocache_arm_pixels,
+            action_dim,
+            arm_preserve_weight=1.0,
+        )
+        nocache_arm_grad = torch.autograd.grad(nocache_arm_loss, nocache_arm_pixels, retain_graph=False, create_graph=False)[0].detach()
 
     row_comparisons = []
     for dim in range(action_dim):
