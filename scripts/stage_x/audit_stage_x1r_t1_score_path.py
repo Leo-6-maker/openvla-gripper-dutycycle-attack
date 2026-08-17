@@ -179,17 +179,20 @@ def arm_cached_loss(rows: Iterable[Any], generated: Any) -> Any:
 
 
 def rehydrate_model_for_autograd(model: Any) -> int:
-    """Clone inference tensors without changing their values or checkpoint identity."""
+    """Clone model tensors for pixel autograd without changing their values."""
     import torch
 
     count = 0
     for module in model.modules():
         for name, parameter in list(module._parameters.items()):
-            if parameter is not None and bool(getattr(parameter, "is_inference", lambda: False)()):
+            # Some low_cpu_mem_usage/tied-weight paths expose inference storage
+            # without a reliable is_inference() flag. Clone every parameter so
+            # the clean gradient audit has ordinary autograd-readable storage.
+            if parameter is not None:
                 module._parameters[name] = torch.nn.Parameter(parameter.detach().clone(), requires_grad=False)
                 count += 1
         for name, buffer in list(module._buffers.items()):
-            if buffer is not None and bool(getattr(buffer, "is_inference", lambda: False)()):
+            if buffer is not None:
                 module._buffers[name] = buffer.detach().clone()
     return count
 
