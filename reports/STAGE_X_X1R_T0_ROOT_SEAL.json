@@ -1,0 +1,42 @@
+{
+  "schema": "STAGE_X_X1R_T0_ROOT_SEAL_V1",
+  "status": "STAGE_X_X1R_T0_REVIEW_REQUIRED",
+  "derived_hold": "STAGE_X_X1R_T0_HOLD_TEACHER_FORCED_ROW_PARITY",
+  "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+  "branch": "codex/stage-x-x1r-t0-pgd-alignment-20260818",
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "clean_forward_runtime_source": {
+    "commit": "7389331ac88c3d5b884b8f8551314d9a400e0217",
+    "tree": "9b7b901fb64ba71ad56182037fe6a04c5535916e"
+  },
+  "final_audit_code_source_before_evidence_sealing": {
+    "commit": "a403a2dea4ba24e7536c74d5f11da3747437f997",
+    "tree": "8be140a128350f6244ae38432082b97d07880dc0"
+  },
+  "evidence_manifest": "STAGE_X_X1R_T0_SHA256SUMS.txt",
+  "evidence_manifest_sha256": "1394bdce227dee0736af6c1d7c15556ce041e1d4ec3ca813ac9e6f13168369d4",
+  "excluded_from_manifest": [
+    "STAGE_X_X1R_T0_SHA256SUMS.sha256",
+    "STAGE_X_X1R_T0_ROOT_SEAL.json",
+    "STAGE_X_X1R_T0_ROOT_SEAL.sha256"
+  ],
+  "protected_boundary": {
+    "pgd_calls": 0,
+    "env_step_calls": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "scientific_identity_changes": {
+    "teacher_changed": false,
+    "student_changed": false,
+    "thresholds_changed": false,
+    "features_changed": false,
+    "production_pgd_path_changed": false,
+    "historical_artifacts_mutated": false
+  }
+}
