@@ -285,7 +285,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         cached_arm_rows = cached_rows(model, prompt_ids, cached_arm_pixels, generated)
         cached_arm_loss = arm_cached_loss(cached_arm_rows, generated)
         cached_arm_grad = torch.autograd.grad(cached_arm_loss, cached_arm_pixels, retain_graph=False, create_graph=False)[0].detach()
-        nocache_arm_loss, nocache_arm_stats, nocache_arm_grad = nocache_adapter._clean_generated_arm_preservation_loss_and_stats(
+        nocache_arm_loss, nocache_arm_stats = nocache_adapter._clean_generated_arm_preservation_loss_and_stats(
             prompt_ids,
             generated.view(1, -1),
             nocache_arm_pixels,
