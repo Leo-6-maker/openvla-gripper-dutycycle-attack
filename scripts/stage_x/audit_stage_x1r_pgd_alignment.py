@@ -335,6 +335,31 @@ def action_token_logit_row_index(dim: int, action_dim: int) -> int:
     return -(int(action_dim) - int(dim) + 1)
 
 
+def teacher_forced_rows(model: Any, input_ids: Any, pixel_values: Any, token_ids: np.ndarray, action_dim: int) -> list[dict[str, Any]]:
+    import torch
+
+    generated = torch.as_tensor(token_ids, dtype=torch.long, device=input_ids.device).view(1, -1)
+    if int(generated.shape[1]) != int(action_dim):
+        raise ValueError(f"TEACHER_FORCED_ACTION_LENGTH_FAIL:{generated.shape[1]}:{action_dim}")
+    full_input_ids = torch.cat((input_ids, generated), dim=1)
+    with torch.inference_mode():
+        output = model(input_ids=full_input_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
+    logits = output.logits[0]
+    rows = []
+    for dim in range(int(action_dim)):
+        row_index = action_token_logit_row_index(dim, action_dim)
+        expected = int(generated[0, dim].item())
+        argmax = int(torch.argmax(logits[row_index]).item())
+        rows.append({
+            "dim": dim,
+            "row_index": row_index,
+            "expected_autoregressive_token": expected,
+            "teacher_forced_argmax_token": argmax,
+            "exact": argmax == expected,
+        })
+    return rows
+
+
 def run_causal_row_toy() -> dict[str, Any]:
     import torch
 
@@ -459,6 +484,7 @@ def clean_forward_worker(args: argparse.Namespace) -> None:
         with torch.inference_mode():
             generated = model.generate(**model_inputs, max_new_tokens=action_dim, do_sample=False, return_dict_in_generate=True, output_scores=True)
         token_ids = generated.sequences[0, -action_dim:].detach().cpu().numpy().astype(np.int64)
+        teacher_rows = teacher_forced_rows(model, model_inputs["input_ids"], model_inputs["pixel_values"], token_ids, action_dim)
         score = generated.scores[-1][0].float().detach().cpu()
         top = torch.topk(score, k=2)
         rows.append({
@@ -471,6 +497,8 @@ def clean_forward_worker(args: argparse.Namespace) -> None:
             "gripper_top1_logit": float(top.values[0]),
             "gripper_top2_logit": float(top.values[1]),
             "gripper_margin": float(top.values[0] - top.values[1]),
+            "teacher_forced_rows": teacher_rows,
+            "teacher_forced_all_dims_exact": bool(all(row["exact"] for row in teacher_rows)),
             "processor_input_ids_exact": bool(torch.equal(prepared["input_ids"], payload["input_ids"])),
             "processor_attention_mask_exact": bool(torch.equal(prepared["attention_mask"], payload["attention_mask"])),
             "processor_pixel_values_exact_after_dtype_cast": bool(torch.equal(prepared["pixel_values"].to(dtype=payload["pixel_values"].dtype), payload["pixel_values"])),
@@ -509,6 +537,8 @@ def aggregate_clean(args: argparse.Namespace) -> None:
                 token_sequences.setdefault(row["stage"], []).append(tuple(row["generated_token_ids"]))
                 if not all(row[key] for key in ("processor_input_ids_exact", "processor_attention_mask_exact", "processor_pixel_values_exact_after_dtype_cast")):
                     failures.append(f"processor:{suite}:{row['stage']}")
+                if not row.get("teacher_forced_all_dims_exact", False):
+                    failures.append(f"teacher_forced_row_mismatch:{suite}:{row['stage']}")
         suite_result = {"replicate_count": len(entries), "stage_token_sequences": {stage: [list(x) for x in seqs] for stage, seqs in token_sequences.items()}, "deterministic": True}
         for stage, seqs in token_sequences.items():
             if not seqs or any(seq != seqs[0] for seq in seqs[1:]):
