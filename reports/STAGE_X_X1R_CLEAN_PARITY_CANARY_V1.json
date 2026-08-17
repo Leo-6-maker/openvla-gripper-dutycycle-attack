@@ -1,0 +1,22 @@
+{
+  "schema": "STAGE_X_X1R_CLEAN_PARITY_CANARY_V1",
+  "status": "HOLD_CLEAN_FORWARD_TOKEN_PARITY",
+  "execution_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_VICTIM_PROVENANCE_CLOSURE_20260817T122000Z",
+  "runtime_source_commit": "fa42bf5244984f6a47eb91922d38fbbb91cd16c4",
+  "runtime_source_tree": "a1cb0496b4265ec2100b610459d0e982fdac26b9",
+  "selection": "one lexicographically first sealed Q00 snapshot per suite from Stage V and Stage VI-B2",
+  "rows": {"snapshots": 8, "processor_exact": 8, "clean_action_within_tolerance": 8, "clean_token_exact": 5, "token_mismatch": 3, "action_tolerance": 1e-6, "maximum_action_error": 2.9802322387695312e-8},
+  "token_mismatches": [
+    {"suite": "libero_10", "stage": "stage_vi_b2", "parent": "libero_10/task_09/state_42", "current_last_token": 31744, "reference_last_token": 31745},
+    {"suite": "libero_goal", "stage": "stage_v", "parent": "libero_goal/task_01/state_41", "current_last_token": 31744, "reference_last_token": 31745},
+    {"suite": "libero_spatial", "stage": "stage_vi_b2", "parent": "libero_spatial/task_08/state_44", "current_last_token": 31744, "reference_last_token": 31745}
+  ],
+  "processor_checks": {"input_ids_exact": true, "attention_mask_exact": true, "pixel_values_exact_after_snapshot_dtype_cast": true},
+  "semantic_checks": {"all_suites_open_close_nonempty": true, "all_suites_open_close_disjoint": true, "canonical_semantics_version": "openvla_libero_exec_spec_v2_official_boundary_20260607"},
+  "resource_receipts": {"physical_gpus": [1, 2, 3, 6], "free_memory_mib_at_worker_start": {"1": 33078, "2": 33078, "3": 33078, "6": 33078}, "one_project_worker_per_gpu": true, "foreign_processes_touched": false},
+  "counters": {"pgd_calls": 0, "env_step_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "protected_reads": 0, "eval160_reads": 0},
+  "eval160": "UNREAD",
+  "protected_evaluation": "UNREAD",
+  "x1r_authorized": false,
+  "interpretation": "Processor and action numeric parity pass, but token identity is not exact on three rows. Do not widen the token gate or infer historical checkpoint equality; preserve HOLD and require owner review/repair under a prospective contract."
+}
