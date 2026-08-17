@@ -247,7 +247,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     nocache_cfg = json.loads(json.dumps(cfg))
     nocache_cfg["attack_optimizer"]["surrogate_score_path"] = "uncached_full_context_v1"
     nocache_adapter = TokenPrefixPGDAttacker(model, processor, nocache_cfg, device=device)
-    arm_prefix = generated[:-1].view(1, -1)
+    arm_prefix = generated[:-1]
 
     official_rows = [
         (score[0, -1, :] if score.ndim == 3 else score[0, :]).detach()
