@@ -1,0 +1,170 @@
+{
+  "schema": "STAGE_X_X0_DUTY_CYCLE_MECHANISM_PROTOCOL_V1",
+  "stage": "STAGE_X_GRIPPER_DUTY_CYCLE_MECHANISM",
+  "namespace": "STAGE_X_X0_DUTY_CYCLE_MECHANISM_20260817",
+  "status": "FROZEN_BEFORE_MEDIATOR_AVAILABILITY_AUDIT",
+  "purpose": "read-only descriptive audit of commanded gripper exposure, realized aperture, contact/support disruption, and exact physical outcomes in consumed non-protected formal evidence",
+  "scientific_scope": {
+    "estimand": "descriptive dose-response and mechanism-chain evidence for the existing V_phys endpoint",
+    "stage_x_is_not": [
+      "a new detector",
+      "a Teacher or Student retraining cycle",
+      "a timing selector",
+      "a new physical intervention",
+      "a protected evaluation"
+    ],
+    "prior_conclusions_immutable": true,
+    "outcome_data_used_for_selection": false
+  },
+  "inputs": {
+    "stage_v_labels": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_FORMAL_M4_AGGREGATE_F696F582_20260815T175500Z/M4_ALL_LABELS_V1.jsonl",
+      "sha256": "cf4ece1b0c864289f6dcf318d91ff59fbb3aecbb65d8482f11ad509e3ff59cea",
+      "rows": 2880,
+      "population": "40 parents x 24 probes x T3/T5/T10",
+      "abstains": "masked; never coerced to negative"
+    },
+    "stage_v_branch_root": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_FORMAL_M4_F696F582_20260815T231000Z",
+      "current_parent_branch_files": 39,
+      "bridge_parent_binding": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_FORMAL_M4_F696F582_20260815T231000Z/parents/00_libero_10__task_08__state_28/BRIDGE_BINDING.json",
+      "bridge_source_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_FORMAL_REPLACEMENT_ATTEMPT1_8C7596E9_20260815T123000Z/parents/00_libero_10__task_08__state_28",
+      "selection_rule": "include all 40 frozen Stage V parents exactly once; bridge source is explicit and inventory-sealed"
+    },
+    "stage_vi_b2_labels": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FORMAL_M4_AGGREGATE_V3_DUAL_SOURCE_20260816T061432Z/B2_ALL_LABELS.jsonl",
+      "sha256": "3817648b3a3ac4de236a48a1377dc252ac6dd54d5fdf254f0753392b3b7c7106",
+      "rows": 1152,
+      "population": "16 parents x 24 probes x T3/T5/T10",
+      "abstains": "masked; never coerced to negative"
+    },
+    "stage_vi_b2_observations": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FORMAL_M4_AGGREGATE_V3_DUAL_SOURCE_20260816T061432Z/B2_ALL_OBSERVATIONS.jsonl",
+      "sha256": "df13daf77c4beac6acd1560dacbed642aadb6278b4d858f121739f1cf29d082d",
+      "rows": 1152
+    },
+    "stage_vi_b2_branches": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FORMAL_M4_AGGREGATE_V3_DUAL_SOURCE_20260816T061432Z/B2_ALL_BRANCHES.jsonl",
+      "sha256": "536ca50db7f511534af0c9444e1083077aed5966a814e6054464a75a861c5b4d",
+      "rows": 1536
+    },
+    "stage_vi_b2_sha256sums": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FORMAL_M4_AGGREGATE_V3_DUAL_SOURCE_20260816T061432Z/SHA256SUMS",
+      "sha256": "04ebc2f8179b7954ac188d791b4a06640cd88c62d88e7709ce6bbf8200887c11"
+    },
+    "stage_ix_negative_reference": {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_IX_FACTORIZED_PGD_TIMING_UTILITY/STAGE_IX_F0_VIS_EXPLOITABILITY_20260816T172453Z",
+      "status": "STAGE_IX_NO_MODEL_SIDE_TIMING_SIGNAL",
+      "consumed_as_stage_x_data": false
+    }
+  },
+  "population": {
+    "primary_unit": "stage + canonical_parent_key + probe_id + probe_step + dose",
+    "arms": ["CONTROL", "T3", "T5", "T10"],
+    "primary_endpoint": "V_phys",
+    "secondary_endpoint": "frozen downstream physical-failure taxonomy only when present exactly",
+    "pairing": "same stage, parent, probe, and probe_step; matched CONTROL with each dose",
+    "observation_window": "exact intersection of relative_step values between matched CONTROL and dose branches; no padding or extrapolation; shorter observed horizons remain censored",
+    "censoring": {
+      "abstain_classes": ["HORIZON_CENSORED_ABSTAIN", "TREATMENT_INVALID_CENSORED_ABSTAIN", "ABSTAIN"],
+      "rule": "retain in accounting and censoring map; exclude from binary-positive/binary-negative comparisons",
+      "no_coercion_to_negative": true
+    },
+    "protected_exclusion": ["Eval160", "protected evaluation", "protected identities"],
+    "new_intervention": false,
+    "new_env_step": false,
+    "new_pgd": false,
+    "new_training": false
+  },
+  "mediators": {
+    "availability_audit_first": true,
+    "not_available_policy": "report NOT_AVAILABLE when exact canonical telemetry is absent or incomplete; do not infer or reconstruct",
+    "definitions": {
+      "M1_commanded_open_fraction": {
+        "layer": "command exposure",
+        "metric": "delivered canonical OPEN command steps divided by requested dose steps, with command receipt and row-level action agreement required",
+        "fallback": "NOT_AVAILABLE"
+      },
+      "M2_aperture_excess_auc_vs_control": {
+        "layer": "realized gripper motion",
+        "metric": "paired area of treatment aperture minus matched CONTROL aperture over the exact overlapping relative_step window",
+        "fallback": "paired max aperture delta versus CONTROL when complete AUC coverage is unavailable"
+      },
+      "M3_any_contact_loss": {
+        "layer": "contact/support",
+        "metric": "any exact valid overlapping-window loss of gripper or support contact relative to the matched CONTROL trajectory",
+        "fallback": "NOT_AVAILABLE"
+      },
+      "M4_object_displacement": {
+        "layer": "object/task consequence",
+        "metric": "exact paired object-position displacement in the registered overlapping physical window",
+        "fallback": "NOT_AVAILABLE; do not substitute inferred release/drop/task failure"
+      },
+      "task_failure": {
+        "layer": "task consequence",
+        "metric": "frozen exact downstream failure taxonomy only if present in the consumed evidence",
+        "fallback": "NOT_AVAILABLE; do not redefine V_phys"
+      }
+    },
+    "selection_rule": "availability only, then the first listed metric per layer whose exact completeness contract passes; no outcome, score, or effect-size selection"
+  },
+  "analyses": {
+    "dose_response": ["T3", "T5", "T10"],
+    "paired_tests": ["risk_difference", "odds_ratio", "McNemar_when_identifiable"],
+    "uncertainty": {
+      "unit": "canonical_parent_key",
+      "bootstrap": "parent resampling with replacement",
+      "replicates": 2000,
+      "seed": 20260817,
+      "iid_row_intervals": false
+    },
+    "monotonicity": {
+      "per_probe_order": ["T3", "T5", "T10"],
+      "patterns": {
+        "monotone": ["000", "001", "011", "111"],
+        "nonmonotone": ["010", "100", "101", "110"]
+      },
+      "abstain_policy": "not assigned a binary pattern"
+    },
+    "temporal_heterogeneity": ["vulnerable_fraction", "transition_count", "longest_vulnerable_run", "entropy", "first_vulnerable_step", "last_vulnerable_step"],
+    "stratification": "report by suite and parent; no outcome-defined phase boundary",
+    "privileged_phase_diagnostic": "only if clean pre-intervention geometry/contact/support fields are exact; descriptive and non-promotional",
+    "mechanism_chain": "dose -> M2 -> M3 -> M4 -> task failure; descriptive association only, no formal mediation claim"
+  },
+  "decision": {
+    "A": "STAGE_X_PHYSICAL_DUTY_CYCLE_MECHANISM_SUPPORTED",
+    "B": "STAGE_X_PHYSICAL_DOSE_RESPONSE_WEAK_OR_NONMONOTONIC",
+    "C": "STAGE_X_MECHANISM_TELEMETRY_INSUFFICIENT",
+    "x0_does_not_authorize": ["physical PGD", "new physical matrix", "Eval160", "protected evaluation"],
+    "x1_dependency": "X1 may be prepared/run only as clean no-env sequential diagnostics; X2 requires X0=A and X1=A"
+  },
+  "resource_contract": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7],
+    "strict_free_memory_rule_mib": "> 20480",
+    "maximum_project_workers_per_gpu": 1,
+    "foreign_workload_interference": false,
+    "partial_fleet_allowed": true,
+    "atomic_unit": "parent",
+    "gpu_required_for_x0": false
+  },
+  "provenance": {
+    "protocol_source_commit": "f5a9d8731594f9f9a01aaf5f8b2b48abddcd91fc",
+    "protocol_source_tree": "d169288b5d0169f78889c8edf3c5c72186030f5f",
+    "execution_worktree": "separate clean server worktree; never the dirty base worktree",
+    "required_outputs": ["execution_manifest.json", "availability_manifest.json", "SHA256SUMS", "SHA256SUMS.sha256", "ROOT_SEAL.json", "ROOT_SEAL.sha256"],
+    "append_only": true,
+    "sealed_roots_immutable": true
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0,
+      "env_steps_with_perturbed_action": 0
+    }
+  }
+}
