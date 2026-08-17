@@ -54,7 +54,7 @@ def exact_frame(manifest_path: Path, manifest: dict[str, Any]) -> tuple[bool, li
     binding = manifest.get("binding")
     if not isinstance(payload, dict) or not isinstance(binding, dict):
         return False, ["payload_or_binding_missing"]
-    if manifest.get("status") not in (None, "PASS", "PASS_CAUSAL_PROBE_SNAPSHOT"):
+    if manifest.get("status") not in (None, "PASS", "PASS_CAUSAL_PROBE_SNAPSHOT", "SEALED_PROSPECTIVE_SNAPSHOT"):
         reasons.append("snapshot_status_not_pass")
     if not isinstance(binding.get("parent_key"), str) or not isinstance(binding.get("probe_id"), str) or not isinstance(binding.get("step"), int):
         reasons.append("binding_incomplete")
