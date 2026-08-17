@@ -1,0 +1,717 @@
+{
+  "eval160": "UNREAD",
+  "protected_counters": {
+    "attack_outcome_reads": 0,
+    "env_step_calls": 0,
+    "eval160_reads": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "protected_evaluation": "UNREAD",
+  "schema": "STAGE_X_X1R_T0_TOKEN_ROUNDTRIP_FORENSIC_V1",
+  "status": "HISTORICAL_GENERATED_TOKEN_IDS_NOT_IDENTIFIABLE",
+  "suites": {
+    "libero_10": {
+      "conclusion": "token IDs are not equivalent merely because decoded actions are numerically close",
+      "historical_generated_token_ids": "NOT_IDENTIFIABLE",
+      "row_count": 2,
+      "rows": [
+        {
+          "R1_current_token_canonical_decode_then_canonical_encode": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          "R2_current_token_project_decode_then_project_encode": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          "R3_reference_raw_canonical_encode": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          "R4_reference_raw_project_encode": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          "current_generated_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          "gripper": {
+            "adjacent_bin_center": -0.007843137254901933,
+            "adjacent_bin_index": 126,
+            "canonical_reencoded_current_raw_token": 31872,
+            "canonical_reencoded_reference_raw_token": 31872,
+            "current_bin_center": 0.0,
+            "current_bin_index": 127,
+            "current_generated_token": 31872,
+            "distance_to_adjacent_center": 0.007843137254901933,
+            "distance_to_current_center": 0.0,
+            "distance_to_left_edge": 0.0039215686274509665,
+            "distance_to_right_edge": 0.0039215686274509665,
+            "historical_raw_action": 0.0,
+            "left_edge": -0.0039215686274509665,
+            "mask": false,
+            "normalized_historical_action": 0.0,
+            "project_reencoded_current_raw_token": 31872,
+            "project_reencoded_reference_raw_token": 31872,
+            "q01": 0.0,
+            "q99": 1.0,
+            "right_edge": 0.0039215686274509665
+          },
+          "historical_generated_token_evidence": "NOT_IDENTIFIABLE; prior artifact contains reference/reencoded token fields, not a direct immutable generation output",
+          "historical_generated_token_ids": null,
+          "parent_key": "libero_10/task_00/state_27",
+          "probe_id": "Q00",
+          "reference_derived_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          "stage": "stage_v"
+        },
+        {
+          "R1_current_token_canonical_decode_then_canonical_encode": [
+            31884,
+            31871,
+            31922,
+            31916,
+            31877,
+            31883,
+            31745
+          ],
+          "R2_current_token_project_decode_then_project_encode": [
+            31884,
+            31871,
+            31922,
+            31916,
+            31877,
+            31883,
+            31745
+          ],
+          "R3_reference_raw_canonical_encode": [
+            31884,
+            31871,
+            31922,
+            31916,
+            31877,
+            31883,
+            31745
+          ],
+          "R4_reference_raw_project_encode": [
+            31884,
+            31871,
+            31922,
+            31916,
+            31877,
+            31883,
+            31745
+          ],
+          "current_generated_token_ids": [
+            31884,
+            31871,
+            31922,
+            31916,
+            31877,
+            31883,
+            31744
+          ],
+          "gripper": {
+            "adjacent_bin_center": 0.9882352941176471,
+            "adjacent_bin_index": 253,
+            "canonical_reencoded_current_raw_token": 31745,
+            "canonical_reencoded_reference_raw_token": 31745,
+            "current_bin_center": 0.996078431372549,
+            "current_bin_index": 254,
+            "current_generated_token": 31744,
+            "distance_to_adjacent_center": 0.007843137488645624,
+            "distance_to_current_center": 2.3374369106932136e-10,
+            "distance_to_left_edge": 0.0039215688611946575,
+            "distance_to_right_edge": 0.003921568393707275,
+            "historical_raw_action": 0.9960784316062927,
+            "left_edge": 0.9921568627450981,
+            "mask": false,
+            "normalized_historical_action": 0.9960784316062927,
+            "project_reencoded_current_raw_token": 31745,
+            "project_reencoded_reference_raw_token": 31745,
+            "q01": 0.0,
+            "q99": 1.0,
+            "right_edge": 1.0
+          },
+          "historical_generated_token_evidence": "NOT_IDENTIFIABLE; prior artifact contains reference/reencoded token fields, not a direct immutable generation output",
+          "historical_generated_token_ids": null,
+          "parent_key": "libero_10/task_09/state_42",
+          "probe_id": "Q00",
+          "reference_derived_token_ids": [
+            31884,
+            31871,
+            31922,
+            31916,
+            31877,
+            31883,
+            31745
+          ],
+          "stage": "stage_vi_b2"
+        }
+      ],
+      "schema": "STAGE_X_X1R_T0_TOKEN_ROUNDTRIP_FORENSIC_V1",
+      "suite": "libero_10"
+    },
+    "libero_goal": {
+      "conclusion": "token IDs are not equivalent merely because decoded actions are numerically close",
+      "historical_generated_token_ids": "NOT_IDENTIFIABLE",
+      "row_count": 2,
+      "rows": [
+        {
+          "R1_current_token_canonical_decode_then_canonical_encode": [
+            31893,
+            31884,
+            31939,
+            31918,
+            31902,
+            31931,
+            31745
+          ],
+          "R2_current_token_project_decode_then_project_encode": [
+            31893,
+            31884,
+            31939,
+            31918,
+            31902,
+            31931,
+            31745
+          ],
+          "R3_reference_raw_canonical_encode": [
+            31893,
+            31884,
+            31939,
+            31918,
+            31902,
+            31931,
+            31745
+          ],
+          "R4_reference_raw_project_encode": [
+            31893,
+            31884,
+            31939,
+            31918,
+            31902,
+            31931,
+            31745
+          ],
+          "current_generated_token_ids": [
+            31893,
+            31884,
+            31939,
+            31918,
+            31902,
+            31931,
+            31744
+          ],
+          "gripper": {
+            "adjacent_bin_center": 0.9882352941176471,
+            "adjacent_bin_index": 253,
+            "canonical_reencoded_current_raw_token": 31745,
+            "canonical_reencoded_reference_raw_token": 31745,
+            "current_bin_center": 0.996078431372549,
+            "current_bin_index": 254,
+            "current_generated_token": 31744,
+            "distance_to_adjacent_center": 0.007843137488645624,
+            "distance_to_current_center": 2.3374369106932136e-10,
+            "distance_to_left_edge": 0.0039215688611946575,
+            "distance_to_right_edge": 0.003921568393707275,
+            "historical_raw_action": 0.9960784316062927,
+            "left_edge": 0.9921568627450981,
+            "mask": false,
+            "normalized_historical_action": 0.9960784316062927,
+            "project_reencoded_current_raw_token": 31745,
+            "project_reencoded_reference_raw_token": 31745,
+            "q01": 0.0,
+            "q99": 1.0,
+            "right_edge": 1.0
+          },
+          "historical_generated_token_evidence": "NOT_IDENTIFIABLE; prior artifact contains reference/reencoded token fields, not a direct immutable generation output",
+          "historical_generated_token_ids": null,
+          "parent_key": "libero_goal/task_01/state_41",
+          "probe_id": "Q00",
+          "reference_derived_token_ids": [
+            31893,
+            31884,
+            31939,
+            31918,
+            31902,
+            31931,
+            31745
+          ],
+          "stage": "stage_v"
+        },
+        {
+          "R1_current_token_canonical_decode_then_canonical_encode": [
+            31878,
+            31884,
+            31890,
+            31891,
+            31903,
+            31931,
+            31872
+          ],
+          "R2_current_token_project_decode_then_project_encode": [
+            31878,
+            31884,
+            31890,
+            31891,
+            31903,
+            31931,
+            31872
+          ],
+          "R3_reference_raw_canonical_encode": [
+            31878,
+            31884,
+            31890,
+            31891,
+            31903,
+            31931,
+            31872
+          ],
+          "R4_reference_raw_project_encode": [
+            31878,
+            31884,
+            31890,
+            31891,
+            31903,
+            31931,
+            31872
+          ],
+          "current_generated_token_ids": [
+            31878,
+            31884,
+            31890,
+            31891,
+            31903,
+            31931,
+            31872
+          ],
+          "gripper": {
+            "adjacent_bin_center": -0.007843137254901933,
+            "adjacent_bin_index": 126,
+            "canonical_reencoded_current_raw_token": 31872,
+            "canonical_reencoded_reference_raw_token": 31872,
+            "current_bin_center": 0.0,
+            "current_bin_index": 127,
+            "current_generated_token": 31872,
+            "distance_to_adjacent_center": 0.007843137254901933,
+            "distance_to_current_center": 0.0,
+            "distance_to_left_edge": 0.0039215686274509665,
+            "distance_to_right_edge": 0.0039215686274509665,
+            "historical_raw_action": 0.0,
+            "left_edge": -0.0039215686274509665,
+            "mask": false,
+            "normalized_historical_action": 0.0,
+            "project_reencoded_current_raw_token": 31872,
+            "project_reencoded_reference_raw_token": 31872,
+            "q01": 0.0,
+            "q99": 1.0,
+            "right_edge": 0.0039215686274509665
+          },
+          "historical_generated_token_evidence": "NOT_IDENTIFIABLE; prior artifact contains reference/reencoded token fields, not a direct immutable generation output",
+          "historical_generated_token_ids": null,
+          "parent_key": "libero_goal/task_02/state_45",
+          "probe_id": "Q00",
+          "reference_derived_token_ids": [
+            31878,
+            31884,
+            31890,
+            31891,
+            31903,
+            31931,
+            31872
+          ],
+          "stage": "stage_vi_b2"
+        }
+      ],
+      "schema": "STAGE_X_X1R_T0_TOKEN_ROUNDTRIP_FORENSIC_V1",
+      "suite": "libero_goal"
+    },
+    "libero_object": {
+      "conclusion": "token IDs are not equivalent merely because decoded actions are numerically close",
+      "historical_generated_token_ids": "NOT_IDENTIFIABLE",
+      "row_count": 2,
+      "rows": [
+        {
+          "R1_current_token_canonical_decode_then_canonical_encode": [
+            31900,
+            31870,
+            31872,
+            31882,
+            31836,
+            31834,
+            31872
+          ],
+          "R2_current_token_project_decode_then_project_encode": [
+            31900,
+            31870,
+            31872,
+            31882,
+            31836,
+            31834,
+            31872
+          ],
+          "R3_reference_raw_canonical_encode": [
+            31900,
+            31870,
+            31872,
+            31882,
+            31836,
+            31834,
+            31872
+          ],
+          "R4_reference_raw_project_encode": [
+            31900,
+            31870,
+            31872,
+            31882,
+            31836,
+            31834,
+            31872
+          ],
+          "current_generated_token_ids": [
+            31900,
+            31870,
+            31872,
+            31882,
+            31836,
+            31834,
+            31872
+          ],
+          "gripper": {
+            "adjacent_bin_center": -0.007843137254901933,
+            "adjacent_bin_index": 126,
+            "canonical_reencoded_current_raw_token": 31872,
+            "canonical_reencoded_reference_raw_token": 31872,
+            "current_bin_center": 0.0,
+            "current_bin_index": 127,
+            "current_generated_token": 31872,
+            "distance_to_adjacent_center": 0.007843137254901933,
+            "distance_to_current_center": 0.0,
+            "distance_to_left_edge": 0.0039215686274509665,
+            "distance_to_right_edge": 0.0039215686274509665,
+            "historical_raw_action": 0.0,
+            "left_edge": -0.0039215686274509665,
+            "mask": false,
+            "normalized_historical_action": 0.0,
+            "project_reencoded_current_raw_token": 31872,
+            "project_reencoded_reference_raw_token": 31872,
+            "q01": 0.0,
+            "q99": 1.0,
+            "right_edge": 0.0039215686274509665
+          },
+          "historical_generated_token_evidence": "NOT_IDENTIFIABLE; prior artifact contains reference/reencoded token fields, not a direct immutable generation output",
+          "historical_generated_token_ids": null,
+          "parent_key": "libero_object/task_00/state_23",
+          "probe_id": "Q00",
+          "reference_derived_token_ids": [
+            31900,
+            31870,
+            31872,
+            31882,
+            31836,
+            31834,
+            31872
+          ],
+          "stage": "stage_v"
+        },
+        {
+          "R1_current_token_canonical_decode_then_canonical_encode": [
+            31900,
+            31870,
+            31899,
+            31882,
+            31887,
+            31834,
+            31872
+          ],
+          "R2_current_token_project_decode_then_project_encode": [
+            31900,
+            31870,
+            31899,
+            31882,
+            31887,
+            31834,
+            31872
+          ],
+          "R3_reference_raw_canonical_encode": [
+            31900,
+            31870,
+            31899,
+            31882,
+            31887,
+            31834,
+            31872
+          ],
+          "R4_reference_raw_project_encode": [
+            31900,
+            31870,
+            31899,
+            31882,
+            31887,
+            31834,
+            31872
+          ],
+          "current_generated_token_ids": [
+            31900,
+            31870,
+            31899,
+            31882,
+            31887,
+            31834,
+            31872
+          ],
+          "gripper": {
+            "adjacent_bin_center": -0.007843137254901933,
+            "adjacent_bin_index": 126,
+            "canonical_reencoded_current_raw_token": 31872,
+            "canonical_reencoded_reference_raw_token": 31872,
+            "current_bin_center": 0.0,
+            "current_bin_index": 127,
+            "current_generated_token": 31872,
+            "distance_to_adjacent_center": 0.007843137254901933,
+            "distance_to_current_center": 0.0,
+            "distance_to_left_edge": 0.0039215686274509665,
+            "distance_to_right_edge": 0.0039215686274509665,
+            "historical_raw_action": 0.0,
+            "left_edge": -0.0039215686274509665,
+            "mask": false,
+            "normalized_historical_action": 0.0,
+            "project_reencoded_current_raw_token": 31872,
+            "project_reencoded_reference_raw_token": 31872,
+            "q01": 0.0,
+            "q99": 1.0,
+            "right_edge": 0.0039215686274509665
+          },
+          "historical_generated_token_evidence": "NOT_IDENTIFIABLE; prior artifact contains reference/reencoded token fields, not a direct immutable generation output",
+          "historical_generated_token_ids": null,
+          "parent_key": "libero_object/task_03/state_28",
+          "probe_id": "Q00",
+          "reference_derived_token_ids": [
+            31900,
+            31870,
+            31899,
+            31882,
+            31887,
+            31834,
+            31872
+          ],
+          "stage": "stage_vi_b2"
+        }
+      ],
+      "schema": "STAGE_X_X1R_T0_TOKEN_ROUNDTRIP_FORENSIC_V1",
+      "suite": "libero_object"
+    },
+    "libero_spatial": {
+      "conclusion": "token IDs are not equivalent merely because decoded actions are numerically close",
+      "historical_generated_token_ids": "NOT_IDENTIFIABLE",
+      "row_count": 2,
+      "rows": [
+        {
+          "R1_current_token_canonical_decode_then_canonical_encode": [
+            31887,
+            31875,
+            31892,
+            31957,
+            31833,
+            31907,
+            31872
+          ],
+          "R2_current_token_project_decode_then_project_encode": [
+            31887,
+            31875,
+            31892,
+            31957,
+            31833,
+            31907,
+            31872
+          ],
+          "R3_reference_raw_canonical_encode": [
+            31887,
+            31875,
+            31892,
+            31957,
+            31833,
+            31907,
+            31872
+          ],
+          "R4_reference_raw_project_encode": [
+            31887,
+            31875,
+            31892,
+            31957,
+            31833,
+            31907,
+            31872
+          ],
+          "current_generated_token_ids": [
+            31887,
+            31875,
+            31892,
+            31957,
+            31833,
+            31907,
+            31872
+          ],
+          "gripper": {
+            "adjacent_bin_center": -0.007843137254901933,
+            "adjacent_bin_index": 126,
+            "canonical_reencoded_current_raw_token": 31872,
+            "canonical_reencoded_reference_raw_token": 31872,
+            "current_bin_center": 0.0,
+            "current_bin_index": 127,
+            "current_generated_token": 31872,
+            "distance_to_adjacent_center": 0.007843137254901933,
+            "distance_to_current_center": 0.0,
+            "distance_to_left_edge": 0.0039215686274509665,
+            "distance_to_right_edge": 0.0039215686274509665,
+            "historical_raw_action": 0.0,
+            "left_edge": -0.0039215686274509665,
+            "mask": false,
+            "normalized_historical_action": 0.0,
+            "project_reencoded_current_raw_token": 31872,
+            "project_reencoded_reference_raw_token": 31872,
+            "q01": 0.0,
+            "q99": 1.0,
+            "right_edge": 0.0039215686274509665
+          },
+          "historical_generated_token_evidence": "NOT_IDENTIFIABLE; prior artifact contains reference/reencoded token fields, not a direct immutable generation output",
+          "historical_generated_token_ids": null,
+          "parent_key": "libero_spatial/task_01/state_25",
+          "probe_id": "Q00",
+          "reference_derived_token_ids": [
+            31887,
+            31875,
+            31892,
+            31957,
+            31833,
+            31907,
+            31872
+          ],
+          "stage": "stage_v"
+        },
+        {
+          "R1_current_token_canonical_decode_then_canonical_encode": [
+            31950,
+            31882,
+            31960,
+            31870,
+            31912,
+            31885,
+            31745
+          ],
+          "R2_current_token_project_decode_then_project_encode": [
+            31950,
+            31882,
+            31960,
+            31870,
+            31912,
+            31885,
+            31745
+          ],
+          "R3_reference_raw_canonical_encode": [
+            31950,
+            31882,
+            31960,
+            31870,
+            31912,
+            31885,
+            31745
+          ],
+          "R4_reference_raw_project_encode": [
+            31950,
+            31882,
+            31960,
+            31870,
+            31912,
+            31885,
+            31745
+          ],
+          "current_generated_token_ids": [
+            31950,
+            31882,
+            31960,
+            31870,
+            31912,
+            31885,
+            31744
+          ],
+          "gripper": {
+            "adjacent_bin_center": 0.9882352941176471,
+            "adjacent_bin_index": 253,
+            "canonical_reencoded_current_raw_token": 31745,
+            "canonical_reencoded_reference_raw_token": 31745,
+            "current_bin_center": 0.996078431372549,
+            "current_bin_index": 254,
+            "current_generated_token": 31744,
+            "distance_to_adjacent_center": 0.007843137488645624,
+            "distance_to_current_center": 2.3374369106932136e-10,
+            "distance_to_left_edge": 0.0039215688611946575,
+            "distance_to_right_edge": 0.003921568393707275,
+            "historical_raw_action": 0.9960784316062927,
+            "left_edge": 0.9921568627450981,
+            "mask": false,
+            "normalized_historical_action": 0.9960784316062927,
+            "project_reencoded_current_raw_token": 31745,
+            "project_reencoded_reference_raw_token": 31745,
+            "q01": 0.0,
+            "q99": 1.0,
+            "right_edge": 1.0
+          },
+          "historical_generated_token_evidence": "NOT_IDENTIFIABLE; prior artifact contains reference/reencoded token fields, not a direct immutable generation output",
+          "historical_generated_token_ids": null,
+          "parent_key": "libero_spatial/task_08/state_44",
+          "probe_id": "Q00",
+          "reference_derived_token_ids": [
+            31950,
+            31882,
+            31960,
+            31870,
+            31912,
+            31885,
+            31745
+          ],
+          "stage": "stage_vi_b2"
+        }
+      ],
+      "schema": "STAGE_X_X1R_T0_TOKEN_ROUNDTRIP_FORENSIC_V1",
+      "suite": "libero_spatial"
+    }
+  }
+}
