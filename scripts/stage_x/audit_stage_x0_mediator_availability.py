@@ -174,10 +174,17 @@ def audit_branch(record: dict[str, Any], path: Path) -> dict[str, Any]:
             break
     contact_fields = ("post_contact_telemetry_valid", "post_object_gripper_contact", "post_object_support_contact")
     contact_complete = bool(rows) and all(
-        isinstance(row, dict) and all(bool_value(row.get(field)) for field in contact_fields) for row in rows
+        isinstance(row, dict)
+        and row.get("post_contact_telemetry_valid") is True
+        and bool_value(row.get("post_object_gripper_contact"))
+        and bool_value(row.get("post_object_support_contact"))
+        for row in rows
     )
     object_position_complete = bool(rows) and all(
-        isinstance(row, dict) and finite_vector(row.get("post_object_position"), 3) for row in rows
+        isinstance(row, dict)
+        and row.get("post_contact_telemetry_valid") is True
+        and finite_vector(row.get("post_object_position"), 3)
+        for row in rows
     )
     relative_steps = [row.get("relative_step") if isinstance(row, dict) else None for row in rows]
     relative_step_complete = bool(rows) and all(isinstance(step, int) for step in relative_steps)
