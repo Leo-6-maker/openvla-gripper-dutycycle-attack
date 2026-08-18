@@ -23,6 +23,7 @@ SAFE_JSON = REPO / "reports/STAGE_X_X1R_T1D1M0R_HUMAN_REVIEW_SHEET_V1.json"
 INSTRUCTIONS = REPO / "docs/handoffs/STAGE_X_X1R_T1D1M0R_OWNER_REVIEW_INSTRUCTIONS_20260818.md"
 OUT_AUDIT = REPO / "reports/STAGE_X_X1R_T1D1M0R_HUMAN_SHEET_AUDIT_V1.json"
 EXPECTED_BASE = "f4da1c6683860757cc9775b573a158dd89505b15"
+EXPECTED_PR131_HEAD = "6dbf1ee287660a5f70ee90a0680e7c859fa155a8"
 EXPECTED_TREE = "e79c1aa77f3eab3a45e1c7e513e1239095c4c69c"
 EXPECTED_LEDGER_SHA = "5f1f036b47b1c9a8c1bafe7a400b6be9269cd3e67587691018005c824dc8d89e"
 EXPECTED_MAPPING_SHA = "3d7f59a736cc2c7bcb5ecdc49e9e57a7e8b547c9e7554251e88158017366f0fe"
@@ -66,6 +67,11 @@ def sha(path: Path) -> str:
 
 def git(*args: str) -> str:
     return subprocess.run(["git", *args], cwd=REPO, check=True, capture_output=True, text=True).stdout.strip()
+
+
+def pr131_blob_sha(relative: str) -> str:
+    content = subprocess.run(["git", "show", f"{EXPECTED_PR131_HEAD}:{relative}"], cwd=REPO, check=True, capture_output=True).stdout
+    return hashlib.sha256(content).hexdigest()
 
 
 def fail(errors: list[str]) -> None:
@@ -156,10 +162,7 @@ def main() -> int:
         path = REPO / relative
         if not path.is_file():
             errors.append(f"D1M0_ARTIFACT_CHANGED:{relative}")
-        elif relative.endswith("STAGE_X_X1R_T1D1M0_ROOT_SEAL.json"):
-            if sha(path) != D1M0_SEAL_SIDE.read_text(encoding="utf-8").split()[0]:
-                errors.append(f"D1M0_ARTIFACT_CHANGED:{relative}")
-        elif sums.get(relative) != sha(path):
+        elif sha(path) != pr131_blob_sha(relative):
             errors.append(f"D1M0_ARTIFACT_CHANGED:{relative}")
     fail(errors)
 
