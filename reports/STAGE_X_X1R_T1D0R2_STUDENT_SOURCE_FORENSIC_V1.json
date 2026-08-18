@@ -1,0 +1,39 @@
+{
+  "classification": {
+    "current_server_file_matches_prospective_git_bytes": false,
+    "historical_receipt_runtime_identity_matches_prospective_git_bytes": true,
+    "historical_training_source": "NOT_IDENTIFIABLE",
+    "prospective_inference_implementation": "TRACKED_PR127_SOURCE_30CF",
+    "reason": "T1 handoff, receipt runtime identity, and current server file are not a single proven launch-time training source."
+  },
+  "declarations": {
+    "current_server_file": "ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b",
+    "historical_t1_receipt_value": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+    "prospective_git_source_raw": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+    "t1_handoff_declaration": "7945e464130d8bcb4b4fd85475dffc3024ef2bc419b5d1ea812b29156b96a0fd"
+  },
+  "errors": [],
+  "schema": "STAGE_X_X1R_T1D0R2_STUDENT_SOURCE_FORENSIC_V1",
+  "source_records": {
+    "current_server_file": {
+      "byte_size": 33934,
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py",
+      "raw_sha256": "ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b"
+    },
+    "historical_t1_receipt": {
+      "json_key": "sealed_detector.student_model_source_sha256",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x_t1_detector_authority_20260818T034500Z/DETECTOR_AUTHORITY_RECEIPT_V1.json",
+      "source_commit": "4e4caff51959f21a2abb74db19ce1edede9645c9",
+      "source_tree": "233e578df72826d29fae8c2725b0ada2405a83bc",
+      "value": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c"
+    },
+    "prospective_git_source": {
+      "byte_size": 34112,
+      "git_blob_sha": "7e2aceabe4a9cfc871b51fc2ceee46fed5019c65",
+      "path": "n5/phase3_student/n5_student_model.py",
+      "raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+      "ref": "HEAD"
+    }
+  },
+  "status": "PASS_FORENSIC_CLASSIFICATION"
+}
