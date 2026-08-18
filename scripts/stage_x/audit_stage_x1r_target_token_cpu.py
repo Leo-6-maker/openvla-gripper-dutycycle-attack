@@ -35,7 +35,7 @@ def main() -> int:
         info = load_native_suite(suite, Path(model_path))
         kwargs = {
             "vocab_eff": int(info["vocab_eff"]),
-            "n_bins": int(info["native"].n_bins),
+            "n_bins": len(info["bin_centers"]),
             "bin_centers": info["bin_centers"],
             "action_stats": info["stats"],
         }

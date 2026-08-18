@@ -287,7 +287,7 @@ def classify_gripper(model: Any, suite: str, token_id: int) -> dict[str, Any]:
 
     stats = model.get_action_stats(suite)
     centers = model.bin_centers.detach().cpu().numpy() if hasattr(model.bin_centers, "detach") else np.asarray(model.bin_centers)
-    result = classify_execution_token(token_id, vocab_eff=int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of), n_bins=len(centers) + 1, bin_centers=centers, action_stats=stats)
+    result = classify_execution_token(token_id, vocab_eff=int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of), n_bins=len(centers), bin_centers=centers, action_stats=stats)
     return {"token_id": int(token_id), "execution_class": result.execution_class, "decoded_raw_gripper": result.decoded_raw_gripper, "executed_env_gripper": result.executed_env_gripper}
 
 
