@@ -1,0 +1,2090 @@
+{
+  "artifact_sha256": {
+    "configs/STAGE_X_X1R_T1D0R2_CLEAN_RUNTIME_AUTHORITY_V1.json": "d8543e52e54ffba4595df8dd5f80cae689c05351556de62d675bb5a29c70a8d6",
+    "docs/handoffs/STAGE_X_X1R_T1D0R2_CLEAN_RUNTIME_AUTHORITY_HANDOFF_20260818.md": "c3e942c0cc0ff1c2f8eb4508f5e38e686ae9db8a2a8221b62d615c449e1c0995",
+    "reports/STAGE_X_X1R_T1D0R2_PARENT_SEED_INVARIANCE_V1.json": "a0b3fc93c39b41d0e83d7571fa5a8016c3185be5e5d783a8a0970c4d6fd0b0c4",
+    "reports/STAGE_X_X1R_T1D0R2_RUNTIME_AUTHORITY_AUDIT_V1.json": "ce53ca86a0f2ef042d843e9efe60c73cfaface43ba90129ea3db35854af07ce4",
+    "reports/STAGE_X_X1R_T1D0R2_STUDENT_REPLAY_PARITY_V1.json": "553671417cfdefba1b669b4d581bb699e8c21d62a7e1edb6c1eb22679d41ae18",
+    "reports/STAGE_X_X1R_T1D0R2_STUDENT_SOURCE_FORENSIC_V1.json": "1f38f5245341c1ef13f4212f877af4a6c3c0f6da628bbf17aaed1f61774427c6",
+    "reports/STAGE_X_X1R_T1D0R2_SUCCESS_HORIZON_AUTHORITY_V1.json": "0004c63512a7f5b1b7b6e0eaf18a2c3bd6182490e7d25f590bc0f96bc856da84",
+    "scripts/stage_x/audit_stage_x1r_t1d0r2_clean_runtime_authority.py": "68c22b45db21cad1ac5ba1d270fe63ef4529f0cc833643932b229113dd1c61a4",
+    "src/gripper_attack/stage_x_x1r_d1_clean_runtime_contract.py": "9b738d2fadd62d575819f4e930d3abf179be7932482d8578520809cc1b91d2e6",
+    "tests/stage_x/test_stage_x1r_t1d0r2_clean_runtime_authority.py": "05f55ac6004889a57aca721e5a457e9d42c3253ab963b8a61a01f01cd91e65fd"
+  },
+  "authorization": {
+    "attack_outcome_authorized": false,
+    "clean_parent_materialization_authorized": false,
+    "env_step_authorized": false,
+    "next_gate": "CLEAN_PARENT_MATERIALIZATION_REVIEW_REQUIRED",
+    "openvla_model_inference_authorized": false,
+    "pgd_authorized": false,
+    "physical_intervention_authorized": false,
+    "protected_authorized": false
+  },
+  "final_branch_seal": {
+    "commit": "NOT_SELF_REFERENTIAL_LIVE_GITHUB_HANDOFF",
+    "tree": "NOT_SELF_REFERENTIAL_LIVE_GITHUB_HANDOFF"
+  },
+  "parent_seed_invariance": {
+    "errors": [],
+    "namespace": "STAGE_X_X1R_T1D0R1_CLEAN_SEED_V1",
+    "population": {
+      "exclusion_union": 990,
+      "executable_parents": 39,
+      "fresh": 210,
+      "g10": 1200,
+      "missing_cell": [
+        "libero_goal/task_01"
+      ],
+      "nominal_cells": 40,
+      "replacement": false,
+      "suite_counts": {
+        "libero_10": 10,
+        "libero_goal": 9,
+        "libero_object": 10,
+        "libero_spatial": 10
+      }
+    },
+    "rows": [
+      {
+        "canonical_parent_key": "libero_10/task_00/state_36",
+        "expected_clean_seed": 1880607296,
+        "ledger_clean_seed": 1880607296,
+        "ledger_key_match": true,
+        "ordinal": 1,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_36",
+        "expected_clean_seed": 2259534777,
+        "ledger_clean_seed": 2259534777,
+        "ledger_key_match": true,
+        "ordinal": 2,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_10/task_02/state_39",
+        "expected_clean_seed": 133316791,
+        "ledger_clean_seed": 133316791,
+        "ledger_key_match": true,
+        "ordinal": 3,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_10/task_03/state_21",
+        "expected_clean_seed": 2204456730,
+        "ledger_clean_seed": 2204456730,
+        "ledger_key_match": true,
+        "ordinal": 4,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_10/task_04/state_30",
+        "expected_clean_seed": 1839308868,
+        "ledger_clean_seed": 1839308868,
+        "ledger_key_match": true,
+        "ordinal": 5,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_22",
+        "expected_clean_seed": 1888554542,
+        "ledger_clean_seed": 1888554542,
+        "ledger_key_match": true,
+        "ordinal": 6,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_34",
+        "expected_clean_seed": 655819680,
+        "ledger_clean_seed": 655819680,
+        "ledger_key_match": true,
+        "ordinal": 7,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_10/task_07/state_27",
+        "expected_clean_seed": 1500404847,
+        "ledger_clean_seed": 1500404847,
+        "ledger_key_match": true,
+        "ordinal": 8,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_10/task_08/state_20",
+        "expected_clean_seed": 1620998485,
+        "ledger_clean_seed": 1620998485,
+        "ledger_key_match": true,
+        "ordinal": 9,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_10/task_09/state_43",
+        "expected_clean_seed": 1436562779,
+        "ledger_clean_seed": 1436562779,
+        "ledger_key_match": true,
+        "ordinal": 10,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_00/state_21",
+        "expected_clean_seed": 3155727413,
+        "ledger_clean_seed": 3155727413,
+        "ledger_key_match": true,
+        "ordinal": 11,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_02/state_34",
+        "expected_clean_seed": 2806598006,
+        "ledger_clean_seed": 2806598006,
+        "ledger_key_match": true,
+        "ordinal": 12,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_03/state_45",
+        "expected_clean_seed": 1233989519,
+        "ledger_clean_seed": 1233989519,
+        "ledger_key_match": true,
+        "ordinal": 13,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_04/state_38",
+        "expected_clean_seed": 1345483395,
+        "ledger_clean_seed": 1345483395,
+        "ledger_key_match": true,
+        "ordinal": 14,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_26",
+        "expected_clean_seed": 3565049498,
+        "ledger_clean_seed": 3565049498,
+        "ledger_key_match": true,
+        "ordinal": 15,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_06/state_28",
+        "expected_clean_seed": 1185417823,
+        "ledger_clean_seed": 1185417823,
+        "ledger_key_match": true,
+        "ordinal": 16,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_07/state_30",
+        "expected_clean_seed": 3266787940,
+        "ledger_clean_seed": 3266787940,
+        "ledger_key_match": true,
+        "ordinal": 17,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_08/state_20",
+        "expected_clean_seed": 368458282,
+        "ledger_clean_seed": 368458282,
+        "ledger_key_match": true,
+        "ordinal": 18,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_09/state_46",
+        "expected_clean_seed": 633404446,
+        "ledger_clean_seed": 633404446,
+        "ledger_key_match": true,
+        "ordinal": 19,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_object/task_00/state_45",
+        "expected_clean_seed": 3231902346,
+        "ledger_clean_seed": 3231902346,
+        "ledger_key_match": true,
+        "ordinal": 20,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_object/task_01/state_40",
+        "expected_clean_seed": 2612251802,
+        "ledger_clean_seed": 2612251802,
+        "ledger_key_match": true,
+        "ordinal": 21,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_object/task_02/state_42",
+        "expected_clean_seed": 4281294931,
+        "ledger_clean_seed": 4281294931,
+        "ledger_key_match": true,
+        "ordinal": 22,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_object/task_03/state_25",
+        "expected_clean_seed": 4182474635,
+        "ledger_clean_seed": 4182474635,
+        "ledger_key_match": true,
+        "ordinal": 23,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_35",
+        "expected_clean_seed": 742553466,
+        "ledger_clean_seed": 742553466,
+        "ledger_key_match": true,
+        "ordinal": 24,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_object/task_05/state_31",
+        "expected_clean_seed": 1132892338,
+        "ledger_clean_seed": 1132892338,
+        "ledger_key_match": true,
+        "ordinal": 25,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_44",
+        "expected_clean_seed": 4031548098,
+        "ledger_clean_seed": 4031548098,
+        "ledger_key_match": true,
+        "ordinal": 26,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_43",
+        "expected_clean_seed": 198268221,
+        "ledger_clean_seed": 198268221,
+        "ledger_key_match": true,
+        "ordinal": 27,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_object/task_08/state_43",
+        "expected_clean_seed": 2529254085,
+        "ledger_clean_seed": 2529254085,
+        "ledger_key_match": true,
+        "ordinal": 28,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_object/task_09/state_23",
+        "expected_clean_seed": 820948684,
+        "ledger_clean_seed": 820948684,
+        "ledger_key_match": true,
+        "ordinal": 29,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_00/state_37",
+        "expected_clean_seed": 3844648892,
+        "ledger_clean_seed": 3844648892,
+        "ledger_key_match": true,
+        "ordinal": 30,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_38",
+        "expected_clean_seed": 3956798880,
+        "ledger_clean_seed": 3956798880,
+        "ledger_key_match": true,
+        "ordinal": 31,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_02/state_31",
+        "expected_clean_seed": 3008181671,
+        "ledger_clean_seed": 3008181671,
+        "ledger_key_match": true,
+        "ordinal": 32,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_03/state_29",
+        "expected_clean_seed": 3066589976,
+        "ledger_clean_seed": 3066589976,
+        "ledger_key_match": true,
+        "ordinal": 33,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_04/state_33",
+        "expected_clean_seed": 4264710247,
+        "ledger_clean_seed": 4264710247,
+        "ledger_key_match": true,
+        "ordinal": 34,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_05/state_27",
+        "expected_clean_seed": 3716716013,
+        "ledger_clean_seed": 3716716013,
+        "ledger_key_match": true,
+        "ordinal": 35,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_06/state_45",
+        "expected_clean_seed": 3054136008,
+        "ledger_clean_seed": 3054136008,
+        "ledger_key_match": true,
+        "ordinal": 36,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_07/state_28",
+        "expected_clean_seed": 995635146,
+        "ledger_clean_seed": 995635146,
+        "ledger_key_match": true,
+        "ordinal": 37,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_08/state_28",
+        "expected_clean_seed": 3476887984,
+        "ledger_clean_seed": 3476887984,
+        "ledger_key_match": true,
+        "ordinal": 38,
+        "seed_match": true
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_21",
+        "expected_clean_seed": 1610086257,
+        "ledger_clean_seed": 1610086257,
+        "ledger_key_match": true,
+        "ordinal": 39,
+        "seed_match": true
+      }
+    ],
+    "schema": "STAGE_X_X1R_T1D0R2_PARENT_SEED_INVARIANCE_V1",
+    "selection_digest": "7532bac8da2b92f4a939cb8ce3b8eb67f75b1955a038f9e43c8118d175af886a",
+    "selection_salt": "STAGE_X_X1R_T1D0_PARENT_AUTHORITY_V1_20260818",
+    "status": "PASS_D0R1_INVARIANTS"
+  },
+  "protected_boundary": {
+    "counters": {
+      "adversarial_images": 0,
+      "attack_backward_calls": 0,
+      "attack_outcome_reads": 0,
+      "env_reset_for_prospective_parent": 0,
+      "env_step_calls": 0,
+      "eval160_reads": 0,
+      "historical_replay_student_forward_calls": 23,
+      "openvla_model_inference_calls": 0,
+      "openvla_weight_loads": 0,
+      "pgd_calls": 0,
+      "physical_interventions": 0,
+      "prospective_parent_clean_rollouts": 0,
+      "prospective_parent_student_forward_calls": 0,
+      "protected_reads": 0,
+      "vphys_reads": 0
+    },
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "reviewed_source": {
+    "base_commit": "aabd419942b7a5de27b2f11da90160d4a7affebc",
+    "branch": "codex/stage-x-x1r-t1d0r1-preclean-integrity-20260818",
+    "commit": "e9db0bfadf3822e8b3fc4771bbdd644e5c07b14e",
+    "tree": "a2772e4b3a2e7dfd060a06bfe2462b7c728d1b14"
+  },
+  "runtime_authority_audit": {
+    "authorization": {
+      "attack_outcome_authorized": false,
+      "clean_parent_materialization_authorized": false,
+      "env_step_authorized": false,
+      "next_gate": "CLEAN_PARENT_MATERIALIZATION_REVIEW_REQUIRED",
+      "openvla_model_inference_authorized": false,
+      "pgd_authorized": false,
+      "physical_intervention_authorized": false,
+      "protected_authorized": false
+    },
+    "counters": {
+      "adversarial_images": 0,
+      "attack_backward_calls": 0,
+      "attack_outcome_reads": 0,
+      "env_reset_for_prospective_parent": 0,
+      "env_step_calls": 0,
+      "eval160_reads": 0,
+      "historical_replay_student_forward_calls": 23,
+      "openvla_model_inference_calls": 0,
+      "openvla_weight_loads": 0,
+      "pgd_calls": 0,
+      "physical_interventions": 0,
+      "prospective_parent_clean_rollouts": 0,
+      "prospective_parent_student_forward_calls": 0,
+      "protected_reads": 0,
+      "vphys_reads": 0
+    },
+    "errors": [
+      "STAGE_X_X1R_T1D0R2_HOLD_STUDENT_REPLAY_PARITY:MISSING_SEALED_PER_STEP_REFERENCE"
+    ],
+    "parent_seed_invariance": {
+      "errors": [],
+      "namespace": "STAGE_X_X1R_T1D0R1_CLEAN_SEED_V1",
+      "population": {
+        "exclusion_union": 990,
+        "executable_parents": 39,
+        "fresh": 210,
+        "g10": 1200,
+        "missing_cell": [
+          "libero_goal/task_01"
+        ],
+        "nominal_cells": 40,
+        "replacement": false,
+        "suite_counts": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        }
+      },
+      "rows": [
+        {
+          "canonical_parent_key": "libero_10/task_00/state_36",
+          "expected_clean_seed": 1880607296,
+          "ledger_clean_seed": 1880607296,
+          "ledger_key_match": true,
+          "ordinal": 1,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_36",
+          "expected_clean_seed": 2259534777,
+          "ledger_clean_seed": 2259534777,
+          "ledger_key_match": true,
+          "ordinal": 2,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_39",
+          "expected_clean_seed": 133316791,
+          "ledger_clean_seed": 133316791,
+          "ledger_key_match": true,
+          "ordinal": 3,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_21",
+          "expected_clean_seed": 2204456730,
+          "ledger_clean_seed": 2204456730,
+          "ledger_key_match": true,
+          "ordinal": 4,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_30",
+          "expected_clean_seed": 1839308868,
+          "ledger_clean_seed": 1839308868,
+          "ledger_key_match": true,
+          "ordinal": 5,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_22",
+          "expected_clean_seed": 1888554542,
+          "ledger_clean_seed": 1888554542,
+          "ledger_key_match": true,
+          "ordinal": 6,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_34",
+          "expected_clean_seed": 655819680,
+          "ledger_clean_seed": 655819680,
+          "ledger_key_match": true,
+          "ordinal": 7,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_27",
+          "expected_clean_seed": 1500404847,
+          "ledger_clean_seed": 1500404847,
+          "ledger_key_match": true,
+          "ordinal": 8,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_20",
+          "expected_clean_seed": 1620998485,
+          "ledger_clean_seed": 1620998485,
+          "ledger_key_match": true,
+          "ordinal": 9,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_43",
+          "expected_clean_seed": 1436562779,
+          "ledger_clean_seed": 1436562779,
+          "ledger_key_match": true,
+          "ordinal": 10,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_00/state_21",
+          "expected_clean_seed": 3155727413,
+          "ledger_clean_seed": 3155727413,
+          "ledger_key_match": true,
+          "ordinal": 11,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_02/state_34",
+          "expected_clean_seed": 2806598006,
+          "ledger_clean_seed": 2806598006,
+          "ledger_key_match": true,
+          "ordinal": 12,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_03/state_45",
+          "expected_clean_seed": 1233989519,
+          "ledger_clean_seed": 1233989519,
+          "ledger_key_match": true,
+          "ordinal": 13,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_04/state_38",
+          "expected_clean_seed": 1345483395,
+          "ledger_clean_seed": 1345483395,
+          "ledger_key_match": true,
+          "ordinal": 14,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_05/state_26",
+          "expected_clean_seed": 3565049498,
+          "ledger_clean_seed": 3565049498,
+          "ledger_key_match": true,
+          "ordinal": 15,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_06/state_28",
+          "expected_clean_seed": 1185417823,
+          "ledger_clean_seed": 1185417823,
+          "ledger_key_match": true,
+          "ordinal": 16,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_07/state_30",
+          "expected_clean_seed": 3266787940,
+          "ledger_clean_seed": 3266787940,
+          "ledger_key_match": true,
+          "ordinal": 17,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_08/state_20",
+          "expected_clean_seed": 368458282,
+          "ledger_clean_seed": 368458282,
+          "ledger_key_match": true,
+          "ordinal": 18,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_09/state_46",
+          "expected_clean_seed": 633404446,
+          "ledger_clean_seed": 633404446,
+          "ledger_key_match": true,
+          "ordinal": 19,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_45",
+          "expected_clean_seed": 3231902346,
+          "ledger_clean_seed": 3231902346,
+          "ledger_key_match": true,
+          "ordinal": 20,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_40",
+          "expected_clean_seed": 2612251802,
+          "ledger_clean_seed": 2612251802,
+          "ledger_key_match": true,
+          "ordinal": 21,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_42",
+          "expected_clean_seed": 4281294931,
+          "ledger_clean_seed": 4281294931,
+          "ledger_key_match": true,
+          "ordinal": 22,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_25",
+          "expected_clean_seed": 4182474635,
+          "ledger_clean_seed": 4182474635,
+          "ledger_key_match": true,
+          "ordinal": 23,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_35",
+          "expected_clean_seed": 742553466,
+          "ledger_clean_seed": 742553466,
+          "ledger_key_match": true,
+          "ordinal": 24,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_31",
+          "expected_clean_seed": 1132892338,
+          "ledger_clean_seed": 1132892338,
+          "ledger_key_match": true,
+          "ordinal": 25,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_44",
+          "expected_clean_seed": 4031548098,
+          "ledger_clean_seed": 4031548098,
+          "ledger_key_match": true,
+          "ordinal": 26,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_43",
+          "expected_clean_seed": 198268221,
+          "ledger_clean_seed": 198268221,
+          "ledger_key_match": true,
+          "ordinal": 27,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_43",
+          "expected_clean_seed": 2529254085,
+          "ledger_clean_seed": 2529254085,
+          "ledger_key_match": true,
+          "ordinal": 28,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_23",
+          "expected_clean_seed": 820948684,
+          "ledger_clean_seed": 820948684,
+          "ledger_key_match": true,
+          "ordinal": 29,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_37",
+          "expected_clean_seed": 3844648892,
+          "ledger_clean_seed": 3844648892,
+          "ledger_key_match": true,
+          "ordinal": 30,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_38",
+          "expected_clean_seed": 3956798880,
+          "ledger_clean_seed": 3956798880,
+          "ledger_key_match": true,
+          "ordinal": 31,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_31",
+          "expected_clean_seed": 3008181671,
+          "ledger_clean_seed": 3008181671,
+          "ledger_key_match": true,
+          "ordinal": 32,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_29",
+          "expected_clean_seed": 3066589976,
+          "ledger_clean_seed": 3066589976,
+          "ledger_key_match": true,
+          "ordinal": 33,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_33",
+          "expected_clean_seed": 4264710247,
+          "ledger_clean_seed": 4264710247,
+          "ledger_key_match": true,
+          "ordinal": 34,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_27",
+          "expected_clean_seed": 3716716013,
+          "ledger_clean_seed": 3716716013,
+          "ledger_key_match": true,
+          "ordinal": 35,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_45",
+          "expected_clean_seed": 3054136008,
+          "ledger_clean_seed": 3054136008,
+          "ledger_key_match": true,
+          "ordinal": 36,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_28",
+          "expected_clean_seed": 995635146,
+          "ledger_clean_seed": 995635146,
+          "ledger_key_match": true,
+          "ordinal": 37,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_28",
+          "expected_clean_seed": 3476887984,
+          "ledger_clean_seed": 3476887984,
+          "ledger_key_match": true,
+          "ordinal": 38,
+          "seed_match": true
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_21",
+          "expected_clean_seed": 1610086257,
+          "ledger_clean_seed": 1610086257,
+          "ledger_key_match": true,
+          "ordinal": 39,
+          "seed_match": true
+        }
+      ],
+      "schema": "STAGE_X_X1R_T1D0R2_PARENT_SEED_INVARIANCE_V1",
+      "selection_digest": "7532bac8da2b92f4a939cb8ce3b8eb67f75b1955a038f9e43c8118d175af886a",
+      "selection_salt": "STAGE_X_X1R_T1D0_PARENT_AUTHORITY_V1_20260818",
+      "status": "PASS_D0R1_INVARIANTS"
+    },
+    "protected_boundary": {
+      "counters_zero_except_allowed_historical_replay": true,
+      "eval160": "UNREAD",
+      "protected_evaluation": "UNREAD"
+    },
+    "runtime_source_pre_evidence": {
+      "head": "2f6332693b6e4015c42928e5fb963e1f81339d9c",
+      "status_porcelain": "",
+      "tree": "3b370adaf8d89d2f26e866a71439c806ef8b75f4"
+    },
+    "schema": "STAGE_X_X1R_T1D0R2_RUNTIME_AUTHORITY_AUDIT_V1",
+    "status": "STAGE_X_X1R_T1D0R2_HOLD_STUDENT_REPLAY_PARITY",
+    "student_replay_parity": {
+      "counters": {
+        "adversarial_images": 0,
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "env_reset_for_prospective_parent": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "historical_replay_student_forward_calls": 23,
+        "openvla_model_inference_calls": 0,
+        "openvla_weight_loads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "prospective_parent_clean_rollouts": 0,
+        "prospective_parent_student_forward_calls": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "errors": [
+        "STAGE_X_X1R_T1D0R2_HOLD_STUDENT_REPLAY_PARITY:MISSING_SEALED_PER_STEP_REFERENCE"
+      ],
+      "historical_replay_student_forward_calls": 23,
+      "prospective_implementation": {
+        "checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+        "dropout_eval": 0.0,
+        "git_source": {
+          "byte_size": 34112,
+          "git_blob_sha": "7e2aceabe4a9cfc871b51fc2ceee46fed5019c65",
+          "path": "n5/phase3_student/n5_student_model.py",
+          "raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+          "ref": "HEAD"
+        },
+        "hidden": 64,
+        "input_dim": 25,
+        "long_rf": 128,
+        "short_rf": 32,
+        "source_path": "n5/phase3_student/n5_student_model.py"
+      },
+      "replays": {
+        "libero_10": {
+          "active_heads": [
+            "physical_criticality",
+            "k10_feasibility",
+            "instability",
+            "gripper_closing_state"
+          ],
+          "canonical_parent_key": "libero_10/task_08/state_28",
+          "feature_dim": 25,
+          "first_emit_step": 155,
+          "per_step_max_abs_diff": null,
+          "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+          "prefix_max_probability_abs_diff": 1.4901161193847656e-08,
+          "prefix_parity_indices": [
+            0,
+            155,
+            192,
+            384
+          ],
+          "repeat_max_probability_abs_diff": 0.0,
+          "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/00_libero_10__task_08__state_28/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+          "replay_sha256": "f048f600a5e552e0dd05d985552ae60fb7cad78ad867b917b581b74bb5e0141a",
+          "row_count": 385,
+          "sealed_per_step_reference_available": false,
+          "sealed_summary_first_emit_step": 155,
+          "strict_checkpoint_load": true,
+          "summary_emit_match": true,
+          "trace_sha256": "a9f4f8603ca8dcff169441221453581f6d8825b4f3815ed7ac7361abdf4c154d"
+        },
+        "libero_goal": {
+          "active_heads": [
+            "physical_criticality",
+            "k10_feasibility",
+            "instability",
+            "gripper_closing_state"
+          ],
+          "canonical_parent_key": "libero_goal/task_02/state_40",
+          "feature_dim": 25,
+          "first_emit_step": 62,
+          "per_step_max_abs_diff": null,
+          "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+          "prefix_max_probability_abs_diff": 7.450580596923828e-09,
+          "prefix_parity_indices": [
+            0,
+            44,
+            62,
+            87
+          ],
+          "repeat_max_probability_abs_diff": 0.0,
+          "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/10_libero_goal__task_02__state_40/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+          "replay_sha256": "7edb3bbda9e6138cf687016734f7eff4a1d1ab1a6042c2f508ee684c8a50a6b6",
+          "row_count": 88,
+          "sealed_per_step_reference_available": false,
+          "sealed_summary_first_emit_step": 62,
+          "strict_checkpoint_load": true,
+          "summary_emit_match": true,
+          "trace_sha256": "c81dc6431402756ee557d7a3f33af439fde0d91992378d9f24773383da9069e5"
+        },
+        "libero_object": {
+          "active_heads": [
+            "physical_criticality",
+            "k10_feasibility",
+            "instability",
+            "gripper_closing_state"
+          ],
+          "canonical_parent_key": "libero_object/task_00/state_23",
+          "feature_dim": 25,
+          "first_emit_step": null,
+          "per_step_max_abs_diff": null,
+          "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+          "prefix_max_probability_abs_diff": 5.587935447692871e-09,
+          "prefix_parity_indices": [
+            0,
+            109,
+            218
+          ],
+          "repeat_max_probability_abs_diff": 0.0,
+          "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/20_libero_object__task_00__state_23/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+          "replay_sha256": "140a0b817b641b6b746a19b17ea6f7f217e014105e646265514297d074103560",
+          "row_count": 219,
+          "sealed_per_step_reference_available": false,
+          "sealed_summary_first_emit_step": null,
+          "strict_checkpoint_load": true,
+          "summary_emit_match": true,
+          "trace_sha256": "be7e77ecbf30f40880d110978186a17f15a140abc4701ca61d8cb36413b31fab"
+        },
+        "libero_spatial": {
+          "active_heads": [
+            "physical_criticality",
+            "k10_feasibility",
+            "instability",
+            "gripper_closing_state"
+          ],
+          "canonical_parent_key": "libero_spatial/task_04/state_36",
+          "feature_dim": 25,
+          "first_emit_step": 57,
+          "per_step_max_abs_diff": null,
+          "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+          "prefix_max_probability_abs_diff": 3.725290298461914e-09,
+          "prefix_parity_indices": [
+            0,
+            57,
+            59,
+            118
+          ],
+          "repeat_max_probability_abs_diff": 0.0,
+          "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/30_libero_spatial__task_04__state_36/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+          "replay_sha256": "e562ba4a58b9d83edfb9ffd5afd10f9de01b93fafdccbd5b6bbcbc929f5115fe",
+          "row_count": 119,
+          "sealed_per_step_reference_available": false,
+          "sealed_summary_first_emit_step": 57,
+          "strict_checkpoint_load": true,
+          "summary_emit_match": true,
+          "trace_sha256": "0ec0c530f76cd9dffd8fab1ffea66d1f5bdacc71eb1bd1190c804414da2ea424"
+        }
+      },
+      "schema": "STAGE_X_X1R_T1D0R2_STUDENT_REPLAY_PARITY_V1",
+      "sealed_per_step_reference_available": false,
+      "sealed_per_step_reference_required": true,
+      "status": "HOLD_STUDENT_REPLAY_PARITY"
+    },
+    "student_source_forensic": {
+      "classification": {
+        "current_server_file_matches_prospective_git_bytes": false,
+        "historical_receipt_runtime_identity_matches_prospective_git_bytes": true,
+        "historical_training_source": "NOT_IDENTIFIABLE",
+        "prospective_inference_implementation": "TRACKED_PR127_SOURCE_30CF",
+        "reason": "T1 handoff, receipt runtime identity, and current server file are not a single proven launch-time training source."
+      },
+      "declarations": {
+        "current_server_file": "ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b",
+        "historical_t1_receipt_value": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+        "prospective_git_source_raw": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+        "t1_handoff_declaration": "7945e464130d8bcb4b4fd85475dffc3024ef2bc419b5d1ea812b29156b96a0fd"
+      },
+      "errors": [],
+      "schema": "STAGE_X_X1R_T1D0R2_STUDENT_SOURCE_FORENSIC_V1",
+      "source_records": {
+        "current_server_file": {
+          "byte_size": 33934,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py",
+          "raw_sha256": "ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b"
+        },
+        "historical_t1_receipt": {
+          "json_key": "sealed_detector.student_model_source_sha256",
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x_t1_detector_authority_20260818T034500Z/DETECTOR_AUTHORITY_RECEIPT_V1.json",
+          "source_commit": "4e4caff51959f21a2abb74db19ce1edede9645c9",
+          "source_tree": "233e578df72826d29fae8c2725b0ada2405a83bc",
+          "value": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c"
+        },
+        "prospective_git_source": {
+          "byte_size": 34112,
+          "git_blob_sha": "7e2aceabe4a9cfc871b51fc2ceee46fed5019c65",
+          "path": "n5/phase3_student/n5_student_model.py",
+          "raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+          "ref": "HEAD"
+        }
+      },
+      "status": "PASS_FORENSIC_CLASSIFICATION"
+    },
+    "success_horizon_authority": {
+      "errors": [],
+      "horizon_authority": {
+        "configured_episode_length_definition": "hard maximum number of policy-decision actions after the canonical ten dummy wait steps",
+        "dummy_wait_counts_toward_policy_horizon": false,
+        "num_steps_wait": 10,
+        "reset_counts_toward_policy_horizon": false,
+        "rows": [
+          {
+            "configured_episode_length": 520,
+            "policy_decision_indices": [
+              0,
+              519
+            ],
+            "suite": "libero_10",
+            "task_index": 0
+          },
+          {
+            "configured_episode_length": 520,
+            "policy_decision_indices": [
+              0,
+              519
+            ],
+            "suite": "libero_10",
+            "task_index": 1
+          },
+          {
+            "configured_episode_length": 520,
+            "policy_decision_indices": [
+              0,
+              519
+            ],
+            "suite": "libero_10",
+            "task_index": 2
+          },
+          {
+            "configured_episode_length": 520,
+            "policy_decision_indices": [
+              0,
+              519
+            ],
+            "suite": "libero_10",
+            "task_index": 3
+          },
+          {
+            "configured_episode_length": 520,
+            "policy_decision_indices": [
+              0,
+              519
+            ],
+            "suite": "libero_10",
+            "task_index": 4
+          },
+          {
+            "configured_episode_length": 520,
+            "policy_decision_indices": [
+              0,
+              519
+            ],
+            "suite": "libero_10",
+            "task_index": 5
+          },
+          {
+            "configured_episode_length": 520,
+            "policy_decision_indices": [
+              0,
+              519
+            ],
+            "suite": "libero_10",
+            "task_index": 6
+          },
+          {
+            "configured_episode_length": 520,
+            "policy_decision_indices": [
+              0,
+              519
+            ],
+            "suite": "libero_10",
+            "task_index": 7
+          },
+          {
+            "configured_episode_length": 520,
+            "policy_decision_indices": [
+              0,
+              519
+            ],
+            "suite": "libero_10",
+            "task_index": 8
+          },
+          {
+            "configured_episode_length": 520,
+            "policy_decision_indices": [
+              0,
+              519
+            ],
+            "suite": "libero_10",
+            "task_index": 9
+          },
+          {
+            "configured_episode_length": 300,
+            "policy_decision_indices": [
+              0,
+              299
+            ],
+            "suite": "libero_goal",
+            "task_index": 0
+          },
+          {
+            "configured_episode_length": 300,
+            "policy_decision_indices": [
+              0,
+              299
+            ],
+            "suite": "libero_goal",
+            "task_index": 1
+          },
+          {
+            "configured_episode_length": 300,
+            "policy_decision_indices": [
+              0,
+              299
+            ],
+            "suite": "libero_goal",
+            "task_index": 2
+          },
+          {
+            "configured_episode_length": 300,
+            "policy_decision_indices": [
+              0,
+              299
+            ],
+            "suite": "libero_goal",
+            "task_index": 3
+          },
+          {
+            "configured_episode_length": 300,
+            "policy_decision_indices": [
+              0,
+              299
+            ],
+            "suite": "libero_goal",
+            "task_index": 4
+          },
+          {
+            "configured_episode_length": 300,
+            "policy_decision_indices": [
+              0,
+              299
+            ],
+            "suite": "libero_goal",
+            "task_index": 5
+          },
+          {
+            "configured_episode_length": 300,
+            "policy_decision_indices": [
+              0,
+              299
+            ],
+            "suite": "libero_goal",
+            "task_index": 6
+          },
+          {
+            "configured_episode_length": 300,
+            "policy_decision_indices": [
+              0,
+              299
+            ],
+            "suite": "libero_goal",
+            "task_index": 7
+          },
+          {
+            "configured_episode_length": 300,
+            "policy_decision_indices": [
+              0,
+              299
+            ],
+            "suite": "libero_goal",
+            "task_index": 8
+          },
+          {
+            "configured_episode_length": 300,
+            "policy_decision_indices": [
+              0,
+              299
+            ],
+            "suite": "libero_goal",
+            "task_index": 9
+          },
+          {
+            "configured_episode_length": 280,
+            "policy_decision_indices": [
+              0,
+              279
+            ],
+            "suite": "libero_object",
+            "task_index": 0
+          },
+          {
+            "configured_episode_length": 280,
+            "policy_decision_indices": [
+              0,
+              279
+            ],
+            "suite": "libero_object",
+            "task_index": 1
+          },
+          {
+            "configured_episode_length": 280,
+            "policy_decision_indices": [
+              0,
+              279
+            ],
+            "suite": "libero_object",
+            "task_index": 2
+          },
+          {
+            "configured_episode_length": 280,
+            "policy_decision_indices": [
+              0,
+              279
+            ],
+            "suite": "libero_object",
+            "task_index": 3
+          },
+          {
+            "configured_episode_length": 280,
+            "policy_decision_indices": [
+              0,
+              279
+            ],
+            "suite": "libero_object",
+            "task_index": 4
+          },
+          {
+            "configured_episode_length": 280,
+            "policy_decision_indices": [
+              0,
+              279
+            ],
+            "suite": "libero_object",
+            "task_index": 5
+          },
+          {
+            "configured_episode_length": 280,
+            "policy_decision_indices": [
+              0,
+              279
+            ],
+            "suite": "libero_object",
+            "task_index": 6
+          },
+          {
+            "configured_episode_length": 280,
+            "policy_decision_indices": [
+              0,
+              279
+            ],
+            "suite": "libero_object",
+            "task_index": 7
+          },
+          {
+            "configured_episode_length": 280,
+            "policy_decision_indices": [
+              0,
+              279
+            ],
+            "suite": "libero_object",
+            "task_index": 8
+          },
+          {
+            "configured_episode_length": 280,
+            "policy_decision_indices": [
+              0,
+              279
+            ],
+            "suite": "libero_object",
+            "task_index": 9
+          },
+          {
+            "configured_episode_length": 220,
+            "policy_decision_indices": [
+              0,
+              219
+            ],
+            "suite": "libero_spatial",
+            "task_index": 0
+          },
+          {
+            "configured_episode_length": 220,
+            "policy_decision_indices": [
+              0,
+              219
+            ],
+            "suite": "libero_spatial",
+            "task_index": 1
+          },
+          {
+            "configured_episode_length": 220,
+            "policy_decision_indices": [
+              0,
+              219
+            ],
+            "suite": "libero_spatial",
+            "task_index": 2
+          },
+          {
+            "configured_episode_length": 220,
+            "policy_decision_indices": [
+              0,
+              219
+            ],
+            "suite": "libero_spatial",
+            "task_index": 3
+          },
+          {
+            "configured_episode_length": 220,
+            "policy_decision_indices": [
+              0,
+              219
+            ],
+            "suite": "libero_spatial",
+            "task_index": 4
+          },
+          {
+            "configured_episode_length": 220,
+            "policy_decision_indices": [
+              0,
+              219
+            ],
+            "suite": "libero_spatial",
+            "task_index": 5
+          },
+          {
+            "configured_episode_length": 220,
+            "policy_decision_indices": [
+              0,
+              219
+            ],
+            "suite": "libero_spatial",
+            "task_index": 6
+          },
+          {
+            "configured_episode_length": 220,
+            "policy_decision_indices": [
+              0,
+              219
+            ],
+            "suite": "libero_spatial",
+            "task_index": 7
+          },
+          {
+            "configured_episode_length": 220,
+            "policy_decision_indices": [
+              0,
+              219
+            ],
+            "suite": "libero_spatial",
+            "task_index": 8
+          },
+          {
+            "configured_episode_length": 220,
+            "policy_decision_indices": [
+              0,
+              219
+            ],
+            "suite": "libero_spatial",
+            "task_index": 9
+          }
+        ],
+        "semantic_origin": "OPENVLA_LIBERO_CANONICAL_POLICY_DECISION_HORIZON",
+        "source": {
+          "byte_size": 11936,
+          "git_blob_sha": "5c3f58178d7c827df829379354f7aefddc0458bc",
+          "path": "experiments/robot/libero/run_libero_eval.py",
+          "raw_sha256": "369d9fc3d59067998ebfadafbd516872c7ff6f9f06a0a48cda8b6ca48051de77",
+          "ref": "c8f03f48af692657d3060c19588038c7220e9af9"
+        },
+        "status": "BOUND"
+      },
+      "legal_horizon_boundary_tests": {
+        "episode_length_14": false,
+        "episode_length_15": true,
+        "t_emit": 0,
+        "t_emit_5_length_19": false,
+        "t_emit_5_length_20": true
+      },
+      "schema": "STAGE_X_X1R_T1D0R2_SUCCESS_HORIZON_AUTHORITY_V1",
+      "source_records": {
+        "libero_bddl_domain": {
+          "byte_size": 33490,
+          "exists": true,
+          "expected_raw_sha256": "9626f2995514474a4fa3cc3d36ace1de091e2293d96f61399688178c56ca1750",
+          "match": true,
+          "path": "/mnt/sdc/dty_user/openvla_attack/repos/LIBERO-official-8f1084e/libero/libero/envs/bddl_base_domain.py",
+          "raw_sha256": "9626f2995514474a4fa3cc3d36ace1de091e2293d96f61399688178c56ca1750"
+        },
+        "libero_env_wrapper": {
+          "byte_size": 9059,
+          "exists": true,
+          "expected_raw_sha256": "2880cad5b3fe46ea105816f42798faf4c22e16839098b679ebcad7b51acfdbd0",
+          "match": true,
+          "path": "/mnt/sdc/dty_user/openvla_attack/repos/LIBERO-official-8f1084e/libero/libero/envs/env_wrapper.py",
+          "raw_sha256": "2880cad5b3fe46ea105816f42798faf4c22e16839098b679ebcad7b51acfdbd0"
+        },
+        "upstream_evaluator": {
+          "byte_size": 11936,
+          "git_blob_sha": "5c3f58178d7c827df829379354f7aefddc0458bc",
+          "path": "experiments/robot/libero/run_libero_eval.py",
+          "raw_sha256": "369d9fc3d59067998ebfadafbd516872c7ff6f9f06a0a48cda8b6ca48051de77",
+          "ref": "c8f03f48af692657d3060c19588038c7220e9af9"
+        }
+      },
+      "status": "PASS_SUCCESS_AND_HORIZON_BINDING",
+      "success_authority": {
+        "benchmark_native_predicate": "BDDL task _check_success() invoked by bddl_base_domain.step",
+        "call_expression": "obs, reward, done, info = env.step(action.tolist()); if done: task_successes += 1",
+        "canonical_evaluator": {
+          "byte_size": 11936,
+          "git_blob_sha": "5c3f58178d7c827df829379354f7aefddc0458bc",
+          "path": "experiments/robot/libero/run_libero_eval.py",
+          "raw_sha256": "369d9fc3d59067998ebfadafbd516872c7ff6f9f06a0a48cda8b6ca48051de77",
+          "ref": "c8f03f48af692657d3060c19588038c7220e9af9"
+        },
+        "comparison_candidates": [
+          {
+            "name": "project_SC5_clean_runner",
+            "reason": "three-suite local runner with 400-step override semantics",
+            "status": "COMPARISON_ONLY"
+          },
+          {
+            "name": "ControlEnv.check_success",
+            "source": {
+              "byte_size": 9059,
+              "exists": true,
+              "path": "/mnt/sdc/dty_user/openvla_attack/repos/LIBERO-official-8f1084e/libero/libero/envs/env_wrapper.py",
+              "raw_sha256": "2880cad5b3fe46ea105816f42798faf4c22e16839098b679ebcad7b51acfdbd0"
+            },
+            "status": "EQUIVALENT_DELEGATE_NOT_CALLSITE"
+          }
+        ],
+        "first_success": "first post-step done=True terminates the task loop",
+        "semantic_origin": "OPENVLA_LIBERO_CANONICAL_ENV_STEP_DONE",
+        "status": "BOUND",
+        "step_index": "t=0 at first policy decision after dummy wait; wait steps are outside policy index",
+        "suite_coverage": [
+          "libero_10",
+          "libero_goal",
+          "libero_object",
+          "libero_spatial"
+        ],
+        "transition_position": "after env.step transition",
+        "wrapper_delegate": "ControlEnv.step -> self.env.step(action)"
+      }
+    }
+  },
+  "runtime_source_pre_evidence": {
+    "head": "2f6332693b6e4015c42928e5fb963e1f81339d9c",
+    "status_porcelain": "",
+    "tree": "3b370adaf8d89d2f26e866a71439c806ef8b75f4"
+  },
+  "schema": "STAGE_X_X1R_T1D0R2_ROOT_SEAL_V1",
+  "status": "STAGE_X_X1R_T1D0R2_HOLD_STUDENT_REPLAY_PARITY",
+  "student_replay_parity": {
+    "counters": {
+      "adversarial_images": 0,
+      "attack_backward_calls": 0,
+      "attack_outcome_reads": 0,
+      "env_reset_for_prospective_parent": 0,
+      "env_step_calls": 0,
+      "eval160_reads": 0,
+      "historical_replay_student_forward_calls": 23,
+      "openvla_model_inference_calls": 0,
+      "openvla_weight_loads": 0,
+      "pgd_calls": 0,
+      "physical_interventions": 0,
+      "prospective_parent_clean_rollouts": 0,
+      "prospective_parent_student_forward_calls": 0,
+      "protected_reads": 0,
+      "vphys_reads": 0
+    },
+    "errors": [
+      "STAGE_X_X1R_T1D0R2_HOLD_STUDENT_REPLAY_PARITY:MISSING_SEALED_PER_STEP_REFERENCE"
+    ],
+    "historical_replay_student_forward_calls": 23,
+    "prospective_implementation": {
+      "checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+      "dropout_eval": 0.0,
+      "git_source": {
+        "byte_size": 34112,
+        "git_blob_sha": "7e2aceabe4a9cfc871b51fc2ceee46fed5019c65",
+        "path": "n5/phase3_student/n5_student_model.py",
+        "raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+        "ref": "HEAD"
+      },
+      "hidden": 64,
+      "input_dim": 25,
+      "long_rf": 128,
+      "short_rf": 32,
+      "source_path": "n5/phase3_student/n5_student_model.py"
+    },
+    "replays": {
+      "libero_10": {
+        "active_heads": [
+          "physical_criticality",
+          "k10_feasibility",
+          "instability",
+          "gripper_closing_state"
+        ],
+        "canonical_parent_key": "libero_10/task_08/state_28",
+        "feature_dim": 25,
+        "first_emit_step": 155,
+        "per_step_max_abs_diff": null,
+        "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+        "prefix_max_probability_abs_diff": 1.4901161193847656e-08,
+        "prefix_parity_indices": [
+          0,
+          155,
+          192,
+          384
+        ],
+        "repeat_max_probability_abs_diff": 0.0,
+        "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/00_libero_10__task_08__state_28/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+        "replay_sha256": "f048f600a5e552e0dd05d985552ae60fb7cad78ad867b917b581b74bb5e0141a",
+        "row_count": 385,
+        "sealed_per_step_reference_available": false,
+        "sealed_summary_first_emit_step": 155,
+        "strict_checkpoint_load": true,
+        "summary_emit_match": true,
+        "trace_sha256": "a9f4f8603ca8dcff169441221453581f6d8825b4f3815ed7ac7361abdf4c154d"
+      },
+      "libero_goal": {
+        "active_heads": [
+          "physical_criticality",
+          "k10_feasibility",
+          "instability",
+          "gripper_closing_state"
+        ],
+        "canonical_parent_key": "libero_goal/task_02/state_40",
+        "feature_dim": 25,
+        "first_emit_step": 62,
+        "per_step_max_abs_diff": null,
+        "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+        "prefix_max_probability_abs_diff": 7.450580596923828e-09,
+        "prefix_parity_indices": [
+          0,
+          44,
+          62,
+          87
+        ],
+        "repeat_max_probability_abs_diff": 0.0,
+        "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/10_libero_goal__task_02__state_40/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+        "replay_sha256": "7edb3bbda9e6138cf687016734f7eff4a1d1ab1a6042c2f508ee684c8a50a6b6",
+        "row_count": 88,
+        "sealed_per_step_reference_available": false,
+        "sealed_summary_first_emit_step": 62,
+        "strict_checkpoint_load": true,
+        "summary_emit_match": true,
+        "trace_sha256": "c81dc6431402756ee557d7a3f33af439fde0d91992378d9f24773383da9069e5"
+      },
+      "libero_object": {
+        "active_heads": [
+          "physical_criticality",
+          "k10_feasibility",
+          "instability",
+          "gripper_closing_state"
+        ],
+        "canonical_parent_key": "libero_object/task_00/state_23",
+        "feature_dim": 25,
+        "first_emit_step": null,
+        "per_step_max_abs_diff": null,
+        "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+        "prefix_max_probability_abs_diff": 5.587935447692871e-09,
+        "prefix_parity_indices": [
+          0,
+          109,
+          218
+        ],
+        "repeat_max_probability_abs_diff": 0.0,
+        "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/20_libero_object__task_00__state_23/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+        "replay_sha256": "140a0b817b641b6b746a19b17ea6f7f217e014105e646265514297d074103560",
+        "row_count": 219,
+        "sealed_per_step_reference_available": false,
+        "sealed_summary_first_emit_step": null,
+        "strict_checkpoint_load": true,
+        "summary_emit_match": true,
+        "trace_sha256": "be7e77ecbf30f40880d110978186a17f15a140abc4701ca61d8cb36413b31fab"
+      },
+      "libero_spatial": {
+        "active_heads": [
+          "physical_criticality",
+          "k10_feasibility",
+          "instability",
+          "gripper_closing_state"
+        ],
+        "canonical_parent_key": "libero_spatial/task_04/state_36",
+        "feature_dim": 25,
+        "first_emit_step": 57,
+        "per_step_max_abs_diff": null,
+        "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+        "prefix_max_probability_abs_diff": 3.725290298461914e-09,
+        "prefix_parity_indices": [
+          0,
+          57,
+          59,
+          118
+        ],
+        "repeat_max_probability_abs_diff": 0.0,
+        "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/30_libero_spatial__task_04__state_36/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+        "replay_sha256": "e562ba4a58b9d83edfb9ffd5afd10f9de01b93fafdccbd5b6bbcbc929f5115fe",
+        "row_count": 119,
+        "sealed_per_step_reference_available": false,
+        "sealed_summary_first_emit_step": 57,
+        "strict_checkpoint_load": true,
+        "summary_emit_match": true,
+        "trace_sha256": "0ec0c530f76cd9dffd8fab1ffea66d1f5bdacc71eb1bd1190c804414da2ea424"
+      }
+    },
+    "schema": "STAGE_X_X1R_T1D0R2_STUDENT_REPLAY_PARITY_V1",
+    "sealed_per_step_reference_available": false,
+    "sealed_per_step_reference_required": true,
+    "status": "HOLD_STUDENT_REPLAY_PARITY"
+  },
+  "student_source_forensic": {
+    "classification": {
+      "current_server_file_matches_prospective_git_bytes": false,
+      "historical_receipt_runtime_identity_matches_prospective_git_bytes": true,
+      "historical_training_source": "NOT_IDENTIFIABLE",
+      "prospective_inference_implementation": "TRACKED_PR127_SOURCE_30CF",
+      "reason": "T1 handoff, receipt runtime identity, and current server file are not a single proven launch-time training source."
+    },
+    "declarations": {
+      "current_server_file": "ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b",
+      "historical_t1_receipt_value": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+      "prospective_git_source_raw": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+      "t1_handoff_declaration": "7945e464130d8bcb4b4fd85475dffc3024ef2bc419b5d1ea812b29156b96a0fd"
+    },
+    "errors": [],
+    "schema": "STAGE_X_X1R_T1D0R2_STUDENT_SOURCE_FORENSIC_V1",
+    "source_records": {
+      "current_server_file": {
+        "byte_size": 33934,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py",
+        "raw_sha256": "ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b"
+      },
+      "historical_t1_receipt": {
+        "json_key": "sealed_detector.student_model_source_sha256",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x_t1_detector_authority_20260818T034500Z/DETECTOR_AUTHORITY_RECEIPT_V1.json",
+        "source_commit": "4e4caff51959f21a2abb74db19ce1edede9645c9",
+        "source_tree": "233e578df72826d29fae8c2725b0ada2405a83bc",
+        "value": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c"
+      },
+      "prospective_git_source": {
+        "byte_size": 34112,
+        "git_blob_sha": "7e2aceabe4a9cfc871b51fc2ceee46fed5019c65",
+        "path": "n5/phase3_student/n5_student_model.py",
+        "raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+        "ref": "HEAD"
+      }
+    },
+    "status": "PASS_FORENSIC_CLASSIFICATION"
+  },
+  "success_horizon_authority": {
+    "errors": [],
+    "horizon_authority": {
+      "configured_episode_length_definition": "hard maximum number of policy-decision actions after the canonical ten dummy wait steps",
+      "dummy_wait_counts_toward_policy_horizon": false,
+      "num_steps_wait": 10,
+      "reset_counts_toward_policy_horizon": false,
+      "rows": [
+        {
+          "configured_episode_length": 520,
+          "policy_decision_indices": [
+            0,
+            519
+          ],
+          "suite": "libero_10",
+          "task_index": 0
+        },
+        {
+          "configured_episode_length": 520,
+          "policy_decision_indices": [
+            0,
+            519
+          ],
+          "suite": "libero_10",
+          "task_index": 1
+        },
+        {
+          "configured_episode_length": 520,
+          "policy_decision_indices": [
+            0,
+            519
+          ],
+          "suite": "libero_10",
+          "task_index": 2
+        },
+        {
+          "configured_episode_length": 520,
+          "policy_decision_indices": [
+            0,
+            519
+          ],
+          "suite": "libero_10",
+          "task_index": 3
+        },
+        {
+          "configured_episode_length": 520,
+          "policy_decision_indices": [
+            0,
+            519
+          ],
+          "suite": "libero_10",
+          "task_index": 4
+        },
+        {
+          "configured_episode_length": 520,
+          "policy_decision_indices": [
+            0,
+            519
+          ],
+          "suite": "libero_10",
+          "task_index": 5
+        },
+        {
+          "configured_episode_length": 520,
+          "policy_decision_indices": [
+            0,
+            519
+          ],
+          "suite": "libero_10",
+          "task_index": 6
+        },
+        {
+          "configured_episode_length": 520,
+          "policy_decision_indices": [
+            0,
+            519
+          ],
+          "suite": "libero_10",
+          "task_index": 7
+        },
+        {
+          "configured_episode_length": 520,
+          "policy_decision_indices": [
+            0,
+            519
+          ],
+          "suite": "libero_10",
+          "task_index": 8
+        },
+        {
+          "configured_episode_length": 520,
+          "policy_decision_indices": [
+            0,
+            519
+          ],
+          "suite": "libero_10",
+          "task_index": 9
+        },
+        {
+          "configured_episode_length": 300,
+          "policy_decision_indices": [
+            0,
+            299
+          ],
+          "suite": "libero_goal",
+          "task_index": 0
+        },
+        {
+          "configured_episode_length": 300,
+          "policy_decision_indices": [
+            0,
+            299
+          ],
+          "suite": "libero_goal",
+          "task_index": 1
+        },
+        {
+          "configured_episode_length": 300,
+          "policy_decision_indices": [
+            0,
+            299
+          ],
+          "suite": "libero_goal",
+          "task_index": 2
+        },
+        {
+          "configured_episode_length": 300,
+          "policy_decision_indices": [
+            0,
+            299
+          ],
+          "suite": "libero_goal",
+          "task_index": 3
+        },
+        {
+          "configured_episode_length": 300,
+          "policy_decision_indices": [
+            0,
+            299
+          ],
+          "suite": "libero_goal",
+          "task_index": 4
+        },
+        {
+          "configured_episode_length": 300,
+          "policy_decision_indices": [
+            0,
+            299
+          ],
+          "suite": "libero_goal",
+          "task_index": 5
+        },
+        {
+          "configured_episode_length": 300,
+          "policy_decision_indices": [
+            0,
+            299
+          ],
+          "suite": "libero_goal",
+          "task_index": 6
+        },
+        {
+          "configured_episode_length": 300,
+          "policy_decision_indices": [
+            0,
+            299
+          ],
+          "suite": "libero_goal",
+          "task_index": 7
+        },
+        {
+          "configured_episode_length": 300,
+          "policy_decision_indices": [
+            0,
+            299
+          ],
+          "suite": "libero_goal",
+          "task_index": 8
+        },
+        {
+          "configured_episode_length": 300,
+          "policy_decision_indices": [
+            0,
+            299
+          ],
+          "suite": "libero_goal",
+          "task_index": 9
+        },
+        {
+          "configured_episode_length": 280,
+          "policy_decision_indices": [
+            0,
+            279
+          ],
+          "suite": "libero_object",
+          "task_index": 0
+        },
+        {
+          "configured_episode_length": 280,
+          "policy_decision_indices": [
+            0,
+            279
+          ],
+          "suite": "libero_object",
+          "task_index": 1
+        },
+        {
+          "configured_episode_length": 280,
+          "policy_decision_indices": [
+            0,
+            279
+          ],
+          "suite": "libero_object",
+          "task_index": 2
+        },
+        {
+          "configured_episode_length": 280,
+          "policy_decision_indices": [
+            0,
+            279
+          ],
+          "suite": "libero_object",
+          "task_index": 3
+        },
+        {
+          "configured_episode_length": 280,
+          "policy_decision_indices": [
+            0,
+            279
+          ],
+          "suite": "libero_object",
+          "task_index": 4
+        },
+        {
+          "configured_episode_length": 280,
+          "policy_decision_indices": [
+            0,
+            279
+          ],
+          "suite": "libero_object",
+          "task_index": 5
+        },
+        {
+          "configured_episode_length": 280,
+          "policy_decision_indices": [
+            0,
+            279
+          ],
+          "suite": "libero_object",
+          "task_index": 6
+        },
+        {
+          "configured_episode_length": 280,
+          "policy_decision_indices": [
+            0,
+            279
+          ],
+          "suite": "libero_object",
+          "task_index": 7
+        },
+        {
+          "configured_episode_length": 280,
+          "policy_decision_indices": [
+            0,
+            279
+          ],
+          "suite": "libero_object",
+          "task_index": 8
+        },
+        {
+          "configured_episode_length": 280,
+          "policy_decision_indices": [
+            0,
+            279
+          ],
+          "suite": "libero_object",
+          "task_index": 9
+        },
+        {
+          "configured_episode_length": 220,
+          "policy_decision_indices": [
+            0,
+            219
+          ],
+          "suite": "libero_spatial",
+          "task_index": 0
+        },
+        {
+          "configured_episode_length": 220,
+          "policy_decision_indices": [
+            0,
+            219
+          ],
+          "suite": "libero_spatial",
+          "task_index": 1
+        },
+        {
+          "configured_episode_length": 220,
+          "policy_decision_indices": [
+            0,
+            219
+          ],
+          "suite": "libero_spatial",
+          "task_index": 2
+        },
+        {
+          "configured_episode_length": 220,
+          "policy_decision_indices": [
+            0,
+            219
+          ],
+          "suite": "libero_spatial",
+          "task_index": 3
+        },
+        {
+          "configured_episode_length": 220,
+          "policy_decision_indices": [
+            0,
+            219
+          ],
+          "suite": "libero_spatial",
+          "task_index": 4
+        },
+        {
+          "configured_episode_length": 220,
+          "policy_decision_indices": [
+            0,
+            219
+          ],
+          "suite": "libero_spatial",
+          "task_index": 5
+        },
+        {
+          "configured_episode_length": 220,
+          "policy_decision_indices": [
+            0,
+            219
+          ],
+          "suite": "libero_spatial",
+          "task_index": 6
+        },
+        {
+          "configured_episode_length": 220,
+          "policy_decision_indices": [
+            0,
+            219
+          ],
+          "suite": "libero_spatial",
+          "task_index": 7
+        },
+        {
+          "configured_episode_length": 220,
+          "policy_decision_indices": [
+            0,
+            219
+          ],
+          "suite": "libero_spatial",
+          "task_index": 8
+        },
+        {
+          "configured_episode_length": 220,
+          "policy_decision_indices": [
+            0,
+            219
+          ],
+          "suite": "libero_spatial",
+          "task_index": 9
+        }
+      ],
+      "semantic_origin": "OPENVLA_LIBERO_CANONICAL_POLICY_DECISION_HORIZON",
+      "source": {
+        "byte_size": 11936,
+        "git_blob_sha": "5c3f58178d7c827df829379354f7aefddc0458bc",
+        "path": "experiments/robot/libero/run_libero_eval.py",
+        "raw_sha256": "369d9fc3d59067998ebfadafbd516872c7ff6f9f06a0a48cda8b6ca48051de77",
+        "ref": "c8f03f48af692657d3060c19588038c7220e9af9"
+      },
+      "status": "BOUND"
+    },
+    "legal_horizon_boundary_tests": {
+      "episode_length_14": false,
+      "episode_length_15": true,
+      "t_emit": 0,
+      "t_emit_5_length_19": false,
+      "t_emit_5_length_20": true
+    },
+    "schema": "STAGE_X_X1R_T1D0R2_SUCCESS_HORIZON_AUTHORITY_V1",
+    "source_records": {
+      "libero_bddl_domain": {
+        "byte_size": 33490,
+        "exists": true,
+        "expected_raw_sha256": "9626f2995514474a4fa3cc3d36ace1de091e2293d96f61399688178c56ca1750",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/repos/LIBERO-official-8f1084e/libero/libero/envs/bddl_base_domain.py",
+        "raw_sha256": "9626f2995514474a4fa3cc3d36ace1de091e2293d96f61399688178c56ca1750"
+      },
+      "libero_env_wrapper": {
+        "byte_size": 9059,
+        "exists": true,
+        "expected_raw_sha256": "2880cad5b3fe46ea105816f42798faf4c22e16839098b679ebcad7b51acfdbd0",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/repos/LIBERO-official-8f1084e/libero/libero/envs/env_wrapper.py",
+        "raw_sha256": "2880cad5b3fe46ea105816f42798faf4c22e16839098b679ebcad7b51acfdbd0"
+      },
+      "upstream_evaluator": {
+        "byte_size": 11936,
+        "git_blob_sha": "5c3f58178d7c827df829379354f7aefddc0458bc",
+        "path": "experiments/robot/libero/run_libero_eval.py",
+        "raw_sha256": "369d9fc3d59067998ebfadafbd516872c7ff6f9f06a0a48cda8b6ca48051de77",
+        "ref": "c8f03f48af692657d3060c19588038c7220e9af9"
+      }
+    },
+    "status": "PASS_SUCCESS_AND_HORIZON_BINDING",
+    "success_authority": {
+      "benchmark_native_predicate": "BDDL task _check_success() invoked by bddl_base_domain.step",
+      "call_expression": "obs, reward, done, info = env.step(action.tolist()); if done: task_successes += 1",
+      "canonical_evaluator": {
+        "byte_size": 11936,
+        "git_blob_sha": "5c3f58178d7c827df829379354f7aefddc0458bc",
+        "path": "experiments/robot/libero/run_libero_eval.py",
+        "raw_sha256": "369d9fc3d59067998ebfadafbd516872c7ff6f9f06a0a48cda8b6ca48051de77",
+        "ref": "c8f03f48af692657d3060c19588038c7220e9af9"
+      },
+      "comparison_candidates": [
+        {
+          "name": "project_SC5_clean_runner",
+          "reason": "three-suite local runner with 400-step override semantics",
+          "status": "COMPARISON_ONLY"
+        },
+        {
+          "name": "ControlEnv.check_success",
+          "source": {
+            "byte_size": 9059,
+            "exists": true,
+            "path": "/mnt/sdc/dty_user/openvla_attack/repos/LIBERO-official-8f1084e/libero/libero/envs/env_wrapper.py",
+            "raw_sha256": "2880cad5b3fe46ea105816f42798faf4c22e16839098b679ebcad7b51acfdbd0"
+          },
+          "status": "EQUIVALENT_DELEGATE_NOT_CALLSITE"
+        }
+      ],
+      "first_success": "first post-step done=True terminates the task loop",
+      "semantic_origin": "OPENVLA_LIBERO_CANONICAL_ENV_STEP_DONE",
+      "status": "BOUND",
+      "step_index": "t=0 at first policy decision after dummy wait; wait steps are outside policy index",
+      "suite_coverage": [
+        "libero_10",
+        "libero_goal",
+        "libero_object",
+        "libero_spatial"
+      ],
+      "transition_position": "after env.step transition",
+      "wrapper_delegate": "ControlEnv.step -> self.env.step(action)"
+    }
+  }
+}
