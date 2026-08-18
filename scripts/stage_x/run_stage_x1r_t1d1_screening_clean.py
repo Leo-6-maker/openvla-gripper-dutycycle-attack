@@ -556,6 +556,8 @@ def main() -> int:
         preflight = load_json(preflight_path)
         if preflight.get("status") != "PASS_DURABLE_STORAGE" or preflight.get("model_contract", {}).get("status") != "PASS":
             raise SystemExit("DURABLE_PREFLIGHT_OR_MODEL_CONTRACT_NOT_PASS")
+        if preflight.get("source", {}).get("commit") != source["commit"] or preflight.get("source", {}).get("tree") != source["tree"]:
+            preflight = durable_preflight(protocol, verify_models=True)
     else:
         preflight = durable_preflight(protocol, verify_models=True)
     if args.preflight_only:
