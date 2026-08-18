@@ -39,7 +39,7 @@
     "attack_adapter_sha256": "26cfb9f5d8a5a29e7ac2729f5c9cdd58dadfd75e45eebe935ee66214cc9402be",
     "controls_sha256": "d665f1345b953d5bb3e15ee102321d5130db828c92fdd2f48a175a20c467598b",
     "route_contract_sha256": "1fd53e0ce09ed7e97b02aac0ca76cb173082178135131392e1e9f9ae50d132a9",
-    "runner_sha256": "b7920864663b2efe85f7c5962aeaffa386f64f05a314dcdac556713c48bd6ae9"
+    "runner_sha256": "c6c3fa8f5b0e9d4352427983cb9564188b7f9a4011919272a47d7c6e4897fe52"
   },
   "status": "PASS_STATIC_ATTACK_IMPLEMENTATION"
 }

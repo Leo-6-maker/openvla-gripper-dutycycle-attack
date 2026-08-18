@@ -395,8 +395,7 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
             counters["openvla_model_inference_calls"] += 1
             clean_decoded = decode_tokens(model, clean_prepared["tokens"], suite)
             clean_decoded.update({"generated": clean_prepared["generated"], "inputs": clean_prepared["inputs"], "prompt_len": int(clean_prepared["inputs"]["input_ids"].shape[1]), "raw_hashes": clean_prepared["raw_hashes"]})
-            telemetry = update_feature(adapter, step, obs, clean_decoded, previous_eef)
-            previous_eef = np.asarray(telemetry["eef"], dtype=np.float64)
+            telemetry, previous_eef = update_feature(adapter, step, obs, clean_decoded, previous_eef)
             if step <= expected_emit:
                 if not telemetry["feature_valid"]:
                     raise RuntimeError(f"CLEAN_FEATURE_INVALID_BEFORE_EMIT:{step}")

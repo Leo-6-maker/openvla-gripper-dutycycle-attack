@@ -101,7 +101,27 @@ def main() -> int:
     if "ExistingDenseAttackAdapter" in runner_text or "Eval160" in runner_text or "V_phys" in runner_text:
         errors.append("RUNNER_CONTAINS_FORBIDDEN_FALLBACK_OR_PROTECTED_PATH")
     try:
-        ast.parse(runner_text)
+        runner_ast = ast.parse(runner_text)
+        update_calls = [
+            node
+            for node in ast.walk(runner_ast)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "update_feature"
+        ]
+        unpacked_update_calls = [
+            node
+            for node in ast.walk(runner_ast)
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Name)
+            and node.value.func.id == "update_feature"
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Tuple)
+            and len(node.targets[0].elts) == 2
+        ]
+        if len(update_calls) != 1 or len(unpacked_update_calls) != 1:
+            errors.append("UPDATE_FEATURE_RETURN_CONTRACT_NOT_UNPACKED")
     except SyntaxError as exc:
         errors.append(f"RUNNER_SYNTAX_ERROR:{exc}")
 
