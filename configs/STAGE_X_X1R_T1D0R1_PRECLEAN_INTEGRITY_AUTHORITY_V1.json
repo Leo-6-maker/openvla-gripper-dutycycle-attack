@@ -235,9 +235,9 @@
   },
   "runtime_authority": {
     "suite_matched_contract_path": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
-    "suite_matched_contract_sha256": "0cafca3d585ff87c1125639b95f558ef6f3501ea24b258842da1a34b2148bec4",
+    "suite_matched_contract_sha256": "37f5d4ea205835fedc8f4d02c3e722c80581aa5c04d9349c7eed0dd4f6364265",
     "detector_handoff_path": "docs/handoffs/STAGE_X_X1R_T1_DETECTOR_PGD_MATRIX_HANDOFF_20260818.md",
-    "detector_handoff_sha256": "facbc1376064a286e9d7ce1a07fe1c185c7e9a75b23b43ddae43420e3c848d87",
+    "detector_handoff_sha256": "7585baf34e4f8ebef7b35d01c8dc0f1a6abf21c56cd1564b768ebe1e177a95a9",
     "student": {
       "checkpoint": {
         "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/checkpoint.pt",
