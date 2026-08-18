@@ -283,6 +283,12 @@ def derive_population(
                     "rank_within_suite_task": 1,
                     "future_state": "IDENTITY_FROZEN",
                 })
+    names = sorted(exclusion_sets)
+    intersections = {
+        f"{left}&{right}": len(set(exclusion_sets[left]) & set(exclusion_sets[right]))
+        for index, left in enumerate(names)
+        for right in names[index + 1:]
+    }
     return {
         "g10_rows": rows,
         "design_rows": design,
@@ -290,6 +296,7 @@ def derive_population(
         "exclusion_union": sorted(union),
         "fresh_rows": [row for row in rows if row["fresh_after_exclusion"]],
         "source_counts": {name: len(values) for name, values in sorted(exclusion_sets.items())},
+        "pairwise_exclusion_intersections": intersections,
     }
 
 
@@ -381,6 +388,7 @@ def recompute(protocol: Mapping[str, Any], repo_root: Path | None = None) -> dic
             "g10_identity_count": len(derived["g10_rows"]),
             "g10_identity_digest": identity_digest(row["canonical_parent_key"] for row in derived["g10_rows"]),
             "exclusion_source_counts": derived["source_counts"],
+            "pairwise_exclusion_intersections": derived["pairwise_exclusion_intersections"],
             "exclusion_union_count": len(derived["exclusion_union"]),
             "exclusion_union_digest": identity_digest(derived["exclusion_union"]),
             "fresh_candidate_count": len(derived["fresh_rows"]),
