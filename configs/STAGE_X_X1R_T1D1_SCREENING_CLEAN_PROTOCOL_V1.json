@@ -1,0 +1,164 @@
+{
+  "schema": "STAGE_X_X1R_T1D1_SCREENING_CLEAN_PROTOCOL_V1",
+  "status": "FROZEN_FOR_SCREENING_CLEAN_EXECUTION",
+  "reviewed_pr": 128,
+  "reviewed_live_head": {
+    "commit": "c1b3cf4ba76b03fd356c88f86a5d352e44241868",
+    "tree": "220ed358376cec39152f6b2c2c794b2db2a16c9c",
+    "base_branch": "codex/stage-x-x1r-t1d0r2-clean-runtime-authority-20260818",
+    "base_commit": "e9db0bfadf3822e8b3fc4771bbdd644e5c07b14e"
+  },
+  "implementation": {
+    "branch": "codex/stage-x-x1r-t1d1-screening-clean-census-20260818",
+    "runtime_source_binding": "record_current_clean_worktree_commit_and_tree_before_first_model_load",
+    "final_seal_binding": "separate_from_runtime_source_pre_evidence"
+  },
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "suite_contract": {
+    "path": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+    "sha256": "0cafca3d585ff87c1125639b95f558ef6f3501ea24b258842da1a34b2148bec4",
+    "status_required": "FROZEN_FOR_CLEAN_PARITY_ONLY",
+    "scientific_authority_required": "X1R_NOT_AUTHORIZED"
+  },
+  "parent_population": {
+    "seed_report": "reports/STAGE_X_X1R_T1D0R2_PARENT_SEED_INVARIANCE_V1.json",
+    "seed_report_sha256": "11d57fb28ad497be51f3627dcfdefe43b7bfebb782a31bcec5b8d3b9f922e61d",
+    "selection_salt": "STAGE_X_X1R_T1D0_PARENT_AUTHORITY_V1_20260818",
+    "seed_namespace": "STAGE_X_X1R_T1D0R1_CLEAN_SEED_V1",
+    "count": 39,
+    "nominal_cells": 40,
+    "missing_cell": "libero_goal/task_01",
+    "replacement": false,
+    "suite_counts": {
+      "libero_10": 10,
+      "libero_goal": 9,
+      "libero_object": 10,
+      "libero_spatial": 10
+    },
+    "canary_ordinals": [1, 11, 20, 30],
+    "selection_rule": "exact_rows_from_immutable_D0R2_seed_report; no outcome-based replacement"
+  },
+  "clean_runtime": {
+    "condition": "SCREENING_CLEAN",
+    "screening_is_not_clean_eval": true,
+    "num_steps_wait": 10,
+    "horizons": {
+      "libero_10": 520,
+      "libero_goal": 300,
+      "libero_object": 280,
+      "libero_spatial": 220
+    },
+    "success": "done returned by env.step after the clean action",
+    "image": {
+      "observation_key": "agentview_image",
+      "orientation": "rotate_180",
+      "preprocess_backend": "official_pil_lanczos",
+      "resize_size": 224,
+      "center_crop": true,
+      "jpeg_round_trip": false
+    },
+    "prompt": "official_in_out",
+    "generation": {
+      "do_sample": false,
+      "passes_per_policy_step": 1,
+      "attention_mask": "drop_for_official_openvla_generation_path",
+      "action_token_count": 7
+    },
+    "action": {
+      "raw_space": "OpenVLA decoded action",
+      "env_space": "official normalize_gripper_action then invert_gripper_action",
+      "arm_tokens_untouched": true,
+      "boundary_raw_gripper_0_5": "recorded and never coerced"
+    }
+  },
+  "student": {
+    "checkpoint": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/checkpoint.pt",
+    "checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+    "source": "n5/phase3_student/n5_student_model.py",
+    "source_raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+    "feature_source": "src/gripper_attack/v5_r3_features.py",
+    "feature_source_sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9",
+    "adapter_source": "src/gripper_attack/d8_streaming_features_v3.py",
+    "adapter_source_sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3",
+    "normalization_sha256": "66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c",
+    "thresholds_sha256": "5236884ea746adc6a5388ab6e8058adb717b86ee2814b71a748c7792d051de3e",
+    "input_dim": 25,
+    "hidden": 64,
+    "short_rf": 32,
+    "long_rf": 128,
+    "dropout_eval": 0.0,
+    "active_heads": [
+      "physical_criticality",
+      "k10_feasibility",
+      "instability",
+      "gripper_closing_state"
+    ],
+    "physical_threshold": 0.55,
+    "closing_threshold": 0.8,
+    "one_shot": true,
+    "student_use": "clean causal screening trace only; no training or retuning"
+  },
+  "durable_storage": {
+    "root": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818",
+    "authoritative": true,
+    "temporary_storage_not_authoritative": true,
+    "episode_count": 39,
+    "per_episode_video_budget_bytes": 134217728,
+    "telemetry_and_seal_overhead_bytes": 536870912,
+    "required_bytes": 5570035712,
+    "free_bytes_required_strictly_greater": true,
+    "video": {
+      "format": "mp4",
+      "codec": "libx264",
+      "fps": 20,
+      "overlay": false,
+      "manual_contact_review": "REQUIRED"
+    },
+    "failure_status": "HOLD_DURABLE_STORAGE"
+  },
+  "retry": {
+    "max_infra_retries": 1,
+    "retry_allowed_only_before_first_OpenVLA_policy_decision": true,
+    "retry_allowed_only_before_first_Student_forward": true,
+    "outcome_based_retry": false,
+    "identity_replacement": false
+  },
+  "forbidden": [
+    "pgd",
+    "rand_uniform",
+    "shuffled_gradient",
+    "attacked_action",
+    "physical_intervention",
+    "v_phys",
+    "x1r_attack_outcome",
+    "eval160",
+    "protected_evaluation"
+  ],
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters_required_zero": [
+      "pgd_calls",
+      "attack_backward_calls",
+      "adversarial_images",
+      "physical_interventions",
+      "vphys_reads",
+      "attack_outcome_reads",
+      "eval160_reads",
+      "protected_reads",
+      "attacked_env_steps"
+    ]
+  },
+  "authorization": {
+    "screening_clean_authorized": true,
+    "openvla_clean_inference_authorized": true,
+    "student_clean_inference_authorized": true,
+    "simulator_reset_step_authorized": true,
+    "pgd_authorized": false,
+    "physical_intervention_authorized": false,
+    "vphys_authorized": false,
+    "eval160_authorized": false,
+    "protected_authorized": false,
+    "next_gate": "PROTOCOL_ATTACK_ELIGIBLE_PRE_MANUAL_REVIEW"
+  }
+}
