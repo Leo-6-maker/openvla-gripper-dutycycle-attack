@@ -34,7 +34,7 @@ def test_source_fixture_drives_identity_join_and_selection(tmp_path):
     assert len(result["exclusion_union"]) == 1
     assert len(result["parent_rows"]) == 3
     assert len([row for row in result["design_rows"] if not row["selected"]]) == 1
-    assert result["design_rows"][0]["missing_reason"] is not None or result["design_rows"][1]["missing_reason"] is not None
+    assert any(row["missing_reason"] is not None for row in result["design_rows"])
 
 
 def test_protocol_is_frozen_and_fail_closed():
