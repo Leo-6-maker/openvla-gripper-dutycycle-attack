@@ -1,0 +1,133 @@
+{
+  "schema": "STAGE_X_X1R_PRIMARY_MATRIX_PROTOCOL_V1",
+  "stage": "STAGE_X_X1R_PROSPECTIVE_PRIMARY_MATRIX",
+  "status": "FROZEN_PRE_LABEL_INGESTION",
+  "freeze_boundary": "2026-08-19",
+  "purpose": "Prospective four-arm Stage X X1R primary matrix after blind owner-label ingestion.",
+  "scientific_estimand": "suite-matched victim response to frozen clean, true-PGD, matched-random, and shuffled-gradient conditions at the frozen Student first-emit timing anchor.",
+  "ancestry": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "base_pr": 132,
+    "base_commit": "14f7df98995262ede4fc129578001ffe40431582",
+    "base_tree": "8e59bdeee666a92a776e9ef99f7c4ac1dd6801f2",
+    "goal_branch": "codex/stage-x-x1r-goal-d1m1-primary-matrix-20260819",
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800"
+  },
+  "population_boundary": {
+    "owner_labels_are_not_parsed_in_this_freeze": true,
+    "candidate_set_source": "PR132 D1M0R sealed review packet",
+    "cohort_selection": "blind mapping only after G0 commit; no outcome-based selection or replacement",
+    "historical_stage_x_results_consumable": false
+  },
+  "arms": [
+    "CLEAN_EVAL",
+    "TRUE_PGD_T5",
+    "RAND_UNIFORM_T5",
+    "SHUFFLED_GRAD_T5"
+  ],
+  "timing": {
+    "trigger": "frozen Student first_emit_step from SCREENING_CLEAN receipt",
+    "attack_start_step": "t_emit",
+    "attack_window_offsets": [0, 1, 2, 3, 4],
+    "attack_window_length": 5,
+    "physical_followup_offsets": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "h_phys": 10,
+    "legal_horizon": "t_emit + 5 + 10 <= episode_length",
+    "terminal_success_semantics": "official policy env.step() result with done=True; no extra policy step is counted",
+    "temporal_delta_boundary": "prev_delta is zeroed at each parent/condition/episode attack-window entry and may be reused only within that same five-step window"
+  },
+  "true_pgd": {
+    "route": "token_prefix_pgd",
+    "strict_route": true,
+    "allow_fallback": false,
+    "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+    "target_token_id": 31745,
+    "target_execution_class": "NATIVE_OPEN",
+    "target_semantics": "direct-generated gripper token must be in the native OPEN class; exact token 31745 is a secondary diagnostic",
+    "epsilon_processor_pixel_values": 0.03,
+    "step_size_processor_pixel_values": 0.006,
+    "num_steps": 5,
+    "cw_margin": 5.0,
+    "random_start": false,
+    "temporal_init": "none",
+    "temporal_smoothing_lambda": 0.0,
+    "prefix_refresh": 1,
+    "iterate_selection": "FINAL_ONLY",
+    "master_dtype": "fp32",
+    "model_cast_and_quantized_budget_correction": true,
+    "projection_space": "processor_pixel_values",
+    "raw_rgb_projection": false,
+    "fallback_or_direct_actuator_edit": false
+  },
+  "arm_isolation": {
+    "primary_invariant": "adv arm token IDs[0:6] == clean arm token IDs[0:6]",
+    "arm_dimensions": [0, 1, 2, 3, 4, 5],
+    "gripper_dimension": 6,
+    "arm_preservation_linf": 0.1,
+    "arm_mismatch_is_structural_failure": true
+  },
+  "controls": {
+    "clean": "unperturbed official clean replay",
+    "rand_uniform": {
+      "primitive": "src/gripper_attack/m3_controls.py::sample_processor_delta",
+      "same_epsilon_and_projection": true,
+      "same_five_step_budget": true,
+      "requires_gradient": false,
+      "objective_oracle": false
+    },
+    "shuffled_grad": {
+      "primitive": "src/gripper_attack/m3_controls.py::shuffled_grad_direction",
+      "mode": "permute",
+      "same_epsilon_alpha_steps_projection_dtype_and_route": true,
+      "objective_oracle": false
+    },
+    "no_extra_control": "No random-time, T10, oracle, or post-hoc selected condition is permitted."
+  },
+  "seed_contract": {
+    "eval_seed_namespace": "STAGE_X_X1R_PRIMARY_MATRIX_EVAL_SEED_V1_20260819",
+    "perturb_seed_namespace": "STAGE_X_X1R_PRIMARY_MATRIX_PERTURB_SEED_V1_20260819",
+    "arm_order_namespace": "STAGE_X_X1R_PRIMARY_MATRIX_ARM_ORDER_V1_20260819",
+    "seed_algorithm": "int(sha256(namespace + '|' + canonical_parent_key + '|' + probe_id).hexdigest()[:8], 16)",
+    "arm_order_base": [
+      "CLEAN_EVAL",
+      "RAND_UNIFORM_T5",
+      "SHUFFLED_GRAD_T5",
+      "TRUE_PGD_T5"
+    ],
+    "arm_rotation_algorithm": "int(sha256(ARM_ORDER_NAMESPACE + '|' + canonical_parent_key + '|' + probe_id).hexdigest()[:2], 16) % 4",
+    "arm_order_selection": "rotate the frozen arm_order_base left by arm_rotation"
+  },
+  "source_route_bindings": {
+    "route_contract": "src/gripper_attack/route_contract.py",
+    "expected_target_token_id": 31745,
+    "expected_target_execution_class": "NATIVE_OPEN",
+    "native_token_authority_required": true,
+    "suite_matched_victim_contract": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json"
+  },
+  "forbidden": [
+    "label-outcome cohort selection",
+    "parent replacement or reselection",
+    "fallback attack route",
+    "epsilon or step-budget tuning after seeing outcomes",
+    "direct actuator edit",
+    "V_phys read for selection",
+    "Eval160 read",
+    "protected evaluation read"
+  ],
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters_at_freeze": {
+      "model_inference_calls": 0,
+      "env_step_calls": 0,
+      "pgd_calls": 0,
+      "attacked_action_steps": 0,
+      "physical_interventions": 0,
+      "vphys_reads": 0,
+      "attack_outcome_reads": 0,
+      "eval160_reads": 0,
+      "protected_reads": 0
+    }
+  },
+  "next_gate": "STAGE_X_X1R_T1D1M1_LABEL_INTEGRITY_AUDIT_REQUIRED"
+}
