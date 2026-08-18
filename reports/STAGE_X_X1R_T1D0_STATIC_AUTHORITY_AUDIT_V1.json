@@ -1,0 +1,42 @@
+{
+  "env_step_executed": false,
+  "errors": [],
+  "eval160": "UNREAD",
+  "missing_task_slots": [
+    "libero_goal/task_01"
+  ],
+  "native_token_gate": "PASS",
+  "parent_authority_gate": "HOLD_PARENT_UNIVERSE_NOT_IDENTIFIABLE",
+  "protected_boundary": {
+    "counters": {
+      "adversarial_images": 0,
+      "attack_outcome_reads": 0,
+      "env_step_calls": 0,
+      "eval160_reads": 0,
+      "pgd_calls": 0,
+      "physical_interventions": 0,
+      "protected_reads": 0,
+      "vphys_reads": 0
+    },
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "protected_evaluation": "UNREAD",
+  "protocol_sha256": "34fa9e4719296ec303d48b2f0c610c4548294000ef2ee457e4c177e2aab4edfd",
+  "required_static_candidate_count": 40,
+  "schema": "STAGE_X_X1R_T1D0_STATIC_AUTHORITY_AUDIT_V1",
+  "selected_static_candidate_count": 39,
+  "source_binding": {
+    "authority_branch": "codex/stage-x-x1r-t1d0-attack-parent-authority-20260818",
+    "base_branch": "codex/stage-x-x1r-t1-detector-pgd-matrix-20260818",
+    "base_commit": "c6a4c5a9e7d63121a75814b3071c9047e1d9e0d0",
+    "base_tree": "aa22ae95ed760a32cde01729c47b40b3331f668a",
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "stack_base_pr": 124
+  },
+  "stage_ix_sha256": "bf27a237ba9fd9be255d5371d160705cc3c55e000e119062934deb4c2a6dee38",
+  "static_load_gate": "PASS",
+  "status": "STAGE_X_X1R_T1D0_HOLD_TIMING_ANCHOR_AUTHORITY",
+  "timing_anchor_gate": "STAGE_X_X1R_T1D0_HOLD_TIMING_ANCHOR_AUTHORITY",
+  "x1r_pgd_executed": false
+}
