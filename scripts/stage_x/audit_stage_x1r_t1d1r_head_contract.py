@@ -59,7 +59,7 @@ def replay_one(d1: Any, model: Any, mean: np.ndarray, std: np.ndarray, row: dict
     if not replay_path.is_file():
         raise RuntimeError(f"HISTORICAL_REPLAY_INPUT_MISSING:{replay_path}")
     payload = load_json(replay_path)
-    if payload.get("schema") != "STAGE_X_M4_CLEAN_REPLAY_STUDENT_INPUTS_V1" or payload.get("intervention_executed") or payload.get("outcomes_read") or payload.get("v_phys_read"):
+    if payload.get("schema") != "STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_V1" or payload.get("intervention_executed") or payload.get("outcomes_read") or payload.get("v_phys_read"):
         raise RuntimeError(f"HISTORICAL_REPLAY_SCOPE_INVALID:{row['canonical_parent_key']}")
     steps = [{"step": int(item["step"]), "raw_action_7d": item["raw_action_7d"], "action_env_7d": item["env_action_7d"]} for item in payload["replay_rows"]]
     telemetry = [{"step": int(item["step"]), "robot0_gripper_qpos": item["robot0_gripper_qpos"], "robot0_eef_pos": item["robot0_eef_pos"]} for item in payload["replay_rows"]]
