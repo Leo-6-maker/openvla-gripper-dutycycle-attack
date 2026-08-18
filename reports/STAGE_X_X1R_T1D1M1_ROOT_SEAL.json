@@ -1,0 +1,50 @@
+{
+  "ancestry": {
+    "base_commit": "14f7df98995262ede4fc129578001ffe40431582",
+    "base_pr": 132,
+    "base_tree": "8e59bdeee666a92a776e9ef99f7c4ac1dd6801f2",
+    "goal_branch": "codex/stage-x-x1r-goal-d1m1-primary-matrix-20260819"
+  },
+  "counts": {
+    "abstain": 1,
+    "fail": 6,
+    "final_attack_eligible": 7,
+    "mapping_rows": 14,
+    "pass": 7,
+    "premanual_rows": 14,
+    "submitted_rows": 14
+  },
+  "included_report_sha256": {
+    "STAGE_X_X1R_T1D1M1_FINAL_ATTACK_COHORT_V1.json": "7b6d4d52ccf2f4e11ba241d5a8f4290863b786ffe33882c886d96edc28825423",
+    "STAGE_X_X1R_T1D1M1_MANUAL_DISPOSITION_LEDGER_V1.json": "c7b88b5c8c73a36525f74f01c3a6bcab76ee94690d3095805797f496da8cd67e",
+    "STAGE_X_X1R_T1D1M1_OWNER_LABEL_INTEGRITY_AUDIT_V1.json": "b6892a383760621c95d6c5b0b31c4a758fc476cf954f40ec692b2768bb1277f9"
+  },
+  "manual_labels_are_final_for_this_cohort": true,
+  "next_gate": "STAGE_X_X1R_G2_ATTACK_IMPLEMENTATION_AUDIT_REQUIRED",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_action_steps": 0,
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "eval160_reads": 0,
+    "model_inference": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "student_inference": 0,
+    "vphys_reads": 0
+  },
+  "replacement_or_rerank": false,
+  "schema": "STAGE_X_X1R_T1D1M1_ROOT_SEAL_V1",
+  "source_bindings": {
+    "candidate_ledger_sha256": "5f1f036b47b1c9a8c1bafe7a400b6be9269cd3e67587691018005c824dc8d89e",
+    "mapping_sha256": "3d7f59a736cc2c7bcb5ecdc49e9e57a7e8b547c9e7554251e88158017366f0fe",
+    "owner_submission_sha256": "76c835c292c76190b2a764da7be746a568697deea1cb4009d63e306fdc610c2c",
+    "primary_protocol": "configs/STAGE_X_X1R_PRIMARY_MATRIX_PROTOCOL_V1.json",
+    "primary_protocol_sha256": "37701fd8f4da1d7fc67d7c4adc776b957975a5735c66557c2385dbf21da5dea8",
+    "review_order_digest": "30a73b0e4ab13e149d8c991906fc9067844797e39113201e9e76a10a8be40d67"
+  },
+  "status": "STAGE_X_X1R_T1D1M1_LABEL_INTEGRITY_PASS_COHORT_FROZEN",
+  "teacher_student_changed": false
+}
