@@ -1,7 +1,7 @@
 # STAGE X X1R T1-D0R1 Pre-clean Integrity Handoff
 
 Date: 2026-08-18
-Status: `STATIC_ONLY_HOLD_PENDING_OFFICIAL_AUDIT`
+Status: `STAGE_X_X1R_T1D0R1_HOLD_CLEAN_RUNTIME_AUTHORITY`
 
 ## Scope
 
@@ -29,9 +29,9 @@ use any new outcome information.
 - Nominal design: 40 cells; executable fresh population: 39 parents;
   missing cell: `libero_goal/task_01`; replacement is forbidden.
 
-The code-only pre-evidence source for this handoff is the branch commit
-`165efe5018224ac1da97699d45bd2bda9130e9fb` with tree
-`fa1721e881c80283a9532d87f4e8a5f2fee1ef10`. The evidence-producing commit is
+The authority pre-evidence source for this handoff is branch commit
+`b1196eb52cc57484115e9ae3ee84ff9bd085a3ae` with tree
+`6408666258288707ef613522f3439790396038ec`. The evidence-producing commit is
 intentionally not embedded in this handoff or its root seal, because doing so
 would be self-referential. The live GitHub HEAD/tree must be reported after
 publication as a separate binding.
@@ -52,6 +52,13 @@ The local Stage IX contract and native-token source must be reconciled from
 Git objects across the c6a4c5a, 2881722b, and aabd419 refs. Stale D0 digest
 claims must remain historical and non-authoritative; current bytes must not be
 rewritten to fit a historical claim.
+
+The official dty LF-byte bindings are recorded as
+`37f5d4ea205835fedc8f4d02c3e722c80581aa5c04d9349c7eed0dd4f6364265` for the
+suite-matched contract and
+`7585baf34e4f8ebef7b35d01c8dc0f1a6abf21c56cd1564b768ebe1e177a95a9` for the
+detector handoff. The earlier Windows CRLF digests are not used as runtime
+identity.
 
 ## Prospective timing and seed freeze
 
@@ -74,16 +81,28 @@ Clean seeds, if a later gate is separately authorized, are derived only as
 namespace `STAGE_X_X1R_T1D0R1_CLEAN_SEED_V1`. No outcome field can influence
 selection or seeding.
 
-## Known fail-closed runtime boundary
+## Audit result and fail-closed runtime boundary
+
+The official CPU audit independently derived 1200 G10 identities, a 990-row
+exclusion union, 210 fresh candidates, 40 design cells, and 39 executable
+parents with no replacement. The missing design cell is
+`libero_goal/task_01`; the executable suite counts are 10/9/10/10. Physical
+directory aliases are explicit, and alias-set invariance passes.
 
 The authority deliberately requires exact task-success and episode-horizon
 path bindings before any future clean materialization. It also verifies the
 declared frozen Student model-source digest against the current prospective
-file and preserves any discrepancy as a HOLD. No current file hash is used to
-retroactively identify historical provenance.
+file and preserves any discrepancy as a HOLD. The current server file is
+`ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b`, while
+the frozen handoff declaration is `7945e464130d8bcb4b4fd85475dffc3024ef2bc419b5d1ea812b29156b96a0fd`
+and the T1 receipt records `30cf...`; these are not silently reconciled. The
+task-success evaluator and episode-horizon source paths also remain
+`NOT_YET_UNIQUE_PATH_BOUND_IN_T1_AUTHORITY`.
 
-Expected terminal behavior for this static-only gate is therefore a concrete
-HOLD if either runtime authority remains unresolved. A HOLD is evidence of an
+No current file hash is used to retroactively identify historical provenance.
+
+The official terminal result is therefore
+`STAGE_X_X1R_T1D0R1_HOLD_CLEAN_RUNTIME_AUTHORITY`. A HOLD is evidence of an
 unclosed authority boundary, not permission to infer, roll out, or attack.
 
 ## Authorization and protected boundary
@@ -106,4 +125,3 @@ The only legal next step after the new Draft PR is independent GPT/owner
 review of the sealed static evidence. The next gate, if explicitly approved,
 is `CLEAN_PARENT_MATERIALIZATION_REVIEW_REQUIRED`; T1-D1 is not authorized by
 this handoff.
-
