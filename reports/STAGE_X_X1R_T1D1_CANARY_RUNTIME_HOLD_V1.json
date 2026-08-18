@@ -1,0 +1,104 @@
+{
+  "schema": "STAGE_X_X1R_T1D1_CANARY_RUNTIME_HOLD_V1",
+  "status": "HOLD_RUNTIME_INVALID_AFTER_FIRST_POLICY_DECISION",
+  "protocol": "STAGE_X_X1R_T1D1_SCREENING_CLEAN_PROTOCOL_V1",
+  "authority": {
+    "source_owner_prompt": "PR128 comment 5326904937",
+    "execution_branch": "codex/stage-x-x1r-t1d1-screening-clean-census-20260818",
+    "source_commit": "f079dcfa2bdafe65291cfdd1fbd2913b2a42668f",
+    "source_tree": "6efe25a144efc43473897e5ff8e08e2124940b70",
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "durable_root": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818",
+    "durable_preflight": {
+      "status": "PASS_DURABLE_STORAGE",
+      "receipt_sha256": "c78a572fc82bbfb3381b025536dacab2cfee9559ed59a6a8e04fe666f86643a3"
+    }
+  },
+  "frozen_student": {
+    "checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+    "source_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+    "weights_changed": false,
+    "thresholds_changed": false
+  },
+  "failure": {
+    "component": "screening_clean_student_trace",
+    "error": "KeyError:'k10_feasibility'",
+    "runner_requested_head": "k10_feasibility",
+    "frozen_model_actual_head": "k10_feasible",
+    "interpretation": "Implementation output-key alias mismatch; no scientific outcome was materialized.",
+    "retry_rule": "All four failures occurred after first_policy_decision=true; retry_eligible=false.",
+    "required_action": "Retain all four identities as immutable RUNTIME_INVALID and stop D1 under the current authority."
+  },
+  "canaries": [
+    {
+      "ordinal": 1,
+      "canonical_parent_key": "libero_10/task_00/state_36",
+      "status": "RUNTIME_INVALID",
+      "receipt_sha256": "11f264af461dd337f5410a5d47df2eb22cd29e3f822a1d35985d20330f2dd488",
+      "video_sha256": "79e6a93c475b3d4b19953cf91b14f908f6731369ef5591800a594fd972485186",
+      "video_bytes": 595165,
+      "env_step_calls": 456,
+      "openvla_model_inference_calls": 446,
+      "first_policy_decision": true,
+      "retry_eligible": false
+    },
+    {
+      "ordinal": 11,
+      "canonical_parent_key": "libero_goal/task_00/state_21",
+      "status": "RUNTIME_INVALID",
+      "receipt_sha256": "0e289073b2b9ba2eec3d79756dbde535470e271805a69ad860d65c895a33d401",
+      "video_sha256": "8ea8e0592056b2a1fe5d2718bf32b76b3c8b529a9a881cfd18b85761eb5edd08",
+      "video_bytes": 271156,
+      "env_step_calls": 310,
+      "openvla_model_inference_calls": 300,
+      "first_policy_decision": true,
+      "retry_eligible": false
+    },
+    {
+      "ordinal": 20,
+      "canonical_parent_key": "libero_object/task_00/state_45",
+      "status": "RUNTIME_INVALID",
+      "receipt_sha256": "64e39bfe972ba82fcc4ff48257484ba227d866be9532126ec69288f60469c3f3",
+      "video_sha256": "01eabbb82c446327ab4c38f76b1d4c185d1af7d767bec12d67ee6d8677ed4102",
+      "video_bytes": 264011,
+      "env_step_calls": 290,
+      "openvla_model_inference_calls": 280,
+      "first_policy_decision": true,
+      "retry_eligible": false
+    },
+    {
+      "ordinal": 30,
+      "canonical_parent_key": "libero_spatial/task_00/state_37",
+      "status": "RUNTIME_INVALID",
+      "receipt_sha256": "6cd8a4127c500867b9601786e2af69482f2ebe6623d1e267a6a1847ceca037a4",
+      "video_sha256": "f27923af09263262c1964615b74aaca58a7beb328962b9f2ea24185fa960971e",
+      "video_bytes": 125372,
+      "env_step_calls": 93,
+      "openvla_model_inference_calls": 83,
+      "first_policy_decision": true,
+      "retry_eligible": false
+    }
+  ],
+  "aggregate": {
+    "canaries_planned": 4,
+    "canaries_runtime_invalid": 4,
+    "clean_success_materialized": 0,
+    "first_emit_materialized": 0,
+    "student_forward_receipts": 0,
+    "remaining_parents_started": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "retry_or_replacement": 0
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "pgd_authorized": false,
+    "physical_intervention_authorized": false,
+    "attack_outcome_authorized": false
+  },
+  "next_gate": "OWNER_REVIEW_T1D1_RUNTIME_REPAIR_REQUIRED"
+}
