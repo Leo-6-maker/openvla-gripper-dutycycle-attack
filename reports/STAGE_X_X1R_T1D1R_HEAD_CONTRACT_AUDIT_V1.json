@@ -173,9 +173,9 @@
   "schema": "STAGE_X_X1R_T1D1R_HEAD_CONTRACT_AUDIT_V1",
   "source": {
     "branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
-    "commit": "6b321ed9157eb4f11ef30becb7a66d9ccc1871e5",
+    "commit": "109cb9a4698fa462de55e5453e3c24175a81e946",
     "status_porcelain": "",
-    "tree": "49e8eb072053866784718b53aabcdf09f6b8fbe1"
+    "tree": "a1675c0a604a4f2d43e652f17339acddb78bce01"
   },
   "status": "STAGE_X_X1R_T1D1R_HEAD_CONTRACT_PASS",
   "student": {
