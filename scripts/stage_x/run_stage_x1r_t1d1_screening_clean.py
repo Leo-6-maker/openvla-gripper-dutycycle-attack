@@ -342,6 +342,7 @@ def load_student(protocol: Mapping[str, Any], paths: Mapping[str, Path]) -> tupl
 
     sys.path.insert(0, str(REPO / "n5/phase3_student"))
     from n5_student_model import N5MultiHeadStudent
+    from gripper_attack.stage_x_x1r_student_head_contract import validate_runtime_head_names
 
     normalization = load_json(paths["normalization"])
     norm = normalization.get("episode_heldout", {}).get("train", {})
@@ -356,6 +357,7 @@ def load_student(protocol: Mapping[str, Any], paths: Mapping[str, Path]) -> tupl
         raise RuntimeError("STUDENT_THRESHOLD_BINDING_MISMATCH")
     checkpoint = torch.load(paths["checkpoint"], map_location="cpu")
     model = N5MultiHeadStudent(input_dim=25, hidden=64, short_rf=32, long_rf=128, dropout=0.0)
+    validate_runtime_head_names(model.HEAD_NAMES)
     model.load_state_dict(checkpoint["model"], strict=True)
     model.eval()
     return model, mean, std, physical, closing
@@ -363,6 +365,7 @@ def load_student(protocol: Mapping[str, Any], paths: Mapping[str, Path]) -> tupl
 
 def student_trace(model: Any, features: list[list[float]], mean: np.ndarray, std: np.ndarray) -> list[dict[str, float]]:
     import torch
+    from gripper_attack.stage_x_x1r_student_head_contract import runtime_head_names
 
     if not features:
         return []
@@ -373,7 +376,7 @@ def student_trace(model: Any, features: list[list[float]], mean: np.ndarray, std
     mask = torch.ones((1, len(features)), dtype=torch.bool)
     with torch.no_grad():
         logits = model(x, timestep_mask=mask)
-    names = ("physical_criticality", "k10_feasibility", "safe_release", "instability", "gripper_closing_state")
+    names = runtime_head_names(model)
     return [{name: float(torch.sigmoid(logits[name][0, index]).item()) for name in names} for index in range(len(features))]
 
 

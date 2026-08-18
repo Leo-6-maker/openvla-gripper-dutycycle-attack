@@ -1,0 +1,41 @@
+{
+  "schema": "STAGE_X_X1R_T1D1R_STUDENT_HEAD_CONTRACT_V1",
+  "status": "FROZEN_FOR_D1R_CPU_REPAIR",
+  "student_source": "n5/phase3_student/n5_student_model.py",
+  "student_source_raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+  "checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+  "historical_semantic_aliases": {
+    "k10_feasibility": "k10_feasible"
+  },
+  "runtime_output_keys": [
+    "physical_criticality",
+    "k10_feasible",
+    "safe_release",
+    "instability",
+    "gripper_closing_state"
+  ],
+  "emit_gate_keys": [
+    "physical_criticality",
+    "gripper_closing_state"
+  ],
+  "emit_gate_inputs": [
+    "candidate_close",
+    "legal_horizon",
+    "physical_criticality",
+    "gripper_closing_state",
+    "one_shot_not_already_emitted"
+  ],
+  "frozen_architecture": {
+    "input_dim": 25,
+    "hidden": 64,
+    "short_rf": 32,
+    "long_rf": 128,
+    "dropout_eval": 0.0
+  },
+  "frozen_decision": {
+    "physical_threshold": 0.55,
+    "closing_threshold": 0.8,
+    "one_shot": true
+  },
+  "scientific_scope": "alias/provenance repair only; no new head, weight, feature, threshold, timing, or decision rule"
+}
