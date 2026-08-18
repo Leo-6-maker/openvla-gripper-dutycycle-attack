@@ -1,0 +1,311 @@
+{
+  "schema": "STAGE_X_X1R_T1D0R1_PRECLEAN_INTEGRITY_AUTHORITY_V1",
+  "status": "STAGE_X_X1R_T1D0R1_STATIC_ONLY",
+  "scientific_authority": "X1R_NOT_AUTHORIZED",
+  "reviewed_pr126": {
+    "number": 126,
+    "head_commit": "aabd419942b7a5de27b2f11da90160d4a7affebc",
+    "head_tree": "f31aa395cbd082f921b19d8b3c6ed50dcefd26f7",
+    "base_pr": 125,
+    "base_branch": "codex/stage-x-x1r-t1d0-attack-parent-authority-20260818",
+    "base_commit": "2881722b51cc5365205a575eddb42f4d22456f09",
+    "base_tree": "77a17257c609f5c98200697ebd7d83f309766bda",
+    "governing_comment": "5323186497",
+    "supersession_comment": "5323188393"
+  },
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "historical_records": {
+    "preserves_T1D0_as_historical_record": true,
+    "preserves_T1D0R_as_historical_record": true,
+    "supersedes_future_execution_authority_of": ["T1-D0", "T1-D0R"],
+    "scientific_change": "RESTORE_PREVIOUSLY_FROZEN_D0_SALT_ONLY",
+    "new_outcome_information_used": false,
+    "historical_d0r_execution_authority": "NOT_ACCEPTED_FOR_EXECUTION",
+    "d0_selection_list_is_comparison_only": true
+  },
+  "scope": {
+    "cpu_static_metadata_code_freeze_only": true,
+    "models_loaded": false,
+    "clean_parent_materialization_started": false,
+    "detector_rollout_started": false,
+    "pgd_started": false,
+    "env_step_started": false,
+    "outcomes_read": false,
+    "forbidden": [
+      "OpenVLA weight load",
+      "model inference",
+      "detector execution on prospective parents",
+      "simulator reset plus policy execution",
+      "env.step",
+      "PGD",
+      "adversarial image/action",
+      "V_phys",
+      "Eval160",
+      "protected evaluation"
+    ]
+  },
+  "selection": {
+    "selection_salt": "STAGE_X_X1R_T1D0_PARENT_AUTHORITY_V1_20260818",
+    "selection_order": "SHA256(selection_salt::canonical_parent_key), then canonical_parent_key",
+    "source_rows_drive_selection": true,
+    "d0_selected_parent_keys_path": "configs/STAGE_X_X1R_T1D0_ATTACK_PARENT_AUTHORITY_V1.json",
+    "expected_nominal_design_cells": 40,
+    "expected_executable_parent_count": 39,
+    "expected_suite_counts": {
+      "libero_10": 10,
+      "libero_goal": 9,
+      "libero_object": 10,
+      "libero_spatial": 10
+    },
+    "expected_missing_cells": ["libero_goal/task_01"],
+    "replacement": false
+  },
+  "timing_freeze": {
+    "timing_semantic_origin": "NEW_PROSPECTIVE_PI_FREEZE_20260818",
+    "emit_step": "t_emit",
+    "attack_start_step": "t_emit",
+    "attack_window": {
+      "start": "t_emit",
+      "end": "t_emit+4",
+      "length": 5,
+      "inclusive": true
+    },
+    "physical_followup": {
+      "start": "t_emit+5",
+      "end": "t_emit+14",
+      "length": 10,
+      "inclusive": true
+    },
+    "legal_horizon": "t_emit + 5 + 10 <= episode_length",
+    "one_shot": true,
+    "no_emit_rule": "NO_EMIT",
+    "historical_scheduler_attack_start_identifiable": false,
+    "prev_delta_contract": {
+      "entry": "reset_to_zero_at_attack_window_entry",
+      "carry": "same_condition_same_episode_same_5_step_window_only",
+      "reset_boundaries": ["parent", "condition", "episode", "attack_window"],
+      "true_pgd_and_shuffled_shared_reset_and_carry": true,
+      "rand_uniform": "one_deterministic_draw_per_frame; no_gradient_carry"
+    },
+    "pure_contract_module": "src/gripper_attack/stage_x_x1r_v2_schedule_contract.py"
+  },
+  "clean_materialization_plan": {
+    "status": "DECLARED_NOT_EXECUTABLE",
+    "enabled": false,
+    "execution_authorized": false,
+    "runner_path": "scripts/stage_x/run_stage_x1r_t1d1_clean_parent_materialization.py",
+    "runner_bound": false,
+    "binds_schedule_module": "src/gripper_attack/stage_x_x1r_v2_schedule_contract.py",
+    "requires_new_owner_review": true,
+    "screening_condition_name": "SCREENING_CLEAN",
+    "future_efficacy_clean_reuse_forbidden": true
+  },
+  "seed_authority": {
+    "namespace": "STAGE_X_X1R_T1D0R1_CLEAN_SEED_V1",
+    "derivation": "uint32(first_8_hex(sha256(namespace + | + canonical_parent_key)))",
+    "inputs": ["immutable canonical_parent_key only"],
+    "outcome_blind": true,
+    "reroll_or_reseed_forbidden": true
+  },
+  "source_recompute": {
+    "selection_salt": "STAGE_X_X1R_T1D0_PARENT_AUTHORITY_V1_20260818",
+    "selection_order": "SHA256(selection_salt::canonical_parent_key), then canonical_parent_key",
+    "universe_contract": {
+      "name": "G10 held-out non-protected LIBERO identity universe",
+      "one_identity_per_g10_manifest_entry": true,
+      "task_range": "00..09",
+      "state_range": "20..49",
+      "nominal_design_cells": 40,
+      "one_parent_per_available_cell": true,
+      "replacement": false
+    },
+    "sources": [
+      {
+        "name": "g10_manifest",
+        "kind": "g10_identities",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json",
+        "sha256": "06bd43fe5666b6bacb763e0ae7dbba12ef317911ba923b469dab8628cc8bb7ef",
+        "json_path": ["identities"]
+      },
+      {
+        "name": "prior_clean_attempt",
+        "kind": "json_identity_list",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V10.json",
+        "sha256": "369749925e09e58a3a6b0b96d59e4583cdbc34355a760f53a4e03659c5dda325",
+        "json_path": ["excluded_parent_keys"]
+      },
+      {
+        "name": "prior_exposure",
+        "kind": "json_identity_list",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V7.json",
+        "sha256": "efab2f0ebd8981628f7bb489fd6a6d58cf4254bbb30e8feabbbb83cb70d047c5",
+        "json_path": ["excluded_parent_keys"]
+      },
+      {
+        "name": "prior_physical_intervention_named_roots",
+        "kind": "directory_identity_listing",
+        "base_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student",
+        "glob": "STAGE_VI_M4_R3_RECONSTRUCTION_*",
+        "listing_sha256": "f059cf14ee69c5dc05cb6ec42558c80cf36b6de4f9289f360ef9b0f3d9a2cfad",
+        "aliases": {
+          "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_LIBERO10_TASK08_STATE28_20260816T170500Z": {
+            "canonical_parent_key": "libero_10/task_08/state_28",
+            "physical_intervention_semantics_from_directory_name": "NOT_IDENTIFIABLE",
+            "historical_outcome_read": false
+          },
+          "STAGE_VI_M4_R3_RECONSTRUCTION_SMOKE_LIBERO10_TASK08_STATE28_20260816T170000Z": {
+            "canonical_parent_key": "libero_10/task_08/state_28",
+            "physical_intervention_semantics_from_directory_name": "NOT_IDENTIFIABLE",
+            "historical_outcome_read": false
+          }
+        },
+        "ignore_noncanonical_directories": false
+      },
+      {
+        "name": "rejected_v2_candidate",
+        "kind": "json_parent_list",
+        "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-vi-b2-formal-source-be753c6/configs/STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V2_REPLACEMENT.json",
+        "sha256": "62e96e779aac57fb681fad030b35c6c76c76a9d82d33250e524c4a126e1942b1",
+        "json_path": ["parents"],
+        "item_field": "canonical_parent_key"
+      },
+      {
+        "name": "stage_v_formal_population",
+        "kind": "json_parent_list",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json",
+        "sha256": "890382bcd9a88d3646dfc66b080265c90c2fda666bf08b14fc3994d05ab492cd",
+        "json_path": ["parents"],
+        "item_field": "canonical_parent_key"
+      },
+      {
+        "name": "stage_v_physical_matrix_6d39860",
+        "kind": "json_parent_list",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_6D39860_20260815T183500Z/PARENT_MANIFEST.json",
+        "sha256": "9938cfe5ba157b2da21fcdae561137f9a2791c995a1bb79e611a5eb5629b2890",
+        "json_path": ["parents"],
+        "item_field": "canonical_parent_key"
+      },
+      {
+        "name": "stage_v_physical_matrix_f696f582",
+        "kind": "json_parent_list",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_F696F582_20260816T040000Z/PARENT_MANIFEST.json",
+        "sha256": "9938cfe5ba157b2da21fcdae561137f9a2791c995a1bb79e611a5eb5629b2890",
+        "json_path": ["parents"],
+        "item_field": "canonical_parent_key"
+      },
+      {
+        "name": "stage_vi_b2_development",
+        "kind": "json_parent_list",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json",
+        "sha256": "890382bcd9a88d3646dfc66b080265c90c2fda666bf08b14fc3994d05ab492cd",
+        "json_path": ["parents"],
+        "item_field": "canonical_parent_key"
+      },
+      {
+        "name": "stage_vi_b2_population",
+        "kind": "json_selected_parent_list",
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_ZERO_TREATMENT_PLAN_33061E0/B2_SELECTION_MANIFEST.json",
+        "sha256": "6e20894d660c473a78ffb91db55385f35fc1e83887417226f35e458882c2ec81",
+        "json_path": ["selected_parents"],
+        "item_field": "canonical_parent_key"
+      }
+    ]
+  },
+  "local_binding_reconciliation": {
+    "refs": [
+      "c6a4c5a9e7d63121a75814b3071c9047e1d9e0d0",
+      "2881722b51cc5365205a575eddb42f4d22456f09",
+      "aabd419942b7a5de27b2f11da90160d4a7affebc"
+    ],
+    "paths": [
+      "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
+      "src/gripper_attack/stage_x_t1_native_token_authority.py"
+    ],
+    "historical_claims": {
+      "D0": {
+        "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json": "bf27a237ba9fd9be255d5371d160705cc3c55e000e119062934deb4c2a6dee38",
+        "src/gripper_attack/stage_x_t1_native_token_authority.py": "b319a9c64300e4297c81a415279c7f2d65eac1bbac62eb22293ce14c7d9734d6"
+      },
+      "D0R": {
+        "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+        "src/gripper_attack/stage_x_t1_native_token_authority.py": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203"
+      }
+    },
+    "required_outcome": "all_refs_byte_identical_to_pr124_pr125_pr126; D0_claims_historical_non_authoritative_if_stale"
+  },
+  "runtime_authority": {
+    "suite_matched_contract_path": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+    "suite_matched_contract_sha256": "37f5d4ea205835fedc8f4d02c3e722c80581aa5c04d9349c7eed0dd4f6364265",
+    "detector_handoff_path": "docs/handoffs/STAGE_X_X1R_T1_DETECTOR_PGD_MATRIX_HANDOFF_20260818.md",
+    "detector_handoff_sha256": "7585baf34e4f8ebef7b35d01c8dc0f1a6abf21c56cd1564b768ebe1e177a95a9",
+    "student": {
+      "checkpoint": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/checkpoint.pt",
+        "sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227"
+      },
+      "model_source": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py",
+        "sha256": "7945e464130d8bcb4b4fd85475dffc3024ef2bc419b5d1ea812b29156b96a0fd",
+        "source": "T1 handoff declaration; must be verified against current prospective file"
+      },
+      "adapter": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1-detector-pgd-matrix-20260818-r3/src/gripper_attack/d8_streaming_features_v3.py",
+        "sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3"
+      },
+      "feature_source": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1-detector-pgd-matrix-20260818-r3/src/gripper_attack/v5_r3_features.py",
+        "sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9"
+      },
+      "normalization": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_G1_SPLITS_FIREWALL_20260813T160000Z/NORMALIZATION.json",
+        "sha256": "66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c"
+      },
+      "thresholds": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/thresholds.json",
+        "sha256": "5236884ea746adc6a5388ab6e8058adb717b86ee2814b71a748c7792d051de3e"
+      }
+    },
+    "tokenizer": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4/prismatic/vla/action_tokenizer.py",
+      "sha256": "fdc98fcbf5b0926ef2181db71946d23ffbfa052cf8443dc933d52c42a191352c"
+    },
+    "model_decoder": {
+      "sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+      "per_suite_path_pattern": "/mnt/sdc/dty_user/openvla_attack/models/<suite>/modeling_prismatic.py"
+    },
+    "clean_runtime_semantics": {
+      "action_preprocessing_postprocessing": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+      "task_success_evaluator": "NOT_YET_UNIQUE_PATH_BOUND_IN_T1_AUTHORITY",
+      "episode_horizon": "NOT_YET_UNIQUE_PATH_BOUND_IN_T1_AUTHORITY",
+      "required_before_clean_materialization": true
+    }
+  },
+  "authorization": {
+    "model_inference_authorized": false,
+    "clean_parent_materialization_authorized": false,
+    "pgd_authorized": false,
+    "env_step_authorized": false,
+    "physical_intervention_authorized": false,
+    "attack_outcome_authorized": false,
+    "protected_authorized": false,
+    "next_gate": "CLEAN_PARENT_MATERIALIZATION_REVIEW_REQUIRED"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters": {
+      "model_inference_calls": 0,
+      "clean_rollout_attempts": 0,
+      "env_step_calls": 0,
+      "pgd_calls": 0,
+      "attack_backward_calls": 0,
+      "adversarial_images": 0,
+      "attacked_env_step_calls": 0,
+      "physical_interventions": 0,
+      "vphys_reads": 0,
+      "attack_outcome_reads": 0,
+      "eval160_reads": 0,
+      "protected_reads": 0
+    }
+  }
+}

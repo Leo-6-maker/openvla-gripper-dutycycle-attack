@@ -1,0 +1,418 @@
+{
+  "runtime_authority": {
+    "clean_runtime_semantics": {
+      "action_preprocessing_postprocessing": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+      "episode_horizon": "NOT_YET_UNIQUE_PATH_BOUND_IN_T1_AUTHORITY",
+      "required_before_clean_materialization": true,
+      "task_success_evaluator": "NOT_YET_UNIQUE_PATH_BOUND_IN_T1_AUTHORITY"
+    },
+    "declared_contract": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1d0r-final3/configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+      "sha256": "37f5d4ea205835fedc8f4d02c3e722c80581aa5c04d9349c7eed0dd4f6364265"
+    },
+    "detector_files": [
+      {
+        "actual_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+        "byte_size": 479586,
+        "exists": true,
+        "expected_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/checkpoint.pt"
+      },
+      {
+        "actual_sha256": "ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b",
+        "byte_size": 33934,
+        "exists": true,
+        "expected_sha256": "7945e464130d8bcb4b4fd85475dffc3024ef2bc419b5d1ea812b29156b96a0fd",
+        "match": false,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py"
+      },
+      {
+        "actual_sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3",
+        "byte_size": 10486,
+        "exists": true,
+        "expected_sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1-detector-pgd-matrix-20260818-r3/src/gripper_attack/d8_streaming_features_v3.py"
+      },
+      {
+        "actual_sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9",
+        "byte_size": 7868,
+        "exists": true,
+        "expected_sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1-detector-pgd-matrix-20260818-r3/src/gripper_attack/v5_r3_features.py"
+      },
+      {
+        "actual_sha256": "66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c",
+        "byte_size": 3423,
+        "exists": true,
+        "expected_sha256": "66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_G1_SPLITS_FIREWALL_20260813T160000Z/NORMALIZATION.json"
+      },
+      {
+        "actual_sha256": "5236884ea746adc6a5388ab6e8058adb717b86ee2814b71a748c7792d051de3e",
+        "byte_size": 99358,
+        "exists": true,
+        "expected_sha256": "5236884ea746adc6a5388ab6e8058adb717b86ee2814b71a748c7792d051de3e",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/thresholds.json"
+      },
+      {
+        "actual_sha256": "fdc98fcbf5b0926ef2181db71946d23ffbfa052cf8443dc933d52c42a191352c",
+        "byte_size": 3758,
+        "exists": true,
+        "expected_sha256": "fdc98fcbf5b0926ef2181db71946d23ffbfa052cf8443dc933d52c42a191352c",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4/prismatic/vla/action_tokenizer.py"
+      },
+      {
+        "actual_sha256": "a23e83751870296c2500048becfc4241e5245e123ee69b01b4e584b1c4d3b2cd",
+        "byte_size": 3580,
+        "exists": true,
+        "expected_sha256": "a23e83751870296c2500048becfc4241e5245e123ee69b01b4e584b1c4d3b2cd",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/config.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "54ca346948d5e62e9519a9ed93e45f0a069b9ec997ad1f48f1d8867d4d2d86d2",
+        "byte_size": 2129,
+        "exists": true,
+        "expected_sha256": "54ca346948d5e62e9519a9ed93e45f0a069b9ec997ad1f48f1d8867d4d2d86d2",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/dataset_statistics.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "byte_size": 94764,
+        "exists": true,
+        "expected_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/model.safetensors.index.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+        "byte_size": 12718,
+        "exists": true,
+        "expected_sha256": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/processing_prismatic.py",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "byte_size": 1842976,
+        "exists": true,
+        "expected_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/tokenizer.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "byte_size": 499723,
+        "exists": true,
+        "expected_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/tokenizer.model",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "byte_size": 26072,
+        "exists": true,
+        "expected_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/modeling_prismatic.py",
+        "role": "suite_model_decoder",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "06135f79f1010f85837ec4b8373bdda3a9387ab4937bc959e91a0ef4208ed237",
+        "byte_size": 3465,
+        "exists": true,
+        "expected_sha256": "06135f79f1010f85837ec4b8373bdda3a9387ab4937bc959e91a0ef4208ed237",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/config.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "5ea8e0815367f6d684736050d6635e1327ed19d011b002f68a56fae1ab980a6a",
+        "byte_size": 2066,
+        "exists": true,
+        "expected_sha256": "5ea8e0815367f6d684736050d6635e1327ed19d011b002f68a56fae1ab980a6a",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/dataset_statistics.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "byte_size": 94764,
+        "exists": true,
+        "expected_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/model.safetensors.index.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+        "byte_size": 12718,
+        "exists": true,
+        "expected_sha256": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/processing_prismatic.py",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "byte_size": 1842976,
+        "exists": true,
+        "expected_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/tokenizer.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "byte_size": 499723,
+        "exists": true,
+        "expected_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/tokenizer.model",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "byte_size": 26072,
+        "exists": true,
+        "expected_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/modeling_prismatic.py",
+        "role": "suite_model_decoder",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "72566b15b9ce4a5f5452aa50b5cc949811ab0a12b72a79a713b6355875813cff",
+        "byte_size": 3720,
+        "exists": true,
+        "expected_sha256": "72566b15b9ce4a5f5452aa50b5cc949811ab0a12b72a79a713b6355875813cff",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/config.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "a4b953c2ab889176a019ce92b86b855bc5990312d1a46cd7a2d9da1abbece861",
+        "byte_size": 2153,
+        "exists": true,
+        "expected_sha256": "a4b953c2ab889176a019ce92b86b855bc5990312d1a46cd7a2d9da1abbece861",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/dataset_statistics.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "byte_size": 94764,
+        "exists": true,
+        "expected_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/model.safetensors.index.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+        "byte_size": 12864,
+        "exists": true,
+        "expected_sha256": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/processing_prismatic.py",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "byte_size": 1842976,
+        "exists": true,
+        "expected_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/tokenizer.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "byte_size": 499723,
+        "exists": true,
+        "expected_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/tokenizer.model",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "byte_size": 26072,
+        "exists": true,
+        "expected_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/modeling_prismatic.py",
+        "role": "suite_model_decoder",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "0f8e15765a60995234ab8b0128da37864577a7ef7c4e8f40a3a35ab1a145634f",
+        "byte_size": 3615,
+        "exists": true,
+        "expected_sha256": "0f8e15765a60995234ab8b0128da37864577a7ef7c4e8f40a3a35ab1a145634f",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/config.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "7636449e2a70f48b42713237c57031bb95a6df1dfd81ef913d756d7d2626b1df",
+        "byte_size": 2109,
+        "exists": true,
+        "expected_sha256": "7636449e2a70f48b42713237c57031bb95a6df1dfd81ef913d756d7d2626b1df",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/dataset_statistics.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "byte_size": 94764,
+        "exists": true,
+        "expected_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/model.safetensors.index.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+        "byte_size": 12864,
+        "exists": true,
+        "expected_sha256": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/processing_prismatic.py",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "byte_size": 1842976,
+        "exists": true,
+        "expected_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/tokenizer.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "byte_size": 499723,
+        "exists": true,
+        "expected_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/tokenizer.model",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "byte_size": 26072,
+        "exists": true,
+        "expected_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/modeling_prismatic.py",
+        "role": "suite_model_decoder",
+        "suite": "libero_spatial"
+      }
+    ],
+    "errors": [
+      "RUNTIME_FILE_BINDING_MISMATCH:/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py",
+      "TASK_SUCCESS_EVALUATOR_PATH_NOT_UNIQUELY_BOUND",
+      "EPISODE_HORIZON_PATH_NOT_UNIQUELY_BOUND"
+    ],
+    "historical_model_source_note": "T1 handoff model-source declaration must match the current prospective file; no current directory hash is used to rewrite historical identity.",
+    "repository_handoff": {
+      "actual_sha256": "7585baf34e4f8ebef7b35d01c8dc0f1a6abf21c56cd1564b768ebe1e177a95a9",
+      "byte_size": 5443,
+      "exists": true,
+      "expected_sha256": "7585baf34e4f8ebef7b35d01c8dc0f1a6abf21c56cd1564b768ebe1e177a95a9",
+      "match": true,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1d0r-final3/docs/handoffs/STAGE_X_X1R_T1_DETECTOR_PGD_MATRIX_HANDOFF_20260818.md"
+    },
+    "status": "HOLD"
+  },
+  "schedule": {
+    "contract": {
+      "attack_steps_7": [
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "clean_materialization_plan": {
+        "binds_schedule_module": "src/gripper_attack/stage_x_x1r_v2_schedule_contract.py",
+        "enabled": false,
+        "execution_authorized": false,
+        "future_efficacy_clean_reuse_forbidden": true,
+        "requires_new_owner_review": true,
+        "runner_bound": false,
+        "runner_path": "scripts/stage_x/run_stage_x1r_t1d1_clean_parent_materialization.py",
+        "screening_condition_name": "SCREENING_CLEAN",
+        "status": "DECLARED_NOT_EXECUTABLE"
+      },
+      "followup_steps_7": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "legal_horizon_7_21": false,
+      "legal_horizon_7_22": true,
+      "prev_delta_boundaries": {
+        "carry": "same_condition_same_episode_same_5_step_window_only",
+        "entry": "reset_to_zero_at_attack_window_entry",
+        "reset_boundaries": [
+          "parent",
+          "condition",
+          "episode",
+          "attack_window"
+        ]
+      }
+    },
+    "errors": [],
+    "module_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1d0r-final3/src/gripper_attack/stage_x_x1r_v2_schedule_contract.py",
+    "module_sha256": "b0f94a6ecbbae95ba193fb874e4c32d067aa21af2e526f3188a12630cf05f97d",
+    "status": "PASS"
+  },
+  "schema": "STAGE_X_X1R_T1D0R1_RUNTIME_CONTRACT_AUDIT_V1"
+}
