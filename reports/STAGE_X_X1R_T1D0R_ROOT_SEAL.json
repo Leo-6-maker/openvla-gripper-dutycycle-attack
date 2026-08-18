@@ -1,0 +1,325 @@
+{
+  "authorization": {
+    "attack_outcome_authorized": false,
+    "clean_parent_materialization_authorized": false,
+    "env_step_authorized": false,
+    "model_inference_authorized": false,
+    "next_gate": "CLEAN_PARENT_MATERIALIZATION_REVIEW_REQUIRED",
+    "pgd_authorized": false,
+    "physical_intervention_authorized": false,
+    "protected_authorized": false
+  },
+  "d0r_runtime_source": {
+    "commit": "393b7bd3368151eade29ef20cde5346377e9b1ea",
+    "tree": "6b2f8231c0396be1052352e3341baabfb9881c70",
+    "worktree_status_before_evidence": ""
+  },
+  "derived_population": {
+    "design_cell_count": 40,
+    "exclusion_source_counts": {
+      "prior_clean_attempt": 958,
+      "prior_exposure": 53,
+      "prior_physical_intervention_named_roots": 39,
+      "rejected_v2_candidate": 16,
+      "stage_v_formal_population": 40,
+      "stage_v_physical_matrix_6d39860": 8,
+      "stage_v_physical_matrix_f696f582": 8,
+      "stage_vi_b2_development": 40,
+      "stage_vi_b2_population": 16
+    },
+    "exclusion_union_count": 990,
+    "exclusion_union_digest": "3439db4306668dfbb734122135c6f327c6ab27ee80b7ebc8db498b222ef6b22b",
+    "executable_parent_count": 39,
+    "executable_parent_counts_by_suite": {
+      "libero_10": 10,
+      "libero_goal": 9,
+      "libero_object": 10,
+      "libero_spatial": 10
+    },
+    "fresh_candidate_count": 210,
+    "fresh_candidate_digest": "cf2242d85ddd266e1af29442f768343ae43e8645e36c6de72614a78371f6816b",
+    "g10_identity_count": 1200,
+    "g10_identity_digest": "b65027f75a84a1c151f7bef4d138575107402bdb6de9481db2e8030069368e15",
+    "missing_design_cells": [
+      "libero_goal/task_01"
+    ],
+    "pairwise_exclusion_intersections": {
+      "prior_clean_attempt&prior_exposure": 50,
+      "prior_clean_attempt&prior_physical_intervention_named_roots": 25,
+      "prior_clean_attempt&rejected_v2_candidate": 2,
+      "prior_clean_attempt&stage_v_formal_population": 25,
+      "prior_clean_attempt&stage_v_physical_matrix_6d39860": 5,
+      "prior_clean_attempt&stage_v_physical_matrix_f696f582": 5,
+      "prior_clean_attempt&stage_vi_b2_development": 25,
+      "prior_clean_attempt&stage_vi_b2_population": 2,
+      "prior_exposure&prior_physical_intervention_named_roots": 0,
+      "prior_exposure&rejected_v2_candidate": 0,
+      "prior_exposure&stage_v_formal_population": 0,
+      "prior_exposure&stage_v_physical_matrix_6d39860": 0,
+      "prior_exposure&stage_v_physical_matrix_f696f582": 0,
+      "prior_exposure&stage_vi_b2_development": 0,
+      "prior_exposure&stage_vi_b2_population": 0,
+      "prior_physical_intervention_named_roots&rejected_v2_candidate": 2,
+      "prior_physical_intervention_named_roots&stage_v_formal_population": 39,
+      "prior_physical_intervention_named_roots&stage_v_physical_matrix_6d39860": 7,
+      "prior_physical_intervention_named_roots&stage_v_physical_matrix_f696f582": 7,
+      "prior_physical_intervention_named_roots&stage_vi_b2_development": 39,
+      "prior_physical_intervention_named_roots&stage_vi_b2_population": 0,
+      "rejected_v2_candidate&stage_v_formal_population": 2,
+      "rejected_v2_candidate&stage_v_physical_matrix_6d39860": 0,
+      "rejected_v2_candidate&stage_v_physical_matrix_f696f582": 0,
+      "rejected_v2_candidate&stage_vi_b2_development": 2,
+      "rejected_v2_candidate&stage_vi_b2_population": 14,
+      "stage_v_formal_population&stage_v_physical_matrix_6d39860": 8,
+      "stage_v_formal_population&stage_v_physical_matrix_f696f582": 8,
+      "stage_v_formal_population&stage_vi_b2_development": 40,
+      "stage_v_formal_population&stage_vi_b2_population": 0,
+      "stage_v_physical_matrix_6d39860&stage_v_physical_matrix_f696f582": 8,
+      "stage_v_physical_matrix_6d39860&stage_vi_b2_development": 8,
+      "stage_v_physical_matrix_6d39860&stage_vi_b2_population": 0,
+      "stage_v_physical_matrix_f696f582&stage_vi_b2_development": 8,
+      "stage_v_physical_matrix_f696f582&stage_vi_b2_population": 0,
+      "stage_vi_b2_development&stage_vi_b2_population": 0
+    },
+    "zero_replacement": true
+  },
+  "eval160": "UNREAD",
+  "external_source_bindings": [
+    {
+      "identity_count": 1200,
+      "identity_digest": "b65027f75a84a1c151f7bef4d138575107402bdb6de9481db2e8030069368e15",
+      "item_field": null,
+      "json_path": [
+        "identities"
+      ],
+      "kind": "g10_identities",
+      "name": "g10_manifest",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json",
+      "sha256": "06bd43fe5666b6bacb763e0ae7dbba12ef317911ba923b469dab8628cc8bb7ef"
+    },
+    {
+      "identity_count": 958,
+      "identity_digest": "ca733f0fe35dc64b214860cfea1848f55037b0c3b46eb8358f3c4de3916cc17b",
+      "item_field": null,
+      "json_path": [
+        "excluded_parent_keys"
+      ],
+      "kind": "json_identity_list",
+      "name": "prior_clean_attempt",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V10.json",
+      "sha256": "369749925e09e58a3a6b0b96d59e4583cdbc34355a760f53a4e03659c5dda325"
+    },
+    {
+      "identity_count": 53,
+      "identity_digest": "d8d98335166f4b1afa8ccfb5435730316869cc072f7f70cea69b91b9b83b94bd",
+      "item_field": null,
+      "json_path": [
+        "excluded_parent_keys"
+      ],
+      "kind": "json_identity_list",
+      "name": "prior_exposure",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V7.json",
+      "sha256": "efab2f0ebd8981628f7bb489fd6a6d58cf4254bbb30e8feabbbb83cb70d047c5"
+    },
+    {
+      "base_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student",
+      "directory_count": 41,
+      "glob": "STAGE_VI_M4_R3_RECONSTRUCTION_*",
+      "identity_count": 39,
+      "identity_digest": "342e18bf5a2ea9abd22153c2d146b4d0be4c41dc84f05a81cc206b708127d18e",
+      "ignored_noncanonical_directories": [
+        "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_LIBERO10_TASK08_STATE28_20260816T170500Z",
+        "STAGE_VI_M4_R3_RECONSTRUCTION_SMOKE_LIBERO10_TASK08_STATE28_20260816T170000Z"
+      ],
+      "kind": "directory_identity_listing",
+      "listing_sha256": "f059cf14ee69c5dc05cb6ec42558c80cf36b6de4f9289f360ef9b0f3d9a2cfad",
+      "name": "prior_physical_intervention_named_roots"
+    },
+    {
+      "identity_count": 16,
+      "identity_digest": "8222fe03136dbf60cef91acbfa80cdc0a588c69f1b546fc0ba373026186dca58",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "parents"
+      ],
+      "kind": "json_parent_list",
+      "name": "rejected_v2_candidate",
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-vi-b2-formal-source-be753c6/configs/STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V2_REPLACEMENT.json",
+      "sha256": "62e96e779aac57fb681fad030b35c6c76c76a9d82d33250e524c4a126e1942b1"
+    },
+    {
+      "identity_count": 40,
+      "identity_digest": "202d35eb1e4e6e8daae39ed7627e97dc0f61f02efaa573ea83b75ab25befbe21",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "parents"
+      ],
+      "kind": "json_parent_list",
+      "name": "stage_v_formal_population",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json",
+      "sha256": "890382bcd9a88d3646dfc66b080265c90c2fda666bf08b14fc3994d05ab492cd"
+    },
+    {
+      "identity_count": 8,
+      "identity_digest": "f34896769c90aa1088f40cbf4caadbfd639cc226f1e3f85725a8874106faf885",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "parents"
+      ],
+      "kind": "json_parent_list",
+      "name": "stage_v_physical_matrix_6d39860",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_6D39860_20260815T183500Z/PARENT_MANIFEST.json",
+      "sha256": "9938cfe5ba157b2da21fcdae561137f9a2791c995a1bb79e611a5eb5629b2890"
+    },
+    {
+      "identity_count": 8,
+      "identity_digest": "f34896769c90aa1088f40cbf4caadbfd639cc226f1e3f85725a8874106faf885",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "parents"
+      ],
+      "kind": "json_parent_list",
+      "name": "stage_v_physical_matrix_f696f582",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_F696F582_20260816T040000Z/PARENT_MANIFEST.json",
+      "sha256": "9938cfe5ba157b2da21fcdae561137f9a2791c995a1bb79e611a5eb5629b2890"
+    },
+    {
+      "identity_count": 40,
+      "identity_digest": "202d35eb1e4e6e8daae39ed7627e97dc0f61f02efaa573ea83b75ab25befbe21",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "parents"
+      ],
+      "kind": "json_parent_list",
+      "name": "stage_vi_b2_development",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json",
+      "sha256": "890382bcd9a88d3646dfc66b080265c90c2fda666bf08b14fc3994d05ab492cd"
+    },
+    {
+      "identity_count": 16,
+      "identity_digest": "a36cd2599147059e62cadd144ee817f5a15b4bb40bf7b7b5543fd90bae1ede6c",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "selected_parents"
+      ],
+      "kind": "json_selected_parent_list",
+      "name": "stage_vi_b2_population",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_ZERO_TREATMENT_PLAN_33061E0/B2_SELECTION_MANIFEST.json",
+      "sha256": "6e20894d660c473a78ffb91db55385f35fc1e83887417226f35e458882c2ec81"
+    }
+  ],
+  "final_branch_seal": {
+    "commit": "NOT_SELF_REFERENTIAL_LIVE_GITHUB_HANDOFF",
+    "note": "The final pushed HEAD/tree is recorded after commit in the handoff; embedding it in this containing commit would be self-referential.",
+    "runtime_commit_pre_evidence": "393b7bd3368151eade29ef20cde5346377e9b1ea",
+    "runtime_tree_pre_evidence": "6b2f8231c0396be1052352e3341baabfb9881c70",
+    "tree": "NOT_SELF_REFERENTIAL_LIVE_GITHUB_HANDOFF"
+  },
+  "generated_artifact_hashes": {
+    "configs/STAGE_X_X1R_T1D0R_TIMING_PARENT_AUTHORITY_V1.json": "413b7da647d5032c8e9ef2aab4dc6beb8fca663c5878714d17f65b7022924ced",
+    "docs/handoffs/STAGE_X_X1R_T1D0R_TIMING_PARENT_AUTHORITY_HANDOFF_20260818.md": "e339bd9a6a8441fefdc196064803dea65d93a1e03eb18933a004270071dfad81",
+    "reports/STAGE_X_X1R_T1D0R_DESIGN_CELL_LEDGER_V1.json": "09ae0b35e2b29868a5c20522f7bc7c05a4d30848b762a5cf50bbd26562fb9d14",
+    "reports/STAGE_X_X1R_T1D0R_G10_IDENTITY_EXCLUSION_LEDGER_V1.json": "4ef3652e20d3044f8c7437e49029d76ba2b2c93eb0e1b1c1de1acae68ad116f1",
+    "reports/STAGE_X_X1R_T1D0R_PARENT_LEDGER_V1.json": "53c9cce8cbdc54bfa3404dd6a25c47e1f9b51f6ca758810fe7d43c0531a8bca3",
+    "reports/STAGE_X_X1R_T1D0R_SOURCE_RECOMPUTE_AUDIT_V1.json": "c4c37a6fd6ebb20f901d54cc44daed784d8a3d920ec43deb892a5c4bfb542c83",
+    "scripts/stage_x/audit_stage_x1r_t1d0r_authority.py": "758f3b5ec2cdf1d3eaa062a0c696e65652a39373398701a629c22ad977f71a2c",
+    "tests/stage_x/test_stage_x1r_t1d0r_authority.py": "3e7a73a3588878a2d0fcaa9da2bbfb3354d662477857390270593645445bcb7d"
+  },
+  "local_source_bindings": {
+    "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json": {
+      "role": "numeric attack-load inheritance only",
+      "sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83"
+    },
+    "src/gripper_attack/stage_x_t1_native_token_authority.py": {
+      "role": "suite-local native action-token authority",
+      "sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203"
+    }
+  },
+  "prospective_timing": {
+    "attack_start_step": "t_emit",
+    "attack_window": {
+      "end": "t_emit+4",
+      "inclusive": true,
+      "length": 5,
+      "start": "t_emit"
+    },
+    "emit_step": "t_emit",
+    "exclusive_required_end": "t_emit+5+10",
+    "historical_attack_start_identifiable": false,
+    "historical_scheduler_attack_start_identifiable": false,
+    "legal_horizon": "t_emit + 5 + 10 <= episode_length",
+    "no_emit_rule": "NO_EMIT",
+    "one_shot": true,
+    "physical_followup": {
+      "end": "t_emit+14",
+      "inclusive": true,
+      "length": 10,
+      "start": "t_emit+5"
+    },
+    "prev_delta_contract": {
+      "carry": "same_condition_same_episode_same_5_step_window_only",
+      "entry": "reset_to_zero_at_attack_window_entry",
+      "rand_uniform": "one_deterministic_draw_per_frame; no_gradient_carry",
+      "reset_boundaries": [
+        "parent",
+        "condition",
+        "episode",
+        "attack_window"
+      ],
+      "true_pgd_and_shuffled_shared_reset_and_carry": true
+    },
+    "runtime_implementation_gate": "PROSPECTIVE_RUNNER_MUST_BIND_THIS_CONTRACT_BEFORE_CLEAN_MATERIALIZATION",
+    "runtime_implementation_status": "PROSPECTIVE_RUNNER_NOT_YET_BOUND",
+    "scheduler_source": {
+      "name": "historical_scheduler_freeze",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_F696F582_20260816T040000Z/SCHEDULER_FREEZE.json",
+      "role": "historical T5/H_phys/one-shot evidence only; no attack-start inference",
+      "sha256": "d0cf083b77809c3f615e0e8deaa9e16ebae7bc8385254f3746564c0bbc907fc4"
+    },
+    "scheduler_source_observation": {
+      "errors": [],
+      "historical_attack_start_identifiable": false,
+      "observed_fields": {
+        "attack_enabled": false,
+        "explicit_attack_start_field_present": false,
+        "h_phys": 10,
+        "one_shot": true,
+        "status": "FROZEN",
+        "t5_steps": 5
+      },
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_F696F582_20260816T040000Z/SCHEDULER_FREEZE.json",
+      "sha256": "d0cf083b77809c3f615e0e8deaa9e16ebae7bc8385254f3746564c0bbc907fc4"
+    },
+    "timing_semantic_origin": "NEW_PROSPECTIVE_PI_FREEZE_20260818"
+  },
+  "protected_boundary": {
+    "counters": {
+      "adversarial_images": 0,
+      "attack_outcome_reads": 0,
+      "env_step_calls": 0,
+      "eval160_reads": 0,
+      "pgd_calls": 0,
+      "physical_interventions": 0,
+      "protected_reads": 0,
+      "vphys_reads": 0
+    },
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "protected_evaluation": "UNREAD",
+  "reviewed_pr125": {
+    "d0r_runtime_source_commit": "393b7bd3368151eade29ef20cde5346377e9b1ea",
+    "d0r_runtime_source_tree": "6b2f8231c0396be1052352e3341baabfb9881c70",
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "reviewed_pr125_head": "2881722b51cc5365205a575eddb42f4d22456f09",
+    "reviewed_pr125_tree": "77a17257c609f5c98200697ebd7d83f309766bda",
+    "worktree_status_before_evidence": ""
+  },
+  "schema": "STAGE_X_X1R_T1D0R_ROOT_SEAL_V1",
+  "sha256sums_scope": {
+    "covers_root_seal_json": true,
+    "excludes_root_seal_sha256_sidecar": true,
+    "excludes_self": true
+  },
+  "status": "STAGE_X_X1R_T1D0R_AUTHORITY_PASS"
+}
