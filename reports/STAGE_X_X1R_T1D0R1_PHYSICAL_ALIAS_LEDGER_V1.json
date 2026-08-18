@@ -1,0 +1,677 @@
+{
+  "invariance": {
+    "alias_keys": [
+      "libero_10/task_08/state_28"
+    ],
+    "alias_rows": [
+      {
+        "canonical_parent_key": "libero_10/task_08/state_28",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_LIBERO10_TASK08_STATE28_20260816T170500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "NOT_IDENTIFIABLE",
+        "source_kind": "EXPLICIT_CANONICAL_ALIAS"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_00/state_27",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task00_state_27_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_00/state_34",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task00_state_34_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_29",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task01_state_29_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_02/state_32",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task02_state_32_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_39",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task05_state_39_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_42",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task05_state_42_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_30",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task06_state_30_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_39",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task06_state_39_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_07/state_29",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task07_state_29_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_01/state_41",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task01_state_41_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_02/state_44",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task02_state_44_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_03/state_36",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task03_state_36_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_03/state_41",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task03_state_41_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_04/state_25",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task04_state_25_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_23",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task05_state_23_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_25",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task05_state_25_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_41",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task05_state_41_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_08/state_33",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task08_state_33_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_01/state_45",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task01_state_45_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_32",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task04_state_32_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_41",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task04_state_41_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_43",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task04_state_43_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_26",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task06_state_26_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_46",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task06_state_46_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_23",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task07_state_23_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_26",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task07_state_26_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_09/state_29",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task09_state_29_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_25",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task01_state_25_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_42",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task01_state_42_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_04/state_44",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task04_state_44_20260816T172300Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_06/state_24",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task06_state_24_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_06/state_34",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task06_state_34_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_07/state_24",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task07_state_24_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_23",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task09_state_23_20260816T172300Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_34",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task09_state_34_20260816T172300Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_44",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task09_state_44_20260816T172300Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_08/state_28",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SMOKE_LIBERO10_TASK08_STATE28_20260816T170000Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "NOT_IDENTIFIABLE",
+        "source_kind": "EXPLICIT_CANONICAL_ALIAS"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_02/state_40",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SUITE_SMOKE_libero_goal_task02_state40_20260816T171000Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_00/state_23",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SUITE_SMOKE_libero_object_task00_state23_20260816T171000Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_04/state_36",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SUITE_SMOKE_libero_spatial_task04_state36_20260816T171000Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      }
+    ],
+    "baseline_with_explicit_aliases": {
+      "fresh_count": 210,
+      "selected_parent_keys": [
+        "libero_10/task_00/state_36",
+        "libero_10/task_01/state_36",
+        "libero_10/task_02/state_39",
+        "libero_10/task_03/state_21",
+        "libero_10/task_04/state_30",
+        "libero_10/task_05/state_22",
+        "libero_10/task_06/state_34",
+        "libero_10/task_07/state_27",
+        "libero_10/task_08/state_20",
+        "libero_10/task_09/state_43",
+        "libero_goal/task_00/state_21",
+        "libero_goal/task_02/state_34",
+        "libero_goal/task_03/state_45",
+        "libero_goal/task_04/state_38",
+        "libero_goal/task_05/state_26",
+        "libero_goal/task_06/state_28",
+        "libero_goal/task_07/state_30",
+        "libero_goal/task_08/state_20",
+        "libero_goal/task_09/state_46",
+        "libero_object/task_00/state_45",
+        "libero_object/task_01/state_40",
+        "libero_object/task_02/state_42",
+        "libero_object/task_03/state_25",
+        "libero_object/task_04/state_35",
+        "libero_object/task_05/state_31",
+        "libero_object/task_06/state_44",
+        "libero_object/task_07/state_43",
+        "libero_object/task_08/state_43",
+        "libero_object/task_09/state_23",
+        "libero_spatial/task_00/state_37",
+        "libero_spatial/task_01/state_38",
+        "libero_spatial/task_02/state_31",
+        "libero_spatial/task_03/state_29",
+        "libero_spatial/task_04/state_33",
+        "libero_spatial/task_05/state_27",
+        "libero_spatial/task_06/state_45",
+        "libero_spatial/task_07/state_28",
+        "libero_spatial/task_08/state_28",
+        "libero_spatial/task_09/state_21"
+      ],
+      "union_count": 990
+    },
+    "diagnostic_canonical_only": {
+      "fresh_count": 210,
+      "selected_parent_keys": [
+        "libero_10/task_00/state_36",
+        "libero_10/task_01/state_36",
+        "libero_10/task_02/state_39",
+        "libero_10/task_03/state_21",
+        "libero_10/task_04/state_30",
+        "libero_10/task_05/state_22",
+        "libero_10/task_06/state_34",
+        "libero_10/task_07/state_27",
+        "libero_10/task_08/state_20",
+        "libero_10/task_09/state_43",
+        "libero_goal/task_00/state_21",
+        "libero_goal/task_02/state_34",
+        "libero_goal/task_03/state_45",
+        "libero_goal/task_04/state_38",
+        "libero_goal/task_05/state_26",
+        "libero_goal/task_06/state_28",
+        "libero_goal/task_07/state_30",
+        "libero_goal/task_08/state_20",
+        "libero_goal/task_09/state_46",
+        "libero_object/task_00/state_45",
+        "libero_object/task_01/state_40",
+        "libero_object/task_02/state_42",
+        "libero_object/task_03/state_25",
+        "libero_object/task_04/state_35",
+        "libero_object/task_05/state_31",
+        "libero_object/task_06/state_44",
+        "libero_object/task_07/state_43",
+        "libero_object/task_08/state_43",
+        "libero_object/task_09/state_23",
+        "libero_spatial/task_00/state_37",
+        "libero_spatial/task_01/state_38",
+        "libero_spatial/task_02/state_31",
+        "libero_spatial/task_03/state_29",
+        "libero_spatial/task_04/state_33",
+        "libero_spatial/task_05/state_27",
+        "libero_spatial/task_06/state_45",
+        "libero_spatial/task_07/state_28",
+        "libero_spatial/task_08/state_28",
+        "libero_spatial/task_09/state_21"
+      ],
+      "union_count": 990
+    },
+    "status": "PASS"
+  },
+  "rows": [
+    {
+      "canonical_parent_key": "libero_10/task_08/state_28",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_LIBERO10_TASK08_STATE28_20260816T170500Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "NOT_IDENTIFIABLE",
+      "source_kind": "EXPLICIT_CANONICAL_ALIAS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_00/state_27",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task00_state_27_20260816T171500Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_00/state_34",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task00_state_34_20260816T171500Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_01/state_29",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task01_state_29_20260816T171500Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_02/state_32",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task02_state_32_20260816T171500Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_05/state_39",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task05_state_39_20260816T171500Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_05/state_42",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task05_state_42_20260816T171500Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_06/state_30",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task06_state_30_20260816T171500Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_06/state_39",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task06_state_39_20260816T171700Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_07/state_29",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task07_state_29_20260816T171500Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_01/state_41",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task01_state_41_20260816T171700Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_44",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task02_state_44_20260816T171700Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_03/state_36",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task03_state_36_20260816T171700Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_03/state_41",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task03_state_41_20260816T171700Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_04/state_25",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task04_state_25_20260816T171700Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_05/state_23",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task05_state_23_20260816T171900Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_05/state_25",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task05_state_25_20260816T171700Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_05/state_41",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task05_state_41_20260816T171900Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_08/state_33",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task08_state_33_20260816T171700Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_01/state_45",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task01_state_45_20260816T171900Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_04/state_32",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task04_state_32_20260816T171900Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_04/state_41",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task04_state_41_20260816T171900Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_04/state_43",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task04_state_43_20260816T172100Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_06/state_26",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task06_state_26_20260816T171900Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_06/state_46",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task06_state_46_20260816T171900Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_07/state_23",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task07_state_23_20260816T172100Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_07/state_26",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task07_state_26_20260816T171900Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_09/state_29",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task09_state_29_20260816T172100Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_01/state_25",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task01_state_25_20260816T172100Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_01/state_42",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task01_state_42_20260816T172100Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_04/state_44",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task04_state_44_20260816T172300Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_06/state_24",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task06_state_24_20260816T172100Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_06/state_34",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task06_state_34_20260816T172100Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_07/state_24",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task07_state_24_20260816T172100Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_09/state_23",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task09_state_23_20260816T172300Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_09/state_34",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task09_state_34_20260816T172300Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_09/state_44",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task09_state_44_20260816T172300Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_08/state_28",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SMOKE_LIBERO10_TASK08_STATE28_20260816T170000Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "NOT_IDENTIFIABLE",
+      "source_kind": "EXPLICIT_CANONICAL_ALIAS"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_40",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SUITE_SMOKE_libero_goal_task02_state40_20260816T171000Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_00/state_23",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SUITE_SMOKE_libero_object_task00_state23_20260816T171000Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_04/state_36",
+      "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SUITE_SMOKE_libero_spatial_task04_state36_20260816T171000Z",
+      "historical_outcome_read": false,
+      "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+      "source_kind": "CANONICAL_DIRECTORY_NAME"
+    }
+  ],
+  "schema": "STAGE_X_X1R_T1D0R1_PHYSICAL_ALIAS_LEDGER_V1"
+}
