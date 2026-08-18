@@ -109,6 +109,7 @@ def student_recompute(protocol: Mapping[str, Any], features: list[list[float]]) 
     if (physical, closing) != (0.55, 0.8):
         raise RuntimeError("STUDENT_THRESHOLD_DRIFT")
     import torch
+    from gripper_attack.stage_x_x1r_student_head_contract import runtime_head_names
 
     sys.path.insert(0, str(REPO / "n5/phase3_student"))
     from n5_student_model import N5MultiHeadStudent
@@ -122,7 +123,7 @@ def student_recompute(protocol: Mapping[str, Any], features: list[list[float]]) 
     mask = torch.ones((1, len(features)), dtype=torch.bool)
     with torch.no_grad():
         logits = model(x, timestep_mask=mask)
-    names = ("physical_criticality", "k10_feasibility", "safe_release", "instability", "gripper_closing_state")
+    names = runtime_head_names(model)
     prediction = [{name: float(torch.sigmoid(logits[name][0, idx]).item()) for name in names} for idx in range(len(features))]
     return prediction, {"status": "PASS", "forward_calls": 1, "thresholds": {"physical_criticality": physical, "gripper_closing_state": closing}}
 

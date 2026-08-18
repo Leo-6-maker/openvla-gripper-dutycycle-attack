@@ -1,0 +1,198 @@
+{
+  "checks": {
+    "continuation_ledger": {
+      "count": 35,
+      "ordinals": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "pass": true,
+      "suite_counts": {
+        "libero_10": 9,
+        "libero_goal": 8,
+        "libero_object": 9,
+        "libero_spatial": 9
+      }
+    },
+    "d1_canary_hold_binding": {
+      "ordinals": [
+        1,
+        11,
+        20,
+        30
+      ],
+      "pass": true,
+      "status": "HOLD_RUNTIME_INVALID_AFTER_FIRST_POLICY_DECISION"
+    },
+    "head_contract_sha256": {
+      "actual": "7c81b12ac4daaa1513d01cf5c44b7d8f6e7d43fae1466c3a697c62f8554b8ce0",
+      "expected": "7c81b12ac4daaa1513d01cf5c44b7d8f6e7d43fae1466c3a697c62f8554b8ce0",
+      "pass": true
+    },
+    "historical_semantic_alias": {
+      "actual": {
+        "k10_feasibility": "k10_feasible"
+      },
+      "pass": true
+    },
+    "historical_t1c_replay_summary_regression": {
+      "count": 4,
+      "pass": true,
+      "results": [
+        {
+          "canonical_parent_key": "libero_10/task_08/state_28",
+          "expected_first_emit_step": 155,
+          "input_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/00_libero_10__task_08__state_28/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+          "input_sha256": "f048f600a5e552e0dd05d985552ae60fb7cad78ad867b917b581b74bb5e0141a",
+          "match": true,
+          "replayed_first_emit_step": 155,
+          "row_count": 385,
+          "scope": "CPU_ONLY_SUMMARY_REGRESSION_NOT_PARITY_PROMOTION"
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_02/state_40",
+          "expected_first_emit_step": 62,
+          "input_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/10_libero_goal__task_02__state_40/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+          "input_sha256": "7edb3bbda9e6138cf687016734f7eff4a1d1ab1a6042c2f508ee684c8a50a6b6",
+          "match": true,
+          "replayed_first_emit_step": 62,
+          "row_count": 88,
+          "scope": "CPU_ONLY_SUMMARY_REGRESSION_NOT_PARITY_PROMOTION"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_23",
+          "expected_first_emit_step": null,
+          "input_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/20_libero_object__task_00__state_23/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+          "input_sha256": "140a0b817b641b6b746a19b17ea6f7f217e014105e646265514297d074103560",
+          "match": true,
+          "replayed_first_emit_step": null,
+          "row_count": 219,
+          "scope": "CPU_ONLY_SUMMARY_REGRESSION_NOT_PARITY_PROMOTION"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_36",
+          "expected_first_emit_step": 57,
+          "input_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/30_libero_spatial__task_04__state_36/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+          "input_sha256": "e562ba4a58b9d83edfb9ffd5afd10f9de01b93fafdccbd5b6bbcbc929f5115fe",
+          "match": true,
+          "replayed_first_emit_step": 57,
+          "row_count": 119,
+          "scope": "CPU_ONLY_SUMMARY_REGRESSION_NOT_PARITY_PROMOTION"
+        }
+      ]
+    },
+    "runtime_output_keys": {
+      "actual": [
+        "physical_criticality",
+        "k10_feasible",
+        "safe_release",
+        "instability",
+        "gripper_closing_state"
+      ],
+      "pass": true
+    },
+    "scheduler_gate_scope": {
+      "forbidden_head_references_absent": true,
+      "required_inputs_present": true
+    },
+    "synthetic_student_trace": {
+      "keys": [
+        "gripper_closing_state",
+        "instability",
+        "k10_feasible",
+        "physical_criticality",
+        "safe_release"
+      ],
+      "pass": true,
+      "rows": 6
+    },
+    "tracked_model_head_names": {
+      "actual": [
+        "physical_criticality",
+        "k10_feasible",
+        "safe_release",
+        "instability",
+        "gripper_closing_state"
+      ],
+      "pass": true
+    }
+  },
+  "d1_canary_hold_report": {
+    "path": "reports/STAGE_X_X1R_T1D1_CANARY_RUNTIME_HOLD_V1.json",
+    "sha256": "2a3d0ff517e92a1f6d31cb72d2a810846d23094e7497c914c4aca352d3cdbb6f",
+    "status": "HOLD_RUNTIME_INVALID_AFTER_FIRST_POLICY_DECISION"
+  },
+  "errors": [],
+  "next_gate": "D1R_REPAIR_CANARY_ORDINAL_2_ONLY",
+  "prospective_rollout_authorized_by_this_report": false,
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "eval160": "UNREAD",
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "vphys_reads": 0
+  },
+  "reviewed_pr129": {
+    "commit": "4b0ceb65f8f7babdd29163e032c56fed3ba57526",
+    "tree": "d7b688e82bf0b9c5e91c08b3ad15c3a6d94b89ad"
+  },
+  "schema": "STAGE_X_X1R_T1D1R_HEAD_CONTRACT_AUDIT_V1",
+  "source": {
+    "branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
+    "commit": "109cb9a4698fa462de55e5453e3c24175a81e946",
+    "status_porcelain": "",
+    "tree": "a1675c0a604a4f2d43e652f17339acddb78bce01"
+  },
+  "status": "STAGE_X_X1R_T1D1R_HEAD_CONTRACT_PASS",
+  "student": {
+    "checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+    "closing_threshold": 0.8,
+    "historical_semantic_aliases": {
+      "k10_feasibility": "k10_feasible"
+    },
+    "physical_threshold": 0.55,
+    "runtime_output_keys": [
+      "physical_criticality",
+      "k10_feasible",
+      "safe_release",
+      "instability",
+      "gripper_closing_state"
+    ],
+    "source_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c"
+  }
+}
+
