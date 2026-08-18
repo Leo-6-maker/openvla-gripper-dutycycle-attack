@@ -374,9 +374,9 @@
     "protected_evaluation": "UNREAD"
   },
   "runtime_source_pre_evidence": {
-    "head": "2f6332693b6e4015c42928e5fb963e1f81339d9c",
+    "head": "836b6ff65edee32dae2688567de83790083da6d6",
     "status_porcelain": "",
-    "tree": "3b370adaf8d89d2f26e866a71439c806ef8b75f4"
+    "tree": "13425a44d1c914b83dacfaad78852a0193cafbc1"
   },
   "schema": "STAGE_X_X1R_T1D0R2_RUNTIME_AUTHORITY_AUDIT_V1",
   "status": "STAGE_X_X1R_T1D0R2_HOLD_STUDENT_REPLAY_PARITY",
