@@ -63,11 +63,11 @@ Student scores, physical scores, or attack/V_phys artifacts while labeling.
 - safe JSON SHA256:
   `9742206be7e948a9e5df7903edb1c5a071819654e983fe950817dc8bed163eff`
 - human-sheet audit SHA256:
-  `2ce71af0efd1e2788c6a9261deccdd26b5bf932792aa018fb207fd7a9d8f76c0`
+  `b1d39852d0687f9aa90215acf933290e70f69e9488a21827e2aa04f5f41f0080`
 - D1M0R SHA256SUMS SHA256:
-  `44f00612bad0ae10cdfb74e2d48fd28844fd2a96863748c423f39ec3ec868e33`
+  `a0d3f1fc98803bf61a2b6bccea7c3e5ee128361e7280b7081281418017ab27fc`
 - D1M0R root-seal SHA256:
-  `3f3bcc000cd867a064adc7941f7e1fa399eed6c1805bfdea960db856c19e83b2`
+  `7b32a23ae6a7808c42c94a6c3caa082cf096a102ecd9d10835f3a2869a0a724d`
 
 ## Owner label return
 
