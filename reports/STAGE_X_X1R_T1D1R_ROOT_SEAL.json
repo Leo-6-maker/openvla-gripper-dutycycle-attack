@@ -1,0 +1,116 @@
+{
+  "census_report": {
+    "path": "reports/STAGE_X_X1R_T1D1R_CENSUS_AUDIT_V1.json",
+    "sha256": "7617a911f01f4a7919f9275eed0f57c3693a701e06a0e9ce267bc70551183a91"
+  },
+  "counts": {
+    "attack_eligible_pre_manual_review": 14,
+    "clean_failure": 12,
+    "clean_success": 23,
+    "continuation_planned": 35,
+    "first_emit": 25,
+    "first_emit_illegal": 0,
+    "first_emit_legal": 25,
+    "no_emit": 10,
+    "runtime_invalid": 0,
+    "runtime_valid": 35
+  },
+  "durable_root": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION",
+  "historical": {
+    "d1_runtime_source": {
+      "commit": "f079dcfa2bdafe65291cfdd1fbd2913b2a42668f",
+      "tree": "6efe25a144efc43473897e5ff8e08e2124940b70"
+    },
+    "d1r_evidence_runtime_source": {
+      "branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
+      "commit": "d74b8b7aff311c4ebbd51bf83ff026efe48d0236",
+      "status_porcelain": "",
+      "tree": "2ee7425fc9177d70abb61f12b644833ec20d0a06"
+    },
+    "d1r_repaired_source_pre_evidence": {
+      "branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
+      "commit": "109cb9a4698fa462de55e5453e3c24175a81e946",
+      "status_porcelain": "",
+      "tree": "a1675c0a604a4f2d43e652f17339acddb78bce01"
+    },
+    "pr129_live_head": {
+      "commit": "4b0ceb65f8f7babdd29163e032c56fed3ba57526",
+      "tree": "d7b688e82bf0b9c5e91c08b3ad15c3a6d94b89ad"
+    }
+  },
+  "manual_review": {
+    "clean_contact_validity": "NOT_REVIEWED",
+    "next_gate": "OWNER_REVIEW_D1R_CENSUS_AND_MANUAL_CONTACT_VALIDITY",
+    "video_review_required": true
+  },
+  "population": {
+    "continuation_count": 35,
+    "continuation_ordinals": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39
+    ],
+    "frozen_executable_design": 39,
+    "immutable_runtime_invalid_consumed_ordinals": [
+      1,
+      11,
+      20,
+      30
+    ],
+    "missing_cell": "libero_goal/task_01",
+    "nominal_design_cells": 40,
+    "replacement": false,
+    "rerank": false
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "forbidden_counters_zero": true,
+    "protected_evaluation": "UNREAD"
+  },
+  "schema": "STAGE_X_X1R_T1D1R_ROOT_SEAL_V1",
+  "scope": "SCREENING_CLEAN_ONLY",
+  "seal_note": "Git source/tree captured before evidence outputs; final GitHub evidence commit/tree is recorded by the subsequent handoff and is not inferred from this pre-output snapshot.",
+  "sha256sums": {
+    "path": "reports/STAGE_X_X1R_T1D1R_SHA256SUMS.txt",
+    "sha256": "f078c88033fcd31a2e4b19bb06256843800eb43460a9322031af757a0f16bc88"
+  },
+  "source_before_evidence_outputs": {
+    "branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
+    "commit": "2b52fbfe7672b5e221e325d7246b456b28511643",
+    "status_porcelain": "",
+    "tree": "dc83fbe6c6630a33bee5b5e457bf4e5f4a9a4865"
+  },
+  "status": "PASS_D1R_CONTINUATION_CENSUS_PRE_MANUAL_REVIEW"
+}
