@@ -125,7 +125,7 @@ def main() -> int:
         "status": status,
         "source": source_receipt(),
         "reviewed_pr129": {"commit": "4b0ceb65f8f7babdd29163e032c56fed3ba57526", "tree": "d7b688e82bf0b9c5e91c08b3ad15c3a6d94b89ad"},
-        "d1_canary_hold_report": {"path": str(CANARY_HOLD), "sha256": sha256_file(CANARY_HOLD), "status": canary_hold.get("status")},
+        "d1_canary_hold_report": {"path": "reports/STAGE_X_X1R_T1D1_CANARY_RUNTIME_HOLD_V1.json", "sha256": sha256_file(CANARY_HOLD), "status": canary_hold.get("status")},
         "student": {"checkpoint_sha256": protocol["student"]["checkpoint_sha256"], "source_sha256": protocol["student"]["source_raw_sha256"], "runtime_output_keys": actual_names, "historical_semantic_aliases": contract["historical_semantic_aliases"], "physical_threshold": physical, "closing_threshold": closing},
         "checks": checks,
         "errors": errors,
