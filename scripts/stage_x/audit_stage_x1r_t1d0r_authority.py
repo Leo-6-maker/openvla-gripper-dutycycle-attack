@@ -17,7 +17,7 @@ from typing import Any, Iterable, Mapping, Sequence
 ROOT = Path(__file__).resolve().parents[2]
 SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
 KEY_RE = re.compile(r"^(libero_(?:10|goal|object|spatial))/task_(\d{2})/state_(\d{2})$")
-DIR_KEY_RE = re.compile(r"(?:^|_)(libero_(?:10|goal|object|spatial))_task(\d{2})_state_(\d{2})(?:_|$)")
+DIR_KEY_RE = re.compile(r"(?:^|_)(libero_(?:10|goal|object|spatial))_task(\d{2})_state_?(\d{2})(?:_|$)")
 
 
 class AuthorityError(ValueError):
