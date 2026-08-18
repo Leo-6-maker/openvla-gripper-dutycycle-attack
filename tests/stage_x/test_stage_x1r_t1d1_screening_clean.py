@@ -27,7 +27,7 @@ def test_d1_protocol_is_frozen_and_closed_for_attack():
 def test_d1_runner_has_no_top_level_attack_or_simulator_import():
     module = ast.parse(RUNNER.read_text(encoding="utf-8"))
     imported = []
-    for node in ast.walk(module):
+    for node in module.body:
         if isinstance(node, ast.Import):
             imported.extend(alias.name.split(".")[0] for alias in node.names)
         elif isinstance(node, ast.ImportFrom):
