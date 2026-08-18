@@ -1,0 +1,143 @@
+{
+  "candidate_count": 14,
+  "candidate_ledger_sha256": "5f1f036b47b1c9a8c1bafe7a400b6be9269cd3e67587691018005c824dc8d89e",
+  "mapping_sha256": "3d7f59a736cc2c7bcb5ecdc49e9e57a7e8b547c9e7554251e88158017366f0fe",
+  "next_phase": "FIXED_REVIEW_COPY_RENDER_ONLY",
+  "order_digest": "30a73b0e4ab13e149d8c991906fc9067844797e39113201e9e76a10a8be40d67",
+  "protected_boundary": {
+    "attack_authorized": false,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "rows": [
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_31",
+      "context_end": 64,
+      "context_start": 40,
+      "first_emit_step": 50,
+      "ordinal": 32,
+      "raw_clean_video_sha256": "2ae6ac68417dbc858eb71d6d71652c4ae317360a37a0d9e823557bcc8a45867b",
+      "review_id": "M001"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_04/state_33",
+      "context_end": 86,
+      "context_start": 62,
+      "first_emit_step": 72,
+      "ordinal": 34,
+      "raw_clean_video_sha256": "a743f5a8b4545ffd086445787b69ccf5962959c48463fe0a680d9caf8283745c",
+      "review_id": "M002"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "context_end": 91,
+      "context_start": 67,
+      "first_emit_step": 77,
+      "ordinal": 12,
+      "raw_clean_video_sha256": "c3375a26a7f536758218789b99975bb5c65c2bfea49f95cf9369230954bfbbc1",
+      "review_id": "M003"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "context_end": 95,
+      "context_start": 71,
+      "first_emit_step": 81,
+      "ordinal": 24,
+      "raw_clean_video_sha256": "f0f2efedfbc0cdb67d952cf1a4be7284bc036e3b5ec9ee03730737c7cb71f086",
+      "review_id": "M004"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_03/state_25",
+      "context_end": 78,
+      "context_start": 54,
+      "first_emit_step": 64,
+      "ordinal": 23,
+      "raw_clean_video_sha256": "f97e160a35c6cccd9b4b63fe1c12d483aa5cf46e64b1808e08d116993affbaf9",
+      "review_id": "M005"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "context_end": 78,
+      "context_start": 54,
+      "first_emit_step": 64,
+      "ordinal": 31,
+      "raw_clean_video_sha256": "d85e97f69c83b922a02d3f3caf5b5775daad21d5e72089a339af0a28acc3e00e",
+      "review_id": "M006"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_04/state_30",
+      "context_end": 104,
+      "context_start": 80,
+      "first_emit_step": 90,
+      "ordinal": 5,
+      "raw_clean_video_sha256": "ec2bc02e6586f249ce626aa55e7e10e8213b5bcfec5c97b8017cdee2ea20bbbe",
+      "review_id": "M007"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_05/state_27",
+      "context_end": 79,
+      "context_start": 55,
+      "first_emit_step": 65,
+      "ordinal": 35,
+      "raw_clean_video_sha256": "43cb43a71a3f9ba51ce06e7810799bf61e11e1ab186ba01f4d3961dbbfd82897",
+      "review_id": "M008"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_06/state_45",
+      "context_end": 96,
+      "context_start": 72,
+      "first_emit_step": 82,
+      "ordinal": 36,
+      "raw_clean_video_sha256": "1f7003634938fde5f1d53656f2cb33cb2b54dcf70548f078569b53f124dd9f03",
+      "review_id": "M009"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_04/state_38",
+      "context_end": 85,
+      "context_start": 61,
+      "first_emit_step": 71,
+      "ordinal": 14,
+      "raw_clean_video_sha256": "e2285e8dba948c9661b2217752d3b3381983411d020b4a841cf11e8edf11030b",
+      "review_id": "M010"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "context_end": 74,
+      "context_start": 50,
+      "first_emit_step": 60,
+      "ordinal": 7,
+      "raw_clean_video_sha256": "f8d3bcf8e08d568ba090f71f45e027e2eefa560491db788fc40453e744d64aed",
+      "review_id": "M011"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_09/state_43",
+      "context_end": 147,
+      "context_start": 123,
+      "first_emit_step": 133,
+      "ordinal": 10,
+      "raw_clean_video_sha256": "c6a70dfc1a45227115a0001a75df5ad8d2bf8a13b0ccb0fc2f3369bfbe47206a",
+      "review_id": "M012"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_08/state_20",
+      "context_end": 70,
+      "context_start": 46,
+      "first_emit_step": 56,
+      "ordinal": 18,
+      "raw_clean_video_sha256": "ba74f3d06c90f524d9bfdac0908e9cc0463cb9d832569e95230060b677e20b9b",
+      "review_id": "M013"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_03/state_29",
+      "context_end": 72,
+      "context_start": 48,
+      "first_emit_step": 58,
+      "ordinal": 33,
+      "raw_clean_video_sha256": "b75277fbd4f4fd30b9cb299c49b38d6aa3fd0016e5277e430e50104aae4bf644",
+      "review_id": "M014"
+    }
+  ],
+  "schema": "STAGE_X_X1R_T1D1M0_PREVIDEO_FREEZE_V1",
+  "status": "PASS_PREVIDEO_FREEZE",
+  "video_pixels_opened": false
+}
