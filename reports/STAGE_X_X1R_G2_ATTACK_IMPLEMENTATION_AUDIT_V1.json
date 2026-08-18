@@ -1,0 +1,45 @@
+{
+  "checks": {
+    "controls_share_processor_budget": true,
+    "runner_claims_atomic_parent": true,
+    "runner_has_no_fallback": true,
+    "runner_has_no_protected_path": true,
+    "runner_syntax_valid": true,
+    "strict_token_prefix_route": true,
+    "target_objective_and_cached_surrogate_bound": true
+  },
+  "cohort": {
+    "count": 7,
+    "path": "D:\\vla_attack\\_work_stagex_goal\\reports\\STAGE_X_X1R_T1D1M1_FINAL_ATTACK_COHORT_V1.json",
+    "sha256": "7b6d4d52ccf2f4e11ba241d5a8f4290863b786ffe33882c886d96edc28825423",
+    "status": "FROZEN_PRE_ATTACK_IMPLEMENTATION_AUDIT"
+  },
+  "errors": [],
+  "next_gate": "STAGE_X_X1R_G3_RUNTIME_CANARY_REQUIRED",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "eval160_reads": 0,
+    "model_inference": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "protocol": {
+    "path": "D:\\vla_attack\\_work_stagex_goal\\configs\\STAGE_X_X1R_PRIMARY_MATRIX_PROTOCOL_V1.json",
+    "sha256": "37701fd8f4da1d7fc67d7c4adc776b957975a5735c66557c2385dbf21da5dea8",
+    "status": "FROZEN_PRE_LABEL_INGESTION"
+  },
+  "schema": "STAGE_X_X1R_G2_ATTACK_IMPLEMENTATION_AUDIT_V1",
+  "scope": "CPU/static only; no model inference, env.step, PGD, intervention, V_phys, Eval160, or protected read",
+  "source": {
+    "attack_adapter_sha256": "26cfb9f5d8a5a29e7ac2729f5c9cdd58dadfd75e45eebe935ee66214cc9402be",
+    "controls_sha256": "d665f1345b953d5bb3e15ee102321d5130db828c92fdd2f48a175a20c467598b",
+    "route_contract_sha256": "1fd53e0ce09ed7e97b02aac0ca76cb173082178135131392e1e9f9ae50d132a9",
+    "runner_sha256": "757d284d0d3b43115cb1f0ff19ba6b0e322692c326c163ff444c568076b7978c"
+  },
+  "status": "PASS_STATIC_ATTACK_IMPLEMENTATION"
+}
