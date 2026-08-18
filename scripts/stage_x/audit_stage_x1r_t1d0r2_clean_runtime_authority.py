@@ -517,11 +517,11 @@ def runtime_audit(config: Mapping[str, Any], repo: Path) -> dict[str, Any]:
 
 def write_evidence(config: Mapping[str, Any], repo: Path) -> dict[str, Any]:
     receipt = load_json(Path(config["historical_t1_receipt"]["path"]))
-    forensic = source_forensic(config, receipt, repo)
-    replay = replay_parity(config, receipt, repo)
-    success = success_horizon(config)
-    parent = parent_seed_invariance(config, repo, receipt)
     runtime = runtime_audit(config, repo)
+    forensic = runtime["student_source_forensic"]
+    replay = runtime["student_replay_parity"]
+    success = runtime["success_horizon_authority"]
+    parent = runtime["parent_seed_invariance"]
     report_paths = {
         "student_source": repo / "reports/STAGE_X_X1R_T1D0R2_STUDENT_SOURCE_FORENSIC_V1.json",
         "student_replay": repo / "reports/STAGE_X_X1R_T1D0R2_STUDENT_REPLAY_PARITY_V1.json",
