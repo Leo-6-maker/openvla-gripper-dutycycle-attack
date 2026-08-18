@@ -34,7 +34,7 @@
   },
   "attack_load_inheritance": {
     "source": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
-    "sha256": "bf27a237ba9fd9be255d5371d160705cc3c55e000e119062934deb4c2a6dee38",
+    "sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
     "numeric_load_only": true,
     "epsilon": 0.1,
     "step_size": 0.02,
@@ -50,7 +50,7 @@
   },
   "target_contract": {
     "native_token_implementation": "src/gripper_attack/stage_x_t1_native_token_authority.py",
-    "native_token_sha256": "b319a9c64300e4297c81a415279c7f2d65eac1bbac62eb22293ce14c7d9734d6",
+    "native_token_sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
     "global_token_id_assumption": false,
     "primary_behavioral_criterion": "direct_generated_gripper_token_in_native_OPEN_class",
     "arm_token_isolation": "adv_arm_token_ids[0:6] == clean_arm_token_ids[0:6]"
@@ -189,12 +189,12 @@
   "local_bindings": [
     {
       "path": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
-      "sha256": "bf27a237ba9fd9be255d5371d160705cc3c55e000e119062934deb4c2a6dee38",
+      "sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
       "role": "numeric attack-load inheritance only"
     },
     {
       "path": "src/gripper_attack/stage_x_t1_native_token_authority.py",
-      "sha256": "b319a9c64300e4297c81a415279c7f2d65eac1bbac62eb22293ce14c7d9734d6",
+      "sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
       "role": "suite-local native action-token authority"
     }
   ],
