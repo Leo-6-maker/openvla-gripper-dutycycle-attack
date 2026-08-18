@@ -363,7 +363,7 @@ def success_horizon(config: Mapping[str, Any]) -> dict[str, Any]:
     required_text = (
         "num_steps_wait: int = 10",
         "while t < max_steps + cfg.num_steps_wait",
-        "env.step(dummy_action)",
+        "env.step(get_libero_dummy_action(cfg.model_family))",
         "env.step(action.tolist())",
         "if done:",
         "task_successes += 1",

@@ -17,7 +17,7 @@
     "prospective_source_raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
     "historical_t1_handoff_source_sha256": "7945e464130d8bcb4b4fd85475dffc3024ef2bc419b5d1ea812b29156b96a0fd",
     "historical_receipt_source_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
-    "current_server_file_path": "/mnt/sdc/dty_user/openvla_attack/n5/phase3_student/n5_student_model.py",
+    "current_server_file_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py",
     "current_server_file_sha256": "ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b",
     "input_dim": 25,
     "hidden": 64,
