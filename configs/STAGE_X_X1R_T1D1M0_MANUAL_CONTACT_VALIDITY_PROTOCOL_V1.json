@@ -1,0 +1,72 @@
+{
+  "schema": "STAGE_X_X1R_T1D1M0_MANUAL_CONTACT_VALIDITY_PROTOCOL_V1",
+  "status": "FROZEN_BEFORE_VIDEO_PIXEL_ACCESS",
+  "source_authority": {
+    "pr": 130,
+    "comment_id": 5328579104,
+    "source_commit": "f4da1c6683860757cc9775b573a158dd89505b15",
+    "source_tree": "2d1b1cf94c0cd5322431eb0a864f1e00afd087f1",
+    "base_branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
+    "branch": "codex/stage-x-x1r-t1d1m0-manual-contact-review-20260818"
+  },
+  "scope": {
+    "question": "At the frozen Student emit time, is the clean trajectory visibly in a task-relevant, gripper-dependent physical interaction for which a five-step gripper-opening intervention would be a meaningful manipulation disturbance rather than normal approach or release?",
+    "allowed": ["sealed D1R receipts", "sealed clean videos", "file hashing", "CPU ffmpeg/image extraction", "blinded packet construction"],
+    "forbidden": ["OpenVLA inference", "Student inference", "simulator reset", "env.step", "PGD", "RAND", "SHUFFLED", "adversarial images/actions", "physical intervention", "V_phys", "attack outcomes", "Eval160", "protected evaluation", "parent replacement", "seed reroll", "threshold/model/feature/scheduler changes"]
+  },
+  "eligibility_recompute": {
+    "source": "already-sealed D1R parent receipts only",
+    "formula": [
+      "status == PASS_SCREENING_CLEAN_EPISODE",
+      "clean_success == true",
+      "student_status == PASS_CAUSAL_TRACE",
+      "first_emit_step != null",
+      "first_emit_step + 5 + 10 <= policy_horizon"
+    ],
+    "required_count": 14
+  },
+  "rubric": {
+    "contact_valid": "PASS",
+    "contact_invalid": "FAIL",
+    "contact_ambiguous": "ABSTAIN",
+    "pass_requires_all": [
+      "task-relevant object or movable part is the contacted target",
+      "gripper-dependent physical coupling is established at t_emit; approach or pre-contact is insufficient",
+      "coupling persists through [t_emit,t_emit+4] without normal release already beginning",
+      "object/part is not already release-safe or independently supported at t_emit",
+      "no pre-existing slip, detachment, or loss of relevant coupling before t_emit",
+      "sealed view is sufficient to judge the interaction"
+    ],
+    "handle_or_fixture_rule": "For handles, doors, and fixtures, sustained gripper-dependent manipulation of the task-relevant movable part is sufficient; free-space lifting is not required.",
+    "fail_reason_codes": [
+      "PRECONTACT_OR_APPROACH",
+      "WRONG_OR_IRRELEVANT_OBJECT_PART",
+      "RELEASE_ALREADY_STARTED",
+      "RELEASE_SAFE_OR_INDEPENDENTLY_SUPPORTED",
+      "CONTACT_ALREADY_LOST_OR_SLIPPING",
+      "OTHER_CLEARLY_NON_GRIPPER_DEPENDENT"
+    ],
+    "abstain_rule": "Use ABSTAIN when occlusion, framing, object identity ambiguity, or insufficient visual evidence prevents a defensible PASS/FAIL judgment. ABSTAIN is not attack-eligible."
+  },
+  "blinding": {
+    "order_salt": "STAGE_X_X1R_T1D1M0_MANUAL_REVIEW_ORDER_V1_20260818",
+    "rank_key": "SHA256(order_salt + '|' + canonical_parent_key)",
+    "sort": "ascending(rank_key, canonical_parent_key)",
+    "anonymous_ids": "M001..M014",
+    "human_visible": ["anonymous review ID", "task instruction", "fixed context clip", "blank label fields"],
+    "human_hidden": ["suite", "task/state ordinal", "Student probabilities", "physical scores", "selection rank", "attack/V_phys results"]
+  },
+  "fixed_review_window": {
+    "context_start": "max(0, t_emit - 10)",
+    "context_end": "min(policy_steps_executed - 1, t_emit + 14)",
+    "emit_frame_is_marked": true,
+    "raw_video_is_immutable": true
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "attack_authorized": false,
+    "physical_intervention_authorized": false
+  },
+  "next_gate": "OWNER_MANUAL_CONTACT_LABELS_REQUIRED"
+}

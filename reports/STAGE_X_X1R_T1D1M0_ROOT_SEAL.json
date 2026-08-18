@@ -1,0 +1,51 @@
+{
+  "ancestry": {
+    "d1r_runtime_commit": "d74b8b7aff311c4ebbd51bf83ff026efe48d0236",
+    "d1r_runtime_tree": "2ee7425fc9177d70abb61f12b644833ec20d0a06",
+    "pr130_head": "f4da1c6683860757cc9775b573a158dd89505b15",
+    "pr130_tree": "2d1b1cf94c0cd5322431eb0a864f1e00afd087f1"
+  },
+  "candidate_ledger_sha256": "5f1f036b47b1c9a8c1bafe7a400b6be9269cd3e67587691018005c824dc8d89e",
+  "counts": {
+    "all_clean_success": true,
+    "all_first_emit_legal": true,
+    "all_student_trace_pass": true,
+    "candidate_count": 14,
+    "d1_excluded_ordinals_present": false,
+    "labels_present": false
+  },
+  "mapping_sha256": "3d7f59a736cc2c7bcb5ecdc49e9e57a7e8b547c9e7554251e88158017366f0fe",
+  "next_gate": "OWNER_MANUAL_CONTACT_LABELS_REQUIRED",
+  "order_digest": "30a73b0e4ab13e149d8c991906fc9067844797e39113201e9e76a10a8be40d67",
+  "packet_audit": {
+    "path": "reports/STAGE_X_X1R_T1D1M0_REVIEW_PACKET_AUDIT_V1.json",
+    "sha256": "a444d60eefd2c75ff871e8e5c1577465ec60e28918e13c5df89968bbe2df5c89"
+  },
+  "protected_boundary": {
+    "attack_authorized": false,
+    "attack_outcome_reads": 0,
+    "env_steps": 0,
+    "eval160": "UNREAD",
+    "model_inference": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "student_inference": 0,
+    "vphys_reads": 0
+  },
+  "review_root": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/T1D1M0_REVIEW_PACKET",
+  "schema": "STAGE_X_X1R_T1D1M0_ROOT_SEAL_V1",
+  "scope": "pre-registered manual contact-validity review packet; no labels",
+  "seal_note": "No manual label was inferred or entered; this seal freezes only the review package and blank form.",
+  "sha256sums": {
+    "path": "reports/STAGE_X_X1R_T1D1M0_SHA256SUMS.txt",
+    "sha256": "26026321baa8d9dd3e54af29b472855ad56d287c63bc54f9fc9977e49d1371b9"
+  },
+  "source_before_evidence_outputs": {
+    "branch": "codex/stage-x-x1r-t1d1m0-manual-contact-review-20260818",
+    "commit": "89d4d74f41bf34d9d827a5ba3d05e601047d53ab",
+    "status_porcelain": "",
+    "tree": "ab0a86e7d8fc35ad0f0d542e0a41eaca2d387d6c"
+  },
+  "status": "STAGE_X_X1R_T1D1M0_REVIEW_PACKET_PASS"
+}
