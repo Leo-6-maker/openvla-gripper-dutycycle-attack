@@ -107,6 +107,7 @@ def main() -> int:
     receipts: list[dict[str, Any]] = []
     by_ordinal: dict[int, dict[str, Any]] = {}
     artifact_rows: list[dict[str, Any]] = []
+    evidence_runtime_source: dict[str, Any] | None = None
     for receipt_path in receipt_paths:
         try:
             receipt = load_json(receipt_path)
@@ -162,8 +163,12 @@ def main() -> int:
         if int(counters.get("prospective_parent_student_forward_calls", -1)) != 1:
             errors.append(f"STUDENT_FORWARD_ACCOUNTING_INVALID:{ordinal}")
         runtime = receipt.get("runtime_source_pre_evidence", {})
-        if runtime.get("commit") != source["commit"] or runtime.get("tree") != source["tree"]:
-            errors.append(f"RUNTIME_SOURCE_MISMATCH:{ordinal}")
+        if evidence_runtime_source is None:
+            evidence_runtime_source = dict(runtime)
+        elif runtime != evidence_runtime_source:
+            errors.append(f"RUNTIME_SOURCE_NONUNIFORM:{ordinal}")
+        if runtime.get("status_porcelain"):
+            errors.append(f"RUNTIME_SOURCE_DIRTY:{ordinal}")
 
         video = receipt.get("video", {})
         video_path = Path(str(video.get("path", "")))
@@ -196,6 +201,8 @@ def main() -> int:
 
     if len(receipts) != len(expected) or sorted(by_ordinal) != expected_ordinals:
         errors.append(f"RECEIPT_COVERAGE_INVALID:{len(receipts)}/{len(expected)}")
+    if evidence_runtime_source is None:
+        errors.append("RUNTIME_SOURCE_MISSING")
     worker_paths = sorted((root / "workers").glob("*.json"))
     worker_ordinals: list[int] = []
     for worker_path in worker_paths:
@@ -233,7 +240,7 @@ def main() -> int:
         "pr129_live_head": {"commit": "4b0ceb65f8f7babdd29163e032c56fed3ba57526", "tree": "d7b688e82bf0b9c5e91c08b3ad15c3a6d94b89ad"},
         "d1_runtime_source": {"commit": protocol["historical_d1"]["source_pre_evidence_commit"], "tree": protocol["historical_d1"]["source_pre_evidence_tree"]},
         "d1r_repaired_source_pre_evidence": head_audit.get("source", {}),
-        "d1r_evidence_runtime_source": source,
+        "d1r_evidence_runtime_source": evidence_runtime_source,
     }
     census = {
         "schema": "STAGE_X_X1R_T1D1R_CENSUS_AUDIT_V1",
