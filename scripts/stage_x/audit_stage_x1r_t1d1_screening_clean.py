@@ -197,6 +197,9 @@ def check_parent(path: Path, parent: Mapping[str, Any], protocol: Mapping[str, A
         if video_path.stat().st_size > int(protocol["durable_storage"]["per_episode_video_budget_bytes"]):
             errors.append("VIDEO_BUDGET_EXCEEDED")
     counters = receipt.get("counters", {})
+    mount_gpu = receipt.get("gpu", {}).get("mount_gate", {})
+    if int(mount_gpu.get("free_memory_mib", 0)) <= 20480:
+        errors.append("GPU_MOUNT_GATE_NOT_STRICTLY_ABOVE_20480_MIB")
     for name in ("pgd_calls", "attack_backward_calls", "adversarial_images", "physical_interventions", "vphys_reads", "attack_outcome_reads", "eval160_reads", "protected_reads", "attacked_env_steps"):
         if int(counters.get(name, -1)) != 0:
             errors.append(f"PROTECTED_COUNTER_NONZERO:{name}")

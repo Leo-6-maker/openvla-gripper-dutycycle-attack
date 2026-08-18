@@ -195,7 +195,7 @@ def student_paths(protocol: Mapping[str, Any]) -> dict[str, Path]:
     return paths
 
 
-def gpu_receipt(physical_gpu: int) -> dict[str, Any]:
+def gpu_receipt(physical_gpu: int, *, require_free: bool = True) -> dict[str, Any]:
     query = subprocess.check_output(
         ["nvidia-smi", "--query-gpu=index,uuid,memory.free,memory.used,utilization.gpu", "--format=csv,noheader,nounits", "-i", str(physical_gpu)],
         text=True,
@@ -209,7 +209,7 @@ def gpu_receipt(physical_gpu: int) -> dict[str, Any]:
         text=True,
     ).strip()
     receipt["compute_apps"] = [line.strip() for line in apps.splitlines() if line.strip()]
-    if receipt["free_memory_mib"] <= 20480:
+    if require_free and receipt["free_memory_mib"] <= 20480:
         raise RuntimeError(f"GPU_RESOURCE_GATE_FAIL:{receipt}")
     return receipt
 
@@ -395,7 +395,7 @@ def append_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     path.write_text("".join(json.dumps(row, ensure_ascii=False, sort_keys=True, default=_json_default) + "\n" for row in rows), encoding="utf-8")
 
 
-def run_parent(parent: Mapping[str, Any], protocol: Mapping[str, Any], contract: Mapping[str, Any], model: Any, processor: Any, device: str, action_dim: int, student: tuple[Any, np.ndarray, np.ndarray, float, float], physical_gpu: int, root: Path, attempt: int) -> dict[str, Any]:
+def run_parent(parent: Mapping[str, Any], protocol: Mapping[str, Any], contract: Mapping[str, Any], model: Any, processor: Any, device: str, action_dim: int, student: tuple[Any, np.ndarray, np.ndarray, float, float], physical_gpu: int, mount_gpu: Mapping[str, Any], root: Path, attempt: int) -> dict[str, Any]:
     from gripper_attack.libero_v4_env_factory import apply_dummy_wait, build_v4_exact_env
     from gripper_attack.openvla_preprocess import prepare_openvla_image
     from gripper_attack.d8_streaming_features_v3 import D8StreamingFeatureAdapterV3, FEATURE_NAMES
@@ -501,7 +501,7 @@ def run_parent(parent: Mapping[str, Any], protocol: Mapping[str, Any], contract:
         video_size = video_path.stat().st_size if video_path.is_file() else 0
         if video_size > int(protocol["durable_storage"]["per_episode_video_budget_bytes"]):
             raise RuntimeError(f"VIDEO_BUDGET_EXCEEDED:{video_size}")
-        receipt = {"schema": "STAGE_X_X1R_T1D1_SCREENING_CLEAN_PARENT_RECEIPT_V1", "status": "PASS_SCREENING_CLEAN_EPISODE", "canonical_parent_key": key, "ordinal": int(parent["ordinal"]), "suite": suite, "task_idx": task_idx, "state_id": state_id, "expected_clean_seed": seed, "condition": "SCREENING_CLEAN", "screening_is_not_clean_eval": True, "policy_horizon": horizon, "policy_steps_executed": len(rows), "clean_success": bool(task_success), "clean_failure": not bool(task_success), "first_emit_step": schedule_result["first_emit_step"], "no_emit_retained": schedule_result["first_emit_step"] is None, "student_status": "PASS_CAUSAL_TRACE" if valid_features else "ABSTAIN_INVALID_FEATURE_STREAM", "attack_eligible_pre_manual_review": bool(task_success and valid_features and schedule_result["first_emit_step"] is not None), "manual_clean_contact_review": "REQUIRED", "video": {"path": str(video_path), "sha256": video_sha, "bytes": video_size, "fps": 20, "overlay": False}, "runtime_source_pre_evidence": source_receipt(), "gpu": gpu_receipt(physical_gpu), "counters": counters, "protected_boundary": {"eval160": "UNREAD", "protected_evaluation": "UNREAD", "pgd_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "attacked_env_steps": 0, "protected_reads": 0}, "forbidden_actions_executed": [], "timestamp_unix": time.time()}
+        receipt = {"schema": "STAGE_X_X1R_T1D1_SCREENING_CLEAN_PARENT_RECEIPT_V1", "status": "PASS_SCREENING_CLEAN_EPISODE", "canonical_parent_key": key, "ordinal": int(parent["ordinal"]), "suite": suite, "task_idx": task_idx, "state_id": state_id, "expected_clean_seed": seed, "condition": "SCREENING_CLEAN", "screening_is_not_clean_eval": True, "policy_horizon": horizon, "policy_steps_executed": len(rows), "clean_success": bool(task_success), "clean_failure": not bool(task_success), "first_emit_step": schedule_result["first_emit_step"], "no_emit_retained": schedule_result["first_emit_step"] is None, "student_status": "PASS_CAUSAL_TRACE" if valid_features else "ABSTAIN_INVALID_FEATURE_STREAM", "attack_eligible_pre_manual_review": bool(task_success and valid_features and schedule_result["first_emit_step"] is not None), "manual_clean_contact_review": "REQUIRED", "video": {"path": str(video_path), "sha256": video_sha, "bytes": video_size, "fps": 20, "overlay": False}, "runtime_source_pre_evidence": source_receipt(), "gpu": {"mount_gate": dict(mount_gpu), "after_episode": gpu_receipt(physical_gpu, require_free=False)}, "counters": counters, "protected_boundary": {"eval160": "UNREAD", "protected_evaluation": "UNREAD", "pgd_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "attacked_env_steps": 0, "protected_reads": 0}, "forbidden_actions_executed": [], "timestamp_unix": time.time()}
         write_json(out / "parent_receipt.json", receipt)
         manifest = load_json(out / "episode_manifest.json")
         manifest.update({"status": receipt["status"], "task_name": str(getattr(task, "name", "")), "instruction": instruction, "bddl_file": bddl, "runtime_source_pre_evidence": receipt["runtime_source_pre_evidence"], "counters": counters, "parent_receipt": "parent_receipt.json", "telemetry": "step_telemetry.jsonl", "video": receipt["video"]})
@@ -585,7 +585,7 @@ def main() -> int:
     root = Path(str(protocol["durable_storage"]["root"]))
     results = []
     for parent in selected:
-        results.append(run_parent(parent, protocol, contract, model, processor, device, action_dim, student, int(args.physical_gpu), root, int(args.attempt)))
+        results.append(run_parent(parent, protocol, contract, model, processor, device, action_dim, student, int(args.physical_gpu), gpu, root, int(args.attempt)))
     summary = {"schema": "STAGE_X_X1R_T1D1_SCREENING_CLEAN_WORKER_RECEIPT_V1", "status": "PASS", "source": source, "preflight": preflight, "gpu_before_model_load": gpu, "suite": next(iter(suites)), "ordinals": ordinals, "parent_receipts": results, "forbidden_counters": {name: 0 for name in ("pgd_calls", "attack_backward_calls", "adversarial_images", "physical_interventions", "vphys_reads", "attack_outcome_reads", "eval160_reads", "protected_reads", "attacked_env_steps")}, "eval160": "UNREAD", "protected_evaluation": "UNREAD"}
     write_json(root / "workers" / f"worker_{next(iter(suites))}_{os.getpid()}.json", summary)
     print(json.dumps({"status": summary["status"], "suite": summary["suite"], "ordinals": ordinals, "root": str(root)}, sort_keys=True))
