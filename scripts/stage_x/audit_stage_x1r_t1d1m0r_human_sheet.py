@@ -127,6 +127,12 @@ def main() -> int:
                     errors.append(f"REVIEW_COPY_PROJECTION_MISMATCH:{review_id}:{field}")
             if any(row.get(field, "") for field in ("contact_label", "reason_code", "reviewer", "review_timestamp", "optional_short_note")):
                 errors.append(f"OWNER_LABEL_FIELD_NOT_BLANK:{review_id}")
+        for path_field, sha_field in (("review_clip_path", "review_clip_sha256"), ("review_frame_strip_path", "review_frame_strip_sha256")):
+            review_path = Path(str(render_row[path_field]))
+            if not review_path.is_file():
+                errors.append(f"REVIEW_COPY_MISSING:{review_id}:{path_field}")
+            elif sha(review_path) != render_row[sha_field]:
+                errors.append(f"REVIEW_COPY_SHA_MISMATCH:{review_id}:{path_field}")
     serialized = json.dumps({"fields": sheet_fields, "rows": sheet_rows}, ensure_ascii=False)
     if any(key in sheet_fields for key in FORBIDDEN_KEYS) or any(key in serialized for key in FORBIDDEN_KEYS):
         errors.append("FORBIDDEN_KEY_EXPOSED_IN_SAFE_SHEET")
