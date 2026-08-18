@@ -105,8 +105,9 @@ def main() -> int:
         errors.append("D1M0_ORDER_DIGEST_CHANGED")
 
     with SAFE_CSV.open(encoding="utf-8", newline="") as f:
-        sheet_rows = list(csv.DictReader(f))
-        sheet_fields = list(f.fieldnames or [])
+        reader = csv.DictReader(f)
+        sheet_rows = list(reader)
+        sheet_fields = list(reader.fieldnames or [])
     if sheet_fields != FIELDS or safe.get("fields") != FIELDS:
         errors.append("SAFE_SHEET_FIELDS_INVALID")
     if [row.get("review_id") for row in sheet_rows] != [f"M{i:03d}" for i in range(1, 15)] or [row.get("review_id") for row in safe.get("rows", [])] != [f"M{i:03d}" for i in range(1, 15)]:
