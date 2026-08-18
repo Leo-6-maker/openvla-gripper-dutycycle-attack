@@ -112,7 +112,7 @@ def file_tree_digest(root: Path) -> dict[str, Any]:
     for path in sorted(root.rglob("*")):
         if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
             continue
-        rows.append({"relative_path": path.relative_to(root).as_posix(), "size": path.stat().st_size, "sha256": sha256_file(path)})
+        rows.append({"path": path.relative_to(root).as_posix(), "size": path.stat().st_size, "sha256": sha256_file(path)})
     canonical = json.dumps(rows, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     return {"file_count": len(rows), "bytes": sum(int(row["size"]) for row in rows), "tree_sha256": sha256_bytes(canonical), "rows": rows}
 
