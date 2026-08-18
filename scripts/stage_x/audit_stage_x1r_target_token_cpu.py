@@ -7,6 +7,8 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -50,7 +52,7 @@ def main() -> int:
             "target_executed_env_gripper": target.executed_env_gripper,
             "endpoint_compatibility_token_id": 31744,
             "endpoint_compatibility_execution_class": endpoint.execution_class,
-            "native_authority_open_token_id": int(info["native"].encode_raw([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])[-1]),
+            "native_authority_open_token_id": int(info["tokenizer_vocab_size"] - np.digitize(1.0, info["bins"])),
             "tokenizer_vocab_size": int(info["tokenizer_vocab_size"]),
             "n_action_bins": int(info["native"].n_bins),
         }
