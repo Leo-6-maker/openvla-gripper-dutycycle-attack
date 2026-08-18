@@ -22,7 +22,7 @@
   },
   "parent_population": {
     "seed_report": "reports/STAGE_X_X1R_T1D0R2_PARENT_SEED_INVARIANCE_V1.json",
-    "seed_report_sha256": "11d57fb28ad497be51f3627dcfdefe43b7bfebb782a31bcec5b8d3b9f922e61d",
+    "seed_report_sha256": "a0b3fc93c39b41d0e83d7571fa5a8016c3185be5e5d783a8a0970c4d6fd0b0c4",
     "selection_salt": "STAGE_X_X1R_T1D0_PARENT_AUTHORITY_V1_20260818",
     "seed_namespace": "STAGE_X_X1R_T1D0R1_CLEAN_SEED_V1",
     "count": 39,
