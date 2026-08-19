@@ -25,9 +25,9 @@
   "scope": "CPU/static only; no model load, inference, simulator reset/step, PGD, physical intervention, V_phys, Eval160, or protected read",
   "source": {
     "branch": "codex/stage-x-x1r2-recovery-20260819",
-    "commit": "126adb478812e32eb1456ab7af180477a68faa1b",
-    "status_porcelain": "?? configs/STAGE_X_X1R2_Q3_ENGINEERING_PROTOCOL_V1.json\n?? reports/STAGE_X_X1R2_Q3_ENGINEERING_FIXTURES_V1.json\n?? reports/STAGE_X_X1R2_Q3_ENGINEERING_STATIC_AUDIT_V1.json\n?? scripts/stage_x/audit_stage_x1r2_q3_engineering.py\n?? scripts/stage_x/run_stage_x1r2_q3_engineering.py",
-    "tree": "4959658125b5cdfe2950b33f72176de267f81e7c"
+    "commit": "08ae0d35479df813f490881d46aa3b777afed2f1",
+    "status_porcelain": "",
+    "tree": "61eeed34fbc2bf3513bdf5fc80a7b9b973d17d2a"
   },
   "static_checks": {
     "all_engineering_arms": true,
