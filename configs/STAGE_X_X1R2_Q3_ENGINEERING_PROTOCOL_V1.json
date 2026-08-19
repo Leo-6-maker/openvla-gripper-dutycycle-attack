@@ -1,0 +1,100 @@
+{
+  "schema": "STAGE_X_X1R2_Q3_ENGINEERING_PROTOCOL_V1",
+  "status": "FROZEN_ENGINEERING_ONLY_PRE_GPU",
+  "scientific_authority": false,
+  "purpose": "real-model qualification of the executable routes using permanently excluded fixtures",
+  "fixture_report": {
+    "path": "reports/STAGE_X_X1R2_Q3_ENGINEERING_FIXTURES_V1.json",
+    "sha256": "17d38891ce9ba1a3cb93f229946c32089abafcdc286bf32a900abd357940ab22",
+    "required_count": 4,
+    "required_suites": ["libero_10", "libero_goal", "libero_object", "libero_spatial"]
+  },
+  "victim_contract": {
+    "path": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+    "sha256": "0cafca3d585ff87c1125639b95f558ef6f3501ea24b258842da1a34b2148bec4",
+    "identity_must_match": true
+  },
+  "student_contract": {
+    "source": "frozen D1R Student runtime contract",
+    "checkpoint_and_thresholds_unchanged": true,
+    "student_scores_are_not_selection_inputs": true
+  },
+  "arms": [
+    "CLEAN_ENGINEERING",
+    "TRUE_PGD_T5_ENGINEERING",
+    "RAND_UNIFORM_T5_ENGINEERING",
+    "SHUFFLED_GRAD_T5_ENGINEERING",
+    "TRUE_RANDOM_TIME_T5_ENGINEERING"
+  ],
+  "core_route_mapping": {
+    "CLEAN_ENGINEERING": "SCREENING_CLEAN_PLUS_CLEAN_EVAL_REPLAY",
+    "TRUE_PGD_T5_ENGINEERING": "TRUE_PGD_T5",
+    "RAND_UNIFORM_T5_ENGINEERING": "RAND_UNIFORM_T5",
+    "SHUFFLED_GRAD_T5_ENGINEERING": "SHUFFLED_GRAD_T5",
+    "TRUE_RANDOM_TIME_T5_ENGINEERING": "TRUE_PGD_T5_AT_FROZEN_RANDOM_LEGAL_TIME"
+  },
+  "attack": {
+    "target_token_id": 31745,
+    "target_execution_class": "NATIVE_OPEN",
+    "epsilon_processor_pixel_values": 0.03,
+    "step_size_processor_pixel_values": 0.006,
+    "num_steps": 5,
+    "strict_route": true,
+    "allow_fallback": false,
+    "arm_isolation_required": true,
+    "rand_optimizer_steps": 0,
+    "shuffled_optimizer_steps": 5,
+    "temporal_attack_window": 5
+  },
+  "timing": {
+    "student_fixture_emit_source": "sealed D1R clean receipt",
+    "student_attack_window": "[t_emit,t_emit+4]",
+    "physical_followup_window": "[t_emit+5,t_emit+14]",
+    "h_phys": 10,
+    "full_episode_end": "first done=True or official suite horizon",
+    "random_time_salt": "STAGE_X_X1R2_Q3_ENGINEERING_RANDOM_TIME_V1_20260819",
+    "random_time_rule": "choose deterministic legal t with t+5+10<=horizon and no overlap with the fixture Student T5 interval",
+    "random_time_outcome_blind": true
+  },
+  "qualification_requirements": {
+    "four_of_four_suite_fixtures_structurally_pass": true,
+    "five_of_five_routes_per_fixture_structurally_pass": true,
+    "full_clean_prefix_execution": true,
+    "student_feature_path_exercised": true,
+    "full_episode_continues_after_h_phys": true,
+    "official_done_or_horizon_recorded": true,
+    "durable_video_and_telemetry": true,
+    "no_scientific_outcome_consumption": true,
+    "no_protected_reads": true
+  },
+  "resource_contract": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "free_memory_mib_strictly_greater_than": 20480,
+    "one_project_worker_per_physical_gpu": true,
+    "foreign_processes_untouched": true,
+    "durable_storage_required": true
+  },
+  "forbidden": [
+    "X1R2 scientific cohort selection",
+    "attack outcome based fixture selection",
+    "V_phys read",
+    "physical intervention",
+    "Eval160 read",
+    "protected evaluation read",
+    "rerun to pass",
+    "detector or threshold modification"
+  ],
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "model_inference_calls": 0,
+    "env_step_calls": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0
+  },
+  "next_gate": "STAGE_X_X1R2_Q3_REAL_EXECUTABLE_QUALIFICATION"
+}

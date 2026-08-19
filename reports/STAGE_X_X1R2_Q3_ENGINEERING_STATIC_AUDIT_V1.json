@@ -1,0 +1,50 @@
+{
+  "errors": [],
+  "fixture_ids": [
+    "Q3-F01",
+    "Q3-F02",
+    "Q3-F03",
+    "Q3-F04"
+  ],
+  "fixture_report_sha256": "17d38891ce9ba1a3cb93f229946c32089abafcdc286bf32a900abd357940ab22",
+  "next_gate": "STAGE_X_X1R2_Q3_REAL_EXECUTABLE_QUALIFICATION",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "env_step_calls": 0,
+    "eval160": "UNREAD",
+    "eval160_reads": 0,
+    "model_inference_calls": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "protocol_sha256": "fe6d8b0c855cf28b92b4da535d0a8b1ee52664aa0181b88ae919bb0e3785ad6e",
+  "schema": "STAGE_X_X1R2_Q3_ENGINEERING_STATIC_AUDIT_V1",
+  "scope": "CPU/static only; no model load, inference, simulator reset/step, PGD, physical intervention, V_phys, Eval160, or protected read",
+  "source": {
+    "branch": "codex/stage-x-x1r2-recovery-20260819",
+    "commit": "126adb478812e32eb1456ab7af180477a68faa1b",
+    "status_porcelain": "?? configs/STAGE_X_X1R2_Q3_ENGINEERING_PROTOCOL_V1.json\n?? reports/STAGE_X_X1R2_Q3_ENGINEERING_FIXTURES_V1.json\n?? reports/STAGE_X_X1R2_Q3_ENGINEERING_STATIC_AUDIT_V1.json\n?? scripts/stage_x/audit_stage_x1r2_q3_engineering.py\n?? scripts/stage_x/run_stage_x1r2_q3_engineering.py",
+    "tree": "4959658125b5cdfe2950b33f72176de267f81e7c"
+  },
+  "static_checks": {
+    "all_engineering_arms": true,
+    "arm_isolation_audit": true,
+    "attack_path_uses_primary_runner": true,
+    "canonical_attack_wrapper": true,
+    "clean_student_path": true,
+    "full_episode_route": true,
+    "no_protected_path": true,
+    "random_time_is_deterministic_and_legal": true,
+    "strict_route_and_target_audit": true
+  },
+  "status": "STAGE_X_X1R2_Q3_ENGINEERING_STATIC_AUTHORITY_PASS",
+  "suites": [
+    "libero_10",
+    "libero_goal",
+    "libero_object",
+    "libero_spatial"
+  ]
+}
