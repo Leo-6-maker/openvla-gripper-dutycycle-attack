@@ -11,7 +11,7 @@
   },
   "victim_contract": {
     "path": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
-    "sha256": "0cafca3d585ff87c1125639b95f558ef6f3501ea24b258842da1a34b2148bec4",
+    "sha256": "37f5d4ea205835fedc8f4d02c3e722c80581aa5c04d9349c7eed0dd4f6364265",
     "identity_must_match": true
   },
   "student_contract": {

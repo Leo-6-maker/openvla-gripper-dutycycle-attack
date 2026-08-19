@@ -20,6 +20,14 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def git_blob_sha256(path: Path) -> str:
+    relative = path.relative_to(ROOT).as_posix()
+    blob = subprocess.check_output(
+        ["git", "-C", str(ROOT), "cat-file", "blob", f"HEAD:{relative}"]
+    )
+    return hashlib.sha256(blob).hexdigest()
+
+
 def git(*args: str) -> str:
     return subprocess.check_output(["git", "-C", str(ROOT), *args], text=True, stderr=subprocess.STDOUT).strip()
 
@@ -37,6 +45,12 @@ def main() -> int:
     fixtures = load(FIXTURES)
     runner_text = RUNNER.read_text(encoding="utf-8")
     primary_text = PRIMARY_RUNNER.read_text(encoding="utf-8")
+
+    victim_contract = ROOT / str(protocol.get("victim_contract", {}).get("path", ""))
+    if not victim_contract.is_file():
+        errors.append("VICTIM_CONTRACT_MISSING")
+    elif git_blob_sha256(victim_contract) != protocol.get("victim_contract", {}).get("sha256"):
+        errors.append("VICTIM_CONTRACT_SHA256_MISMATCH")
 
     if protocol.get("status") != "FROZEN_ENGINEERING_ONLY_PRE_GPU":
         errors.append("Q3_PROTOCOL_STATUS")
@@ -80,6 +94,7 @@ def main() -> int:
         "source": {"branch": git("branch", "--show-current"), "commit": git("rev-parse", "HEAD"), "tree": git("rev-parse", "HEAD^{tree}"), "status_porcelain": git("status", "--porcelain")},
         "fixture_report_sha256": sha256(FIXTURES),
         "protocol_sha256": sha256(PROTOCOL),
+        "victim_contract_git_blob_sha256": git_blob_sha256(victim_contract) if victim_contract.is_file() else None,
         "fixture_ids": [row.get("fixture_id") for row in rows],
         "suites": sorted(suites),
         "static_checks": static_checks,

@@ -20,14 +20,14 @@
     "protected_reads": 0,
     "vphys_reads": 0
   },
-  "protocol_sha256": "fe6d8b0c855cf28b92b4da535d0a8b1ee52664aa0181b88ae919bb0e3785ad6e",
+  "protocol_sha256": "0052afc0f4ad8634f504818c963c95fd10a74f765a75f1658b105398e5ac8621",
   "schema": "STAGE_X_X1R2_Q3_ENGINEERING_STATIC_AUDIT_V1",
   "scope": "CPU/static only; no model load, inference, simulator reset/step, PGD, physical intervention, V_phys, Eval160, or protected read",
   "source": {
     "branch": "codex/stage-x-x1r2-recovery-20260819",
-    "commit": "72e9cdf8d7ce84890291f097f5dc84019dda3daf",
-    "status_porcelain": "M reports/STAGE_X_X1R2_Q3_ENGINEERING_STATIC_AUDIT_V1.json",
-    "tree": "7e6e59132d0f60e22db07b122da593b493a897c3"
+    "commit": "81108e3f72ff524e22a7da69269cf6ab6ccc9f1d",
+    "status_porcelain": "M configs/STAGE_X_X1R2_Q3_ENGINEERING_PROTOCOL_V1.json\n M scripts/stage_x/audit_stage_x1r2_q3_engineering.py",
+    "tree": "23eb68391d834650204b4210a83516f316a07002"
   },
   "static_checks": {
     "all_engineering_arms": true,
@@ -46,5 +46,6 @@
     "libero_goal",
     "libero_object",
     "libero_spatial"
-  ]
+  ],
+  "victim_contract_git_blob_sha256": "37f5d4ea205835fedc8f4d02c3e722c80581aa5c04d9349c7eed0dd4f6364265"
 }
