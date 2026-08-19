@@ -1,0 +1,105 @@
+{
+  "schema": "STAGE_X_X1R_V1_FINAL_BLOCKED_CLOSURE_V1",
+  "status": "STAGE_X_X1R_V1_CLOSED_RUNTIME_BLOCKED",
+  "scientific_identity": "STAGE_X_X1R_V1",
+  "closure_basis": "two consumed runtime-invalid parents and five untouched parents under the immutable seven-parent cohort",
+  "frozen_itt_n": 7,
+  "scientific_evaluable_n": 0,
+  "efficacy_estimate": null,
+  "attack_success_inference": false,
+  "cohort_binding": {
+    "protocol_path": "configs/STAGE_X_X1R_PRIMARY_MATRIX_PROTOCOL_V1.json",
+    "protocol_sha256": "37701fd8f4da1d7fc67d7c4adc776b957975a5735c66557c2385dbf21da5dea8",
+    "cohort_path": "reports/STAGE_X_X1R_T1D1M1_FINAL_ATTACK_COHORT_V1.json",
+    "cohort_sha256": "7b6d4d52ccf2f4e11ba241d5a8f4290863b786ffe33882c886d96edc28825423",
+    "owner_submission_sha256": "76c835c292c76190b2a764da7be746a568697deea1cb4009d63e306fdc610c2c",
+    "cohort_population_unchanged": true
+  },
+  "parents": [
+    {
+      "review_id": "M001",
+      "ordinal": 32,
+      "canonical_parent_key": "libero_spatial/task_02/state_31",
+      "status": "RUNTIME_INVALID_CONSUMED",
+      "scientific_evidence": false,
+      "rerun": false,
+      "replacement": false,
+      "source_commit": "c96f4079fa8c466160e6d07521e9f82cb34eb829",
+      "source_tree": "18cfe3263af6c79860aca3a2b1cd9141bf6bd16d",
+      "hold_report": "reports/STAGE_X_X1R_PRIMARY_MATRIX_CANARY_RUNTIME_HOLD_V1.json"
+    },
+    {
+      "review_id": "M002",
+      "ordinal": 34,
+      "canonical_parent_key": "libero_spatial/task_04/state_33",
+      "status": "RUNTIME_INVALID_CONSUMED",
+      "scientific_evidence": false,
+      "rerun": false,
+      "replacement": false,
+      "source_commit": "353d5594da430b30b16f6dd288155fa52a016c84",
+      "source_tree": "a7975415c5bff6e23170538007d4cd2060d5478f",
+      "hold_report": "reports/STAGE_X_X1R_G3R_M002_RUNTIME_HOLD_V1.json",
+      "exposure_correction": "reports/STAGE_X_X1R_V1_RUNTIME_EXPOSURE_CORRECTION_V1.json"
+    },
+    {
+      "review_id": "M008",
+      "ordinal": 35,
+      "status": "NEVER_STARTED",
+      "scientific_evidence": false,
+      "rerun": false,
+      "replacement": false
+    },
+    {
+      "review_id": "M009",
+      "ordinal": 36,
+      "status": "NEVER_STARTED",
+      "scientific_evidence": false,
+      "rerun": false,
+      "replacement": false
+    },
+    {
+      "review_id": "M010",
+      "ordinal": 37,
+      "status": "NEVER_STARTED",
+      "scientific_evidence": false,
+      "rerun": false,
+      "replacement": false
+    },
+    {
+      "review_id": "M011",
+      "ordinal": 38,
+      "status": "NEVER_STARTED",
+      "scientific_evidence": false,
+      "rerun": false,
+      "replacement": false
+    },
+    {
+      "review_id": "M014",
+      "ordinal": 41,
+      "status": "NEVER_STARTED",
+      "scientific_evidence": false,
+      "rerun": false,
+      "replacement": false
+    }
+  ],
+  "rules_preserved": {
+    "no_replacement": true,
+    "no_rerun": true,
+    "no_top_up": true,
+    "no_outcome_based_selection": true,
+    "no_vphys_read": true,
+    "no_eval160_read": true,
+    "no_protected_read": true
+  },
+  "interpretation": "V1 is an incomplete prospective attempt invalidated by runtime engineering failures; it is not a negative attack experiment and supplies no attack efficacy estimate.",
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "vphys_reads": 0,
+    "physical_interventions": 0,
+    "attack_outcome_reads": 0
+  },
+  "next_gate": "X1R2_Q0_AUTHORITATIVE_ATTACK_ENTRYPOINT"
+}

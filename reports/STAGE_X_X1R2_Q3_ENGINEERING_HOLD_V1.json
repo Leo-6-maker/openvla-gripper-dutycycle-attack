@@ -1,0 +1,72 @@
+{
+  "schema": "STAGE_X_X1R2_Q3_ENGINEERING_HOLD_V1",
+  "status": "STAGE_X_X1R2_Q3_HOLD_ARM_TOKEN_ISOLATION_AFTER_EXPOSURE",
+  "scope": "Q3 engineering-only excluded fixture qualification; not scientific evidence and not a prospective X1R2 result",
+  "authority": {
+    "q3_static_status": "STAGE_X_X1R2_Q3_ENGINEERING_STATIC_AUTHORITY_PASS",
+    "q3_static_source_commit": "10b5d24ca206f8d42b93950d7db5b46a7c5625ec",
+    "q3_static_source_tree": "106482d00584073252fb48e03895ea4712499cd0",
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "fixture": {
+    "fixture_id": "Q3-F01",
+    "review_id": "M007",
+    "canonical_parent_key": "libero_10/task_04/state_30",
+    "ordinal": 5,
+    "physical_gpu": 1,
+    "gpu_uuid": "GPU-f6910e5c-f41e-109e-43d0-f01f0d77dbf2",
+    "output_root": "/llm_jzm/dty_user/openvla_attack_x1r2_q3_20260819/fixtures/Q3-F01"
+  },
+  "failure": {
+    "stage": "TRUE_PGD_T5_ENGINEERING",
+    "step": 90,
+    "error": "RuntimeError:ARM_TOKEN_ISOLATION_FAIL:90",
+    "structural_valid": false,
+    "retry_authorized": false,
+    "continuation_authorized": false
+  },
+  "exposure": {
+    "model_inference_started": true,
+    "model_inference_calls": 91,
+    "policy_action_materialized": true,
+    "env_step_started": true,
+    "env_step_completed": true,
+    "rows_materialized": 90,
+    "attack_invocation_started": true,
+    "attack_result_returned": true,
+    "attack_result_accepted": true,
+    "loss_forward_count": 6,
+    "backward_invocation_count": 5,
+    "adversarial_decode_count": 1,
+    "attacked_action_materialized": true,
+    "attacked_env_step_started": false,
+    "attacked_env_step_completed": false,
+    "attack_outcome_reads": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0
+  },
+  "evidence": {
+    "branch_receipt_sha256": "ebcdaca22c01cee24a8ffc033e931b0dcd2b37aeb6f257936f50c3cf3cefc416",
+    "step_telemetry_sha256": "ef42e3d44ad1ff2c7f6babb9e15d9cbdef0b4261ba4f4903356b9f49c477af45",
+    "rollout_video_sha256": "2410f942452b137bcdf56324164247118c2c1a56339e9c51f307413ddbf02a11",
+    "clean_parent_receipt_sha256": "0c7694da168d605a4b8dfcb86159bd220acab78b7f65335a96d0dc644df87310"
+  },
+  "continuation": {
+    "q3_f01": "CONSUMED_RUNTIME_INVALID_NONRERUNNABLE",
+    "q3_f02": "NOT_STARTED",
+    "q3_f03": "NOT_STARTED",
+    "q3_f04": "NOT_STARTED",
+    "remaining_q3_fixtures": "SEALED_NOT_STARTED",
+    "next_gate": "OWNER_REVIEW_X1R2_Q3_STRUCTURAL_REPAIR_REQUIRED"
+  },
+  "scientific_boundary": {
+    "q3_engineering_result_consumable": false,
+    "x1r2_population_authority": "NOT_ISSUED",
+    "formal_attack_matrix_authorized": false,
+    "protected_boundary_violated": false
+  }
+}

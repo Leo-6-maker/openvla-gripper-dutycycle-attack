@@ -1638,8 +1638,20 @@ class OpenVLAVisualAttacker:
         if callable(reset):
             reset()
 
-    def attack(self, observation, instruction, clean_action, target_action, clean_model_output=None, *, unnorm_key: str = "libero_goal") -> AttackResult:
+    def attack(
+        self,
+        observation,
+        instruction,
+        clean_action,
+        target_action,
+        clean_model_output=None,
+        *,
+        unnorm_key: str = "libero_goal",
+        execution_trace: Optional[Dict[str, Any]] = None,
+    ) -> AttackResult:
         validate_attack_request(self.route, target_action_present=target_action is not None)
+        if execution_trace is not None:
+            execution_trace["attack_invocation_started"] = True
         if self.route.strict_route:
             result = self.adapter.attack(
                 observation,
@@ -1654,6 +1666,15 @@ class OpenVLAVisualAttacker:
                 result = self.adapter.attack(observation, instruction, clean_action, target_action, clean_model_output, unnorm_key=unnorm_key)
             except TypeError:
                 result = self.adapter.attack(observation, instruction, clean_action, target_action, clean_model_output)
+        if execution_trace is not None:
+            execution_trace["attack_result_returned"] = True
+            debug_returned = getattr(result, "debug", {}) or {}
+            for source, target in (
+                ("num_backwards", "backward_invocation_count"),
+                ("num_loss_forwards", "loss_forward_count"),
+            ):
+                if source in debug_returned:
+                    execution_trace[target] = int(debug_returned[source])
         fallback_reason = (result.debug or {}).get("fallback_reason")
         fallback_used = bool(self.resolved_adapter_class != "TokenPrefixPGDAttacker" or fallback_reason)
         result.debug = attach_route_debug(
@@ -1667,5 +1688,12 @@ class OpenVLAVisualAttacker:
         result.debug["x_adv_is_none"] = result.x_adv is None
         result.debug["action_adv_is_none"] = result.action_adv is None
         if self.route.strict_route:
-            validate_true_pgd_attack_result(result, self.route)
+            try:
+                validate_true_pgd_attack_result(result, self.route)
+            except Exception:
+                if execution_trace is not None:
+                    execution_trace["attack_result_accepted"] = False
+                raise
+        if execution_trace is not None:
+            execution_trace["attack_result_accepted"] = True
         return result

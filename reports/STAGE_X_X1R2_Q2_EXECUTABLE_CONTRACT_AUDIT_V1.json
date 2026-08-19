@@ -1,0 +1,46 @@
+{
+  "canonical_route_mock": {
+    "allow_fallback": false,
+    "strict_route": true,
+    "target_execution_class": "NATIVE_OPEN",
+    "target_token_id": 31745
+  },
+  "errors": [],
+  "failure_injection": {
+    "cases": 7,
+    "status": "PASS"
+  },
+  "next_gate": "STAGE_X_X1R2_Q3_ENGINEERING_ONLY_REAL_MODEL_QUALIFICATION",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "env_reset_calls": 0,
+    "env_step_calls": 0,
+    "eval160": "UNREAD",
+    "eval160_reads": 0,
+    "model_inference_calls": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_X_X1R2_Q2_EXECUTABLE_CONTRACT_AUDIT_V1",
+  "scope": "CPU/mock/failure-injection only; no checkpoint load, model inference, simulator reset/step, PGD outcome, V_phys, Eval160, or protected read",
+  "source": {
+    "branch": "codex/stage-x-x1r2-recovery-20260819",
+    "commit": "691293210be5b9e2f35060c230f089c3f27afe9e",
+    "status_porcelain": "",
+    "tree": "ecf0b791745fb6939006065514ba26d098e0ea3a"
+  },
+  "static_checks": {
+    "arm_isolation_literal": true,
+    "canonical_wrapper_only": true,
+    "durable_telemetry": true,
+    "execution_trace_passed": true,
+    "exposure_fields": true,
+    "full_episode_after_h_phys": true,
+    "native_open_constants": true,
+    "rand_zero_optimizer_steps": true
+  },
+  "status": "STAGE_X_X1R2_Q2_EXECUTABLE_CONTRACT_PASS"
+}

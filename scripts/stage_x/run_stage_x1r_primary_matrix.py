@@ -50,8 +50,18 @@ COUNTER_NAMES = (
     "env_step_calls",
     "pgd_calls",
     "attack_backward_calls",
+    "attack_invocation_count",
+    "attack_result_returned_count",
+    "attack_result_accepted_count",
+    "loss_forward_count",
+    "adversarial_decode_count",
     "adversarial_images",
     "attacked_env_steps",
+    "env_step_started_count",
+    "env_step_completed_count",
+    "attacked_env_step_started_count",
+    "attacked_env_step_completed_count",
+    "attacked_action_materialized_count",
     "physical_interventions",
     "vphys_reads",
     "attack_outcome_reads",
@@ -344,10 +354,23 @@ def append_telemetry(path: Path, row: Mapping[str, Any]) -> None:
 
 def initial_exposure() -> dict[str, Any]:
     return {
+        "model_inference_started": False,
         "policy_action_materialized": False,
+        "env_step_started": False,
         "first_env_step_executed": False,
+        "env_step_completed": False,
         "model_inference_calls": 0,
         "rows_materialized": 0,
+        "attack_invocation_started": False,
+        "attack_result_returned": False,
+        "attack_result_accepted": False,
+        "backward_invocation_count": 0,
+        "loss_forward_count": 0,
+        "adversarial_decode_started": False,
+        "adversarial_decode_count": 0,
+        "attacked_action_materialized": False,
+        "attacked_env_step_started": False,
+        "attacked_env_step_completed": False,
     }
 
 
@@ -356,8 +379,70 @@ def mark_policy_action_materialized(exposure: dict[str, Any], counters: dict[str
     counters["policy_action_materialized_count"] += 1
 
 
+def mark_model_inference_started(exposure: dict[str, Any]) -> None:
+    exposure["model_inference_started"] = True
+
+
+def mark_env_step_started(exposure: dict[str, Any], counters: dict[str, int], *, attacked: bool = False) -> None:
+    exposure["env_step_started"] = True
+    counters["env_step_started_count"] += 1
+    if attacked:
+        exposure["attacked_env_step_started"] = True
+        counters["attacked_env_step_started_count"] += 1
+
+
+def mark_env_step_completed(exposure: dict[str, Any], counters: dict[str, int], *, attacked: bool = False) -> None:
+    exposure["env_step_completed"] = True
+    exposure["first_env_step_executed"] = True
+    counters["env_step_completed_count"] += 1
+    if attacked:
+        exposure["attacked_env_step_completed"] = True
+        counters["attacked_env_step_completed_count"] += 1
+
+
 def mark_env_step_executed(exposure: dict[str, Any]) -> None:
     exposure["first_env_step_executed"] = True
+
+
+def mark_attack_invocation_started(exposure: dict[str, Any], counters: dict[str, int]) -> None:
+    exposure["attack_invocation_started"] = True
+    counters["attack_invocation_count"] += 1
+    counters["pgd_calls"] += 1
+
+
+def sync_attack_trace(exposure: dict[str, Any], counters: dict[str, int], trace: Mapping[str, Any]) -> None:
+    for key, counter in (
+        ("attack_invocation_started", None),
+        ("attack_result_returned", "attack_result_returned_count"),
+        ("attack_result_accepted", "attack_result_accepted_count"),
+    ):
+        if key in trace:
+            was_set = bool(exposure.get(key, False))
+            exposure[key] = bool(trace[key])
+            if key == "attack_invocation_started" and bool(trace[key]) and not was_set:
+                counters["attack_invocation_count"] += 1
+                counters["pgd_calls"] += 1
+            if counter is not None and bool(trace[key]) and not was_set:
+                counters[counter] += 1
+    for source, target, counter in (
+        ("backward_invocation_count", "backward_invocation_count", "attack_backward_calls"),
+        ("loss_forward_count", "loss_forward_count", "loss_forward_count"),
+    ):
+        if source in trace:
+            value = int(trace[source])
+            exposure[target] = value
+            counters[counter] += value
+
+
+def mark_adversarial_decode_started(exposure: dict[str, Any]) -> None:
+    exposure["adversarial_decode_started"] = True
+
+
+def mark_adversarial_decode_completed(exposure: dict[str, Any], counters: dict[str, int]) -> None:
+    exposure["adversarial_decode_count"] += 1
+    counters["adversarial_decode_count"] += 1
+    exposure["attacked_action_materialized"] = True
+    counters["attacked_action_materialized_count"] += 1
 
 
 def set_seed(seed: int) -> None:
@@ -406,9 +491,8 @@ def update_feature(adapter: Any, step: int, obs: Mapping[str, Any], decoded: Map
 
 
 def run_condition(parent: Mapping[str, Any], condition: str, model: Any, processor: Any, device: str, contract: Mapping[str, Any], protocol: Mapping[str, Any], physical_gpu: int, output: Path, arm_index: int) -> dict[str, Any]:
-    from gripper_attack.route_contract import route_config_from_attack_config, validate_attack_request, validate_true_pgd_attack_result
     from gripper_attack.d8_streaming_features_v3 import D8StreamingFeatureAdapterV3
-    from gripper_attack.attack_adapter import TokenPrefixPGDAttacker
+    from gripper_attack.attack_adapter import OpenVLAVisualAttacker
 
     suite = str(parent["suite"])
     key = str(parent["canonical_parent_key"])
@@ -441,7 +525,7 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
         adapter = D8StreamingFeatureAdapterV3()
         attacker = None
         if condition in {"TRUE_PGD_T5", "SHUFFLED_GRAD_T5"}:
-            attacker = TokenPrefixPGDAttacker(model, processor, build_attack_config(condition, seeds["perturb_seed"]), seed=seeds["perturb_seed"], preprocess_kwargs={"center_crop": True, "resize_size": 224, "libero_preprocess_backend": "official_pil_lanczos", "postprocess_gripper": True}, device=device)
+            attacker = OpenVLAVisualAttacker(model, processor, build_attack_config(condition, seeds["perturb_seed"]), seed=seeds["perturb_seed"], preprocess_kwargs={"center_crop": True, "resize_size": 224, "libero_preprocess_backend": "official_pil_lanczos", "postprocess_gripper": True}, device=device)
             attacker.reset_temporal_state()
 
         for step in range(horizon):
@@ -449,6 +533,7 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
             if raw_image.dtype != np.uint8:
                 raw_image = np.clip(raw_image, 0, 255).astype(np.uint8)
             writer.append_data(raw_image)
+            mark_model_inference_started(exposure)
             clean_prepared = prepare_generation(model, processor, raw_image, instruction, suite, device)
             counters["openvla_model_inference_calls"] += 1
             counters["model_inference_calls"] += 1
@@ -474,22 +559,24 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
                     draw_seed = perturb_rng.getrandbits(32)
                     adv_inputs, linf, delta_sha, correction_count = random_adv_inputs(clean_decoded["inputs"], draw_seed)
                     perturb_draw_index += 1
+                    mark_adversarial_decode_started(exposure)
                     executed = decode_from_inputs(model, adv_inputs, clean_decoded["prompt_len"], suite)
+                    mark_adversarial_decode_completed(exposure, counters)
                     attack_summary = {"condition": condition, "attack_executed": True, "route": "m3_controls.sample_processor_delta", "seed": seeds["perturb_seed"], "draw_seed": draw_seed, "draw_index": perturb_draw_index, "epsilon": EPSILON, "step_size": STEP_SIZE, "num_steps": 0, "temporal_attack_budget_frames": ATTACK_WINDOW, "optimizer_steps": 0, "pixel_linf": linf, "delta_sha256": delta_sha, "projection_correction_count": correction_count, "gradient_used": False}
                 else:
-                    result = attacker.attack(raw_image, instruction, clean_action=np.asarray(clean_decoded["raw_action_7d"], dtype=np.float32), target_action=np.asarray(clean_decoded["raw_action_7d"], dtype=np.float32), clean_model_output=clean_decoded["generated"], unnorm_key=suite)
-                    route = route_config_from_attack_config(build_attack_config(condition, seeds["perturb_seed"]))
-                    validate_attack_request(route, target_action_present=True)
-                    validate_true_pgd_attack_result(result, route)
+                    attack_trace: dict[str, Any] = {}
+                    try:
+                        result = attacker.attack(raw_image, instruction, clean_action=np.asarray(clean_decoded["raw_action_7d"], dtype=np.float32), target_action=np.asarray(clean_decoded["raw_action_7d"], dtype=np.float32), clean_model_output=clean_decoded["generated"], unnorm_key=suite, execution_trace=attack_trace)
+                    finally:
+                        sync_attack_trace(exposure, counters, attack_trace)
                     adv_inputs = result.debug["adv_inputs"]
+                    mark_adversarial_decode_started(exposure)
                     executed = decode_from_inputs(model, adv_inputs, clean_decoded["prompt_len"], suite)
-                    counters["pgd_calls"] += 1
-                    counters["attack_backward_calls"] += int((result.debug or {}).get("num_backwards", 0))
+                    mark_adversarial_decode_completed(exposure, counters)
                     attack_summary = {"condition": condition, "attack_executed": True, "seed": seeds["perturb_seed"], "temporal_attack_budget_frames": ATTACK_WINDOW, "optimizer_steps": ATTACK_STEPS, "route": summarize_attack(result)}
                 attack_tensor = persist_attack_tensor(output, step, condition, clean_decoded["inputs"], adv_inputs)
                 attack_summary["processor_tensor"] = attack_tensor
                 counters["adversarial_images"] += 1
-                counters["attacked_env_steps"] += 1
                 attack_delivered += 1
 
             clean_tokens = [int(x) for x in clean_decoded["tokens"]]
@@ -501,9 +588,12 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
             if attack_summary.get("attack_executed") and not arm_equal:
                 raise RuntimeError(f"ARM_TOKEN_ISOLATION_FAIL:{step}")
             env_action = np.asarray(executed["env_action_7d"], dtype=np.float32)
+            mark_env_step_started(exposure, counters, attacked=bool(attack_summary.get("attack_executed")))
             obs, reward, done, info = env.step(env_action.tolist())
             counters["env_step_calls"] += 1
-            mark_env_step_executed(exposure)
+            mark_env_step_completed(exposure, counters, attacked=bool(attack_summary.get("attack_executed")))
+            if attack_summary.get("attack_executed"):
+                counters["attacked_env_steps"] += 1
             next_rows_materialized = int(exposure["rows_materialized"]) + 1
             row = {
                 "step": step,
@@ -595,6 +685,7 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
             "first_env_step_executed": bool(exposure["first_env_step_executed"]),
             "model_inference_calls": int(exposure["model_inference_calls"]),
             "rows_materialized": int(exposure["rows_materialized"]),
+            "execution_exposure": dict(exposure),
             "raw_rollout_video": {"path": str(output / "rollout.mp4"), "sha256": sha256_file(output / "rollout.mp4"), "bytes": (output / "rollout.mp4").stat().st_size},
             "telemetry": {"path": str(telemetry_path), "sha256": sha256_file(telemetry_path), "rows": len(rows)},
             "runtime_source": source_receipt(),
@@ -627,6 +718,7 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
             "first_env_step_executed": bool(exposure["first_env_step_executed"]),
             "model_inference_calls": int(exposure["model_inference_calls"]),
             "rows_materialized": int(exposure["rows_materialized"]),
+            "execution_exposure": dict(exposure),
             "eval_seed": seeds["eval_seed"],
             "perturb_seed": seeds["perturb_seed"],
             "runtime_source": source_receipt(),
