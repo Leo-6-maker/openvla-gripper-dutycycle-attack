@@ -1,0 +1,46 @@
+{
+  "canonical_route_mock": {
+    "allow_fallback": false,
+    "strict_route": true,
+    "target_execution_class": "NATIVE_OPEN",
+    "target_token_id": 31745
+  },
+  "errors": [],
+  "failure_injection": {
+    "cases": 7,
+    "status": "PASS"
+  },
+  "next_gate": "STAGE_X_X1R2_Q3_ENGINEERING_ONLY_REAL_MODEL_QUALIFICATION",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "env_reset_calls": 0,
+    "env_step_calls": 0,
+    "eval160": "UNREAD",
+    "eval160_reads": 0,
+    "model_inference_calls": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_X_X1R2_Q2_EXECUTABLE_CONTRACT_AUDIT_V1",
+  "scope": "CPU/mock/failure-injection only; no checkpoint load, model inference, simulator reset/step, PGD outcome, V_phys, Eval160, or protected read",
+  "source": {
+    "branch": "codex/stage-x-x1r2-recovery-20260819",
+    "commit": "3f1693caaa30e1cc1fdf747cc69725d40a5a5092",
+    "status_porcelain": "M scripts/stage_x/run_stage_x1r_primary_matrix.py\n M src/gripper_attack/attack_adapter.py\n?? docs/handoffs/STAGE_X_X1R_V1_BLOCKED_CLOSURE_20260819.md\n?? reports/STAGE_X_X1R2_Q2_EXECUTABLE_CONTRACT_AUDIT_V1.json\n?? reports/STAGE_X_X1R_V1_FINAL_BLOCKED_CLOSURE_V1.json\n?? reports/STAGE_X_X1R_V1_RUNTIME_EXPOSURE_CORRECTION_V1.json\n?? scripts/stage_x/audit_stage_x1r2_q2_contract.py",
+    "tree": "2fa25c963b8cd156b6c97e6719b3b7b796214220"
+  },
+  "static_checks": {
+    "arm_isolation_literal": true,
+    "canonical_wrapper_only": true,
+    "durable_telemetry": true,
+    "execution_trace_passed": true,
+    "exposure_fields": true,
+    "full_episode_after_h_phys": true,
+    "native_open_constants": true,
+    "rand_zero_optimizer_steps": true
+  },
+  "status": "STAGE_X_X1R2_Q2_EXECUTABLE_CONTRACT_PASS"
+}
