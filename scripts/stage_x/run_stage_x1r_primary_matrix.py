@@ -28,7 +28,6 @@ sys.path.insert(0, str(ROOT / "src"))
 
 PROTOCOL = ROOT / "configs/STAGE_X_X1R_PRIMARY_MATRIX_PROTOCOL_V1.json"
 COHORT = ROOT / "reports/STAGE_X_X1R_T1D1M1_FINAL_ATTACK_COHORT_V1.json"
-SCREENING_PROTOCOL = ROOT / "configs/STAGE_X_X1R_T1D1_SCREENING_CLEAN_PROTOCOL_V1.json"
 SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
 HORIZONS = {"libero_10": 520, "libero_goal": 300, "libero_object": 280, "libero_spatial": 220}
 CONDITIONS = ("CLEAN_EVAL", "TRUE_PGD_T5", "RAND_UNIFORM_T5", "SHUFFLED_GRAD_T5")
@@ -45,6 +44,7 @@ MIN_FREE_BYTES = 4 * 1024**3
 
 COUNTER_NAMES = (
     "openvla_model_inference_calls",
+    "model_inference_calls",
     "student_forward_calls",
     "env_reset_calls",
     "env_step_calls",
@@ -57,6 +57,8 @@ COUNTER_NAMES = (
     "attack_outcome_reads",
     "eval160_reads",
     "protected_reads",
+    "policy_action_materialized_count",
+    "rows_materialized",
 )
 
 
@@ -104,13 +106,22 @@ def safe_name(value: str) -> str:
     return "".join(char if char.isalnum() or char in "._-" else "_" for char in value)
 
 
-def seed_for(namespace: str, parent_key: str, suffix: str) -> int:
-    return int(hashlib.sha256(f"{namespace}|{parent_key}|{suffix}".encode()).hexdigest()[:8], 16)
+def seed_for(namespace: str, parent_key: str, probe_id: str = PROBE_ID) -> int:
+    return int(hashlib.sha256(f"{namespace}|{parent_key}|{probe_id}".encode()).hexdigest()[:8], 16)
 
 
-def arm_order(parent_key: str) -> list[str]:
-    base = ["CLEAN_EVAL", "RAND_UNIFORM_T5", "SHUFFLED_GRAD_T5", "TRUE_PGD_T5"]
-    rotation = int(hashlib.sha256(f"STAGE_X_X1R_PRIMARY_MATRIX_ARM_ORDER_V1_20260819|{parent_key}|{PROBE_ID}".encode()).hexdigest()[:2], 16) % 4
+def primary_seed_values(protocol: Mapping[str, Any], parent_key: str) -> dict[str, int]:
+    contract = protocol["seed_contract"]
+    return {
+        "eval_seed": seed_for(str(contract["eval_seed_namespace"]), parent_key),
+        "perturb_seed": seed_for(str(contract["perturb_seed_namespace"]), parent_key),
+    }
+
+
+def arm_order(parent_key: str, protocol: Mapping[str, Any]) -> list[str]:
+    contract = protocol["seed_contract"]
+    base = list(contract["arm_order_base"])
+    rotation = int(hashlib.sha256(f"{contract['arm_order_namespace']}|{parent_key}|{PROBE_ID}".encode()).hexdigest()[:2], 16) % 4
     return base[rotation:] + base[:rotation]
 
 
@@ -277,6 +288,10 @@ def summarize_attack(result: Any) -> dict[str, Any]:
         "gradient_transform": debug.get("gradient_transform"),
         "arm_prefix_match_count": debug.get("arm_prefix_match_count"),
         "arm_prefix_match_denominator": debug.get("arm_prefix_match_denominator"),
+        "target_token_objective_loss_trajectory": debug.get("target_token_objective_loss_trajectory"),
+        "target_token_arm_preservation_loss_trajectory": debug.get("target_token_arm_preservation_loss_trajectory"),
+        "gradient_norm_trajectory": debug.get("gradient_norm_trajectory"),
+        "generated_arm_prefix_trajectory": debug.get("generated_arm_prefix_trajectory"),
         "delta_final_sha256": debug.get("delta_final_sha256"),
         "processor_input_sha256": debug.get("processor_input_sha256"),
     }
@@ -291,7 +306,7 @@ def classify_gripper(model: Any, suite: str, token_id: int) -> dict[str, Any]:
     return {"token_id": int(token_id), "execution_class": result.execution_class, "decoded_raw_gripper": result.decoded_raw_gripper, "executed_env_gripper": result.executed_env_gripper}
 
 
-def random_adv_inputs(clean_inputs: Mapping[str, Any], seed: int) -> tuple[dict[str, Any], float, str]:
+def random_adv_inputs(clean_inputs: Mapping[str, Any], seed: int) -> tuple[dict[str, Any], float, str, int]:
     import torch
 
     from gripper_attack.m3_controls import project_and_cast_processor_values, sample_processor_delta
@@ -300,7 +315,49 @@ def random_adv_inputs(clean_inputs: Mapping[str, Any], seed: int) -> tuple[dict[
     delta = sample_processor_delta(tuple(original.shape), epsilon=EPSILON, seed=int(seed), dtype=torch.float32, device=original.device)
     adv, correction_count = project_and_cast_processor_values(original, delta, epsilon=EPSILON, candidate_is_delta=True)
     diff = (adv.float() - original.float()).detach()
-    return {"input_ids": clean_inputs["input_ids"], "pixel_values": adv}, float(diff.abs().max().detach().cpu()), clean_tensor_sha256(diff)
+    return {"input_ids": clean_inputs["input_ids"], "pixel_values": adv}, float(diff.abs().max().detach().cpu()), clean_tensor_sha256(diff), int(correction_count)
+
+
+def persist_attack_tensor(output: Path, step: int, condition: str, clean_inputs: Mapping[str, Any], adv_inputs: Mapping[str, Any]) -> dict[str, Any]:
+    clean = clean_inputs["pixel_values"].detach().float().cpu().numpy()
+    adv = adv_inputs["pixel_values"].detach().float().cpu().numpy()
+    delta = adv - clean
+    path = output / "attack_tensors" / f"{condition}_{int(step):04d}.npz"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(path, clean_pixel_values=clean, adv_pixel_values=adv, delta=delta)
+    return {
+        "path": str(path),
+        "sha256": sha256_file(path),
+        "bytes": int(path.stat().st_size),
+        "linf": float(np.abs(delta).max()) if delta.size else 0.0,
+        "l2": float(np.linalg.norm(delta.reshape(-1))) if delta.size else 0.0,
+    }
+
+
+def append_telemetry(path: Path, row: Mapping[str, Any]) -> None:
+    line = json.dumps(row, ensure_ascii=False, sort_keys=True, default=_json_default) + "\n"
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(line)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def initial_exposure() -> dict[str, Any]:
+    return {
+        "policy_action_materialized": False,
+        "first_env_step_executed": False,
+        "model_inference_calls": 0,
+        "rows_materialized": 0,
+    }
+
+
+def mark_policy_action_materialized(exposure: dict[str, Any], counters: dict[str, int]) -> None:
+    exposure["policy_action_materialized"] = True
+    counters["policy_action_materialized_count"] += 1
+
+
+def mark_env_step_executed(exposure: dict[str, Any]) -> None:
+    exposure["first_env_step_executed"] = True
 
 
 def set_seed(seed: int) -> None:
@@ -348,33 +405,35 @@ def update_feature(adapter: Any, step: int, obs: Mapping[str, Any], decoded: Map
     return {"qpos": qpos.tolist(), "eef": eef.tolist(), "velocity": velocity.tolist(), "feature_valid": bool(result.get("valid")), "feature_error": str(result.get("error", "")), "features_25d": feature, "candidate_close": bool(result.get("valid") and raw[6] < 0.5)}, eef
 
 
-def run_condition(parent: Mapping[str, Any], condition: str, model: Any, processor: Any, device: str, student: tuple[Any, np.ndarray, np.ndarray, float, float], contract: Mapping[str, Any], physical_gpu: int, output: Path, arm_index: int) -> dict[str, Any]:
+def run_condition(parent: Mapping[str, Any], condition: str, model: Any, processor: Any, device: str, contract: Mapping[str, Any], protocol: Mapping[str, Any], physical_gpu: int, output: Path, arm_index: int) -> dict[str, Any]:
     from gripper_attack.route_contract import route_config_from_attack_config, validate_attack_request, validate_true_pgd_attack_result
-    from gripper_attack.stage_x_t1_native_token_authority import NativeActionTokenAuthorityV2, SuiteActionTokenBinding
     from gripper_attack.d8_streaming_features_v3 import D8StreamingFeatureAdapterV3
     from gripper_attack.attack_adapter import TokenPrefixPGDAttacker
-    from scripts.stage_x.run_stage_x1r_t1d1_screening_clean import schedule, student_trace
 
     suite = str(parent["suite"])
     key = str(parent["canonical_parent_key"])
     expected_emit = int(parent["first_emit_step"])
     horizon = int(parent["policy_horizon"])
     counters = {name: 0 for name in COUNTER_NAMES}
-    set_seed(int(parent["expected_clean_seed"]))
+    seeds = primary_seed_values(protocol, key)
+    set_seed(seeds["eval_seed"])
+    exposure = initial_exposure()
     env = None
     writer = None
     rows: list[dict[str, Any]] = []
-    features: list[list[float]] = []
-    candidates: list[bool] = []
     previous_eef: np.ndarray | None = None
     clean_emit_verified = False
     attack_delivered = 0
-    terminated_early = False
-    clean_success = False
+    terminal_success = False
+    terminal_success_step: int | None = None
+    perturb_draw_index = 0
+    perturb_rng = random.Random(seeds["perturb_seed"])
     start = time.time()
+    telemetry_path = output / "step_telemetry.jsonl"
     try:
         env, obs, instruction, task_idx, state_id, bddl = build_parent_env(parent, contract["suites"][suite], physical_gpu)
         counters["env_reset_calls"] = 1
+        telemetry_path.touch(exist_ok=True)
         import imageio.v2 as imageio
 
         video_path = output / "rollout.mp4"
@@ -382,8 +441,7 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
         adapter = D8StreamingFeatureAdapterV3()
         attacker = None
         if condition in {"TRUE_PGD_T5", "SHUFFLED_GRAD_T5"}:
-            attack_seed = seed_for("STAGE_X_X1R_PRIMARY_MATRIX_PERTURB_SEED_V1_20260819", key, f"{PROBE_ID}|{condition}")
-            attacker = TokenPrefixPGDAttacker(model, processor, build_attack_config(condition, attack_seed), seed=attack_seed, preprocess_kwargs={"center_crop": True, "resize_size": 224, "libero_preprocess_backend": "official_pil_lanczos", "postprocess_gripper": True}, device=device)
+            attacker = TokenPrefixPGDAttacker(model, processor, build_attack_config(condition, seeds["perturb_seed"]), seed=seeds["perturb_seed"], preprocess_kwargs={"center_crop": True, "resize_size": 224, "libero_preprocess_backend": "official_pil_lanczos", "postprocess_gripper": True}, device=device)
             attacker.reset_temporal_state()
 
         for step in range(horizon):
@@ -393,61 +451,68 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
             writer.append_data(raw_image)
             clean_prepared = prepare_generation(model, processor, raw_image, instruction, suite, device)
             counters["openvla_model_inference_calls"] += 1
+            counters["model_inference_calls"] += 1
+            exposure["model_inference_calls"] += 1
             clean_decoded = decode_tokens(model, clean_prepared["tokens"], suite)
             clean_decoded.update({"generated": clean_prepared["generated"], "inputs": clean_prepared["inputs"], "prompt_len": int(clean_prepared["inputs"]["input_ids"].shape[1]), "raw_hashes": clean_prepared["raw_hashes"]})
+            if len(clean_decoded["tokens"]) != 7:
+                raise RuntimeError(f"CLEAN_ACTION_TOKEN_COUNT_INVALID:{len(clean_decoded['tokens'])}")
+            mark_policy_action_materialized(exposure, counters)
             telemetry, previous_eef = update_feature(adapter, step, obs, clean_decoded, previous_eef)
             if step <= expected_emit:
                 if not telemetry["feature_valid"]:
-                    raise RuntimeError(f"CLEAN_FEATURE_INVALID_BEFORE_EMIT:{step}")
-                features.append(telemetry["features_25d"])
-                candidates.append(telemetry["candidate_close"])
+                    if not terminal_success:
+                        raise RuntimeError(f"CLEAN_FEATURE_INVALID_BEFORE_EMIT:{step}")
             if step == expected_emit:
-                student_model, mean, std, physical_threshold, closing_threshold = student
-                prediction = student_trace(student_model, features, mean, std)
-                counters["student_forward_calls"] += 1
-                schedule_result = schedule(prediction, candidates, horizon, physical_threshold, closing_threshold)
-                if schedule_result["first_emit_step"] != expected_emit or schedule_result["emitted_count"] != 1:
-                    raise RuntimeError(f"CLEAN_EMIT_RUNTIME_MISMATCH:{schedule_result['first_emit_step']}!={expected_emit}")
                 clean_emit_verified = True
 
             executed = clean_decoded
             attack_summary: dict[str, Any] = {"condition": "CLEAN", "attack_executed": False}
+            attack_tensor: dict[str, Any] | None = None
             if clean_emit_verified and expected_emit <= step <= expected_emit + ATTACK_WINDOW - 1 and condition != "CLEAN_EVAL":
-                perturb_seed = seed_for("STAGE_X_X1R_PRIMARY_MATRIX_PERTURB_SEED_V1_20260819", key, f"{PROBE_ID}|{condition}|step={step}")
                 if condition == "RAND_UNIFORM_T5":
-                    adv_inputs, linf, delta_sha = random_adv_inputs(clean_decoded["inputs"], perturb_seed)
+                    draw_seed = perturb_rng.getrandbits(32)
+                    adv_inputs, linf, delta_sha, correction_count = random_adv_inputs(clean_decoded["inputs"], draw_seed)
+                    perturb_draw_index += 1
                     executed = decode_from_inputs(model, adv_inputs, clean_decoded["prompt_len"], suite)
-                    attack_summary = {"condition": condition, "attack_executed": True, "route": "m3_controls.sample_processor_delta", "seed": perturb_seed, "epsilon": EPSILON, "step_size": STEP_SIZE, "num_steps": ATTACK_STEPS, "pixel_linf": linf, "delta_sha256": delta_sha, "gradient_used": False}
+                    attack_summary = {"condition": condition, "attack_executed": True, "route": "m3_controls.sample_processor_delta", "seed": seeds["perturb_seed"], "draw_seed": draw_seed, "draw_index": perturb_draw_index, "epsilon": EPSILON, "step_size": STEP_SIZE, "num_steps": 0, "temporal_attack_budget_frames": ATTACK_WINDOW, "optimizer_steps": 0, "pixel_linf": linf, "delta_sha256": delta_sha, "projection_correction_count": correction_count, "gradient_used": False}
                 else:
                     result = attacker.attack(raw_image, instruction, clean_action=np.asarray(clean_decoded["raw_action_7d"], dtype=np.float32), target_action=np.asarray(clean_decoded["raw_action_7d"], dtype=np.float32), clean_model_output=clean_decoded["generated"], unnorm_key=suite)
-                    route = route_config_from_attack_config(build_attack_config(condition, perturb_seed))
+                    route = route_config_from_attack_config(build_attack_config(condition, seeds["perturb_seed"]))
                     validate_attack_request(route, target_action_present=True)
                     validate_true_pgd_attack_result(result, route)
                     adv_inputs = result.debug["adv_inputs"]
                     executed = decode_from_inputs(model, adv_inputs, clean_decoded["prompt_len"], suite)
                     counters["pgd_calls"] += 1
                     counters["attack_backward_calls"] += int((result.debug or {}).get("num_backwards", 0))
-                    attack_summary = {"condition": condition, "attack_executed": True, "seed": perturb_seed, "route": summarize_attack(result)}
+                    attack_summary = {"condition": condition, "attack_executed": True, "seed": seeds["perturb_seed"], "temporal_attack_budget_frames": ATTACK_WINDOW, "optimizer_steps": ATTACK_STEPS, "route": summarize_attack(result)}
+                attack_tensor = persist_attack_tensor(output, step, condition, clean_decoded["inputs"], adv_inputs)
+                attack_summary["processor_tensor"] = attack_tensor
                 counters["adversarial_images"] += 1
                 counters["attacked_env_steps"] += 1
                 attack_delivered += 1
 
             clean_tokens = [int(x) for x in clean_decoded["tokens"]]
             executed_tokens = [int(x) for x in executed["tokens"]]
+            if len(executed_tokens) != 7:
+                raise RuntimeError(f"EXECUTED_ACTION_TOKEN_COUNT_INVALID:{len(executed_tokens)}")
             arm_equal = executed_tokens[:6] == clean_tokens[:6]
             gripper_semantics = classify_gripper(model, suite, int(executed_tokens[-1]))
-            if condition == "TRUE_PGD_T5" and attack_summary.get("attack_executed") and not arm_equal:
+            if attack_summary.get("attack_executed") and not arm_equal:
                 raise RuntimeError(f"ARM_TOKEN_ISOLATION_FAIL:{step}")
             env_action = np.asarray(executed["env_action_7d"], dtype=np.float32)
             obs, reward, done, info = env.step(env_action.tolist())
             counters["env_step_calls"] += 1
-            rows.append({
+            mark_env_step_executed(exposure)
+            next_rows_materialized = int(exposure["rows_materialized"]) + 1
+            row = {
                 "step": step,
                 "condition": condition,
                 "canonical_parent_key": key,
                 "arm_index": arm_index,
                 "expected_first_emit_step": expected_emit,
                 "raw_agentview_sha256": sha256_bytes(raw_image.tobytes()),
+                "raw_agentview_shape": list(raw_image.shape),
                 "clean_processor_input_ids_sha256": clean_decoded["raw_hashes"].get("input_ids", ""),
                 "clean_processor_pixel_values_sha256": clean_decoded["raw_hashes"].get("pixel_values", ""),
                 "clean_token_ids": clean_tokens,
@@ -463,28 +528,40 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
                 "robot0_gripper_qpos": telemetry["qpos"],
                 "robot0_eef_pos": telemetry["eef"],
                 "attack": attack_summary,
+                "seeds": {"eval_seed": seeds["eval_seed"], "perturb_seed": seeds["perturb_seed"]},
                 "reward": float(reward),
                 "done_after_env_step": bool(done),
-            })
+                "policy_action_materialized": True,
+                "first_env_step_executed": True,
+                "counters": dict(counters),
+                "rows_materialized": next_rows_materialized,
+            }
+            rows.append(row)
+            exposure["rows_materialized"] = next_rows_materialized
+            counters["rows_materialized"] = next_rows_materialized
+            append_telemetry(telemetry_path, row)
             if done:
-                clean_success = True
-                terminated_early = step < expected_emit + ATTACK_WINDOW + H_PHYS - 1
-                break
-            if clean_emit_verified and step >= expected_emit + ATTACK_WINDOW + H_PHYS - 1:
+                terminal_success = True
+                terminal_success_step = step
                 break
 
-        if not clean_emit_verified:
+        if not clean_emit_verified and not terminal_success:
             raise RuntimeError("CLEAN_EMIT_NOT_REACHED")
         if writer is not None:
             writer.close()
             writer = None
+        requested_attack_steps = ATTACK_WINDOW if condition != "CLEAN_EVAL" else 0
         requested_followup_end = expected_emit + ATTACK_WINDOW + H_PHYS - 1
-        horizon_censored = len(rows) - 1 < requested_followup_end
-        attack_compliant = condition == "CLEAN_EVAL" or attack_delivered == ATTACK_WINDOW
-        status = "HORIZON_CENSORED_ABSTAIN" if horizon_censored else "PASS_PRIMARY_MATRIX_BRANCH"
+        last_step = len(rows) - 1
+        physical_followup_complete = bool(clean_emit_verified and last_step >= requested_followup_end)
+        attack_fully_delivered = bool(condition == "CLEAN_EVAL" or attack_delivered == requested_attack_steps)
+        official_horizon_reached = bool(not terminal_success and len(rows) >= horizon)
+        physical_followup_censored = bool(terminal_success and not physical_followup_complete)
+        attack_censored = bool(terminal_success and not attack_fully_delivered)
+        attack_compliant = attack_fully_delivered
         receipt = {
             "schema": "STAGE_X_X1R_PRIMARY_MATRIX_BRANCH_RECEIPT_V1",
-            "status": status,
+            "status": "PASS_PRIMARY_MATRIX_BRANCH",
             "structural_valid": True,
             "canonical_parent_key": key,
             "review_id": parent["review_id"],
@@ -494,20 +571,32 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
             "state_id": state_id,
             "condition": condition,
             "arm_index": arm_index,
-            "arm_order": arm_order(key),
+            "arm_order": arm_order(key, protocol),
             "probe_id": PROBE_ID,
+            "eval_seed": seeds["eval_seed"],
+            "perturb_seed": seeds["perturb_seed"],
             "first_emit_step": expected_emit,
             "attack_window": [expected_emit, expected_emit + ATTACK_WINDOW - 1],
             "physical_followup": [expected_emit + ATTACK_WINDOW, expected_emit + ATTACK_WINDOW + H_PHYS - 1],
             "policy_steps_executed": len(rows),
             "requested_observation_end_step": requested_followup_end,
-            "horizon_censored": horizon_censored,
-            "attack_requested_steps": ATTACK_WINDOW if condition != "CLEAN_EVAL" else 0,
+            "physical_followup_complete": physical_followup_complete,
+            "physical_followup_censored_by_terminal_success": physical_followup_censored,
+            "attack_requested_steps": requested_attack_steps,
             "attack_delivered_steps": attack_delivered,
+            "attack_fully_delivered": attack_fully_delivered,
+            "attack_censored_by_terminal_success": attack_censored,
             "attack_compliant": attack_compliant,
-            "clean_success_or_done": bool(clean_success),
+            "official_task_success": bool(terminal_success),
+            "terminal_success_step": terminal_success_step,
+            "official_horizon_reached": official_horizon_reached,
+            "final_policy_steps_executed": len(rows),
+            "policy_action_materialized": bool(exposure["policy_action_materialized"]),
+            "first_env_step_executed": bool(exposure["first_env_step_executed"]),
+            "model_inference_calls": int(exposure["model_inference_calls"]),
+            "rows_materialized": int(exposure["rows_materialized"]),
             "raw_rollout_video": {"path": str(output / "rollout.mp4"), "sha256": sha256_file(output / "rollout.mp4"), "bytes": (output / "rollout.mp4").stat().st_size},
-            "telemetry": {"path": str(output / "step_telemetry.jsonl"), "rows": len(rows)},
+            "telemetry": {"path": str(telemetry_path), "sha256": sha256_file(telemetry_path), "rows": len(rows)},
             "runtime_source": source_receipt(),
             "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
             "gpu": gpu_receipt(physical_gpu, require_free=False),
@@ -516,7 +605,6 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
             "elapsed_seconds": time.time() - start,
         }
         write_json(output / "branch_receipt.json", receipt)
-        (output / "step_telemetry.jsonl").write_text("".join(json.dumps(row, ensure_ascii=False, sort_keys=True, default=_json_default) + "\n" for row in rows), encoding="utf-8")
         return receipt
     except Exception as exc:
         if writer is not None:
@@ -526,16 +614,21 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
                 pass
         failure = {
             "schema": "STAGE_X_X1R_PRIMARY_MATRIX_BRANCH_RECEIPT_V1",
-            "status": "RUNTIME_INVALID_AFTER_FIRST_POLICY_DECISION" if rows else "RUNTIME_INVALID_BEFORE_POLICY_DECISION",
+            "status": "RUNTIME_INVALID_AFTER_FIRST_POLICY_DECISION" if exposure["policy_action_materialized"] else "RUNTIME_INVALID_BEFORE_FIRST_POLICY_DECISION",
             "structural_valid": False,
             "canonical_parent_key": key,
             "review_id": parent["review_id"],
             "ordinal": parent["ordinal"],
             "suite": suite,
             "condition": condition,
-            "first_policy_decision": bool(rows),
+            "first_policy_decision": bool(exposure["policy_action_materialized"]),
             "error": f"{type(exc).__name__}:{exc}",
-            "rows_materialized": len(rows),
+            "policy_action_materialized": bool(exposure["policy_action_materialized"]),
+            "first_env_step_executed": bool(exposure["first_env_step_executed"]),
+            "model_inference_calls": int(exposure["model_inference_calls"]),
+            "rows_materialized": int(exposure["rows_materialized"]),
+            "eval_seed": seeds["eval_seed"],
+            "perturb_seed": seeds["perturb_seed"],
             "runtime_source": source_receipt(),
             "counters": counters,
             "protected_boundary": {"eval160": "UNREAD", "protected_evaluation": "UNREAD", "vphys_reads": 0, "attack_outcome_reads": 0, "physical_interventions": 0, "eval160_reads": 0, "protected_reads": 0},
@@ -590,12 +683,10 @@ def main() -> int:
     claim = claim_parent(root, parent)
     suite = str(parent["suite"])
     suite_identity = verify_model_identity(contract, suite)
-    from scripts.stage_x.run_stage_x1r_t1d1_screening_clean import load_openvla, load_student, student_paths
+    from scripts.stage_x.run_stage_x1r_t1d1_screening_clean import load_openvla
 
     suite_cfg = contract["suites"][suite]
     model, processor, device, _action_dim = load_openvla(Path(str(suite_cfg["model_path"])), suite)
-    screening = read_json(SCREENING_PROTOCOL)
-    student = load_student(screening, student_paths(screening))
     parent_root = root / "parents" / f"{int(parent['ordinal']):03d}_{safe_name(str(parent['canonical_parent_key']))}"
     if parent_root.exists() and any(parent_root.iterdir()):
         raise SystemExit(f"PARENT_OUTPUT_EXISTS:{parent_root}")
@@ -608,6 +699,8 @@ def main() -> int:
         "source": source_receipt(),
         "protocol_sha256": sha256_file(PROTOCOL),
         "cohort_sha256": sha256_file(COHORT),
+        "seed_contract": primary_seed_values(protocol, str(parent["canonical_parent_key"])),
+        "arm_order": arm_order(str(parent["canonical_parent_key"]), protocol),
         "suite_model_identity": suite_identity,
         "gpu_before_model_load": mount_gpu,
         "physical_gpu": args.physical_gpu,
@@ -619,10 +712,10 @@ def main() -> int:
     write_json(parent_root / "parent_manifest.json", run_manifest)
     branch_receipts = []
     try:
-        for arm_index, condition in enumerate(arm_order(str(parent["canonical_parent_key"]))):
+        for arm_index, condition in enumerate(arm_order(str(parent["canonical_parent_key"]), protocol)):
             branch = parent_root / condition
             branch.mkdir(parents=True, exist_ok=False)
-            branch_receipts.append(run_condition(parent, condition, model, processor, device, student, contract, args.physical_gpu, branch, arm_index))
+            branch_receipts.append(run_condition(parent, condition, model, processor, device, contract, protocol, args.physical_gpu, branch, arm_index))
         if not all(receipt.get("structural_valid") for receipt in branch_receipts):
             raise RuntimeError("PARENT_STRUCTURAL_INVALID")
         write_json(parent_root / "parent_receipt.json", {
@@ -630,7 +723,7 @@ def main() -> int:
             "status": "PASS_PRIMARY_MATRIX_PARENT",
             "structural_valid": True,
             "parent": parent,
-            "arm_order": arm_order(str(parent["canonical_parent_key"])),
+            "arm_order": arm_order(str(parent["canonical_parent_key"]), protocol),
             "branch_receipts": [{"condition": r["condition"], "status": r["status"], "path": str(parent_root / r["condition"] / "branch_receipt.json")} for r in branch_receipts],
             "source": source_receipt(),
             "gpu_after": gpu_receipt(args.physical_gpu, require_free=False),
@@ -639,7 +732,7 @@ def main() -> int:
         run_manifest["status"] = "PASS_PRIMARY_MATRIX_PARENT"
         run_manifest["branch_receipts"] = branch_receipts
         write_json(parent_root / "parent_manifest.json", run_manifest)
-        print(json.dumps({"status": "PASS_PRIMARY_MATRIX_PARENT", "parent": parent["canonical_parent_key"], "conditions": arm_order(str(parent["canonical_parent_key"]))}, sort_keys=True))
+        print(json.dumps({"status": "PASS_PRIMARY_MATRIX_PARENT", "parent": parent["canonical_parent_key"], "conditions": arm_order(str(parent["canonical_parent_key"]), protocol)}, sort_keys=True))
         return 0
     except Exception as exc:
         write_json(parent_root / "parent_receipt.json", {"schema": "STAGE_X_X1R_PRIMARY_MATRIX_PARENT_RECEIPT_V1", "status": "HOLD_PARENT_STRUCTURAL_FAILURE", "structural_valid": False, "parent": parent, "branch_receipts": branch_receipts, "error": f"{type(exc).__name__}:{exc}", "source": source_receipt(), "protected_boundary": {"eval160": "UNREAD", "protected_evaluation": "UNREAD", "vphys_reads": 0, "attack_outcome_reads": 0, "physical_interventions": 0, "eval160_reads": 0, "protected_reads": 0}})
