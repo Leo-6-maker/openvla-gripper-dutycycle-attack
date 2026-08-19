@@ -122,7 +122,6 @@ def main() -> int:
     if source["status_porcelain"]:
         raise SystemExit("WORKTREE_NOT_CLEAN")
     durable = durable_preflight(args.output_root)
-    gpu = primary.gpu_receipt(args.physical_gpu, require_free=True)
     contract = read_json(VICTIM_CONTRACT)
     if sha256_file(VICTIM_CONTRACT) != protocol["victim_contract"]["sha256"]:
         raise SystemExit("VICTIM_CONTRACT_SHA_MISMATCH")
@@ -136,6 +135,7 @@ def main() -> int:
     student_paths = D1.student_paths(d1_protocol)
     student = D1.load_student(d1_protocol, student_paths)
     suite_cfg = contract["suites"][suite]
+    gpu = primary.gpu_receipt(args.physical_gpu, require_free=True)
     model, processor, device, action_dim = D1.load_openvla(Path(str(suite_cfg["model_path"])), suite)
     parent = dict(fixture)
     parent["legal_horizon"] = True
