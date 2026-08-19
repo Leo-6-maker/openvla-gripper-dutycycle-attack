@@ -1,0 +1,70 @@
+{
+  "env_step": false,
+  "errors": [],
+  "eval160": "UNREAD",
+  "model_inference": false,
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "pgd_calls": 0,
+  "physical_interventions": 0,
+  "protected_evaluation": "UNREAD",
+  "rows": [
+    {
+      "endpoint_compatibility_execution_class": "CLIP_MEDIATED_OPEN",
+      "endpoint_compatibility_token_id": 31744,
+      "model_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+      "n_action_bins": 256,
+      "native_authority_open_token_id": 31744,
+      "suite": "libero_10",
+      "target_decoded_raw_gripper": 0.9960784316062927,
+      "target_executed_env_gripper": -1.0,
+      "target_execution_class": "NATIVE_OPEN",
+      "target_token_id": 31745,
+      "tokenizer_vocab_size": 32000
+    },
+    {
+      "endpoint_compatibility_execution_class": "CLIP_MEDIATED_OPEN",
+      "endpoint_compatibility_token_id": 31744,
+      "model_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+      "n_action_bins": 256,
+      "native_authority_open_token_id": 31744,
+      "suite": "libero_goal",
+      "target_decoded_raw_gripper": 0.9960784316062927,
+      "target_executed_env_gripper": -1.0,
+      "target_execution_class": "NATIVE_OPEN",
+      "target_token_id": 31745,
+      "tokenizer_vocab_size": 32000
+    },
+    {
+      "endpoint_compatibility_execution_class": "CLIP_MEDIATED_OPEN",
+      "endpoint_compatibility_token_id": 31744,
+      "model_path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+      "n_action_bins": 256,
+      "native_authority_open_token_id": 31744,
+      "suite": "libero_object",
+      "target_decoded_raw_gripper": 0.9960784316062927,
+      "target_executed_env_gripper": -1.0,
+      "target_execution_class": "NATIVE_OPEN",
+      "target_token_id": 31745,
+      "tokenizer_vocab_size": 32000
+    },
+    {
+      "endpoint_compatibility_execution_class": "CLIP_MEDIATED_OPEN",
+      "endpoint_compatibility_token_id": 31744,
+      "model_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620",
+      "n_action_bins": 256,
+      "native_authority_open_token_id": 31744,
+      "suite": "libero_spatial",
+      "target_decoded_raw_gripper": 0.9960784316062927,
+      "target_executed_env_gripper": -1.0,
+      "target_execution_class": "NATIVE_OPEN",
+      "target_token_id": 31745,
+      "tokenizer_vocab_size": 32000
+    }
+  ],
+  "schema": "STAGE_X_X1R_TARGET_TOKEN_CPU_SEMANTICS_V1",
+  "runtime_source_commit": "ff9e689eb05d26b828779a0c0f205ba3470a6218",
+  "runtime_source_tree": "d1d146791fef341d3145a9584c83b9298eec02c4",
+  "audit_script_sha256": "7a0c3c7444cb627f595bf7e47527cecddc5f5a0e36d42d983e3c1240ccae4d09",
+  "status": "PASS_31745_NATIVE_OPEN",
+  "vphys_reads": 0
+}

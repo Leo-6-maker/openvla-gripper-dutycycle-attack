@@ -1,0 +1,99 @@
+{
+  "schema": "STAGE_X_X1R_G3R_M002_RUNTIME_HOLD_V1",
+  "status": "STAGE_X_X1R_G3R_M002_RUNTIME_INVALID",
+  "decision": "M002_CONSUMED_NO_RERUN_NO_REPLACEMENT_NO_CONTINUATION",
+  "review_id": "M002",
+  "ordinal": 34,
+  "canonical_parent_key": "libero_spatial/task_04/state_33",
+  "suite": "libero_spatial",
+  "first_emit_step": 72,
+  "policy_horizon": 220,
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "runtime_source": {
+    "commit": "353d5594da430b30b16f6dd288155fa52a016c84",
+    "tree": "a7975415c5bff6e23170538007d4cd2060d5478f",
+    "status_porcelain": ""
+  },
+  "protocol_binding": {
+    "protocol_sha256": "37701fd8f4da1d7fc67d7c4adc776b957975a5735c66557c2385dbf21da5dea8",
+    "cohort_sha256": "7b6d4d52ccf2f4e11ba241d5a8f4290863b786ffe33882c886d96edc28825423",
+    "seed_ledger_sha256": "acd10753d52d40f26a5bbc8a0828dcecba35fd80407432f105c361f92cd90f3e",
+    "eval_seed": 2819561587,
+    "perturb_seed": 3254547160,
+    "arm_order": [
+      "TRUE_PGD_T5",
+      "CLEAN_EVAL",
+      "RAND_UNIFORM_T5",
+      "SHUFFLED_GRAD_T5"
+    ]
+  },
+  "execution": {
+    "physical_gpu": 1,
+    "cuda_visible_devices": "1",
+    "output_root": "/llm_jzm/dty_user/openvla_attack_x1r_primary_20260819",
+    "claim_path": "/llm_jzm/dty_user/openvla_attack_x1r_primary_20260819/claims/034_libero_spatial_task_04_state_33.claim",
+    "first_attempted_arm": "TRUE_PGD_T5",
+    "attempted_arm_index": 0,
+    "status": "RUNTIME_INVALID_AFTER_FIRST_POLICY_DECISION",
+    "error": "RouteContractError:strict route result missing strict_route=True",
+    "failure_boundary": "before_attack_result_acceptance_and_before_attacked_env_step",
+    "remaining_arms_started": false,
+    "automatic_retry": false
+  },
+  "exposure": {
+    "policy_action_materialized": true,
+    "first_env_step_executed": true,
+    "model_inference_calls": 73,
+    "rows_materialized": 72,
+    "env_reset_calls": 1,
+    "env_step_calls": 72,
+    "student_forward_calls": 0,
+    "pgd_calls": 0,
+    "attack_backward_calls": 0,
+    "adversarial_images": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0
+  },
+  "root_cause_audit": {
+    "runner_path": "scripts/stage_x/run_stage_x1r_primary_matrix.py directly constructs TokenPrefixPGDAttacker and calls attacker.attack",
+    "route_metadata_owner": "OpenVLAVisualAttacker.attack attaches route debug and validates strict results",
+    "contract_failure": "direct TokenPrefixPGDAttacker result did not carry debug.strict_route=True before runner validation",
+    "scientific_interpretation": "runtime/protocol conformance failure only; no attack outcome or V_phys label was produced",
+    "repair_authorized": false,
+    "source_mutation_after_failure": false
+  },
+  "remote_artifacts": {
+    "claim_sha256": "3136453896103296828654ac267beaf60fc9f40c2e574d1fdef2b426cefd14c2",
+    "parent_manifest_sha256": "f656d7b044782b5d5aaba9f9114bce7b017c1b8a61114810ea6ac74296369ddc",
+    "parent_receipt_sha256": "387ccb4a85deb5956d80c41519dd6fd8f2457b5c39b0bb7399397c9193a86f50",
+    "branch_receipt_sha256": "07b00e4e665f069ee403bbb87de38a127d23a9749278a3d981377ff54c6f7890",
+    "telemetry_sha256": "329f26a24e1dce41cde56fd607a8d4c377a2a2f246e2965c92ed838a8cea493d",
+    "rollout_video_sha256": "073e3c2c16b5ad7cd0fc5b964b6d4bd367d6520f50e0735ddec5febf73a01608",
+    "claim_path": "/llm_jzm/dty_user/openvla_attack_x1r_primary_20260819/claims/034_libero_spatial_task_04_state_33.claim",
+    "parent_receipt_path": "/llm_jzm/dty_user/openvla_attack_x1r_primary_20260819/parents/034_libero_spatial_task_04_state_33/parent_receipt.json",
+    "branch_receipt_path": "/llm_jzm/dty_user/openvla_attack_x1r_primary_20260819/parents/034_libero_spatial_task_04_state_33/TRUE_PGD_T5/branch_receipt.json"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0
+  },
+  "continuation": {
+    "M001": "IMMUTABLE_RUNTIME_INVALID",
+    "M002": "IMMUTABLE_RUNTIME_INVALID",
+    "M008": "NOT_STARTED",
+    "M009": "NOT_STARTED",
+    "M010": "NOT_STARTED",
+    "M011": "NOT_STARTED",
+    "M014": "NOT_STARTED",
+    "next_gate": "OWNER_REVIEW_M002_RUNTIME_HOLD_REQUIRED"
+  },
+  "eval160": "UNREAD",
+  "protected_evaluation": "UNREAD"
+}

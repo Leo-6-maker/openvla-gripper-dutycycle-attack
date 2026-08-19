@@ -1,0 +1,124 @@
+{
+  "ledger_sha256": "acd10753d52d40f26a5bbc8a0828dcecba35fd80407432f105c361f92cd90f3e",
+  "probe_id": "PRIMARY_EMIT_T5",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "eval160_reads": 0,
+    "model_inference": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "protocol_sha256": "37701fd8f4da1d7fc67d7c4adc776b957975a5735c66557c2385dbf21da5dea8",
+  "rows": [
+    {
+      "arm_order": [
+        "RAND_UNIFORM_T5",
+        "SHUFFLED_GRAD_T5",
+        "TRUE_PGD_T5",
+        "CLEAN_EVAL"
+      ],
+      "arm_rotation": 1,
+      "canonical_parent_key": "libero_spatial/task_02/state_31",
+      "eval_seed": 3756094088,
+      "ordinal": 32,
+      "perturb_seed": 2274717660,
+      "review_id": "M001"
+    },
+    {
+      "arm_order": [
+        "TRUE_PGD_T5",
+        "CLEAN_EVAL",
+        "RAND_UNIFORM_T5",
+        "SHUFFLED_GRAD_T5"
+      ],
+      "arm_rotation": 3,
+      "canonical_parent_key": "libero_spatial/task_04/state_33",
+      "eval_seed": 2819561587,
+      "ordinal": 34,
+      "perturb_seed": 3254547160,
+      "review_id": "M002"
+    },
+    {
+      "arm_order": [
+        "TRUE_PGD_T5",
+        "CLEAN_EVAL",
+        "RAND_UNIFORM_T5",
+        "SHUFFLED_GRAD_T5"
+      ],
+      "arm_rotation": 3,
+      "canonical_parent_key": "libero_spatial/task_05/state_27",
+      "eval_seed": 1158980798,
+      "ordinal": 35,
+      "perturb_seed": 3869285999,
+      "review_id": "M008"
+    },
+    {
+      "arm_order": [
+        "CLEAN_EVAL",
+        "RAND_UNIFORM_T5",
+        "SHUFFLED_GRAD_T5",
+        "TRUE_PGD_T5"
+      ],
+      "arm_rotation": 0,
+      "canonical_parent_key": "libero_spatial/task_06/state_45",
+      "eval_seed": 1676401956,
+      "ordinal": 36,
+      "perturb_seed": 4113314152,
+      "review_id": "M009"
+    },
+    {
+      "arm_order": [
+        "CLEAN_EVAL",
+        "RAND_UNIFORM_T5",
+        "SHUFFLED_GRAD_T5",
+        "TRUE_PGD_T5"
+      ],
+      "arm_rotation": 0,
+      "canonical_parent_key": "libero_goal/task_04/state_38",
+      "eval_seed": 3412520872,
+      "ordinal": 14,
+      "perturb_seed": 347536238,
+      "review_id": "M010"
+    },
+    {
+      "arm_order": [
+        "RAND_UNIFORM_T5",
+        "SHUFFLED_GRAD_T5",
+        "TRUE_PGD_T5",
+        "CLEAN_EVAL"
+      ],
+      "arm_rotation": 1,
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "eval_seed": 723212556,
+      "ordinal": 7,
+      "perturb_seed": 483195532,
+      "review_id": "M011"
+    },
+    {
+      "arm_order": [
+        "CLEAN_EVAL",
+        "RAND_UNIFORM_T5",
+        "SHUFFLED_GRAD_T5",
+        "TRUE_PGD_T5"
+      ],
+      "arm_rotation": 0,
+      "canonical_parent_key": "libero_spatial/task_03/state_29",
+      "eval_seed": 2814625318,
+      "ordinal": 33,
+      "perturb_seed": 3788834183,
+      "review_id": "M014"
+    }
+  ],
+  "schema": "STAGE_X_X1R_G3R_FROZEN_SEED_LEDGER_V1",
+  "source": {
+    "commit": "003cd024bf2cb63292c11dec4c0d29a33d8fe975",
+    "status_porcelain": "",
+    "tree": "fe198df8fdca5291169e407d395f303e7fa5264d"
+  },
+  "status": "PASS_FROZEN_SEED_LEDGER"
+}

@@ -1,0 +1,46 @@
+{
+  "schema": "STAGE_X_X1R_PRIMARY_MATRIX_PREINGESTION_AUDIT_V1",
+  "status": "G0_PASS_PRE_LABEL_INGESTION",
+  "purpose": "Bind the exact PR132 ancestry, raw owner submission, and prospective primary protocol before semantic label ingestion.",
+  "ancestry": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "base_pr": 132,
+    "base_commit": "14f7df98995262ede4fc129578001ffe40431582",
+    "base_tree": "8e59bdeee666a92a776e9ef99f7c4ac1dd6801f2",
+    "goal_branch": "codex/stage-x-x1r-goal-d1m1-primary-matrix-20260819"
+  },
+  "raw_bindings": {
+    "owner_submission": "reports/STAGE_X_X1R_T1D1M1_OWNER_LABEL_SUBMISSION_V1.csv",
+    "owner_submission_sha256": "76c835c292c76190b2a764da7be746a568697deea1cb4009d63e306fdc610c2c",
+    "owner_binding_receipt": "reports/STAGE_X_X1R_T1D1M1_OWNER_BINDING_RECEIPT_V1.json",
+    "primary_protocol": "configs/STAGE_X_X1R_PRIMARY_MATRIX_PROTOCOL_V1.json",
+    "primary_protocol_sha256": "37701fd8f4da1d7fc67d7c4adc776b957975a5735c66557c2385dbf21da5dea8"
+  },
+  "pre_ingestion_invariants": {
+    "raw_sha_verified": true,
+    "semantic_label_parse": false,
+    "private_mapping_join": false,
+    "cohort_computed": false,
+    "model_inference": false,
+    "env_step": false,
+    "pgd": false,
+    "physical_intervention": false,
+    "vphys_read": false
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters": {
+      "model_inference_calls": 0,
+      "env_step_calls": 0,
+      "pgd_calls": 0,
+      "attacked_action_steps": 0,
+      "physical_interventions": 0,
+      "vphys_reads": 0,
+      "attack_outcome_reads": 0,
+      "eval160_reads": 0,
+      "protected_reads": 0
+    }
+  },
+  "next_gate": "STAGE_X_X1R_T1D1M1_LABEL_INTEGRITY_AUDIT_REQUIRED"
+}
