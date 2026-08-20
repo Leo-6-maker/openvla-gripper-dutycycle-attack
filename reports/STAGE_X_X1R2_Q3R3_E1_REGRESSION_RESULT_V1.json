@@ -1,0 +1,61 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E1_REGRESSION_RESULT_V1",
+  "status": "PASS",
+  "gate": "STAGE_X_X1R2_Q3R3_E1_FAILURE_PATH_CANDIDATE_EVIDENCE_PRESERVATION",
+  "source_commit": "94971bd595243a6615d9bb418d841a2962e74cf3",
+  "source_tree": "4d483781c3f5b58fb931965a024b592d99f1ba5e",
+  "local_cpu_mock": {
+    "test_command": "python -m unittest discover -s tests/stage_x -p test_stage_x1r2_q3r3_e1_failure_persistence.py -q",
+    "tests_run": 5,
+    "tests_passed": 5,
+    "tests_failed": 0,
+    "status": "PASS"
+  },
+  "local_static": {
+    "ast_parse": "PASS",
+    "files": [
+      "src/gripper_attack/failure_evidence.py",
+      "scripts/stage_x/run_stage_x1r2_q3r3_engineering_matrix.py",
+      "tests/stage_x/test_stage_x1r2_q3r3_e1_failure_persistence.py",
+      "tests/stage_x/test_stage_x1r2_gripper_selective_contract.py"
+    ],
+    "status": "PASS"
+  },
+  "existing_selector_regression": {
+    "test": "test_strict_candidate_audit_requires_clean_to_open_transition",
+    "assertion": "first valid candidate remains selected when a later valid candidate also exists",
+    "local_dependency_note": "full torch/pytest stack is not installed in the local shell; the PR CPU CI ran the repository suite",
+    "status": "PASS_IN_PR_CI"
+  },
+  "github_ci": [
+    {
+      "name": "source-registry",
+      "workflow": "cpu-b3-official-v3",
+      "status": "SUCCESS",
+      "url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/actions/runs/32384718974/job/96476266840"
+    },
+    {
+      "name": "detector-v5-cpu",
+      "workflow": "cpu-detector-v5",
+      "status": "SUCCESS",
+      "url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/actions/runs/32384718996/job/96476267254"
+    },
+    {
+      "name": "stageb-cpu",
+      "workflow": "cpu-stageb",
+      "status": "SUCCESS",
+      "url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/actions/runs/32384718970/job/96476267062"
+    }
+  ],
+  "forbidden_execution": {
+    "gpu": 0,
+    "openvla_inference": 0,
+    "simulator": 0,
+    "pgd": 0,
+    "new_fixture": 0,
+    "vphys": 0,
+    "eval160": 0,
+    "protected": 0
+  },
+  "selection_semantics_unchanged": true
+}
