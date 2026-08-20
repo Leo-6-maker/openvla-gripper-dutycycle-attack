@@ -1,0 +1,138 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_BRANCH_ESTIMAND_V1",
+  "status": "FROZEN_PROSPECTIVE_BRANCH_ESTIMAND_ENGINEERING_ONLY",
+  "scientific_authority": false,
+  "supersedes": {
+    "q3r2_c_status": "OWNER_REVIEW_Q3R2_CLEAN_PREFIX_DETERMINISM_NOT_ESTABLISHED",
+    "old_contract_remains_immutable": true,
+    "independent_closed_loop_bit_exactness_is_not_relabelled_pass": true
+  },
+  "source_binding": {
+    "prospective_namespace_source_commit": "cee5fef3d297483767eeaf26888b8662f7e7cbaa",
+    "prospective_namespace_source_tree": "d88e3bfb88bb22235c0381b2a833f628578bb538",
+    "frozen_runtime_authority_commit": "85fa8e678ca599f21f5a69d180c7179f9ef99478",
+    "frozen_runtime_authority_tree": "f6555a5d49dda45f29ef64ca8ae4b65b7b08d3f9"
+  },
+  "frozen_semantics": {
+    "student_checkpoint_unchanged": true,
+    "student_features_unchanged": true,
+    "student_normalization_unchanged": true,
+    "student_thresholds_unchanged": true,
+    "student_scheduler_unchanged": true,
+    "student_role": "operational_timing_selector_only",
+    "target_class_primary": "NATIVE_OPEN",
+    "target_token_secondary": 31745,
+    "visual_only": true,
+    "epsilon": 0.03,
+    "step_size": 0.006,
+    "pgd_steps": 5,
+    "random_start": false,
+    "strict_route": true,
+    "no_fallback": true,
+    "no_actuator_overwrite": true,
+    "no_decode_reencode": true,
+    "arm_token_dims": [0, 1, 2, 3, 4, 5],
+    "gripper_token_dim": 6,
+    "t5": 5,
+    "h_phys": 10,
+    "attack_window": "[t_emit,t_emit+4]",
+    "followup_window": "[t_emit+5,t_emit+14]"
+  },
+  "reference_clean": {
+    "per_parent_count": 1,
+    "trajectory_identity": "one realized current-runtime clean trajectory",
+    "requirements": [
+      "runtime-valid",
+      "clean-success",
+      "one-shot-first-emit",
+      "legal T5+H_phys window"
+    ],
+    "student_inference_count": 1,
+    "timing_is_computed_once": true,
+    "sealed_fields": [
+      "exact_initial_state",
+      "dummy_wait_convention",
+      "policy_action_prefix",
+      "policy_token_prefix",
+      "reference_raw_observation_at_each_candidate_time",
+      "student_trace",
+      "t_emit",
+      "branch_state_receipt"
+    ]
+  },
+  "branch_point": {
+    "definition": "state immediately before the policy action at t_emit",
+    "replayed_prefix_steps": "[0,t_emit)",
+    "first_branch_action_step": "t_emit",
+    "all_arms_use_common_reference_observation": true,
+    "common_observation_source": "captured REFERENCE_CLEAN observation bytes at branch point",
+    "clean_observation_mutated": false,
+    "post_first_branch_action_live_observations_allowed": true
+  },
+  "branch_prefix": {
+    "fresh_env_per_branch": true,
+    "initial_state_must_match_reference": true,
+    "replay_only_sealed_reference_env_action_7d": true,
+    "openvla_before_branch_forbidden": true,
+    "student_before_branch_forbidden": true,
+    "new_policy_action_before_branch_forbidden": true,
+    "independent_closed_loop_replay_forbidden": true
+  },
+  "branch_state_contract": {
+    "required_fields": [
+      "model_identity",
+      "suite_task_state_identity",
+      "seed_and_dummy_wait",
+      "wrapper_step_index",
+      "qpos",
+      "qvel",
+      "act",
+      "ctrl",
+      "time",
+      "mocap_state",
+      "task_object_state",
+      "controller_state"
+    ],
+    "stable_serialization_rule": "exact dtype, shape, byte serialization, and hash where stable",
+    "float_comparison": {
+      "atol": 1e-12,
+      "rtol": 0.0,
+      "widen_after_first_real_run": false
+    },
+    "integer_string_shape_dtype_fields_exact": true,
+    "missing_required_field_is_fail": true,
+    "branch_state_pass_requires_all_required_fields": true
+  },
+  "first_decision_contract": {
+    "reference_observation_bytes_persisted": true,
+    "clean_uses_reference_observation_unchanged": true,
+    "true_rand_shuffled_use_same_reference_observation": true,
+    "direct_generated_clean_7_token_action_reproduces_reference": true,
+    "live_rerender_at_branch_is_diagnostic_only": true
+  },
+  "random_time_control": {
+    "salt": "STAGE_X1R2_Q3R3_RANDOM_TIME_V1_20260820",
+    "selection": "sha256(salt|canonical_parent_key) modulo legal starts",
+    "legal_start_constraint": "start + T5 + H_phys <= episode horizon",
+    "exclude_student_emit_window": true,
+    "outcome_blind": true
+  },
+  "future_arms": [
+    "CLEAN",
+    "TRUE_PGD_T5",
+    "RAND_UNIFORM_T5",
+    "SHUFFLED_GRAD_T5",
+    "TRUE_PGD_RANDOM_TIME_T5"
+  ],
+  "protected_boundary": {
+    "model_inference_authorized_in_q3r3_a": false,
+    "simulator_authorized_in_q3r3_a": false,
+    "env_step_authorized_in_q3r3_a": false,
+    "pgd_authorized": false,
+    "physical_intervention_authorized": false,
+    "vphys_authorized": false,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "next_gate": "STAGE_X1R2_Q3R3_BRANCH_ESTIMAND_FREEZE_PASS"
+}

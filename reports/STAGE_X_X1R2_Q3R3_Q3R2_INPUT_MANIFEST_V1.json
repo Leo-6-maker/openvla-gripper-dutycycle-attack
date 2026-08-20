@@ -1,0 +1,24 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_Q3R2_INPUT_MANIFEST_V1",
+  "status": "FROZEN_READ_ONLY_INPUTS",
+  "server_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820",
+  "suite_inputs": {
+    "libero_goal": {
+      "report": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820/libero_goal/SUITE_CLEAN_DETERMINISM_REPORT_V1.json", "sha256": "d441656f26889995b741781a7f8f1d0556b0b1a5ad878435362143b36cc24563"},
+      "repeat_0": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820/libero_goal/Q3R2-LIBERO_GOAL-01/repeat_0/step_telemetry.jsonl", "sha256": "b2e659975ec0e156034593e8d57ec564a2c13c4dfe9705a92e0d269548156845"},
+      "repeat_1": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820/libero_goal/Q3R2-LIBERO_GOAL-01/repeat_1/step_telemetry.jsonl", "sha256": "eba7e2a7eb7b5df7db89430ea8acb7237c1213428a38bdbc779017a9e215365c"}
+    },
+    "libero_object": {
+      "report": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820/libero_object/SUITE_CLEAN_DETERMINISM_REPORT_V1.json", "sha256": "1eec732c3d998d4bf55d0817a41a54cb0bc3dacb3dbdc5c11221f8ccfc5b30c9"},
+      "evidence_mode": "sealed_report_only"
+    },
+    "libero_spatial": {
+      "report": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820/libero_spatial/SUITE_CLEAN_DETERMINISM_REPORT_V1.json", "sha256": "8cfd4b89a9a578ccfcbdc74ce987b9c2f620d9576847f421373dd1275a620bf9"},
+      "repeat_0": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820/libero_spatial/Q3R2-LIBERO_SPATIAL-01/repeat_0/step_telemetry.jsonl", "sha256": "bae89f21d4fa548f6ec9f6c744ef8ad591af94b2d46c5dc3323a6bc91614054c"},
+      "repeat_1": {"path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820/libero_spatial/Q3R2-LIBERO_SPATIAL-01/repeat_1/step_telemetry.jsonl", "sha256": "4a7850a38ced2abcd26860b7a781a2f3dbefbed49dd26dcace3193647cfec2d4"}
+    }
+  },
+  "inventory_rule": {"raw_frame_extensions": [".png", ".jpg", ".jpeg", ".npy", ".npz", ".mp4", ".mkv", ".webm"], "expected_raw_frame_count": 0},
+  "q3r2_evidence_is_immutable": true,
+  "scientific_use": false
+}
