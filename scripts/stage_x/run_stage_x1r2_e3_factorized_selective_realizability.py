@@ -283,12 +283,13 @@ def run_parent(protocol_path: Path, parent: Mapping[str, Any], physical_gpu: int
     gpu = engineering.gpu_receipt(physical_gpu, require_free=True)
     output = root / str(parent["suite"]) / str(parent["fixture_id"])
     if output.exists():
-        raise SystemExit(f"E3_PARENT_OUTPUT_EXISTS:{output}")
+        attempts = sorted(path for path in output.glob("attempt_*") if path.is_dir())
+        output = output / f"attempt_{len(attempts) + 1:02d}"
     output.mkdir(parents=True)
     counters = fresh_counters()
     start = time.time()
     try:
-        contract = load_json(ROOT / "configs/STAGE_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json")
+        contract = load_json(ROOT / "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json")
         suite_cfg = contract["suites"][str(parent["suite"])]
         primary.verify_model_identity(contract, str(parent["suite"]))
         model, processor, device, _action_dim = engineering.load_openvla(Path(str(suite_cfg["model_path"])), str(parent["suite"]))

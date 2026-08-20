@@ -39,15 +39,17 @@ def manifest(root: Path) -> list[dict[str, Any]]:
 
 
 def parent_row(root: Path, row: dict[str, Any]) -> dict[str, Any]:
-    path = root / str(row["suite"]) / str(row["fixture_id"]) / "parent_receipt.json"
-    if not path.is_file():
+    fixture_root = root / str(row["suite"]) / str(row["fixture_id"])
+    paths = sorted(path for path in fixture_root.rglob("parent_receipt.json") if path.is_file())
+    if not paths:
         return {"suite": row["suite"], "fixture_id": row["fixture_id"], "canonical_parent_key": row["canonical_parent_key"], "status": "HOLD_E3_PARENT_RECEIPT_MISSING", "probe_available": False, "true_invocation_reached": False, "candidate_evidence_complete": False, "strict_valid_candidate": False}
+    path = paths[-1]
     receipt = load_json(path)
     clean = receipt.get("clean_probe") or {}
     true = receipt.get("true_receipt") or {}
     probe = clean.get("probe")
     evidence_complete = bool(probe is None or true.get("candidate_audit_complete") is True)
-    return {"suite": row["suite"], "fixture_id": row["fixture_id"], "canonical_parent_key": row["canonical_parent_key"], "status": receipt.get("status"), "clean_runtime_status": clean.get("status"), "probe_available": probe is not None, "probe_step": None if probe is None else int(probe["step"]), "true_invocation_reached": int((true.get("counters") or {}).get("true_invocation_reached", 0)) == 1, "candidate_evidence_complete": evidence_complete, "candidate_count": int(true.get("observed_candidate_count", len(true.get("candidate_audit") or []))), "strict_valid_candidate": receipt.get("status") == "PASS_E3_VALID_CANDIDATE", "selected_candidate_index": true.get("selected_candidate_index"), "selected_candidate_source": true.get("selected_candidate_source"), "counters": receipt.get("counters", {}), "protected_boundary": receipt.get("protected_boundary", {}), "receipt_path": str(path)}
+    return {"suite": row["suite"], "fixture_id": row["fixture_id"], "canonical_parent_key": row["canonical_parent_key"], "status": receipt.get("status"), "clean_runtime_status": clean.get("status"), "probe_available": probe is not None, "probe_step": None if probe is None else int(probe["step"]), "true_invocation_reached": int((true.get("counters") or {}).get("true_invocation_reached", 0)) == 1, "candidate_evidence_complete": evidence_complete, "candidate_count": int(true.get("observed_candidate_count", len(true.get("candidate_audit") or []))), "strict_valid_candidate": receipt.get("status") == "PASS_E3_VALID_CANDIDATE", "selected_candidate_index": true.get("selected_candidate_index"), "selected_candidate_source": true.get("selected_candidate_source"), "counters": receipt.get("counters", {}), "protected_boundary": receipt.get("protected_boundary", {}), "receipt_path": str(path), "attempt_history": [{"path": str(item), "status": load_json(item).get("status")} for item in paths]}
 
 
 def main() -> int:
