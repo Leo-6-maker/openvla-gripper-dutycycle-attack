@@ -1,0 +1,27 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_BRANCH_RUNNER_V1",
+  "status": "FROZEN_CPU_MOCK_BRANCH_RUNNER_ONLY",
+  "scientific_authority": false,
+  "branch_estimand": "configs/STAGE_X_X1R2_Q3R3_BRANCH_ESTIMAND_V1.json",
+  "implementation": {
+    "module": "src/gripper_attack/stage_x_q3r3_branch_replay.py",
+    "audit": "scripts/stage_x/audit_stage_x1r2_q3r3_branch_replay.py",
+    "tests": ["tests/stage_x/test_stage_x1r2_q3r3_branch_replay.py"],
+    "source_receipt": "audit report binds the committed source after implementation"
+  },
+  "allowed": ["stdlib", "CPU mock objects", "sealed reference action tuples", "sealed reference observation bytes"],
+  "forbidden": ["OpenVLA inference before branch", "Student inference before branch", "simulator construction", "real env.step", "PGD", "physical intervention", "V_phys", "Eval160", "protected evaluation"],
+  "requirements": {
+    "reference_clean_computes_timing_once": true,
+    "prefix_is_sealed_reference_actions_only": true,
+    "branch_point_is_before_action_at_t_emit": true,
+    "common_first_observation_bytes_required": true,
+    "branch_state_required_fields": ["model_identity", "suite_task_state_identity", "seed_and_dummy_wait", "wrapper_step_index", "qpos", "qvel", "act", "ctrl", "time", "mocap_state", "task_object_state", "controller_state"],
+    "float_atol": 1e-12,
+    "float_rtol": 0.0,
+    "no_tolerance_widening": true,
+    "attacked_step_requires_structural_gates": true,
+    "protected_counters_zero": true
+  },
+  "next_gate": "STAGE_X1R2_Q3R3_BRANCH_RUNNER_STATIC_PASS"
+}
