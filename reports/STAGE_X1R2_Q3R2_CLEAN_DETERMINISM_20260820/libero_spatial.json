@@ -1,0 +1,55 @@
+{
+  "comparison": {
+    "clean_success_equal": true,
+    "first_emit_equal": false,
+    "full_exact": false,
+    "full_sha256_repeat0": "bc346ca32ddccb283788d9e33541a13eb2e31147a8f736f9bed28e555ee436dd",
+    "full_sha256_repeat1": "95582047ba0221863e41681be307bece8ddecb225109b03ff0073ea0d1a3e592",
+    "prefix_exact": false,
+    "prefix_sha256_repeat0": "bf24d6828d46a589c2d73ae92041bff4aef1671088ff4bdaa93de05da29a9fb7",
+    "prefix_sha256_repeat1": "01d1ddb96d830ba3522f3d9b75cf7fd0240786c13d1e0eef860483991cc37574",
+    "prefix_steps": 69
+  },
+  "mount_gpu": {
+    "compute_apps": [],
+    "cuda_visible_devices": "4",
+    "free_memory_mib": 81210,
+    "gpu_uuid": "GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
+    "physical_gpu": 4,
+    "used_memory_mib": 13,
+    "utilization_gpu_percent": 0
+  },
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "runtime_authority": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-gripper-dutycycle-attack-x1r2-q3r2-authority-20260820/configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
+    "runtime_code_commit": "85fa8e678ca599f21f5a69d180c7179f9ef99478",
+    "runtime_code_tree": "f6555a5d49dda45f29ef64ca8ae4b65b7b08d3f9",
+    "status": "STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_PASS"
+  },
+  "scan": [
+    {
+      "canonical_parent_key": "libero_spatial/task_09/state_29",
+      "clean_success": true,
+      "error": "",
+      "first_emit_legal": true,
+      "first_emit_step": 68,
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-01",
+      "status": "PASS_CLEAN_REPEAT",
+      "trace_sha256": "bc346ca32ddccb283788d9e33541a13eb2e31147a8f736f9bed28e555ee436dd"
+    }
+  ],
+  "schema": "STAGE_X_X1R2_Q3R2_CLEAN_DETERMINISM_SUITE_REPORT_V1",
+  "selected_fixture": "Q3R2-LIBERO_SPATIAL-01",
+  "selected_parent_key": "libero_spatial/task_09/state_29",
+  "status": "OWNER_REVIEW_Q3R2_CLEAN_PREFIX_DETERMINISM_NOT_ESTABLISHED",
+  "suite": "libero_spatial"
+}
