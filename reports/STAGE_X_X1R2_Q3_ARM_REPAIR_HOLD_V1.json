@@ -1,0 +1,84 @@
+{
+  "schema": "STAGE_X_X1R2_Q3_ARM_REPAIR_HOLD_V1",
+  "status": "OWNER_REVIEW_Q3_ARM_REPAIR_HOLD_CLEAN_EMIT_REPLAY_MISMATCH",
+  "scientific_authority": false,
+  "scope": "Q3-AR-F01 permanently excluded engineering fixture only",
+  "historical_boundary": {
+    "q3_f01": "IMMUTABLE_RUNTIME_INVALID; not rerun",
+    "q3_f02": "SEALED_NOT_STARTED",
+    "q3_f03": "SEALED_NOT_STARTED",
+    "q3_f04": "SEALED_NOT_STARTED",
+    "x1r2_scientific_population": "NOT_SELECTED"
+  },
+  "fixture": {
+    "fixture_id": "Q3-AR-F01",
+    "review_id": "M012",
+    "canonical_parent_key": "libero_10/task_09/state_43",
+    "ordinal": 10,
+    "permanent_exclusion": true,
+    "prior_attack_exposure": false
+  },
+  "runtime": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "source_commit": "b7237611c466077a9a7e6f0b1102e9176cfa2c88",
+    "source_tree": "fd5eeef98480b4c608ebd4eafb8e325afa8cd17a",
+    "physical_gpu": 2,
+    "cuda_visible_devices": "2",
+    "mount_free_memory_mib": 31270,
+    "output_root": "/llm_jzm/dty_user/openvla_attack_x1r2_q3_arm_repair_20260820",
+    "clean_output": "/llm_jzm/dty_user/openvla_attack_x1r2_q3_arm_repair_20260820/fixtures/Q3-AR-F01/CLEAN_ENGINEERING/parents/010_libero_10_task_09_state_43/attempt_0"
+  },
+  "failure": {
+    "stage": "post_clean_screening_before_first_attack_arm",
+    "runner_error": "Q3_STUDENT_EMIT_REPLAY_MISMATCH:None!=133",
+    "expected_first_emit_step": 133,
+    "observed_first_emit_step": null,
+    "clean_receipt_status": "PASS_SCREENING_CLEAN_EPISODE",
+    "clean_success": true,
+    "student_status": "PASS_CAUSAL_TRACE",
+    "no_emit_retained": true,
+    "arm_isolation_repair_validated": false,
+    "arm_isolation_repair_failed": false,
+    "attack_arms_started": false
+  },
+  "counters": {
+    "openvla_model_inference_calls": 256,
+    "env_step_calls": 266,
+    "pgd_calls": 0,
+    "attack_backward_calls": 0,
+    "attack_invocation_count": 0,
+    "attack_result_returned_count": 0,
+    "adversarial_images": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0
+  },
+  "materialized_artifacts": {
+    "parent_receipt_sha256": "ed7143d6bd1c50655fb5b61295ca2ed9ced965069251b366a3ad154600912e38",
+    "episode_manifest_sha256": "80408f3389a43a77d4029155e3dd87c437ea5f8e2f4b4b2a8e765b31b11c90fe",
+    "step_telemetry_sha256": "7742ac082e772be424aa8c173480f6edf6e64a58a234a2748c1568dc1eb45a3e",
+    "clean_video_sha256": "9945ece6501d22cdfd353786178cff1ff35e70fc70bc4cf7312b19972e642a4a",
+    "attack_arm_directories": [],
+    "attack_tensors": [],
+    "branch_receipts": []
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0
+  },
+  "stop_policy": {
+    "rerun_q3_ar_f01": false,
+    "replacement": false,
+    "start_q3_f02_f04": false,
+    "start_x1r2_scientific_population": false,
+    "next_gate": "OWNER_REVIEW_Q3_CLEAN_EMIT_REPLAY_MISMATCH_ROOT_CAUSE_REQUIRED"
+  }
+}
