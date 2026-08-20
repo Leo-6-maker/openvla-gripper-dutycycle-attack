@@ -1,0 +1,123 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1",
+  "status": "STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_PASS",
+  "scientific_authority": false,
+  "scope": {
+    "allowed": [
+      "static_source_provenance",
+      "suite_model_tree_verification",
+      "frozen_student_artifact_verification",
+      "package_surface_verification",
+      "engineering_fixture_authority_preparation"
+    ],
+    "forbidden": [
+      "model_inference",
+      "simulator_construction",
+      "env_step",
+      "pgd",
+      "physical_intervention",
+      "v_phys",
+      "Eval160",
+      "protected_evaluation"
+    ]
+  },
+  "source_binding": {
+    "github_pr": 135,
+    "reviewed_pr_head_before_authority": "85fa8e678ca599f21f5a69d180c7179f9ef99478",
+    "reviewed_pr_tree_before_authority": "f6555a5d49dda45f29ef64ca8ae4b65b7b08d3f9",
+    "runtime_code_commit": "85fa8e678ca599f21f5a69d180c7179f9ef99478",
+    "runtime_code_tree": "f6555a5d49dda45f29ef64ca8ae4b65b7b08d3f9",
+    "deployment_observed_commit": "b7237611c466077a9a7e6f0b1102e9176cfa2c88",
+    "deployment_observed_tree": "fd5eeef98480b4c608ebd4eafb8e325afa8cd17a",
+    "source_relationship": "deployment runtime Git blobs equal the reviewed runtime-code blobs; authority artifacts are not runtime semantics",
+    "runtime_files": [
+      {"path": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json", "git_blob_sha": "b46af63d37ae7e26bf095c8492084cf9860e64a4"},
+      {"path": "configs/STAGE_X_X1R2_GRIPPER_SELECTIVE_ATTACK_CONTRACT_V1.json", "git_blob_sha": "986d6735177b2d21a45c2137302b1efa43fd5e32"},
+      {"path": "src/gripper_attack/libero_v4_env_factory.py", "git_blob_sha": "f37b494f061b3eb51e160a0ae7bf2126f928bb79"},
+      {"path": "src/gripper_attack/openvla_preprocess.py", "git_blob_sha": "026e8e83ca8a5b7e9144d441311b3e7881490990"},
+      {"path": "src/gripper_attack/attack_adapter.py", "git_blob_sha": "8ccbc2547d0fa27071e8cd02bbcd4c6cdc140b6a"},
+      {"path": "src/gripper_attack/stage_x_x1r_student_head_contract.py", "git_blob_sha": "a9aa813e4b7ab376f35853a71d649af41d38007d"},
+      {"path": "src/gripper_attack/v5_r3_features.py", "git_blob_sha": "2e5e9e5e7968c301c2fae16c346ed91523951765"},
+      {"path": "src/gripper_attack/d8_streaming_features_v3.py", "git_blob_sha": "0b3d2f1c47be1622e5ec15c864cd64f026e6084d"},
+      {"path": "src/gripper_attack/openvla_libero_exec_spec.py", "git_blob_sha": "45d6cba83f8919e0b3dfd06e3ff942dbb632e723"},
+      {"path": "src/gripper_attack/v3_generation_parity.py", "git_blob_sha": "70a59f520cc615a6b216c6e61ec5931fb022e0e1"},
+      {"path": "n5/phase3_student/n5_student_model.py", "git_blob_sha": "7e2aceabe4a9cfc871b51fc2ceee46fed5019c65"},
+      {"path": "scripts/stage_x/run_stage_x1r_t1d1_screening_clean.py", "git_blob_sha": "b17761a158aca448610c251d17843c658392479b"},
+      {"path": "scripts/stage_x/run_stage_x1r_primary_matrix.py", "git_blob_sha": "6ad6760eccef1bf01e5b5780fc85e36692bb24bb"},
+      {"path": "scripts/stage_x/run_stage_x1r2_q3_engineering.py", "git_blob_sha": "d8829dd1e3587493c50cd9e642c279246f5495b9"}
+    ]
+  },
+  "victim_contract": {
+    "repo_path": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+    "server_raw_sha256": "37f5d4ea205835fedc8f4d02c3e722c80581aa5c04d9349c7eed0dd4f6364265",
+    "git_blob_sha": "b46af63d37ae7e26bf095c8492084cf9860e64a4",
+    "status_required": "FROZEN_FOR_CLEAN_PARITY_ONLY",
+    "scientific_authority_required": "X1R_NOT_AUTHORIZED"
+  },
+  "suite_models": {
+    "identity_source": "victim_contract.model_identity; independently rehashed by audit",
+    "libero_10": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10", "unnorm_key": "libero_10", "file_count": 18, "bytes": 15085093727, "tree_sha256": "4a83f512232909d34ec2f835acf492713b4c174f0b016ac00cbb330ed5ff8dbd", "weights_sha256": "3e67f96dfa0b2295a7bb016709c6bdf0a8f7c8e7c5a8b9c8476dd5728e860819", "semantic_files_sha256": "70c660d7a3d1d6e1f86107d76ae9213cc75e77b9c483cfdfe91c8ea6f61aedad"},
+    "libero_goal": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal", "unnorm_key": "libero_goal", "file_count": 19, "bytes": 15085095390, "tree_sha256": "5354cfe948abd56789ea3b50976fb3693d68a8b617771ca0db8fee368dfd542d", "weights_sha256": "aac0c7f827825d699d1385851e3aae06383882228f4261c395dab8e9cc7bfca3", "semantic_files_sha256": "c9c38cd09de70076cba28b410df2868389e5f27472fe2b83b9926509821a7cdb"},
+    "libero_object": {"path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object", "unnorm_key": "libero_object", "file_count": 19, "bytes": 15085095882, "tree_sha256": "f3e5c61db14bd2670e98ea742bfec6baace25533ce8ad2c11685d68e20957f6c", "weights_sha256": "3497559622046335ebf0e250f49924af35313338a346086ce6dfc78f6084398d", "semantic_files_sha256": "1e5360756623157afa024b38ef7fd26f5add93beaaa7f7794108cfdc1312f243"},
+    "libero_spatial": {"path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620", "unnorm_key": "libero_spatial", "file_count": 19, "bytes": 15085095735, "tree_sha256": "b3faccff2e0c1b401973aca6e12e98ae23482441d85199ae9507251ac1dea1b5", "weights_sha256": "4cb8f0a23a9cbd9331a9f70bce6880d4042ae7acf29078d73802e447be3b3c93", "semantic_files_sha256": "8575f7f16376d79dbf824dd65379b2e6e787c42343ee60c50e51c57f7850fd0f"}
+  },
+  "student_binding": {
+    "input_dim": 25,
+    "hidden": 64,
+    "short_rf": 32,
+    "long_rf": 128,
+    "dropout_eval": 0.0,
+    "runtime_heads": ["physical_criticality", "k10_feasible", "safe_release", "instability", "gripper_closing_state"],
+    "historical_semantic_aliases": {"k10_feasibility": "k10_feasible"},
+    "normalization_family": "episode_heldout.train",
+    "physical_threshold": 0.55,
+    "closing_threshold": 0.8,
+    "one_shot": true,
+    "artifacts": [
+      {"name": "checkpoint", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/checkpoint.pt", "sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227"},
+      {"name": "normalization", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_G1_SPLITS_FIREWALL_20260813T160000Z/NORMALIZATION.json", "sha256": "66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c"},
+      {"name": "thresholds", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/thresholds.json", "sha256": "5236884ea746adc6a5388ab6e8058adb717b86ee2814b71a748c7792d051de3e"},
+      {"name": "student_source", "path": "/mnt/sdc/dty_user/openvla_attack/n5/phase3_student/n5_student_model.py", "sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c"},
+      {"name": "feature_source", "path": "/mnt/sdc/dty_user/openvla_attack/src/gripper_attack/v5_r3_features.py", "sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9"},
+      {"name": "adapter_source", "path": "/mnt/sdc/dty_user/openvla_attack/src/gripper_attack/d8_streaming_features_v3.py", "sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3"}
+    ]
+  },
+  "environment": {
+    "official_path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "python_invocation": "bin/python -s",
+    "python_version": "3.10.16",
+    "python_realpath": "/home/sz/miniconda3/envs/hallo/bin/python3.10",
+    "prefix": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "base_prefix": "/home/sz/miniconda3/envs/hallo",
+    "include_system_site_packages": true,
+    "packages": {
+      "torch": {"version": "2.2.2+cu118", "file": "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/torch/__init__.py"},
+      "transformers": {"version": "4.40.1", "file": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/transformers/__init__.py"},
+      "numpy": {"version": "1.26.4", "file": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/numpy/__init__.py"},
+      "PIL": {"version": "10.3.0", "file": "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/PIL/__init__.py"},
+      "cv2": {"version": "4.9.0", "file": "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/cv2/__init__.py"},
+      "mujoco": {"version": "3.9.0", "file": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/mujoco/__init__.py"},
+      "robosuite": {"version": "1.4.1", "file": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/robosuite/__init__.py"},
+      "tokenizers": {"version": "0.19.1", "file": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/tokenizers/__init__.py"},
+      "safetensors": {"version": "0.5.3", "file": "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/safetensors/__init__.py"},
+      "accelerate": {"version": "0.28.0", "file": "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/accelerate/__init__.py"},
+      "torchvision": {"version": "0.17.2+cu118", "file": "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/torchvision/__init__.py"},
+      "libero": {"version": null, "file": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/libero/__init__.py"}
+    },
+    "pip_freeze_sha256": "8572a1662921ab187d43b7d6353b7bb0b918ddb57c5d358885cf5c1626df3deb",
+    "robosuite_private_macros": "ABSENT; warning emitted on import; retained as explicit runtime state"
+  },
+  "execution_semantics": {
+    "camera": {"name": "agentview", "height": 256, "width": 256, "control_freq": 20},
+    "preprocess": {"orientation": "rotate_180", "resize": 224, "backend": "official_pil_lanczos", "center_crop": true, "jpeg_round_trip": false},
+    "reset": {"env_seed": 0, "set_init_state_before_dummy_wait": true, "dummy_wait_steps": 10, "seed_everything": ["random", "numpy", "torch_cpu", "torch_cuda"]},
+    "prompt_and_generation": {"prompt": "official_in_out", "do_sample": false, "generation_passes_per_step": 1, "drop_attention_mask": true, "append_image_end_token_if_needed": 29871, "direct_generated_action_tokens": 7},
+    "horizons": {"libero_10": 520, "libero_goal": 300, "libero_object": 280, "libero_spatial": 220},
+    "success": "canonical policy env.step done=True; dummy wait is outside policy horizon",
+    "student_scheduler": {"candidate": "raw_action[6] < 0.5", "legal": "step + 5 + 10 <= configured horizon", "gates": ["physical_criticality >= 0.55", "gripper_closing_state >= 0.80"], "one_shot": true},
+    "attack": {"visual_only": true, "epsilon": 0.03, "step_size": 0.006, "steps": 5, "random_start": false, "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3", "target_class_primary": "NATIVE_OPEN", "target_token_secondary": 31745, "arm_token_dims": [0, 1, 2, 3, 4, 5], "gripper_dim": 6, "strict_candidate_order": ["delta0", "pgd_iteration_1", "pgd_iteration_2", "pgd_iteration_3", "pgd_iteration_4", "pgd_iteration_5"], "no_fallback": true, "no_reencode": true},
+    "timing": {"t5": 5, "h_phys": 10, "attack_window": "[t_emit,t_emit+4]", "followup_window": "[t_emit+5,t_emit+14]", "full_episode": true}
+  },
+  "protected_boundary": {"eval160": "UNREAD", "protected_evaluation": "UNREAD", "counters": {"model_inference_calls": 0, "env_step_calls": 0, "pgd_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "protected_reads": 0}},
+  "next_gate": "STAGE_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_FREEZE"
+}
