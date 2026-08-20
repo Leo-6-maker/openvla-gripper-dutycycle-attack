@@ -19,6 +19,9 @@ def test_q3r3_d_protocol_is_engineering_only_and_resource_bound():
     assert protocol["protected_boundary"]["physical_interventions"] == 0
     assert protocol["protected_boundary"]["vphys_reads"] == 0
     assert protocol["protected_boundary"]["eval160"] == "UNREAD"
+    source = (ROOT / "scripts/stage_x/run_stage_x1r2_q3r3_engineering_matrix.py").read_text(encoding="utf-8")
+    assert "Q3R3_C_REFERENCE_CLEAN" in source
+    assert "D_RANDOM_TIME_REPLAY_OBSERVATION_MISMATCH" in source
 
 
 def test_q3r3_d_runner_has_fail_closed_branch_gates():

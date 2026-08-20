@@ -692,6 +692,8 @@ class TokenPrefixPGDAttacker:
         open_token_ids: torch.LongTensor,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """Select only a predeclared candidate with exact direct-token isolation."""
+        if open_token_ids is None or int(open_token_ids.numel()) == 0:
+            raise RouteContractError("STRICT_CANDIDATE_AUDIT_OPEN_TOKEN_SET_MISSING")
         clean_tokens = [int(x) for x in clean_generated_action_token_ids.detach().cpu().tolist()]
         if len(clean_tokens) != 7:
             raise RouteContractError(f"ACTION_TOKEN_COUNT_FOR_ARM_AUDIT:{len(clean_tokens)}")
@@ -1163,6 +1165,13 @@ class TokenPrefixPGDAttacker:
                     action_stats=stats,
                 )
                 unnorm_key = resolved_unnorm
+        arm_audit_open_token_ids = region_token_ids
+        if self.arm_isolation_candidate_policy == "STRICT_CANDIDATE_AUDIT_V1" and arm_audit_open_token_ids is None:
+            # Target-token loss uses one secondary token, but arm isolation is
+            # defined over the checkpoint-local native OPEN execution class.
+            arm_audit_open_token_ids = self.get_gripper_region_by_decoded_action(
+                unnorm_key, postprocess_gripper=bool(self.postprocess_gripper)
+            )["open_token_ids"]
         if is_force_open_z_down and self.loss_weights is not None:
             loss_kwargs["loss_weights"] = self.loss_weights
         initial_loss = None; final_loss = None; _prefix_debug_final = None
@@ -1335,7 +1344,7 @@ class TokenPrefixPGDAttacker:
                     clean_ids,
                     trajectory_candidate_inputs,
                     clean_generated_action_token_ids,
-                    region_token_ids,
+                    arm_audit_open_token_ids,
                 )
                 selected_candidate_index = int(selected_candidate["candidate_index"])
                 selected_candidate_adv_model = selected_candidate["pixel_values"].detach()

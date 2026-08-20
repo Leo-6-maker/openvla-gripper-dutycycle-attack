@@ -166,6 +166,9 @@ def load_fixture(protocol: Mapping[str, Any], fixture: Mapping[str, Any], contra
     ]
     if any(not path.is_file() for path in required):
         raise RuntimeError(f"Q3R3_C_REFERENCE_FILE_MISSING:{suite}")
+    observation_manifest_path = directory / "reference_observations_manifest.json"
+    if protocol.get("reference_observation_source_required") and not observation_manifest_path.is_file():
+        raise RuntimeError(f"Q3R3_C_REFERENCE_OBSERVATION_MANIFEST_MISSING:{suite}")
     if sha256_file(report_path) != str(fixture["report_sha256"]):
         raise RuntimeError(f"Q3R3_C_SUITE_REPORT_SHA_MISMATCH:{suite}")
     report = load_json(report_path)
@@ -199,6 +202,11 @@ def load_fixture(protocol: Mapping[str, Any], fixture: Mapping[str, Any], contra
     model_identity = str(contract["suites"][suite]["model_identity"]["tree_sha256"])
     if state.get("model_identity") != model_identity:
         raise RuntimeError(f"Q3R3_C_MODEL_IDENTITY_MISMATCH:{suite}")
+    observation_manifest = load_json(observation_manifest_path) if observation_manifest_path.is_file() else None
+    if protocol.get("reference_observation_source_required"):
+        rows_by_step = {int(row["step"]): row for row in observation_manifest.get("rows", [])}
+        if set(rows_by_step) != {int(row["step"]) for row in telemetry}:
+            raise RuntimeError(f"Q3R3_C_REFERENCE_OBSERVATION_MANIFEST_INCOMPLETE:{suite}")
     return {
         "fixture": dict(fixture),
         "parent": model_parent(fixture, receipt),
@@ -208,8 +216,26 @@ def load_fixture(protocol: Mapping[str, Any], fixture: Mapping[str, Any], contra
         "branch_state": state,
         "reference_image": image_bytes,
         "reference_image_sha256": sha256_bytes(image_bytes),
+        "reference_observations_manifest": observation_manifest,
         "root": str(directory),
     }
+
+
+def load_reference_observation(data: Mapping[str, Any], step: int) -> tuple[bytes, dict[str, Any]]:
+    manifest = data.get("reference_observations_manifest")
+    if not isinstance(manifest, Mapping):
+        raise RuntimeError("Q3R3_C_REFERENCE_OBSERVATION_SOURCE_MISSING")
+    entries = {int(row["step"]): row for row in manifest.get("rows", [])}
+    entry = entries.get(int(step))
+    if entry is None:
+        raise RuntimeError(f"Q3R3_C_REFERENCE_OBSERVATION_STEP_MISSING:{step}")
+    path = Path(str(data["root"])) / str(entry["path"])
+    payload = path.read_bytes()
+    if sha256_bytes(payload) != str(entry["sha256"]):
+        raise RuntimeError(f"Q3R3_C_REFERENCE_OBSERVATION_SHA_MISMATCH:{step}")
+    if len(payload) != 256 * 256 * 3:
+        raise RuntimeError(f"Q3R3_C_REFERENCE_OBSERVATION_SIZE_INVALID:{step}")
+    return payload, dict(entry)
 
 
 def random_time_start(protocol: Mapping[str, Any], parent: Mapping[str, Any], rows: list[Mapping[str, Any]]) -> tuple[int, str, list[int]]:
@@ -514,13 +540,22 @@ def run_suite(args: argparse.Namespace) -> int:
     random_state_a, random_image_a, random_replay_audit = replay_to_start(data["parent"], suite_cfg, data["rows"], random_start, args.physical_gpu)
     random_state_b, random_image_b, random_replay_b = replay_to_start(data["parent"], suite_cfg, data["rows"], random_start, args.physical_gpu)
     random_state_audit = q3r3_c.compare_branch_state(random_state_a, random_state_b)
-    if not random_state_audit.get("equal") or not compare_image_bytes(random_image_a, random_image_b):
+    if not random_state_audit.get("equal"):
         raise RuntimeError(f"D_RANDOM_TIME_REPLAY_MISMATCH:{random_state_audit}")
+    if protocol.get("reference_observation_source_required"):
+        random_reference_bytes, random_reference_entry = load_reference_observation(data, random_start)
+        reference_observation_source = "Q3R3_C_REFERENCE_CLEAN"
+    else:
+        if not compare_image_bytes(random_image_a, random_image_b):
+            raise RuntimeError(f"D_RANDOM_TIME_REPLAY_OBSERVATION_MISMATCH:{random_start}")
+        random_reference_bytes = random_image_a.tobytes()
+        random_reference_entry = {"step": random_start, "sha256": sha256_bytes(random_reference_bytes), "source": "two_replay_observation"}
+        reference_observation_source = "Q3R3_D_TWO_REPLAY_OBSERVATION"
     random_dir = Path(str(protocol["resource"]["durable_output_root"])) / suite / str(data["parent"]["fixture_id"])
     random_dir.mkdir(parents=True, exist_ok=False)
     random_obs_path = random_dir / "random_reference_observation.bin"
-    random_obs_path.write_bytes(random_image_a.tobytes())
-    random_material = {"start": random_start, "rank": random_rank, "candidates": candidates, "state": random_state_a, "image_bytes": random_image_a.tobytes(), "replay_audit": random_state_audit, "replay_a": random_replay_audit, "replay_b": random_replay_b, "observation_path": str(random_obs_path), "observation_sha256": sha256_file(random_obs_path)}
+    random_obs_path.write_bytes(random_reference_bytes)
+    random_material = {"start": random_start, "rank": random_rank, "candidates": candidates, "state": random_state_a, "image_bytes": random_reference_bytes, "replay_audit": random_state_audit, "replay_a": random_replay_audit, "replay_b": random_replay_b, "replay_image_a_sha256": sha256_bytes(random_image_a.tobytes()), "replay_image_b_sha256": sha256_bytes(random_image_b.tobytes()), "reference_observation_source": reference_observation_source, "reference_observation_entry": random_reference_entry, "observation_path": str(random_obs_path), "observation_sha256": sha256_file(random_obs_path)}
     if random_start >= int(data["parent"]["first_emit_step"]) and random_start <= int(data["parent"]["first_emit_step"]) + 4:
         raise RuntimeError("D_RANDOM_TIME_OVERLAPS_STUDENT_EMIT_WINDOW")
     write_json(random_dir / "random_time_materialization.json", {key: value for key, value in random_material.items() if key != "image_bytes"})

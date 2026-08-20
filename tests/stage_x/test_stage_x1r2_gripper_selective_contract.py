@@ -62,6 +62,22 @@ def test_strict_candidate_audit_fails_closed_without_selective_candidate():
         raise AssertionError("non-selective candidate was accepted")
 
 
+def test_strict_candidate_audit_fails_closed_without_native_open_set():
+    attacker = object.__new__(TokenPrefixPGDAttacker)
+    attacker._generate_action_prefix_tokens = lambda _prompt, _pixel_values, *, prefix_len: torch.tensor([1, 2, 3, 4, 5, 6, 20])
+    try:
+        attacker._select_strict_arm_candidate(
+            torch.tensor([[101]]),
+            [{"candidate_index": 0, "candidate_source": "test", "pixel_values": torch.tensor([0])}],
+            torch.tensor([1, 2, 3, 4, 5, 6, 10]),
+            None,
+        )
+    except RouteContractError as exc:
+        assert str(exc) == "STRICT_CANDIDATE_AUDIT_OPEN_TOKEN_SET_MISSING"
+    else:
+        raise AssertionError("missing native OPEN set was not rejected")
+
+
 def test_contract_freezes_direct_generation_and_transition_gates():
     path = ROOT / "configs/STAGE_X_X1R2_GRIPPER_SELECTIVE_ATTACK_CONTRACT_V1.json"
     contract = json.loads(path.read_text(encoding="utf-8"))

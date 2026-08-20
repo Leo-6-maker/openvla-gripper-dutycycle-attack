@@ -40,7 +40,7 @@ def check_zero(boundary: dict[str, Any], errors: list[str], label: str) -> None:
         errors.append(f"{label}:PROTECTED_STATUS_INVALID")
 
 
-def audit_suite(path: Path, source_commit: str, source_tree: str, errors: list[str], repairs: dict[tuple[str, int], dict[str, Any]]) -> dict[str, Any]:
+def audit_suite(path: Path, source_commit: str, source_tree: str, errors: list[str], repairs: dict[tuple[str, int], dict[str, Any]], require_reference_observations: bool) -> dict[str, Any]:
     if not path.is_file():
         errors.append(f"MISSING_SUITE_REPORT:{path}")
         return {"path": str(path), "status": "MISSING"}
@@ -71,6 +71,22 @@ def audit_suite(path: Path, source_commit: str, source_tree: str, errors: list[s
     for row in scan:
         if row.get("canonical_parent_key") in EXPOSED:
             errors.append(f"{suite}:EXPOSED_SCAN_IDENTITY:{row.get('canonical_parent_key')}")
+    if require_reference_observations:
+        selected_root = path.parent / str(report.get("selected_fixture"))
+        manifest_path = selected_root / "reference_observations_manifest.json"
+        if not manifest_path.is_file():
+            errors.append(f"{suite}:REFERENCE_OBSERVATION_MANIFEST_MISSING")
+        else:
+            manifest = load(manifest_path)
+            rows_by_step = {int(item.get("step", -1)): item for item in manifest.get("rows", [])}
+            telemetry = load(selected_root / "reference_telemetry.json").get("rows", []) if (selected_root / "reference_telemetry.json").is_file() else []
+            expected_steps = {int(item.get("step", -1)) for item in telemetry}
+            if rows_by_step.keys() != expected_steps:
+                errors.append(f"{suite}:REFERENCE_OBSERVATION_STEP_SET_INVALID")
+            for item in manifest.get("rows", []):
+                payload_path = selected_root / str(item.get("path", ""))
+                if not payload_path.is_file() or sha256_file(payload_path) != str(item.get("sha256", "")):
+                    errors.append(f"{suite}:REFERENCE_OBSERVATION_BINDING_INVALID:{item.get('step')}")
     branches = report.get("branch_receipts", [])
     if len(branches) != 2:
         errors.append(f"{suite}:BRANCH_REPEAT_COUNT:{len(branches)}")
@@ -139,6 +155,7 @@ def main() -> int:
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
     parser.add_argument("--schema-repair", type=Path)
+    parser.add_argument("--require-reference-observations", action="store_true")
     args = parser.parse_args()
     errors: list[str] = []
     repairs: dict[tuple[str, int], dict[str, Any]] = {}
@@ -150,7 +167,7 @@ def main() -> int:
             errors.append("RECEIPT_SCHEMA_REPAIR_SOURCE_MISMATCH")
         for repair in repair_doc.get("repairs", []):
             repairs[(str(repair.get("suite")), int(repair.get("repeat", -1)))] = repair
-    rows = [audit_suite(args.root / suite / "SUITE_BRANCH_REPLAY_REPORT_V1.json", args.source_commit, args.source_tree, errors, repairs) for suite in SUITES]
+    rows = [audit_suite(args.root / suite / "SUITE_BRANCH_REPLAY_REPORT_V1.json", args.source_commit, args.source_tree, errors, repairs, args.require_reference_observations) for suite in SUITES]
     selected = [row.get("selected_parent_key") for row in rows if row.get("selected_parent_key")]
     if len(selected) != len(set(selected)):
         errors.append("SELECTED_PARENT_DUPLICATE_ACROSS_SUITES")

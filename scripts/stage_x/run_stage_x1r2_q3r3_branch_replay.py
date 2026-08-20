@@ -119,8 +119,8 @@ def seed_for(key: str) -> int:
     return int(hashlib.sha256(f"STAGE_X1R2_Q3R3_REFERENCE_CLEAN_V1_20260820|{key}".encode()).hexdigest()[:8], 16)
 
 
-def load_inputs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
-    protocol = load_json(PROTOCOL)
+def load_inputs(protocol_path: Path = PROTOCOL) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], list[dict[str, Any]], set[str]]:
+    protocol = load_json(protocol_path)
     authority = load_json(AUTHORITY)
     if protocol.get("status") != "FROZEN_ENGINEERING_BRANCH_REPLAY_ONLY":
         raise RuntimeError("Q3R3_C_PROTOCOL_NOT_FROZEN")
@@ -143,7 +143,8 @@ def load_inputs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], list[
         raise RuntimeError("SUITE_VICTIM_CONTRACT_GIT_BLOB_MISMATCH")
     if set(protocol.get("already_exposed_q3r2_keys", [])) != EXPOSED:
         raise RuntimeError("Q3R2_EXPOSED_KEY_BINDING_MISMATCH")
-    return protocol, authority, contract, pool
+    excluded = EXPOSED | {str(key) for key in protocol.get("excluded_engineering_keys", [])}
+    return protocol, authority, contract, pool, excluded
 
 
 def student_paths(authority: Mapping[str, Any]) -> dict[str, Path]:
@@ -298,7 +299,7 @@ def reference_rollout(parent: Mapping[str, Any], model: Any, processor: Any, dev
             prefix = [{"step": int(row["step"]), "action_env_7d": row["action_env_7d"], "direct_generated_token_ids": row["direct_generated_token_ids"]} for row in rows[: int(emit) + 1]]
             write_json(out / "reference_action_prefix.json", {"t_emit": int(emit), "rows": prefix})
             write_json(out / "reference_branch_state.json", ref_state)
-            return {"receipt": receipt, "rows": rows, "instruction": instruction, "initial_state": initial_state, "branch_state": ref_state, "reference_image": image_cache[int(emit)], "emit_row": rows[int(emit)], "action_rows": rows}
+            return {"receipt": receipt, "rows": rows, "instruction": instruction, "initial_state": initial_state, "branch_state": ref_state, "reference_image": image_cache[int(emit)], "emit_row": rows[int(emit)], "action_rows": rows, "image_cache": image_cache}
         return {"receipt": receipt, "rows": rows}
     finally:
         if env is not None:
@@ -356,8 +357,21 @@ def branch_repeat(parent: Mapping[str, Any], reference: Mapping[str, Any], model
             env.close()
 
 
+def persist_reference_observations(root: Path, image_cache: Mapping[int, bytes]) -> dict[str, Any]:
+    observation_root = root / "reference_observations"
+    observation_root.mkdir(parents=True, exist_ok=False)
+    rows = []
+    for step, payload in sorted(image_cache.items()):
+        path = observation_root / f"step_{int(step):04d}.bin"
+        path.write_bytes(payload)
+        rows.append({"step": int(step), "path": path.relative_to(root).as_posix(), "bytes": len(payload), "sha256": sha256_bytes(payload)})
+    manifest = {"schema": "STAGE_X1R2_Q3R3_REFERENCE_OBSERVATION_MANIFEST_V1", "source": "single_REFERENCE_CLEAN_trajectory", "rows": rows}
+    write_json(root / "reference_observations_manifest.json", manifest)
+    return manifest
+
+
 def run_suite(args: argparse.Namespace) -> int:
-    protocol, authority, contract, pool = load_inputs()
+    protocol, authority, contract, pool, excluded = load_inputs(Path(args.protocol))
     suite = args.suite
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.physical_gpu)
     source = source_receipt(args.source_commit, args.source_tree)
@@ -375,7 +389,7 @@ def run_suite(args: argparse.Namespace) -> int:
     torch.set_num_threads(1)
     model, processor, device, action_dim = clean.load_openvla(Path(str(contract_suite["model_path"])), str(contract_suite["unnorm_key"]))
     student = clean.load_student({}, paths)
-    candidates = [row for row in pool if row["suite"] == suite and row["canonical_parent_key"] not in set(protocol["already_exposed_q3r2_keys"])]
+    candidates = [row for row in pool if row["suite"] == suite and row["canonical_parent_key"] not in excluded]
     scan: list[dict[str, Any]] = []
     selected = None
     selected_ref: dict[str, Any] | None = None
@@ -397,6 +411,8 @@ def run_suite(args: argparse.Namespace) -> int:
     status = "HOLD_NO_CURRENT_RUNTIME_QUALIFIED_REFERENCE_CLEAN"
     if selected is not None and selected_ref is not None:
         selected_root = suite_root / str(selected["fixture_id"])
+        if protocol.get("reference_clean", {}).get("persist_all_observations"):
+            persist_reference_observations(selected_root, selected_ref["image_cache"])
         branches = [branch_repeat(selected, selected_ref, model, processor, device, contract_suite, args.physical_gpu, selected_root, repeat) for repeat in range(2)]
         status = "PASS_SUITE_BRANCH_REPLAY" if all(item.get("status") == "PASS_BRANCH_REPLAY" and item.get("state_audit", {}).get("equal") and item.get("clean_direct_tokens_match") for item in branches) else "HOLD_BRANCH_REPLAY"
     report = {"schema": "STAGE_X1R2_Q3R3_BRANCH_REPLAY_SUITE_REPORT_V1", "status": status, "suite": suite, "source": source, "model_identity_observed": model_identity_observed, "mount_gpu": mount, "scan": scan, "selected_fixture": selected["fixture_id"] if selected else None, "selected_parent_key": selected["canonical_parent_key"] if selected else None, "branch_receipts": branches, "protected_boundary": {"pgd_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "attacked_env_steps": 0, "protected_reads": 0, "protected_evaluation": "UNREAD", "eval160": "UNREAD"}, "scientific_authority": False, "next_gate": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS"}
@@ -410,6 +426,7 @@ def main() -> int:
     parser.add_argument("--physical-gpu", type=int, required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
+    parser.add_argument("--protocol", type=Path, default=PROTOCOL)
     return run_suite(parser.parse_args())
 
 

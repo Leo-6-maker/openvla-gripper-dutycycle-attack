@@ -28,6 +28,8 @@ def test_q3r3_c_runner_checks_committed_source_before_model_load():
     assert "seed_all(seed)" in source
     assert "clean.load_openvla" in source
     assert "physical_interventions" in source
+    assert "persist_reference_observations" in source
+    assert "excluded_engineering_keys" in source
 
 
 def test_q3r3_c_aggregator_has_no_runtime_or_attack_dependency():

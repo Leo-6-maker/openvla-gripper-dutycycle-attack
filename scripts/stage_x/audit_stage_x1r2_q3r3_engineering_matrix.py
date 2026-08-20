@@ -157,6 +157,8 @@ def main() -> int:
         random = load(random_path)
         fail(errors, random.get("replay_audit", {}).get("equal") is True, f"RANDOM_STATE_REPLAY:{suite}")
         fail(errors, random.get("observation_sha256") == suite_receipt.get("random_time", {}).get("observation_sha256"), f"RANDOM_OBSERVATION_BINDING:{suite}")
+        if protocol.get("reference_observation_source_required"):
+            fail(errors, random.get("reference_observation_source") == "Q3R3_C_REFERENCE_CLEAN", f"RANDOM_REFERENCE_SOURCE:{suite}")
         arms = {}
         kind_by_label = {
             "CLEAN_ENGINEERING": "clean",
