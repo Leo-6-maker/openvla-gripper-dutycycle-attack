@@ -1,0 +1,68 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E2_GOAL_NO_LEGAL_EMIT_DIAGNOSTIC_V1",
+  "status": "PASS_STATIC_DIAGNOSTIC_NO_LEGAL_EMIT_IN_BOUND_SUCCESSOR_POOL",
+  "date": "2026-08-21",
+  "source": {
+    "commit": "71d6a7e7c7ac2202a206d872f86ad1f79fea70b9",
+    "tree": "76776602598747b8fa90801ceb1400a896937806",
+    "scheduler_source": "scripts/stage_x/run_stage_x1r_t1d1_screening_clean.py",
+    "scheduler_source_git_blob_sha256": "b17761a158aca448610c251d17843c658392479b",
+    "primary_source_git_blob_sha256": "6ad6760eccef1bf01e5b5780fc85e36692bb24bb"
+  },
+  "durable_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_e2_20260821",
+  "frozen_scheduler_predicate": {
+    "candidate_close": true,
+    "legal_horizon": true,
+    "physical_criticality_at_least": 0.55,
+    "gripper_closing_state_at_least": 0.8,
+    "first_emit_one_shot": true
+  },
+  "fixtures": [
+    {
+      "fixture_id": "Q3R2-LIBERO_GOAL-09",
+      "canonical_parent_key": "libero_goal/task_07/state_43",
+      "reference_telemetry_sha256": "2332d83017ce92b52df148fd780c19f5732e75a8e73248c0dee203ef356877d9",
+      "reference_receipt_sha256": "eb7917b271cd9ccc0d302b99c4a2580fde9c19b369e6410386bc3e29d1b031bf",
+      "rows": 105,
+      "candidate_close_count": 48,
+      "max_physical_criticality": 0.4813580811023712,
+      "max_gripper_closing_state": 0.009132853709161282,
+      "legal_emit_predicate_count": 0,
+      "first_emit_step": null
+    },
+    {
+      "fixture_id": "Q3R2-LIBERO_GOAL-10",
+      "canonical_parent_key": "libero_goal/task_08/state_32",
+      "reference_telemetry_sha256": "18a091d6e5b6b36efa161f6ac48a3bd2bfc14e9576976f83395e5575ca46d1c6",
+      "reference_receipt_sha256": "b3106d13284a43406312a9f166922b083d1877138d808a3645a93a175ffc6a4b",
+      "rows": 140,
+      "candidate_close_count": 53,
+      "max_physical_criticality": 0.7597017288208008,
+      "max_gripper_closing_state": 0.7156898975372314,
+      "legal_emit_predicate_count": 0,
+      "first_emit_step": null
+    },
+    {
+      "fixture_id": "Q3R2-LIBERO_GOAL-11",
+      "canonical_parent_key": "libero_goal/task_05/state_21",
+      "reference_telemetry_sha256": "2bcf82d00baffda840428d5c2034007e05539aaacf88b5905234224db343a20c",
+      "reference_receipt_sha256": "d173826e3d48cca3f30e148060557ea6d5aa69a1a82da2f766e03d62f097da28",
+      "rows": 126,
+      "candidate_close_count": 0,
+      "max_physical_criticality": 0.5765600204467773,
+      "max_gripper_closing_state": 0.007447198964655399,
+      "legal_emit_predicate_count": 0,
+      "first_emit_step": null
+    }
+  ],
+  "interpretation": "The bounded goal-suite clean scheduler has no legal emit under the frozen thresholds. This is not a strict selector negative and not a validator false rejection; no attack or protected outcome was read.",
+  "protected_boundary": {
+    "model_inference": "clean_reference_only",
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "protected_reads": 0,
+    "eval160": "UNREAD"
+  }
+}
