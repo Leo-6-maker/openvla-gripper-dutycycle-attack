@@ -1,0 +1,86 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_BRANCH_QUALIFICATION_HOLD_V1",
+  "status": "HOLD_E2_FOUR_SUITE_BRANCH_QUALIFICATION_INCOMPLETE_NO_LEGAL_GOAL_EMIT",
+  "date": "2026-08-21",
+  "gate": "STAGE_X_X1R2_Q3R3_E2_PREATTACK_BRANCH_QUALIFICATION",
+  "source": {
+    "commit": "71d6a7e7c7ac2202a206d872f86ad1f79fea70b9",
+    "tree": "76776602598747b8fa90801ceb1400a896937806",
+    "server_worktree": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x1r2-q3r3-e2-71d6a7e",
+    "status": "CLEAN"
+  },
+  "protocol": {
+    "path": "configs/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_PROTOCOL_V1.json",
+    "git_blob_sha256": "21d4b4f8c4fe5a66d5960b8bb1b7ccf211b843df",
+    "pool_git_blob_sha256": "a7c48cab8c4bfef0ead1019fa9987ce6e44c1ae5",
+    "durable_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_e2_20260821"
+  },
+  "remote_root_seal": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_e2_20260821/STAGE_X1R2_Q3R3_E2_BRANCH_QUALIFICATION_ROOT_SEAL_V1.json",
+    "sha256": "1ea143dbaf866839d0dd3d0f8f304c91b4b701100042e0dd701c712fd5b3c003",
+    "sidecar_sha256": "8c6668bfaf8f7fb8bc1633b09492c6460a294ad3cb6ca93dba0497d4c9ba7552"
+  },
+  "suite_results": {
+    "libero_10": {
+      "report_sha256": "bd5b47ac2035a3c7a184bbedd48209e3e120359fd2f2d036adff176e01671405",
+      "status": "PASS_SUITE_BRANCH_REPLAY",
+      "selected_fixture": "Q3R2-LIBERO_10-08",
+      "canonical_parent_key": "libero_10/task_08/state_39",
+      "t_emit": 137,
+      "branch_repeats": 2,
+      "state_equal": true,
+      "direct_tokens_match": true
+    },
+    "libero_goal": {
+      "report_sha256": "27f672eb4482ad4d45cfebbef1601fcb2603a2001164f2088f68d63659be3418",
+      "status": "HOLD_NO_CURRENT_RUNTIME_QUALIFIED_REFERENCE_CLEAN",
+      "scanned_count": 3,
+      "all_reference_clean_success": true,
+      "all_first_emit_step": null,
+      "all_first_emit_legal": false,
+      "branch_repeats": 0,
+      "reason": "No legal clean scheduler emit exists in all three bounded successor fixtures."
+    },
+    "libero_object": {
+      "report_sha256": "1d89137cd31ae25e78b4e6005259520f29b4a5a0299d5d4ae6b3a47b58f7b726",
+      "status": "PASS_SUITE_BRANCH_REPLAY",
+      "selected_fixture": "E2S-LIBERO_OBJECT-03",
+      "canonical_parent_key": "libero_object/task_02/state_25",
+      "t_emit": 60,
+      "branch_repeats": 2,
+      "state_equal": true,
+      "direct_tokens_match": true
+    },
+    "libero_spatial": {
+      "report_sha256": "2ec28ac1fde266f0c939c48a96a91915f682581353de16c1aac3a56c1c3107e9",
+      "status": "PASS_SUITE_BRANCH_REPLAY",
+      "selected_fixture": "Q3R2-LIBERO_SPATIAL-08",
+      "canonical_parent_key": "libero_spatial/task_06/state_37",
+      "t_emit": 62,
+      "branch_repeats": 2,
+      "state_equal": true,
+      "direct_tokens_match": true
+    }
+  },
+  "protected_boundary": {
+    "gpu_workers_mounted": 3,
+    "clean_reference_model_inference_only": true,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "protected_reads": 0,
+    "attack_outcome_reads": 0,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "resource": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "free_memory_mib_strictly_greater_than": 20480,
+    "one_project_worker_per_physical_gpu": true,
+    "max_project_workers": 8,
+    "foreign_processes_untouched": true
+  },
+  "decision": "Do not enter E2 TRUE feasibility: the four-suite pre-attack branch gate is incomplete because libero_goal exhausted its bounded pool without a legal emit.",
+  "next_legal_action": "OWNER_OR_PI_REVIEW_OR_EXPLICIT_AUTHORITY_FOR_A_NEW_ENGINEERING_POOL; no R0/R1/R2, no method tuning, no protected evaluation"
+}
