@@ -100,18 +100,19 @@ SOURCE_FILES = (
 )
 
 
-def source_receipt(source_commit: str, source_tree: str) -> dict[str, Any]:
+def source_receipt(source_commit: str, source_tree: str, extra_files: tuple[str, ...] = ()) -> dict[str, Any]:
     observed_head = git("rev-parse", "HEAD")
     observed_tree = git("rev-parse", "HEAD^{tree}")
     if source_commit != observed_head or source_tree != observed_tree:
         raise RuntimeError(f"SOURCE_BINDING_MISMATCH:expected={source_commit}/{source_tree}:observed={observed_head}/{observed_tree}")
+    source_files = tuple(dict.fromkeys((*SOURCE_FILES, *extra_files)))
     return {
         "commit": source_commit,
         "tree": source_tree,
         "repository_observed_head": observed_head,
         "repository_observed_tree": observed_tree,
         "status_porcelain": git("status", "--porcelain"),
-        "runtime_file_blobs": {path: git("rev-parse", f"HEAD:{path}") for path in SOURCE_FILES},
+        "runtime_file_blobs": {path: git("rev-parse", f"HEAD:{path}") for path in source_files},
     }
 
 
@@ -119,10 +120,10 @@ def seed_for(key: str) -> int:
     return int(hashlib.sha256(f"STAGE_X1R2_Q3R3_REFERENCE_CLEAN_V1_20260820|{key}".encode()).hexdigest()[:8], 16)
 
 
-def load_inputs(protocol_path: Path = PROTOCOL) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], list[dict[str, Any]], set[str]]:
+def load_inputs(protocol_path: Path = PROTOCOL) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], list[dict[str, Any]], set[str], str]:
     protocol = load_json(protocol_path)
     authority = load_json(AUTHORITY)
-    if protocol.get("status") != "FROZEN_ENGINEERING_BRANCH_REPLAY_ONLY":
+    if protocol.get("status") not in {"FROZEN_ENGINEERING_BRANCH_REPLAY_ONLY", "FROZEN_E2_PROSPECTIVE_FEASIBILITY_ONLY"}:
         raise RuntimeError("Q3R3_C_PROTOCOL_NOT_FROZEN")
     if authority.get("status") != "STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_PASS":
         raise RuntimeError("Q3R2_RUNTIME_AUTHORITY_NOT_PASS")
@@ -131,11 +132,22 @@ def load_inputs(protocol_path: Path = PROTOCOL) -> tuple[dict[str, Any], dict[st
     branch = protocol.get("branch_replay", {})
     if branch.get("repeat_count") != 2 or branch.get("prebranch_openvla_calls") != 0 or branch.get("prebranch_student_calls") != 0:
         raise RuntimeError("Q3R3_C_BRANCH_CONTRACT_MISMATCH")
-    if git("rev-parse", "HEAD:reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json") != protocol["q3r2_pool"]["git_blob_sha256"]:
-        raise RuntimeError("Q3R2_POOL_GIT_BLOB_MISMATCH")
-    pool = load_json(POOL).get("selected", [])
-    if len(pool) != 48 or any(not row.get("permanent_exclusion") or row.get("scientific_use") or row.get("outcome_read") for row in pool):
-        raise RuntimeError("Q3R2_POOL_SCOPE_INVALID")
+    pool_binding = protocol.get("fixture_pool")
+    if pool_binding is None:
+        pool_binding = protocol["q3r2_pool"]
+    pool_rel = str(pool_binding["path"])
+    pool_path = Path(pool_rel)
+    if not pool_path.is_absolute():
+        pool_path = REPO / pool_path
+    if not pool_path.is_file():
+        raise RuntimeError(f"FIXTURE_POOL_MISSING:{pool_path}")
+    expected_blob = pool_binding.get("git_blob_sha256")
+    if expected_blob is not None and git("rev-parse", f"HEAD:{pool_rel}") != str(expected_blob):
+        raise RuntimeError("FIXTURE_POOL_GIT_BLOB_MISMATCH")
+    pool = load_json(pool_path).get("selected", [])
+    expected_count = int(pool_binding.get("selected_count", 48))
+    if len(pool) != expected_count or any(not row.get("permanent_exclusion") or row.get("scientific_use") or row.get("outcome_read") for row in pool):
+        raise RuntimeError("FIXTURE_POOL_SCOPE_INVALID")
     contract = load_json(CONTRACT)
     if contract.get("status") != "FROZEN_FOR_CLEAN_PARITY_ONLY" or contract.get("scientific_authority") != "X1R_NOT_AUTHORIZED":
         raise RuntimeError("SUITE_VICTIM_CONTRACT_SCOPE_INVALID")
@@ -144,7 +156,7 @@ def load_inputs(protocol_path: Path = PROTOCOL) -> tuple[dict[str, Any], dict[st
     if set(protocol.get("already_exposed_q3r2_keys", [])) != EXPOSED:
         raise RuntimeError("Q3R2_EXPOSED_KEY_BINDING_MISMATCH")
     excluded = EXPOSED | {str(key) for key in protocol.get("excluded_engineering_keys", [])}
-    return protocol, authority, contract, pool, excluded
+    return protocol, authority, contract, pool, excluded, pool_rel
 
 
 def student_paths(authority: Mapping[str, Any]) -> dict[str, Path]:
@@ -371,10 +383,11 @@ def persist_reference_observations(root: Path, image_cache: Mapping[int, bytes])
 
 
 def run_suite(args: argparse.Namespace) -> int:
-    protocol, authority, contract, pool, excluded = load_inputs(Path(args.protocol))
+    protocol, authority, contract, pool, excluded, pool_rel = load_inputs(Path(args.protocol))
     suite = args.suite
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.physical_gpu)
-    source = source_receipt(args.source_commit, args.source_tree)
+    protocol_rel = Path(args.protocol).resolve().relative_to(REPO).as_posix()
+    source = source_receipt(args.source_commit, args.source_tree, (protocol_rel, pool_rel))
     mount = gpu_receipt(args.physical_gpu)
     root = Path(str(protocol["resource"]["durable_output_root"]))
     root.mkdir(parents=True, exist_ok=True)
@@ -393,9 +406,14 @@ def run_suite(args: argparse.Namespace) -> int:
     scan: list[dict[str, Any]] = []
     selected = None
     selected_ref: dict[str, Any] | None = None
+    branches: list[dict[str, Any]] = []
+    candidate_branch_attempts: list[dict[str, Any]] = []
     suite_root = root / suite
     suite_root.mkdir(parents=True, exist_ok=True)
-    for candidate in candidates:
+    scan_cap = int(protocol.get("bounded_scan_cap", len(candidates)))
+    if scan_cap <= 0:
+        raise RuntimeError("Q3R3_SCAN_CAP_INVALID")
+    for candidate in candidates[:scan_cap]:
         out = suite_root / str(candidate["fixture_id"])
         if out.exists():
             raise RuntimeError(f"Q3R3_C_OUTPUT_EXISTS:{out}")
@@ -404,18 +422,26 @@ def run_suite(args: argparse.Namespace) -> int:
         rec = result["receipt"]
         scan.append({"fixture_id": candidate["fixture_id"], "canonical_parent_key": candidate["canonical_parent_key"], "status": rec["status"], "clean_success": rec["clean_success"], "valid_feature_stream": rec["valid_feature_stream"], "first_emit_step": rec["first_emit_step"], "first_emit_legal": rec["first_emit_legal"]})
         if rec["clean_success"] and rec["valid_feature_stream"] and rec["first_emit_step"] is not None and rec["first_emit_legal"]:
-            selected = candidate
-            selected_ref = result
-            break
-    branches: list[dict[str, Any]] = []
+            selected_root = suite_root / str(candidate["fixture_id"])
+            if protocol.get("reference_clean", {}).get("persist_all_observations"):
+                persist_reference_observations(selected_root, result["image_cache"])
+            candidate_branches = [branch_repeat(candidate, result, model, processor, device, contract_suite, args.physical_gpu, selected_root, repeat) for repeat in range(2)]
+            branch_pass = all(item.get("status") == "PASS_BRANCH_REPLAY" and item.get("state_audit", {}).get("equal") and item.get("clean_direct_tokens_match") for item in candidate_branches)
+            scan[-1]["branch_replay_status"] = "PASS_BRANCH_REPLAY" if branch_pass else "HOLD_BRANCH_REPLAY"
+            candidate_branch_attempts.append({"fixture_id": candidate["fixture_id"], "canonical_parent_key": candidate["canonical_parent_key"], "status": scan[-1]["branch_replay_status"], "branch_receipts": candidate_branches})
+            if branch_pass:
+                if selected is None:
+                    selected = candidate
+                    selected_ref = result
+                    branches = candidate_branches
+                if not protocol.get("collect_all_branch_qualified", False):
+                    break
     status = "HOLD_NO_CURRENT_RUNTIME_QUALIFIED_REFERENCE_CLEAN"
     if selected is not None and selected_ref is not None:
-        selected_root = suite_root / str(selected["fixture_id"])
-        if protocol.get("reference_clean", {}).get("persist_all_observations"):
-            persist_reference_observations(selected_root, selected_ref["image_cache"])
-        branches = [branch_repeat(selected, selected_ref, model, processor, device, contract_suite, args.physical_gpu, selected_root, repeat) for repeat in range(2)]
-        status = "PASS_SUITE_BRANCH_REPLAY" if all(item.get("status") == "PASS_BRANCH_REPLAY" and item.get("state_audit", {}).get("equal") and item.get("clean_direct_tokens_match") for item in branches) else "HOLD_BRANCH_REPLAY"
-    report = {"schema": "STAGE_X1R2_Q3R3_BRANCH_REPLAY_SUITE_REPORT_V1", "status": status, "suite": suite, "source": source, "model_identity_observed": model_identity_observed, "mount_gpu": mount, "scan": scan, "selected_fixture": selected["fixture_id"] if selected else None, "selected_parent_key": selected["canonical_parent_key"] if selected else None, "branch_receipts": branches, "protected_boundary": {"pgd_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "attacked_env_steps": 0, "protected_reads": 0, "protected_evaluation": "UNREAD", "eval160": "UNREAD"}, "scientific_authority": False, "next_gate": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS"}
+        status = "PASS_SUITE_BRANCH_REPLAY"
+    elif candidate_branch_attempts:
+        status = "HOLD_BRANCH_REPLAY"
+    report = {"schema": "STAGE_X1R2_Q3R3_BRANCH_REPLAY_SUITE_REPORT_V1", "status": status, "suite": suite, "source": source, "model_identity_observed": model_identity_observed, "mount_gpu": mount, "scan": scan, "bounded_scan_cap": scan_cap, "selected_fixture": selected["fixture_id"] if selected else None, "selected_parent_key": selected["canonical_parent_key"] if selected else None, "branch_receipts": branches, "candidate_branch_attempts": candidate_branch_attempts, "protected_boundary": {"pgd_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "attacked_env_steps": 0, "protected_reads": 0, "protected_evaluation": "UNREAD", "eval160": "UNREAD"}, "scientific_authority": False, "next_gate": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS"}
     write_json(suite_root / "SUITE_BRANCH_REPLAY_REPORT_V1.json", report)
     return 0 if status == "PASS_SUITE_BRANCH_REPLAY" else 2
 

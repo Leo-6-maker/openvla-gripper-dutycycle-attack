@@ -23,6 +23,8 @@ _AUDIT_KEYS = (
     "clean_gripper_is_native_open",
     "gripper_token_changed",
     "processor_input_sha256",
+    "delta_sha256",
+    "pixel_budget_adv_inputs_linf",
 )
 
 

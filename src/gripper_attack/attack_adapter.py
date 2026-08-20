@@ -731,6 +731,8 @@ class TokenPrefixPGDAttacker:
                 "clean_gripper_is_native_open": clean_gripper_is_native_open,
                 "gripper_token_changed": gripper_token_id != clean_gripper_token_id,
                 "processor_input_sha256": str(candidate.get("processor_input_sha256", "")),
+                "delta_sha256": str(candidate.get("delta_sha256", "")),
+                "pixel_budget_adv_inputs_linf": float(candidate.get("pixel_budget_adv_inputs_linf", 0.0)),
             }
             audit.append(item)
             if not arm_mismatch and not clean_gripper_is_native_open and gripper_token_id in open_ids and gripper_token_id != clean_gripper_token_id:
@@ -1322,7 +1324,7 @@ class TokenPrefixPGDAttacker:
                     trajectory_candidate_inputs.append(
                         {
                             "candidate_index": int(i + 1),
-                            "candidate_source": "pgd_iteration",
+                            "candidate_source": f"pgd_iteration_{int(i + 1)}",
                             "input_ids": clean_ids.detach(),
                             "pixel_values": cand_model.detach(),
                             "delta_sha256": tensor_sha256(cand_diff),

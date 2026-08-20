@@ -1,0 +1,85 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_PROTOCOL_V1",
+  "status": "FROZEN_E2_PROSPECTIVE_FEASIBILITY_ONLY",
+  "date": "2026-08-21",
+  "scientific_authority": false,
+  "explicit_user_authorization": "授权你自主推进，遇到工程问题自己解决",
+  "authority_scope": "Engineering continuation only; no attack-semantic, scientific-population, endpoint, or protected-firewall change.",
+  "fixture_pool": {
+    "path": "reports/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_ENGINEERING_POOL_V1.json",
+    "git_blob_sha256": "a7c48cab8c4bfef0ead1019fa9987ce6e44c1ae5",
+    "per_suite_count": 3,
+    "selected_count": 12,
+    "scientific_use": false,
+    "permanent_exclusion": true
+  },
+  "q3r2_pool": {
+    "path": "reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json",
+    "git_blob_sha256": "2f567ccf16fdd42479a566b48a9ac9893fd027cb",
+    "per_suite_count": 12,
+    "scientific_use": false,
+    "permanent_exclusion": true
+  },
+  "already_exposed_q3r2_keys": [
+    "libero_10/task_08/state_44",
+    "libero_goal/task_02/state_37",
+    "libero_object/task_01/state_34",
+    "libero_spatial/task_09/state_29"
+  ],
+  "bounded_scan_cap": 3,
+  "candidate_policy": {
+    "sequential_frozen_pool_order": true,
+    "candidate_consumed_after_exposure": true,
+    "replacement": false,
+    "outcome_blind": true,
+    "attack_result_used_for_selection": false,
+    "advance_after_branch_qualification_failure_within_cap": true
+  },
+  "reference_clean": {"t5": 5, "h_phys": 10, "dummy_wait_steps": 10, "student_timing_once": true, "persist_all_observations": true},
+  "branch_replay": {
+    "repeat_count": 2,
+    "fresh_env_per_repeat": true,
+    "collect_all_branch_qualified": true,
+    "prebranch_openvla_calls": 0,
+    "prebranch_student_calls": 0,
+    "branch_point": "immediately before action at t_emit",
+    "first_decision_input": "same captured REFERENCE_CLEAN observation bytes",
+    "first_clean_action_must_match_reference_tokens": true,
+    "post_branch_clean_steps": 15
+  },
+  "state_contract": {"stable_fields_exact": true, "float_atol": 1e-12, "float_rtol": 0.0, "missing_field": "HOLD", "widen_after_first_run": false},
+  "resource": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "free_memory_mib_strictly_greater_than": 20480,
+    "one_project_worker_per_physical_gpu": true,
+    "max_project_workers": 8,
+    "foreign_processes_untouched": true,
+    "durable_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_e2_20260821",
+    "minimum_free_bytes": 4294967296
+  },
+  "e2_true_probe": {
+    "true_only": true,
+    "candidate_order": ["delta0", "pgd_iteration_1", "pgd_iteration_2", "pgd_iteration_3", "pgd_iteration_4", "pgd_iteration_5"],
+    "stop_before_attacked_env_step": true,
+    "required_candidate_count": 6,
+    "no_physical_outcome_read": true
+  },
+  "frozen_method": {
+    "epsilon": 0.03,
+    "step_size": 0.006,
+    "num_steps": 5,
+    "random_start": false,
+    "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "target_execution_class": "NATIVE_OPEN",
+    "secondary_target_token_id": 31745,
+    "exact_arm_dimensions": [0, 1, 2, 3, 4, 5],
+    "direct_action_token_count": 7,
+    "strict_route": true,
+    "allow_fallback": false,
+    "no_actuator_overwrite": true,
+    "no_decode_reencode": true
+  },
+  "protected_boundary": {"eval160": "UNREAD", "protected_evaluation": "UNREAD", "protected_reads": 0, "vphys_reads": 0, "physical_interventions": 0, "attack_outcome_reads": 0, "attacked_env_steps": 0},
+  "next_gate": "STAGE_X_X1R2_Q3R3_E2_TRUE_FEASIBILITY_PROBE"
+}

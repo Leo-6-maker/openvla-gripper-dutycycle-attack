@@ -26,6 +26,8 @@ def _row(index: int, *, arm_equal: bool = False) -> dict:
         "clean_gripper_is_native_open": False,
         "gripper_token_changed": index == 5,
         "processor_input_sha256": f"sha-{index}",
+        "delta_sha256": f"delta-{index}",
+        "pixel_budget_adv_inputs_linf": 0.006 * index,
     }
 
 
