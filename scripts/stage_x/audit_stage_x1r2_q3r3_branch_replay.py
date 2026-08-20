@@ -50,6 +50,9 @@ def audit_suite(path: Path, source_commit: str, source_tree: str, errors: list[s
         errors.append(f"{suite}:SUITE_STATUS:{report.get('status')}")
     if report.get("scientific_authority") is not False:
         errors.append(f"{suite}:SCIENTIFIC_AUTHORITY_NOT_FALSE")
+    observed_model = report.get("model_identity_observed", {}).get("identity", {})
+    if not observed_model.get("tree_sha256") or int(observed_model.get("file_count", 0)) <= 0 or int(observed_model.get("bytes", 0)) <= 0:
+        errors.append(f"{suite}:MODEL_IDENTITY_RECEIPT_MISSING")
     source = report.get("source", {})
     if source.get("commit") != source_commit or source.get("tree") != source_tree:
         errors.append(f"{suite}:SOURCE_ARGUMENT_BINDING_MISMATCH")

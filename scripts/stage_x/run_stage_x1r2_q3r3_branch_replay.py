@@ -162,6 +162,27 @@ def verify_student_source_binding(authority: Mapping[str, Any]) -> None:
             raise RuntimeError(f"STUDENT_SOURCE_BINDING_MISMATCH:{artifact['name']}:{path}")
 
 
+def verify_model_identity(suite_cfg: Mapping[str, Any]) -> dict[str, Any]:
+    path = Path(str(suite_cfg["model_path"]))
+    if not path.is_dir():
+        raise RuntimeError(f"MODEL_DIRECTORY_MISSING:{path}")
+    observed = clean.file_tree_digest(path)
+    expected = suite_cfg["model_identity"]
+    for key in ("file_count", "bytes", "tree_sha256"):
+        if observed[key] != expected[key]:
+            raise RuntimeError(f"MODEL_IDENTITY_MISMATCH:{key}:{observed[key]}!={expected[key]}")
+    key_files: dict[str, str] = {}
+    for relative, expected_sha in expected.get("key_files", {}).items():
+        key_path = path / relative
+        if not key_path.is_file():
+            raise RuntimeError(f"MODEL_KEY_FILE_MISSING:{relative}")
+        actual = sha256_file(key_path)
+        key_files[relative] = actual
+        if actual != expected_sha:
+            raise RuntimeError(f"MODEL_KEY_FILE_SHA_MISMATCH:{relative}")
+    return {"path": str(path), "identity": observed, "key_files": key_files}
+
+
 def seed_all(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed & 0xFFFFFFFF)
@@ -346,6 +367,7 @@ def run_suite(args: argparse.Namespace) -> int:
     if int(os.statvfs(root).f_bavail * os.statvfs(root).f_frsize) <= int(protocol["resource"]["minimum_free_bytes"]):
         raise RuntimeError("HOLD_DURABLE_STORAGE")
     contract_suite = contract["suites"][suite]
+    model_identity_observed = verify_model_identity(contract_suite)
     paths = student_paths(authority)
     verify_student_source_binding(authority)
     import torch
@@ -377,7 +399,7 @@ def run_suite(args: argparse.Namespace) -> int:
         selected_root = suite_root / str(selected["fixture_id"])
         branches = [branch_repeat(selected, selected_ref, model, processor, device, contract_suite, args.physical_gpu, selected_root, repeat) for repeat in range(2)]
         status = "PASS_SUITE_BRANCH_REPLAY" if all(item.get("status") == "PASS_BRANCH_REPLAY" and item.get("state_audit", {}).get("equal") and item.get("clean_direct_tokens_match") for item in branches) else "HOLD_BRANCH_REPLAY"
-    report = {"schema": "STAGE_X1R2_Q3R3_BRANCH_REPLAY_SUITE_REPORT_V1", "status": status, "suite": suite, "source": source, "mount_gpu": mount, "scan": scan, "selected_fixture": selected["fixture_id"] if selected else None, "selected_parent_key": selected["canonical_parent_key"] if selected else None, "branch_receipts": branches, "protected_boundary": {"pgd_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "attacked_env_steps": 0, "protected_reads": 0, "protected_evaluation": "UNREAD", "eval160": "UNREAD"}, "scientific_authority": False, "next_gate": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS"}
+    report = {"schema": "STAGE_X1R2_Q3R3_BRANCH_REPLAY_SUITE_REPORT_V1", "status": status, "suite": suite, "source": source, "model_identity_observed": model_identity_observed, "mount_gpu": mount, "scan": scan, "selected_fixture": selected["fixture_id"] if selected else None, "selected_parent_key": selected["canonical_parent_key"] if selected else None, "branch_receipts": branches, "protected_boundary": {"pgd_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "attacked_env_steps": 0, "protected_reads": 0, "protected_evaluation": "UNREAD", "eval160": "UNREAD"}, "scientific_authority": False, "next_gate": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS"}
     write_json(suite_root / "SUITE_BRANCH_REPLAY_REPORT_V1.json", report)
     return 0 if status == "PASS_SUITE_BRANCH_REPLAY" else 2
 
