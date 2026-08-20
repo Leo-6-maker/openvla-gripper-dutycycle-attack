@@ -1,0 +1,101 @@
+{
+  "schema": "STAGE_X_X1R2_Q3_ARM_REPAIR_PROTOCOL_V1",
+  "status": "FROZEN_ARM_REPAIR_ENGINEERING_PRE_GPU",
+  "scientific_authority": false,
+  "purpose": "Validate the gripper-selective structural repair on one permanently excluded real-model fixture; no scientific attack outcome is authorized.",
+  "fixture_report": {
+    "path": "reports/STAGE_X_X1R2_Q3_ARM_REPAIR_FIXTURE_V1.json",
+    "sha256": "adc42d49dcd8b35d4a662ced2efff81ecef51184601d63fca52b699928210205",
+    "required_count": 1,
+    "required_fixture_id": "Q3-AR-F01"
+  },
+  "victim_contract": {
+    "path": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+    "sha256": "37f5d4ea205835fedc8f4d02c3e722c80581aa5c04d9349c7eed0dd4f6364265",
+    "identity_must_match": true
+  },
+  "selective_attack_contract": {
+    "path": "configs/STAGE_X_X1R2_GRIPPER_SELECTIVE_ATTACK_CONTRACT_V1.json",
+    "sha256": "872001cf521d21a8aeda5762c55ace8975d844dc22cb8e05e0d6ea6032f950d1",
+    "identity_must_match": true
+  },
+  "arm_isolation_candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+  "arms": [
+    "CLEAN_ENGINEERING",
+    "TRUE_PGD_T5_ENGINEERING",
+    "RAND_UNIFORM_T5_ENGINEERING",
+    "SHUFFLED_GRAD_T5_ENGINEERING",
+    "TRUE_RANDOM_TIME_T5_ENGINEERING"
+  ],
+  "attack": {
+    "target_token_id": 31745,
+    "target_execution_class": "NATIVE_OPEN",
+    "epsilon_processor_pixel_values": 0.03,
+    "step_size_processor_pixel_values": 0.006,
+    "num_steps": 5,
+    "strict_route": true,
+    "allow_fallback": false,
+    "arm_isolation_required": true,
+    "candidate_order": "delta0_then_pgd_iteration_1_to_5",
+    "candidate_selection": "first_direct_generated_clean_arm_equal_clean_non_open_adv_native_open_transition",
+    "physical_action_execution": "forbidden unless all selective contract gates pass"
+  },
+  "timing": {
+    "student_fixture_emit_source": "sealed D1R clean receipt",
+    "student_attack_window": "[t_emit,t_emit+4]",
+    "physical_followup_window": "[t_emit+5,t_emit+14]",
+    "h_phys": 10,
+    "random_time_salt": "STAGE_X1R2_Q3_ARM_REPAIR_RANDOM_TIME_V1_20260820",
+    "random_time_rule": "deterministic legal non-overlapping engineering control only",
+    "outcome_blind": true
+  },
+  "qualification_requirements": {
+    "one_fixture_structurally_passes": true,
+    "five_arms_materialized": true,
+    "direct_generated_action_token_count_is_seven": true,
+    "clean_non_open_to_adversarial_native_open_transition_for_true_and_shuffled": true,
+    "arm_token_ids_equal_before_attacked_env_step": true,
+    "no_attacked_env_step_before_all_gates": true,
+    "durable_video_and_telemetry": true,
+    "no_scientific_outcome_consumption": true,
+    "no_protected_reads": true
+  },
+  "resource_contract": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "free_memory_mib_strictly_greater_than": 20480,
+    "one_project_worker_per_physical_gpu": true,
+    "foreign_processes_untouched": true,
+    "durable_storage_required": true
+  },
+  "historical_boundary": {
+    "q3_f01": "IMMUTABLE_RUNTIME_INVALID; do not rerun",
+    "q3_f02": "SEALED_NOT_STARTED; do not start under old authority",
+    "q3_f03": "SEALED_NOT_STARTED; do not start under old authority",
+    "q3_f04": "SEALED_NOT_STARTED; do not start under old authority",
+    "repair_fixture": "Q3-AR-F01 permanently excluded engineering-only identity"
+  },
+  "forbidden": [
+    "X1R2 scientific population selection",
+    "attack outcome based fixture selection",
+    "V_phys read",
+    "physical intervention",
+    "Eval160 read",
+    "protected evaluation read",
+    "rerun Q3-F01",
+    "start Q3-F02 through Q3-F04",
+    "detector or threshold modification"
+  ],
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "model_inference_calls": 0,
+    "env_step_calls": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0
+  },
+  "next_gate": "STAGE_X1R2_Q3_ARM_REPAIR_STATIC_AUDIT"
+}

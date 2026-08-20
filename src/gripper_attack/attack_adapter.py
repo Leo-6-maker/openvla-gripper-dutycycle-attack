@@ -169,6 +169,7 @@ class TokenPrefixPGDAttacker:
         self.surrogate_score_path = str(cfg.get("surrogate_score_path", "uncached_full_context_v1") or "uncached_full_context_v1").strip().lower()
         self.gradient_transform = str(cfg.get("gradient_transform", "none") or "none").strip().lower()
         self.gradient_transform_seed = int(cfg.get("gradient_transform_seed", seed))
+        self.arm_isolation_candidate_policy = str(cfg.get("arm_isolation_candidate_policy", "FINAL_ONLY") or "FINAL_ONLY").strip()
         self.best_restart_metric = str(cfg.get("best_restart_metric", "target_ce_final"))
         self.seed = int(seed)
         self.preprocess_kwargs = dict(preprocess_kwargs or {})
@@ -176,6 +177,7 @@ class TokenPrefixPGDAttacker:
         self.device = device or "cuda:0"
         self.config = cfg
         self._frozen = False
+        self.last_attack_diagnostics: dict[str, Any] = {}
 
     def reset_temporal_state(self):
         self._prev_delta = None
@@ -682,6 +684,72 @@ class TokenPrefixPGDAttacker:
         return gen.sequences[0, prompt_input_ids.shape[1]:].detach().to(
             device=prompt_input_ids.device, dtype=torch.long)
 
+    def _select_strict_arm_candidate(
+        self,
+        prompt_input_ids: torch.LongTensor,
+        trajectory_candidate_inputs: list[dict[str, Any]],
+        clean_generated_action_token_ids: torch.LongTensor,
+        open_token_ids: torch.LongTensor,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        """Select only a predeclared candidate with exact direct-token isolation."""
+        clean_tokens = [int(x) for x in clean_generated_action_token_ids.detach().cpu().tolist()]
+        if len(clean_tokens) != 7:
+            raise RouteContractError(f"ACTION_TOKEN_COUNT_FOR_ARM_AUDIT:{len(clean_tokens)}")
+        clean_arm = clean_tokens[:-1]
+        clean_gripper_token_id = int(clean_tokens[-1])
+        open_ids = {int(x) for x in open_token_ids.detach().cpu().tolist()}
+        clean_gripper_is_native_open = clean_gripper_token_id in open_ids
+        audit: list[dict[str, Any]] = []
+        for candidate in trajectory_candidate_inputs:
+            candidate_tokens = [
+                int(x)
+                for x in self._generate_action_prefix_tokens(
+                    prompt_input_ids,
+                    candidate["pixel_values"],
+                    prefix_len=len(clean_tokens),
+                ).detach().cpu().tolist()
+            ]
+            arm_mismatch = [
+                int(dim)
+                for dim, (clean_id, candidate_id) in enumerate(zip(clean_arm, candidate_tokens[:-1]))
+                if int(clean_id) != int(candidate_id)
+            ]
+            gripper_token_id = int(candidate_tokens[-1])
+            item = {
+                "candidate_index": int(candidate["candidate_index"]),
+                "candidate_source": str(candidate["candidate_source"]),
+                "direct_generated_token_ids": candidate_tokens,
+                "clean_arm_token_ids": clean_arm,
+                "direct_generated_arm_token_ids": candidate_tokens[:-1],
+                "arm_token_ids_equal": not arm_mismatch,
+                "arm_mismatch_dimensions": arm_mismatch,
+                "direct_generated_gripper_token_id": gripper_token_id,
+                "direct_generated_gripper_is_native_open": gripper_token_id in open_ids,
+                "clean_gripper_token_id": clean_gripper_token_id,
+                "clean_gripper_is_native_open": clean_gripper_is_native_open,
+                "gripper_token_changed": gripper_token_id != clean_gripper_token_id,
+                "processor_input_sha256": str(candidate.get("processor_input_sha256", "")),
+            }
+            audit.append(item)
+            if not arm_mismatch and not clean_gripper_is_native_open and gripper_token_id in open_ids and gripper_token_id != clean_gripper_token_id:
+                self.last_attack_diagnostics = {
+                    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+                    "candidate_audit": audit,
+                    "selected_candidate_index": int(candidate["candidate_index"]),
+                    "selected_candidate_source": str(candidate["candidate_source"]),
+                }
+                return candidate, audit
+        diagnostics = {
+            "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+            "candidate_audit": audit,
+            "selected_candidate_index": None,
+            "selected_candidate_source": None,
+        }
+        self.last_attack_diagnostics = diagnostics
+        error = RouteContractError("STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE")
+        error.diagnostics = diagnostics
+        raise error
+
     def _gripper_row_stats(self, row: torch.Tensor, open_token_ids: torch.LongTensor, close_token_ids: torch.LongTensor) -> dict:
         probs = torch.softmax(row, dim=-1)
         top_val, top_idx = torch.max(row, dim=-1)
@@ -910,6 +978,7 @@ class TokenPrefixPGDAttacker:
         }
 
     def attack(self, observation: Any, instruction=None, clean_action=None, target_action=None, clean_model_output=None, *, unnorm_key: str = "libero_goal") -> AttackResult:
+        self.last_attack_diagnostics = {}
         objective = str(getattr(self, "objective", "targeted_directional_ce"))
         is_untargeted = objective in {"untargeted_clean_token_ce", "untargeted_clean_ce", "maximize_clean_ce", "untargeted_arm_clean_token_ce", "ctrl_random_direction_arm_only"}
         is_arm_only_untargeted = objective in {"untargeted_arm_clean_token_ce", "ctrl_random_direction_arm_only"}
@@ -927,6 +996,10 @@ class TokenPrefixPGDAttacker:
         is_target_token_logratio_v2 = objective in {"autoregressive_prefix_gripper_target_token_logratio_v2"}
         is_target_token_logratio_arm_v3 = objective in {"autoregressive_prefix_gripper_target_token_logratio_arm_v3"}
         is_target_token_objective = is_target_token_cw_v1 or is_target_token_logratio_v2 or is_target_token_logratio_arm_v3
+        if self.arm_isolation_candidate_policy not in {"FINAL_ONLY", "STRICT_CANDIDATE_AUDIT_V1"}:
+            raise RouteContractError(f"UNKNOWN_ARM_ISOLATION_CANDIDATE_POLICY:{self.arm_isolation_candidate_policy}")
+        if self.arm_isolation_candidate_policy == "STRICT_CANDIDATE_AUDIT_V1" and not is_target_token_objective:
+            raise RouteContractError("STRICT_CANDIDATE_AUDIT_REQUIRES_TARGET_TOKEN_OBJECTIVE")
         is_gripper_expected_action = objective in {"gripper_open_expected_action"}
         is_prefix_locked = is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_prefix_locked_top1
         is_corrected_hybrid = is_force_open_region_z_down  # uses corrected OPEN region + Z CE
@@ -1094,6 +1167,9 @@ class TokenPrefixPGDAttacker:
             loss_kwargs["loss_weights"] = self.loss_weights
         initial_loss = None; final_loss = None; _prefix_debug_final = None
         generated_prefix_debug = {}
+        selected_candidate_index = None
+        arm_isolation_candidate_audit = None
+        selected_candidate_adv_model = None
         if is_generated_prefix_v3 or is_target_token_objective:
             prefix_refresh_interval = int(self.prefix_refresh_interval)
             prefix_refresh_count = 0
@@ -1252,7 +1328,23 @@ class TokenPrefixPGDAttacker:
                 del grad
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
-            adv_model_for_final = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+            selected_candidate_index = None
+            arm_isolation_candidate_audit = None
+            if self.arm_isolation_candidate_policy == "STRICT_CANDIDATE_AUDIT_V1":
+                selected_candidate, arm_isolation_candidate_audit = self._select_strict_arm_candidate(
+                    clean_ids,
+                    trajectory_candidate_inputs,
+                    clean_generated_action_token_ids,
+                    region_token_ids,
+                )
+                selected_candidate_index = int(selected_candidate["candidate_index"])
+                selected_candidate_adv_model = selected_candidate["pixel_values"].detach()
+                adv = selected_candidate_adv_model.float()
+            adv_model_for_final = (
+                selected_candidate_adv_model
+                if selected_candidate_adv_model is not None
+                else self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+            )
             final_prefix = self._generate_action_prefix_tokens(
                 clean_ids,
                 adv_model_for_final,
@@ -1445,7 +1537,11 @@ class TokenPrefixPGDAttacker:
                 del grad, loss
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
-        adv_model = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+        adv_model = (
+            selected_candidate_adv_model
+            if selected_candidate_adv_model is not None
+            else self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+        )
         if not (is_generated_prefix_v3 or is_target_token_objective):
             with torch.no_grad():
                 final_loss = float(self._loss(full_ids, labels, adv_model, **loss_kwargs).detach().cpu())
@@ -1488,6 +1584,9 @@ class TokenPrefixPGDAttacker:
             "delta_final_sha256": tensor_sha256(diff),
             "delta0_processor_input_sha256": tensor_sha256(delta0_adv_model.detach()),
             "processor_input_sha256": tensor_sha256(adv_model.detach()),
+            "arm_isolation_candidate_policy": self.arm_isolation_candidate_policy,
+            "arm_isolation_candidate_audit": arm_isolation_candidate_audit,
+            "selected_candidate_index": selected_candidate_index,
         }
         if is_generated_prefix_v3 or is_target_token_objective:
             debug.update(generated_prefix_debug)
@@ -1652,20 +1751,28 @@ class OpenVLAVisualAttacker:
         validate_attack_request(self.route, target_action_present=target_action is not None)
         if execution_trace is not None:
             execution_trace["attack_invocation_started"] = True
-        if self.route.strict_route:
-            result = self.adapter.attack(
-                observation,
-                instruction,
-                clean_action,
-                target_action,
-                clean_model_output,
-                unnorm_key=unnorm_key,
-            )
-        else:
-            try:
-                result = self.adapter.attack(observation, instruction, clean_action, target_action, clean_model_output, unnorm_key=unnorm_key)
-            except TypeError:
-                result = self.adapter.attack(observation, instruction, clean_action, target_action, clean_model_output)
+        try:
+            if self.route.strict_route:
+                result = self.adapter.attack(
+                    observation,
+                    instruction,
+                    clean_action,
+                    target_action,
+                    clean_model_output,
+                    unnorm_key=unnorm_key,
+                )
+            else:
+                try:
+                    result = self.adapter.attack(observation, instruction, clean_action, target_action, clean_model_output, unnorm_key=unnorm_key)
+                except TypeError:
+                    result = self.adapter.attack(observation, instruction, clean_action, target_action, clean_model_output)
+        except Exception as exc:
+            if execution_trace is not None:
+                execution_trace["attack_error"] = f"{type(exc).__name__}:{exc}"
+                diagnostics = getattr(self.adapter, "last_attack_diagnostics", None)
+                if diagnostics:
+                    execution_trace["attack_contract_diagnostics"] = diagnostics
+            raise
         if execution_trace is not None:
             execution_trace["attack_result_returned"] = True
             debug_returned = getattr(result, "debug", {}) or {}

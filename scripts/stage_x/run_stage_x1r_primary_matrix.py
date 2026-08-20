@@ -249,7 +249,7 @@ def decode_from_inputs(model: Any, inputs: Mapping[str, Any], prompt_len: int, u
     return {"generated": generated, **decode_tokens(model, [int(x) for x in tokens], unnorm_key)}
 
 
-def build_attack_config(condition: str, seed: int) -> dict[str, Any]:
+def build_attack_config(condition: str, seed: int, *, arm_isolation_candidate_policy: str = "FINAL_ONLY") -> dict[str, Any]:
     return {"attack_optimizer": {
         "method": "token_prefix_pgd",
         "strict_route": True,
@@ -270,6 +270,7 @@ def build_attack_config(condition: str, seed: int) -> dict[str, Any]:
         "gradient_transform": "permute" if condition == "SHUFFLED_GRAD_T5" else "none",
         "gradient_transform_seed": int(seed),
         "arm_preserve_weight": 0.1,
+        "arm_isolation_candidate_policy": str(arm_isolation_candidate_policy),
     }}
 
 
@@ -302,8 +303,35 @@ def summarize_attack(result: Any) -> dict[str, Any]:
         "target_token_arm_preservation_loss_trajectory": debug.get("target_token_arm_preservation_loss_trajectory"),
         "gradient_norm_trajectory": debug.get("gradient_norm_trajectory"),
         "generated_arm_prefix_trajectory": debug.get("generated_arm_prefix_trajectory"),
+        "clean_generated_action_token_ids": debug.get("clean_generated_action_token_ids"),
+        "generated_adv_arm_prefix_token_ids": debug.get("generated_adv_arm_prefix_token_ids"),
+        "arm_isolation_candidate_policy": debug.get("arm_isolation_candidate_policy"),
+        "arm_isolation_candidate_audit": debug.get("arm_isolation_candidate_audit"),
+        "selected_candidate_index": debug.get("selected_candidate_index"),
         "delta_final_sha256": debug.get("delta_final_sha256"),
         "processor_input_sha256": debug.get("processor_input_sha256"),
+    }
+
+
+def audit_direct_action_tokens(clean_tokens: list[int], executed_tokens: list[int]) -> dict[str, Any]:
+    """Describe the exact direct-generated action-token comparison."""
+    if len(clean_tokens) != 7 or len(executed_tokens) != 7:
+        raise RuntimeError(f"ACTION_TOKEN_COUNT_FOR_ARM_AUDIT:{len(clean_tokens)}:{len(executed_tokens)}")
+    mismatch_dimensions = [
+        int(dim)
+        for dim in range(6)
+        if int(clean_tokens[dim]) != int(executed_tokens[dim])
+    ]
+    return {
+        "clean_token_ids": [int(x) for x in clean_tokens],
+        "executed_token_ids": [int(x) for x in executed_tokens],
+        "clean_arm_token_ids": [int(x) for x in clean_tokens[:6]],
+        "executed_arm_token_ids": [int(x) for x in executed_tokens[:6]],
+        "arm_token_ids_equal": not mismatch_dimensions,
+        "arm_mismatch_dimensions": mismatch_dimensions,
+        "clean_gripper_token_id": int(clean_tokens[6]),
+        "executed_gripper_token_id": int(executed_tokens[6]),
+        "gripper_token_changed": int(clean_tokens[6]) != int(executed_tokens[6]),
     }
 
 
@@ -432,6 +460,9 @@ def sync_attack_trace(exposure: dict[str, Any], counters: dict[str, int], trace:
             value = int(trace[source])
             exposure[target] = value
             counters[counter] += value
+    for key in ("attack_error", "attack_contract_diagnostics"):
+        if key in trace:
+            exposure[key] = trace[key]
 
 
 def mark_adversarial_decode_started(exposure: dict[str, Any]) -> None:
@@ -512,6 +543,8 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
     terminal_success_step: int | None = None
     perturb_draw_index = 0
     perturb_rng = random.Random(seeds["perturb_seed"])
+    last_failure_context: dict[str, Any] | None = None
+    last_attack_trace: dict[str, Any] | None = None
     start = time.time()
     telemetry_path = output / "step_telemetry.jsonl"
     try:
@@ -525,7 +558,18 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
         adapter = D8StreamingFeatureAdapterV3()
         attacker = None
         if condition in {"TRUE_PGD_T5", "SHUFFLED_GRAD_T5"}:
-            attacker = OpenVLAVisualAttacker(model, processor, build_attack_config(condition, seeds["perturb_seed"]), seed=seeds["perturb_seed"], preprocess_kwargs={"center_crop": True, "resize_size": 224, "libero_preprocess_backend": "official_pil_lanczos", "postprocess_gripper": True}, device=device)
+            attacker = OpenVLAVisualAttacker(
+                model,
+                processor,
+                build_attack_config(
+                    condition,
+                    seeds["perturb_seed"],
+                    arm_isolation_candidate_policy=str(protocol.get("arm_isolation_candidate_policy", "FINAL_ONLY")),
+                ),
+                seed=seeds["perturb_seed"],
+                preprocess_kwargs={"center_crop": True, "resize_size": 224, "libero_preprocess_backend": "official_pil_lanczos", "postprocess_gripper": True},
+                device=device,
+            )
             attacker.reset_temporal_state()
 
         for step in range(horizon):
@@ -568,6 +612,7 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
                     try:
                         result = attacker.attack(raw_image, instruction, clean_action=np.asarray(clean_decoded["raw_action_7d"], dtype=np.float32), target_action=np.asarray(clean_decoded["raw_action_7d"], dtype=np.float32), clean_model_output=clean_decoded["generated"], unnorm_key=suite, execution_trace=attack_trace)
                     finally:
+                        last_attack_trace = dict(attack_trace)
                         sync_attack_trace(exposure, counters, attack_trace)
                     adv_inputs = result.debug["adv_inputs"]
                     mark_adversarial_decode_started(exposure)
@@ -583,10 +628,18 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
             executed_tokens = [int(x) for x in executed["tokens"]]
             if len(executed_tokens) != 7:
                 raise RuntimeError(f"EXECUTED_ACTION_TOKEN_COUNT_INVALID:{len(executed_tokens)}")
-            arm_equal = executed_tokens[:6] == clean_tokens[:6]
+            direct_action_audit = audit_direct_action_tokens(clean_tokens, executed_tokens)
+            arm_equal = bool(direct_action_audit["arm_token_ids_equal"])
+            if attack_summary.get("attack_executed"):
+                attack_summary["direct_action_audit"] = direct_action_audit
+                last_failure_context = {
+                    "step": int(step),
+                    "direct_action_audit": direct_action_audit,
+                    "attack_summary": attack_summary,
+                }
             gripper_semantics = classify_gripper(model, suite, int(executed_tokens[-1]))
             if attack_summary.get("attack_executed") and not arm_equal:
-                raise RuntimeError(f"ARM_TOKEN_ISOLATION_FAIL:{step}")
+                raise RuntimeError(f"ARM_TOKEN_ISOLATION_FAIL:{step}:dims={direct_action_audit['arm_mismatch_dimensions']}")
             env_action = np.asarray(executed["env_action_7d"], dtype=np.float32)
             mark_env_step_started(exposure, counters, attacked=bool(attack_summary.get("attack_executed")))
             obs, reward, done, info = env.step(env_action.tolist())
@@ -612,6 +665,7 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
                 "clean_raw_gripper": clean_decoded["raw_gripper"],
                 "executed_raw_gripper": executed["raw_gripper"],
                 "arm_token_ids_equal": arm_equal,
+                "direct_action_audit": direct_action_audit,
                 "executed_gripper_semantics": gripper_semantics,
                 "student_feature_valid": telemetry["feature_valid"],
                 "candidate_close": telemetry["candidate_close"],
@@ -719,6 +773,8 @@ def run_condition(parent: Mapping[str, Any], condition: str, model: Any, process
             "model_inference_calls": int(exposure["model_inference_calls"]),
             "rows_materialized": int(exposure["rows_materialized"]),
             "execution_exposure": dict(exposure),
+            "failure_context": last_failure_context,
+            "last_attack_trace": last_attack_trace,
             "eval_seed": seeds["eval_seed"],
             "perturb_seed": seeds["perturb_seed"],
             "runtime_source": source_receipt(),

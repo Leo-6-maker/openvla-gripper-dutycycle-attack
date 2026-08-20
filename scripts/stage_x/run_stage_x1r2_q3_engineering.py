@@ -87,6 +87,19 @@ def attacked_row_audit(path: Path, core_condition: str) -> dict[str, Any]:
                 raise RuntimeError(f"ENGINEERING_PROCESSOR_LINF_INVALID:{core_condition}:{row.get('step')}")
         if row.get("arm_token_ids_equal") is not True:
             raise RuntimeError(f"ENGINEERING_ARM_ISOLATION_INVALID:{core_condition}:{row.get('step')}")
+        if core_condition in {"TRUE_PGD_T5", "SHUFFLED_GRAD_T5"}:
+            semantics = row.get("executed_gripper_semantics", {})
+            if semantics.get("execution_class") != "NATIVE_OPEN":
+                raise RuntimeError(f"ENGINEERING_TRUE_GRIPPER_TARGET_INVALID:{core_condition}:{row.get('step')}")
+            route_summary = row.get("attack", {}).get("route", {})
+            if route_summary.get("selected_candidate_index") is None:
+                raise RuntimeError(f"ENGINEERING_SELECTIVE_CANDIDATE_MISSING:{core_condition}:{row.get('step')}")
+            selected = [
+                item for item in route_summary.get("arm_isolation_candidate_audit", [])
+                if item.get("candidate_index") == route_summary.get("selected_candidate_index")
+            ]
+            if len(selected) != 1 or selected[0].get("clean_gripper_is_native_open") is not False or selected[0].get("gripper_token_changed") is not True or selected[0].get("direct_generated_gripper_is_native_open") is not True:
+                raise RuntimeError(f"ENGINEERING_GRIPPER_TRANSITION_INVALID:{core_condition}:{row.get('step')}")
     return {
         "rows": len(rows),
         "attack_rows": len(attack_rows),
@@ -101,17 +114,29 @@ def main() -> int:
     parser.add_argument("--fixture-id", required=True)
     parser.add_argument("--physical-gpu", required=True, type=int)
     parser.add_argument("--output-root", required=True, type=Path)
+    parser.add_argument("--protocol", type=Path, default=Q3_PROTOCOL)
+    parser.add_argument("--fixture-report", type=Path, default=None)
     args = parser.parse_args()
 
-    protocol = read_json(Q3_PROTOCOL)
-    fixtures = read_json(FIXTURE_REPORT)
-    if protocol.get("status") != "FROZEN_ENGINEERING_ONLY_PRE_GPU":
+    protocol = read_json(args.protocol)
+    fixture_report_path = args.fixture_report or ROOT / str(protocol["fixture_report"]["path"])
+    fixtures = read_json(fixture_report_path)
+    if protocol.get("status") not in {
+        "FROZEN_ENGINEERING_ONLY_PRE_GPU",
+        "FROZEN_ARM_REPAIR_ENGINEERING_PRE_GPU",
+    } or protocol.get("scientific_authority") is not False:
         raise SystemExit("Q3_PROTOCOL_NOT_FROZEN")
-    if fixtures.get("status") != "STAGE_X_X1R2_Q3_ENGINEERING_FIXTURES_FROZEN":
+    if fixtures.get("status") not in {
+        "STAGE_X_X1R2_Q3_ENGINEERING_FIXTURES_FROZEN",
+        "FROZEN_REPAIR_ENGINEERING_FIXTURE_PRE_GPU",
+    } or fixtures.get("scientific_use") is not False:
         raise SystemExit("Q3_FIXTURE_REPORT_NOT_FROZEN")
-    if sha256_file(FIXTURE_REPORT) != protocol["fixture_report"]["sha256"]:
+    if sha256_file(fixture_report_path) != protocol["fixture_report"]["sha256"]:
         raise SystemExit("Q3_FIXTURE_REPORT_SHA_MISMATCH")
-    fixture_rows = [row for row in fixtures.get("fixtures", []) if row.get("fixture_id") == args.fixture_id]
+    fixture_rows = list(fixtures.get("fixtures", []))
+    if not fixture_rows and fixtures.get("fixture"):
+        fixture_rows = [fixtures["fixture"]]
+    fixture_rows = [row for row in fixture_rows if row.get("fixture_id") == args.fixture_id]
     if len(fixture_rows) != 1:
         raise SystemExit("Q3_FIXTURE_ID_INVALID")
     fixture = fixture_rows[0]
@@ -122,8 +147,9 @@ def main() -> int:
     if source["status_porcelain"]:
         raise SystemExit("WORKTREE_NOT_CLEAN")
     durable = durable_preflight(args.output_root)
-    contract = read_json(VICTIM_CONTRACT)
-    if sha256_file(VICTIM_CONTRACT) != protocol["victim_contract"]["sha256"]:
+    victim_contract_path = ROOT / str(protocol["victim_contract"]["path"])
+    contract = read_json(victim_contract_path)
+    if sha256_file(victim_contract_path) != protocol["victim_contract"]["sha256"]:
         raise SystemExit("VICTIM_CONTRACT_SHA_MISMATCH")
     suite = str(fixture["suite"])
     primary.verify_model_identity(contract, suite)
@@ -164,6 +190,7 @@ def main() -> int:
         output = args.output_root / "fixtures" / args.fixture_id / engineering_label
         output.mkdir(parents=True, exist_ok=False)
         branch = primary.run_condition(run_parent, core_condition, model, processor, device, contract, {
+            "arm_isolation_candidate_policy": str(protocol.get("arm_isolation_candidate_policy", "FINAL_ONLY")),
             "seed_contract": {
                 "eval_seed_namespace": "STAGE_X_X1R2_Q3_ENGINEERING_EVAL_V1_20260819",
                 "perturb_seed_namespace": "STAGE_X_X1R2_Q3_ENGINEERING_PERTURB_V1_20260819",
