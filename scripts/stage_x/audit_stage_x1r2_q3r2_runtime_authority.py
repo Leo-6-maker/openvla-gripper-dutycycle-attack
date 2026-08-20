@@ -124,6 +124,8 @@ def audit(config: dict[str, Any], expected_commit: str | None) -> dict[str, Any]
     student_rows = []
     for row in config["student_binding"]["artifacts"]:
         path = Path(str(row["path"]))
+        if not path.is_absolute():
+            path = REPO / path
         actual = sha256_file(path) if path.is_file() else "MISSING"
         if actual != row["sha256"]:
             errors.append(f"STUDENT_ARTIFACT_MISMATCH:{row['name']}")

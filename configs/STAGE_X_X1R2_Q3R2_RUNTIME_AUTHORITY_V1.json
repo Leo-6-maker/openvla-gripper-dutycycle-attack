@@ -77,9 +77,9 @@
       {"name": "checkpoint", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/checkpoint.pt", "sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227"},
       {"name": "normalization", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_G1_SPLITS_FIREWALL_20260813T160000Z/NORMALIZATION.json", "sha256": "66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c"},
       {"name": "thresholds", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/thresholds.json", "sha256": "5236884ea746adc6a5388ab6e8058adb717b86ee2814b71a748c7792d051de3e"},
-      {"name": "student_source", "path": "/mnt/sdc/dty_user/openvla_attack/n5/phase3_student/n5_student_model.py", "sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c"},
-      {"name": "feature_source", "path": "/mnt/sdc/dty_user/openvla_attack/src/gripper_attack/v5_r3_features.py", "sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9"},
-      {"name": "adapter_source", "path": "/mnt/sdc/dty_user/openvla_attack/src/gripper_attack/d8_streaming_features_v3.py", "sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3"}
+      {"name": "student_source", "path": "n5/phase3_student/n5_student_model.py", "sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c"},
+      {"name": "feature_source", "path": "src/gripper_attack/v5_r3_features.py", "sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9"},
+      {"name": "adapter_source", "path": "src/gripper_attack/d8_streaming_features_v3.py", "sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3"}
     ]
   },
   "environment": {
