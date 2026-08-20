@@ -1,0 +1,71 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_POOL_ROOT_SEAL_V1",
+  "status": "SEALED_E2_SUCCESSOR_ENGINEERING_AUTHORITY_PRE_GPU",
+  "date": "2026-08-21",
+  "gate": "STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_ENGINEERING_POOL_AUTHORIZATION",
+  "decision": "PASS_E2_SUCCESSOR_ENGINEERING_POOL_AUTHORIZED_PRE_GPU",
+  "source_commit_at_authority_construction": "5bf29dd4492c578d22a551ba99705c90930472ad",
+  "source_tree_at_authority_construction": "237d941d4f646668f0c3d2dab9c99a9e3064d784",
+  "publication_note": "This seal binds the frozen source package before authority-document publication. Verify the final live PR HEAD/tree and runtime checkout separately; do not conflate them with this construction binding.",
+  "artifacts": [
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_ENGINEERING_POOL_V1.json",
+      "sha256": "b7774b7f6bcfcb6e46056b739c86f764c5bc7dfb4304ed0eb2b31898c690acda",
+      "git_blob_sha256": "a7c48cab8c4bfef0ead1019fa9987ce6e44c1ae5"
+    },
+    {
+      "path": "configs/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_PROTOCOL_V1.json",
+      "sha256": "edb10f8010ca7579ca55bdab56117120989d16789e1bbfa88594eb669266341c",
+      "git_blob_sha256": "21d4b4f8c4fe5a66d5960b8bb1b7ccf211b843df"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_AUTHORIZATION_RECEIPT_V1.json",
+      "sha256": "3adb2e12ff1466ca15ab5e16f846ff77e48c96392edfc369003c07092e69d04b"
+    },
+    {
+      "path": "docs/handoffs/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_POOL_AUTHORIZATION_20260821.md",
+      "sha256": "9862f6656de1133a404aac201e4640c23a082f4b40bb1b2dec6170338daaa5e5"
+    }
+  ],
+  "successor_pool": {
+    "selected_count": 12,
+    "per_suite_count": 3,
+    "permanent_exclusion": true,
+    "scientific_use": false,
+    "outcome_read": false,
+    "replacement": false
+  },
+  "frozen_method": {
+    "epsilon": 0.03,
+    "step_size": 0.006,
+    "pgd_steps": 5,
+    "random_start": false,
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "exact_arm_dimensions": [0, 1, 2, 3, 4, 5],
+    "target_execution_class": "NATIVE_OPEN",
+    "stop_before_attacked_env_step": true
+  },
+  "resource_boundary": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "free_memory_mib_strictly_greater_than": 20480,
+    "one_project_worker_per_physical_gpu": true,
+    "max_project_workers": 8,
+    "foreign_processes_untouched": true,
+    "gpu_worker_mounted": false,
+    "durable_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_e2_20260821"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "model_inference_calls": 0,
+    "simulator_steps": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "protected_reads": 0,
+    "attack_outcome_reads": 0
+  },
+  "next_gate": "STAGE_X_X1R2_Q3R3_E2_PREATTACK_BRANCH_QUALIFICATION",
+  "mandatory_stop": "STOP_BEFORE_E2_GPU_OR_MODEL_EXECUTION_UNTIL_THIS_PACKAGE_IS_PUBLISHED_AND_REMOTE_VERIFIED"
+}
