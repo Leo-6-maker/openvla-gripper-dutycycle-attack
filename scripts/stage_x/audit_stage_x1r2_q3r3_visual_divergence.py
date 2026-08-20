@@ -136,6 +136,7 @@ def main() -> None:
         "schema": "STAGE_X_X1R2_Q3R3_VISUAL_DIVERGENCE_AUDIT_V1",
         "status": "STAGE_X1R2_Q3R3_BRANCH_ESTIMAND_FREEZE_PASS",
         "scope": "static/CPU/offline only; no model inference, simulator construction, env.step, PGD, physical intervention, V_phys, Eval160, or protected read",
+        "audit_source": manifest.get("audit_source", {}),
         "q3r2_hold_preserved": True,
         "suite_results": suites,
         "raw_frame_inventory": {"root": str(inventory_root), "matching_files": inventory, "count": len(inventory), "numeric_metrics_available": bool(inventory)},

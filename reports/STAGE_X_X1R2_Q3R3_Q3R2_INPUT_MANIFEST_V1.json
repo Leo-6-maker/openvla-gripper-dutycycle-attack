@@ -1,6 +1,10 @@
 {
   "schema": "STAGE_X_X1R2_Q3R3_Q3R2_INPUT_MANIFEST_V1",
   "status": "FROZEN_READ_ONLY_INPUTS",
+  "audit_source": {
+    "commit": "198d76b3d297483767eeaf26888b8662f7e7cbaa",
+    "tree": "7d0df2cd9ce0d6f3d32660504228b751f4a0c170"
+  },
   "server_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820",
   "suite_inputs": {
     "libero_goal": {
