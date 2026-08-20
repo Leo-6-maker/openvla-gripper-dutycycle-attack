@@ -1,0 +1,157 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_D2_ENGINEERING_MATRIX_PROTOCOL_V1",
+  "status": "FROZEN_ENGINEERING_ONLY_PRE_GPU",
+  "scientific_authority": false,
+  "supersedes_for_engineering_only": "STAGE_X_X1R2_Q3R3_ENGINEERING_MATRIX_PROTOCOL_V1",
+  "historical_boundary": {
+    "q3r3_d_hold_immutable": true,
+    "old_q3r3_d_fixtures_rerun": false,
+    "new_scientific_population": false,
+    "engineering_fixtures_permanently_excluded": true,
+    "replacement": false
+  },
+  "q3r3_c_binding": {
+    "durable_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_c2_20260820",
+    "root_seal": {
+      "path": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_ROOT_SEAL_V1.json",
+      "sha256": "fe23991c94852bc65269d740a6c67f782350dc61e600f766fdfbf85461abbdcc"
+    },
+    "execution_source": {
+      "commit": "e8c3df12f603806af4a2ffbfbf82df3ec2b3f99e",
+      "tree": "b7817efb36a2f9c8bcd583d955463468cda6c63c"
+    },
+    "receipt_repair_source": {
+      "commit": "e8c3df12f603806af4a2ffbfbf82df3ec2b3f99e",
+      "tree": "b7817efb36a2f9c8bcd583d955463468cda6c63c"
+    }
+  },
+  "fixtures": [
+    {
+      "suite": "libero_10",
+      "fixture_id": "Q3R2-LIBERO_10-07",
+      "canonical_parent_key": "libero_10/task_07/state_36",
+      "t_emit": 266,
+      "report_sha256": "7ce986b06a1f7f1c2ca3574434ab171b1b3ae892a922e3a9c976857b69eb8626"
+    },
+    {
+      "suite": "libero_goal",
+      "fixture_id": "Q3R2-LIBERO_GOAL-08",
+      "canonical_parent_key": "libero_goal/task_04/state_43",
+      "t_emit": 52,
+      "report_sha256": "a3d313ce4251cc0998fdb1addf3470ef0844a4dc44dd8fd6223fc19059838eed"
+    },
+    {
+      "suite": "libero_object",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-12",
+      "canonical_parent_key": "libero_object/task_05/state_22",
+      "t_emit": 155,
+      "report_sha256": "16e7cabd69c57d27ac708a9e53fb08e84088483395c333399bcb4bb8292090b9"
+    },
+    {
+      "suite": "libero_spatial",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-06",
+      "canonical_parent_key": "libero_spatial/task_07/state_46",
+      "t_emit": 65,
+      "report_sha256": "d8a23a8d992a5d4e07e6149e9522ea6f173537bf6a546e14360daf3b9542e478"
+    }
+  ],
+  "branch_contract": {
+    "fresh_env_per_arm": true,
+    "reference_action_prefix": "sealed reference clean action_env_7d rows [0,start)",
+    "branch_point": "immediately before the action at start",
+    "common_first_observation": "sealed Q3R3-C2 REFERENCE_CLEAN observation bytes at the selected start",
+    "live_branch_render": "diagnostic only; never first-decision input",
+    "state_compare": {
+      "atol": 1e-12,
+      "rtol": 0.0,
+      "missing_field": "HOLD",
+      "widening": false
+    },
+    "prebranch_calls": {
+      "openvla": 0,
+      "student": 0,
+      "policy_actions": 0
+    },
+    "reference_observation_source": "Q3R3_C_REFERENCE_CLEAN",
+    "random_time_replay_image_equality": "diagnostic_only_not_gate"
+  },
+  "reference_observation_source_required": true,
+  "window": {
+    "t5": 5,
+    "h_phys": 10,
+    "attack_steps": 5,
+    "followup_steps": 10,
+    "required_actions_per_arm": 15
+  },
+  "arms": [
+    {"label": "CLEAN_ENGINEERING", "kind": "clean", "attack_window": false},
+    {"label": "TRUE_PGD_T5_ENGINEERING", "kind": "true_pgd", "timing": "student_emit"},
+    {"label": "RAND_UNIFORM_T5_ENGINEERING", "kind": "random_uniform", "timing": "student_emit"},
+    {"label": "SHUFFLED_GRAD_T5_ENGINEERING", "kind": "shuffled_pgd", "timing": "student_emit"},
+    {"label": "TRUE_RANDOM_TIME_T5_ENGINEERING", "kind": "true_pgd", "timing": "deterministic_random_time"}
+  ],
+  "attack_contract": {
+    "path": "configs/STAGE_X_X1R2_GRIPPER_SELECTIVE_ATTACK_CONTRACT_V1.json",
+    "file_sha256": "872001CF521D21A8AEDA5762C55ACE8975D844DC22CB8E05E0D6EA6032F950D1",
+    "git_blob_sha": "986d6735177b2d21a45c2137302b1efa43fd5e32",
+    "epsilon_processor_pixel_values": 0.03,
+    "step_size_processor_pixel_values": 0.006,
+    "num_steps": 5,
+    "random_start": false,
+    "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+    "target_execution_class": "NATIVE_OPEN",
+    "target_token_id_secondary": 31745,
+    "arm_token_dims": [0, 1, 2, 3, 4, 5],
+    "gripper_token_dim": 6,
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "strict_route": true,
+    "allow_fallback": false,
+    "no_reencode": true,
+    "no_actuator_overwrite": true
+  },
+  "random_time": {
+    "salt": "STAGE_X1R2_Q3R3_D2_RANDOM_TIME_V1_20260820",
+    "selection": "sha256(salt|canonical_parent_key) modulo sorted starts",
+    "domain": "starts with a complete sealed reference 15-action window",
+    "legal_constraint": "start + 14 <= last sealed reference step",
+    "exclude": "[t_emit,t_emit+4]",
+    "outcome_blind": true,
+    "no_student_or_attack_inputs": true
+  },
+  "source_binding": {
+    "runtime_source": "worker receipts bind observed commit/tree and clean status from an immutable checkout",
+    "audit_source": "aggregate audit binds its observed commit/tree and clean status",
+    "c_source_is_separate": true
+  },
+  "resource": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "free_memory_mib_strictly_greater_than": 20480,
+    "one_project_worker_per_physical_gpu": true,
+    "max_project_workers": 8,
+    "planned_workers": 4,
+    "foreign_processes_untouched": true,
+    "durable_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_d2_20260820",
+    "minimum_free_bytes": 4294967296
+  },
+  "protected_boundary": {
+    "model_inference_authorized": true,
+    "simulator_reset_step_authorized": true,
+    "pgd_calls_authorized": true,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "protected_reads": 0,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "scientific_boundary": {
+    "engineering_only": true,
+    "scientific_efficacy_claim": false,
+    "scientific_population_selection": false,
+    "promotional_use": false,
+    "formal_x1r2_authority": false,
+    "next_gate_after_pass": "STAGE_X1R2_Q3R3_FOUR_SUITE_EXECUTABLE_QUALIFICATION_PASS"
+  },
+  "next_gate": "STAGE_X1R2_Q3R3_D2_ENGINEERING_MATRIX"
+}
