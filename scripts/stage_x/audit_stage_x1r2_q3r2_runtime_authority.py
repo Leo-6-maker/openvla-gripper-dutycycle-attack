@@ -57,11 +57,13 @@ def package_surface() -> dict[str, Any]:
         module = importlib.import_module(name)
         packages[name] = {"version": getattr(module, "__version__", None), "file": str(getattr(module, "__file__", ""))}
     freeze = subprocess.check_output([sys.executable, "-s", "-m", "pip", "freeze"], text=True)
+    pyvenv = Path(sys.prefix) / "pyvenv.cfg"
     return {
         "python": sys.version,
         "executable": str(Path(sys.executable).resolve()),
         "prefix": sys.prefix,
         "base_prefix": sys.base_prefix,
+        "include_system_site_packages": "include-system-site-packages = true" in pyvenv.read_text(encoding="utf-8") if pyvenv.is_file() else None,
         "sys_path": sys.path,
         "packages": packages,
         "pip_freeze_sha256": hashlib.sha256(freeze.encode()).hexdigest(),
@@ -128,12 +130,17 @@ def audit(config: dict[str, Any], expected_commit: str | None) -> dict[str, Any]
         student_rows.append({"name": row["name"], "path": str(path), "sha256": actual})
 
     environment = package_surface()
-    expected_packages = config["environment"]["packages"]
+    expected_environment = config["environment"]
+    if environment["executable"] != expected_environment["python_realpath"] or environment["prefix"] != expected_environment["prefix"] or environment["base_prefix"] != expected_environment["base_prefix"] or not environment["python"].startswith(expected_environment["python_version"]):
+        errors.append("PYTHON_RUNTIME_BINDING_MISMATCH")
+    if environment["include_system_site_packages"] != expected_environment["include_system_site_packages"]:
+        errors.append("PYVENV_SITE_PACKAGE_POLICY_MISMATCH")
+    expected_packages = expected_environment["packages"]
     for name, expected in expected_packages.items():
         actual = environment["packages"].get(name, {})
         if actual.get("version") != expected["version"] or actual.get("file") != expected["file"]:
             errors.append(f"PACKAGE_BINDING_MISMATCH:{name}")
-    if environment["pip_freeze_sha256"] != config["environment"]["pip_freeze_sha256"]:
+    if environment["pip_freeze_sha256"] != expected_environment["pip_freeze_sha256"]:
         errors.append("PIP_FREEZE_MISMATCH")
 
     return {
