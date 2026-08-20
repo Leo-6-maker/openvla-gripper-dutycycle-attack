@@ -39,11 +39,12 @@ def test_strict_candidate_audit_requires_clean_to_open_transition():
         torch.tensor([[101]]), candidates, torch.tensor([1, 2, 3, 4, 5, 6, 10]), torch.tensor([20])
     )
     assert selected["candidate_index"] == 2
-    assert len(audit) == 3
+    assert len(audit) == 4
     assert audit[0]["clean_gripper_is_native_open"] is False
     assert audit[0]["direct_generated_gripper_is_native_open"] is False
     assert audit[2]["arm_token_ids_equal"] is True
     assert audit[2]["gripper_token_changed"] is True
+    assert audit[3]["candidate_index"] == 3
 
 
 def test_strict_candidate_audit_fails_closed_without_selective_candidate():

@@ -702,6 +702,7 @@ class TokenPrefixPGDAttacker:
         open_ids = {int(x) for x in open_token_ids.detach().cpu().tolist()}
         clean_gripper_is_native_open = clean_gripper_token_id in open_ids
         audit: list[dict[str, Any]] = []
+        selected_candidate = None
         for candidate in trajectory_candidate_inputs:
             candidate_tokens = [
                 int(x)
@@ -736,13 +737,18 @@ class TokenPrefixPGDAttacker:
             }
             audit.append(item)
             if not arm_mismatch and not clean_gripper_is_native_open and gripper_token_id in open_ids and gripper_token_id != clean_gripper_token_id:
-                self.last_attack_diagnostics = {
-                    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
-                    "candidate_audit": audit,
-                    "selected_candidate_index": int(candidate["candidate_index"]),
-                    "selected_candidate_source": str(candidate["candidate_source"]),
-                }
-                return candidate, audit
+                # Keep auditing the frozen trajectory so successful routes also
+                # leave a complete six-row receipt; selection remains first-valid.
+                if selected_candidate is None:
+                    selected_candidate = candidate
+        if selected_candidate is not None:
+            self.last_attack_diagnostics = {
+                "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+                "candidate_audit": audit,
+                "selected_candidate_index": int(selected_candidate["candidate_index"]),
+                "selected_candidate_source": str(selected_candidate["candidate_source"]),
+            }
+            return selected_candidate, audit
         diagnostics = {
             "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
             "candidate_audit": audit,
