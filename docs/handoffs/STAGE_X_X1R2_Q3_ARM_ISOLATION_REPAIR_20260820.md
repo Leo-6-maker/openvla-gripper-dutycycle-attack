@@ -39,6 +39,9 @@ It is already permanently excluded by the frozen manual `FAIL / PRECONTACT_OR_AP
 
 ## Pre-GPU evidence
 
+- runtime repair source commit: `b7237611c466077a9a7e6f0b1102e9176cfa2c88`
+- runtime repair source tree: `fd5eeef98480b4c608ebd4eafb8e325afa8cd17a`
+- the final GitHub PR seal commit/tree is documentation provenance and must not be substituted for the runtime source binding above
 - static audit: `PASS_Q3_ARM_REPAIR_STATIC_AUDIT_PRE_GPU`
 - targeted regression: `15 passed`
 - Python compilation: pass
