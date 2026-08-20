@@ -32,7 +32,7 @@
       "fixture_id": "Q3R2-LIBERO_10-05",
       "canonical_parent_key": "libero_10/task_06/state_38",
       "t_emit": 68,
-      "report_sha256": "b177df4b322c2562d4b75988dcc644b24822c21440ae670f8cd151272f95e32"
+      "report_sha256": "b177df4b322c2562d4b75988dcc644b24822c21440ae670f8cd151272f95e32c"
     },
     {
       "suite": "libero_goal",
