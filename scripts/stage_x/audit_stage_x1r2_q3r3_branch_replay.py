@@ -40,7 +40,7 @@ def check_zero(boundary: dict[str, Any], errors: list[str], label: str) -> None:
         errors.append(f"{label}:PROTECTED_STATUS_INVALID")
 
 
-def audit_suite(path: Path, source_commit: str, source_tree: str, errors: list[str]) -> dict[str, Any]:
+def audit_suite(path: Path, source_commit: str, source_tree: str, errors: list[str], repairs: dict[tuple[str, int], dict[str, Any]]) -> dict[str, Any]:
     if not path.is_file():
         errors.append(f"MISSING_SUITE_REPORT:{path}")
         return {"path": str(path), "status": "MISSING"}
@@ -90,7 +90,17 @@ def audit_suite(path: Path, source_commit: str, source_tree: str, errors: list[s
             errors.append(f"{label}:POST_BRANCH_STEPS:{branch.get('post_branch_steps')}")
         if not branch.get("reference_observation_sha256") or not branch.get("live_branch_observation_sha256"):
             errors.append(f"{label}:OBSERVATION_RECEIPT_MISSING")
-        check_zero(branch.get("protected_boundary", {}), errors, label)
+        boundary = dict(branch.get("protected_boundary", {}))
+        if "protected_reads" not in boundary:
+            repair = repairs.get((suite, int(branch.get("repeat", -1))))
+            if not repair or repair.get("field_added") != "protected_reads" or int(repair.get("derived_value", -1)) != 0:
+                errors.append(f"{label}:PROTECTED_READS_MISSING_WITHOUT_REPAIR")
+            else:
+                raw_path = path.parent / str(report.get("selected_fixture")) / f"branch_repeat_{int(branch['repeat'])}.json"
+                if repair.get("raw_receipt_path") != raw_path.relative_to(path.parents[1]).as_posix() or repair.get("raw_receipt_sha256") != sha256_file(raw_path):
+                    errors.append(f"{label}:REPAIR_RAW_SHA_MISMATCH")
+                boundary["protected_reads"] = 0
+        check_zero(boundary, errors, label)
     check_zero(report.get("protected_boundary", {}), errors, f"{suite}:suite")
     return {
         "suite": suite,
@@ -128,9 +138,19 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-tree", required=True)
+    parser.add_argument("--schema-repair", type=Path)
     args = parser.parse_args()
     errors: list[str] = []
-    rows = [audit_suite(args.root / suite / "SUITE_BRANCH_REPLAY_REPORT_V1.json", args.source_commit, args.source_tree, errors) for suite in SUITES]
+    repairs: dict[tuple[str, int], dict[str, Any]] = {}
+    if args.schema_repair:
+        repair_doc = load(args.schema_repair)
+        if repair_doc.get("status") != "PASS_APPEND_ONLY_RECEIPT_SCHEMA_REPAIR" or not repair_doc.get("raw_receipts_unchanged"):
+            errors.append("RECEIPT_SCHEMA_REPAIR_NOT_PASS")
+        if repair_doc.get("execution_source") != {"commit": args.source_commit, "tree": args.source_tree}:
+            errors.append("RECEIPT_SCHEMA_REPAIR_SOURCE_MISMATCH")
+        for repair in repair_doc.get("repairs", []):
+            repairs[(str(repair.get("suite")), int(repair.get("repeat", -1)))] = repair
+    rows = [audit_suite(args.root / suite / "SUITE_BRANCH_REPLAY_REPORT_V1.json", args.source_commit, args.source_tree, errors, repairs) for suite in SUITES]
     selected = [row.get("selected_parent_key") for row in rows if row.get("selected_parent_key")]
     if len(selected) != len(set(selected)):
         errors.append("SELECTED_PARENT_DUPLICATE_ACROSS_SUITES")

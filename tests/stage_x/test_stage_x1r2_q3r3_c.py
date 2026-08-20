@@ -35,3 +35,11 @@ def test_q3r3_c_aggregator_has_no_runtime_or_attack_dependency():
     source = (root / "scripts/stage_x/audit_stage_x1r2_q3r3_branch_replay.py").read_text(encoding="utf-8").lower()
     for forbidden in ("import torch", "transformers", "mujoco", "from libero", "env.step("):
         assert forbidden not in source
+
+
+def test_q3r3_c_receipt_repair_is_append_only():
+    root = Path(__file__).resolve().parents[2]
+    source = (root / "scripts/stage_x/repair_stage_x1r2_q3r3_branch_receipts.py").read_text(encoding="utf-8")
+    assert "raw_receipts_unchanged" in source
+    assert "raw_receipt_sha256" in source
+    assert "write_text" in source
