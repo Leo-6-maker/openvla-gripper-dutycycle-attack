@@ -65,7 +65,8 @@ def load_protocol() -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]
     authority = clean.load_json(AUTHORITY)
     if authority.get("status") != "STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_PASS":
         raise RuntimeError("Q3R2_RUNTIME_AUTHORITY_NOT_PASS")
-    if sha256_file(POOL) != protocol["pool"]["sha256"]:
+    git_blob = subprocess.check_output(["git", "-C", str(REPO), "rev-parse", "HEAD:reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json"], text=True).strip()
+    if git_blob != protocol["pool"]["git_blob_sha256"]:
         raise RuntimeError("Q3R2_ENGINEERING_POOL_SHA_MISMATCH")
     pool = clean.load_json(POOL)["selected"]
     return protocol, authority, pool

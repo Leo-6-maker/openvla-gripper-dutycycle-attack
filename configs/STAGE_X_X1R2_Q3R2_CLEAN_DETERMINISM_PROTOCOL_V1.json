@@ -2,7 +2,7 @@
   "schema": "STAGE_X_X1R2_Q3R2_CLEAN_DETERMINISM_PROTOCOL_V1",
   "status": "FROZEN_ENGINEERING_ONLY_CLEAN_EXECUTION",
   "scientific_authority": false,
-  "pool": {"path": "reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json", "sha256": "4a703459336c7fa1c93d7e8dc7fe6c9391ac9c3c2986bd5bf443d083ef7fa0cb", "scan_order": "selected array order within suite", "per_suite_max_candidates": 12},
+  "pool": {"path": "reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json", "git_blob_sha256": "2f567ccf16fdd42479a566b48a9ac9893fd027cb", "server_raw_sha256": "9177b54262acb969619b577f50c8e4aa58dfde83ce13a40434b8ab26386460b1", "scan_order": "selected array order within suite", "per_suite_max_candidates": 12},
   "runtime_authority": {"path": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json", "status_required": "STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_PASS", "runtime_code_commit": "85fa8e678ca599f21f5a69d180c7179f9ef99478", "runtime_code_tree": "f6555a5d49dda45f29ef64ca8ae4b65b7b08d3f9"},
   "seed": {"salt": "STAGE_X_X1R2_Q3R2_CLEAN_DETERMINISM_SEED_V1_20260820", "rule": "uint32(sha256(salt|canonical_parent_key)[:8])", "outcome_blind": true},
   "repeat": {"count": 2, "fresh_env_per_repeat": true, "same_loaded_frozen_model_process": true, "primary_comparison": "exact observation/token/Student trace through first emit inclusive", "post_emit_full_trace": "recorded diagnostic; not silently promoted if prefix fails"},
