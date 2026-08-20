@@ -1,0 +1,100 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_TAKEOVER_READBACK_E1_V1",
+  "status": "TAKEOVER_READBACK_E1_COMPLETE",
+  "date": "2026-08-20",
+  "authorized_gate": "STAGE_X_X1R2_Q3R3_E1_FAILURE_PATH_CANDIDATE_EVIDENCE_PRESERVATION",
+  "authorization": {
+    "pr": 135,
+    "comment_id": "5357390655",
+    "comment_url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/135#issuecomment-5357390655",
+    "scope": "append-only E0 publication plus CPU/static/mock failure-path evidence persistence",
+    "stop_after_e1": true
+  },
+  "live_pr_binding": {
+    "state": "OPEN",
+    "draft": true,
+    "mergeable": "MERGEABLE",
+    "merge_state": "CLEAN",
+    "head_commit_before_e1": "9ae3ba4fe1af4f8064cc76d29a54ae1e6b26451a",
+    "head_tree_before_e1": "a0682095f2df27cbe628d4f3ff987b5741fca2a",
+    "ci_before_e1": "source-registry, detector-v5-cpu, and stageb-cpu SUCCESS"
+  },
+  "scientific_state": {
+    "estimand_separation": {
+      "C_t": "clean/reference action and trajectory context",
+      "V_t_d": "physical vulnerability outcome for condition d; not accessed or inferred by E1",
+      "E_t": "engineering/evidence observation; never a substitute for V_t_d"
+    },
+    "primary_positive": "X0 physical duty-cycle mechanism evidence remains sealed and primary positive evidence",
+    "frozen_negative_results": [
+      "VI-B2 STUDENT_HELDOUT_GENERALIZATION_NOT_ESTABLISHED",
+      "VII STAGE_VII_DEVELOPMENT_NO_GENERALIZABLE_DETECTOR",
+      "VIII STAGE_VIII_R1_NO_GENERALIZABLE_RELATIVE_SELECTOR",
+      "IX STAGE_IX_NO_MODEL_SIDE_TIMING_SIGNAL"
+    ],
+    "d2": "engineering-only; same frozen selector failure in four suites; not efficacy evidence",
+    "e0": "HOLD_Q3R3_E0_FEASIBILITY_EVIDENCE_INSUFFICIENT",
+    "strict_arm_isolation_feasibility": "UNRESOLVED",
+    "r0_r1_r2": "UNAUTHORIZED",
+    "vphys": "UNREAD_AND_UNAUTHORIZED",
+    "eval160": "UNREAD_AND_UNAUTHORIZED",
+    "protected_evaluation": "UNREAD_AND_UNAUTHORIZED"
+  },
+  "e0_publication_binding": {
+    "reports/STAGE_X_X1R2_Q3R3_TAKEOVER_READBACK_V1.json": "d947f3905a862e5d1223411184fafe114ec5897a490a9598b84dad8a834d19d0",
+    "reports/STAGE_X_X1R2_Q3R3_E0_EXACT_ARM_ISOLATION_FEASIBILITY_AUDIT_V1.json": "4aabadbaf8a262ae39b349fb40905f10e9560cb5f1e5de23411d90723f0e349e",
+    "reports/STAGE_X_X1R2_Q3R3_E0_CANDIDATE_MATRIX_V1.csv": "b911043ab64746f3f3af367f2fae00bba22918a05dc42b014bf64d0f5d7511fc",
+    "docs/handoffs/STAGE_X_X1R2_Q3R3_E0_EXACT_ARM_ISOLATION_FEASIBILITY_20260820.md": "3456b4019c8a87dcac877ea5cf639f70695d734af40e55cb97e1a1b3dc2dddc7",
+    "reports/STAGE_X_X1R2_Q3R3_E0_ROOT_SEAL_V1.json": "50bcab9abfb262c5c942593a8eefc01993cfebe201a6447e4d81a91b7ac24db1",
+    "e0_root_seal_artifact_count": 4,
+    "publication_rule": "publish these existing bytes append-only; do not regenerate or replace"
+  },
+  "source_and_evidence_recheck": {
+    "d2_source_commit": "b86006d95b20b82b1dbdf91d159e8269c112b6fa",
+    "d2_source_tree": "1e10664e02541fac5287c36e6514f3d5df2c71eb",
+    "d2_true_receipts_unchanged": true,
+    "d2_candidate_fields_in_true_receipt_dirs": "NONE",
+    "current_worktree_head_before_e1_commit": "9ae3ba4fe1af4f8064cc76d29a54ae1e6b26451a"
+  },
+  "resource_recheck": {
+    "worker_rule": "free_memory_mib_strictly_greater_than_20480",
+    "max_workers_per_physical_gpu": 1,
+    "max_physical_gpus": 8,
+    "gpu_free_mib_snapshot": {
+      "0": 74470,
+      "1": 81210,
+      "2": 26758,
+      "3": 26548,
+      "4": 26488,
+      "5": 29578,
+      "6": 29578,
+      "7": 27342
+    },
+    "foreign_compute_workloads_present": true,
+    "worker_mounted": false
+  },
+  "e1_allowed": [
+    "publish and seal existing E0 artifacts",
+    "CPU/static/mock failure receipt instrumentation",
+    "persist six compact candidate audit rows on strict-selector failure",
+    "compare exception diagnostics with adapter last_attack_diagnostics",
+    "regression-test unchanged successful selection behavior"
+  ],
+  "e1_forbidden": [
+    "GPU",
+    "OpenVLA inference",
+    "simulator reset or step",
+    "new PGD or backward pass",
+    "new fixture exposure",
+    "RAND/SHUFFLED/random-time",
+    "R0/R1/R2",
+    "V_phys",
+    "Eval160",
+    "protected evaluation"
+  ],
+  "historical_file_presence": {
+    "GPT_SCIENTIFIC_REVIEW_TAKEOVER_20260818.md": "NOT_PRESENT_ON_CURRENT_ANCESTRY",
+    "GPT_SCIENTIFIC_REVIEW_HISTORY_AND_FAILURES_20260818.md": "NOT_PRESENT_ON_CURRENT_ANCESTRY",
+    "STAGE_VIII_SEPARATE_HANDOFF": "NOT_PRESENT; final status is explicitly carried by IX freeze/result and prior PI history"
+  }
+}

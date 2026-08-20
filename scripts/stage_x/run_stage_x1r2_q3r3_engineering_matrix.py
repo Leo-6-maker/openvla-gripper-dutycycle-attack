@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT / "scripts" / "stage_x"))
 import run_stage_x1r2_q3r3_branch_replay as q3r3_c
 import run_stage_x1r_primary_matrix as primary
 from run_stage_x1r_t1d1_screening_clean import load_openvla
+from gripper_attack.failure_evidence import write_failure_receipt
 
 PROTOCOL = ROOT / "configs/STAGE_X_X1R2_Q3R3_ENGINEERING_MATRIX_PROTOCOL_V1.json"
 VICTIM_CONTRACT = ROOT / "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json"
@@ -505,7 +506,7 @@ def run_arm(data: Mapping[str, Any], arm: Mapping[str, Any], model: Any, process
             "retry_authorized": False,
             "source": source_receipt(),
         }
-        write_json(output / "arm_receipt.json", failure)
+        write_failure_receipt(output / "arm_receipt.json", failure, exc, attacker)
         raise
     finally:
         if env is not None:

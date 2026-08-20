@@ -33,7 +33,7 @@ def test_strict_candidate_audit_requires_clean_to_open_transition():
     attacker._generate_action_prefix_tokens = fake_generate
     candidates = [
         {"candidate_index": index, "candidate_source": "test", "pixel_values": torch.tensor([index])}
-        for index in range(3)
+        for index in range(4)
     ]
     selected, audit = attacker._select_strict_arm_candidate(
         torch.tensor([[101]]), candidates, torch.tensor([1, 2, 3, 4, 5, 6, 10]), torch.tensor([20])

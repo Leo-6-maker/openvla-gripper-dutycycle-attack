@@ -1,0 +1,25 @@
+suite,fixture_id,t_emit,candidate_index,candidate_source,arm_token_ids_equal,arm_mismatch_dimensions,gripper_token_id,gripper_native_open,clean_gripper_token_id,clean_gripper_native_open,gripper_token_changed,delta_sha256,processor_input_sha256,pixel_budget_adv_inputs_linf,classification,evidence
+libero_10,Q3R2-LIBERO_10-07,266,0,delta0,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_10,Q3R2-LIBERO_10-07,266,1,pgd_iteration_1,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_10,Q3R2-LIBERO_10-07,266,2,pgd_iteration_2,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_10,Q3R2-LIBERO_10-07,266,3,pgd_iteration_3,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_10,Q3R2-LIBERO_10-07,266,4,pgd_iteration_4,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_10,Q3R2-LIBERO_10-07,266,5,pgd_iteration_5,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_goal,Q3R2-LIBERO_GOAL-08,52,0,delta0,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_goal,Q3R2-LIBERO_GOAL-08,52,1,pgd_iteration_1,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_goal,Q3R2-LIBERO_GOAL-08,52,2,pgd_iteration_2,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_goal,Q3R2-LIBERO_GOAL-08,52,3,pgd_iteration_3,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_goal,Q3R2-LIBERO_GOAL-08,52,4,pgd_iteration_4,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_goal,Q3R2-LIBERO_GOAL-08,52,5,pgd_iteration_5,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_object,Q3R2-LIBERO_OBJECT-12,155,0,delta0,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_object,Q3R2-LIBERO_OBJECT-12,155,1,pgd_iteration_1,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_object,Q3R2-LIBERO_OBJECT-12,155,2,pgd_iteration_2,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_object,Q3R2-LIBERO_OBJECT-12,155,3,pgd_iteration_3,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_object,Q3R2-LIBERO_OBJECT-12,155,4,pgd_iteration_4,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_object,Q3R2-LIBERO_OBJECT-12,155,5,pgd_iteration_5,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_spatial,Q3R2-LIBERO_SPATIAL-06,65,0,delta0,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_spatial,Q3R2-LIBERO_SPATIAL-06,65,1,pgd_iteration_1,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_spatial,Q3R2-LIBERO_SPATIAL-06,65,2,pgd_iteration_2,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_spatial,Q3R2-LIBERO_SPATIAL-06,65,3,pgd_iteration_3,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_spatial,Q3R2-LIBERO_SPATIAL-06,65,4,pgd_iteration_4,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
+libero_spatial,Q3R2-LIBERO_SPATIAL-06,65,5,pgd_iteration_5,,,,,,,,,,,NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE,TRUE receipt only; candidate audit not sealed
