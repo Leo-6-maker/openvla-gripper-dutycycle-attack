@@ -114,7 +114,7 @@ def main() -> int:
         ("STRICT_CANDIDATE_AUDIT_V1", adapter_text),
         ("reset_temporal_state", runner_text),
         ("PASS_F1C_STRICT_CANDIDATE", runner_text),
-        ("EXECUTE_CLEAN_ACTION", runner_text),
+        ("CLEAN_ACTION", runner_text),
         ("attacked_env_steps", runner_text),
     ):
         if needle not in text:
