@@ -360,7 +360,7 @@ def clean_rollout_multi(parent: Mapping[str, Any], suite_cfg: Mapping[str, Any],
             env.close()
 
 
-def build_attack(method: str, steps: int, seed: int, model: Any, processor: Any, device: str, protocol: Mapping[str, Any]) -> Any:
+def build_attack(method: str, steps: int, seed: int, model: Any, processor: Any, device: str, protocol: Mapping[str, Any], temporal_init: str = "none") -> Any:
     from gripper_attack.attack_adapter import OpenVLAVisualAttacker
 
     objective = str(protocol["methods"][method]["objective"])
@@ -379,7 +379,7 @@ def build_attack(method: str, steps: int, seed: int, model: Any, processor: Any,
         "cw_margin": 5.0,
         "gripper_margin": 5.0,
         "random_start": False,
-        "temporal_init": "none",
+        "temporal_init": str(temporal_init),
         "temporal_smooth_lambda": 0.0,
         "prefix_refresh_interval": 1,
         "surrogate_score_path": "cached_autoregressive_generate_v1",

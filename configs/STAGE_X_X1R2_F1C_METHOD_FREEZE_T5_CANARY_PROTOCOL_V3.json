@@ -1,0 +1,97 @@
+{
+  "schema": "STAGE_X1R2_F1C_METHOD_FREEZE_T5_CANARY_PROTOCOL_V3",
+  "status": "FROZEN_F1C_T5_CANARY_V3",
+  "scientific_authority": false,
+  "gate": "STAGE_X_X1R2_F1C_METHOD_FREEZE_AND_T5_CANARY",
+  "population": {
+    "role": "C_CANARY_V3",
+    "path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_C_CANARY_V3_LEDGER_V3.json",
+    "row_count": 8,
+    "per_suite_count": 2,
+    "f1a3_root_seal_path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json",
+    "f1a3_root_seal_sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+    "canary_ledger_sha256": "98205d765f5171c1807444512dc407ff327d5b1a22d25599d954dbe506f5e9cd",
+    "source_split_salt": "STAGE_X1R2_F1A3_SOURCE_V3_SPLIT_20260821"
+  },
+  "method": {
+    "method": "M1",
+    "objective": "autoregressive_prefix_gripper_native_open_logratio_v4",
+    "iterations": 10,
+    "epsilon_processor_pixel_values": 0.03,
+    "step_size": 0.003,
+    "random_start": false,
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "candidate_order": ["delta0", "pgd_iteration_1", "pgd_iteration_2", "pgd_iteration_3", "pgd_iteration_4", "pgd_iteration_5", "pgd_iteration_6", "pgd_iteration_7", "pgd_iteration_8", "pgd_iteration_9", "pgd_iteration_10"],
+    "target_token_id_secondary": 31745,
+    "target_execution_class": "NATIVE_OPEN",
+    "exact_arm_dimensions": [0, 1, 2, 3, 4, 5],
+    "direct_action_token_count": 7,
+    "strict_route": true,
+    "allow_fallback": false,
+    "no_decode_reencode": true,
+    "no_actuator_overwrite": true
+  },
+  "temporal_arms": ["none", "prev_delta"],
+  "temporal_selection": {
+    "unit": "parent",
+    "lexicographic": [
+      "maximize minimum per-suite canary parent count with strict-valid T5 step",
+      "maximize total canary parents with strict-valid T5 step",
+      "maximize total delivered strict-valid steps",
+      "tie prefer none temporal initialization"
+    ],
+    "outcome_blind": true,
+    "physical_signal_forbidden": true
+  },
+  "probe": {
+    "max_per_parent": 1,
+    "selection_salt": "STAGE_X1R2_F1C_CANARY_PROBE_V3_20260821",
+    "eligibility": [
+      "clean runtime valid through step",
+      "exactly seven direct generated tokens",
+      "clean gripper is not NATIVE_OPEN",
+      "step+14 < official horizon"
+    ],
+    "no_replacement": true,
+    "clean_only_selection": true
+  },
+  "execution": {
+    "attempted_steps": 5,
+    "attack_invoked_only_for_clean_non_native_open": true,
+    "execute_attacked_action_only_after_strict_validation": true,
+    "invalid_or_missing_candidate_action": "EXECUTE_CLEAN_ACTION",
+    "done_is_only_termination_signal": true,
+    "student_used": false,
+    "student_emit_used": false
+  },
+  "upstream": {
+    "f1b_decision_path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_DECISION_V3.json",
+    "f1b_decision_sha256": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
+    "f1b_result_root_path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json",
+    "f1b_result_root_sha256": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
+    "f1b_selected_method": "M1",
+    "f1b_selected_iterations": 10
+  },
+  "runtime": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "durable_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_f1c_t5_canary_v3_20260821",
+    "attack_seed_salt": "STAGE_X1R2_F1C_T5_ATTACK_V3_20260821",
+    "source_receipt": "bind_current_exact_commit_tree_and_runtime_file_blobs_before_first_model_load"
+  },
+  "resource": {
+    "free_memory_mib_strictly_greater_than": 20480,
+    "minimum_free_bytes": 4294967296,
+    "max_project_workers": 8,
+    "one_project_worker_per_physical_gpu": true,
+    "foreign_processes_untouched": true
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0,
+    "physical_interventions": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0
+  }
+}
