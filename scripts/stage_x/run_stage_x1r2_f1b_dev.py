@@ -363,16 +363,28 @@ def clean_rollout_multi(parent: Mapping[str, Any], suite_cfg: Mapping[str, Any],
 def build_attack(method: str, steps: int, seed: int, model: Any, processor: Any, device: str, protocol: Mapping[str, Any], temporal_init: str = "none") -> Any:
     from gripper_attack.attack_adapter import OpenVLAVisualAttacker
 
-    objective = str(protocol["methods"][method]["objective"])
-    epsilon = float(protocol["frozen_attack"]["epsilon_processor_pixel_values"])
-    step_size = float(protocol["frozen_attack"]["step_size_by_iterations"][str(steps)])
+    if "methods" in protocol:
+        objective = str(protocol["methods"][method]["objective"])
+        epsilon = float(protocol["frozen_attack"]["epsilon_processor_pixel_values"])
+        step_size = float(protocol["frozen_attack"]["step_size_by_iterations"][str(steps)])
+        target_token_id = int(protocol["frozen_attack"]["target_token_id_secondary"])
+        target_execution_class = str(protocol["frozen_attack"]["target_execution_class"])
+    else:
+        selected = protocol["method"]
+        if selected.get("method") != method or int(selected.get("iterations", -1)) != int(steps):
+            raise ValueError(f"ATTACK_METHOD_SELECTION_MISMATCH:{method}:{steps}")
+        objective = str(selected["objective"])
+        epsilon = float(selected["epsilon_processor_pixel_values"])
+        step_size = float(selected["step_size"])
+        target_token_id = int(selected["target_token_id_secondary"])
+        target_execution_class = str(selected["target_execution_class"])
     config = {"attack_optimizer": {
         "method": "token_prefix_pgd",
         "strict_route": True,
         "allow_fallback": False,
         "objective": objective,
-        "target_token_id": int(protocol["frozen_attack"]["target_token_id_secondary"]),
-        "target_execution_class": str(protocol["frozen_attack"]["target_execution_class"]),
+        "target_token_id": target_token_id,
+        "target_execution_class": target_execution_class,
         "epsilon": epsilon,
         "step_size": step_size,
         "num_steps": int(steps),

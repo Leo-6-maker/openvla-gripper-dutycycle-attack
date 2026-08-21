@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import torch
 
 from gripper_attack.attack_adapter import RouteContractError, TokenPrefixPGDAttacker
 from gripper_attack.execution_target import native_open_logratio_loss_and_stats
+from stage_x.run_stage_x1r2_f1b_dev import build_attack
 from stage_x.run_stage_x1r_primary_matrix import audit_direct_action_tokens
 
 
@@ -100,3 +102,14 @@ def test_native_open_set_objective_uses_all_open_tokens_and_excludes_them_from_c
     assert stats["non_open_competitor_count"] == 2
     assert stats["best_native_open_token"] == 1
     assert stats["best_non_open_token"] == 2
+
+
+def test_build_attack_accepts_f1c_single_method_protocol():
+    protocol = json.loads((ROOT / "configs/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_PROTOCOL_V3.json").read_text(encoding="utf-8"))
+    with patch("gripper_attack.attack_adapter.OpenVLAVisualAttacker") as constructor:
+        build_attack("M1", 10, 7, None, None, "cpu", protocol, temporal_init="prev_delta")
+    optimizer = constructor.call_args.args[2]["attack_optimizer"]
+    assert optimizer["objective"] == protocol["method"]["objective"]
+    assert optimizer["epsilon"] == protocol["method"]["epsilon_processor_pixel_values"]
+    assert optimizer["step_size"] == protocol["method"]["step_size"]
+    assert optimizer["temporal_init"] == "prev_delta"
