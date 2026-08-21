@@ -1,0 +1,43 @@
+{
+  "audit_sha256": "e0d4b782a3a34d16464cb28ebf900bd9ba745d53381f94e78327a9afabac275f",
+  "classification": "REPLAY_EXECUTION_EVIDENCE_INSUFFICIENT_BEFORE_INTERPRETABLE_T5",
+  "completed_arm_count": 14,
+  "completed_parent_count": 7,
+  "failure_arm_count": 2,
+  "failure_mode": "F1C_REPLAY_OBSERVATION_HASH_MISMATCH",
+  "failure_parent_count": 1,
+  "gate": "STAGE_X_X1R2_F1C4_FRESH_CANARY_REQUALIFICATION_V1",
+  "namespace": "STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822",
+  "no_physical_or_protected_use": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 1,
+    "eval160": "UNREAD",
+    "new_vphys_reads": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD"
+  },
+  "schema": "STAGE_X1R2_F1C4_TERMINAL_DECISION_V1",
+  "status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL",
+  "stop_conditions": {
+    "create_f1c5": false,
+    "enter_eval160_or_protected": false,
+    "open_bridge_v3": false,
+    "recycle_or_top_up_identities": false,
+    "run_f1d": false,
+    "tune_method": false
+  },
+  "temporal_selection": "NOT_APPLICABLE_TERMINAL_HOLD",
+  "totals": {
+    "attack_invocation_count": 70,
+    "attacked_env_steps": 1,
+    "attempted_step_count": 70,
+    "candidate_evidence_complete_steps": 70,
+    "candidate_evidence_rows": 770,
+    "clean_fallback_steps": 69,
+    "no_strict_candidate_steps": 69,
+    "pgd_calls": 1,
+    "physical_interventions": 0,
+    "strict_valid_steps": 1,
+    "vphys_reads": 0
+  }
+}
