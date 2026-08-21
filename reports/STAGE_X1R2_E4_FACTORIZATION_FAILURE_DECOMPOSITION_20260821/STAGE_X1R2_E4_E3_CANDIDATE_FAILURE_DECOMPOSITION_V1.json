@@ -1,0 +1,3021 @@
+{
+  "classification_definitions": {
+    "ARM_EXACT_AND_NATIVE_OPEN": "arm_token_ids_equal=true and direct_generated_gripper_is_native_open=true",
+    "ARM_EXACT_BUT_NOT_NATIVE_OPEN": "arm_token_ids_equal=true and direct_generated_gripper_is_native_open=false",
+    "EVIDENCE_MISSING": "a required sealed candidate field is absent or structurally invalid; no field is inferred",
+    "NATIVE_OPEN_BUT_ARM_DRIFT": "arm_token_ids_equal=false and direct_generated_gripper_is_native_open=true",
+    "NEITHER_OPEN_NOR_ARM_EXACT": "arm_token_ids_equal=false and direct_generated_gripper_is_native_open=false"
+  },
+  "global_summary": {
+    "candidate_class_counts": {
+      "ARM_EXACT_AND_NATIVE_OPEN": 4,
+      "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 29,
+      "NATIVE_OPEN_BUT_ARM_DRIFT": 1,
+      "NEITHER_OPEN_NOR_ARM_EXACT": 38
+    },
+    "candidate_slots": 72,
+    "evidence_missing_parent_count": 0,
+    "parent_failure_categories": {
+      "JOINT_LIMITED": 1,
+      "STRICT_REALIZABLE": 2,
+      "TARGETABILITY_LIMITED": 9
+    },
+    "parents": 12,
+    "parents_with_exact_arm": 12,
+    "parents_with_native_open": 3,
+    "parents_with_strict_valid_candidate": 2
+  },
+  "input_binding": {
+    "artifact_count": 60,
+    "candidate_slot_denominator": "12 parents x 6 ordered candidates = 72; parent-level aggregation is primary",
+    "decision_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/E3_DECISION_TABLE_V1.json",
+    "decision_sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24",
+    "e3_status": "E3_STRICT_SELECTIVE_REALIZABILITY_PARTIAL_SUITE_DEPENDENT",
+    "execution_mode": "offline_cpu_static_sealed_artifact_analysis",
+    "forbidden_execution": {
+      "backward": 0,
+      "env_step": 0,
+      "eval160": 0,
+      "gpu": 0,
+      "openvla_inference": 0,
+      "pgd": 0,
+      "physical_intervention": 0,
+      "protected": 0,
+      "simulator": 0,
+      "vphys": 0
+    },
+    "root_seal_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/E3_ROOT_SEAL_V1.json",
+    "root_seal_sha256": "20f5be64be1884aded25385e08c69ba3f5982422d546a532a737fd89e1bec16b",
+    "root_seal_status": "SEALED_E3_STRICT_SELECTIVE_REALIZABILITY_PARTIAL_SUITE_DEPENDENT",
+    "source_commit": "d642ab5a57d23f44933e1907991c845e2f30e294",
+    "source_status": "",
+    "source_tree": "1533bcec345c1b9ee06c46281291700c47527489"
+  },
+  "parent_failure_category_definitions": {
+    "EVIDENCE_MISSING": "one or more candidate rows cannot be classified from sealed fields",
+    "JOINT_LIMITED": "native OPEN and exact-arm candidates occur separately, but no candidate satisfies both",
+    "SELECTIVITY_LIMITED": "native OPEN occurs, but no candidate preserves exact arm tokens",
+    "STRICT_REALIZABLE": "at least one candidate is ARM_EXACT_AND_NATIVE_OPEN",
+    "TARGETABILITY_LIMITED": "no candidate reaches native OPEN"
+  },
+  "parent_rows": [
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31881,
+            31857,
+            31895,
+            31820,
+            31913
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31884,
+            31881,
+            31857,
+            31895,
+            31820,
+            31913,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "16a17c4c52aecbed26788ceaefc98195fd232d8fed6f5e6891c339d4a1d6212b",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            2,
+            5
+          ],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "b9dcec5653925e608d2eec673118df84f796a285807ac247347c1f92eba22e2f",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31878,
+            31863,
+            31895,
+            31820,
+            31885
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31884,
+            31878,
+            31863,
+            31895,
+            31820,
+            31885,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "c19ac0bc39529636a2ea2ccbb784c85de605717eaa8c0226d159ec3a1f37c0c7",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            2,
+            4,
+            5
+          ],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "b62cab532e45fdc9b32ffb01c81d6f13ddc3e0f21d733daccaef1a3b0f69e342",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31878,
+            31863,
+            31895,
+            31819,
+            31885
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31884,
+            31878,
+            31863,
+            31895,
+            31819,
+            31885,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": true,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "a977ee9898acec9c8fc0e1d1439cd7f28b2964c4f55514607cd333e3fc5c964c",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            2,
+            4,
+            5
+          ],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "6fdce80f9f37c2cac96bd6bd8028ed34746c462778d568db6033e332a02308f6",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31878,
+            31875,
+            31895,
+            31844,
+            31892
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31884,
+            31878,
+            31875,
+            31895,
+            31844,
+            31892,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "bdebe1a5c33ad19b58026f47f2cd84b80f8d31285fe22512a1f0999c9b3e02b4",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            4,
+            5
+          ],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "89b892e163f7bcbab00430c6ae52edd5ec2466a08d2673b6e72dc250a66c67b4",
+          "direct_generated_arm_token_ids": [
+            31909,
+            31878,
+            31911,
+            31895,
+            31855,
+            31883
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31909,
+            31878,
+            31911,
+            31895,
+            31855,
+            31883,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "2c509d27c79056db1c6de628c3b07fbb34052fbe96e1eabf651bf2294bf96da5",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "6aa0592ec655916c7af662d538427cf0cd98363e471c3020ce25442d77d36716",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31878,
+            31859,
+            31907,
+            31815,
+            31885
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31884,
+            31878,
+            31859,
+            31907,
+            31815,
+            31885,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "8766036744ea4e86f8a38f378f6a394b00fa0c903e209a792f9d472dbc20b4a6",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": false,
+        "any_strict_valid_candidate": false,
+        "arm_mismatch_dimension_histogram": {
+          "0": 1,
+          "1": 5,
+          "2": 5,
+          "3": 1,
+          "4": 4,
+          "5": 5
+        },
+        "candidate_class_counts": {
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 1,
+          "NEITHER_OPEN_NOR_ARM_EXACT": 5
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_10/task_05/state_41",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": null,
+        "earliest_strict_valid_candidate_index": null,
+        "fixture_id": "E3-LIBERO_10-01",
+        "parent_failure_category": "TARGETABILITY_LIMITED",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-01/attempt_01/parent_receipt.json",
+        "receipt_status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+        "selected_candidate_index": null,
+        "suite": "libero_10"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31757,
+            31885,
+            31895,
+            31898,
+            31912
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31884,
+            31757,
+            31885,
+            31895,
+            31898,
+            31912,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "9223281e068aaabde8841ea40527e04c80275485daae06c9ed24d707d8737e9b",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            4,
+            5
+          ],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "f95d3bec515c2414a550590cedff581e1d26e1f69538881d91fd0c11696c991c",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31757,
+            31885,
+            31895,
+            31902,
+            31903
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31884,
+            31757,
+            31885,
+            31895,
+            31902,
+            31903,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "1184d87a16f27ff061acdbd7bf347d30bdc70e21079779858451dcb3dc649227",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            4,
+            5
+          ],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "432f6564e4f78d4ecb9281315b80afabee7f5c822b22ddade1b654f21c568f4e",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31757,
+            31885,
+            31895,
+            31887,
+            31907
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31884,
+            31757,
+            31885,
+            31895,
+            31887,
+            31907,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "fd89aa9fe6e7b7ddf14b5bcb151497f120a638bd3907a39964e58fd5e3812f98",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            2,
+            4,
+            5
+          ],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "9421c6f2f9135b01c8a3e0e63805573ed1bbc327e5f9caac71b736bb0044af8f",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31757,
+            31881,
+            31895,
+            31897,
+            31908
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31884,
+            31757,
+            31881,
+            31895,
+            31897,
+            31908,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "ca00ed30af5b3a3620666fb99439d67f68a98f94239d18b89a87f73adb27996e",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            4,
+            5
+          ],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "caf3b926c9427cab3f4f76873bf6e7c862eef80fc8aa694a46cbd8e338d9ac9a",
+          "direct_generated_arm_token_ids": [
+            31877,
+            31757,
+            31885,
+            31895,
+            31887,
+            31901
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31877,
+            31757,
+            31885,
+            31895,
+            31887,
+            31901,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "a471be14712afe0546eea05486423354f8c39fe92d829a50a9572193f61e36c7",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            4,
+            5
+          ],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "fc03b1a5afeaf8257a1a93ffef3b1f2f1011ff3525c917ffc5627f62b1b2a3af",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31757,
+            31885,
+            31895,
+            31902,
+            31903
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31884,
+            31757,
+            31885,
+            31895,
+            31902,
+            31903,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "9eceb11c703fb45e112d55328d64703c5e0e6eed587ced11e23c5b6de55bd410",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": false,
+        "any_strict_valid_candidate": false,
+        "arm_mismatch_dimension_histogram": {
+          "0": 1,
+          "2": 1,
+          "4": 5,
+          "5": 5
+        },
+        "candidate_class_counts": {
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 1,
+          "NEITHER_OPEN_NOR_ARM_EXACT": 5
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_10/task_04/state_36",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": null,
+        "earliest_strict_valid_candidate_index": null,
+        "fixture_id": "E3-LIBERO_10-02",
+        "parent_failure_category": "TARGETABILITY_LIMITED",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-02/attempt_01/parent_receipt.json",
+        "receipt_status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+        "selected_candidate_index": null,
+        "suite": "libero_10"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "03e53dee216eeae58e87c9259c7b03145dfecb5a96192f44652c9054abbd48a0",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "a1b7b9a392a923196075f471d7750e284d35efdbd9f9720a76245ae523250dcd",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "95cbd0c884785bbb42f152a9faef48d5a49590fbe2c27777f571609385c230d3",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "cadc6db94921d095429120e1016575933035bdf0b3301cd6f20b68cd3efcbb9e",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "421532c1ef1380e8f5c33931d8f511421c608a3e4903c425fb89f971d80c599b",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "ARM_EXACT_AND_NATIVE_OPEN",
+          "delta_sha256": "fa28c2aa44a0cdcca919666f1ae02d3f653efbf8d2d088393398360bf8a6d61f",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883
+          ],
+          "direct_generated_gripper_token_id": 31745,
+          "direct_generated_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31745
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": true,
+          "native_open": true,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "515d71424300d8f9506f49d2b862e8edbdff2317f93d7a537f7e4af08086c63c",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "ARM_EXACT_AND_NATIVE_OPEN",
+          "delta_sha256": "ef497799f46089d1cabe80daea08347dc55d6eb1417057717643ac266fe267f6",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883
+          ],
+          "direct_generated_gripper_token_id": 31745,
+          "direct_generated_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31745
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": true,
+          "native_open": true,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "ea93c0973ec91d2a4992679a7639070b4fe68e2950051db4dff7ee4c01781eae",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "61d9cc6e120348f7b9235f82981fa6d545ea74e21d07ae7a5ea81ea819f6aeb6",
+          "direct_generated_arm_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "a12ab1c2a3e40e92751c16ff40677de45c4618e2a5af61cc2cd886c98bfccdea",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": true,
+        "any_strict_valid_candidate": true,
+        "arm_mismatch_dimension_histogram": {},
+        "candidate_class_counts": {
+          "ARM_EXACT_AND_NATIVE_OPEN": 2,
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 4
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_10/task_03/state_21",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": 3,
+        "earliest_strict_valid_candidate_index": 3,
+        "fixture_id": "E3-LIBERO_10-03",
+        "parent_failure_category": "STRICT_REALIZABLE",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-03/attempt_01/parent_receipt.json",
+        "receipt_status": "PASS_E3_VALID_CANDIDATE",
+        "selected_candidate_index": 3,
+        "suite": "libero_10"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31876,
+            31884,
+            31892,
+            31891,
+            31902,
+            31931
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31876,
+            31884,
+            31892,
+            31891,
+            31902,
+            31931,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "6123ab46467d5796ef1b1e6587e24ff3e2d7c8937fa5a99120cb49844a1e06af",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "bef0e9c3ba60e861ecd103f2add45a254adf79ef10538e3fa98e4e6153953361",
+          "direct_generated_arm_token_ids": [
+            31870,
+            31878,
+            31887,
+            31893,
+            31879,
+            31931
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31870,
+            31878,
+            31887,
+            31893,
+            31879,
+            31931,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": true,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "76ca7e5a7c373f5d1922aa2baebc1d73cf140801ff897b9440304c5b8b4ca4f6",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "d233266df58cfb134f759f3474e43ba6d00303b686807633a646279f1ca8ad6a",
+          "direct_generated_arm_token_ids": [
+            31876,
+            31884,
+            31892,
+            31891,
+            31902,
+            31931
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31876,
+            31884,
+            31892,
+            31891,
+            31902,
+            31931,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "11250a75621de8ca17ea818dc45dac6e94689caaa8dd65546463b5fde78d2d21",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "e0ac7895ac7e14449195f156d0b76847fbcfc762a92413267d5e9953ec84b06a",
+          "direct_generated_arm_token_ids": [
+            31870,
+            31878,
+            31887,
+            31893,
+            31879,
+            31931
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31870,
+            31878,
+            31887,
+            31893,
+            31879,
+            31931,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": true,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "93b230781593e7c5dd819bd9f83042f69fa8d17bdf658c772d90fedf56048444",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "2152d1ece68443b1da728c1537cca79a4e3c27a407d7fc39053bd30cd55366bf",
+          "direct_generated_arm_token_ids": [
+            31876,
+            31884,
+            31892,
+            31891,
+            31902,
+            31931
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31876,
+            31884,
+            31892,
+            31891,
+            31902,
+            31931,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": true,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "e995717cfc9c29cd9c6d01bcc786ef48a86b4d421bed6db57d8d7eaebcee331b",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "543e5014150500e4759acbe3ad560e902314d96de380b66a071fd1de1ffba863",
+          "direct_generated_arm_token_ids": [
+            31877,
+            31869,
+            31962,
+            31900,
+            31918,
+            31923
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31877,
+            31869,
+            31962,
+            31900,
+            31918,
+            31923,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "b479c1f10695e46647e133f29716b13b9c11be1fd0e1fceec0ef1933cad762ab",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": false,
+        "any_strict_valid_candidate": false,
+        "arm_mismatch_dimension_histogram": {
+          "0": 3,
+          "1": 3,
+          "2": 3,
+          "3": 3,
+          "4": 3,
+          "5": 1
+        },
+        "candidate_class_counts": {
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 3,
+          "NEITHER_OPEN_NOR_ARM_EXACT": 3
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_goal/task_06/state_28",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": null,
+        "earliest_strict_valid_candidate_index": null,
+        "fixture_id": "E3-LIBERO_GOAL-01",
+        "parent_failure_category": "TARGETABILITY_LIMITED",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-01/attempt_01/parent_receipt.json",
+        "receipt_status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+        "selected_candidate_index": null,
+        "suite": "libero_goal"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31907,
+            31900,
+            31918,
+            31901,
+            31848,
+            31837
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31907,
+            31900,
+            31918,
+            31901,
+            31848,
+            31837,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "c32e2603c17067eb07a86e04f1efae5dadbe97ae6a6da413fdf70f71ce6d5fe0",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "b95ef59e26060aac29f282039055656552677d6481d4e1a9dd832bbb7ddf1ee3",
+          "direct_generated_arm_token_ids": [
+            31907,
+            31911,
+            31917,
+            31905,
+            31877,
+            31874
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31907,
+            31911,
+            31917,
+            31905,
+            31877,
+            31874,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "18561ae8298041b33766c359f14f200f5fa93da36f69cb0962b301334dc39b90",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "f090dfd9b50bab84197069f1eb3c2443cf3f8da5bbfdcd1e0052d7c5d75a70d3",
+          "direct_generated_arm_token_ids": [
+            31907,
+            31908,
+            31918,
+            31905,
+            31911,
+            31931
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31907,
+            31908,
+            31918,
+            31905,
+            31911,
+            31931,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "59ab1e70abc1e81896773bf5c1e83fffd95a4744e98d0abfa0f17305a725acf8",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "a342c4c066fed74981150cb88b564fc8c9b56f735a9e5b2afb86caac853e8802",
+          "direct_generated_arm_token_ids": [
+            31907,
+            31911,
+            31918,
+            31905,
+            31907,
+            31867
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31907,
+            31911,
+            31918,
+            31905,
+            31907,
+            31867,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "eb26bd94545e154c6e36e0568040bdb0d82125561b0f81c3c970be202e09a074",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "32024645a6e345d89cf10c960079bd2d6f1c2a37344c5ef6601048bb96e44487",
+          "direct_generated_arm_token_ids": [
+            31907,
+            31908,
+            31918,
+            31905,
+            31916,
+            31867
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31907,
+            31908,
+            31918,
+            31905,
+            31916,
+            31867,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "3f46395da596ab925426d38f96dc40f42110c5e5123f9fd6d976eecb744946cf",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "NATIVE_OPEN_BUT_ARM_DRIFT",
+          "delta_sha256": "fcdde50ca872c334e575bf913c06deaf4f8e324bc9869ad681fc6986665259a5",
+          "direct_generated_arm_token_ids": [
+            31907,
+            31911,
+            31917,
+            31905,
+            31877,
+            31874
+          ],
+          "direct_generated_gripper_token_id": 31745,
+          "direct_generated_token_ids": [
+            31907,
+            31911,
+            31917,
+            31905,
+            31877,
+            31874,
+            31745
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": true,
+          "native_open": true,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "057e5eab61648bdfe3729075b39e2875818da6a2320746e04b11b9746a2dd0e9",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": true,
+        "any_strict_valid_candidate": false,
+        "arm_mismatch_dimension_histogram": {
+          "1": 5,
+          "2": 2,
+          "3": 5,
+          "4": 5,
+          "5": 5
+        },
+        "candidate_class_counts": {
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 1,
+          "NATIVE_OPEN_BUT_ARM_DRIFT": 1,
+          "NEITHER_OPEN_NOR_ARM_EXACT": 4
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_goal/task_09/state_46",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": 5,
+        "earliest_strict_valid_candidate_index": null,
+        "fixture_id": "E3-LIBERO_GOAL-02",
+        "parent_failure_category": "JOINT_LIMITED",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-02/attempt_01/parent_receipt.json",
+        "receipt_status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+        "selected_candidate_index": null,
+        "suite": "libero_goal"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31750,
+            31872,
+            31925,
+            31903,
+            31902,
+            31949
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31750,
+            31872,
+            31925,
+            31903,
+            31902,
+            31949,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "ee455d3bba6a1e5869c346149e96c2545c0c1c0d3fcb6cc8e0941a8b79cb9144",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            5
+          ],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "b750b429dcde3cc288b09b93058cda984f63b004ec56aa323cba10124d6aa71f",
+          "direct_generated_arm_token_ids": [
+            31761,
+            31870,
+            31927,
+            31930,
+            31902,
+            31957
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31761,
+            31870,
+            31927,
+            31930,
+            31902,
+            31957,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "783e63b92a0b2644f48a5fdec9888a2d00f9a78e80fe1f44ff812d24abc1b3ae",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            5
+          ],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "1768440296fa72f60826df716345f9d76d8cee8b1757e198e02c3103275cf036",
+          "direct_generated_arm_token_ids": [
+            31758,
+            31847,
+            31915,
+            31920,
+            31902,
+            31945
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31758,
+            31847,
+            31915,
+            31920,
+            31902,
+            31945,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "33fedac3da02fe1464febe7aa05c206deb96018514517d275951f0967bf4a43e",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "069652694a8e6d303fc4e587bc81eaf61444039fb4801a12d891795e962ad948",
+          "direct_generated_arm_token_ids": [
+            31747,
+            31851,
+            31913,
+            31913,
+            31896,
+            31931
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31747,
+            31851,
+            31913,
+            31913,
+            31896,
+            31931,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "0ef0feac49d281dd4cd84265b5d4ae90a41fbaba83ed62fbd09fb1c6eb443e8d",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "bf37f201d56e64845bb96958fc1520e3ce452cdb5811b488ba458df0be258c80",
+          "direct_generated_arm_token_ids": [
+            31763,
+            31843,
+            31920,
+            31955,
+            31856,
+            31931
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31763,
+            31843,
+            31920,
+            31955,
+            31856,
+            31931,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "dcdd0d8212a84e4634bb2cb917a5905aa4b3cd4fc5bb8c93931e3c7cf4bff185",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            5
+          ],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "ee2745ceaa0ec7dc0673db1eec7fa4ee5b773808b3e94ffdc724afd92606cb3e",
+          "direct_generated_arm_token_ids": [
+            31763,
+            31851,
+            31930,
+            31942,
+            31902,
+            31945
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31763,
+            31851,
+            31930,
+            31942,
+            31902,
+            31945,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "e60e87665ebbc416d8e2ffa268ca419b656a601c683428e433eef3638225f262",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": false,
+        "any_strict_valid_candidate": false,
+        "arm_mismatch_dimension_histogram": {
+          "0": 5,
+          "1": 5,
+          "2": 5,
+          "3": 5,
+          "4": 2,
+          "5": 5
+        },
+        "candidate_class_counts": {
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 1,
+          "NEITHER_OPEN_NOR_ARM_EXACT": 5
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_goal/task_04/state_38",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": null,
+        "earliest_strict_valid_candidate_index": null,
+        "fixture_id": "E3-LIBERO_GOAL-03",
+        "parent_failure_category": "TARGETABILITY_LIMITED",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-03/attempt_01/parent_receipt.json",
+        "receipt_status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+        "selected_candidate_index": null,
+        "suite": "libero_goal"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31854,
+            31750,
+            31865,
+            31882,
+            31887,
+            31824
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31854,
+            31750,
+            31865,
+            31882,
+            31887,
+            31824,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "d4afad7906422e02aec6baa937d4d789743a824d089569222440614b79d280fe",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "2bbf9e188b25c7623d50196330639e63c1d8de4ec1cd25622be3d8ef8045ea40",
+          "direct_generated_arm_token_ids": [
+            31854,
+            31750,
+            31865,
+            31882,
+            31887,
+            31824
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31854,
+            31750,
+            31865,
+            31882,
+            31887,
+            31824,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "a1101e314f681cdc7544db566c52111e34e63b226c9aed7f8f92cb4653d7d5f3",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "defb945c7320565253a9c8f390f6da6cd2d69b435e41c24ea374710cae52a73d",
+          "direct_generated_arm_token_ids": [
+            31854,
+            31750,
+            31865,
+            31882,
+            31887,
+            31824
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31854,
+            31750,
+            31865,
+            31882,
+            31887,
+            31824,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "0e7378d04a36c4f1315fdccc31b40c0969a6ac7c0d4aee2149a3603ff146806b",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            2,
+            5
+          ],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "e73bfcd8422aa84380ca2723754962650860c2bc094cd20ae9fde522a1ed5e06",
+          "direct_generated_arm_token_ids": [
+            31856,
+            31750,
+            31863,
+            31882,
+            31887,
+            31829
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31856,
+            31750,
+            31863,
+            31882,
+            31887,
+            31829,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "edad3451b9a296f9c281984baf56d54110239fb43d8bb64e4e383076257831af",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            5
+          ],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "93a4caaa6a9eb79c837049094579b9b76ea5b97f8ad57916ed95e5a2ace3dece",
+          "direct_generated_arm_token_ids": [
+            31856,
+            31751,
+            31863,
+            31882,
+            31887,
+            31829
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31856,
+            31751,
+            31863,
+            31882,
+            31887,
+            31829,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "86e1d7a9077910591fb2353160ca3f8c20c9f977f28fcfd981df0fc616b8f44a",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "5440b54e8e4da1b7c280f5b27950d8abea92d9b442d2d668c9fd63c76a6e813a",
+          "direct_generated_arm_token_ids": [
+            31854,
+            31750,
+            31865,
+            31882,
+            31887,
+            31824
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31854,
+            31750,
+            31865,
+            31882,
+            31887,
+            31824,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "694e44bd57f29b35f77e7ed9a7d2b5f0d01c01d2dfcb57ddf1fe58f5ba5de2ef",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": false,
+        "any_strict_valid_candidate": false,
+        "arm_mismatch_dimension_histogram": {
+          "0": 2,
+          "1": 1,
+          "2": 2,
+          "5": 2
+        },
+        "candidate_class_counts": {
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 4,
+          "NEITHER_OPEN_NOR_ARM_EXACT": 2
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_object/task_08/state_40",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": null,
+        "earliest_strict_valid_candidate_index": null,
+        "fixture_id": "E3-LIBERO_OBJECT-01",
+        "parent_failure_category": "TARGETABILITY_LIMITED",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-01/attempt_01/parent_receipt.json",
+        "receipt_status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+        "selected_candidate_index": null,
+        "suite": "libero_object"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31782,
+            31931,
+            31912,
+            31858,
+            31895,
+            31866
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31782,
+            31931,
+            31912,
+            31858,
+            31895,
+            31866,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "8a3b7314759ccae5da5ca6806e8b6784a36593693635c5087819d0455e8e8fcd",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "80e36788fda490f6cbdc699e74ea231d6e074b30c9c80b255d10dc1db37ceabf",
+          "direct_generated_arm_token_ids": [
+            31782,
+            31931,
+            31912,
+            31844,
+            31902,
+            31913
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31782,
+            31931,
+            31912,
+            31844,
+            31902,
+            31913,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "a334d828ba06129d38ba7cf7b6c15db3e8b53e2cd9063d5051f1e71efc7e7df3",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "74d479129854d4f71078a488d71252a04ad3aa661285bebd4e672c884fe93915",
+          "direct_generated_arm_token_ids": [
+            31782,
+            31939,
+            31892,
+            31849,
+            31919,
+            31904
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31782,
+            31939,
+            31892,
+            31849,
+            31919,
+            31904,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "8a933cbf9d8f05ad5f814912ebc38e2992ad6476007a9b629f8b7c125f1c6045",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            3,
+            4
+          ],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "907071c76166c8d14211580d78dbae5bafb7f26aa7cc5268405946a404055577",
+          "direct_generated_arm_token_ids": [
+            31782,
+            31926,
+            31912,
+            31844,
+            31902,
+            31866
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31782,
+            31926,
+            31912,
+            31844,
+            31902,
+            31866,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "0db403e710c14952ad6cbc021ce167ac5cb2ce605ed8471f8ce53a524b7117dc",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "d381444f2e55d99536af12266f04981b2fbba7d8ffd00a468bef693d1dee030a",
+          "direct_generated_arm_token_ids": [
+            31773,
+            31932,
+            31891,
+            31882,
+            31907,
+            31856
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31773,
+            31932,
+            31891,
+            31882,
+            31907,
+            31856,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "40476e6f5db14f74fa13af6c3e7ea7e9fc30611cfb313b0c6522ab0d93fb8d55",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "9e4f8e7eb07962eec7a196c1080d38dbe8397abe7d3c56b9875546bfa56d6c19",
+          "direct_generated_arm_token_ids": [
+            31782,
+            31938,
+            31894,
+            31882,
+            31969,
+            31866
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31782,
+            31938,
+            31894,
+            31882,
+            31969,
+            31866,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "66708664fbda701908c1ac1ba19d36e286698252f2445d01612ae8b638bcb0c6",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": false,
+        "any_strict_valid_candidate": false,
+        "arm_mismatch_dimension_histogram": {
+          "0": 1,
+          "1": 4,
+          "2": 3,
+          "3": 5,
+          "4": 5,
+          "5": 3
+        },
+        "candidate_class_counts": {
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 1,
+          "NEITHER_OPEN_NOR_ARM_EXACT": 5
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_object/task_03/state_30",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": null,
+        "earliest_strict_valid_candidate_index": null,
+        "fixture_id": "E3-LIBERO_OBJECT-02",
+        "parent_failure_category": "TARGETABILITY_LIMITED",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-02/attempt_01/parent_receipt.json",
+        "receipt_status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+        "selected_candidate_index": null,
+        "suite": "libero_object"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31881,
+            31870,
+            31875,
+            31882,
+            31934,
+            31894
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31881,
+            31870,
+            31875,
+            31882,
+            31934,
+            31894,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "8ab6ac93d09d630e4cfd24b36f64be6442377e4af6b8830baa2b919b954922a1",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            4,
+            5
+          ],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "932dcc6462fd09bab471160e008517c7cd7a4b7949d4ac906ac990ef7c5297ef",
+          "direct_generated_arm_token_ids": [
+            31881,
+            31870,
+            31875,
+            31882,
+            31887,
+            31834
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31881,
+            31870,
+            31875,
+            31882,
+            31887,
+            31834,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "c63b916ec1ff305640a8e2106fd670c45cba38f15f089842e221476326f0766d",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "7b5c935ba65b37327629e7fcc1fe3d5e746893dc2d46c22872927f3240f31edd",
+          "direct_generated_arm_token_ids": [
+            31881,
+            31870,
+            31875,
+            31882,
+            31934,
+            31894
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31881,
+            31870,
+            31875,
+            31882,
+            31934,
+            31894,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "64f94c4f174f6b043aaa9352dd34a08deecdf045d42533e7c60dc72dd12543cd",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            4,
+            5
+          ],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "c71ef86cdc980da28dd0eb83b2245e5214edba88120f49c72fb5a3491d6f914f",
+          "direct_generated_arm_token_ids": [
+            31864,
+            31857,
+            31878,
+            31882,
+            31935,
+            31861
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31864,
+            31857,
+            31878,
+            31882,
+            31935,
+            31861,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "4dcd8a6695e41a2085e277f5ef0dfb2dc089a37a2aefd4d84f46552e9e825827",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            4,
+            5
+          ],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "4417a64755e812b6b4d7f503aaef4d2b692ad1646abfdced3811a82acc4e947a",
+          "direct_generated_arm_token_ids": [
+            31864,
+            31857,
+            31878,
+            31882,
+            31935,
+            31861
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31864,
+            31857,
+            31878,
+            31882,
+            31935,
+            31861,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "bd271d75f8b9b550f69f75d3f1acea954eee1f8fdac684ff370a28b549337648",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "5ca485594567583bba3b34943734a8f9de3f3c5b7f43ee1165f778ab1171d95d",
+          "direct_generated_arm_token_ids": [
+            31881,
+            31870,
+            31875,
+            31882,
+            31934,
+            31894
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31881,
+            31870,
+            31875,
+            31882,
+            31934,
+            31894,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "bf01085e7e57b6ff1ebe120bd12e10051e69f0a301d4233b26725773040b80a2",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": false,
+        "any_strict_valid_candidate": false,
+        "arm_mismatch_dimension_histogram": {
+          "0": 2,
+          "1": 2,
+          "2": 2,
+          "4": 3,
+          "5": 3
+        },
+        "candidate_class_counts": {
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 3,
+          "NEITHER_OPEN_NOR_ARM_EXACT": 3
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_object/task_09/state_28",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": null,
+        "earliest_strict_valid_candidate_index": null,
+        "fixture_id": "E3-LIBERO_OBJECT-03",
+        "parent_failure_category": "TARGETABILITY_LIMITED",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-03/parent_receipt.json",
+        "receipt_status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+        "selected_candidate_index": null,
+        "suite": "libero_object"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31999,
+            31885,
+            31993,
+            31967,
+            31862,
+            31903
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31999,
+            31885,
+            31993,
+            31967,
+            31862,
+            31903,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "11e46eab3725cc65f2737347f2426cb34cc49558d21241313028442c31e3520b",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "d27038b959c9c56c3b3c0e10740be5e97955da2263b07b1857467de8a87780a8",
+          "direct_generated_arm_token_ids": [
+            31999,
+            31885,
+            31993,
+            31967,
+            31862,
+            31903
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31999,
+            31885,
+            31993,
+            31967,
+            31862,
+            31903,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "f0e88195f3df2244684edcddcf15fa6e5a2f8fdda383e92b65db54896990afc4",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "ARM_EXACT_AND_NATIVE_OPEN",
+          "delta_sha256": "951a7a9892e4eae9eba1798b4af87b41c927ec5fe1419f02b5e32bb986d79424",
+          "direct_generated_arm_token_ids": [
+            31999,
+            31885,
+            31993,
+            31967,
+            31862,
+            31903
+          ],
+          "direct_generated_gripper_token_id": 31745,
+          "direct_generated_token_ids": [
+            31999,
+            31885,
+            31993,
+            31967,
+            31862,
+            31903,
+            31745
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": true,
+          "native_open": true,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "2ece0c04f0753007aec7595982ad3a771846bed1029cdf3384608a52fe62c8a7",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            2,
+            3,
+            5
+          ],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "ecc60672f7a6e90295a70926464c49a968cd6ce1ff1e24af8cdb8feabda00616",
+          "direct_generated_arm_token_ids": [
+            31999,
+            31881,
+            31978,
+            31980,
+            31862,
+            31908
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31999,
+            31881,
+            31978,
+            31980,
+            31862,
+            31908,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "fdf546ec374e709e2298c83df7f25dd1931c81bee186993df95824dbd5388be3",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            1,
+            2,
+            3,
+            5
+          ],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "853d6ceaf375aca347e9a3523339d782968591aa84fee68d74fbf5391939fff6",
+          "direct_generated_arm_token_ids": [
+            31999,
+            31873,
+            31949,
+            31985,
+            31862,
+            31802
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31999,
+            31873,
+            31949,
+            31985,
+            31862,
+            31802,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "01151ad3b979cec18c0fa55c4385e095a1387679440721cf7c224e513add3e03",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "ARM_EXACT_AND_NATIVE_OPEN",
+          "delta_sha256": "c14c15cf313db133ce8a84add5bb32797aef5c6cb3887f1b12f29f41d60f26cc",
+          "direct_generated_arm_token_ids": [
+            31999,
+            31885,
+            31993,
+            31967,
+            31862,
+            31903
+          ],
+          "direct_generated_gripper_token_id": 31745,
+          "direct_generated_token_ids": [
+            31999,
+            31885,
+            31993,
+            31967,
+            31862,
+            31903,
+            31745
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": true,
+          "native_open": true,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "289427eb4d52d5007490e56b6c109e0db12846d9d9e8b6409b954ff2153d9bef",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": true,
+        "any_strict_valid_candidate": true,
+        "arm_mismatch_dimension_histogram": {
+          "1": 2,
+          "2": 2,
+          "3": 2,
+          "5": 2
+        },
+        "candidate_class_counts": {
+          "ARM_EXACT_AND_NATIVE_OPEN": 2,
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 2,
+          "NEITHER_OPEN_NOR_ARM_EXACT": 2
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_spatial/task_09/state_30",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": 2,
+        "earliest_strict_valid_candidate_index": 2,
+        "fixture_id": "E3-LIBERO_SPATIAL-01",
+        "parent_failure_category": "STRICT_REALIZABLE",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_spatial/E3-LIBERO_SPATIAL-01/parent_receipt.json",
+        "receipt_status": "PASS_E3_VALID_CANDIDATE",
+        "selected_candidate_index": 2,
+        "suite": "libero_spatial"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "aa3a4bf388f6341602d4ae47001bb1f1533b45878ca39e75f73a04b934c8247e",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "09003ca147f054ec707955b98f1344e323fddb4808b803d4afbe1a5ff003863a",
+          "direct_generated_arm_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "9c00013e37d8a44e1b4cc8dba34ed679fb2647694b68911c3400843cd079e0c8",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "2e5addcfc3a840d21f2b90a39b2cc1d23f100825dc0f13e525ba67c1fc16e38c",
+          "direct_generated_arm_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "5f3127d3d42fa31bd9ba3753122225eb8dc6bf3a77106faddde787393f45f43b",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "196af50285a0dda1bc69ddda0d96524187027a403eb428f06b7fcd927a34867a",
+          "direct_generated_arm_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "c9479a5bd6ee4ad64e35d519dcfd295d6f52307b0c232e79b323a2ef3d00cd5a",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "5034c4c1f4dec683fc2017f2634a7a3c031c8f9d84500985d1e59c5a04bbed8b",
+          "direct_generated_arm_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": true,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "c94a688903bd373d9a0d9ef513e382b96e831583631626ddaff600dd7459cba7",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "54053198d8db0551922b48ee0a0793dc452305128a66fa94d55ee872037783ba",
+          "direct_generated_arm_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855
+          ],
+          "direct_generated_gripper_token_id": 31872,
+          "direct_generated_token_ids": [
+            31887,
+            31882,
+            31994,
+            31800,
+            31835,
+            31855,
+            31872
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "7444b29c3c6a602af8b8c1559a131742a2169af7e4e325cf592eba270ff64041",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": false,
+        "any_strict_valid_candidate": false,
+        "arm_mismatch_dimension_histogram": {},
+        "candidate_class_counts": {
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 6
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_spatial/task_03/state_32",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": null,
+        "earliest_strict_valid_candidate_index": null,
+        "fixture_id": "E3-LIBERO_SPATIAL-02",
+        "parent_failure_category": "TARGETABILITY_LIMITED",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_spatial/E3-LIBERO_SPATIAL-02/parent_receipt.json",
+        "receipt_status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+        "selected_candidate_index": null,
+        "suite": "libero_spatial"
+      }
+    },
+    {
+      "candidates": [
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 0,
+          "candidate_source": "delta0",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "76cad675a53b96a31936bebc4507b08704b6fcba1b41f3dba608cd397fc7d98f",
+          "direct_generated_arm_token_ids": [
+            31800,
+            31907,
+            31952,
+            31803,
+            31862,
+            31838
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31800,
+            31907,
+            31952,
+            31803,
+            31862,
+            31838,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0,
+          "processor_input_sha256": "b821c4c4ad0c72e13fb1df7d3f52eecb753fffa0406dd68170d16de4ef365fb0",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 1,
+          "candidate_source": "pgd_iteration_1",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "d8829c066b4b1e096d6f0cce0107773675356d067b84650e9dba3f7d41d638a4",
+          "direct_generated_arm_token_ids": [
+            31835,
+            31915,
+            31982,
+            31833,
+            31947,
+            31857
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31835,
+            31915,
+            31982,
+            31833,
+            31947,
+            31857,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.0078125,
+          "processor_input_sha256": "997e265c8e9784ab5c8366874b280f7725b79f75cd69c89afd6121a6328e5455",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 2,
+          "candidate_source": "pgd_iteration_2",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "8852bd4b71d98e6cf9d6d5f6e7f73c8771c253fe0ed5cc8d28cf951a00fbbef1",
+          "direct_generated_arm_token_ids": [
+            31815,
+            31931,
+            31975,
+            31809,
+            31925,
+            31857
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31815,
+            31931,
+            31975,
+            31809,
+            31925,
+            31857,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.015625,
+          "processor_input_sha256": "daefb2a58736f67567cb9b7ef4cbefb4ac6eee54c1d9d1093a90bfad8f217224",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            3,
+            4,
+            5
+          ],
+          "candidate_index": 3,
+          "candidate_source": "pgd_iteration_3",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "fedcf15474bdcd4192874382e1b57687179311abae5b6f1a9397a0376785547c",
+          "direct_generated_arm_token_ids": [
+            31800,
+            31907,
+            31952,
+            31870,
+            31942,
+            31857
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31800,
+            31907,
+            31952,
+            31870,
+            31942,
+            31857,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.01953125,
+          "processor_input_sha256": "16718249eae4acfd0240589c3eae82e5e83d60252dbaac0f7e71ec3efeb0040a",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": false,
+          "arm_mismatch_dimensions": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "candidate_index": 4,
+          "candidate_source": "pgd_iteration_4",
+          "classification": "NEITHER_OPEN_NOR_ARM_EXACT",
+          "delta_sha256": "964d4da95564a10a6045ee3f8281e3bcedf4370ffd165f58279ad57c969bf280",
+          "direct_generated_arm_token_ids": [
+            31823,
+            31911,
+            31974,
+            31813,
+            31862,
+            31838
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31823,
+            31911,
+            31974,
+            31813,
+            31862,
+            31838,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.02734375,
+          "processor_input_sha256": "9d7621d2b35f46513abfc1d3967b03bcd07f6638170d030fe521d333be471ee6",
+          "structural_errors": []
+        },
+        {
+          "arm_exact": true,
+          "arm_mismatch_dimensions": [],
+          "candidate_index": 5,
+          "candidate_source": "pgd_iteration_5",
+          "classification": "ARM_EXACT_BUT_NOT_NATIVE_OPEN",
+          "delta_sha256": "3cd17d341b308abebb88c3ec522351275d7a74e538e9d27fb6750c5234d715d6",
+          "direct_generated_arm_token_ids": [
+            31800,
+            31907,
+            31952,
+            31803,
+            31862,
+            31838
+          ],
+          "direct_generated_gripper_token_id": 31744,
+          "direct_generated_token_ids": [
+            31800,
+            31907,
+            31952,
+            31803,
+            31862,
+            31838,
+            31744
+          ],
+          "evidence_missing_fields": [],
+          "gripper_token_changed": false,
+          "native_open": false,
+          "pixel_budget_adv_inputs_linf": 0.029998779296875,
+          "processor_input_sha256": "daa97dd5f2a1c4b202a3aa23055f0f8b0c54b804016cfdcb6b07d86609ec4d93",
+          "structural_errors": []
+        }
+      ],
+      "summary": {
+        "any_candidate_exact_arm": true,
+        "any_candidate_native_open": false,
+        "any_strict_valid_candidate": false,
+        "arm_mismatch_dimension_histogram": {
+          "0": 3,
+          "1": 3,
+          "2": 3,
+          "3": 4,
+          "4": 3,
+          "5": 3
+        },
+        "candidate_class_counts": {
+          "ARM_EXACT_BUT_NOT_NATIVE_OPEN": 2,
+          "NEITHER_OPEN_NOR_ARM_EXACT": 4
+        },
+        "candidate_count": 6,
+        "candidate_evidence_complete": true,
+        "canonical_parent_key": "libero_spatial/task_06/state_29",
+        "earliest_exact_arm_candidate_index": 0,
+        "earliest_native_open_candidate_index": null,
+        "earliest_strict_valid_candidate_index": null,
+        "fixture_id": "E3-LIBERO_SPATIAL-03",
+        "parent_failure_category": "TARGETABILITY_LIMITED",
+        "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_spatial/E3-LIBERO_SPATIAL-03/parent_receipt.json",
+        "receipt_status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+        "selected_candidate_index": null,
+        "suite": "libero_spatial"
+      }
+    }
+  ],
+  "schema": "STAGE_X_X1R2_E4_E3_CANDIDATE_FAILURE_DECOMPOSITION_V1",
+  "status": "STAGE_X_X1R2_E4_DECOMPOSITION_PASS",
+  "suite_summary": {
+    "libero_10": {
+      "any_exact_arm": 3,
+      "any_native_open": 1,
+      "any_strict_valid": 1,
+      "arm_mismatch_dimension_histogram": {
+        "0": 2,
+        "1": 5,
+        "2": 6,
+        "3": 1,
+        "4": 9,
+        "5": 10
+      },
+      "parent_failure_categories": {
+        "STRICT_REALIZABLE": 1,
+        "TARGETABILITY_LIMITED": 2
+      },
+      "parents": 3
+    },
+    "libero_goal": {
+      "any_exact_arm": 3,
+      "any_native_open": 1,
+      "any_strict_valid": 0,
+      "arm_mismatch_dimension_histogram": {
+        "0": 8,
+        "1": 13,
+        "2": 10,
+        "3": 13,
+        "4": 10,
+        "5": 11
+      },
+      "parent_failure_categories": {
+        "JOINT_LIMITED": 1,
+        "TARGETABILITY_LIMITED": 2
+      },
+      "parents": 3
+    },
+    "libero_object": {
+      "any_exact_arm": 3,
+      "any_native_open": 0,
+      "any_strict_valid": 0,
+      "arm_mismatch_dimension_histogram": {
+        "0": 5,
+        "1": 7,
+        "2": 7,
+        "3": 5,
+        "4": 8,
+        "5": 8
+      },
+      "parent_failure_categories": {
+        "TARGETABILITY_LIMITED": 3
+      },
+      "parents": 3
+    },
+    "libero_spatial": {
+      "any_exact_arm": 3,
+      "any_native_open": 1,
+      "any_strict_valid": 1,
+      "arm_mismatch_dimension_histogram": {
+        "0": 3,
+        "1": 5,
+        "2": 5,
+        "3": 6,
+        "4": 3,
+        "5": 5
+      },
+      "parent_failure_categories": {
+        "STRICT_REALIZABLE": 1,
+        "TARGETABILITY_LIMITED": 2
+      },
+      "parents": 3
+    }
+  }
+}

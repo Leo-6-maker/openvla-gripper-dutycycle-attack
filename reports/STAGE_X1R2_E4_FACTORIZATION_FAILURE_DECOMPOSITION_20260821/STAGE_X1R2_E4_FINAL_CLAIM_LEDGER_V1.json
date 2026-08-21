@@ -1,0 +1,159 @@
+{
+  "attack_efficacy": false,
+  "e3_structural_summary": {
+    "candidate_slots": 72,
+    "fixed_parent_denominator": 12,
+    "parents_with_strict_valid_candidate": 2,
+    "suite_summary": {
+      "libero_10": {
+        "any_exact_arm": 3,
+        "any_native_open": 1,
+        "any_strict_valid": 1,
+        "arm_mismatch_dimension_histogram": {
+          "0": 2,
+          "1": 5,
+          "2": 6,
+          "3": 1,
+          "4": 9,
+          "5": 10
+        },
+        "parent_failure_categories": {
+          "STRICT_REALIZABLE": 1,
+          "TARGETABILITY_LIMITED": 2
+        },
+        "parents": 3
+      },
+      "libero_goal": {
+        "any_exact_arm": 3,
+        "any_native_open": 1,
+        "any_strict_valid": 0,
+        "arm_mismatch_dimension_histogram": {
+          "0": 8,
+          "1": 13,
+          "2": 10,
+          "3": 13,
+          "4": 10,
+          "5": 11
+        },
+        "parent_failure_categories": {
+          "JOINT_LIMITED": 1,
+          "TARGETABILITY_LIMITED": 2
+        },
+        "parents": 3
+      },
+      "libero_object": {
+        "any_exact_arm": 3,
+        "any_native_open": 0,
+        "any_strict_valid": 0,
+        "arm_mismatch_dimension_histogram": {
+          "0": 5,
+          "1": 7,
+          "2": 7,
+          "3": 5,
+          "4": 8,
+          "5": 8
+        },
+        "parent_failure_categories": {
+          "TARGETABILITY_LIMITED": 3
+        },
+        "parents": 3
+      },
+      "libero_spatial": {
+        "any_exact_arm": 3,
+        "any_native_open": 1,
+        "any_strict_valid": 1,
+        "arm_mismatch_dimension_histogram": {
+          "0": 3,
+          "1": 5,
+          "2": 5,
+          "3": 6,
+          "4": 3,
+          "5": 5
+        },
+        "parent_failure_categories": {
+          "STRICT_REALIZABLE": 1,
+          "TARGETABILITY_LIMITED": 2
+        },
+        "parents": 3
+      }
+    }
+  },
+  "identity_join_policy": "No identity-level joins across X0, VI-B2, VII, VIII, IX, E2, and E3; synthesis is claim-safe and stage-level only.",
+  "input_binding": {
+    "artifact_count": 60,
+    "candidate_slot_denominator": "12 parents x 6 ordered candidates = 72; parent-level aggregation is primary",
+    "decision_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/E3_DECISION_TABLE_V1.json",
+    "decision_sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24",
+    "e3_status": "E3_STRICT_SELECTIVE_REALIZABILITY_PARTIAL_SUITE_DEPENDENT",
+    "execution_mode": "offline_cpu_static_sealed_artifact_analysis",
+    "forbidden_execution": {
+      "backward": 0,
+      "env_step": 0,
+      "eval160": 0,
+      "gpu": 0,
+      "openvla_inference": 0,
+      "pgd": 0,
+      "physical_intervention": 0,
+      "protected": 0,
+      "simulator": 0,
+      "vphys": 0
+    },
+    "root_seal_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/E3_ROOT_SEAL_V1.json",
+    "root_seal_sha256": "20f5be64be1884aded25385e08c69ba3f5982422d546a532a737fd89e1bec16b",
+    "root_seal_status": "SEALED_E3_STRICT_SELECTIVE_REALIZABILITY_PARTIAL_SUITE_DEPENDENT",
+    "source_commit": "d642ab5a57d23f44933e1907991c845e2f30e294",
+    "source_status": "",
+    "source_tree": "1533bcec345c1b9ee06c46281291700c47527489"
+  },
+  "mandatory_stop": "OWNER_PI_REVIEW_REQUIRED; no new attack objective, tuning, detector retraining, enlarged pool, RAND, SHUFFLED, R0/R1/R2, physical arm, Eval160, or protected read",
+  "not_promotable_claims": [
+    "universal or generalizable detector",
+    "cross-suite visual-PGD physical efficacy",
+    "Goal/Object visual attack impossibility",
+    "detector caused E3 failure",
+    "formal mediation from X0",
+    "attack efficacy inferred from E3-valid parents",
+    "protected or Eval160 validation"
+  ],
+  "preferred_thesis": "Gripper-targeted manipulation failures exhibit a dose- and phase-dependent OPEN duty-cycle physical mechanism, while clean timing criticality, physical vulnerability, and visual exploitability only partially align. Clean/context timing selectors fail to generalize reliably across suites, and even timing-decoupled strict gripper-selective visual realizability is sparse and suite/state dependent under the frozen method.",
+  "promotable_claims": [
+    {
+      "boundary": "No formal mediation and no protected evaluation.",
+      "claim": "X0 supports a dose- and phase-dependent physical OPEN duty-cycle mechanism through command delivery, aperture excess, contact loss, and displacement.",
+      "id": "X0_MECHANISM",
+      "role": "descriptive_mechanistic_bounded_counterfactual",
+      "source": "docs/handoffs/STAGE_X_X0_RESULT_20260817.md"
+    },
+    {
+      "boundary": "Populations and estimands remain separate; no identity-level join.",
+      "claim": "VI-B2, VII, and VIII do not establish stable cross-suite timing-selector generalization under their frozen gates.",
+      "id": "TIMING_NEGATIVE_CASCADE",
+      "role": "descriptive_predictive_negative",
+      "source": "STAGE_X_X1R2_E4_FACTORIZATION_SYNTHESIS_TABLE_V1.csv"
+    },
+    {
+      "boundary": "Not physical attack efficacy.",
+      "claim": "Stage IX separates model-side targetability from physical timing utility; high model-side scores did not establish factorized timing utility.",
+      "id": "IX_FACTORIZATION_GAP",
+      "role": "descriptive_predictive_model_side",
+      "source": "docs/handoffs/STAGE_IX_F0_RESULT_20260817.md"
+    },
+    {
+      "boundary": "No TRUE, physical, V_phys, Eval160, or protected read.",
+      "claim": "E2 is bounded Goal timing/scheduler non-emission evidence, not a strict visual-method negative.",
+      "id": "E2_TIMING_HOLD",
+      "role": "engineering_diagnostic",
+      "source": "docs/handoffs/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_BRANCH_QUALIFICATION_HOLD_20260821.md"
+    },
+    {
+      "boundary": "No physical efficacy, prevalence, cross-suite general capability, or impossibility claim.",
+      "claim": "E3 establishes bounded model-side strict selective realizability in 2 of 12 engineering-only parents, with suite/state dependence.",
+      "id": "E3_SPARSE_REALIZABILITY",
+      "role": "model_side_exploitability_descriptive",
+      "source": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/E3_DECISION_TABLE_V1.json"
+    }
+  ],
+  "protected_evaluation": "UNREAD",
+  "schema": "STAGE_X_X1R2_E4_FINAL_CLAIM_LEDGER_V1",
+  "status": "STAGE_X_X1R2_E4_PAPER_LOCK_READY"
+}

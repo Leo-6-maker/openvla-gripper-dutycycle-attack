@@ -1,0 +1,47 @@
+{
+  "artifact_count": 5,
+  "artifact_manifest": [
+    {
+      "bytes": 1224,
+      "path": "E4_INPUT_BINDING_V1.json",
+      "sha256": "ae8ccaa34e3ba45038b6c7d04c7d869582d02c4f72fb50477b326034a1531e62"
+    },
+    {
+      "bytes": 96969,
+      "path": "STAGE_X1R2_E4_E3_CANDIDATE_FAILURE_DECOMPOSITION_V1.json",
+      "sha256": "c4ac212f6998cd0c12b4c427aa2314a0f5a75cfb4cafca118bb78edfd43cd412"
+    },
+    {
+      "bytes": 3434,
+      "path": "STAGE_X1R2_E4_FACTORIZATION_SYNTHESIS_TABLE_V1.csv",
+      "sha256": "cda5397fb64d1efcdde91e0e5ca9d2c60165d62ab52a110aa561b17a5603b28d"
+    },
+    {
+      "bytes": 6505,
+      "path": "STAGE_X1R2_E4_FINAL_CLAIM_LEDGER_V1.json",
+      "sha256": "c67f0035c392a355fe9f51b0769dea069609925cfe0cefa5ac9d368ea1191c25"
+    },
+    {
+      "bytes": 1189,
+      "path": "STAGE_X1R2_E4_PAPER_LOCK_20260821.md",
+      "sha256": "22d186ede47d6f62fb5871fd4cddf4b03ef49d607b400d9571525d1af82c37c0"
+    }
+  ],
+  "input_decision_sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24",
+  "input_e3_root_seal_sha256": "20f5be64be1884aded25385e08c69ba3f5982422d546a532a737fd89e1bec16b",
+  "mandatory_stop": "OWNER_PI_REVIEW_REQUIRED",
+  "protected_boundary": {
+    "backward": 0,
+    "env_step": 0,
+    "eval160": 0,
+    "gpu": 0,
+    "openvla_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected": 0,
+    "simulator": 0,
+    "vphys": 0
+  },
+  "schema": "STAGE_X_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_ROOT_SEAL_V1",
+  "status": "SEALED_STAGE_X_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_AND_PAPER_LOCK"
+}
