@@ -62,7 +62,7 @@ def rel(path: Path) -> str:
 
 def boundary_errors(value: Mapping[str, Any], label: str) -> list[str]:
     errors: list[str] = []
-    if value.get("student_used") is not False or value.get("student_emit_used") is not False:
+    if ("student_used" in value and value.get("student_used") is not False) or ("student_emit_used" in value and value.get("student_emit_used") is not False):
         errors.append(f"{label}:STUDENT_USED")
     boundary = value.get("protected_boundary") or {}
     if boundary.get("eval160") != "UNREAD" or boundary.get("protected_evaluation") != "UNREAD":
@@ -233,7 +233,7 @@ def main() -> int:
         if status not in {"PASS_F1B_VALID_CANDIDATE", "F1B_NO_STRICT_CANDIDATE"}:
             errors.append(f"ATTACK_STATUS_INVALID:{config_key}:{status}")
         if status == "F1B_NO_STRICT_CANDIDATE":
-            if receipt.get("selector_error_type") != "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE":
+            if receipt.get("selector_error_message") != "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE":
                 errors.append(f"FAILURE_TYPE_INVALID:{config_key}")
             if receipt.get("diagnostics_sources_equal") is not True:
                 errors.append(f"FAILURE_DIAGNOSTICS_NOT_EQUAL:{config_key}")
