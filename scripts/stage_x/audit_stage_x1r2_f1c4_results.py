@@ -235,6 +235,18 @@ def main() -> int:
                     errors.append(f"CANDIDATE_EVIDENCE:{key}:{arm}:{row.get('attempt')}")
                 if status == "PASS_F1C_STRICT_CANDIDATE":
                     strict_valid += 1
+                    selected_index = attack.get("selected_candidate_index")
+                    selected = next((item for item in audit if item.get("candidate_index") == selected_index), None)
+                    strict_candidate_ok = (
+                        row.get("attacked_action_executed") is True
+                        and isinstance(selected, dict)
+                        and selected.get("arm_token_ids_equal") is True
+                        and selected.get("direct_generated_gripper_is_native_open") is True
+                        and len(selected.get("direct_generated_token_ids", [])) == int(protocol["method"]["direct_action_token_count"])
+                        and float(selected.get("pixel_budget_adv_inputs_linf", float("inf"))) <= float(protocol["method"]["epsilon_processor_pixel_values"])
+                    )
+                    if not strict_candidate_ok:
+                        errors.append(f"STRICT_CANDIDATE_GATE:{key}:{arm}:{row.get('attempt')}")
                 if attack.get("selector_error_message"):
                     attack_errors[str(attack["selector_error_message"])] += 1
             attempted = int(receipt.get("attempted_step_count", 0))
@@ -381,7 +393,7 @@ def main() -> int:
             "new_vphys_reads": 0,
             "physical_interventions": 0,
             "attack_outcome_reads": 0,
-            "attacked_env_steps": 0,
+            "attacked_env_steps": totals["attacked_env_steps"],
             "eval160": "UNREAD",
             "protected_evaluation": "UNREAD",
         },
