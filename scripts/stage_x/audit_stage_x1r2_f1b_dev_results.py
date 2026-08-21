@@ -126,7 +126,7 @@ def method_rank(stat: Mapping[str, Any]) -> tuple[float, ...]:
     mean_linf = stat.get("mean_selected_linf")
     return (
         -float(stat["min_per_suite_parent_success"]),
-        -float(stat["total_parent_success"]),
+        -float(stat["parent_success_count"]),
         float(mean_linf) if mean_linf is not None else math.inf,
         float(stat["complexity_rank"]),
         float(stat["iterations"]),
