@@ -1,0 +1,101 @@
+{
+  "schema": "STAGE_X_X1R2_F1B_DEV_PROTOCOL_V3",
+  "status": "FROZEN_F1B_DEV_V3",
+  "scientific_authority": false,
+  "gate": "STAGE_X_X1R2_F1B_TARGETABILITY_METHOD_DEVELOPMENT",
+  "population": {
+    "path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_DEV_V3_LEDGER_V3.json",
+    "role": "DEV_V3",
+    "row_count": 24,
+    "per_suite_count": 6,
+    "f1a3_root_seal_path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json",
+    "f1a3_root_seal_sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+    "split_salt": "STAGE_X_X1R2_F1A3_SOURCE_V3_SPLIT_20260821"
+  },
+  "methods": {
+    "M0": {
+      "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+      "optimization_target": "secondary_token_31745_logratio_with_clean_arm_surrogate",
+      "complexity_rank": 0,
+      "iterations": [5, 10]
+    },
+    "M1": {
+      "objective": "autoregressive_prefix_gripper_native_open_logratio_v4",
+      "optimization_target": "cached_native_open_set_logsumexp_minus_non_open_logsumexp",
+      "complexity_rank": 1,
+      "iterations": [5, 10]
+    },
+    "M2": {
+      "objective": "autoregressive_prefix_gripper_native_open_logratio_arm_v5",
+      "optimization_target": "M1_plus_clean_generated_arm_token_preservation_surrogate",
+      "complexity_rank": 2,
+      "iterations": [5, 10]
+    }
+  },
+  "frozen_attack": {
+    "epsilon_processor_pixel_values": 0.03,
+    "step_size_by_iterations": {"5": 0.006, "10": 0.003},
+    "random_start": false,
+    "temporal_init": "none",
+    "temporal_smooth_lambda": 0.0,
+    "prefix_refresh_interval": 1,
+    "surrogate_score_path": "cached_autoregressive_generate_v1",
+    "target_token_id_secondary": 31745,
+    "target_execution_class": "NATIVE_OPEN",
+    "strict_route": true,
+    "allow_fallback": false,
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "candidate_order": ["delta0", "pgd_iteration_1", "pgd_iteration_2", "pgd_iteration_3", "pgd_iteration_4", "pgd_iteration_5", "pgd_iteration_6", "pgd_iteration_7", "pgd_iteration_8", "pgd_iteration_9", "pgd_iteration_10"],
+    "exact_arm_dimensions": [0, 1, 2, 3, 4, 5],
+    "direct_action_token_count": 7,
+    "no_decode_reencode": true,
+    "no_actuator_overwrite": true,
+    "no_attacked_env_step": true
+  },
+  "probe": {
+    "max_per_parent": 3,
+    "selection_salt": "STAGE_X_X1R2_F1B_DEV_PROBE_V3_20260821",
+    "eligibility": [
+      "clean runtime valid through step",
+      "exactly seven direct generated tokens",
+      "clean gripper is not NATIVE_OPEN",
+      "step+14 < official horizon"
+    ],
+    "outcome_blind": true,
+    "student_used": false,
+    "student_emit_used": false,
+    "no_replacement": true
+  },
+  "selection": {
+    "unit": "parent",
+    "lexicographic": [
+      "maximize minimum per-suite parent success count",
+      "maximize total DEV parents with >=1 strict-valid probe",
+      "minimize mean Linf then method complexity",
+      "tie simpler method then fewer iterations"
+    ],
+    "advancement_requires_strict_improvement_over_M0_on_first_two_criteria": true,
+    "no_clear_improvement_status": "F1_TARGETABILITY_DEVELOPMENT_NO_CLEAR_IMPROVEMENT"
+  },
+  "runtime": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "durable_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_f1b_dev_v3_20260821",
+    "source_receipt": "bind_current_exact_commit_tree_and_runtime_file_blobs_before_first_model_load"
+  },
+  "resource": {
+    "free_memory_mib_strictly_greater_than": 20480,
+    "minimum_free_bytes": 4294967296,
+    "max_project_workers": 8,
+    "one_project_worker_per_physical_gpu": true,
+    "foreign_processes_untouched": true
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0,
+    "physical_interventions": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0
+  }
+}

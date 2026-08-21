@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 
 from gripper_attack.attack_adapter import RouteContractError, TokenPrefixPGDAttacker
+from gripper_attack.execution_target import native_open_logratio_loss_and_stats
 from stage_x.run_stage_x1r_primary_matrix import audit_direct_action_tokens
 
 
@@ -88,3 +89,14 @@ def test_contract_freezes_direct_generation_and_transition_gates():
     assert "clean direct-generated gripper execution class != NATIVE_OPEN" in contract["required_gates_before_attacked_env_step"]
     assert "adversarial direct-generated gripper execution class = NATIVE_OPEN" in contract["required_gates_before_attacked_env_step"]
     assert contract["repair_candidate_policy"]["name"] == "STRICT_CANDIDATE_AUDIT_V1"
+
+
+def test_native_open_set_objective_uses_all_open_tokens_and_excludes_them_from_competitors():
+    row = torch.tensor([1.0, 5.0, 2.0, 4.0])
+    loss, stats = native_open_logratio_loss_and_stats(row, open_token_ids=[1, 3])
+    expected = torch.logsumexp(torch.tensor([1.0, 2.0]), 0) - torch.logsumexp(torch.tensor([5.0, 4.0]), 0)
+    assert torch.allclose(loss, expected)
+    assert stats["native_open_token_count"] == 2
+    assert stats["non_open_competitor_count"] == 2
+    assert stats["best_native_open_token"] == 1
+    assert stats["best_non_open_token"] == 2

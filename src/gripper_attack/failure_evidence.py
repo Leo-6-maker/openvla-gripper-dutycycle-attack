@@ -48,13 +48,19 @@ def _compact_diagnostics(value: Any) -> dict[str, Any] | None:
                 "selected_candidate_index": value.get("selected_candidate_index"),
                 "selected_candidate_source": value.get("selected_candidate_source"),
             }
-        audit.append({key: row.get(key) for key in _AUDIT_KEYS})
-    return {
+        item = {key: row.get(key) for key in _AUDIT_KEYS}
+        if "surrogate_diagnostics" in row:
+            item["surrogate_diagnostics"] = row.get("surrogate_diagnostics")
+        audit.append(item)
+    result = {
         "candidate_policy": value.get("candidate_policy"),
         "candidate_audit": audit,
         "selected_candidate_index": value.get("selected_candidate_index"),
         "selected_candidate_source": value.get("selected_candidate_source"),
     }
+    if "optimization_diagnostics" in value:
+        result["optimization_diagnostics"] = value.get("optimization_diagnostics")
+    return result
 
 
 def _audit_complete(diagnostics: Mapping[str, Any] | None, expected_count: int) -> bool:
@@ -115,9 +121,16 @@ def build_failure_evidence(exc: BaseException, attacker: Any, *, expected_count:
     }
 
 
-def write_failure_receipt(path: Path, failure: Mapping[str, Any], exc: BaseException, attacker: Any) -> dict[str, Any]:
+def write_failure_receipt(
+    path: Path,
+    failure: Mapping[str, Any],
+    exc: BaseException,
+    attacker: Any,
+    *,
+    expected_count: int = 6,
+) -> dict[str, Any]:
     receipt = dict(failure)
-    receipt.update(build_failure_evidence(exc, attacker))
+    receipt.update(build_failure_evidence(exc, attacker, expected_count=int(expected_count)))
     if receipt["diagnostics_consistency_status"] == "HOLD_DIAGNOSTICS_SOURCE_DISAGREEMENT":
         receipt["status"] = "HOLD_Q3R3_D_FAILURE_DIAGNOSTICS_INCONSISTENT"
     path.parent.mkdir(parents=True, exist_ok=True)
