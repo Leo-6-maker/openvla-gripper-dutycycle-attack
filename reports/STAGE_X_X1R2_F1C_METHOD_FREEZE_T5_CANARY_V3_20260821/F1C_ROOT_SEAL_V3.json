@@ -7,8 +7,8 @@
     "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
     "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_DECISION_V3.json": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
     "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
-    "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_METHOD_SPEC_V3.json": "1985c41d1fce617f6c35e942c004fe8a400b880520909cccad09d1d6df5ace75",
-    "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_PRE_GPU_AUDIT_V3.json": "19ab32964d577e0adab0093117a1d9ce2357a9a3d0447ac58ccd34e704b7ead4",
+    "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_METHOD_SPEC_V3.json": "93c44130d426f0afc8df2624a695e7a2b922b72f99207be3b1979e07891561d6",
+    "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_PRE_GPU_AUDIT_V3.json": "710080a1b8d9ac4c4931f748f8ee87aab797e62d01342cebb7e7c522b03d6a41",
     "scripts/stage_x/run_stage_x1r2_f1b_dev.py": "06f882de60190c6c72d3500d2e4d06ba0f1863213f4d35d5e59cdcaf47da7fb6",
     "scripts/stage_x/run_stage_x1r2_f1c_t5_canary.py": "56a965fee68b0d5c2c86fda42c5de50bedfcc9f235cd8d19020de467e085a746",
     "scripts/stage_x/run_stage_x1r_primary_matrix.py": "75aac917d393113458e68ced5de5f1721420ef4671406cd1f0395c0e1014aa10",
@@ -21,8 +21,8 @@
   "f1a3_root_seal_sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
   "f1b_decision_sha256": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
   "f1b_result_root_sha256": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
-  "method_spec_sha256": "1985c41d1fce617f6c35e942c004fe8a400b880520909cccad09d1d6df5ace75",
-  "pre_gpu_audit_sha256": "19ab32964d577e0adab0093117a1d9ce2357a9a3d0447ac58ccd34e704b7ead4",
+  "method_spec_sha256": "93c44130d426f0afc8df2624a695e7a2b922b72f99207be3b1979e07891561d6",
+  "pre_gpu_audit_sha256": "710080a1b8d9ac4c4931f748f8ee87aab797e62d01342cebb7e7c522b03d6a41",
   "protected_boundary": {
     "attack_outcome_reads": 0,
     "attacked_env_steps": 0,
@@ -35,7 +35,7 @@
   "protocol_sha256": "b8467589eb15ad26602379f1a835cb478cfcb7b281bb44f4447a621c1f330c75",
   "schema": "STAGE_X1R2_F1C_ROOT_SEAL_V3",
   "seal_scope_excludes_sidecar": true,
-  "source_commit": "c08529bd5c562e5bfbfa62330c2cd4217fe377e9",
-  "source_tree": "844fed80720421555a513290999a7c40f7d0bf00",
+  "source_commit": "911174fa143e8a537854afee011d3a212d1968d5",
+  "source_tree": "7dfad84f474d213590e2ae7b9c3c19062270ca0b",
   "status": "PASS_F1C_PRE_GPU_STATIC_CONTRACT"
 }

@@ -6,7 +6,7 @@
   "cpu_regression": {
     "returncode": 0,
     "stderr_tail": "",
-    "stdout_tail": "...........                                                              [100%]\n11 passed in 3.10s\n"
+    "stdout_tail": "...........                                                              [100%]\n11 passed in 2.28s\n"
   },
   "errors": [],
   "eval160": "UNREAD",
@@ -14,7 +14,7 @@
   "f1b_decision_sha256": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
   "f1b_result_root_sha256": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
   "gpu_calls": 0,
-  "method_spec_sha256": "1985c41d1fce617f6c35e942c004fe8a400b880520909cccad09d1d6df5ace75",
+  "method_spec_sha256": "93c44130d426f0afc8df2624a695e7a2b922b72f99207be3b1979e07891561d6",
   "model_inference_calls": 0,
   "paper_v1_worktree_changed": false,
   "pgd_calls": 0,
@@ -25,7 +25,7 @@
   "simulator_calls": 0,
   "source": {
     "branch": "codex/stage-x-x1r2-q3-arm-isolation-repair-20260820",
-    "commit": "c08529bd5c562e5bfbfa62330c2cd4217fe377e9",
+    "commit": "911174fa143e8a537854afee011d3a212d1968d5",
     "git_blob_sha1": {
       "configs/STAGE_X_X1R2_F1B_DEV_PROTOCOL_V3.json": "d8443a2ebfc0a9b81a4364848f34415d9d5a80b2",
       "configs/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_PROTOCOL_V3.json": "715c927d385bc71e941488a10627f673c942f6bb",
@@ -59,8 +59,8 @@
       "src/gripper_attack/route_contract.py": "2c07fa19fc651cfb9a32aa54cae610888d28a795d72a28d1733620f5c0b9a53e"
     },
     "runtime_python": "C:\\msys64\\ucrt64\\bin\\python.exe",
-    "status_porcelain": "?? contract_git_content.tmp\n?? reports/STAGE_X1R2_Q3R2_CLEAN_DETERMINISM_20260820/telemetry/\n?? reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/\n?? stage_x1r2_q3r3_c_16d1131a7e5c4228a1b8aa3b11a58ede.bundle\n?? stage_x1r2_q3r3_c_afff24a3909f459c9d180fa6dbc4bf11.bundle\n?? stage_x1r2_q3r3_c_c41c29b127a04bdc8dfe22f6876eacc6.bundle\n?? stage_x1r2_q3r3_d_3225c1c_20260820.bundle\n?? stage_x1r2_q3r3_d_3d43fa9356ff5569581c7dbf4374dcc22c9bcb33.bundle\n?? stagex_e3_0efdf1e.pack\n?? stagex_e3_198a401.pack\n?? stagex_e3_54ce807.pack\n?? stagex_e3_a031a21.pack\n?? stagex_e3_b215c4d.pack\n?? stagex_e3_b215c4d_v2.pack\n?? stagex_e4_d642ab5.pack\n?? stagex_e4_full_d642.pack\n?? stagex_f1b_full_20260821.bundle\n?? stagex_f1b_full_20260821_r2.bundle\n?? stagex_f1b_full_20260821_r3.bundle\n?? stagex_f1b_full_20260821_r4.bundle\n?? stagex_f1b_full_20260821_r5.bundle\n?? stagex_requal_b86006d.bundle\n?? stagex_requal_e8c3df1.bundle",
-    "tree": "844fed80720421555a513290999a7c40f7d0bf00"
+    "status_porcelain": "?? contract_git_content.tmp\n?? reports/STAGE_X1R2_Q3R2_CLEAN_DETERMINISM_20260820/telemetry/\n?? stage_x1r2_q3r3_c_16d1131a7e5c4228a1b8aa3b11a58ede.bundle\n?? stage_x1r2_q3r3_c_afff24a3909f459c9d180fa6dbc4bf11.bundle\n?? stage_x1r2_q3r3_c_c41c29b127a04bdc8dfe22f6876eacc6.bundle\n?? stage_x1r2_q3r3_d_3225c1c_20260820.bundle\n?? stage_x1r2_q3r3_d_3d43fa9356ff5569581c7dbf4374dcc22c9bcb33.bundle\n?? stagex_e3_0efdf1e.pack\n?? stagex_e3_198a401.pack\n?? stagex_e3_54ce807.pack\n?? stagex_e3_a031a21.pack\n?? stagex_e3_b215c4d.pack\n?? stagex_e3_b215c4d_v2.pack\n?? stagex_e4_d642ab5.pack\n?? stagex_e4_full_d642.pack\n?? stagex_f1b_full_20260821.bundle\n?? stagex_f1b_full_20260821_r2.bundle\n?? stagex_f1b_full_20260821_r3.bundle\n?? stagex_f1b_full_20260821_r4.bundle\n?? stagex_f1b_full_20260821_r5.bundle\n?? stagex_f1c_20260821.bundle\n?? stagex_requal_b86006d.bundle\n?? stagex_requal_e8c3df1.bundle",
+    "tree": "7dfad84f474d213590e2ae7b9c3c19062270ca0b"
   },
   "status": "PASS_F1C_PRE_GPU_STATIC_CONTRACT",
   "vphys_reads": 0
