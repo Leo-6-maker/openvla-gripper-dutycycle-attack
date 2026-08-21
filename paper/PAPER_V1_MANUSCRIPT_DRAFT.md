@@ -74,12 +74,18 @@ bounded engineering population?
 <!-- CLAIM:C102 -->
 The paper makes six bounded contributions:
 
+<!-- CLAIM:C102A -->
 1. a dose- and phase-dependent physical OPEN duty-cycle mechanism;
+<!-- CLAIM:C102B -->
 2. an explicit separation of `C_t`, `V_t(d)`, and `E_t`;
+<!-- CLAIM:C102C -->
 3. negative held-out and cross-suite evidence for frozen timing selectors;
+<!-- CLAIM:C102D -->
 4. a model-to-physics timing factorization gap;
+<!-- CLAIM:C102E -->
 5. sparse, suite/state-dependent strict selective visual realizability under
    the frozen method; and
+<!-- CLAIM:C102F -->
 6. a reproducibility record covering tokenizer semantics, victim provenance,
    censoring, branch replay, immutable histories, and fail-closed paper
    governance.
@@ -127,6 +133,7 @@ instead asks where alignment breaks.
 
 ### 3.1 Evidence levels and primary units
 
+<!-- CLAIM:C103 -->
 The evidence map distinguishes primary bounded evidence, negative scientific
 evidence, diagnostic-only evidence, and invalid/superseded histories. Each
 stage keeps its source-declared population and denominator. E3/E4 use twelve
@@ -140,6 +147,7 @@ claim-safe.
 
 ### 3.2 X0 physical mechanism
 
+<!-- CLAIM:C104 -->
 X0 contains 40 Stage V and 16 Stage VI-B2 parents, 1,344 probe groups, and
 1,126 complete three-dose rows. The source-defined consumable counts are 1,245
 at T3, 1,191 at T5, and 1,126 at T10. The downstream task-failure taxonomy
@@ -153,6 +161,7 @@ in the current checkout. It is not used as a primary quantitative population.
 
 ### 3.3 Timing-selector evidence
 
+<!-- CLAIM:C105 -->
 VI-B2 evaluates a frozen Student on fresh held-out parents. Its T5 primary
 closure has 333 consumable rows and 51 abstain/censored rows. VII evaluates
 three frozen development candidates under predeclared promotion gates. VIII R1
@@ -162,6 +171,7 @@ than converting missing or censored evidence into negative labels.
 
 ### 3.4 Stage IX factorized no-environment audit
 
+<!-- CLAIM:C106 -->
 Stage IX contains 1,344 sealed no-environment rows. It compares model-side
 scores with factorized parent-macro timing utility. No perturbed action is
 stepped in the environment, no physical intervention is performed, and no
@@ -169,10 +179,12 @@ protected result is read.
 
 ### 3.5 E2, E3, and E4 structural boundaries
 
+<!-- CLAIM:C107 -->
 E2 is a bounded clean scheduler feasibility audit. Three Goal successor
 identities had no legal Student emit, so no TRUE probe was started. E2 is not a
 strict visual-method negative.
 
+<!-- CLAIM:C108 -->
 E3 evaluates twelve fresh engineering-only identities, with twelve clean
 runtimes valid, twelve probes available, twelve TRUE invocations reached, and
 twelve six-candidate audits complete. The frozen method uses the pre-registered
@@ -180,6 +192,7 @@ strict route, exact arm coordinates `[0:6]`, native `NATIVE_OPEN`, epsilon
 0.03, step size 0.006, and five PGD iterations. E3 does not execute attacked
 environment steps.
 
+<!-- CLAIM:C109 -->
 E4 performs only offline decomposition of the sealed E3 rows. It classifies
 candidate-level structural outcomes and aggregates them at the parent level.
 Its `attack_efficacy` field is false.
@@ -200,6 +213,7 @@ for eligible rows, aperture excess increases with dose, contact-loss incidence
 increases, and object displacement increases. This supports a descriptive,
 mechanistic interpretation of OPEN duty-cycle exposure.
 
+<!-- CLAIM:C209 -->
 The wording is intentionally limited. X0 does not provide a formal mediation
 analysis. It does not establish that a clean timing score causes the physical
 response, and its task-failure taxonomy remains unavailable rather than being
@@ -272,6 +286,7 @@ different method could not realize them.
 
 ### 5.1 The factorization gap is the result
 
+<!-- CLAIM:C302 -->
 The positive and negative evidence is coherent when the layers are kept
 separate. X0 shows that the physical system can respond to increased OPEN
 duty-cycle exposure in a dose- and phase-dependent way. VI-B2 through VIII show

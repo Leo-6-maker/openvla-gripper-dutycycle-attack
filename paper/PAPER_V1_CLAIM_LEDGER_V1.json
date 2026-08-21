@@ -1,0 +1,947 @@
+{
+  "authority_map": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json",
+  "claim_count": 48,
+  "claims": [
+    {
+      "allowed_caveat": "Directly supported by X0; bounded counterfactual only.",
+      "claim_id": "C001",
+      "claim_type": "descriptive_mechanistic",
+      "denominator": "X0 sealed parent/probe rows",
+      "direct_support": true,
+      "exact_wording": "Gripper-targeted manipulation failures are often discussed as if clean timing criticality, physical vulnerability, and visual exploitability were one quantity. We separate them into three estimands: clean criticality/opportunity `C_t`, physical vulnerability under a duration-`d` command-OPEN counterfactual `V_t(d)`, and strict visual exploitability `E_t`. The evidence supports a different picture. In Stage X0, the physical OPEN mechanism shows a dose response: the raw positive rates at T3, T5, and T10 are 0.39438, 0.67758, and 0.87300 among the source-defined consumable rows, and the complete three-dose patterns are all monotone. The associated telemetry chain is consistent with command delivery, aperture excess, contact loss, and displacement.",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:9",
+      "source_artifacts": [
+        "X0"
+      ]
+    },
+    {
+      "allowed_caveat": "Negative result is stage-specific and gate-specific.",
+      "claim_id": "C002",
+      "claim_type": "predictive_negative",
+      "denominator": "source-declared parent-grouped units",
+      "direct_support": true,
+      "exact_wording": "Clean/context timing selectors do not establish stable deployment-facing generalization under the frozen gates: the held-out VI-B2 result has overall AUROC 0.6246432939 and ECE-10 0.4606357016, all three Stage VII candidates fail at least one promotion gate, and both Stage VIII R1 selectors fail their parent-grouped gate.",
+      "forbidden_stronger_wording": [
+        "every feature is uninformative",
+        "visual attack failure",
+        "universal detector"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:21",
+      "source_artifacts": [
+        "VI_B2",
+        "VII",
+        "VIII"
+      ]
+    },
+    {
+      "allowed_caveat": "No-environment model-side evidence; not physical efficacy.",
+      "claim_id": "C003",
+      "claim_type": "model_side_factorization",
+      "denominator": "1,344 no-environment rows with parent-macro aggregation",
+      "direct_support": true,
+      "exact_wording": "Stage IX makes the factorization gap explicit. Model-side scores have DEVTEST AUROC 0.870743--0.900510, while factorized parent-macro AUC is 0.483698--0.523390; the former does not establish physical timing utility.",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "formal mediation",
+        "causal chain"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:28",
+      "source_artifacts": [
+        "IX"
+      ]
+    },
+    {
+      "allowed_caveat": "Parent-level descriptive structural result; no physical efficacy or impossibility.",
+      "claim_id": "C004",
+      "claim_type": "model_side_exploitability",
+      "denominator": "E3/E4: 12 engineering parents; 72 ordered candidate slots diagnostic",
+      "direct_support": true,
+      "exact_wording": "When Student timing is removed, the frozen strict visual audit remains sparse and suite/state dependent: E3/E4 find two strict-valid parents among twelve engineering-only parents, with one in `libero_10`, one in `libero_spatial`, and none in `libero_goal` or `libero_object`. The primary E3/E4 unit is the parent; the 72 candidate slots are diagnostic and non-iid.",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "Goal/Object impossibility",
+        "candidate-slot iid inference",
+        "detector caused E3"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:33",
+      "source_artifacts": [
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Synthesis remains bounded by each source artifact and the authority map.",
+      "claim_id": "C005",
+      "claim_type": "cross_stage_synthesis",
+      "denominator": "stage-level source units; no identity join",
+      "direct_support": true,
+      "exact_wording": "The resulting contribution is a mechanism-first factorization account, not a universal detector or a demonstrated cross-suite visual attack. X0 provides bounded physical mechanism evidence; VI-B2 through VIII provide frozen timing-selector negatives; IX separates model-side targetability from timing utility; and E3/E4 bound the sparse model-side realizability regime.",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:40",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Claim must remain within the authority map and protected firewall.",
+      "claim_id": "C006",
+      "claim_type": "governance_boundary",
+      "denominator": "stage-specific source units",
+      "direct_support": true,
+      "exact_wording": "No physical attack efficacy is established by this paper package, and Eval160 and protected evaluation remain unread. The paper therefore treats negative results, censoring, provenance failures, and fail-closed governance as part of the result rather than as invitations to tune the method.",
+      "forbidden_stronger_wording": [
+        "protected validation",
+        "Eval160 validation",
+        "historical invalid promotion"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:47",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E2",
+        "E3_E4",
+        "HISTORICAL_X1_X1R"
+      ]
+    },
+    {
+      "allowed_caveat": "Synthesis remains bounded by each source artifact and the authority map.",
+      "claim_id": "C101",
+      "claim_type": "cross_stage_synthesis",
+      "denominator": "stage-level source units; no identity join",
+      "direct_support": true,
+      "exact_wording": "This study uses a mechanism-first design to keep those questions separate. The positive physical result is an OPEN duty-cycle mechanism with dose and phase structure. The negative results test whether clean timing selectors generalize and whether model-side timing scores retain physical timing utility. The final structural audit asks a narrower question: after removing Student timing, can the frozen visual method realize exact gripper-selective OPEN at all on a bounded engineering population?",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:65",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Synthesis remains bounded by each source artifact and the authority map.",
+      "claim_id": "C102",
+      "claim_type": "cross_stage_synthesis",
+      "denominator": "stage-level source units; no identity join",
+      "direct_support": true,
+      "exact_wording": "The paper makes six bounded contributions:",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:74",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Directly supported by X0; bounded counterfactual only.",
+      "claim_id": "C102A",
+      "claim_type": "descriptive_mechanistic",
+      "denominator": "X0 sealed parent/probe rows",
+      "direct_support": true,
+      "exact_wording": "1. a dose- and phase-dependent physical OPEN duty-cycle mechanism;",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:77",
+      "source_artifacts": [
+        "X0"
+      ]
+    },
+    {
+      "allowed_caveat": "Synthesis remains bounded by each source artifact and the authority map.",
+      "claim_id": "C102B",
+      "claim_type": "cross_stage_synthesis",
+      "denominator": "stage-level source units; no identity join",
+      "direct_support": true,
+      "exact_wording": "2. an explicit separation of `C_t`, `V_t(d)`, and `E_t`;",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:79",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Negative result is stage-specific and gate-specific.",
+      "claim_id": "C102C",
+      "claim_type": "predictive_negative",
+      "denominator": "source-declared parent-grouped units",
+      "direct_support": true,
+      "exact_wording": "3. negative held-out and cross-suite evidence for frozen timing selectors;",
+      "forbidden_stronger_wording": [
+        "every feature is uninformative",
+        "visual attack failure",
+        "universal detector"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:81",
+      "source_artifacts": [
+        "VI_B2",
+        "VII",
+        "VIII"
+      ]
+    },
+    {
+      "allowed_caveat": "No-environment model-side evidence; not physical efficacy.",
+      "claim_id": "C102D",
+      "claim_type": "model_side_factorization",
+      "denominator": "1,344 no-environment rows with parent-macro aggregation",
+      "direct_support": true,
+      "exact_wording": "4. a model-to-physics timing factorization gap;",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "formal mediation",
+        "causal chain"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:83",
+      "source_artifacts": [
+        "IX"
+      ]
+    },
+    {
+      "allowed_caveat": "Parent-level descriptive structural result; no physical efficacy or impossibility.",
+      "claim_id": "C102E",
+      "claim_type": "model_side_exploitability",
+      "denominator": "E3/E4: 12 engineering parents; 72 ordered candidate slots diagnostic",
+      "direct_support": true,
+      "exact_wording": "5. sparse, suite/state-dependent strict selective visual realizability under the frozen method; and",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "Goal/Object impossibility",
+        "candidate-slot iid inference",
+        "detector caused E3"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:85",
+      "source_artifacts": [
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Synthesis remains bounded by each source artifact and the authority map.",
+      "claim_id": "C102F",
+      "claim_type": "cross_stage_synthesis",
+      "denominator": "stage-level source units; no identity join",
+      "direct_support": true,
+      "exact_wording": "6. a reproducibility record covering tokenizer semantics, victim provenance, censoring, branch replay, immutable histories, and fail-closed paper governance. These contributions do not include a universal detector, cross-suite physical visual-PGD efficacy, or protected validation.",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:88",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Directly supported by X0; bounded counterfactual only.",
+      "claim_id": "C103",
+      "claim_type": "descriptive_mechanistic",
+      "denominator": "X0 sealed parent/probe rows",
+      "direct_support": true,
+      "exact_wording": "The evidence map distinguishes primary bounded evidence, negative scientific evidence, diagnostic-only evidence, and invalid/superseded histories. Each stage keeps its source-declared population and denominator. E3/E4 use twelve engineering-only parents as the primary unit. Their six ordered candidates per parent yield 72 candidate slots, but those slots are not independent samples and are never used as a parent-level inferential denominator. There are no identity-level joins across X0, the bounded Black Bowl context, VI-B2, VII, VIII, IX, E2, E3, and E4. The synthesis is stage-level and claim-safe. ### 3.2 X0 physical mechanism",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:136",
+      "source_artifacts": [
+        "X0"
+      ]
+    },
+    {
+      "allowed_caveat": "Directly supported by X0; bounded counterfactual only.",
+      "claim_id": "C104",
+      "claim_type": "descriptive_mechanistic",
+      "denominator": "X0 sealed parent/probe rows",
+      "direct_support": true,
+      "exact_wording": "X0 contains 40 Stage V and 16 Stage VI-B2 parents, 1,344 probe groups, and 1,126 complete three-dose rows. The source-defined consumable counts are 1,245 at T3, 1,191 at T5, and 1,126 at T10. The downstream task-failure taxonomy was not reconstructed from `V_phys`; the mechanism readout is therefore kept separate from any task-failure interpretation. The earlier Black Bowl fixed-window material is retained only as bounded historical mechanism context. Its repository configuration specifies seeds and reference windows, but the raw sealed outcome denominator is not identifiable in the current checkout. It is not used as a primary quantitative population. ### 3.3 Timing-selector evidence",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:150",
+      "source_artifacts": [
+        "X0"
+      ]
+    },
+    {
+      "allowed_caveat": "Negative result is stage-specific and gate-specific.",
+      "claim_id": "C105",
+      "claim_type": "predictive_negative",
+      "denominator": "source-declared parent-grouped units",
+      "direct_support": true,
+      "exact_wording": "VI-B2 evaluates a frozen Student on fresh held-out parents. Its T5 primary closure has 333 consumable rows and 51 abstain/censored rows. VII evaluates three frozen development candidates under predeclared promotion gates. VIII R1 evaluates two relative-selector candidates with parent-grouped and leave-one- suite-out requirements. These stages retain abstains and failed gates rather than converting missing or censored evidence into negative labels. ### 3.4 Stage IX factorized no-environment audit",
+      "forbidden_stronger_wording": [
+        "every feature is uninformative",
+        "visual attack failure",
+        "universal detector"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:164",
+      "source_artifacts": [
+        "VI_B2",
+        "VII",
+        "VIII"
+      ]
+    },
+    {
+      "allowed_caveat": "No-environment model-side evidence; not physical efficacy.",
+      "claim_id": "C106",
+      "claim_type": "model_side_factorization",
+      "denominator": "1,344 no-environment rows with parent-macro aggregation",
+      "direct_support": true,
+      "exact_wording": "Stage IX contains 1,344 sealed no-environment rows. It compares model-side scores with factorized parent-macro timing utility. No perturbed action is stepped in the environment, no physical intervention is performed, and no protected result is read. ### 3.5 E2, E3, and E4 structural boundaries",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "formal mediation",
+        "causal chain"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:174",
+      "source_artifacts": [
+        "IX"
+      ]
+    },
+    {
+      "allowed_caveat": "Parent-level descriptive structural result; no physical efficacy or impossibility.",
+      "claim_id": "C107",
+      "claim_type": "model_side_exploitability",
+      "denominator": "E3/E4: 12 engineering parents; 72 ordered candidate slots diagnostic",
+      "direct_support": true,
+      "exact_wording": "E2 is a bounded clean scheduler feasibility audit. Three Goal successor identities had no legal Student emit, so no TRUE probe was started. E2 is not a strict visual-method negative.",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "Goal/Object impossibility",
+        "candidate-slot iid inference",
+        "detector caused E3"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:182",
+      "source_artifacts": [
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Parent-level descriptive structural result; no physical efficacy or impossibility.",
+      "claim_id": "C108",
+      "claim_type": "model_side_exploitability",
+      "denominator": "E3/E4: 12 engineering parents; 72 ordered candidate slots diagnostic",
+      "direct_support": true,
+      "exact_wording": "E3 evaluates twelve fresh engineering-only identities, with twelve clean runtimes valid, twelve probes available, twelve TRUE invocations reached, and twelve six-candidate audits complete. The frozen method uses the pre-registered strict route, exact arm coordinates `[0:6]`, native `NATIVE_OPEN`, epsilon 0.03, step size 0.006, and five PGD iterations. E3 does not execute attacked environment steps.",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "Goal/Object impossibility",
+        "candidate-slot iid inference",
+        "detector caused E3"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:187",
+      "source_artifacts": [
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Parent-level descriptive structural result; no physical efficacy or impossibility.",
+      "claim_id": "C109",
+      "claim_type": "model_side_exploitability",
+      "denominator": "E3/E4: 12 engineering parents; 72 ordered candidate slots diagnostic",
+      "direct_support": true,
+      "exact_wording": "E4 performs only offline decomposition of the sealed E3 rows. It classifies candidate-level structural outcomes and aggregates them at the parent level. Its `attack_efficacy` field is false.",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "Goal/Object impossibility",
+        "candidate-slot iid inference",
+        "detector caused E3"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:195",
+      "source_artifacts": [
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Directly supported by X0; bounded counterfactual only.",
+      "claim_id": "C201",
+      "claim_type": "descriptive_mechanistic",
+      "denominator": "X0 sealed parent/probe rows",
+      "direct_support": true,
+      "exact_wording": "The X0 raw positive rates rise from 0.39438 at T3 to 0.67758 at T5 and 0.87300 at T10 among the source-defined consumable rows. Of the 1,126 complete three-dose patterns, all are monotone and fall in `000`, `001`, `011`, or `111`; no non-monotone pattern is observed.",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:204",
+      "source_artifacts": [
+        "X0"
+      ]
+    },
+    {
+      "allowed_caveat": "Directly supported by X0; bounded counterfactual only.",
+      "claim_id": "C202",
+      "claim_type": "descriptive_mechanistic",
+      "denominator": "X0 sealed parent/probe rows",
+      "direct_support": true,
+      "exact_wording": "The associated telemetry is mechanism-consistent: command delivery is exact for eligible rows, aperture excess increases with dose, contact-loss incidence increases, and object displacement increases. This supports a descriptive, mechanistic interpretation of OPEN duty-cycle exposure.",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:210",
+      "source_artifacts": [
+        "X0"
+      ]
+    },
+    {
+      "allowed_caveat": "Directly supported by X0; bounded counterfactual only.",
+      "claim_id": "C209",
+      "claim_type": "descriptive_mechanistic",
+      "denominator": "X0 sealed parent/probe rows",
+      "direct_support": true,
+      "exact_wording": "The wording is intentionally limited. X0 does not provide a formal mediation analysis. It does not establish that a clean timing score causes the physical response, and its task-failure taxonomy remains unavailable rather than being reconstructed from a downstream label. ### 4.2 VI-B2 through VIII: timing selectors do not generalize reliably",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:216",
+      "source_artifacts": [
+        "X0"
+      ]
+    },
+    {
+      "allowed_caveat": "Negative result is stage-specific and gate-specific.",
+      "claim_id": "C203",
+      "claim_type": "predictive_negative",
+      "denominator": "source-declared parent-grouped units",
+      "direct_support": true,
+      "exact_wording": "The held-out VI-B2 Student result has overall AUROC 0.6246432939, AUPRC lift 1.1911425664, and ECE-10 0.4606357016. Suite-level failures are material: the `libero_10` emission rate is zero, `libero_object` has no negative consumable examples for an identifiable AUROC, and overall calibration exceeds the frozen limit. The frozen causal/actionable generalization conclusion is therefore not established.",
+      "forbidden_stronger_wording": [
+        "every feature is uninformative",
+        "visual attack failure",
+        "universal detector"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:224",
+      "source_artifacts": [
+        "VI_B2",
+        "VII",
+        "VIII"
+      ]
+    },
+    {
+      "allowed_caveat": "Negative result is stage-specific and gate-specific.",
+      "claim_id": "C204",
+      "claim_type": "predictive_negative",
+      "denominator": "source-declared parent-grouped units",
+      "direct_support": true,
+      "exact_wording": "Stage VII reaches a negative development decision for all three frozen candidates S7-A, S7-B, and S7-C: each fails at least one predeclared cross-suite generalization or selectivity gate, and none is promoted. This is not a claim that every runtime feature is uninformative.",
+      "forbidden_stronger_wording": [
+        "every feature is uninformative",
+        "visual attack failure",
+        "universal detector"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:232",
+      "source_artifacts": [
+        "VI_B2",
+        "VII",
+        "VIII"
+      ]
+    },
+    {
+      "allowed_caveat": "Negative result is stage-specific and gate-specific.",
+      "claim_id": "C205",
+      "claim_type": "predictive_negative",
+      "denominator": "source-declared parent-grouped units",
+      "direct_support": true,
+      "exact_wording": "Stage VIII R1 preserves a narrower negative. R1-A has DEVTEST parent-macro AUC 0.577615 and R1-B has 0.658572; both fail the frozen gate. Relative timing may be descriptively identifiable within some source data, but the two frozen selectors do not establish a generalizable deployment-facing relative vulnerability selector. Together these stages support the distinction between overall discrimination, cross-suite generalization, and within-parent actionable timing. A score that looks useful in one aggregation is not automatically an actionable scheduler. ### 4.3 Stage IX: model-side signal versus factorized timing utility",
+      "forbidden_stronger_wording": [
+        "every feature is uninformative",
+        "visual attack failure",
+        "universal detector"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:238",
+      "source_artifacts": [
+        "VI_B2",
+        "VII",
+        "VIII"
+      ]
+    },
+    {
+      "allowed_caveat": "No-environment model-side evidence; not physical efficacy.",
+      "claim_id": "C206",
+      "claim_type": "model_side_factorization",
+      "denominator": "1,344 no-environment rows with parent-macro aggregation",
+      "direct_support": true,
+      "exact_wording": "Stage IX model-side DEVTEST AUROC is 0.870743 for E0, 0.900510 for E1, and 0.897157 for E3. The corresponding factorized parent-macro AUC is 0.483698, 0.521112, and 0.523390. The factorized top-k and LOSO gates also remain unsatisfied. Thus high model-side targetability scores did not establish reliable physical timing utility. This is a model-side/no-environment factorization result. It does not measure physical attack efficacy and does not imply that a visual attack is impossible. ### 4.4 E3/E4: strict selective realizability without Student timing",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "formal mediation",
+        "causal chain"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:251",
+      "source_artifacts": [
+        "IX"
+      ]
+    },
+    {
+      "allowed_caveat": "Parent-level descriptive structural result; no physical efficacy or impossibility.",
+      "claim_id": "C207",
+      "claim_type": "model_side_exploitability",
+      "denominator": "E3/E4: 12 engineering parents; 72 ordered candidate slots diagnostic",
+      "direct_support": true,
+      "exact_wording": "E3 completes all twelve clean runtimes, probes, TRUE invocations, and six-candidate audits. Two of twelve engineering-only parents have at least one strict-valid candidate: one in `libero_10` and one in `libero_spatial`. The `libero_goal` and `libero_object` suites have zero strict-valid parents.",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "Goal/Object impossibility",
+        "candidate-slot iid inference",
+        "detector caused E3"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:263",
+      "source_artifacts": [
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Parent-level descriptive structural result; no physical efficacy or impossibility.",
+      "claim_id": "C208",
+      "claim_type": "model_side_exploitability",
+      "denominator": "E3/E4: 12 engineering parents; 72 ordered candidate slots diagnostic",
+      "direct_support": true,
+      "exact_wording": "E4 aggregates the same denominator into nine targetability-limited parents, one joint-limited parent, and two strict-realizable parents. Every parent has at least one exact-arm candidate, but only three of twelve parents have any native-OPEN candidate. The candidate-slot decomposition is 4 `ARM_EXACT_AND_NATIVE_OPEN`, 29 `ARM_EXACT_BUT_NOT_NATIVE_OPEN`, 1 `NATIVE_OPEN_BUT_ARM_DRIFT`, and 38 `NEITHER_OPEN_NOR_ARM_EXACT` over 72 ordered slots; these counts are diagnostic secondary evidence, not iid scientific samples. The dominant bounded limitation is therefore targetability under the frozen method, with one Goal parent showing a joint targetability/selectivity conflict. This conclusion is model-side and structural. It does not say that Goal or Object physical attacks are impossible, nor does it say that a different method could not realize them.",
+      "forbidden_stronger_wording": [
+        "physical attack efficacy",
+        "Goal/Object impossibility",
+        "candidate-slot iid inference",
+        "detector caused E3"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:269",
+      "source_artifacts": [
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Synthesis remains bounded by each source artifact and the authority map.",
+      "claim_id": "C302",
+      "claim_type": "cross_stage_synthesis",
+      "denominator": "stage-level source units; no identity join",
+      "direct_support": true,
+      "exact_wording": "The positive and negative evidence is coherent when the layers are kept separate. X0 shows that the physical system can respond to increased OPEN duty-cycle exposure in a dose- and phase-dependent way. VI-B2 through VIII show that clean timing selectors do not automatically yield stable deployment-facing generalization. IX shows that a strong model-side score can coexist with near- chance factorized timing utility. E3/E4 show that even when Student timing is removed, strict visual realization is sparse and suite/state dependent under a frozen method.",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:289",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Synthesis remains bounded by each source artifact and the authority map.",
+      "claim_id": "C301",
+      "claim_type": "cross_stage_synthesis",
+      "denominator": "stage-level source units; no identity join",
+      "direct_support": true,
+      "exact_wording": "The evidence therefore supports a factorization-gap thesis: physical vulnerability, clean timing criticality, and visual exploitability are related questions but are not interchangeable evidence. A positive result at one layer does not promote an untested claim at another layer. ### 5.2 Why the negative results are informative The negative stages were not used to tune toward a desired attack outcome. Thresholds, Student features, attack objective, epsilon, PGD steps, candidate selection semantics, arm-isolation criterion, and parent pools remained frozen within their respective authorizations. E2 was preserved as a scheduler hold; it was not relabeled as a method failure. E3/E4 were stopped after the pre-registered structural audit rather than expanded until a positive parent appeared. ### 5.3 Engineering evidence and scientific evidence Branch replay, direct-token equality, state equality, and candidate receipts are valuable engineering evidence. They establish that the paired-branch infrastructure and E3/E4 evidence persistence were sufficiently explicit for the bounded audits. They do not convert a structurally valid model-side candidate into a physical efficacy result. The same separation applies to historical X1/X1R-V1 attempts: runtime-invalid or provenance-mismatched histories are preserved for governance, not promoted as negative attack data.",
+      "forbidden_stronger_wording": [
+        "formal mediation",
+        "universal detector",
+        "physical attack efficacy",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:299",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E2",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Claim must remain within the authority map and protected firewall.",
+      "claim_id": "C401",
+      "claim_type": "governance_boundary",
+      "denominator": "stage-specific source units",
+      "direct_support": true,
+      "exact_wording": "OpenVLA gripper-targeted manipulation exhibits a measurable dose- and phase-dependent OPEN duty-cycle mechanism, but that mechanism does not by itself establish a generalizable clean timing selector or a reliable visual route to physical intervention. The earned evidence instead shows a factorization gap: model-side targetability and physical timing utility can diverge, and strict timing-decoupled visual realizability is sparse and suite/state dependent under the frozen method.",
+      "forbidden_stronger_wording": [
+        "protected validation",
+        "Eval160 validation",
+        "historical invalid promotion"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:374",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E2",
+        "E3_E4",
+        "HISTORICAL_X1_X1R"
+      ]
+    },
+    {
+      "allowed_caveat": "Claim must remain within the authority map and protected firewall.",
+      "claim_id": "C402",
+      "claim_type": "governance_boundary",
+      "denominator": "stage-specific source units",
+      "direct_support": true,
+      "exact_wording": "The strongest claim supported by the current evidence is therefore bounded and mechanism-first. It does not include universal detection, cross-suite visual attack efficacy, Goal/Object impossibility, formal mediation, or protected validation. Further attack escalation would require a new scientific authority and is outside this paper lock.",
+      "forbidden_stronger_wording": [
+        "protected validation",
+        "Eval160 validation",
+        "historical invalid promotion"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:383",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E2",
+        "E3_E4",
+        "HISTORICAL_X1_X1R"
+      ]
+    },
+    {
+      "allowed_caveat": "Retain the stated evidence boundary.",
+      "claim_id": "LIMIT_1",
+      "claim_type": "limitation",
+      "denominator": "as stated by the cited source; limitation not a new estimate",
+      "direct_support": true,
+      "exact_wording": "1. X0 provides a bounded physical mechanism result, not formal mediation and not a universal physical law.",
+      "forbidden_stronger_wording": [
+        "remove limitation",
+        "fill with new experiment"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:327",
+      "source_artifacts": [
+        "PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1"
+      ]
+    },
+    {
+      "allowed_caveat": "Retain the stated evidence boundary.",
+      "claim_id": "LIMIT_2",
+      "claim_type": "limitation",
+      "denominator": "as stated by the cited source; limitation not a new estimate",
+      "direct_support": true,
+      "exact_wording": "2. VI-B2, VII, and VIII are source-specific frozen negative studies; they do not prove that every detector architecture fails.",
+      "forbidden_stronger_wording": [
+        "remove limitation",
+        "fill with new experiment"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:329",
+      "source_artifacts": [
+        "PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1"
+      ]
+    },
+    {
+      "allowed_caveat": "Retain the stated evidence boundary.",
+      "claim_id": "LIMIT_3",
+      "claim_type": "limitation",
+      "denominator": "as stated by the cited source; limitation not a new estimate",
+      "direct_support": true,
+      "exact_wording": "3. Stage IX is a no-environment model-side audit. Its factorized utility is not a physical outcome.",
+      "forbidden_stronger_wording": [
+        "remove limitation",
+        "fill with new experiment"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:331",
+      "source_artifacts": [
+        "PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1"
+      ]
+    },
+    {
+      "allowed_caveat": "Retain the stated evidence boundary.",
+      "claim_id": "LIMIT_4",
+      "claim_type": "limitation",
+      "denominator": "as stated by the cited source; limitation not a new estimate",
+      "direct_support": true,
+      "exact_wording": "4. E3/E4 use twelve engineering-only parents. The counts are descriptive and parent-level; candidate slots are not iid and no significance test is used.",
+      "forbidden_stronger_wording": [
+        "remove limitation",
+        "fill with new experiment"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:333",
+      "source_artifacts": [
+        "PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1"
+      ]
+    },
+    {
+      "allowed_caveat": "Retain the stated evidence boundary.",
+      "claim_id": "LIMIT_5",
+      "claim_type": "limitation",
+      "denominator": "as stated by the cited source; limitation not a new estimate",
+      "direct_support": true,
+      "exact_wording": "5. E3/E4 do not establish physical efficacy, prevalence, or impossibility in any suite. Goal/Object remain scientifically unresolved for other methods.",
+      "forbidden_stronger_wording": [
+        "remove limitation",
+        "fill with new experiment"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:335",
+      "source_artifacts": [
+        "PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1"
+      ]
+    },
+    {
+      "allowed_caveat": "Retain the stated evidence boundary.",
+      "claim_id": "LIMIT_6",
+      "claim_type": "limitation",
+      "denominator": "as stated by the cited source; limitation not a new estimate",
+      "direct_support": true,
+      "exact_wording": "6. The Black Bowl raw sealed outcome denominator is not identifiable in the current checkout, so it remains contextual rather than a primary table.",
+      "forbidden_stronger_wording": [
+        "remove limitation",
+        "fill with new experiment"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:337",
+      "source_artifacts": [
+        "PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1"
+      ]
+    },
+    {
+      "allowed_caveat": "Retain the stated evidence boundary.",
+      "claim_id": "LIMIT_7",
+      "claim_type": "limitation",
+      "denominator": "as stated by the cited source; limitation not a new estimate",
+      "direct_support": true,
+      "exact_wording": "7. Stage VIII was recovered from immutable Git history rather than the current checkout; its direct handoff and blob binding are recorded in the authority map.",
+      "forbidden_stronger_wording": [
+        "remove limitation",
+        "fill with new experiment"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:339",
+      "source_artifacts": [
+        "PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1"
+      ]
+    },
+    {
+      "allowed_caveat": "Retain the stated evidence boundary.",
+      "claim_id": "LIMIT_8",
+      "claim_type": "limitation",
+      "denominator": "as stated by the cited source; limitation not a new estimate",
+      "direct_support": true,
+      "exact_wording": "8. Historical X1 and X1R-V1 contain provenance/runtime defects and supply no efficacy estimate.",
+      "forbidden_stronger_wording": [
+        "remove limitation",
+        "fill with new experiment"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:342",
+      "source_artifacts": [
+        "PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1"
+      ]
+    },
+    {
+      "allowed_caveat": "Retain the stated evidence boundary.",
+      "claim_id": "LIMIT_9",
+      "claim_type": "limitation",
+      "denominator": "as stated by the cited source; limitation not a new estimate",
+      "direct_support": true,
+      "exact_wording": "9. Eval160 and protected evaluation were not read. No claim about protected validation is made.",
+      "forbidden_stronger_wording": [
+        "remove limitation",
+        "fill with new experiment"
+      ],
+      "manuscript_location": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md:344",
+      "source_artifacts": [
+        "PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1"
+      ]
+    },
+    {
+      "allowed_caveat": "Caption wording is bounded by the source artifact and authority map.",
+      "claim_id": "FIG1_CAPTION",
+      "claim_type": "figure_caption",
+      "denominator": "as stated in the corresponding figure data table",
+      "direct_support": true,
+      "exact_wording": "Figure 1 caption: C_t, V_t(d), and E_t are distinct quantities; dashed arrows are conceptual only and do not assert causal mediation.",
+      "forbidden_stronger_wording": [
+        "physical efficacy",
+        "formal mediation",
+        "candidate-slot iid inference",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_FIGURE_TABLE_PACKAGE_V1.md",
+      "source_artifacts": [
+        "X0",
+        "VI_B2",
+        "VII",
+        "VIII",
+        "IX",
+        "E3_E4"
+      ]
+    },
+    {
+      "allowed_caveat": "Caption wording is bounded by the source artifact and authority map.",
+      "claim_id": "FIG2_CAPTION",
+      "claim_type": "figure_caption",
+      "denominator": "as stated in the corresponding figure data table",
+      "direct_support": true,
+      "exact_wording": "Figure 2 caption: X0 T3/T5/T10 rates and monotone three-dose patterns support a dose- and phase-dependent OPEN duty-cycle mechanism; the chain is descriptive/mechanistic, not formal mediation.",
+      "forbidden_stronger_wording": [
+        "physical efficacy",
+        "formal mediation",
+        "candidate-slot iid inference",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_FIGURE_TABLE_PACKAGE_V1.md",
+      "source_artifacts": [
+        "X0"
+      ]
+    },
+    {
+      "allowed_caveat": "Caption wording is bounded by the source artifact and authority map.",
+      "claim_id": "FIG3_CAPTION",
+      "claim_type": "figure_caption",
+      "denominator": "as stated in the corresponding figure data table",
+      "direct_support": true,
+      "exact_wording": "Figure 3 caption: VI-B2, VII, and VIII fail their frozen held-out/generalization gates at their source-declared units.",
+      "forbidden_stronger_wording": [
+        "physical efficacy",
+        "formal mediation",
+        "candidate-slot iid inference",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_FIGURE_TABLE_PACKAGE_V1.md",
+      "source_artifacts": [
+        "VI_B2",
+        "VII",
+        "VIII"
+      ]
+    },
+    {
+      "allowed_caveat": "Caption wording is bounded by the source artifact and authority map.",
+      "claim_id": "FIG4_CAPTION",
+      "claim_type": "figure_caption",
+      "denominator": "as stated in the corresponding figure data table",
+      "direct_support": true,
+      "exact_wording": "Figure 4 caption: Stage IX model-side AUROC is high while factorized parent-macro AUC is near chance; this is no-environment model-side evidence, not physical attack efficacy.",
+      "forbidden_stronger_wording": [
+        "physical efficacy",
+        "formal mediation",
+        "candidate-slot iid inference",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_FIGURE_TABLE_PACKAGE_V1.md",
+      "source_artifacts": [
+        "IX"
+      ]
+    },
+    {
+      "allowed_caveat": "Caption wording is bounded by the source artifact and authority map.",
+      "claim_id": "FIG5_CAPTION",
+      "claim_type": "figure_caption",
+      "denominator": "as stated in the corresponding figure data table",
+      "direct_support": true,
+      "exact_wording": "Figure 5 caption: E3/E4 parent-level aggregation is primary; candidate-slot counts are diagnostic and non-iid; the result is model-side only.",
+      "forbidden_stronger_wording": [
+        "physical efficacy",
+        "formal mediation",
+        "candidate-slot iid inference",
+        "protected validation"
+      ],
+      "manuscript_location": "paper/PAPER_V1_FIGURE_TABLE_PACKAGE_V1.md",
+      "source_artifacts": [
+        "E3_E4"
+      ]
+    }
+  ],
+  "figure_table_package": "paper/PAPER_V1_FIGURE_TABLE_PACKAGE_V1.md",
+  "hard_checks": {
+    "candidate_slots_non_iid": true,
+    "detector_not_used_to_explain_e3": true,
+    "e2_not_attack_failure": true,
+    "e3_e4_not_physical_efficacy": true,
+    "historical_invalid_nonpromotional": true,
+    "parent_unit_primary": true,
+    "protected_eval160_unread": true,
+    "source_denominator_binding": true,
+    "stale_result_not_promoted": true,
+    "x0_no_formal_mediation": true
+  },
+  "manuscript": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md",
+  "paper_status": "PAPER_V1_MECHANISM_FACTORIZATION_DRAFT_BUNDLE_READY_FOR_PI",
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "new_openvla_inference": 0,
+    "new_pgd_or_backward": 0,
+    "new_physical_intervention": 0,
+    "new_simulator_or_env_step": 0,
+    "new_vphys_read": 0,
+    "protected_evaluation": "UNREAD"
+  },
+  "schema": "PAPER_V1_CLAIM_LEDGER_V1",
+  "status": "PAPER_V1_CLAIM_AUDIT_PASS"
+}
