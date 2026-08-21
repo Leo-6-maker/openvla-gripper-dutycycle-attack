@@ -1,0 +1,34 @@
+{
+  "artifact_hashes": {
+    "configs/STAGE_X_X1R2_F1B_DEV_PROTOCOL_V3.json": "391d4d4047a72b7d0979b8dbbc2f2d4491a2c0c2466bc314c8e9146117384d45",
+    "configs/STAGE_X_X1R2_GRIPPER_SELECTIVE_ATTACK_CONTRACT_V1.json": "872001cf521d21a8aeda5762c55ace8975d844dc22cb8e05e0d6ea6032f950d1",
+    "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_DEV_V3_LEDGER_V3.json": "f114505a7ea6aee9959f9db3aa1aedea1cebf89f09b820a4b7746236de46ef9a",
+    "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+    "reports/STAGE_X_X1R2_F1B_DEV_METHOD_FREEZE_V3_20260821/F1B_METHOD_SPEC_V3.json": "eadbd7ec65d7859cf19889f8f9748b38cf0d6007a5395c6d278ecceaf3d76035",
+    "reports/STAGE_X_X1R2_F1B_DEV_METHOD_FREEZE_V3_20260821/F1B_PRE_GPU_AUDIT_V3.json": "9fd8d954a7706672777886c05337dbd0815fd8b575da3c7da6644a1762eb730d",
+    "scripts/stage_x/run_stage_x1r2_f1b_dev.py": "a4a708ceb20c00809f9af17da1dd75a1ce6545f14cc3ca2579fd7bea12b3418f",
+    "scripts/stage_x/run_stage_x1r_primary_matrix.py": "75aac917d393113458e68ced5de5f1721420ef4671406cd1f0395c0e1014aa10",
+    "src/gripper_attack/attack_adapter.py": "02dbad9ffa30aa1d00e5e2d2688a0f580a1f57ab1e0957f3082bcdf43d715e23",
+    "src/gripper_attack/execution_target.py": "ce27747e1dfc06c7a05c0393566e59d90b11dee1c9d9d579713b0df6a208e201",
+    "src/gripper_attack/failure_evidence.py": "ce4c02da1ca9bc74698bc083f5c91e7927f34d64be982b80612c2d2415f9752b",
+    "src/gripper_attack/route_contract.py": "2c07fa19fc651cfb9a32aa54cae610888d28a795d72a28d1733620f5c0b9a53e"
+  },
+  "f1a3_root_seal_sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+  "method_spec_sha256": "eadbd7ec65d7859cf19889f8f9748b38cf0d6007a5395c6d278ecceaf3d76035",
+  "pre_gpu_audit_sha256": "9fd8d954a7706672777886c05337dbd0815fd8b575da3c7da6644a1762eb730d",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "protocol_sha256": "391d4d4047a72b7d0979b8dbbc2f2d4491a2c0c2466bc314c8e9146117384d45",
+  "schema": "STAGE_X1R2_F1B_ROOT_SEAL_V3",
+  "seal_scope_excludes_sidecar": true,
+  "source_commit": "c581786296e5308f8166bbc628059d1608a61d3b",
+  "source_tree": "9d451dc82c604dd79be566e561ed0f0171197cc8",
+  "status": "PASS_F1B_PRE_GPU_STATIC_CONTRACT"
+}
