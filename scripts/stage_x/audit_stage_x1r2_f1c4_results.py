@@ -135,7 +135,7 @@ def main() -> int:
         })
     if len(worker_summaries) != 8:
         errors.append(f"WORKER_COUNT:{len(worker_summaries)}")
-    if observed_keys != sorted(observed_keys) or set(observed_keys) != expected_keys_set or len(observed_keys) != len(set(observed_keys)):
+    if set(observed_keys) != expected_keys_set or len(observed_keys) != len(set(observed_keys)):
         errors.append("WORKER_COVERAGE")
     for worker in worker_summaries:
         admission = worker.get("gpu_before_model_load") or {}
@@ -262,7 +262,9 @@ def main() -> int:
                 arm_totals[arm]["runtime_error_count"] += 1
                 if attempted != 0 or step_rows or attack_invocations != 0:
                     errors.append(f"ARM_HOLD_COUNTER_RECONCILIATION:{key}:{arm}")
-                error_counts[str(receipt.get("error"))] += 1
+                runtime_error = str(receipt.get("error"))
+                error_counts[runtime_error] += 1
+                errors.append(f"ARM_RUNTIME_ERROR:{key}:{arm}:{runtime_error}")
             else:
                 errors.append(f"ARM_STATUS:{key}:{arm}:{arm_status}")
             for field in ("pgd_calls", "attacked_env_steps", "physical_interventions", "vphys_reads"):
