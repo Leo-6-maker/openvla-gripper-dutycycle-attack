@@ -1,0 +1,54 @@
+{
+  "attacked_env_steps": 0,
+  "bridge_outcome_read": 0,
+  "bridge_runtime": 0,
+  "counts": {
+    "libero_10": 2,
+    "libero_goal": 2,
+    "libero_object": 2,
+    "libero_spatial": 2
+  },
+  "eval160": "UNREAD",
+  "exposure_reaudit_path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_EXPOSURE_REAUDIT_V1.json",
+  "exposure_reaudit_sha256": "93b897996afe73bd7f98a92abb41deb2364a7ec35b2d3b97ecf4bb42aac6cfa1",
+  "gate": "STAGE_X_X1R2_F1C4_FRESH_CANARY_REQUALIFICATION_V1",
+  "gpu": 0,
+  "intersections": {
+    "BRIDGE_V3": 0,
+    "C_CANARY_V3": 0,
+    "DEV_V3": 0
+  },
+  "ledger_path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_FRESH_CANARY_LEDGER_V1.json",
+  "ledger_sha256": "d6cd9c3ab753fcef5dd79376e03dba5dd3e8e9b7ac1c1755a93d4f5a30bd9c34",
+  "method_equivalence_path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_METHOD_EQUIVALENCE_AUDIT_V1.json",
+  "method_equivalence_sha256": "f8166557c47c393a91b80fcd3f1d55d8d282f91cab66cc3cec19f9ea48549f44",
+  "method_spec_path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_METHOD_SPEC_V1.json",
+  "method_spec_sha256": "5b0b7f8b15f016f77702b630678acd091a8d39a9d85e4a2e4fdfa2f7d008235b",
+  "model_inference": 0,
+  "pgd": 0,
+  "physical_interventions": 0,
+  "protected": "UNREAD",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "bridge_outcome_read": 0,
+    "bridge_runtime": 0,
+    "eval160": "UNREAD",
+    "physical_interventions": 0,
+    "physical_outcome": 0,
+    "protected": "UNREAD",
+    "vphys": 0
+  },
+  "protocol_path": "configs/STAGE_X_X1R2_F1C4_FRESH_CANARY_PROTOCOL_V1.json",
+  "protocol_sha256": "0b1b86bf6bd3882c5874658d1487e4db4cad121a56a18973c28ccc7bd5b17216",
+  "schema": "STAGE_X1R2_F1C4_PRE_GPU_AUDIT_V1",
+  "simulator": 0,
+  "source": {
+    "branch": "codex/stage-x-x1r2-q3-arm-isolation-repair-20260820",
+    "commit": "5bb45c004c3aa23a2a0b4dfebeb25959b90c5f71",
+    "status_porcelain": "",
+    "tree": "9e5d63c92b6fb88a78d17a1fc18e721db6540b98"
+  },
+  "status": "PASS_F1C4_PRE_GPU_STATIC_CONTRACT",
+  "vphys": 0
+}
