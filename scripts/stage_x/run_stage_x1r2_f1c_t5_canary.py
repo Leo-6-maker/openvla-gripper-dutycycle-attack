@@ -79,7 +79,7 @@ def parent_from_row(row: Mapping[str, Any], ordinal: int) -> dict[str, Any]:
     suite, task_text, state_text = str(row["canonical_parent_key"]).split("/")
     return {
         "ordinal": int(ordinal),
-        "fixture_id": f"F1C_{suite}_{task_text}_{state_text}",
+        "fixture_id": str(row.get("fixture_id") or f"F1C_{suite}_{task_text}_{state_text}"),
         "suite": suite,
         "canonical_parent_key": str(row["canonical_parent_key"]),
         "task_idx": int(task_text.split("_")[1]),
@@ -115,8 +115,19 @@ def complete_audit(audit: Any, expected_count: int) -> bool:
     )
 
 
-def validate_f1c_freeze(protocol: Mapping[str, Any], physical_gpu: int) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    if protocol.get("status") != "FROZEN_F1C_T5_CANARY_V3" or protocol.get("scientific_authority") is not False:
+def _freeze_paths(protocol: Mapping[str, Any]) -> dict[str, Path]:
+    freeze = protocol.get("freeze", {})
+    return {
+        "method_spec": ROOT / str(freeze.get("method_spec_path", METHOD_SPEC.relative_to(ROOT))),
+        "pre_gpu_audit": ROOT / str(freeze.get("pre_gpu_audit_path", PRE_GPU_AUDIT.relative_to(ROOT))),
+        "root_seal": ROOT / str(freeze.get("root_seal_path", ROOT_SEAL.relative_to(ROOT))),
+        "root_sidecar": ROOT / str(freeze.get("root_sidecar_path", ROOT_SIDECAR.relative_to(ROOT))),
+    }
+
+
+def validate_f1c_freeze(protocol: Mapping[str, Any], physical_gpu: int, protocol_path: Path = PROTOCOL) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    allowed_statuses = set(protocol.get("validation", {}).get("protocol_statuses", ["FROZEN_F1C_T5_CANARY_V3"]))
+    if protocol.get("status") not in allowed_statuses or protocol.get("scientific_authority") is not False:
         raise SystemExit("F1C_PROTOCOL_NOT_FROZEN")
     official = str(protocol["runtime"]["official_environment"])
     if not str(sys.executable).startswith(official + "/"):
@@ -124,19 +135,25 @@ def validate_f1c_freeze(protocol: Mapping[str, Any], physical_gpu: int) -> tuple
     source = source_receipt()
     if source["status_porcelain"]:
         raise SystemExit(f"F1C_WORKTREE_NOT_CLEAN:{source['status_porcelain']}")
-    for path in (METHOD_SPEC, PRE_GPU_AUDIT, ROOT_SEAL, ROOT_SIDECAR):
+    freeze_paths = _freeze_paths(protocol)
+    method_spec_path = freeze_paths["method_spec"]
+    pre_gpu_audit_path = freeze_paths["pre_gpu_audit"]
+    root_seal_path = freeze_paths["root_seal"]
+    root_sidecar_path = freeze_paths["root_sidecar"]
+    for path in (method_spec_path, pre_gpu_audit_path, root_seal_path, root_sidecar_path):
         if not path.is_file():
             raise SystemExit(f"F1C_METHOD_FREEZE_ARTIFACT_MISSING:{path}")
-    root_sha = sha256_file(ROOT_SEAL)
-    if ROOT_SIDECAR.read_text(encoding="utf-8").split()[0] != root_sha:
+    root_sha = sha256_file(root_seal_path)
+    if root_sidecar_path.read_text(encoding="utf-8").split()[0] != root_sha:
         raise SystemExit("F1C_METHOD_FREEZE_ROOT_SIDECAR_MISMATCH")
-    seal, method, audit = load_json(ROOT_SEAL), load_json(METHOD_SPEC), load_json(PRE_GPU_AUDIT)
-    if seal.get("status") != "PASS_F1C_PRE_GPU_STATIC_CONTRACT" or method.get("status") != "PASS_F1C_METHOD_SPEC_SEALED" or audit.get("status") != "PASS_F1C_PRE_GPU_STATIC_CONTRACT":
+    seal, method, audit = load_json(root_seal_path), load_json(method_spec_path), load_json(pre_gpu_audit_path)
+    validation = protocol.get("validation", {})
+    if seal.get("status") != validation.get("root_seal_status", "PASS_F1C_PRE_GPU_STATIC_CONTRACT") or method.get("status") != validation.get("method_spec_status", "PASS_F1C_METHOD_SPEC_SEALED") or audit.get("status") != validation.get("pre_gpu_status", "PASS_F1C_PRE_GPU_STATIC_CONTRACT"):
         raise SystemExit("F1C_METHOD_FREEZE_NOT_PASS")
-    protocol_sha = sha256_file(PROTOCOL)
+    protocol_sha = sha256_file(protocol_path)
     if seal.get("protocol_sha256") != protocol_sha or method.get("protocol_sha256") != protocol_sha:
         raise SystemExit("F1C_METHOD_FREEZE_PROTOCOL_HASH_MISMATCH")
-    if seal.get("method_spec_sha256") != sha256_file(METHOD_SPEC) or seal.get("pre_gpu_audit_sha256") != sha256_file(PRE_GPU_AUDIT):
+    if seal.get("method_spec_sha256") != sha256_file(method_spec_path) or seal.get("pre_gpu_audit_sha256") != sha256_file(pre_gpu_audit_path):
         raise SystemExit("F1C_METHOD_FREEZE_ARTIFACT_HASH_MISMATCH")
     if seal.get("protected_boundary") != protocol.get("protected_boundary"):
         raise SystemExit("F1C_METHOD_FREEZE_PROTECTED_BOUNDARY_MISMATCH")
@@ -147,13 +164,15 @@ def validate_f1c_freeze(protocol: Mapping[str, Any], physical_gpu: int) -> tuple
     sealed_commit = str(seal.get("source_commit", ""))
     if not sealed_commit or subprocess.run(["git", "-C", str(ROOT), "merge-base", "--is-ancestor", sealed_commit, str(source["commit"])], check=False).returncode != 0:
         raise SystemExit("F1C_METHOD_FREEZE_SOURCE_NOT_ANCESTOR")
-    f1a3_root = ROOT / str(protocol["population"]["f1a3_root_seal_path"])
+    population = protocol["population"]
+    f1a3_root = ROOT / str(population["f1a3_root_seal_path"])
     if sha256_file(f1a3_root) != str(protocol["population"]["f1a3_root_seal_sha256"]):
         raise SystemExit("F1C_F1A3_ROOT_HASH_MISMATCH")
     f1a3_sidecar = f1a3_root.with_suffix(".sha256")
     if f1a3_sidecar.read_text(encoding="utf-8").split()[0] != sha256_file(f1a3_root):
         raise SystemExit("F1C_F1A3_ROOT_SIDECAR_MISMATCH")
-    if sha256_file(CANARY_LEDGER) != str(protocol["population"]["canary_ledger_sha256"]):
+    ledger_path = ROOT / str(population.get("path", CANARY_LEDGER.relative_to(ROOT)))
+    if sha256_file(ledger_path) != str(population["canary_ledger_sha256"]):
         raise SystemExit("F1C_CANARY_LEDGER_HASH_MISMATCH")
     f1b_decision = load_json(F1B_DECISION)
     f1b_root = load_json(F1B_RESULT_ROOT)
@@ -163,14 +182,18 @@ def validate_f1c_freeze(protocol: Mapping[str, Any], physical_gpu: int) -> tuple
         raise SystemExit("F1C_F1B_UPSTREAM_HASH_MISMATCH")
     if f1b_root.get("status") != "PASS_F1B_DEV_RESULT_AGGREGATION":
         raise SystemExit("F1C_F1B_RESULT_ROOT_NOT_PASS")
-    ledger = load_json(CANARY_LEDGER)
+    ledger = load_json(ledger_path)
     rows = list(ledger.get("rows", []))
-    if ledger.get("status") != "PASS_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3" or len(rows) != 8:
+    expected_ledger_status = validation.get("ledger_status", "PASS_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3")
+    expected_role = str(population.get("role", "C_CANARY_V3"))
+    expected_row_count = int(population.get("row_count", 8))
+    if ledger.get("status") != expected_ledger_status or len(rows) != expected_row_count:
         raise SystemExit("F1C_CANARY_LEDGER_INVALID")
-    if any(row.get("role") != "C_CANARY_V3" or row.get("permanent_exclusion") is not True or row.get("outcome_read") is not False for row in rows):
+    if any(row.get("role") != expected_role or row.get("permanent_exclusion") is not True or row.get("outcome_read") is not False for row in rows):
         raise SystemExit("F1C_CANARY_ROLE_FIREWALL_INVALID")
     counts = {suite: sum(row.get("suite") == suite for row in rows) for suite in SUITES}
-    if counts != {suite: 2 for suite in SUITES} or len({row.get("canonical_parent_key") for row in rows}) != 8:
+    expected_per_suite = int(population.get("per_suite_count", 2))
+    if counts != {suite: expected_per_suite for suite in SUITES} or len({row.get("canonical_parent_key") for row in rows}) != expected_row_count:
         raise SystemExit(f"F1C_CANARY_COUNTS_INVALID:{counts}")
     if int(protocol["execution"]["attempted_steps"]) != 5 or tuple(protocol["temporal_arms"]) != ARMS:
         raise SystemExit("F1C_EXECUTION_BOUNDARY_INVALID")
@@ -562,7 +585,7 @@ def run_parent(parent: Mapping[str, Any], suite_cfg: Mapping[str, Any], model: A
 
 def run_worker(protocol_path: Path, physical_gpu: int, worker_index: int, worker_count: int) -> int:
     protocol = load_json(protocol_path)
-    source, rows = validate_f1c_freeze(protocol, physical_gpu)
+    source, rows = validate_f1c_freeze(protocol, physical_gpu, protocol_path)
     if worker_count < 1 or worker_count > int(protocol["resource"]["max_project_workers"]) or worker_index < 0 or worker_index >= worker_count:
         raise SystemExit("F1C_WORKER_ASSIGNMENT_INVALID")
     root = Path(str(protocol["runtime"]["durable_output_root"]))
