@@ -29,6 +29,11 @@ PROTOCOL = ROOT / "configs/STAGE_X_X1R2_F1B_DEV_PROTOCOL_V3.json"
 CONTRACT = ROOT / "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json"
 SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
 METHODS = ("M0", "M1", "M2")
+F1B_FREEZE_DIR = ROOT / "reports/STAGE_X_X1R2_F1B_DEV_METHOD_FREEZE_V3_20260821"
+F1B_METHOD_SPEC = F1B_FREEZE_DIR / "F1B_METHOD_SPEC_V3.json"
+F1B_PRE_GPU_AUDIT = F1B_FREEZE_DIR / "F1B_PRE_GPU_AUDIT_V3.json"
+F1B_ROOT_SEAL = F1B_FREEZE_DIR / "F1B_ROOT_SEAL_V3.json"
+F1B_ROOT_SIDECAR = F1B_FREEZE_DIR / "F1B_ROOT_SEAL_V3.sha256"
 
 
 def load_json(path: Path) -> Any:
@@ -122,6 +127,38 @@ def durable_preflight(root: Path, minimum_free_bytes: int) -> dict[str, Any]:
     return {"root": str(root), "free_bytes": free_bytes, "write_probe_sha256": probe_sha}
 
 
+def validate_f1b_freeze(protocol: Mapping[str, Any], source: Mapping[str, Any]) -> None:
+    paths = (F1B_METHOD_SPEC, F1B_PRE_GPU_AUDIT, F1B_ROOT_SEAL, F1B_ROOT_SIDECAR)
+    if not all(path.is_file() for path in paths):
+        raise SystemExit("F1B_METHOD_FREEZE_ARTIFACT_MISSING")
+    root_sha = sha256_file(F1B_ROOT_SEAL)
+    if F1B_ROOT_SIDECAR.read_text(encoding="utf-8").split()[0] != root_sha:
+        raise SystemExit("F1B_METHOD_FREEZE_ROOT_SIDECAR_MISMATCH")
+    seal = load_json(F1B_ROOT_SEAL)
+    method = load_json(F1B_METHOD_SPEC)
+    audit = load_json(F1B_PRE_GPU_AUDIT)
+    if seal.get("status") != "PASS_F1B_PRE_GPU_STATIC_CONTRACT":
+        raise SystemExit("F1B_METHOD_FREEZE_NOT_PASS")
+    if method.get("status") != "PASS_F1B_METHOD_SPEC_SEALED" or audit.get("status") != "PASS_F1B_PRE_GPU_STATIC_CONTRACT":
+        raise SystemExit("F1B_METHOD_FREEZE_STATUS_INVALID")
+    protocol_sha = sha256_file(PROTOCOL)
+    if seal.get("protocol_sha256") != protocol_sha or method.get("protocol_sha256") != protocol_sha:
+        raise SystemExit("F1B_METHOD_FREEZE_PROTOCOL_HASH_MISMATCH")
+    if seal.get("method_spec_sha256") != sha256_file(F1B_METHOD_SPEC) or audit.get("method_spec_sha256") != sha256_file(F1B_METHOD_SPEC):
+        raise SystemExit("F1B_METHOD_FREEZE_METHOD_SPEC_HASH_MISMATCH")
+    if seal.get("pre_gpu_audit_sha256") != sha256_file(F1B_PRE_GPU_AUDIT):
+        raise SystemExit("F1B_METHOD_FREEZE_AUDIT_HASH_MISMATCH")
+    if seal.get("protected_boundary") != protocol.get("protected_boundary"):
+        raise SystemExit("F1B_METHOD_FREEZE_PROTECTED_BOUNDARY_MISMATCH")
+    for relative, expected in dict(seal.get("artifact_hashes", {})).items():
+        path = ROOT / relative
+        if not path.is_file() or sha256_file(path) != expected:
+            raise SystemExit(f"F1B_METHOD_FREEZE_ARTIFACT_HASH_MISMATCH:{relative}")
+    sealed_commit = str(seal.get("source_commit", ""))
+    if not sealed_commit or subprocess.run(["git", "-C", str(ROOT), "merge-base", "--is-ancestor", sealed_commit, str(source["commit"])], check=False).returncode != 0:
+        raise SystemExit("F1B_METHOD_FREEZE_SOURCE_NOT_ANCESTOR")
+
+
 def validate_protocol(protocol: Mapping[str, Any], physical_gpu: int) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if protocol.get("status") != "FROZEN_F1B_DEV_V3" or protocol.get("scientific_authority") is not False:
         raise SystemExit("F1B_PROTOCOL_NOT_FROZEN")
@@ -131,6 +168,7 @@ def validate_protocol(protocol: Mapping[str, Any], physical_gpu: int) -> tuple[d
     source = source_receipt()
     if source["status_porcelain"]:
         raise SystemExit(f"F1B_WORKTREE_NOT_CLEAN:{source['status_porcelain']}")
+    validate_f1b_freeze(protocol, source)
     f1a3_root = ROOT / str(protocol["population"]["f1a3_root_seal_path"])
     f1a3_sidecar = f1a3_root.with_suffix(".sha256")
     if not f1a3_root.is_file() or not f1a3_sidecar.is_file():

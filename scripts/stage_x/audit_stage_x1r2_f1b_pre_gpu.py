@@ -107,7 +107,7 @@ def main() -> int:
         errors.append("PAPER_V1_WORKTREE_CHANGED")
     try:
         subprocess.check_call([sys.executable, "-m", "py_compile", *[str(ROOT / path) for path in SOURCE_PATHS if path.endswith(".py")]], cwd=ROOT)
-        test = subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/stage_x/test_stage_x1r2_gripper_selective_contract.py", "tests/stage_x/test_stage_x1r2_q3r3_e1_failure_persistence.py"], cwd=ROOT, text=True, capture_output=True, check=False)
+        test = subprocess.run(["pytest", "-q", "tests/stage_x/test_stage_x1r2_gripper_selective_contract.py", "tests/stage_x/test_stage_x1r2_q3r3_e1_failure_persistence.py"], cwd=ROOT, text=True, capture_output=True, check=False)
         tests = {"returncode": int(test.returncode), "stdout_tail": test.stdout[-4000:], "stderr_tail": test.stderr[-2000:]}
         if test.returncode != 0:
             errors.append("CPU_REGRESSION_FAILED")
