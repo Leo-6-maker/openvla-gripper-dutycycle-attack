@@ -43,7 +43,9 @@ def parent_row(root: Path, row: dict[str, Any]) -> dict[str, Any]:
     paths = sorted(path for path in fixture_root.rglob("parent_receipt.json") if path.is_file())
     if not paths:
         return {"suite": row["suite"], "fixture_id": row["fixture_id"], "canonical_parent_key": row["canonical_parent_key"], "status": "HOLD_E3_PARENT_RECEIPT_MISSING", "probe_available": False, "true_invocation_reached": False, "candidate_evidence_complete": False, "strict_valid_candidate": False}
-    path = paths[-1]
+    # Prefer the deepest attempt receipt; the legacy root receipt is only a
+    # pointer/history record and must not override a completed repair attempt.
+    path = max(paths, key=lambda item: (len(item.relative_to(fixture_root).parts), item.as_posix()))
     receipt = load_json(path)
     clean = receipt.get("clean_probe") or {}
     true = receipt.get("true_receipt") or {}
