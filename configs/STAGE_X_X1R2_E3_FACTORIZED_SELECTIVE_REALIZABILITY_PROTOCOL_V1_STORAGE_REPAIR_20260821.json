@@ -1168,7 +1168,7 @@
   "status": "FROZEN_E3_FACTORIZED_SELECTIVE_REALIZABILITY",
   "supersedes_protocol": {
     "path": "configs/STAGE_X_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_PROTOCOL_V1.json",
-    "raw_sha256": "a631988821a7e9e81fa399c3e546a041e14f5b06cc0fc95a5fd16d73ebf35a5a",
+    "raw_sha256": "ec0daf7d661bb7608059c470148f37a94c350862acbef0e0021bd7c9eb5c14c0",
     "reason": "The original 4 GiB durable preflight was an engineering carry-over; observed E3 artifacts are MiB-scale. No method, population, denominator, or GPU rule changed."
   },
   "true_execution": {
@@ -1187,4 +1187,4 @@
     "shuffled": false,
     "stop_before_attacked_env_step": true
   }
-}\n
+}
