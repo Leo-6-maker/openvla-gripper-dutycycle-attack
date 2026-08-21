@@ -42,7 +42,7 @@ def git(*args: str) -> str:
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
 
 
 def main() -> int:
@@ -180,7 +180,7 @@ def main() -> int:
     }
     write_json(ROOT_SEAL, seal)
     seal_sha = sha(ROOT_SEAL)
-    ROOT_SIDECAR.write_text(f"{seal_sha}  {ROOT_SEAL.name}\n", encoding="utf-8")
+    ROOT_SIDECAR.write_text(f"{seal_sha}  {ROOT_SEAL.name}\n", encoding="utf-8", newline="\n")
     print(json.dumps({"status": audit["status"], "errors": errors, "output": str(OUT), "root_seal_sha256": seal_sha}, sort_keys=True))
     return 0 if not errors else 1
 
