@@ -1,0 +1,67 @@
+{
+  "allowed_dev_contamination_label": "LEGACY_DETECTOR_TRAIN_ONLY_ALLOWED_FOR_F1_DEV",
+  "bridge_source": {
+    "count": 20,
+    "identity_only_until_f1_c": true,
+    "name": "BRIDGE_SOURCE_V2",
+    "no_replacement_top_up_or_suite_substitution": true,
+    "per_suite": 5,
+    "ranking": "sha256(STAGE_X_X1R2_F1A2_BRIDGE_SOURCE_V2_SALT_20260821|canonical_parent_key)",
+    "state_range": "20..49"
+  },
+  "dev_hard_exclusion_policy": [
+    "prior_visual_attack_or_pgd_or_attack_result",
+    "prior_physical_intervention_or_vphys_or_command_open",
+    "prior_q3_q3ar_q3r2_q3r3_e2_e3_engineering_exposure",
+    "prior_fec_g2_canary_or_runtime_qualification",
+    "prior_manual_outcome_adjudication",
+    "protected_or_eval160_membership",
+    "unresolved_exposure_category"
+  ],
+  "dev_source": {
+    "count": 24,
+    "held_out_claim": false,
+    "name": "DEV_SOURCE_V2",
+    "per_suite": 6,
+    "permanent_exclusion": true,
+    "ranking": "sha256(STAGE_X_X1R2_F1A2_DEV_SOURCE_V2_SALT_20260821|canonical_parent_key)",
+    "state_range": "0..19"
+  },
+  "gate": "STAGE_X_X1R2_F1A2_SOURCE_LEAKAGE_AND_POPULATION_FREEZE_V2",
+  "method_or_scientific_counters_changed": false,
+  "model_simulator_pgd_physical_protected_reads_authorized": false,
+  "pi_authority": {
+    "latest_v2_attachment_sha256": "64a8b4a966b2579d61eecc672525187bfeef815c727b73ff76e7546428ec7831",
+    "latest_v2_comment_id": 5368241704,
+    "pull_request": 135,
+    "superseded_attachment_sha256": "e9ba28d2f45382f24a08d343d58fe914e059dfb392021f774cefd84bfc7d0445"
+  },
+  "protected_boundary": {
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "gpu": 0,
+    "openvla_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected": "UNREAD",
+    "simulator": 0,
+    "vphys": 0
+  },
+  "schema": "STAGE_X_X1R2_F1A2_SOURCE_LEAKAGE_CONTRACT_V2",
+  "source_binding": {
+    "branch": "codex/stage-x-x1r2-q3-arm-isolation-repair-20260820",
+    "g10_fresh_by_suite": {
+      "libero_10": 49,
+      "libero_goal": 21,
+      "libero_object": 70,
+      "libero_spatial": 70
+    },
+    "g10_fresh_rows": 210,
+    "g10_path": "reports/STAGE_X_X1R_T1D0R_G10_IDENTITY_EXCLUSION_LEDGER_V1.json",
+    "g10_rows": 1200,
+    "g10_sha256": "eadad7440ee67b9aeff0bb73ceab7af3b27fc1cf1ccb6e4bebf953660f75a015",
+    "input_commit": "c27f27cb3d8d89077129d06c3e9f49419c9c6170",
+    "input_tree": "0c2625b2e0c230ab225653028d30535ab8c3fdea"
+  },
+  "status": "HOLD_F1A2_SOURCE_CONTRACT_NOT_ESTABLISHED"
+}

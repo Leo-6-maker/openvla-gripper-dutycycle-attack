@@ -1,0 +1,1370 @@
+{
+  "bridge": {
+    "base_source_count": 15,
+    "capacity_deficit_by_suite": {
+      "libero_10": 0,
+      "libero_goal": 5,
+      "libero_object": 0,
+      "libero_spatial": 0
+    },
+    "capacity_reconciliation": {
+      "after_complete_identity_source_inventory": {
+        "libero_10": 20,
+        "libero_goal": 0,
+        "libero_object": 35,
+        "libero_spatial": 36
+      },
+      "after_named_stronger_sources": {
+        "libero_10": 25,
+        "libero_goal": 0,
+        "libero_object": 42,
+        "libero_spatial": 42
+      },
+      "after_previous_15_source_subset": {
+        "libero_10": 33,
+        "libero_goal": 5,
+        "libero_object": 51,
+        "libero_spatial": 52
+      }
+    },
+    "complete_current_exclusion_union_digest": "858e2ff578bf6bc7a1bc9fe7bef18bf138172fdb8f4e886ff71f6db690338436",
+    "complete_current_exclusion_union_key_count": 178,
+    "complete_identity_source_inventory": [
+      {
+        "classification": "EXPLICIT_BASE_F1A_15_SOURCE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 2,
+        "included_in_complete_union": true,
+        "path": "configs/STAGE_VI_B2_FRESH_PARENT_MANIFEST_V3.json",
+        "sha256": "cbf5125b64c09815bd79ef05ba40d948797f99638294eab8808e65f37c0dbedd"
+      },
+      {
+        "classification": "EXPLICIT_STRONGER_CURRENT_IDENTITY_AUTHORITY",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 5,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 8,
+        "included_in_complete_union": true,
+        "path": "configs/STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_V1_1.json",
+        "sha256": "182ce7075b5582e249a66e4e8e1d68627fc157c07614df98409ca94247320672"
+      },
+      {
+        "classification": "STATIC_PROTOCOL_OR_TAXONOMY_NOT_EXECUTION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 6,
+          "libero_object": 0,
+          "libero_spatial": 4
+        },
+        "fresh_overlap_count": 10,
+        "included_in_complete_union": false,
+        "path": "configs/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1_4.json",
+        "sha256": "73a099b4ba9ae106cd432b25c97885beaff2f25b9a5e424910d9810e52f8ad12"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 2,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 3,
+        "included_in_complete_union": true,
+        "path": "configs/STAGE_V_M4_POST_HOLD_CANDIDATE_PARENT_MANIFEST_V1.json",
+        "sha256": "0b6a0e7b76e7ae774a059c48a57bb4618a70b056a72d4c79c66bac8002d4e8e3"
+      },
+      {
+        "classification": "STATIC_PROTOCOL_OR_TAXONOMY_NOT_EXECUTION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 3,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": false,
+        "path": "configs/STAGE_V_M4_POST_HOLD_STATIC_TAXONOMY_AUDIT_V1.json",
+        "sha256": "758446939856cf0278600a0af39b9c6f6b0b79e36b7540a94c0fd5aa0e006838"
+      },
+      {
+        "classification": "STATIC_PROTOCOL_OR_TAXONOMY_NOT_EXECUTION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 12,
+          "libero_goal": 12,
+          "libero_object": 15,
+          "libero_spatial": 12
+        },
+        "fresh_overlap_count": 51,
+        "included_in_complete_union": false,
+        "path": "configs/STAGE_X_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_PROTOCOL_V1.json",
+        "sha256": "a631988821a7e9e81fa399c3e546a041e14f5b06cc0fc95a5fd16d73ebf35a5a"
+      },
+      {
+        "classification": "STATIC_PROTOCOL_OR_TAXONOMY_NOT_EXECUTION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 12,
+          "libero_goal": 12,
+          "libero_object": 15,
+          "libero_spatial": 12
+        },
+        "fresh_overlap_count": 51,
+        "included_in_complete_union": false,
+        "path": "configs/STAGE_X_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_PROTOCOL_V1_STORAGE_REPAIR_20260821.json",
+        "sha256": "926c4ee73c2ac743a8c867603c666e199fef7402862cb114cbd97c1a12168e5e"
+      },
+      {
+        "classification": "STATIC_PROTOCOL_OR_TAXONOMY_NOT_EXECUTION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": false,
+        "path": "configs/STAGE_X_X1R2_Q3R3_BRANCH_REPLAY_PROTOCOL_V1.json",
+        "sha256": "dfe0ae401132b995671f40f42f834b29220559e49acb8a5b2bdc39231cf3fe7a"
+      },
+      {
+        "classification": "STATIC_PROTOCOL_OR_TAXONOMY_NOT_EXECUTION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 5,
+          "libero_goal": 6,
+          "libero_object": 9,
+          "libero_spatial": 4
+        },
+        "fresh_overlap_count": 24,
+        "included_in_complete_union": false,
+        "path": "configs/STAGE_X_X1R2_Q3R3_C2_BRANCH_REPLAY_PROTOCOL_V1.json",
+        "sha256": "480684b69d4c73cfe4708e79a94eb36ac1b631ae1e8ddc7062edda1ca6dc8d86"
+      },
+      {
+        "classification": "STATIC_PROTOCOL_OR_TAXONOMY_NOT_EXECUTION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": false,
+        "path": "configs/STAGE_X_X1R2_Q3R3_D2_ENGINEERING_MATRIX_PROTOCOL_V1.json",
+        "sha256": "e2d53e32d4091cf5b8abc233fdc38a78b877fed52452869b5d3f4799cde8db94"
+      },
+      {
+        "classification": "STATIC_PROTOCOL_OR_TAXONOMY_NOT_EXECUTION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": false,
+        "path": "configs/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_PROTOCOL_V1.json",
+        "sha256": "edb10f8010ca7579ca55bdab56117120989d16789e1bbfa88594eb669266341c"
+      },
+      {
+        "classification": "STATIC_PROTOCOL_OR_TAXONOMY_NOT_EXECUTION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": false,
+        "path": "configs/STAGE_X_X1R2_Q3R3_ENGINEERING_MATRIX_PROTOCOL_V1.json",
+        "sha256": "019b0203dcb4eb0973fdea18377dd63531ebabfe2e20eedb3deccfac1a9f821d"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        },
+        "fresh_overlap_count": 39,
+        "included_in_complete_union": true,
+        "path": "configs/STAGE_X_X1R_T1D0_ATTACK_PARENT_AUTHORITY_V1.json",
+        "sha256": "c1123784c432984543eb4646ff7bc072766cf3b92b4c1b5ca96d5d0bb0a77d27"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 3,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 5,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_V_M4_CURRENT_SOURCE_FINAL40_TERMINAL_HOLD_20260813.md",
+        "sha256": "a0103b4c9054144f7382edba88f17334e71a9ea737721582de9b9a10ff4246ce"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 1,
+          "libero_object": 0,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 2,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_V_M4_FINAL_CORRIDOR_PROBE_FIREWALL_HOLD_20260813.md",
+        "sha256": "19c4ab2da48d0624ef5d58b03bdc95fa732777dcc7bce36cc7907bbcaa49c8d8"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 4
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_V_M4_SPATIAL_REPLENISHMENT_QUALIFICATION_V3_20260813.md",
+        "sha256": "d6c25c5de7c52221707397a65dc182e745e746b664090c3db8f47a6d10ec0d68"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 2,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 3,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_V_POST_HOLD_CORRIDOR_AND_CLEAN_TEACHER_STUDENT_REVIEW_20260813.md",
+        "sha256": "4a795bb95bb5465b5fe0faaa1d934656c2dffb7a2d87f8fae8d949fc3cf51741"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_X1R2_Q3R2_CLEAN_PREFIX_DETERMINISM_HOLD_20260820.md",
+        "sha256": "354d00d932187788bba29283124e22842a83f143d597a7eb4ced375486f266f8"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 3,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_X_X1R2_Q3R3_A_BRANCH_ESTIMAND_20260820.md",
+        "sha256": "a42539d543692d91b6bd2f0eea585b8139290b8d8447da69e275cdb4fec0b4fd"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_X_X1R2_Q3R3_C_BRANCH_REPLAY_20260820.md",
+        "sha256": "e691c41390e16bb349f917c32b3e0eda906fa3023cd79c2c26f3e19d81098964"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_X_X1R2_Q3_ARM_ISOLATION_REPAIR_20260820.md",
+        "sha256": "f02a17a65cacc946ba0cc73c6f8253fad0621d27417ad8256e6d45b5a1d9a716"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_X_X1R2_Q3_AR_CLEAN_EMIT_RCA1_20260820.md",
+        "sha256": "87b1e23b9d9181813cfc1d529e9f4ca55d049f243f993cf7cda482ab7430539b"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_X_X1R2_Q3_ENGINEERING_HOLD_20260819.md",
+        "sha256": "a506cb4b54d6a54f384496a918df431be768b8d0f5082d41abeee5f2ad326ae1"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 2,
+        "included_in_complete_union": true,
+        "path": "docs/handoffs/STAGE_X_X1R_V1_BLOCKED_CLOSURE_20260819.md",
+        "sha256": "6a10bc7c372ccf2e5e42abc3e299e78711b0e6dec128ff0dee9bb5d7027a5c70"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 2,
+          "libero_goal": 0,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": true,
+        "path": "reports/G2_CANARY_32_RECEIPT.json",
+        "sha256": "a76f574a6ad13610ada01936fc8c5f45adef23df32870f971c0a265f086f7ec3"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 1,
+          "libero_object": 0,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 2,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_V_M4_FINAL_CORRIDOR_PROBE_SUPPORT_RECONCILIATION_V1.json",
+        "sha256": "f02c9f7332c63fa47c0e74ca13b0a5804327e055b32689e6c581c175c7018127"
+      },
+      {
+        "classification": "EXPLICIT_BASE_F1A_15_SOURCE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_20260821/E3_DECISION_TABLE_V1.json",
+        "sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_20260821/E3_DECISION_TABLE_V1_SUPERSEDED_AGGREGATOR_BUG.json",
+        "sha256": "1ef2c2111db191ac9e47cc6faca8967b511515a58c91dd9c380338de6f86ee45"
+      },
+      {
+        "classification": "EXPLICIT_BASE_F1A_15_SOURCE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_20260821/STAGE_X1R2_E4_E3_CANDIDATE_FAILURE_DECOMPOSITION_V1.json",
+        "sha256": "c4ac212f6998cd0c12b4c427aa2314a0f5a75cfb4cafca118bb78edfd43cd412"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 1,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X1R2_Q3R2_CLEAN_DETERMINISM_20260820/libero_goal.json",
+        "sha256": "d441656f26889995b741781a7f8f1d0556b0b1a5ad878435362143b36cc24563"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 1,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X1R2_Q3R2_CLEAN_DETERMINISM_20260820/libero_object.json",
+        "sha256": "1eec732c3d998d4bf55d0817a41a54cb0bc3dacb3dbdc5c11221f8ccfc5b30c9"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X1R2_Q3R2_CLEAN_DETERMINISM_20260820/libero_spatial.json",
+        "sha256": "8cfd4b89a9a578ccfcbdc74ce987b9c2f620d9576847f421373dd1275a620bf9"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X1R2_Q3R2_CLEAN_PREFIX_DETERMINISM_HOLD_V1.json",
+        "sha256": "3f580d4a54d8aaf46827b0450089e3e37c465e15e2d09140e704e7762e35859a"
+      },
+      {
+        "classification": "EXPLICIT_BASE_F1A_15_SOURCE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS_V1.json",
+        "sha256": "dbd2e63e2b93f1511673494fd2015707881f50c821c729e07c2ad1a78b9abf16"
+      },
+      {
+        "classification": "EXPLICIT_BASE_F1A_15_SOURCE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 3,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X1R2_Q3R3_VISUAL_DIVERGENCE_AUDIT_V1.json",
+        "sha256": "df71fce77552ee95663a1583565159dc0d14eee2ee70f78edf56d17794d36ec0"
+      },
+      {
+        "classification": "EXPLICIT_BASE_F1A_15_SOURCE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 15,
+          "libero_goal": 15,
+          "libero_object": 18,
+          "libero_spatial": 15
+        },
+        "fresh_overlap_count": 63,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_E3_SELECTIVE_REALIZABILITY_POOL_V1.json",
+        "sha256": "221a4f071a395ef739b647cdb8da9aee8060475cd0f9b35248f13f651c08cf31"
+      },
+      {
+        "classification": "EXPLICIT_BASE_F1A_15_SOURCE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 14,
+          "libero_goal": 13,
+          "libero_object": 13,
+          "libero_spatial": 13
+        },
+        "fresh_overlap_count": 53,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json",
+        "sha256": "4a703459336c7fa1c93d7e8dc7fe6c9391ac9c3c2986bd5bf443d083ef7fa0cb"
+      },
+      {
+        "classification": "EXPLICIT_BASE_F1A_15_SOURCE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 3,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 3,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_Q3R3_E2_GOAL_NO_LEGAL_EMIT_DIAGNOSTIC_V1.json",
+        "sha256": "6eb80949c6b72560b75c9fa588bfd2234443da5ebb7f1936790de9685d01c232"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 5,
+          "libero_goal": 4,
+          "libero_object": 0,
+          "libero_spatial": 6
+        },
+        "fresh_overlap_count": 15,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_Q3R3_E2_PREFLIGHT_POOL_AUDIT_V1.json",
+        "sha256": "e5fe8b2c21c8697560e07155e6a3e2e6ab7d79bea4688c252f65aa88e9d20513"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 0,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 3,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_BRANCH_QUALIFICATION_HOLD_V1.json",
+        "sha256": "8bbaf09900c2765907236ce9171f3c0eb2b48a7b898ff340adcbb3a398116312"
+      },
+      {
+        "classification": "EXPLICIT_BASE_F1A_15_SOURCE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_ENGINEERING_POOL_V1.json",
+        "sha256": "b7774b7f6bcfcb6e46056b739c86f764c5bc7dfb4304ed0eb2b31898c690acda"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 3,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_Q3_ARM_REPAIR_FIXTURE_V1.json",
+        "sha256": "adc42d49dcd8b35d4a662ced2efff81ecef51184601d63fca52b699928210205"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_Q3_ARM_REPAIR_HOLD_V1.json",
+        "sha256": "f1f6ac7263799ad13e87fcc68438606505f3ef9f2a23209dd810a3ddc1ca2f52"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_Q3_AR_CLEAN_EMIT_RCA1_V1.json",
+        "sha256": "7a3dfc047c1040b2b72989cd215adb75c6531b0c38df9ecd4288a5cad10b8214"
+      },
+      {
+        "classification": "EXPLICIT_BASE_F1A_15_SOURCE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_Q3_ENGINEERING_FIXTURES_V1.json",
+        "sha256": "17d38891ce9ba1a3cb93f229946c32089abafcdc286bf32a900abd357940ab22"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R2_Q3_ENGINEERING_HOLD_V1.json",
+        "sha256": "bffcdbcca86ef100f0798de473f7ab050a782e1a203c1e1811159bad0968f08e"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 0,
+          "libero_spatial": 5
+        },
+        "fresh_overlap_count": 7,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_G3R_FROZEN_SEED_LEDGER_V1.json",
+        "sha256": "3af1311cc263ea1ab3ec38e662aeef96fb7b5c9e723c5650de65b96aa39620df"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_G3R_M002_MODEL_LOAD_PREFLIGHT_AUDIT_V1.json",
+        "sha256": "1a4fb58ecf4df0fa437e5bfaddcbee55c7b751f0cb29d3b6cd2fe50b3497c63a"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_G3R_M002_MODEL_LOAD_PREFLIGHT_V1.json",
+        "sha256": "f4e486524425c6b7a1e00c19e06118651c4e8535ec43211805152b238af82d9d"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_G3R_M002_RUNTIME_HOLD_V1.json",
+        "sha256": "a5b944d5c7b46090c9720aa30898966a1f82ac94627fd88339a49ffb49e2d27a"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 1,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_PRIMARY_MATRIX_CANARY_RUNTIME_HOLD_V1.json",
+        "sha256": "147f61f8ebdeb867e4c117a79652f6ded348f023bb81ab61ea19071aa4e820d4"
+      },
+      {
+        "classification": "DERIVED_ROOT_OR_AUDIT_NOT_INDEPENDENT_EXPOSURE",
+        "fresh_overlap_by_suite": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        },
+        "fresh_overlap_count": 39,
+        "included_in_complete_union": false,
+        "path": "reports/STAGE_X_X1R_T1D0R1_DESIGN_CELL_LEDGER_V1.json",
+        "sha256": "76d6cbd6cc211b33ed3d925dcf82c462b867245bf7a2400d840d7d9e9681f221"
+      },
+      {
+        "classification": "EXPLICIT_STRONGER_CURRENT_IDENTITY_AUTHORITY",
+        "fresh_overlap_by_suite": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        },
+        "fresh_overlap_count": 39,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D0R1_PARENT_LEDGER_V1.json",
+        "sha256": "5f55995faf17dc842579798e3a77a34283632283f00af6571b85d17692aebd7a"
+      },
+      {
+        "classification": "DERIVED_ROOT_OR_AUDIT_NOT_INDEPENDENT_EXPOSURE",
+        "fresh_overlap_by_suite": {
+          "libero_10": 20,
+          "libero_goal": 16,
+          "libero_object": 19,
+          "libero_spatial": 17
+        },
+        "fresh_overlap_count": 72,
+        "included_in_complete_union": false,
+        "path": "reports/STAGE_X_X1R_T1D0R1_PARENT_RECOMPUTE_AUDIT_V1.json",
+        "sha256": "5c32d4b77f1bd0f7981fde0391d169d9220b8d19d4dff7f63290e035f51c83d6"
+      },
+      {
+        "classification": "DERIVED_ROOT_OR_AUDIT_NOT_INDEPENDENT_EXPOSURE",
+        "fresh_overlap_by_suite": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        },
+        "fresh_overlap_count": 39,
+        "included_in_complete_union": false,
+        "path": "reports/STAGE_X_X1R_T1D0R1_PHYSICAL_ALIAS_LEDGER_V1.json",
+        "sha256": "6df78dfcf842282b59c51ed1dbf8c4c672e3ece3277df39e0858b8ea8c508a26"
+      },
+      {
+        "classification": "DERIVED_ROOT_OR_AUDIT_NOT_INDEPENDENT_EXPOSURE",
+        "fresh_overlap_by_suite": {
+          "libero_10": 20,
+          "libero_goal": 16,
+          "libero_object": 19,
+          "libero_spatial": 17
+        },
+        "fresh_overlap_count": 72,
+        "included_in_complete_union": false,
+        "path": "reports/STAGE_X_X1R_T1D0R1_ROOT_SEAL.json",
+        "sha256": "29d1d628dddacae9fad3a3acbc03824f5a49d24f284251e7858d5724369f90a6"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        },
+        "fresh_overlap_count": 39,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D0R2_PARENT_SEED_INVARIANCE_V1.json",
+        "sha256": "11d57fb28ad497be51f3627dcfdefe43b7bfebb782a31bcec5b8d3b9f922e61d"
+      },
+      {
+        "classification": "DERIVED_ROOT_OR_AUDIT_NOT_INDEPENDENT_EXPOSURE",
+        "fresh_overlap_by_suite": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        },
+        "fresh_overlap_count": 39,
+        "included_in_complete_union": false,
+        "path": "reports/STAGE_X_X1R_T1D0R2_ROOT_SEAL.json",
+        "sha256": "58b781e896abf53156388000d910df051e7f3b3540f5f8e5a97d971052cfaa7d"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        },
+        "fresh_overlap_count": 39,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D0R2_RUNTIME_AUTHORITY_AUDIT_V1.json",
+        "sha256": "b737677a0bc2e900705e3823f24f5f5a71f0ec65fc63c87dfca2fe3d071d9f53"
+      },
+      {
+        "classification": "DERIVED_ROOT_OR_AUDIT_NOT_INDEPENDENT_EXPOSURE",
+        "fresh_overlap_by_suite": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        },
+        "fresh_overlap_count": 39,
+        "included_in_complete_union": false,
+        "path": "reports/STAGE_X_X1R_T1D0R_DESIGN_CELL_LEDGER_V1.json",
+        "sha256": "0f3371160ed59ec3f2ce449295590046605bcdb0f6bb1c1f9ac66e0c0a9ce7fc"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        },
+        "fresh_overlap_count": 39,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D0R_PARENT_LEDGER_V1.json",
+        "sha256": "347ae869615b0132cfe20180c517980abc186be455f2e962343d9995ad3c3a99"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 2,
+          "libero_spatial": 6
+        },
+        "fresh_overlap_count": 14,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D1M0_MANUAL_REVIEW_MAPPING_V1.json",
+        "sha256": "32ee4643625bb3f08ad98b3a23690d70c2f406f745dc11a82091c8e666bea73c"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 2,
+          "libero_spatial": 6
+        },
+        "fresh_overlap_count": 14,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D1M0_PREMANUAL_ELIGIBLE_LEDGER_V1.json",
+        "sha256": "d65c11f6ece5d52ab3599f356fd4e4e84ebd8374460458cb92191f8345851742"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 2,
+          "libero_spatial": 6
+        },
+        "fresh_overlap_count": 14,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D1M0_PREVIDEO_FREEZE_V1.json",
+        "sha256": "ed438215d8e1ef6ec86bb21654fcae2b3ca00a869ce3f53f29c51bad64e447b2"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 0,
+          "libero_spatial": 5
+        },
+        "fresh_overlap_count": 7,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D1M1_FINAL_ATTACK_COHORT_V1.json",
+        "sha256": "7b6d4d52ccf2f4e11ba241d5a8f4290863b786ffe33882c886d96edc28825423"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 2,
+          "libero_spatial": 6
+        },
+        "fresh_overlap_count": 14,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D1M1_MANUAL_DISPOSITION_LEDGER_V1.json",
+        "sha256": "c7b88b5c8c73a36525f74f01c3a6bcab76ee94690d3095805797f496da8cd67e"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 9,
+          "libero_goal": 8,
+          "libero_object": 9,
+          "libero_spatial": 9
+        },
+        "fresh_overlap_count": 35,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D1R_CONTINUATION_LEDGER_V1.json",
+        "sha256": "91d866ae61e31fe1299585b4669eeca024733dc27e2ac3a04458843951cfa668"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_T1D1_CANARY_RUNTIME_HOLD_V1.json",
+        "sha256": "55023de53008826e84c6276dc3f41167b1f80f4ee31ae4aa707586a526c27b8e"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 2,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_V1_FINAL_BLOCKED_CLOSURE_V1.json",
+        "sha256": "6bd0913bc452adf0f9d02152e11321a9709123e365dfd9dad8ac3be3eeb3d4e7"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 2,
+        "included_in_complete_union": true,
+        "path": "reports/STAGE_X_X1R_V1_RUNTIME_EXPOSURE_CORRECTION_V1.json",
+        "sha256": "82a145219eed1d898842a88b981c60c603fa8e758480a8e8316bee17da0ee282"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 5,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 8,
+        "included_in_complete_union": true,
+        "path": "reports/server_evidence/STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_EXACT55_V1.json",
+        "sha256": "efee3d855ef7db79eed9f7b03440d59884d53d58c1c249a7cab749052b0bac59"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 3,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 5,
+        "included_in_complete_union": true,
+        "path": "reports/server_evidence/STAGE_V_M4_CORRIDOR_CURRENT_SOURCE_AB_RECONCILIATION_HOLD_V1.json",
+        "sha256": "91c9e4dee8a900fe429fbf3b1f92a5fe7a9fa875dd1c5a0887ce791ec482c03a"
+      },
+      {
+        "classification": "UNRESOLVED_IDENTITY_SOURCE_CONSERVATIVE_UNION",
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 2,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 3,
+        "included_in_complete_union": true,
+        "path": "reports/server_evidence/STAGE_V_M4_POST_HOLD_V1_ENGINEERING_INVALID_HOLD_20260813.json",
+        "sha256": "760c335be86a115a9aeeb7dbf5e9cf0853018c3cc4d72286f148f32d6b119e88"
+      }
+    ],
+    "complete_identity_source_inventory_count": 73,
+    "freeze_status": "NOT_FROZEN_UNTIL_EXACT_5_PER_SUITE",
+    "g10_state_range": "20..49",
+    "identity_only_at_freeze": true,
+    "outcome_read": false,
+    "proposed_by_suite": {
+      "libero_10": [
+        "libero_10/task_07/state_22",
+        "libero_10/task_05/state_21",
+        "libero_10/task_06/state_21",
+        "libero_10/task_06/state_35",
+        "libero_10/task_09/state_24"
+      ],
+      "libero_goal": [],
+      "libero_object": [
+        "libero_object/task_05/state_33",
+        "libero_object/task_05/state_27",
+        "libero_object/task_02/state_27",
+        "libero_object/task_06/state_31",
+        "libero_object/task_09/state_25"
+      ],
+      "libero_spatial": [
+        "libero_spatial/task_07/state_43",
+        "libero_spatial/task_02/state_26",
+        "libero_spatial/task_01/state_34",
+        "libero_spatial/task_05/state_46",
+        "libero_spatial/task_02/state_21"
+      ]
+    },
+    "remaining_fresh_by_suite": {
+      "libero_10": 20,
+      "libero_goal": 0,
+      "libero_object": 35,
+      "libero_spatial": 36
+    },
+    "remaining_fresh_count": 91,
+    "remaining_fresh_digest": "7fb9d1ba8b40156b157fad8b63a77d1bc998ae8f069441aed5b51fa32284b6a6",
+    "replacement_top_up_or_suite_substitution": false,
+    "requested_count": 20,
+    "requested_per_suite": 5,
+    "runtime_read": false,
+    "salt": "STAGE_X_X1R2_F1A2_BRIDGE_SOURCE_V2_SALT_20260821",
+    "source_bindings": [
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 12,
+          "libero_goal": 12,
+          "libero_object": 12,
+          "libero_spatial": 12
+        },
+        "fresh_overlap_count": 48,
+        "key_count": 48,
+        "parser": "canonical_parent_key_recursive",
+        "path": "reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "4a703459336c7fa1c93d7e8dc7fe6c9391ac9c3c2986bd5bf443d083ef7fa0cb"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "key_count": 12,
+        "parser": "canonical_parent_key_recursive",
+        "path": "reports/STAGE_X_X1R2_E3_SELECTIVE_REALIZABILITY_POOL_V1.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "221a4f071a395ef739b647cdb8da9aee8060475cd0f9b35248f13f651c08cf31"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "key_count": 12,
+        "parser": "canonical_parent_key_recursive",
+        "path": "reports/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_ENGINEERING_POOL_V1.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "b7774b7f6bcfcb6e46056b739c86f764c5bc7dfb4304ed0eb2b31898c690acda"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "key_count": 4,
+        "parser": "canonical_parent_key_recursive",
+        "path": "reports/STAGE_X_X1R2_Q3_ENGINEERING_FIXTURES_V1.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "17d38891ce9ba1a3cb93f229946c32089abafcdc286bf32a900abd357940ab22"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 2,
+        "key_count": 16,
+        "parser": "canonical_parent_key_recursive",
+        "path": "configs/STAGE_VI_B2_FRESH_PARENT_MANIFEST_V3.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "cbf5125b64c09815bd79ef05ba40d948797f99638294eab8808e65f37c0dbedd"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 40,
+        "parser": "canonical_parent_key_recursive",
+        "path": "reports/server_evidence/STAGE_V_M4_ELIGIBLE_FORMAL_PARENT_MANIFEST_V2.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "8026d9310a58caa74e8a8b44fb8c5e56dead3d6fa35718c1a4e3f457c3cec7ad"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 22,
+        "parser": "canonical_parent_key_recursive",
+        "path": "configs/STAGE_V_M4_POST_HOLD_CANDIDATE_PARENT_MANIFEST_V1_1.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "1ca15ea62cef54f5ad3612f8f164db7cc2c3e53a6fb3858b477212457d4bbb2c"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 0,
+        "parser": "identity_regex",
+        "path": "reports/STAGE_X_X1R2_Q3R3_E0_CANDIDATE_MATRIX_V1.csv",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "b911043ab64746f3f3af367f2fae00bba22918a05dc42b014bf64d0f5d7511fc"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 0,
+        "parser": "canonical_parent_key_recursive",
+        "path": "reports/STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS_V1.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "dbd2e63e2b93f1511673494fd2015707881f50c821c729e07c2ad1a78b9abf16"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 0,
+        "parser": "canonical_parent_key_recursive",
+        "path": "reports/STAGE_X1R2_Q3R3_VISUAL_DIVERGENCE_AUDIT_V1.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "df71fce77552ee95663a1583565159dc0d14eee2ee70f78edf56d17794d36ec0"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 3,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 3,
+        "key_count": 3,
+        "parser": "canonical_parent_key_recursive",
+        "path": "reports/STAGE_X_X1R2_Q3R3_E2_GOAL_NO_LEGAL_EMIT_DIAGNOSTIC_V1.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "6eb80949c6b72560b75c9fa588bfd2234443da5ebb7f1936790de9685d01c232"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "key_count": 12,
+        "parser": "canonical_parent_key_recursive",
+        "path": "reports/STAGE_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_20260821/E3_DECISION_TABLE_V1.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "key_count": 12,
+        "parser": "canonical_parent_key_recursive",
+        "path": "reports/STAGE_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_20260821/STAGE_X1R2_E4_E3_CANDIDATE_FAILURE_DECOMPOSITION_V1.json",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "c4ac212f6998cd0c12b4c427aa2314a0f5a75cfb4cafca118bb78edfd43cd412"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 0,
+        "parser": "identity_regex",
+        "path": "paper/data/PAPER_V1_FIGURE5_E3_E4_PARENT_REALIZABILITY.csv",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "8d34b4c6537ceb6e47de6a7c138c10b50d68785025a9c005d18adc22185b0128"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 0,
+        "parser": "identity_regex",
+        "path": "paper/tables/PAPER_V1_E3_E4_PARENT_REALIZABILITY.csv",
+        "role": "BASE_F1A_15_SOURCE_UNION",
+        "sha256": "88276a56800a2391285156aaac25765cd38d06913671f7b840f9c09e35bfd027"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 10,
+          "libero_goal": 9,
+          "libero_object": 10,
+          "libero_spatial": 10
+        },
+        "fresh_overlap_count": 39,
+        "key_count": 39,
+        "parser": "canonical_parent_key_jsonl",
+        "path": "reports/STAGE_X_X1R_T1D0R1_PARENT_LEDGER_V1.json",
+        "role": "STRONGER_CURRENT_IDENTITY_AUTHORITY",
+        "sha256": "5f55995faf17dc842579798e3a77a34283632283f00af6571b85d17692aebd7a"
+      },
+      {
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 5,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 8,
+        "key_count": 43,
+        "parser": "canonical_parent_key_recursive",
+        "path": "configs/STAGE_V_M4_CORRIDOR_ATTEMPT_REGISTRY_V1_1.json",
+        "role": "STRONGER_CURRENT_IDENTITY_AUTHORITY",
+        "sha256": "182ce7075b5582e249a66e4e8e1d68627fc157c07614df98409ca94247320672"
+      }
+    ],
+    "source_domain": "BRIDGE_SOURCE_V2",
+    "stronger_source_count": 2
+  },
+  "dev": {
+    "freeze_status": "NOT_FROZEN_UNTIL_BOTH_LEDGER_PASS",
+    "permanent_exclusion_applied": false,
+    "proposed_by_suite": {
+      "libero_10": [
+        "libero_10/task_07/state_01",
+        "libero_10/task_01/state_06",
+        "libero_10/task_01/state_01",
+        "libero_10/task_09/state_08",
+        "libero_10/task_07/state_06",
+        "libero_10/task_04/state_19"
+      ],
+      "libero_goal": [
+        "libero_goal/task_02/state_13",
+        "libero_goal/task_05/state_04",
+        "libero_goal/task_07/state_07",
+        "libero_goal/task_02/state_06",
+        "libero_goal/task_04/state_16",
+        "libero_goal/task_00/state_05"
+      ],
+      "libero_object": [
+        "libero_object/task_01/state_06",
+        "libero_object/task_09/state_19",
+        "libero_object/task_01/state_08",
+        "libero_object/task_08/state_03",
+        "libero_object/task_09/state_07",
+        "libero_object/task_08/state_19"
+      ],
+      "libero_spatial": [
+        "libero_spatial/task_07/state_10",
+        "libero_spatial/task_02/state_05",
+        "libero_spatial/task_02/state_12",
+        "libero_spatial/task_06/state_05",
+        "libero_spatial/task_02/state_02",
+        "libero_spatial/task_06/state_07"
+      ]
+    },
+    "proposed_count": 24,
+    "requested_count": 24,
+    "requested_per_suite": 6,
+    "salt": "STAGE_X_X1R2_F1A2_DEV_SOURCE_V2_SALT_20260821",
+    "source_domain": "DEV_SOURCE_V2"
+  },
+  "disjointness": {
+    "dev_bridge_key_intersection_count": 0,
+    "pass": true,
+    "source_range_intersection_count": 0
+  },
+  "gate": "STAGE_X_X1R2_F1A2_SOURCE_LEAKAGE_AND_POPULATION_FREEZE_V2",
+  "gate_checks": {
+    "bridge_capacity_deficit_by_suite": {
+      "libero_10": 0,
+      "libero_goal": 5,
+      "libero_object": 0,
+      "libero_spatial": 0
+    },
+    "bridge_exact_5_per_suite": false,
+    "bridge_outcome_read_counter": 0,
+    "bridge_strict_g10_fresh": false,
+    "dev_exact_6_per_suite": true,
+    "dev_no_hard_exposure": true,
+    "errors": [],
+    "eval160": "UNREAD",
+    "intersection_zero": true,
+    "protected": "UNREAD"
+  },
+  "pi_authority": {
+    "latest_v2_attachment_sha256": "64a8b4a966b2579d61eecc672525187bfeef815c727b73ff76e7546428ec7831",
+    "latest_v2_comment_id": 5368241704,
+    "pull_request": 135,
+    "superseded_attachment_sha256": "e9ba28d2f45382f24a08d343d58fe914e059dfb392021f774cefd84bfc7d0445"
+  },
+  "protected_boundary": {
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "gpu": 0,
+    "openvla_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected": "UNREAD",
+    "simulator": 0,
+    "vphys": 0
+  },
+  "schema": "STAGE_X_X1R2_F1A2_POPULATION_AUDIT_V2",
+  "scope": "CPU/static/offline only; no GPU, model, inference, simulator, env.step, PGD, V_phys, physical, or protected read",
+  "source": {
+    "branch": "codex/stage-x-x1r2-q3-arm-isolation-repair-20260820",
+    "g10_fresh_by_suite": {
+      "libero_10": 49,
+      "libero_goal": 21,
+      "libero_object": 70,
+      "libero_spatial": 70
+    },
+    "g10_fresh_rows": 210,
+    "g10_path": "reports/STAGE_X_X1R_T1D0R_G10_IDENTITY_EXCLUSION_LEDGER_V1.json",
+    "g10_rows": 1200,
+    "g10_sha256": "eadad7440ee67b9aeff0bb73ceab7af3b27fc1cf1ccb6e4bebf953660f75a015",
+    "input_commit": "c27f27cb3d8d89077129d06c3e9f49419c9c6170",
+    "input_tree": "0c2625b2e0c230ab225653028d30535ab8c3fdea"
+  },
+  "status": "HOLD_F1A2_SOURCE_CONTRACT_NOT_ESTABLISHED",
+  "stop_rule": "HOLD_F1A2_SOURCE_CONTRACT_NOT_ESTABLISHED"
+}
