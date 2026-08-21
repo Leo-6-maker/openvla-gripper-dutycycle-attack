@@ -1,0 +1,153 @@
+{
+  "expected_parent_count": 8,
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "rows": [
+    {
+      "arms": {
+        "none": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_10/task_09/state_00",
+      "probe_step": 457,
+      "suite": "libero_10"
+    },
+    {
+      "arms": {
+        "none": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_10/task_09/state_16",
+      "probe_step": 64,
+      "suite": "libero_10"
+    },
+    {
+      "arms": {
+        "none": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_goal/task_05/state_10",
+      "probe_step": 33,
+      "suite": "libero_goal"
+    },
+    {
+      "arms": {
+        "none": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_goal/task_07/state_19",
+      "probe_step": 45,
+      "suite": "libero_goal"
+    },
+    {
+      "arms": {
+        "none": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "probe_step": 121,
+      "suite": "libero_object"
+    },
+    {
+      "arms": {
+        "none": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_object/task_09/state_18",
+      "probe_step": 161,
+      "suite": "libero_object"
+    },
+    {
+      "arms": {
+        "none": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_spatial/task_01/state_11",
+      "probe_step": 109,
+      "suite": "libero_spatial"
+    },
+    {
+      "arms": {
+        "none": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attempted_steps": 0,
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_spatial/task_02/state_05",
+      "probe_step": 70,
+      "suite": "libero_spatial"
+    }
+  ],
+  "runtime_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_f1c_t5_canary_v3_20260821",
+  "schema": "STAGE_X1R2_F1C_T5_CANARY_PROBE_LEDGER_V3",
+  "status": "HOLD_F1C_EXECUTABLE_EVIDENCE_INSUFFICIENT"
+}
