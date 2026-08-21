@@ -555,15 +555,17 @@ def run_worker(protocol_path: Path, physical_gpu: int, worker_index: int, worker
         raise SystemExit("F1C_WORKER_ASSIGNMENT_INVALID")
     root = Path(str(protocol["runtime"]["durable_output_root"]))
     root.mkdir(parents=True, exist_ok=True)
-    stale = [path for path in root.iterdir() if path.name != "workers"]
     worker_root = root / "workers"
     worker_root.mkdir(parents=True, exist_ok=True)
-    if any(path.name.startswith("worker_") for path in worker_root.iterdir()) and not any(path.name == f"worker_{worker_index:02d}_receipt.json" for path in worker_root.iterdir()):
-        # Other workers may already have claimed this fresh root; only parent/launch files make it stale.
-        pass
-    if stale:
-        raise SystemExit(f"F1C_OUTPUT_ROOT_NOT_FRESH:{stale}")
     assigned = [row for index, row in enumerate(rows) if index % worker_count == worker_index]
+    worker_receipt_path = worker_root / f"worker_{worker_index:02d}_receipt.json"
+    existing_parents = [
+        root / str(row["suite"]) / safe_name(str(row["canonical_parent_key"]))
+        for row in assigned
+        if (root / str(row["suite"]) / safe_name(str(row["canonical_parent_key"]))).exists()
+    ]
+    if worker_receipt_path.exists() or existing_parents:
+        raise SystemExit(f"F1C_OUTPUT_ROOT_NOT_FRESH:{worker_receipt_path}:{existing_parents}")
     worker_receipt: dict[str, Any] = {
         "schema": "STAGE_X1R2_F1C_WORKER_RECEIPT_V3",
         "status": "RUNNING",
@@ -575,7 +577,7 @@ def run_worker(protocol_path: Path, physical_gpu: int, worker_index: int, worker
         "gpu_before_model_load": dev.gpu_receipt(physical_gpu),
         "protected_boundary": protected_boundary(),
     }
-    write_json(worker_root / f"worker_{worker_index:02d}_receipt.json", worker_receipt)
+    write_json(worker_receipt_path, worker_receipt)
     contract = load_json(SUITE_CONTRACT)
     parent_receipts: list[dict[str, Any]] = []
     start = time.time()
@@ -607,12 +609,12 @@ def run_worker(protocol_path: Path, physical_gpu: int, worker_index: int, worker
             except Exception:
                 pass
         worker_receipt.update({"status": "PASS_F1C_WORKER_COMPLETED", "parent_receipts": [{"suite": row.get("suite"), "canonical_parent_key": row.get("canonical_parent_key"), "status": row.get("status")} for row in parent_receipts], "elapsed_seconds": time.time() - start, "gpu_after": dev.gpu_receipt(physical_gpu)})
-        write_json(worker_root / f"worker_{worker_index:02d}_receipt.json", worker_receipt)
+        write_json(worker_receipt_path, worker_receipt)
         print(json.dumps({"status": worker_receipt["status"], "worker_index": worker_index, "parents": len(parent_receipts)}, sort_keys=True))
         return 0
     except Exception as exc:
         worker_receipt.update({"status": "HOLD_F1C_RUNTIME", "error": f"{type(exc).__name__}:{exc}", "elapsed_seconds": time.time() - start})
-        write_json(worker_root / f"worker_{worker_index:02d}_receipt.json", worker_receipt)
+        write_json(worker_receipt_path, worker_receipt)
         print(json.dumps({"status": worker_receipt["status"], "worker_index": worker_index, "error": worker_receipt["error"]}, sort_keys=True))
         return 1
 
