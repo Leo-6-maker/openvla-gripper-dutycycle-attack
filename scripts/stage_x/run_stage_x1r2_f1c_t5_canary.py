@@ -206,6 +206,7 @@ def clean_probe_selection(parent: Mapping[str, Any], suite_cfg: Mapping[str, Any
                 "step": int(step),
                 "observation_sha256": dev.sha256_bytes(image.tobytes()),
                 "direct_generated_token_ids": tokens,
+                "clean_env_action_7d": [float(value) for value in decoded["env_action_7d"]],
                 "gripper": gripper,
                 "eligible": bool(eligible_now),
                 "probe_rank": probe_rank(protocol, key, step) if eligible_now else None,
@@ -222,6 +223,7 @@ def clean_probe_selection(parent: Mapping[str, Any], suite_cfg: Mapping[str, Any
                     "clean_gripper": gripper,
                     "clean_raw_hashes": dict(prepared["raw_hashes"]),
                     "clean_action_7d": decoded["raw_action_7d"],
+                    "prefix_clean_env_actions_7d": [list(row["clean_env_action_7d"]) for row in rows[:step]],
                     "prompt_len": int(prepared["inputs"]["input_ids"].shape[1]),
                 })
             if step + 1 >= int(parent["policy_horizon"]):
@@ -285,6 +287,18 @@ def clean_probe_selection(parent: Mapping[str, Any], suite_cfg: Mapping[str, Any
             env.close()
 
 
+def replay_clean_prefix(env: Any, obs: Any, prefix: Any) -> tuple[Any, int]:
+    if not isinstance(prefix, list):
+        raise RuntimeError("F1C_REPLAY_PREFIX_ACTIONS_MISSING")
+    for step, action in enumerate(prefix):
+        if not isinstance(action, list) or len(action) != 7:
+            raise RuntimeError(f"F1C_REPLAY_PREFIX_ACTION_INVALID:{step}")
+        obs, _reward, done, _info = env.step([float(value) for value in action])
+        if done:
+            raise RuntimeError("F1C_REPLAY_TERMINATED_BEFORE_PROBE")
+    return obs, len(prefix)
+
+
 def reconstruct_to_probe(parent: Mapping[str, Any], suite_cfg: Mapping[str, Any], model: Any, processor: Any, device: str, protocol: Mapping[str, Any], probe: Mapping[str, Any]) -> tuple[Any, Any, str, dict[str, Any], dict[str, int]]:
     key, suite, target = str(parent["canonical_parent_key"]), str(parent["suite"]), int(probe["step"])
     counters = {"env_reset_calls": 0, "env_step_calls": 0, "model_inference_calls": 0}
@@ -292,26 +306,24 @@ def reconstruct_to_probe(parent: Mapping[str, Any], suite_cfg: Mapping[str, Any]
     env, obs, instruction, _task_idx, _state_id, _bddl = primary.build_parent_env(parent, suite_cfg, int(os.environ["CUDA_VISIBLE_DEVICES"]))
     counters["env_reset_calls"] = 1
     try:
-        for step in range(target + 1):
-            image = dev.normalize_image(obs["agentview_image"])
-            prepared = primary.prepare_generation(model, processor, image, instruction, suite, device)
-            decoded = primary.decode_tokens(model, prepared["tokens"], suite)
-            decoded.update({"generated": prepared["generated"], "inputs": prepared["inputs"], "prompt_len": int(prepared["inputs"]["input_ids"].shape[1]), "raw_hashes": prepared["raw_hashes"]})
-            counters["model_inference_calls"] += 1
-            tokens = [int(value) for value in decoded["tokens"]]
-            if len(tokens) != 7:
-                raise RuntimeError(f"F1C_REPLAY_TOKEN_COUNT_INVALID:{len(tokens)}")
-            if step == target:
-                if dev.sha256_bytes(image.tobytes()) != str(probe["observation_sha256"]):
-                    raise RuntimeError("F1C_REPLAY_OBSERVATION_HASH_MISMATCH")
-                if tokens != [int(value) for value in probe["clean_tokens"]]:
-                    raise RuntimeError("F1C_REPLAY_DIRECT_TOKEN_MISMATCH")
-                return env, obs, instruction, decoded, counters
-            obs, _reward, done, _info = env.step(list(decoded["env_action_7d"]))
-            counters["env_step_calls"] += 1
-            if done:
-                raise RuntimeError("F1C_REPLAY_TERMINATED_BEFORE_PROBE")
-        raise RuntimeError(f"F1C_REPLAY_TARGET_NOT_REACHED:{key}:{target}")
+        prefix = probe.get("prefix_clean_env_actions_7d")
+        if not isinstance(prefix, list) or len(prefix) != target:
+            raise RuntimeError("F1C_REPLAY_PREFIX_ACTIONS_MISSING")
+        obs, replay_steps = replay_clean_prefix(env, obs, prefix)
+        counters["env_step_calls"] += replay_steps
+        image = dev.normalize_image(obs["agentview_image"])
+        prepared = primary.prepare_generation(model, processor, image, instruction, suite, device)
+        decoded = primary.decode_tokens(model, prepared["tokens"], suite)
+        decoded.update({"generated": prepared["generated"], "inputs": prepared["inputs"], "prompt_len": int(prepared["inputs"]["input_ids"].shape[1]), "raw_hashes": prepared["raw_hashes"]})
+        counters["model_inference_calls"] += 1
+        tokens = [int(value) for value in decoded["tokens"]]
+        if len(tokens) != 7:
+            raise RuntimeError(f"F1C_REPLAY_TOKEN_COUNT_INVALID:{len(tokens)}")
+        if dev.sha256_bytes(image.tobytes()) != str(probe["observation_sha256"]):
+            raise RuntimeError("F1C_REPLAY_OBSERVATION_HASH_MISMATCH")
+        if tokens != [int(value) for value in probe["clean_tokens"]]:
+            raise RuntimeError("F1C_REPLAY_DIRECT_TOKEN_MISMATCH")
+        return env, obs, instruction, decoded, counters
     except Exception:
         env.close()
         raise

@@ -9,6 +9,7 @@ import torch
 from gripper_attack.attack_adapter import RouteContractError, TokenPrefixPGDAttacker
 from gripper_attack.execution_target import native_open_logratio_loss_and_stats
 from stage_x.run_stage_x1r2_f1b_dev import build_attack
+from stage_x.run_stage_x1r2_f1c_t5_canary import reconstruct_to_probe, replay_clean_prefix
 from stage_x.run_stage_x1r_primary_matrix import audit_direct_action_tokens
 
 
@@ -113,3 +114,20 @@ def test_build_attack_accepts_f1c_single_method_protocol():
     assert optimizer["epsilon"] == protocol["method"]["epsilon_processor_pixel_values"]
     assert optimizer["step_size"] == protocol["method"]["step_size"]
     assert optimizer["temporal_init"] == "prev_delta"
+
+
+def test_f1c_probe_record_contains_a_clean_action_prefix_contract():
+    assert reconstruct_to_probe.__name__ == "reconstruct_to_probe"
+    class FakeEnv:
+        def __init__(self):
+            self.actions = []
+
+        def step(self, action):
+            self.actions.append(action)
+            return {"step": len(self.actions)}, 0.0, False, {}
+
+    env = FakeEnv()
+    obs, steps = replay_clean_prefix(env, {"step": 0}, [[0, 1, 2, 3, 4, 5, 6], [6, 5, 4, 3, 2, 1, 0]])
+    assert steps == 2
+    assert obs == {"step": 2}
+    assert env.actions[0] == [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
