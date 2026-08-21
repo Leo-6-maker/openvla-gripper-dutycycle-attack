@@ -77,7 +77,12 @@ def current_post_a3_paths() -> list[Path]:
         ["git", "-C", str(ROOT), "diff", "--name-only", f"{POST_A3_SOURCE_COMMIT}..HEAD"],
         text=True,
     ).splitlines()
-    return [ROOT / name for name in names if (ROOT / name).is_file()]
+    source_authority_prefix = "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/"
+    return [
+        ROOT / name
+        for name in names
+        if (ROOT / name).is_file() and not name.startswith(source_authority_prefix)
+    ]
 
 
 def scan_for_keys(keys: list[str], paths: list[Path]) -> dict[str, list[str]]:
