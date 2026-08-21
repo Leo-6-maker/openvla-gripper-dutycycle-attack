@@ -109,7 +109,7 @@
   },
   "source": {
     "branch": "codex/stage-x-x1r2-q3-arm-isolation-repair-20260820",
-    "commit": "c581786296e5308f8166bbc628059d1608a61d3b",
+    "commit": "ad4e4adbf0d020e114f861322159c55a9dc61407",
     "git_blob_sha1": {
       "configs/STAGE_X_X1R2_F1B_DEV_PROTOCOL_V3.json": "d8443a2ebfc0a9b81a4364848f34415d9d5a80b2",
       "configs/STAGE_X_X1R2_GRIPPER_SELECTIVE_ATTACK_CONTRACT_V1.json": "986d6735177b2d21a45c2137302b1efa43fd5e32",
@@ -132,8 +132,8 @@
       "src/gripper_attack/failure_evidence.py": "ce4c02da1ca9bc74698bc083f5c91e7927f34d64be982b80612c2d2415f9752b",
       "src/gripper_attack/route_contract.py": "2c07fa19fc651cfb9a32aa54cae610888d28a795d72a28d1733620f5c0b9a53e"
     },
-    "status_porcelain": "?? contract_git_content.tmp\n?? reports/STAGE_X1R2_Q3R2_CLEAN_DETERMINISM_20260820/telemetry/\n?? reports/STAGE_X_X1R2_F1B_DEV_METHOD_FREEZE_V3_20260821/\n?? stage_x1r2_q3r3_c_16d1131a7e5c4228a1b8aa3b11a58ede.bundle\n?? stage_x1r2_q3r3_c_afff24a3909f459c9d180fa6dbc4bf11.bundle\n?? stage_x1r2_q3r3_c_c41c29b127a04bdc8dfe22f6876eacc6.bundle\n?? stage_x1r2_q3r3_d_3225c1c_20260820.bundle\n?? stage_x1r2_q3r3_d_3d43fa9356ff5569581c7dbf4374dcc22c9bcb33.bundle\n?? stagex_e3_0efdf1e.pack\n?? stagex_e3_198a401.pack\n?? stagex_e3_54ce807.pack\n?? stagex_e3_a031a21.pack\n?? stagex_e3_b215c4d.pack\n?? stagex_e3_b215c4d_v2.pack\n?? stagex_e4_d642ab5.pack\n?? stagex_e4_full_d642.pack\n?? stagex_requal_b86006d.bundle\n?? stagex_requal_e8c3df1.bundle",
-    "tree": "9d451dc82c604dd79be566e561ed0f0171197cc8"
+    "status_porcelain": "?? contract_git_content.tmp\n?? reports/STAGE_X1R2_Q3R2_CLEAN_DETERMINISM_20260820/telemetry/\n?? stage_x1r2_q3r3_c_16d1131a7e5c4228a1b8aa3b11a58ede.bundle\n?? stage_x1r2_q3r3_c_afff24a3909f459c9d180fa6dbc4bf11.bundle\n?? stage_x1r2_q3r3_c_c41c29b127a04bdc8dfe22f6876eacc6.bundle\n?? stage_x1r2_q3r3_d_3225c1c_20260820.bundle\n?? stage_x1r2_q3r3_d_3d43fa9356ff5569581c7dbf4374dcc22c9bcb33.bundle\n?? stagex_e3_0efdf1e.pack\n?? stagex_e3_198a401.pack\n?? stagex_e3_54ce807.pack\n?? stagex_e3_a031a21.pack\n?? stagex_e3_b215c4d.pack\n?? stagex_e3_b215c4d_v2.pack\n?? stagex_e4_d642ab5.pack\n?? stagex_e4_full_d642.pack\n?? stagex_f1b_full_20260821.bundle\n?? stagex_requal_b86006d.bundle\n?? stagex_requal_e8c3df1.bundle",
+    "tree": "2cc1bbad3746d2937c7d9dd8b9d1c5664318ca83"
   },
   "status": "PASS_F1B_METHOD_SPEC_SEALED"
 }
