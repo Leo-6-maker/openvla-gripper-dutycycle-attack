@@ -1,0 +1,46 @@
+{
+  "artifact_manifest": [
+    {
+      "bytes": 4225,
+      "path": "configs/STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V1.json",
+      "sha256": "a4dd2ecef90f8a01f619702be6bf5779244aa6c8b50c32e925b1b0c7d28af789"
+    },
+    {
+      "bytes": 2818,
+      "path": "reports/STAGE_Z_Z0_MODEL_AUTHORITY_MAP_V1.json",
+      "sha256": "0d36c06aedd0c79dc9b615de7ebde5dc464f71ee4247aea46a97fb34b30de9b0"
+    },
+    {
+      "bytes": 3481,
+      "path": "reports/STAGE_Z_Z0_ENVIRONMENT_ACTION_PARITY_V1.json",
+      "sha256": "8e55d580a74a5fea6e7a136497587a1ff881f01fceef6b7179f0ccccbcd8d632"
+    },
+    {
+      "bytes": 44744,
+      "path": "reports/STAGE_Z_Z0_SHARED_40_IDENTITY_PANEL_V1.json",
+      "sha256": "6523c1f2e514a2f329e369d17a38810e08669d23bcdbb63c0cf48462e0b0f84e"
+    }
+  ],
+  "blocking_reasons": [
+    "shared 40-identity panel is structurally incomplete: four Goal tasks have no remaining fresh identity under the frozen exclusion union",
+    "official OFT checkpoints are not materialized on the server for exact byte-level authority sealing",
+    "official OpenPI source checkout is not materialized separately from the modified fork",
+    "current M0 server model trees require an exact re-audit against the immutable runtime authority"
+  ],
+  "git_binding": {
+    "head_commit": "d54b431a7ac186dcaf8a645a4fa9bfab9b9dde18",
+    "head_tree": "c5e44859e095eaa5f153cabfefd8a671864abc89"
+  },
+  "gpu_workers_started": 0,
+  "next_legal_action": "PI review of Z0 HOLD; no Z1/Z2/Z3/Z4 until authority and exact 40-panel contract are re-established",
+  "panel_status": "HOLD_STAGE_Z_Z0_CROSS_MODEL_AUTHORITY_NOT_ESTABLISHED",
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "scientific_outcomes": "UNREAD",
+    "v_phys": "UNREAD"
+  },
+  "schema": "STAGE_Z_Z0_ROOT_SEAL_V1",
+  "scientific_rollout_started": false,
+  "snapshot_utc": "2026-08-22T15:27:41Z",
+  "status": "HOLD_STAGE_Z_Z0_CROSS_MODEL_AUTHORITY_NOT_ESTABLISHED"
+}

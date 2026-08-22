@@ -1,0 +1,1063 @@
+{
+  "git_binding": {
+    "head_commit": "d54b431a7ac186dcaf8a645a4fa9bfab9b9dde18",
+    "head_tree": "c5e44859e095eaa5f153cabfefd8a671864abc89"
+  },
+  "missing_tasks_without_replacement": [
+    "libero_goal/task_01",
+    "libero_goal/task_04",
+    "libero_goal/task_06",
+    "libero_goal/task_09"
+  ],
+  "panel_contract": {
+    "candidate_state_range": [
+      0,
+      49
+    ],
+    "no_replacement_or_top_up": true,
+    "outcome_independent": true,
+    "requested_identity_count": 40,
+    "salt": "STAGE_Z_CROSS_MODEL_PANEL_V1_20260822",
+    "selection_order": "sha256(salt|suite|task|state), then canonical_parent_key",
+    "suite_count": 4,
+    "tasks_per_suite": 10
+  },
+  "population_accounting": {
+    "base_fresh_after_prior_exclusion": 210,
+    "consumed_union": 63,
+    "e2_selected": 12,
+    "e3_selected": 12,
+    "identity_ledger_rows": 1200,
+    "panel_missing": 4,
+    "panel_selected": 36,
+    "q3_selected": 48,
+    "remaining_fresh_after_union": 147
+  },
+  "protected_boundary": {
+    "gpu_rollout": false,
+    "model_inference": false,
+    "physical_intervention": false,
+    "protected_eval160": false,
+    "scientific_outcome_read": false
+  },
+  "rows": [
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_10/task_00/state_33",
+          "rank_sha256": "05593efb43a73a9d9e73f20b5ae0a33ec239d095da1a371b3bdb0e6631ed5f97"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_36",
+          "rank_sha256": "3e06b25dff5cff748c2e8be53280b9c5a5c5b3dccccb74a3bec031ba87e058d1"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_42",
+          "rank_sha256": "876e4d12285be9abc63e5a4b15d503638d6c4ea8331ff753b97325e2a7fe9386"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_29",
+          "rank_sha256": "b8760cea6d052a4ba3b90d1a561cc9b66af199083c11501c11d1140c46955a9e"
+        }
+      ],
+      "selected_parent_key": "libero_10/task_00/state_33",
+      "selected_rank_sha256": "05593efb43a73a9d9e73f20b5ae0a33ec239d095da1a371b3bdb0e6631ed5f97",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_10",
+      "task_idx": 0
+    },
+    {
+      "candidate_count_after_union_exclusion": 2,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_10/task_01/state_35",
+          "rank_sha256": "4e91f8e7603bae527365aca79334e366ac5e5a4e5075e7c1d7d66f359fc1eef8"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_36",
+          "rank_sha256": "aad12d73d2b87325fc37db64f4435850a9b2d747fc4400a19f499506e490e248"
+        }
+      ],
+      "selected_parent_key": "libero_10/task_01/state_35",
+      "selected_rank_sha256": "4e91f8e7603bae527365aca79334e366ac5e5a4e5075e7c1d7d66f359fc1eef8",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_10",
+      "task_idx": 1
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_10/task_02/state_30",
+          "rank_sha256": "7e551121e424390fd82cf36899451965e6bd7e8799fad1996f5136db51854c04"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_42",
+          "rank_sha256": "a3e740883fde329c05956b38a85894d15cb40afd72c5aab1c4ca0838fa95760a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_39",
+          "rank_sha256": "ad33a6303ac08019e94824f707beb14bb06b776c6e9c7bdda8a513b6f7cfcf1d"
+        }
+      ],
+      "selected_parent_key": "libero_10/task_02/state_30",
+      "selected_rank_sha256": "7e551121e424390fd82cf36899451965e6bd7e8799fad1996f5136db51854c04",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_10",
+      "task_idx": 2
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_10/task_03/state_45",
+          "rank_sha256": "2124d743fee792808d155367be7886af6e7949e572105bb9c846bc8b3e7d8080"
+        }
+      ],
+      "selected_parent_key": "libero_10/task_03/state_45",
+      "selected_rank_sha256": "2124d743fee792808d155367be7886af6e7949e572105bb9c846bc8b3e7d8080",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_10",
+      "task_idx": 3
+    },
+    {
+      "candidate_count_after_union_exclusion": 6,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_10/task_04/state_34",
+          "rank_sha256": "36f127f54a062a45d8d2c58e903b31e864406bb74974abea971903cb5461a813"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_32",
+          "rank_sha256": "575e6870e6392a680cc2f87f1157c3f047f2cd2efb1496d830f0be580c0e99d4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_24",
+          "rank_sha256": "8b6ae8c172a1a04ef7d678061d101141d55888199a05cf23f2993ce24d06a49e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_45",
+          "rank_sha256": "91fe5728fe028f71ee30a9c1b428d73dd1cd57706e429c456fe8cc8cbb4d2046"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_20",
+          "rank_sha256": "a1a111700a2f96ad5cbd4dc02024b0b6abed74a0a55ef72393b49195c2488101"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_30",
+          "rank_sha256": "c4911c1e08e759a92275dce2539f76bbb8c4cb437fbbdbb87594159de1985567"
+        }
+      ],
+      "selected_parent_key": "libero_10/task_04/state_34",
+      "selected_rank_sha256": "36f127f54a062a45d8d2c58e903b31e864406bb74974abea971903cb5461a813",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_10",
+      "task_idx": 4
+    },
+    {
+      "candidate_count_after_union_exclusion": 6,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_10/task_05/state_21",
+          "rank_sha256": "3b28375640b8d3a6e0227df7667858aaeef14f5c184280b653bebcad3b4e7f14"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_35",
+          "rank_sha256": "4cfdc27f183ba3dcfffc76ff1a34ac793093fa1ad84049d493fd920fc72d9b79"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_24",
+          "rank_sha256": "50f34e39245251789beb7981c4784ae518391853ad591414b85687c2db903241"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_40",
+          "rank_sha256": "5f9874e6c5d9a21b735defc11d5c671ccc0b3c89aef921c1fcbe1fda6e59acb6"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_22",
+          "rank_sha256": "632bb7db8058f57fa9e12dd6372ae91600f0f7db1b4088ede59a6a0bdb4113f4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_26",
+          "rank_sha256": "dc75630faf0eff397fa3a5cfeda6a14454438e1fb3f53de7daea049f686c4968"
+        }
+      ],
+      "selected_parent_key": "libero_10/task_05/state_21",
+      "selected_rank_sha256": "3b28375640b8d3a6e0227df7667858aaeef14f5c184280b653bebcad3b4e7f14",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_10",
+      "task_idx": 5
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_10/task_06/state_34",
+          "rank_sha256": "13f34507e8f99f7464d2f3f80a41dc793ccf5e87f2d2ac0ce854b4333a3a33e8"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_32",
+          "rank_sha256": "764b3822c15fa5a447d273c8f4f36e7385d227589924259b05f61cbcd056c7b4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_21",
+          "rank_sha256": "92954192d26876df25007c36e3713402c1c9017348054c2515b7298217cc654c"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_35",
+          "rank_sha256": "cd2793c1ebba2452b1179afc81180bed4110b26f8be4d7e8c37a4464e8c2f114"
+        }
+      ],
+      "selected_parent_key": "libero_10/task_06/state_34",
+      "selected_rank_sha256": "13f34507e8f99f7464d2f3f80a41dc793ccf5e87f2d2ac0ce854b4333a3a33e8",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_10",
+      "task_idx": 6
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_10/task_07/state_20",
+          "rank_sha256": "2dfe788677b1d993948fd81d5be684175fe1b13bc130f6a77e18a3d9ae3807c0"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_22",
+          "rank_sha256": "551f22e3360ad9d5060534d5fadc60261fe9a45667ec256ae8ffa5c79a410b0c"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_27",
+          "rank_sha256": "90c67d0240f27f0af060028bf118c4890a62097f2418c101444f466331d27c5f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_45",
+          "rank_sha256": "92790e10dd124672430dc6a2ceb335fa37299645d63b3404c0d897e408604750"
+        }
+      ],
+      "selected_parent_key": "libero_10/task_07/state_20",
+      "selected_rank_sha256": "2dfe788677b1d993948fd81d5be684175fe1b13bc130f6a77e18a3d9ae3807c0",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_10",
+      "task_idx": 7
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_10/task_08/state_20",
+          "rank_sha256": "ea1ec893fe2683076c9ac90f999b5647fa7424f0713426723fd569087d707e25"
+        }
+      ],
+      "selected_parent_key": "libero_10/task_08/state_20",
+      "selected_rank_sha256": "ea1ec893fe2683076c9ac90f999b5647fa7424f0713426723fd569087d707e25",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_10",
+      "task_idx": 8
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_10/task_09/state_24",
+          "rank_sha256": "820261010c837b290189c4f89ab2b4d851f2100a490eeb4a42b19851f8ae3338"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_43",
+          "rank_sha256": "8e221c32dded5858d21c8903558c097baafcd493ed30f7c28cfb5c251fff6e74"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_40",
+          "rank_sha256": "c38bb6ddbfb43f98e596277aa36d98dbf35f601724aef564195f74cc3b8804d3"
+        }
+      ],
+      "selected_parent_key": "libero_10/task_09/state_24",
+      "selected_rank_sha256": "820261010c837b290189c4f89ab2b4d851f2100a490eeb4a42b19851f8ae3338",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_10",
+      "task_idx": 9
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_goal/task_00/state_21",
+          "rank_sha256": "d1f3742ba303a77fe959b7cab8e5326416e4a3f2684d3b48c66aeec281455cd4"
+        }
+      ],
+      "selected_parent_key": "libero_goal/task_00/state_21",
+      "selected_rank_sha256": "d1f3742ba303a77fe959b7cab8e5326416e4a3f2684d3b48c66aeec281455cd4",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_goal",
+      "task_idx": 0
+    },
+    {
+      "candidate_count_after_union_exclusion": 0,
+      "ranked_fresh_candidates": [],
+      "selected_parent_key": null,
+      "selected_rank_sha256": null,
+      "structurally_missing_without_replacement": true,
+      "suite": "libero_goal",
+      "task_idx": 1
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_goal/task_02/state_34",
+          "rank_sha256": "2bcc7a1728b754138054eb21c0c70ef115965aa98d4a64287410f55aa385042d"
+        }
+      ],
+      "selected_parent_key": "libero_goal/task_02/state_34",
+      "selected_rank_sha256": "2bcc7a1728b754138054eb21c0c70ef115965aa98d4a64287410f55aa385042d",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_goal",
+      "task_idx": 2
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_goal/task_03/state_45",
+          "rank_sha256": "0c452f4b462aab3eb8725e8382b0da2de9b749d53d1a39b6cda7f95086f034fa"
+        }
+      ],
+      "selected_parent_key": "libero_goal/task_03/state_45",
+      "selected_rank_sha256": "0c452f4b462aab3eb8725e8382b0da2de9b749d53d1a39b6cda7f95086f034fa",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_goal",
+      "task_idx": 3
+    },
+    {
+      "candidate_count_after_union_exclusion": 0,
+      "ranked_fresh_candidates": [],
+      "selected_parent_key": null,
+      "selected_rank_sha256": null,
+      "structurally_missing_without_replacement": true,
+      "suite": "libero_goal",
+      "task_idx": 4
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_goal/task_05/state_26",
+          "rank_sha256": "ec4f2f019da63fb56963ea4305d4648b97385a70d37bd615dff38d619b7b4d72"
+        }
+      ],
+      "selected_parent_key": "libero_goal/task_05/state_26",
+      "selected_rank_sha256": "ec4f2f019da63fb56963ea4305d4648b97385a70d37bd615dff38d619b7b4d72",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_goal",
+      "task_idx": 5
+    },
+    {
+      "candidate_count_after_union_exclusion": 0,
+      "ranked_fresh_candidates": [],
+      "selected_parent_key": null,
+      "selected_rank_sha256": null,
+      "structurally_missing_without_replacement": true,
+      "suite": "libero_goal",
+      "task_idx": 6
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_goal/task_07/state_30",
+          "rank_sha256": "3cbffc1c6320f10c19deeb210ee259624eba51354f220741cf656db79219dc6b"
+        }
+      ],
+      "selected_parent_key": "libero_goal/task_07/state_30",
+      "selected_rank_sha256": "3cbffc1c6320f10c19deeb210ee259624eba51354f220741cf656db79219dc6b",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_goal",
+      "task_idx": 7
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_goal/task_08/state_20",
+          "rank_sha256": "3ee781bd6216dbcbf5a6cf514cdcb06e2c8cca1e771c6f6aef35d54acf37305c"
+        }
+      ],
+      "selected_parent_key": "libero_goal/task_08/state_20",
+      "selected_rank_sha256": "3ee781bd6216dbcbf5a6cf514cdcb06e2c8cca1e771c6f6aef35d54acf37305c",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_goal",
+      "task_idx": 8
+    },
+    {
+      "candidate_count_after_union_exclusion": 0,
+      "ranked_fresh_candidates": [],
+      "selected_parent_key": null,
+      "selected_rank_sha256": null,
+      "structurally_missing_without_replacement": true,
+      "suite": "libero_goal",
+      "task_idx": 9
+    },
+    {
+      "candidate_count_after_union_exclusion": 7,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_object/task_00/state_22",
+          "rank_sha256": "01d1cbcb598801f0e51510068062696d48211d4f308e659e482d93234442e67c"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_43",
+          "rank_sha256": "2b6db2bf3faf35997c4502818bdf0eff52d31b2038624be2b22228261b0e2601"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_24",
+          "rank_sha256": "2d488e1e37bd296721a0cdb1462217268456ab84b4c3b58c738e79e18fad1215"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_26",
+          "rank_sha256": "405783f094b50f3a9ca428a0166638702c7b40b0578970caad72f61254efefe9"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_27",
+          "rank_sha256": "454d37e4659eb42eb2525b8eb0d33135d2e85035a028b6c76207b327be919db0"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_30",
+          "rank_sha256": "67552f5ce9c7312f19f9b2257f0efaf6f20fc29a63cc2aca524ffdc3d91a6e0e"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_45",
+          "rank_sha256": "72277427407ca9d3e472a19231905818c64e7af5d3ccc18ccbbc46105d459246"
+        }
+      ],
+      "selected_parent_key": "libero_object/task_00/state_22",
+      "selected_rank_sha256": "01d1cbcb598801f0e51510068062696d48211d4f308e659e482d93234442e67c",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_object",
+      "task_idx": 0
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_object/task_01/state_40",
+          "rank_sha256": "86be2c9bfc2f975a348b1c15b69b8378706e5199a5d00c575715d27805117e70"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_39",
+          "rank_sha256": "9f84148083afa3a2bebdb8ecf02c39b124c8a034ffb13aa93c8b8917e5c043e5"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_20",
+          "rank_sha256": "a2052a676abed564eb3ca3432f5daafbd8b5f652cef3581f75c1c5cb52f67b55"
+        }
+      ],
+      "selected_parent_key": "libero_object/task_01/state_40",
+      "selected_rank_sha256": "86be2c9bfc2f975a348b1c15b69b8378706e5199a5d00c575715d27805117e70",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_object",
+      "task_idx": 1
+    },
+    {
+      "candidate_count_after_union_exclusion": 8,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_object/task_02/state_26",
+          "rank_sha256": "47659ffb3998e43010ed5bf971e58653c036a7ab3dd9713a06ca2395b150f673"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_31",
+          "rank_sha256": "5a79b4e302e23ba177f7c891ed4492a8fb994bc2ff886bf27b08d7fc27bedf10"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_27",
+          "rank_sha256": "5c934937e57bbd2f07837de0a775900b91ae92a9a5ef2b13e76b3521a386e262"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_46",
+          "rank_sha256": "7d070ab25de0eccd93f2467a868e4081a7f75e0ac317d39239e1c8274ac1450a"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_40",
+          "rank_sha256": "9a67688c8fe72a8298d7635146e68d4b3411b54682bc5f4137bda7ce8cc4cbbf"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_42",
+          "rank_sha256": "c9a401a24f80e34d4917ed25a5107f16875cf7e1f88e50672cca7e3dab33a6e5"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_20",
+          "rank_sha256": "fc9e3013a04a1d5e2b07a2d1cfb9a63f602ff605a3cf3e3ea8b81bb1f2c27b83"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_38",
+          "rank_sha256": "ff1a9b2f6ef90ed76951911f263a4f9adaf038572463539060a4ae846e03e197"
+        }
+      ],
+      "selected_parent_key": "libero_object/task_02/state_26",
+      "selected_rank_sha256": "47659ffb3998e43010ed5bf971e58653c036a7ab3dd9713a06ca2395b150f673",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_object",
+      "task_idx": 2
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_object/task_03/state_29",
+          "rank_sha256": "133e71bcc2d4a0e56b7df0abd39f845220dc4a7be1e5767b66a4d46c583a667a"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_20",
+          "rank_sha256": "1a1fa83592a3cf90ee317dce52b75431da7995b2cb0016caeccf27fbcf76848a"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_25",
+          "rank_sha256": "d6119c24fceda6f8f2e70c9aa3d7fae2727628b0e679582565f1ecb7ebca9aef"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_32",
+          "rank_sha256": "ddadd5673b2c2f7fd74d6f5922de128f8ad6a749c9b3d7f3a7346820d9598a40"
+        }
+      ],
+      "selected_parent_key": "libero_object/task_03/state_29",
+      "selected_rank_sha256": "133e71bcc2d4a0e56b7df0abd39f845220dc4a7be1e5767b66a4d46c583a667a",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_object",
+      "task_idx": 3
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_object/task_04/state_35",
+          "rank_sha256": "5a63e1c507d65ee4ff25c9c2cf1f6aae169e36d3a95a2d71b0b4d9c6e861db8c"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_33",
+          "rank_sha256": "66c6b12e2a6aeea256f16633c30729b92eeebfef7a29c13cff924cc79d3c3609"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_21",
+          "rank_sha256": "a6d49ef6d237b864c387569e5659d22db91ec4da8f89c9f5dcce98bac164d6d0"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_45",
+          "rank_sha256": "cf3e72ced0d60e71306e0ae3de895c9eda0af848f680972d4014b2aa74611e8f"
+        }
+      ],
+      "selected_parent_key": "libero_object/task_04/state_35",
+      "selected_rank_sha256": "5a63e1c507d65ee4ff25c9c2cf1f6aae169e36d3a95a2d71b0b4d9c6e861db8c",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_object",
+      "task_idx": 4
+    },
+    {
+      "candidate_count_after_union_exclusion": 5,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_object/task_05/state_27",
+          "rank_sha256": "54c7ecc7dbef1ce6bfd311e2729ff2075107701f6cda42d5e079179b35c8532d"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_25",
+          "rank_sha256": "9637485d4d7172f3ab1735cb2efbb818688d55884db246a7f49b00262de8a3f7"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_31",
+          "rank_sha256": "a8da63362db09fd2ef83a1b6f1502b1f58111b25b71af1f16c815c16c1bdd8fb"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_33",
+          "rank_sha256": "a9f9a61dc6f0500c27d2cde15fb36b74255826e15127248a89320ef184f4a200"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_26",
+          "rank_sha256": "d718560f32e1a0f9eea877e4dd34fe4605cc6e1343462aa998b1c579c5fe633a"
+        }
+      ],
+      "selected_parent_key": "libero_object/task_05/state_27",
+      "selected_rank_sha256": "54c7ecc7dbef1ce6bfd311e2729ff2075107701f6cda42d5e079179b35c8532d",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_object",
+      "task_idx": 5
+    },
+    {
+      "candidate_count_after_union_exclusion": 6,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_object/task_06/state_31",
+          "rank_sha256": "225167e2e3dc51b74f21cb47b3e7d2a9bddafc7315c44aa8afe159bd35c88384"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_44",
+          "rank_sha256": "428d4215cdac0eb21e8e8b23ba6f1f8f079516ec385499494a5091aed4236ff4"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_36",
+          "rank_sha256": "6bd5bc89defbd222f67a1af6ef10cc59e231d153feb3dccfbf978f5b5941b87e"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_28",
+          "rank_sha256": "943f9484bdc9f94a24ae657ed39e39456a60df73f296b793f99dce5ff607dc43"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_42",
+          "rank_sha256": "af840aced4223ff4f68d8485d85ecea45bb2e073a34333ab00b2975168cf68d6"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_29",
+          "rank_sha256": "dce6cdd20b3be3b6e3b0117f03c5ffd53860257af5ee5a99f532c3e84a0a7c31"
+        }
+      ],
+      "selected_parent_key": "libero_object/task_06/state_31",
+      "selected_rank_sha256": "225167e2e3dc51b74f21cb47b3e7d2a9bddafc7315c44aa8afe159bd35c88384",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_object",
+      "task_idx": 6
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_object/task_07/state_45",
+          "rank_sha256": "0958f08059a720ce1db1a63405c9ee89922b315019eb1e1b57d6d264e74f28a6"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_43",
+          "rank_sha256": "58687a68e61e40904433142f36b4f1e88aadd6a9ef7ae10ce814dfb0814d428d"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_24",
+          "rank_sha256": "721380aa22fdcd830f87c48fb64bca116b9421c8be94ef482dafc7408cb38fcb"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_30",
+          "rank_sha256": "e2f4fa6660f5141d4fea4890455cc91ed19e50077868a95aad7d31d0afb3e70c"
+        }
+      ],
+      "selected_parent_key": "libero_object/task_07/state_45",
+      "selected_rank_sha256": "0958f08059a720ce1db1a63405c9ee89922b315019eb1e1b57d6d264e74f28a6",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_object",
+      "task_idx": 7
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_object/task_08/state_35",
+          "rank_sha256": "22ac8ef6af3ca70b70ce195e8610279494a2fa05f3381be7fbf1237348cd0f4b"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_43",
+          "rank_sha256": "ae0fdb4e1339739600122fcc307e373772fe012a56905e0df971c257f4919391"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_39",
+          "rank_sha256": "d28c9cc33eaebd027bf444c1b28298b01b87d4c0f9a677f1464da68308ce1984"
+        }
+      ],
+      "selected_parent_key": "libero_object/task_08/state_35",
+      "selected_rank_sha256": "22ac8ef6af3ca70b70ce195e8610279494a2fa05f3381be7fbf1237348cd0f4b",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_object",
+      "task_idx": 8
+    },
+    {
+      "candidate_count_after_union_exclusion": 8,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_object/task_09/state_23",
+          "rank_sha256": "49d1584cf3e9336149a4ff8f92d4eb067ce38b9ec8aad0691ca4ea32ac8e9e69"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_40",
+          "rank_sha256": "58cee79ff0fec3fe954463b1cc21f0649713871488f912608a2077d496a4b3ff"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_25",
+          "rank_sha256": "7fd55b063c61e113fc4fcdd17f6aad39d337409164be841d14f11e52759b7754"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_31",
+          "rank_sha256": "9434aa8bdec41f71d240c0d5a20962a424f4c1c2642efc692d2bd229f11c64ae"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_38",
+          "rank_sha256": "b95089f3be0ff4131e1979fd45ca497fe44cb10a2e27c39d5523f87eb328af1a"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_37",
+          "rank_sha256": "c5777ac3af5063562c8dbd7dc48363d1453b845e705eca3ceddf2b8bbc020635"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_34",
+          "rank_sha256": "cf5cd90510f5fe5e35e782a74eda2aec5e11a78fb21bd510b63827f898d12bab"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_20",
+          "rank_sha256": "d494d4caf485093f72be807d16b6bd6e760d3446eb1a2a97eb1a2edf3231cf5f"
+        }
+      ],
+      "selected_parent_key": "libero_object/task_09/state_23",
+      "selected_rank_sha256": "49d1584cf3e9336149a4ff8f92d4eb067ce38b9ec8aad0691ca4ea32ac8e9e69",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_object",
+      "task_idx": 9
+    },
+    {
+      "candidate_count_after_union_exclusion": 2,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_37",
+          "rank_sha256": "dced18383524a344278a50124618588c14ec318c6ad0ccb8ccaaa2d874710797"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_36",
+          "rank_sha256": "e003f8f915a8a3073e5db78d112602d19c03c6ca80c203ab503bf3b47d526a00"
+        }
+      ],
+      "selected_parent_key": "libero_spatial/task_00/state_37",
+      "selected_rank_sha256": "dced18383524a344278a50124618588c14ec318c6ad0ccb8ccaaa2d874710797",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_spatial",
+      "task_idx": 0
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_38",
+          "rank_sha256": "1db5b5be25b375b7a64df09b091663f9d0f54b9e1f11afa0bdc42f2721da6726"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_32",
+          "rank_sha256": "8a75eb47b98f00d74436c479661fc355716c59451f1e93c04c35979a3d9c4fd7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_30",
+          "rank_sha256": "9cca77dc5893d654bbb5e0e340358e115c1b15855c2a7e679bba9d0612fb101b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_34",
+          "rank_sha256": "c4660db9c704b1355a820853a4ba2e323c471336d2c2e795eb8bde77f1cd6101"
+        }
+      ],
+      "selected_parent_key": "libero_spatial/task_01/state_38",
+      "selected_rank_sha256": "1db5b5be25b375b7a64df09b091663f9d0f54b9e1f11afa0bdc42f2721da6726",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_spatial",
+      "task_idx": 1
+    },
+    {
+      "candidate_count_after_union_exclusion": 11,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_40",
+          "rank_sha256": "12ef3c17813db315fbe1f285ed1ce028aaa3e8a814c09adc9f2997997debeb90"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_26",
+          "rank_sha256": "3e4259450092f018db6945b55a57b23bc6aa10357a4e4b666e538149867412fd"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_21",
+          "rank_sha256": "4e4c6a6edb2a9729cc8a294717c2c475df6e5ac8c882e8a6dfc3e1d073345968"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_35",
+          "rank_sha256": "4f5f5ba23c9a90e17238829184cfbe71af142fa2044f458f1325feb409ee123b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_29",
+          "rank_sha256": "4f998085ce85d55221a8ce076fd496dc2c11136b1e5d97f83f67d32448ac5afb"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_43",
+          "rank_sha256": "6cf09cc1448fd0b4a93fe801044534cfe6ca47e40a7fea128f07751728e9140e"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_31",
+          "rank_sha256": "94397a0f99c4ba3c3f7da6b1e615c6e82524011a0296e9dee81dd479322312e6"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_39",
+          "rank_sha256": "9b2a763b7f0ef6c3f86f9635e14b98c79e65ae628d1b3723688f7a24e484c8d9"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_27",
+          "rank_sha256": "9de0e3479b1451bfda835c97b3cd84e8a34087a4225afd681b2e6c7934185c77"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_20",
+          "rank_sha256": "bcb430ddcb4f7ba9c9aa0514ee991cb43e475aede7a53b47eafe6407bab7c135"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_36",
+          "rank_sha256": "f7816ef68010df2972becbdfff0b82a5dd2cb2658afa8c655db533baf1929ced"
+        }
+      ],
+      "selected_parent_key": "libero_spatial/task_02/state_40",
+      "selected_rank_sha256": "12ef3c17813db315fbe1f285ed1ce028aaa3e8a814c09adc9f2997997debeb90",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_spatial",
+      "task_idx": 2
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_33",
+          "rank_sha256": "4cb3ae7fb375c5c3b366410d83ca5a32d96c6fae726e5fb99772fbe4139f0707"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_40",
+          "rank_sha256": "4d33c7919acb652052de82d38c39b92de8b31a8dbc6cc35e55302870c87ae61b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_29",
+          "rank_sha256": "8ec5a3fc25f2697e4cdcdae8fd23fbee648ba8e41985c1bfebd9d9a36d3dd845"
+        }
+      ],
+      "selected_parent_key": "libero_spatial/task_03/state_33",
+      "selected_rank_sha256": "4cb3ae7fb375c5c3b366410d83ca5a32d96c6fae726e5fb99772fbe4139f0707",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_spatial",
+      "task_idx": 3
+    },
+    {
+      "candidate_count_after_union_exclusion": 7,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_31",
+          "rank_sha256": "007690494d185eb2e19a2b21d0e63532ca89ddab91e0d7a793867afe0fbee38b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_22",
+          "rank_sha256": "32e155433f4da2f084c41141b06c3c53323fcafa519668b22930e086c1e075b5"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_41",
+          "rank_sha256": "36c7c5516510a753bc977388b73cddee84488d2118b574cf23528c4f42db7cb7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_21",
+          "rank_sha256": "4356a0425f92ce18250f91cdfa30300a82b4e700b5572e1c20bfe0025111721c"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_33",
+          "rank_sha256": "8b84898c5e1db67e0171fa3cf83748c7a39aefed84dc8839d571b8605692dff7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_43",
+          "rank_sha256": "a8841e506728c53329725f798a8d7c6c4daf265c962d5fb1ba1f24a00273643a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_29",
+          "rank_sha256": "c41dc50abeae05a3632681f30b47ab82ae6ff61096b6cd0e741dc6f696377942"
+        }
+      ],
+      "selected_parent_key": "libero_spatial/task_04/state_31",
+      "selected_rank_sha256": "007690494d185eb2e19a2b21d0e63532ca89ddab91e0d7a793867afe0fbee38b",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_spatial",
+      "task_idx": 4
+    },
+    {
+      "candidate_count_after_union_exclusion": 7,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_23",
+          "rank_sha256": "12adf9dbea7e7910b7f9654b9efd4774f1a4dfba13e62db1bf261c3b7ddd836e"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_27",
+          "rank_sha256": "1d65b4846009c931535480694ee9431c46637f77eff683041186680e7847d6c6"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_36",
+          "rank_sha256": "29a60f7ac201a696ed846e6af0cf5d88ff8b19ce726ea9f6d71b6d430b937d9a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_46",
+          "rank_sha256": "4e53bcbcc89f7926d33a7c63c645d8d40571e2445593e0aab496cfb7335a0a74"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_22",
+          "rank_sha256": "9b97960f30986db44dd77c7788615edf668d728125fc626605c941b1a07051db"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_28",
+          "rank_sha256": "bad2350d111cb29a9fa25767ef1fe0b07f371e80da26dc8c903f7337e4549a72"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_34",
+          "rank_sha256": "f6d21939bafb49e149daa95770eb623a28219afe7407ef3fb93fe5860151be32"
+        }
+      ],
+      "selected_parent_key": "libero_spatial/task_05/state_23",
+      "selected_rank_sha256": "12adf9dbea7e7910b7f9654b9efd4774f1a4dfba13e62db1bf261c3b7ddd836e",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_spatial",
+      "task_idx": 5
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_27",
+          "rank_sha256": "4cef4105639bc71bd13acae60597bbc6e6c70847d4aa9dd80a0b5446f3e5b221"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_45",
+          "rank_sha256": "709da9be68cf7f71eb37ea0a9731aa405a7a3e12a933b34afb00c85d6301ef06"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_23",
+          "rank_sha256": "c7fca14ea1b08225767cd8280fa173fd0f80b96e4ada5673c4a5d0df2e7a50eb"
+        }
+      ],
+      "selected_parent_key": "libero_spatial/task_06/state_27",
+      "selected_rank_sha256": "4cef4105639bc71bd13acae60597bbc6e6c70847d4aa9dd80a0b5446f3e5b221",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_spatial",
+      "task_idx": 6
+    },
+    {
+      "candidate_count_after_union_exclusion": 5,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_28",
+          "rank_sha256": "3c4ba10a6392609dae2e455f7fdc1d5b188a4b019c49282a70bff0455205cff5"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_34",
+          "rank_sha256": "b1567f68173246cfc112b3728603bf5a0ffc97123169c7090337a0e32b56dc64"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_26",
+          "rank_sha256": "ca0c57f9ef99f43c357112ca074150b02a1601546338055f984e24645618f32e"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_20",
+          "rank_sha256": "dea3023429801dd3de59afc111ab3e443dd54049080ba939eba0891ea7638e7e"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_43",
+          "rank_sha256": "dfb9347287daec975ea227fcebf5b81c2526e43d2b758e172bdeb2613ae4c2a9"
+        }
+      ],
+      "selected_parent_key": "libero_spatial/task_07/state_28",
+      "selected_rank_sha256": "3c4ba10a6392609dae2e455f7fdc1d5b188a4b019c49282a70bff0455205cff5",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_spatial",
+      "task_idx": 7
+    },
+    {
+      "candidate_count_after_union_exclusion": 6,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_32",
+          "rank_sha256": "39e4d78436224c86088735f1e314ce7b89828fab9cbb317e71b09f36490ec5cf"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_27",
+          "rank_sha256": "532357150b14b1f3833b66a415ad2298a6f2f6d82ee55ea5b9289dc8fda0d012"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_45",
+          "rank_sha256": "8478c7abaa388597edfa82d7efbfccc230817b6a117b9656c8107bab1d7ba1bb"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_33",
+          "rank_sha256": "b618c28dba8a23f5e4ac50913381819bf72bb6d9da8134dfe15f11fd762e6ed4"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_28",
+          "rank_sha256": "bcf9caaa0c4ce9c39d5db45154ab85f5c3a662f738abbf9039b18457e253b91d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_31",
+          "rank_sha256": "d92513bf026be7cd82c5fe64e89022aabe53a311a5481482f0958a70548a5520"
+        }
+      ],
+      "selected_parent_key": "libero_spatial/task_08/state_32",
+      "selected_rank_sha256": "39e4d78436224c86088735f1e314ce7b89828fab9cbb317e71b09f36490ec5cf",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_spatial",
+      "task_idx": 8
+    },
+    {
+      "candidate_count_after_union_exclusion": 7,
+      "ranked_fresh_candidates": [
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_21",
+          "rank_sha256": "0fbb2e137983be952165b38406ca68f7d14249f65b3d23d8c9e4b5aad0dedaa6"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_32",
+          "rank_sha256": "56f1ff1189ea5b066dcbd7a0627eefe11432d8ffcef5260f15a6e837cf01f5ee"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_41",
+          "rank_sha256": "96dea623c962e78a83f825bd82db6933bd4c6f9bb005e88660712f1caa487844"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_46",
+          "rank_sha256": "dc17ac908061359b97451db06337a745bc8651250c7776f0141cc0ad24e965d7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_43",
+          "rank_sha256": "ed0f11a14751a8ce32aa9e16a540b728e98fac6694dbdb9de95fb20439ca475c"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_27",
+          "rank_sha256": "ef8959523e4be8712ee806aac9680881fcc78019c909f84788e1ba749be20caa"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_33",
+          "rank_sha256": "f25a061751dc8e986cf6acad5a01f179b287982255c0caba2d84ce5fc06dd148"
+        }
+      ],
+      "selected_parent_key": "libero_spatial/task_09/state_21",
+      "selected_rank_sha256": "0fbb2e137983be952165b38406ca68f7d14249f65b3d23d8c9e4b5aad0dedaa6",
+      "structurally_missing_without_replacement": false,
+      "suite": "libero_spatial",
+      "task_idx": 9
+    }
+  ],
+  "schema": "STAGE_Z_Z0_SHARED_40_IDENTITY_PANEL_V1",
+  "source_bindings": {
+    "e2_pool": {
+      "bytes": 10153,
+      "path": "reports/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_ENGINEERING_POOL_V1.json",
+      "sha256": "b7774b7f6bcfcb6e46056b739c86f764c5bc7dfb4304ed0eb2b31898c690acda"
+    },
+    "e3_pool": {
+      "bytes": 51211,
+      "path": "reports/STAGE_X_X1R2_E3_SELECTIVE_REALIZABILITY_POOL_V1.json",
+      "sha256": "221a4f071a395ef739b647cdb8da9aee8060475cd0f9b35248f13f651c08cf31"
+    },
+    "f1a3_root": {
+      "bytes": 4044,
+      "path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json",
+      "sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71"
+    },
+    "f1t_root": {
+      "bytes": 3725,
+      "path": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json",
+      "sha256": "697fe0584b55c676c964836471581d5f7cea05cdae6b5346a3e8b9a85ef10c10"
+    },
+    "identity_ledger": {
+      "bytes": 692177,
+      "path": "reports/STAGE_X_X1R_T1D0R1_G10_IDENTITY_EXCLUSION_LEDGER_V1.json",
+      "sha256": "16457ee12f2d1ec72d0bbf13a33dd67d632062787ef8bfd3be62187c99c13532"
+    },
+    "q3_pool": {
+      "bytes": 29519,
+      "path": "reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json",
+      "sha256": "4a703459336c7fa1c93d7e8dc7fe6c9391ac9c3c2986bd5bf443d083ef7fa0cb"
+    }
+  },
+  "status": "HOLD_STAGE_Z_Z0_CROSS_MODEL_AUTHORITY_NOT_ESTABLISHED"
+}
