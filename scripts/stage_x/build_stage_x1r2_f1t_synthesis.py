@@ -120,8 +120,14 @@ def main() -> int:
 
     paper_binding = f1a3["paper_v1_binding"]
     current_paper_tree_sha = paper_tree_listing_sha()
-    paper_v1_diff = git("diff", "--name-only", "HEAD", "--", "paper/PAPER_V1_", "paper")
-    paper_v1_staged_diff = git("diff", "--cached", "--name-only", "HEAD", "--", "paper/PAPER_V1_", "paper")
+    paper_v1_diff = [
+        line for line in git("diff", "--name-only", "HEAD", "--", "paper").splitlines()
+        if line.startswith("paper/PAPER_V1_")
+    ]
+    paper_v1_staged_diff = [
+        line for line in git("diff", "--cached", "--name-only", "HEAD", "--", "paper").splitlines()
+        if line.startswith("paper/PAPER_V1_")
+    ]
     paper_v1_unchanged = (
         current_paper_tree_sha == paper_binding["paper_v1_tree_listing_sha256"]
         and not paper_v1_diff
@@ -212,8 +218,10 @@ def main() -> int:
 
     authority_entries = [
         authority_entry(PAPER_V1_ROOT, scope="immutable Paper V1 final root seal", immutable=True),
+        authority_entry(PAPER_V1_CLAIMS, scope="immutable Paper V1 claim ledger", immutable=True),
         authority_entry(F1A3_ROOT, scope="F1-A3 source split, role authority, and Paper V1 binding", immutable=True),
         authority_entry(F1B_FREEZE_ROOT, scope="F1-B selected-method static freeze", immutable=True),
+        authority_entry(F1B_COMPARISON, scope="F1-B preregistered DEV method comparison", immutable=True),
         authority_entry(F1B_ROOT, scope="F1-B DEV parent-level result root", immutable=True),
         authority_entry(F1B_DECISION, scope="F1-B method selection decision", immutable=True),
         authority_entry(F1C_FREEZE_ROOT, scope="historical F1-C V3 method freeze", immutable=True),
@@ -251,6 +259,14 @@ def main() -> int:
             "bridge_runtime": f1a3["protected_boundary"]["bridge_runtime"],
             "bridge_outcome_read": f1a3["protected_boundary"]["bridge_outcome_read"],
             "disposition": "sealed_and_unopened; separate PI authorization required",
+        },
+        "f1c4_runtime_manifest": {
+            "local_audit_root": f1c4_audit["runtime"]["local_audit_root"],
+            "remote_root": f1c4_audit["runtime"]["remote_root"],
+            "file_count": f1c4_audit["runtime"]["file_count"],
+            "manifest_sha256": f1c4_audit["runtime"]["manifest_sha256"],
+            "attested_by": rel(F1C4_AUDIT),
+            "disposition": "runtime manifest attestation sealed in F1-C4 audit; no new runtime read",
         },
         "entries": authority_entries,
         "source_bindings": {
