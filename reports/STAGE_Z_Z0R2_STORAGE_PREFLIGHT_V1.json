@@ -1,0 +1,18 @@
+{
+  "concurrent_checkpoint_policy": "forbidden",
+  "destructive_cleanup_performed": false,
+  "durable_mounts": {
+    "/llm_jzm": {
+      "available_bytes": 44635054080
+    },
+    "/mnt/sdc": {
+      "available_bytes": 27645411328
+    }
+  },
+  "oft_total_bytes": 63756636806,
+  "openpi_checkpoint_bytes": 12439122345,
+  "schema": "STAGE_Z_Z0R2_STORAGE_PREFLIGHT_V1",
+  "snapshot_source": "Z0R1 durable preflight plus sequential materialization policy",
+  "status": "HOLD_M1_NOT_SEALED",
+  "volatile_space_excluded": true
+}

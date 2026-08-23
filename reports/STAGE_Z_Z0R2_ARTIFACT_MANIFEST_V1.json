@@ -1,0 +1,57 @@
+{
+  "entries": [
+    {
+      "bytes": 1476,
+      "path": "configs/STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V3.json",
+      "sha256": "0597a2d6566828e475d719325e2b0c6febe2be795370a90602a6959b0f175686"
+    },
+    {
+      "bytes": 445765,
+      "path": "reports/STAGE_Z_Z0R2_COMMON_LIBERO_AUTHORITY_V1.json",
+      "sha256": "413ea761392807d95d6030b825529d0fb141980a2e77494489182d4405c47527"
+    },
+    {
+      "bytes": 1573,
+      "path": "reports/STAGE_Z_Z0R2_ENVIRONMENT_ACTION_BRANCH_PARITY_V1.json",
+      "sha256": "a516f1ba6e908d563384d78219b79a41beee0e380c9dc72e0e65038c5d7222f4"
+    },
+    {
+      "bytes": 6447,
+      "path": "reports/STAGE_Z_Z0R2_M0_FILE_LEVEL_AUTHORITY_DIFF_V1.json",
+      "sha256": "88cd5549c19fe47cfac1738ee780aec6d6fe4603c3bc678f6944fa1b1ebe60c7"
+    },
+    {
+      "bytes": 1909,
+      "path": "reports/STAGE_Z_Z0R2_M0_SEMANTIC_CHECKPOINT_MANIFEST_V1.json",
+      "sha256": "c4bffdda45687e6ef76552e507477d055d44fbba07243787a3654e008aa8fd01"
+    },
+    {
+      "bytes": 551,
+      "path": "reports/STAGE_Z_Z0R2_M1_MATERIALIZATION_LEDGER_V1.json",
+      "sha256": "073b9372b3d5439a178dc99ff9ab462575b2ecb8d28f412dcbabbb448c4f5e5a"
+    },
+    {
+      "bytes": 22791,
+      "path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V1.json",
+      "sha256": "caf7e9d171e12aa0489d285efe1836cb11586ab01723ee85bf176e7c7eb2f1db"
+    },
+    {
+      "bytes": 749,
+      "path": "reports/STAGE_Z_Z0R2_M2_OPENPI_REVERIFICATION_V1.json",
+      "sha256": "4c2c8a99deae45e9fcda109fbdfb795bcf62f847fdbe349bc31f4af2b17213fe"
+    },
+    {
+      "bytes": 508139,
+      "path": "reports/STAGE_Z_Z0R2_MODEL_AUTHORITY_MAP_V1.json",
+      "sha256": "911bffb1e5a8080c9f0425866d0ff6f5726f05ed24415e38b2f6bff465e4aafc"
+    },
+    {
+      "bytes": 540,
+      "path": "reports/STAGE_Z_Z0R2_STORAGE_PREFLIGHT_V1.json",
+      "sha256": "96c6f06ac84ffd813bdadc5fefd670f9985664ef33af1c679a615ac092f03747"
+    }
+  ],
+  "root_excluded": true,
+  "schema": "STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V1",
+  "status": "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED"
+}
