@@ -58,6 +58,20 @@ OUTPUT_NAMES = (
     "timing_generalization_cascade.json",
     "stage_ix_factorization_gap.json",
     "execution_layer_evidence.json",
+    "plot_quantitative.csv",
+    "core_numbers.tex",
+)
+CSV_FIELDS = (
+    "section",
+    "stage",
+    "item",
+    "metric",
+    "value",
+    "denominator",
+    "primary_unit",
+    "claim_id",
+    "status",
+    "boundary_note",
 )
 
 
@@ -684,6 +698,140 @@ def build_execution(
     }
 
 
+def build_quantitative_csv(payloads: Mapping[str, Mapping[str, Any]]) -> bytes:
+    """Flatten only plot/table quantities; JSON remains the complete export."""
+
+    hierarchy = {
+        row["stage"]: row for row in payloads["evidence_hierarchy.json"]["rows"]
+    }
+    rows: list[dict[str, str]] = []
+
+    def add(*values: Any) -> None:
+        require(len(values) == len(CSV_FIELDS), "csv_row_width")
+        rows.append(dict(zip(CSV_FIELDS, map(str, values), strict=True)))
+
+    x0 = payloads["x0_mechanism.json"]
+    for row in x0["doses"]:
+        add(
+            "x0_mechanism",
+            "X0",
+            row["dose"],
+            "raw_positive_rate",
+            row["raw_positive_rate"],
+            row["source_defined_consumable_rows"],
+            hierarchy["X0"]["primary_unit"],
+            ";".join(x0["claim_ids"]),
+            x0["status"],
+            x0["uncertainty_policy"],
+        )
+
+    cascade = payloads["timing_generalization_cascade.json"]
+    for row in cascade["rows"]:
+        add(
+            "timing_generalization",
+            row["stage"],
+            "",
+            row["primary_metric"],
+            row["value"],
+            row["denominator_censoring"],
+            row["primary_unit"],
+            ";".join(hierarchy[row["stage"]]["promotable_wording_key"]),
+            row["gate_or_status"],
+            row["missing_value_policy"],
+        )
+
+    ix = payloads["stage_ix_factorization_gap.json"]
+    for row in ix["rows"]:
+        for metric in ("model_side_auroc", "factorized_parent_macro_auc"):
+            add(
+                "factorization_gap",
+                "IX",
+                row["score"],
+                metric,
+                row[metric],
+                ix["denominator_censoring"],
+                ix["primary_unit"],
+                ix["claim_id"],
+                ix["status"],
+                f"top-k/LOSO={row['top_k_loso_gate_status']}; no environment",
+            )
+
+    stream = io.StringIO(newline="")
+    writer = csv.DictWriter(stream, fieldnames=CSV_FIELDS, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    return stream.getvalue().encode("utf-8")
+
+
+def build_tex_numbers(
+    payloads: Mapping[str, Mapping[str, Any]], source_head: str
+) -> bytes:
+    """Emit dependency-free TeX macros for the most reused paper numbers."""
+
+    x0 = payloads["x0_mechanism.json"]
+    doses = {row["dose"]: row for row in x0["doses"]}
+    ix = payloads["stage_ix_factorization_gap.json"]
+    ix_rows = {row["score"]: row for row in ix["rows"]}
+    populations = payloads["execution_layer_evidence.json"]["populations"]
+    e3 = populations["e3_strict_single_state_realizability"]
+    e4 = populations["e4_candidate_diagnostics"]
+    f1b = populations["f1b_dev_method_development"]
+    f1c = populations["f1c4_fresh_executable_qualification"]
+    commands: list[tuple[str, Any]] = [("PaperVTwoSourceHead", source_head)]
+    for label, dose in (("TThree", "T3"), ("TFive", "T5"), ("TTen", "T10")):
+        commands.extend(
+            (
+                (f"PaperVTwoXZero{label}Rate", doses[dose]["raw_positive_rate"]),
+                (
+                    f"PaperVTwoXZero{label}Denominator",
+                    doses[dose]["source_defined_consumable_rows"],
+                ),
+            )
+        )
+    for label, score in (("EZero", "E0"), ("EOne", "E1"), ("EThree", "E3")):
+        commands.extend(
+            (
+                (
+                    f"PaperVTwoIX{label}ModelAUROC",
+                    ix_rows[score]["model_side_auroc"],
+                ),
+                (
+                    f"PaperVTwoIX{label}FactorizedAUC",
+                    ix_rows[score]["factorized_parent_macro_auc"],
+                ),
+            )
+        )
+    commands.extend(
+        (
+            (
+                "PaperVTwoXZeroCompletePatterns",
+                x0["complete_three_dose_patterns"]["count"],
+            ),
+            ("PaperVTwoEThreeParentDenominator", e3["parent_denominator"]),
+            (
+                "PaperVTwoEThreeStrictRealizableParents",
+                e3["parent_categories"]["STRICT_REALIZABLE"],
+            ),
+            ("PaperVTwoEFourCandidateDenominator", e4["candidate_denominator"]),
+            ("PaperVTwoFOneBDevParentDenominator", f1b["dev_parent_count"]),
+            ("PaperVTwoFOneCParentDenominator", f1c["parent_denominator"]),
+        )
+    )
+    lines = [
+        "% Generated from sealed main-repository evidence; do not edit.",
+        f"% source_head={source_head}",
+        "% claim_ids=C201,C202,C206,C207,C208,F1T-P01,F1T-P02,F1T-P03,F1T-P04,F1T-P05",
+    ]
+    for name, value in commands:
+        rendered = str(value)
+        require(
+            re.fullmatch(r"[A-Za-z0-9.+-]+", rendered) is not None,
+            f"tex_value:{name}:{rendered}",
+        )
+        lines.append(f"\\newcommand{{\\{name}}}{{{rendered}}}")
+    return ("\n".join(lines) + "\n").encode("ascii")
+
+
 def build_bundle(source_ref: str) -> dict[str, bytes]:
     snapshot = Snapshot(source_ref)
     snapshot.bytes(GENERATOR)
@@ -726,8 +874,10 @@ def build_bundle(source_ref: str) -> dict[str, bytes]:
             snapshot, snapshot.csv(FIGURE5), paper_map, f1_summary, f1_root
         ),
     }
-    require(tuple(payloads) == OUTPUT_NAMES, "output_order")
     generated = {name: json_bytes(value) for name, value in payloads.items()}
+    generated["plot_quantitative.csv"] = build_quantitative_csv(payloads)
+    generated["core_numbers.tex"] = build_tex_numbers(payloads, snapshot.commit)
+    require(tuple(generated) == OUTPUT_NAMES, "output_order")
 
     authority_inputs = []
     for path in sorted(AUTHORITY_INPUTS):

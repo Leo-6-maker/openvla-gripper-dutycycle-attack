@@ -1,8 +1,9 @@
 # Paper V2 deterministic evidence export
 
 This prospective namespace reads committed, sealed authorities from the main
-repository and emits five presentation-neutral JSON exports plus one manifest
-under `exports/paper_v2/`. It never modifies `paper/PAPER_V1_*`.
+repository and emits five presentation-neutral JSON exports, one tidy plot CSV,
+one dependency-free TeX macro file, and one manifest under `exports/paper_v2/`.
+It never modifies `paper/PAPER_V1_*`.
 
 The generator must first be committed so its Git blob can be bound. Generate a
 bundle from that committed tooling/source snapshot with:
