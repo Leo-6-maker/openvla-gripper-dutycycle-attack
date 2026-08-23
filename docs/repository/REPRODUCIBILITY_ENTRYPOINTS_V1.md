@@ -62,12 +62,22 @@ The current root remains a Z0R2 authority HOLD, not a result.
 
 ### Paper V2 evidence export
 
-Status: `NOT_AVAILABLE_UNTIL_CODE_R5`.
+Status: `PAPER_V2_DETERMINISTIC_EXPORT_PASS`.
 
-CODE-R5 will add a new deterministic export command and output namespace. This
-document must be updated when that command exists and passes its golden test.
-Until then, do not substitute a Paper V1 builder or rerun the immutable F1T
-synthesis producer.
+```text
+python scripts/paper_v2/export_paper_v2_evidence.py --check
+```
+
+Expected terminal marker:
+`PAPER_V2_EXPORT_CHECK_PASS source_head=<40-hex> files=8`.
+
+This rebuilds five presentation-neutral JSON exports, one tidy plot CSV, one
+dependency-free TeX macro file, and their manifest from the committed source
+HEAD recorded in the manifest, then compares every byte. It reads only
+committed sealed static authorities. To intentionally regenerate after
+committing an authorized source/tooling change, use `--write --source-ref
+<full-commit-sha>` and review the resulting manifest and diff. Never substitute
+a Paper V1 builder or rerun the immutable F1T synthesis producer.
 
 ## Evidence reading order
 

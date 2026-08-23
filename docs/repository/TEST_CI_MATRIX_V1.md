@@ -10,7 +10,7 @@ authorization.
 
 | Workflow / job | Trigger and lifecycle | Purpose and source families | Environment | GPU, model, simulator |
 | --- | --- | --- | --- | --- |
-| `repository-hygiene.yml` / `repository-hygiene-cpu` | Every pull request and push to `main`; `CURRENT_REQUIRED_ALL_PR` | Immutable authority registry; repository maps/ledgers/navigation; Paper V1 read-only claims; Stage Z static contracts | Ubuntu, Python 3.11, pytest; full Git history; target under 10 minutes | None. No Torch/CUDA/model/simulator dependency and no `env.step`. |
+| `repository-hygiene.yml` / `repository-hygiene-cpu` | Every pull request and push to `main`; `CURRENT_REQUIRED_ALL_PR` | Immutable authority registry; repository maps/ledgers/navigation; Paper V1 read-only claims; deterministic Paper V2 exports; Stage Z static contracts | Ubuntu, Python 3.11, pytest; full Git history; target under 10 minutes | None. No Torch/CUDA/model/simulator dependency and no `env.step`. |
 | `cpu-b3-official-v3.yml` / `source-registry` | Every pull request and push to `main`; `CURRENT_REQUIRED_ALL_PR` | Official V3 source registry and B3 formal/training/prediction/attack-manifest contracts | Ubuntu, Python 3.10, editable package, pytest/numpy/pillow, CPU Torch | CPU Torch tests only; no model checkpoint, GPU, simulator, or environment execution. |
 | `cpu-detector-v5.yml` / `detector-v5-cpu` | Every pull request and push to `main`; `CURRENT_REQUIRED_ALL_PR` | V5/R3/factorized detector contracts, Stage V M3.5/M4 governance, and Stage X audit-only contracts | Ubuntu, Python 3.10, editable package, pytest/numpy/pillow, CPU Torch | CPU tensors/fixtures/mocks only; no model checkpoint, GPU, simulator, attack run, or real `env.step`. |
 | `cpu-stageb.yml` / `stageb-cpu` | Every pull request and push to `main`; `CURRENT_REQUIRED_ALL_PR` | Stage-B clean collection/audits, B3 retention/materialization, source inventory, and generated-evidence exclusion | Ubuntu, Python 3.10, editable package, pytest/numpy/pillow | No GPU/model/simulator execution. Runner files are compiled, not invoked. |
@@ -31,9 +31,10 @@ run on PR #136.
 python scripts/repository/audit_immutable_authority_paths.py
 python -m json.tool docs/repository/REPOSITORY_LIFECYCLE_LEDGER_V1.json
 python -m json.tool docs/repository/IMMUTABLE_AUTHORITY_PATHS_V1.json
-python -m py_compile scripts/repository/audit_immutable_authority_paths.py scripts/paper/check_paper_v1_claims.py
+python -m py_compile scripts/repository/audit_immutable_authority_paths.py scripts/paper/check_paper_v1_claims.py scripts/paper_v2/export_paper_v2_evidence.py
 python scripts/paper/check_paper_v1_claims.py
-pytest -q tests/repository tests/stage_z/test_stage_z_preparation.py
+python scripts/paper_v2/export_paper_v2_evidence.py --check
+pytest -q tests/repository tests/paper_v2 tests/stage_z/test_stage_z_preparation.py
 git show --check --format= HEAD
 git diff --check
 ```
@@ -97,7 +98,7 @@ The workflow separately compiles the H1 module list and rejects Python
 | Core source contract tests | Official V3/B3, detector V5, Stage-B, factorized Phase C/L3 | Broad PR guardrails plus path-specific deep suites; CPU only. |
 | Stage X engineering/audit tests | `tests/stage_x` and `tests/test_stage_x_primary_matrix_runner.py` in `detector-v5-cpu` | Current audit-only contracts; no scientific runner execution. |
 | Stage Z static/adapter tests | `tests/stage_z/test_stage_z_preparation.py` in `repository-hygiene-cpu` | Synthetic action/queue/replan/panel/disable guards; Z0R2 remains HOLD. |
-| Paper-analysis/export tests | Paper V1 read-only checker and repository tests in `repository-hygiene-cpu` | V1 claim consistency now covered; CODE-R5 must add deterministic V2 export golden tests here. |
+| Paper-analysis/export tests | Paper V1 read-only checker plus Paper V2 CSV/JSON/TeX byte-rebuild, manifest-binding, claim-ID, denominator, censoring, and population-separation tests in `repository-hygiene-cpu` | V1 wording and deterministic V2 exports are covered without scientific execution. |
 | Legacy compatibility tests | D8 H1, pilot analysis, retained B3/SC5/factorized suites | Preserved because current or historical contracts depend on them; PASS does not promote old evidence. |
 
 ## Known boundaries

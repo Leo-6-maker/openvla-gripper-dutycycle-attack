@@ -22,5 +22,6 @@ Lifecycle of the older V1 scripts:
   hashes from both canonical Git and historical CRLF materializations, so they
   are not the cross-platform canonical entry point.
 
-Paper V2 receives a new deterministic export surface in CODE-R5. Do not mutate
-V1 builders or use the presentation repository as scientific source.
+Paper V2 receives a deterministic CSV/JSON/TeX export surface in CODE-R5. Do
+not mutate V1 builders or use the presentation repository as scientific source.
+Its canonical command and lifecycle notes are in `scripts/paper_v2/README.md`.

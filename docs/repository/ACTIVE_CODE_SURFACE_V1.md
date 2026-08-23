@@ -141,10 +141,13 @@ The family index is `scripts/paper/README.md`.
   claim check.
 - `scripts/repository/audit_immutable_authority_paths.py` is the canonical
   static byte/path authority check.
+- `scripts/paper_v2/export_paper_v2_evidence.py` is the canonical deterministic
+  Paper V2 CSV/JSON/TeX exporter/checker; `exports/paper_v2/` is its digest-bound
+  output.
 - Paper V1 builders/sealers are immutable historical producers and must not be
   rerun for cleanup.
-- CODE-R5 will add a new deterministic Paper V2 export namespace. It must not
-  mutate Paper V1 or treat the separate paper repository as scientific source.
+- The Paper V2 surface does not mutate Paper V1 or treat the separate paper
+  repository as scientific source.
 
 ## Change policy
 

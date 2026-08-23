@@ -24,7 +24,9 @@ handoffs.
   T5 delivery was not established. BRIDGE/F1-D was not opened.
 - Paper V2 is an append-only extension of V1. The existing bounded F1 delta is
   [`paper/PAPER_V2_F1_DELTA_FROM_V1.md`](paper/PAPER_V2_F1_DELTA_FROM_V1.md);
-  deterministic export tooling will be added in a separate V2 namespace.
+  deterministic, digest-bound CSV/JSON/TeX exports are under
+  [`exports/paper_v2/`](exports/paper_v2/) and are checked by
+  [`scripts/paper_v2/export_paper_v2_evidence.py`](scripts/paper_v2/export_paper_v2_evidence.py).
 - Stage Z is not a scientific result. The controlling root currently records
   `HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED`, no scientific
   rollout, and zero model/GPU/simulator/environment/protected counters:
@@ -59,6 +61,7 @@ The canonical CPU/static checks are:
 ```bash
 python scripts/repository/audit_immutable_authority_paths.py
 python scripts/paper/check_paper_v1_claims.py
+python scripts/paper_v2/export_paper_v2_evidence.py --check
 python -m pytest -q tests/stage_x tests/test_stage_x_primary_matrix_runner.py
 python -m pytest -q tests/stage_z/test_stage_z_preparation.py
 ```
@@ -82,7 +85,7 @@ consistency, not scientific authorization.
 - `paper/`: immutable Paper V1 package plus append-only Paper V2 inputs.
 - `reports/`: root seals, manifests, receipts, decisions, and retained failures.
 - `configs/`: frozen protocols and runtime/analysis contracts.
-- `scripts/paper/`, `scripts/stage_x/`, `scripts/stage_z/`, and
+- `scripts/paper/`, `scripts/paper_v2/`, `scripts/stage_x/`, `scripts/stage_z/`, and
   `scripts/repository/`: family READMEs identify the one safe current entry
   point and label historical producers/runners.
 - `src/gripper_attack/`: shared implementation and compatibility surface.

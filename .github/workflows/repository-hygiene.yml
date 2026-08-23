@@ -32,11 +32,14 @@ jobs:
         run: |
           python -m py_compile \
             scripts/repository/audit_immutable_authority_paths.py \
-            scripts/paper/check_paper_v1_claims.py
+            scripts/paper/check_paper_v1_claims.py \
+            scripts/paper_v2/export_paper_v2_evidence.py
       - name: Check sealed Paper V1 claims read-only
         run: python scripts/paper/check_paper_v1_claims.py
-      - name: Run repository and Stage Z static tests
-        run: pytest -q tests/repository tests/stage_z/test_stage_z_preparation.py
+      - name: Check deterministic Paper V2 exports
+        run: python scripts/paper_v2/export_paper_v2_evidence.py --check
+      - name: Run repository, Paper V2, and Stage Z static tests
+        run: pytest -q tests/repository tests/paper_v2 tests/stage_z/test_stage_z_preparation.py
       - name: Check patch whitespace
         run: |
           git show --check --format= HEAD
