@@ -286,6 +286,9 @@ def f1_claim_binding(
                 {
                     **snapshot.binding(path),
                     "declared_sha256": entry["sha256"],
+                    "declared_digest_basis": declared_basis(
+                        snapshot.bytes(path), entry["sha256"]
+                    ),
                     "status": entry["status"],
                     "source_commit": entry["source_commit"],
                     "source_tree": entry["source_tree"],
