@@ -297,6 +297,7 @@ def f1_claim_binding(
 def build_hierarchy(
     snapshot: Snapshot,
     paper_map: Mapping[str, Any],
+    claims: Mapping[str, Any],
     supplement: Mapping[str, Any],
     f1_map: Mapping[str, Any],
     f1_summary: Mapping[str, Any],
@@ -311,48 +312,50 @@ def build_hierarchy(
             "Does command-OPEN exposure show a dose/phase physical mechanism?",
             units["x0"],
             "SEALED_PHYSICAL_COMMAND_OPEN_COUNTERFACTUAL",
-            "X0_MECHANISM",
+            ("C201", "C202"),
         ),
         "VI_B2": (
             "VI-B2",
             "Does frozen Student timing generalize on fresh held-out parents?",
             units["vi_b2"],
             "SEALED_HELDOUT_TIMING_EVALUATION",
-            "TIMING_NEGATIVE_CASCADE",
+            ("C203",),
         ),
         "VII": (
             "VII",
             "Does a frozen context detector pass cross-suite promotion gates?",
             units["vii"],
             "SEALED_DEVELOPMENT_TIMING_EVALUATION",
-            "TIMING_NEGATIVE_CASCADE",
+            ("C204",),
         ),
         "VIII": (
             "VIII",
             "Does a relative selector generalize under parent/LOSO gates?",
             units["viii"],
             "SEALED_RELATIVE_SELECTOR_EVALUATION",
-            "TIMING_NEGATIVE_CASCADE",
+            ("C205",),
         ),
         "IX": (
             "IX",
             "Do model-side targetability scores retain factorized timing utility?",
             units["ix"],
             "NO_ENVIRONMENT_MODEL_SIDE",
-            "IX_FACTORIZATION_GAP",
+            ("C206",),
         ),
         "E3_E4": (
             "E3/E4",
             "Can the frozen timing-decoupled method realize strict selective OPEN?",
             units["e3_e4"],
             "NO_ENVIRONMENT_MODEL_SIDE_STRUCTURAL",
-            "E3_SPARSE_REALIZABILITY",
+            ("C207", "C208"),
         ),
     }
     rows = []
     for source_id in metadata:
-        label, question, unit, exposure, wording_key = metadata[source_id]
+        label, question, unit, exposure, claim_ids = metadata[source_id]
         source = sources[source_id]
+        for claim_id in claim_ids:
+            claim_by_id(claims, claim_id, source_id)
         rows.append(
             {
                 "stage": label,
@@ -362,9 +365,12 @@ def build_hierarchy(
                 "denominator_censoring": source["population_or_denominator"],
                 "environment_exposure": exposure,
                 "status": source["status"],
-                "promotable_wording_key": wording_key,
-                "authority_paths": source["source_paths"],
-                "authority_binding": source_binding(source),
+                "promotable_wording_key": list(claim_ids),
+                "authority_paths": [PAPER_CLAIMS, *source["source_paths"]],
+                "authority_binding": {
+                    "claim_ledger": snapshot.binding(PAPER_CLAIMS),
+                    "source": source_binding(source),
+                },
             }
         )
 
@@ -391,7 +397,7 @@ def build_hierarchy(
             "environment_exposure": "NO_ENVIRONMENT_MODEL_SIDE_DEV",
             "status": f1b_decision["status"],
             "selected_method": f1b["selected_method"],
-            "promotable_wording_key": "F1T-P01",
+            "promotable_wording_key": ["F1T-P01"],
             "authority_paths": f1b_authority["paths"],
             "authority_binding": f1b_authority["bindings"],
         }
@@ -457,10 +463,15 @@ def build_hierarchy(
     }
 
 
-def find_claim(claims: Mapping[str, Any], phrase: str) -> Mapping[str, Any]:
-    matches = [row for row in claims["claims"] if phrase in row["exact_wording"]]
-    require(len(matches) == 1, f"claim_phrase:{phrase}:{len(matches)}")
-    return matches[0]
+def claim_by_id(
+    claims: Mapping[str, Any], claim_id: str, source_id: str
+) -> Mapping[str, Any]:
+    matches = [row for row in claims["claims"] if row["claim_id"] == claim_id]
+    require(len(matches) == 1, f"claim_id:{claim_id}:{len(matches)}")
+    claim = matches[0]
+    require(claim["direct_support"] is True, f"claim_support:{claim_id}")
+    require(source_id in claim["source_artifacts"], f"claim_source:{claim_id}:{source_id}")
+    return claim
 
 
 def build_x0(
@@ -470,7 +481,8 @@ def build_x0(
     claims: Mapping[str, Any],
 ) -> dict[str, Any]:
     x0 = next(row for row in paper_map["sources"] if row["id"] == "X0")
-    claim = find_claim(claims, "complete three-dose patterns, all are monotone")
+    claim = claim_by_id(claims, "C201", "X0")
+    claim_by_id(claims, "C202", "X0")
     match = re.search(
         r"Of the ([0-9,]+) complete three-dose patterns, all are monotone and fall in (.+?); no non-monotone pattern is observed",
         claim["exact_wording"],
@@ -484,6 +496,7 @@ def build_x0(
     return {
         "schema": "PAPER_V2_X0_MECHANISM_V1",
         "status": x0["status"],
+        "claim_ids": ["C201", "C202"],
         "doses": [
             {
                 "dose": row["dose"],
@@ -549,11 +562,12 @@ def build_ix(
     claims: Mapping[str, Any],
 ) -> dict[str, Any]:
     ix = next(row for row in paper_map["sources"] if row["id"] == "IX")
-    gate_claim = find_claim(claims, "factorized top-k and LOSO gates also remain")
+    gate_claim = claim_by_id(claims, "C206", "IX")
     require("remain unsatisfied" in gate_claim["exact_wording"], "ix_gate_status")
     return {
         "schema": "PAPER_V2_STAGE_IX_FACTORIZATION_GAP_V1",
         "status": ix["status"],
+        "claim_id": gate_claim["claim_id"],
         "primary_unit": supplement["primary_units"]["ix"],
         "denominator_censoring": ix["population_or_denominator"],
         "environment_exposure": "NO_ENVIRONMENT",
@@ -689,6 +703,7 @@ def build_bundle(source_ref: str) -> dict[str, bytes]:
         "evidence_hierarchy.json": build_hierarchy(
             snapshot,
             paper_map,
+            claims,
             supplement,
             f1_map,
             f1_summary,
