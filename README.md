@@ -1,130 +1,136 @@
-﻿# OpenVLA Gripper Duty-Cycle Attack
+# OpenVLA gripper duty-cycle research artifact
 
-This repository is a clean research artifact for reproducing an inference-time gripper-targeted visual attack on OpenVLA/LIBERO. The main claim is deliberately narrow: duty-cycle shaping of the gripper-open command during contact-critical windows can induce visible grasp/lift/carry failures in the LIBERO black-bowl task.
+This repository contains the scientific source, sealed evidence, provenance,
+contracts, and reproducibility tooling for the OpenVLA/LIBERO gripper
+duty-cycle project. The current result is mechanism-first and
+factorization-aware; it is not a claim of a universal visual attack or a
+universal detector.
 
-## Prerequisites
+This README is navigation, not scientific authority. Resolve claims and status
+from the linked authority maps, claim ledgers, manifests, root seals, and
+handoffs.
 
-- **Python**: 3.10+ (verified with 3.10.18)
-- **CUDA**: 12.1+ (verified with 12.1, driver 530)
-- **GPU memory**: ~14 GiB for OpenVLA-7B in float16 (single GPU) or 3-4 GPUs
-  with ~5 GiB each plus CPU offload
-- **Disk**: ~30 GiB for model checkpoints and LIBERO datasets
-- **Transformers**: 4.40.x recommended (5.x also works with patching)
-- **LIBERO**: datasets must be locally available (MuJoCo rendering uses EGL)
-- **OpenVLA model**: not a pip package. Loaded via `trust_remote_code=True`
-  directly from the checkpoint directory. The checkpoint must contain
-  `modeling_prismatic.py`, `configuration_prismatic.py`, and
-  `processing_prismatic.py`. Our runner auto-patches these files via
-  `scripts/patch_openvla_compat.py` when `--auto_patch_compat` is passed.
+## Current scientific status
 
-## Quick Start
+- Paper V1 is a sealed mechanism/factorization draft bundle. Its source map is
+  [`paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json`](paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json),
+  its wording gate is
+  [`paper/PAPER_V1_CLAIM_LEDGER_V1.json`](paper/PAPER_V1_CLAIM_LEDGER_V1.json),
+  and its terminal seal is
+  [`paper/PAPER_V1_FINAL_ROOT_SEAL_V1.json`](paper/PAPER_V1_FINAL_ROOT_SEAL_V1.json).
+- Stage X/F1 is closed under the terminal synthesis
+  [`reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json`](reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json).
+  Strict selective execution was observed at least once, but reliable sustained
+  T5 delivery was not established. BRIDGE/F1-D was not opened.
+- Paper V2 is an append-only extension of V1. The existing bounded F1 delta is
+  [`paper/PAPER_V2_F1_DELTA_FROM_V1.md`](paper/PAPER_V2_F1_DELTA_FROM_V1.md);
+  deterministic export tooling will be added in a separate V2 namespace.
+- Stage Z is not a scientific result. The controlling root currently records
+  `HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED`, no scientific
+  rollout, and zero model/GPU/simulator/environment/protected counters:
+  [`reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json`](reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json).
+
+## Evidence hierarchy
+
+| Layer | Earned status | Boundary |
+| --- | --- | --- |
+| X0 physical duty-cycle mechanism | Primary bounded positive | Dose- and phase-dependent OPEN mechanism; descriptive/mechanistic, not formal mediation or universal efficacy. |
+| VI-B2, VII, VIII timing-selector line | Valid stage-specific negatives | Frozen held-out/generalization gates only; not proof that every feature or detector is uninformative. |
+| IX factorized timing analysis | Model-side factorization evidence | No-environment evidence; not physical attack efficacy. |
+| E3/E4 strict selective realizability | Bounded structural evidence | Engineering-parent unit is primary; candidate slots are non-iid diagnostics; no physical efficacy or impossibility claim. |
+| F1/F1T execution qualification | Terminal bounded execution-layer evidence | At least one strict execution, but no reliable full-T5 qualification; no BRIDGE/F1-D promotion. |
+| Stage Z | Z0R2 authority HOLD | Preparation is not evidence; no Z1 or scientific rollout is authorized by this repository state. |
+
+The canonical source/denominator/claim restrictions are in the Paper V1
+authority map and claim ledger, not in this summary.
+
+## Safe repository checks
+
+Create the documented environment if needed:
 
 ```bash
-# 1. Create and activate environment
 conda env create -f environment.yml
 conda activate openvla-gripper-attack
-
-# 2. Install the project package
 pip install -e .
-
-# 3. Configure paths (copy from example and edit)
-cp .env.example .env
-# Edit .env — set OPENVLA_MODEL_ROOT, OPENVLA_BASE_MODEL_DIR,
-# OPENVLA_SPATIAL_MODEL_PATH, and LIBERO_DATA_ROOT to your local paths.
-# Then source the file or export the variables:
-source .env   # or: export $(cat .env | xargs)
-
-# 4. Verify the CLI works
-python scripts/run_attack_pipeline.py --help
 ```
 
-### Test the pipeline (no GPU required)
+The canonical CPU/static checks are:
 
 ```bash
-# Unit tests (31 tests, ~7 seconds)
-python -m pytest -q tests/
-
-# Dry-run — prints the dispatched command without executing
-python scripts/run_attack_pipeline.py --task black_bowl --state 7 --seed 1 \
-    --condition clean --dry_run
+python scripts/repository/audit_immutable_authority_paths.py
+python scripts/paper/check_paper_v1_claims.py
+python -m pytest -q tests/stage_x tests/test_stage_x_primary_matrix_runner.py
+python -m pytest -q tests/stage_z/test_stage_z_preparation.py
 ```
 
-### Run a real episode (GPU + LIBERO + OpenVLA required)
+See
+[`docs/repository/REPRODUCIBILITY_ENTRYPOINTS_V1.md`](docs/repository/REPRODUCIBILITY_ENTRYPOINTS_V1.md)
+for expected markers and exact boundaries. A green check means repository
+consistency, not scientific authorization.
 
-Before running, ensure the environment variables from `.env` are exported AND
-the following are set:
+## Repository navigation
 
-```bash
-export MUJOCO_GL=egl                    # headless rendering (required)
-export CUDA_VISIBLE_DEVICES=0           # or a comma-separated list of free GPUs
-export OPENVLA_CUDA_MAX_MEMORY=10000MiB # per-GPU memory cap for device_map=auto
-```
+- [`docs/repository/REPOSITORY_MAP_V1.md`](docs/repository/REPOSITORY_MAP_V1.md):
+  top-level ownership, lifecycle, and risk map.
+- [`docs/repository/REPOSITORY_LIFECYCLE_LEDGER_V1.json`](docs/repository/REPOSITORY_LIFECYCLE_LEDGER_V1.json):
+  machine-readable lifecycle classifications.
+- [`docs/repository/ACTIVE_CODE_SURFACE_V1.md`](docs/repository/ACTIVE_CODE_SURFACE_V1.md):
+  current execution primitives, audit/contracts, compatibility modules, and
+  Stage X/Stage Z/paper surfaces.
+- [`docs/repository/IMMUTABLE_AUTHORITY_PATHS_V1.md`](docs/repository/IMMUTABLE_AUTHORITY_PATHS_V1.md):
+  protected path/byte firewall and digest rules.
+- `paper/`: immutable Paper V1 package plus append-only Paper V2 inputs.
+- `reports/`: root seals, manifests, receipts, decisions, and retained failures.
+- `configs/`: frozen protocols and runtime/analysis contracts.
+- `scripts/paper/`, `scripts/stage_x/`, `scripts/stage_z/`, and
+  `scripts/repository/`: family READMEs identify the one safe current entry
+  point and label historical producers/runners.
+- `src/gripper_attack/`: shared implementation and compatibility surface.
+- `tests/`: CPU/static contract and regression tests.
+- `archive/` and `n5/`: retained history; status must be read from evidence,
+  not inferred from filenames.
 
-Then run directly via the runner (bypasses the pipeline wrapper, gives full
-control over GPU placement):
+The root `tmp_*.py` files are retained historical diagnostics pending a
+separate compatibility decision. They are not current entry points and must not
+be executed merely because they remain at top level.
 
-```bash
-python scripts/v4_run_eval_openvla.py \
-    --tasks_config configs/v4_tasks_libero.yaml \
-    --attack_config configs/paper_black_bowl_attack.yaml \
-    --directions_config configs/v4_directions.yaml \
-    --task_id libero_spatial_black_bowl \
-    --trigger clean --rho 0.0 --seed 1 --episodes 1 \
-    --max_steps_override 400 \
-    --model_path "$OPENVLA_SPATIAL_MODEL_PATH" \
-    --base_model_code_dir "$OPENVLA_BASE_MODEL_DIR" \
-    --unnorm_key libero_spatial \
-    --camera_obs_key agentview_image \
-    --auto_patch_compat \
-    --libero_official_preprocess --center_crop --postprocess_gripper \
-    --deterministic_init_states --state_ids 7 \
-    --render_gpu_device_id 0 --model_gpu_device_id 0 \
-    --output_root "$OPENVLA_OUTPUT_ROOT" \
-    --run_id my_clean_run --success_metric done
-```
+## Historical and provenance warning
 
-Or use the public pipeline wrapper (sets Template B parameters automatically):
+The repository intentionally preserves superseded plans, engineering HOLDs,
+invalid/non-promotional attempts, exact runtime sources, and historical
+receipts. Their presence does not make them current authority. Do not:
 
-```bash
-python scripts/run_attack_pipeline.py \
-    --task black_bowl --state 7 --seed 1 --condition clean \
-    --model_path "$OPENVLA_SPATIAL_MODEL_PATH" \
-    --base_model_code_dir "$OPENVLA_BASE_MODEL_DIR"
-```
+- relabel a HOLD as PASS or a runtime/engineering failure as a scientific
+  negative;
+- rerun, tune, recycle, or top up a frozen cohort to obtain promotion;
+- move, rewrite, or delete a sealed path or exact source-byte dependency for
+  cleanup;
+- substitute clean-only, diagnostic, reserve, or candidate-slot evidence into
+  a scientific denominator;
+- use green CI as evidence that a scientific gate passed.
 
-The public entrypoint dispatches the frozen Template B parameters by default:
-`epsilon=0.10`, `step_size=0.020`, `attack_steps=20`, State7 window `75-84`,
-State5 window `78-87`, and `constant_delta_pregrasp` window `35-45`.
-Override them with `--epsilon`, `--step_size`, `--attack_steps`.
+Before changing historical material, run the immutable authority audit and
+trace imports, subprocess paths, configs, docs, manifests, seals, and Git
+history.
 
-### Troubleshooting
+## Protected boundary
 
-- **`ModuleNotFoundError: No module named 'openvla'`**: This is expected.
-  OpenVLA is not a pip package. The model code lives inside the checkpoint
-  directory and is loaded via `trust_remote_code=True`. Ensure
-  `--model_path` points to a checkpoint that contains `modeling_prismatic.py`.
+The controlling Paper V1, F1T, and Stage Z authorities preserve Eval160 and
+protected evaluation as `UNREAD`. Repository-hygiene and paper-support work
+must perform no model inference, GPU work, simulator use, `env.step`,
+adversarial generation/backward pass, physical intervention, `V_phys` read, or
+protected read. Any future scientific execution requires separate prospective
+PI authorization; this README grants none.
 
-- **CUDA OOM**: Reduce `OPENVLA_CUDA_MAX_MEMORY` or add more GPUs via
-  `CUDA_VISIBLE_DEVICES`. The model distributes layers across all visible
-  GPUs when `--model_gpu_device_id -1` (auto mode).
+## Main repository and paper repository
 
-- **Transformers 5.x compatibility**: Pass `--auto_patch_compat` to let the
-  runner copy and patch the Prismatic model files from the base checkpoint.
-
-## Repository Layout
-
-- `src/gripper_attack/`: public reusable attack, trigger, logging, and metric code.
-- `scripts/run_attack_pipeline.py`: stable public CLI for the six-condition matrix.
-- `scripts/v4_*.py`: legacy/repro entrypoints retained for traceability.
-- `docs/reproducibility.md`: exact reproduction instructions and provenance.
-- `docs/claim_and_evidence.md`: frozen claim, evidence table, and boundaries.
-- `docs/dataset_diagnostics.md`: excluded dataset diagnostics and future-work framing.
-- `archive/`: curated historical notes and scripts that explain exploratory branches.
-
-## Claim Boundaries
-
-We do not claim `prev_delta` or margin-objective uniqueness. We do not claim broad cross-dataset generalization. Moka pots, alphabet soup, and open-middle-drawer are documented as diagnostics/future work rather than main evidence.
+This repository owns scientific source-of-truth, evidence extraction, and
+deterministic exports. The separate
+[`Leo-6-maker/stage_aware_attack_on_vision_language_model`](https://github.com/Leo-6-maker/stage_aware_attack_on_vision_language_model)
+repository owns LaTeX, plotting style, captions, and manuscript presentation.
+The paper/Overleaf surface consumes digest-bound exports and is not a new
+authority for scientific numbers.
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+MIT License. See [`LICENSE`](LICENSE).
