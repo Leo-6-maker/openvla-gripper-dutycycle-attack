@@ -23,7 +23,9 @@ def test_q3r3_c_protocol_is_engineering_only_and_strictly_bound():
 def test_q3r3_c_runner_checks_committed_source_before_model_load():
     root = Path(__file__).resolve().parents[2]
     source = (root / "scripts/stage_x/run_stage_x1r2_q3r3_branch_replay.py").read_text(encoding="utf-8")
-    assert 'source = source_receipt(args.source_commit, args.source_tree)' in source
+    source_receipt_call = "source = source_receipt(args.source_commit, args.source_tree,"
+    assert source_receipt_call in source
+    assert source.index(source_receipt_call) < source.index("clean.load_openvla")
     assert "verify_student_source_binding(authority)" in source
     assert "seed_all(seed)" in source
     assert "clean.load_openvla" in source
