@@ -1,0 +1,84 @@
+{
+  "active_scientific_gate": "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED",
+  "artifact_entries": [
+    {
+      "bytes": 1760,
+      "path": "src\\stage_z_preparation\\__init__.py",
+      "sha256": "987b755ad6cb613943a9341d160bbcf5faffefa7fd6a913513c2302d61a69cd3"
+    },
+    {
+      "bytes": 3943,
+      "path": "src\\stage_z_preparation\\adapters.py",
+      "sha256": "53fb92973a32a5e1526a8f310c0538246157221c4c7d8dd7572928eba9b9bbd0"
+    },
+    {
+      "bytes": 2039,
+      "path": "src\\stage_z_preparation\\analysis.py",
+      "sha256": "540b44d56e0e58bc929836fa018e5384e424ae3fc75e4f92df6832ba8f7e810a"
+    },
+    {
+      "bytes": 3334,
+      "path": "src\\stage_z_preparation\\anchors.py",
+      "sha256": "3ebb5ffe5c55b527d8dfa849e34195803b1fb6c34936d9ceaccf8a9f422e7783"
+    },
+    {
+      "bytes": 7508,
+      "path": "src\\stage_z_preparation\\contract.py",
+      "sha256": "33a4a80e41fa84b30d6619b898313d5cf383625282baa050586f0238068e915a"
+    },
+    {
+      "bytes": 3226,
+      "path": "src\\stage_z_preparation\\matrix.py",
+      "sha256": "612257cb4b6e365abdd002aa851baed75ce2e6cfc996d45542047dcfd83c40fe"
+    },
+    {
+      "bytes": 3134,
+      "path": "src\\stage_z_preparation\\panel.py",
+      "sha256": "6c83f32a4010569497a23747905596497cc2074851ef1aaf586a2b794b1c42db"
+    },
+    {
+      "bytes": 1567,
+      "path": "src\\stage_z_preparation\\runner.py",
+      "sha256": "cf9fea949b03bac71cd7d27f387dda16f49bf3cd3ca2b8a10649568b071b2936"
+    },
+    {
+      "bytes": 2829,
+      "path": "src\\stage_z_preparation\\telemetry.py",
+      "sha256": "783a3984fe64931997ecdd20179a8613c7d350a068805719469760e2725419f3"
+    },
+    {
+      "bytes": 3837,
+      "path": "configs\\STAGE_Z_MULTI_MODEL_RUNNER_PREP_V1.json",
+      "sha256": "c8c5e51fab360942c02cb2611a429fb125ed91d6e693b606a6925fc380e8ad2c"
+    }
+  ],
+  "checks": {
+    "common_action_contract_frozen": true,
+    "forbidden_runtime_imports": [],
+    "model_family_boundaries_frozen": true,
+    "package_ast_compiles": true,
+    "queue_replan_guards_present": true,
+    "structural_missing_cells_preserved": true,
+    "student_detector_timing_selection": false,
+    "synthetic_rows_explicitly_non_scientific": true,
+    "z1_z2_z3_scaffolds_static_only": true
+  },
+  "execution_enabled": false,
+  "model_or_simulator_exposure": false,
+  "next_legal_action": "finish Z0R2 authority closure, then STOP_FOR_PI",
+  "protected_counters": {
+    "env_step": 0,
+    "eval160": 0,
+    "gpu_workers": 0,
+    "model_inference": 0,
+    "model_loads": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected_reads": 0,
+    "simulator": 0,
+    "v_phys": 0
+  },
+  "schema": "STAGE_Z_MULTI_MODEL_RUNNER_PREPARATION_STATIC_AUDIT_V1",
+  "status": "STAGE_Z_MULTI_MODEL_RUNNER_PREPARATION_STATIC_PASS",
+  "synthetic_only": true
+}
