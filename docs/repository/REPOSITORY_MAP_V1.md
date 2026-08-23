@@ -79,18 +79,21 @@ Canonical claim and status sources are the Paper V1 authority map/claim ledger, 
 4. Use `docs/handoffs/GPT_SCIENTIFIC_REVIEW_HANDOFF_STAGE_Z_20260822.md` for narrative context, checking later seals/commits before relying on its snapshot.
 5. Use the R1 immutable registry before proposing any path or byte change.
 
-## Authority issue carried into R1
+## Non-authority Stage Z snapshot issue carried into R1
 
 `reports/STAGE_Z_MULTI_MODEL_RUNNER_PREPARATION_STATIC_AUDIT_V1.json` lists
 `src/stage_z_preparation/__init__.py` as a 1,760-byte artifact with SHA-256
 `987b755ad6cb613943a9341d160bbcf5faffefa7fd6a913513c2302d61a69cd3`.
 That path is absent from both the inventory source tree and the originating
 commit `af9f09c2839f2c8fe505641b13621a892ef7dff0`; no tracked history for the
-path was found. The audit builder globbed the working directory, so the sealed
-audit appears to have captured an untracked source file. R0 does not repair,
-reinterpret, or rewrite this artifact. R1 must fail closed unless the exact
-bytes are recovered under owner authority or a prospective superseding
-authority package explicitly resolves the mismatch.
+path was found. The audit builder globbed the working directory, so the audit
+captured an untracked source file. The later `7f09596` authority rebind
+explicitly keeps the Z0R2 root at `b16f1df`, before runner preparation, and
+current-tree reference searches find no seal, manifest, claim ledger, handoff,
+or digest binding this audit. R0 therefore treats it as a stale generated
+engineering snapshot, not current scientific authority. It remains preserved;
+R1 must keep it outside the immutable registry unless contrary authority is
+found.
 
 ## R0 disposition
 

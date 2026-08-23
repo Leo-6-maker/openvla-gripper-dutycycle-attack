@@ -53,14 +53,17 @@ The three `tmp_*.py` files are the only plausible root cleanup candidates. R0 de
 
 No tracked file is classified `GENERATED_NONAUTHORITY` with enough evidence for deletion. R0 therefore approves no move or deletion. The compatibility-safe path is indexing, lifecycle labeling, and later deprecation notices where R1/R2 prove they are safe.
 
-## Pre-existing authority mismatch
+## Pre-existing non-authority snapshot mismatch
 
 The current Stage Z runner-preparation static audit points to a missing
 `src/stage_z_preparation/__init__.py` (1,760 bytes; expected SHA-256
 `987b755ad6cb613943a9341d160bbcf5faffefa7fd6a913513c2302d61a69cd3`).
 The path is absent from current HEAD and from commit `af9f09c`, which introduced
-the package and audit. This is not clutter and is not repaired by cleanup.
-It is a fail-closed R1 authority-firewall issue.
+the package and audit. Commit `7f09596` keeps the active Z0R2 authority root
+bound to the earlier `b16f1df` tree, and no current authority artifact or
+digest references this static audit. It is therefore a stale generated
+engineering snapshot, not immutable scientific authority. Preserve and label
+it; do not rewrite it merely to make the old PASS self-consistent.
 
 ## Gate result
 

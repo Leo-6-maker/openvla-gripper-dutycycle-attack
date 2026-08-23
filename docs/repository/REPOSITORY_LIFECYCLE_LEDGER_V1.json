@@ -560,8 +560,8 @@
       "referenced_by_active_authority": "yes",
       "safe_to_move": "no",
       "safe_to_delete": "no",
-      "recommended_action": "Keep static-only and execution-disabled; R1 must resolve the audit's missing __init__.py fail-closed",
-      "evidence": ["reports/STAGE_Z_MULTI_MODEL_RUNNER_PREPARATION_STATIC_AUDIT_V1.json lists absent src/stage_z_preparation/__init__.py with SHA-256 987b755ad6cb613943a9341d160bbcf5faffefa7fd6a913513c2302d61a69cd3", "tests/stage_z/test_stage_z_preparation.py"]
+      "recommended_action": "Keep static-only and execution-disabled; preserve but do not rely on the stale non-authority audit entry for missing __init__.py",
+      "evidence": ["reports/STAGE_Z_MULTI_MODEL_RUNNER_PREPARATION_STATIC_AUDIT_V1.json lists absent src/stage_z_preparation/__init__.py, but 7f09596 keeps the active Z0R2 root at the earlier b16f1df tree and no authority artifact binds this audit", "tests/stage_z/test_stage_z_preparation.py"]
     },
     {
       "path": "src/utils/",
