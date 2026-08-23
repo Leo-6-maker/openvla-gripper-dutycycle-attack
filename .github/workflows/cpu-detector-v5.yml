@@ -83,5 +83,7 @@ jobs:
         run: pytest -q tests/detector_v5/test_stage_v_dynamic8.py tests/detector_v5/test_stage_v_gpu_resource_contract.py tests/detector_v5/test_stage_v_m3_5_phase_classifier.py tests/detector_v5/test_stage_v_m3_5_physical_taxonomy.py tests/detector_v5/test_stage_v_m3_5_intervention_parent.py tests/detector_v5/test_stage_v_m3_5_selection_v2.py tests/detector_v5/test_stage_v_m3_5_runtime_audit_v1_3.py
       - name: Run formal M4 outer-gate CPU contract tests
         run: pytest -q tests/detector_v5/test_stage_v_m4_matched_parent.py tests/detector_v5/test_stage_v_m4_formal_resource_gate.py
+      - name: Run Stage X audit-only CPU contracts
+        run: pytest -q tests/stage_x tests/test_stage_x_primary_matrix_runner.py
       - name: Check patch whitespace
         run: git diff --check

@@ -1,0 +1,43 @@
+name: repository-hygiene
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  repository-hygiene-cpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install minimal test dependency
+        run: python -m pip install pytest
+      - name: Audit immutable authority paths
+        run: python scripts/repository/audit_immutable_authority_paths.py
+      - name: Parse repository index JSON
+        run: |
+          python -m json.tool docs/repository/REPOSITORY_LIFECYCLE_LEDGER_V1.json > /dev/null
+          python -m json.tool docs/repository/IMMUTABLE_AUTHORITY_PATHS_V1.json > /dev/null
+      - name: Compile repository and paper checks
+        run: |
+          python -m py_compile \
+            scripts/repository/audit_immutable_authority_paths.py \
+            scripts/paper/check_paper_v1_claims.py
+      - name: Check sealed Paper V1 claims read-only
+        run: python scripts/paper/check_paper_v1_claims.py
+      - name: Run repository and Stage Z static tests
+        run: pytest -q tests/repository tests/stage_z/test_stage_z_preparation.py
+      - name: Check patch whitespace
+        run: |
+          git show --check --format= HEAD
+          git diff --check
