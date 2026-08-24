@@ -1,0 +1,88 @@
+{
+  "action_before_intervention": [
+    0.035593315958976746,
+    -0.009974976070225239,
+    -0.014853298664093018,
+    -0.000747068552300334,
+    -0.000615825061686337,
+    -0.0027168416418135166,
+    -0.9986836910247803
+  ],
+  "action_meta": {
+    "action_after_libero_clip": [
+      0.035593315958976746,
+      -0.009974976070225239,
+      -0.014853298664093018,
+      -0.000747068552300334,
+      -0.000615825061686337,
+      -0.0027168416418135166,
+      -0.9986836910247803
+    ],
+    "action_was_clipped": false,
+    "chunk_length": 10,
+    "raw_action": [
+      0.035593315958976746,
+      -0.009974976070225239,
+      -0.014853298664093018,
+      -0.000747068552300334,
+      -0.000615825061686337,
+      -0.0027168416418135166,
+      -0.9986836910247803
+    ],
+    "replan": "fresh_policy_infer"
+  },
+  "branch_replay": {
+    "mode": "FRESH_OFFICIAL_ENV_AFTER_SNAPSHOT_RESTORE_PROBE",
+    "post_state_a_sha256": "acc93ea5650b80e43cc8428e190ecc9a7fe6182c86ba53529e5cf316cae6aac9",
+    "post_state_b_sha256": "acc93ea5650b80e43cc8428e190ecc9a7fe6182c86ba53529e5cf316cae6aac9",
+    "post_state_exact": true,
+    "pre_state_exact": true,
+    "pre_state_sha256": "3baeb562caa7bf14d04a26a77337be8f9c3a423dfeb07808d0efa3efbf30b3fb"
+  },
+  "canonical_parent_key": "libero_10/task_04/state_03",
+  "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+  "checkpoint_manifest": null,
+  "cuda_visible_devices": "4",
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3",
+        "pid": "3923068",
+        "used_memory_mib": "28538"
+      }
+    ],
+    "free_memory_mib": 52664,
+    "index": 4,
+    "used_memory_mib": 28558,
+    "utilization_gpu_percent": 53
+  },
+  "intervention": false,
+  "model_family": "M2_PI05_LIBERO",
+  "normalization": {
+    "checkpoint_mutated": false
+  },
+  "physical_outcome_read": false,
+  "role": "PRIMARY",
+  "runtime_counters": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 22,
+    "eval160_reads": 0,
+    "model_inference_calls": 1,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z1_RUNTIME_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_ENGINEERING_ONLY",
+  "selection_rank_sha256": "8ed42bb383b4328a021f6f991b53e4474c68528777704c6a40de4fba551a581a",
+  "state_id": 3,
+  "status": "PASS",
+  "suite": "libero_10",
+  "task_idx": 4,
+  "task_language": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+  "task_success_read": false,
+  "timestamp_utc": "2026-08-24T21:24:51Z"
+}
