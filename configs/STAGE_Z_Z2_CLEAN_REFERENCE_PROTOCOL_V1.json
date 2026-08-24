@@ -1,0 +1,133 @@
+{
+  "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V1",
+  "status": "STAGE_Z_Z2_CLEAN_REFERENCE_AUTHORIZED_BY_USER_DIRECT_CONTINUATION",
+  "authorization": {
+    "source": "user_direct_autonomous_continuation",
+    "instruction": "不用等待PI,自主往下推进",
+    "scope": "Z2 clean references and outcome-blind anchor selection only",
+    "scientific_execution": true,
+    "protected_evaluation": false
+  },
+  "supersedes": {
+    "path": "configs/STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V4.json",
+    "sha256": "e37acb1fa88fe38a27c847042c25e19937171ab4feafe8d652b9fecb323c12cb"
+  },
+  "git_binding": {
+    "commit": "ebb4b6d5e3df4418f5db01df2c5a4dd839dce9ec",
+    "tree": "e273bd647a3ae726a231a34f13989b5ce82260d9",
+    "runner": {
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "git_blob": "68d9f0201dadde2f93734a9cd8d67f4f3ee304ed",
+      "sha256": "b1206ca7624c109de2073d5bacce8b79eb76f59ca45e90b9131578752f643ba7"
+    },
+    "loader": {
+      "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+      "git_blob": "0489bc8dad28c6f44bd172550853d17624adc073",
+      "sha256": "7b36f7ccb09d460641e1e9bcbb6977958e8fd68f5d8130ac19f8381268f3ae32"
+    }
+  },
+  "authority": {
+    "z0r2_root_seal_sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d",
+    "z0r2_model_authority_sha256": "7abcc9505c42a15c143d1333c1b3eda3254b46f2d210d5b15fcb5a5db684ea79",
+    "z0r2_common_libero_sha256": "bf2f85f6a8719349d18daa80e36b4a70571bb7044f14b2addc0de555c3b4b118",
+    "shared_panel_path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+    "shared_panel_sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1",
+    "population": {
+      "shared_fresh_identities": 36,
+      "suite_denominators": {"libero_10": 10, "libero_goal": 6, "libero_object": 10, "libero_spatial": 10},
+      "structural_missing_cells": ["libero_goal/task_01", "libero_goal/task_04", "libero_goal/task_06", "libero_goal/task_09"],
+      "replacement": false,
+      "top_up": false,
+      "identity_reuse_after_exposure": false
+    }
+  },
+  "model_panel": {
+    "M0_OPENVLA": {
+      "authority": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
+      "authority_sha256": "d78c6e77547f0f0c3d0a05c75d3a114477adba0971ef8fdd9f4db4446ff63776",
+      "decision_boundary": "FRESH_PER_STEP"
+    },
+    "M1_OPENVLA_OFT": {
+      "source_commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "source_tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+      "checkpoint_manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+      "decision_boundary": "FRESH_OFT_ACTION_QUEUE",
+      "num_actions_chunk": 8,
+      "num_open_loop_steps": 8,
+      "residual_queue_at_anchor": "FORBIDDEN"
+    },
+    "M2_PI05_LIBERO": {
+      "source_commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "source_tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be",
+      "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+      "checkpoint_manifest_sha256": "d9104dfdea46eca2fadf05ec7fc478b19d39b19aa8dfda0e6adedcd6d6b6efac",
+      "decision_boundary": "FRESH_PI05_REPLAN",
+      "replan_steps": 5,
+      "action_horizon": 10,
+      "residual_chunk_at_anchor": "FORBIDDEN"
+    }
+  },
+  "common_libero": {
+    "commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+    "tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60",
+    "camera": "agentview",
+    "camera_size": [256, 256],
+    "preprocess": {"rotate_180": true, "resize": 224},
+    "dummy_wait_steps": 10,
+    "horizons": {"libero_10": 520, "libero_goal": 300, "libero_object": 280, "libero_spatial": 220}
+  },
+  "action_contract": {
+    "dimension": 7,
+    "arm_indices": [0, 1, 2, 3, 4, 5],
+    "gripper_index": 6,
+    "native_open": -1.0,
+    "native_close": 1.0,
+    "decode_reencode": false,
+    "silent_fallback": false,
+    "intervention": "NOT_IN_Z2_CLEAN_REFERENCE"
+  },
+  "anchor_selection": {
+    "critical_phases": ["CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY"],
+    "noncritical_phases": ["PRE_CONTACT"],
+    "phase_classifier": {
+      "path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py",
+      "schema": "STAGE_V_M3_5_PHASE_CLASSIFIER_V1",
+      "sha256": "e3c48886777a45cfe7d2b9942bbeeb6ebc992f29568846180d31d064b839fbe6"
+    },
+    "physical_taxonomy": {
+      "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+      "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+      "sha256": "52e2d393018e13f95cabf12d47bae41246733710e7505680c1ef533517b32240"
+    },
+    "selector": {
+      "path": "src/stage_z_preparation/anchors.py",
+      "sha256": "1ae9bb576861ae4598b41e4091f34c67c9e03f4f91c8e3b5604d3ba95289512a"
+    },
+    "minimum_remaining_horizon": 20,
+    "critical_salt": "STAGE_Z_Z2_CRITICAL_ANCHOR_V1_20260823",
+    "noncritical_salt": "STAGE_Z_Z2_NONCRITICAL_CONTROL_V1_20260823",
+    "selection": "sha256(salt|model_family|canonical_parent_key|step), then step",
+    "inputs": ["clean trajectory", "instantaneous privileged object/eef/contact geometry"],
+    "forbidden_inputs": ["task success", "reward", "terminal outcome", "future rows", "Student", "detector", "attack outcome", "manual label"],
+    "no_anchor_policy": "ABSTAIN_WITHOUT_REPLACEMENT"
+  },
+  "execution": {
+    "workers": "at most one per physical GPU",
+    "gpu_admission": "free_memory_mib > 20480 immediately before launch",
+    "foreign_processes": "record only; never touch",
+    "materialization": "M1 exact frozen revision, sequential suite cache only; no checkpoint mutation",
+    "clean_env_steps": true,
+    "clean_model_inference": true,
+    "physical_intervention": false,
+    "pgd": false,
+    "attacked_env_steps": false,
+    "v_phys_endpoint": false,
+    "protected_reads": false,
+    "eval160": false
+  },
+  "outputs": {
+    "receipt_schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+    "receipt_fields": ["clean action trace", "fresh-boundary snapshots", "critical candidates", "noncritical candidates", "selected anchor state", "selected clean action prefix", "counter firewall"],
+    "next_stage": "Z3 five-arm physical matrix only after clean-reference receipts are sealed"
+  }
+}
