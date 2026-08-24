@@ -1,0 +1,185 @@
+{
+  "schema": "STAGE_Z_Z1_ENGINEERING_CANARY_LEDGER_V1",
+  "status": "STAGE_Z_Z1_ENGINEERING_CANARY_LEDGER_FROZEN",
+  "gate": "STAGE_Z_Z1_MULTI_MODEL_RUNTIME_CANARY_QUALIFICATION_V1",
+  "namespace": "STAGE_Z_Z1_ENGINEERING_CANARY_V1_20260823",
+  "purpose": "Outcome-blind runtime engineering qualification only; every selected identity is permanently excluded from all Stage-Z scientific populations.",
+  "source_authority": {
+    "eligible_excluded_ledger": {
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_FRESH_CANARY_LEDGER_V1.json",
+      "sha256": "ad30ace4b647c1be4cc79e2683e013c34b7b3876fa2f19928de406c553344674",
+      "rows": 8,
+      "source_class": "F1C4_PERMANENTLY_EXCLUDED_ENGINEERING_NAMESPACE",
+      "all_rows_permanent_exclusion": true,
+      "all_rows_scientific_use_false": true,
+      "all_rows_outcome_read_false_at_source_freeze": true
+    },
+    "eligible_excluded_pre_gpu_audit": {
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_PRE_GPU_AUDIT_V1.json",
+      "sha256": "a45196b0786d7bc9bbdd3ec5120865b7e62bce5743cbb1400729860e9d346910"
+    },
+    "eligible_excluded_root": {
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_ROOT_SEAL_V1.json",
+      "sha256": "aec6e0098a52563d3f756b3d2dcfe514305c5bea436bd2581bd91c85afb79005"
+    },
+    "scientific_panel": {
+      "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+      "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1",
+      "overlap_count": 0,
+      "overlap_keys": []
+    },
+    "z0r2_provenance_receipt": {
+      "path": "reports/STAGE_Z_Z0R2_V2_GENERATION_PROVENANCE_RECEIPT_V1.json",
+      "sha256": "c319f9a01ec35297cf4f4b8f418745f8d634ad734b424100488262cc0db83b94"
+    }
+  },
+  "selection": {
+    "salt": "STAGE_Z_Z1_ENGINEERING_CANARY_V1_20260823",
+    "rank_rule": "sha256(salt|canonical_parent_key), then canonical_parent_key",
+    "per_suite_primary_count": 1,
+    "per_suite_backup_count": 1,
+    "selected_count": 8,
+    "same_identity_across_models": true,
+    "forbidden_inputs": [
+      "visual/physical outcome",
+      "Student/detector score",
+      "task success",
+      "V_phys",
+      "video/manual label",
+      "protected data",
+      "model behavior"
+    ],
+    "backup_consumption_rule": "A backup may be consumed only for a predeclared engineering-invalid reason: no legal fresh decision boundary with H_phys=10 remaining. No third replacement or top-up.",
+    "canonical_parent_keys_sha256": "fe97b4bd526d1e9ff372fff76ff8f4598f74a5780c26ac2eb3f073a768375429"
+  },
+  "selected": [
+    {
+      "suite": "libero_10",
+      "role": "PRIMARY",
+      "canonical_parent_key": "libero_10/task_04/state_03",
+      "task_idx": 4,
+      "state_id": 3,
+      "selection_rank_sha256": "8ed42bb383b4328a021f6f991b53e4474c68528777704c6a40de4fba551a581a",
+      "source_fixture_id": "F1C4_libero_10_task_04_state_03",
+      "source_role_ordinal": 2,
+      "source_rank_hash": "054b8c283aaa99b120002d7df99e8205137793f53e1269fc06d415bf7e5d25b3",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "outcome_read": false
+    },
+    {
+      "suite": "libero_10",
+      "role": "BACKUP",
+      "canonical_parent_key": "libero_10/task_05/state_08",
+      "task_idx": 5,
+      "state_id": 8,
+      "selection_rank_sha256": "c998573f86d195667a32650786194787bbe396d2b08378e7deb280a0bcb7245b",
+      "source_fixture_id": "F1C4_libero_10_task_05_state_08",
+      "source_role_ordinal": 1,
+      "source_rank_hash": "04120bcb0fcac787ca344d219ec6b0a95e09c11bb140176fb54504d6ab02f3eb",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "outcome_read": false
+    },
+    {
+      "suite": "libero_goal",
+      "role": "PRIMARY",
+      "canonical_parent_key": "libero_goal/task_08/state_05",
+      "task_idx": 8,
+      "state_id": 5,
+      "selection_rank_sha256": "2aee7f62956c0539410c50fcb9cf9b4ee4dd7a0d05d686258c2c97ed17927e9f",
+      "source_fixture_id": "F1C4_libero_goal_task_08_state_05",
+      "source_role_ordinal": 4,
+      "source_rank_hash": "0223f84effbcb46963403cc617f3118f2df3fbd9bb977973bf0e097caf184e02",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "outcome_read": false
+    },
+    {
+      "suite": "libero_goal",
+      "role": "BACKUP",
+      "canonical_parent_key": "libero_goal/task_06/state_03",
+      "task_idx": 6,
+      "state_id": 3,
+      "selection_rank_sha256": "b94adc1058f3f6dae4e9acb499e47fbdead303b059d012b28051d3f4597b25f2",
+      "source_fixture_id": "F1C4_libero_goal_task_06_state_03",
+      "source_role_ordinal": 3,
+      "source_rank_hash": "01092a2f5e213fa0dbfdd71ce6b2e0e69dcd627b9dfcbc2701e9e342e2157d64",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "outcome_read": false
+    },
+    {
+      "suite": "libero_object",
+      "role": "PRIMARY",
+      "canonical_parent_key": "libero_object/task_03/state_13",
+      "task_idx": 3,
+      "state_id": 13,
+      "selection_rank_sha256": "8deee4ce8f1e0725d411d63b426fdedc203c06b48d6195d4df8224a201095d5b",
+      "source_fixture_id": "F1C4_libero_object_task_03_state_13",
+      "source_role_ordinal": 5,
+      "source_rank_hash": "00e31f585a73dfd15824655f22f9a8bff09fa76ddca0d64afc5efbb600202902",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "outcome_read": false
+    },
+    {
+      "suite": "libero_object",
+      "role": "BACKUP",
+      "canonical_parent_key": "libero_object/task_05/state_14",
+      "task_idx": 5,
+      "state_id": 14,
+      "selection_rank_sha256": "9b46c8cee7d5a6bb8ab64279b41a76d1a419dff6d62233789258bc32cf4a8dcf",
+      "source_fixture_id": "F1C4_libero_object_task_05_state_14",
+      "source_role_ordinal": 6,
+      "source_rank_hash": "0148474e59f159390cfd77cbf9f22a012b4d69a989002de11698a1f10df91855",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "outcome_read": false
+    },
+    {
+      "suite": "libero_spatial",
+      "role": "PRIMARY",
+      "canonical_parent_key": "libero_spatial/task_08/state_01",
+      "task_idx": 8,
+      "state_id": 1,
+      "selection_rank_sha256": "62c39b2f34326f2f64dc339821dbb60a91a49e9bd4fd6b4639237655583151aa",
+      "source_fixture_id": "F1C4_libero_spatial_task_08_state_01",
+      "source_role_ordinal": 7,
+      "source_rank_hash": "017ca05770bfe68d6d64a40f130e5a7f46e9d50734c7f9e4cb3af75c8310a82e",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "outcome_read": false
+    },
+    {
+      "suite": "libero_spatial",
+      "role": "BACKUP",
+      "canonical_parent_key": "libero_spatial/task_02/state_13",
+      "task_idx": 2,
+      "state_id": 13,
+      "selection_rank_sha256": "ee997f1d4681e6a35e1e1f0e7753e9ae634e7af382f3a953589ef923c13dc491",
+      "source_fixture_id": "F1C4_libero_spatial_task_02_state_13",
+      "source_role_ordinal": 8,
+      "source_rank_hash": "0228f7a6bbe4b38f35a99b65e2d3ccd613dc6ed545d1e1d262b6dd901244d3dc",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "outcome_read": false
+    }
+  ],
+  "runtime_exposure": {
+    "model_inference_calls": 0,
+    "env_step_calls": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "stage_z_scientific_parent_exposure": 0,
+    "eval160": "UNREAD",
+    "protected": "UNREAD"
+  },
+  "git_binding": {
+    "source_commit": "b4552524908ac0ef48e3a693549487e947955234",
+    "source_tree": "bed216d269843f6023d86504da25f74fc272db48"
+  },
+  "next_legal_action": "FREEZE_Z1_RUNTIME_SOURCE_STATIC_AUTHORITY"
+}
