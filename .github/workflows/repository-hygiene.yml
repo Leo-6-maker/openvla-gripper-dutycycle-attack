@@ -39,7 +39,7 @@ jobs:
       - name: Check deterministic Paper V2 exports
         run: python scripts/paper_v2/export_paper_v2_evidence.py --check
       - name: Run repository, Paper V2, and Stage Z static tests
-        run: pytest -q tests/repository tests/paper_v2 tests/stage_z/test_stage_z_preparation.py
+        run: pytest -q tests/repository tests/paper_v2 tests/stage_z/test_stage_z_preparation.py tests/stage_z/test_stage_z_z1r1_optional_import.py
       - name: Check patch whitespace
         run: |
           git show --check --format= HEAD
