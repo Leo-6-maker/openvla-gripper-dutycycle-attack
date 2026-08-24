@@ -16,10 +16,10 @@
   },
   "runtime_code_binding": {
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "commit": "196062b3093cfef926b9e61ddd54bb10a147eab6",
-    "tree": "c9a1825e24ffc76b918a770953c2d6cac948f7cb",
+    "commit": "125e30896b3d4b2d5a92bde9f8dc6ffe00a42c62",
+    "tree": "65d48d9a7cd3c216992031112a8889d04083b96c",
     "runner_path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
-    "runner_git_blob": "8ce67e4e824b91ece5b20a2a7d37a22e1661ef7e",
+    "runner_git_blob": "0c55ae8fa791f4de5eb7ec592f51a8c284a8637c",
     "preflight_path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py",
     "preflight_git_blob": "414acc538ee2d43d25460ea89a36677f899a4a9d"
   },
