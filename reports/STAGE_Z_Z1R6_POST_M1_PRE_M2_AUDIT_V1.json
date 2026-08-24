@@ -1,0 +1,159 @@
+{
+  "checks": {
+    "M0_checkpoints": {
+      "libero_10": {
+        "bytes": 15085093727,
+        "files": 18,
+        "ignored_generated_files": [],
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10"
+      },
+      "libero_goal": {
+        "bytes": 15085095390,
+        "files": 19,
+        "ignored_generated_files": [],
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal"
+      },
+      "libero_object": {
+        "bytes": 15085095882,
+        "files": 19,
+        "ignored_generated_files": [],
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object"
+      },
+      "libero_spatial": {
+        "bytes": 15085095735,
+        "files": 19,
+        "ignored_generated_files": [
+          "__pycache__/configuration_prismatic.cpython-310.pyc",
+          "__pycache__/modeling_prismatic.cpython-310.pyc",
+          "__pycache__/processing_prismatic.cpython-310.pyc"
+        ],
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"
+      }
+    },
+    "M1_sequential_materialization": {
+      "pre_gpu_status": "PENDING_PER_CELL_MANIFEST_VERIFICATION",
+      "root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache"
+    },
+    "M2_checkpoint": {
+      "bytes": 12439085481,
+      "files": 16,
+      "ignored_generated_files": [],
+      "path": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero"
+    },
+    "canary_rows": 8,
+    "common_libero": {
+      "commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+      "status": "CLEAN",
+      "tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60"
+    },
+    "eligible_gpu_indices": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "engineering_canary_key_count": 8,
+    "foreign_process_policy": "record-only-never-touch",
+    "gpu_snapshot": [
+      {
+        "free_memory_mib": 4732,
+        "index": 0,
+        "used_memory_mib": 76491,
+        "utilization_gpu_percent": 100
+      },
+      {
+        "free_memory_mib": 4732,
+        "index": 1,
+        "used_memory_mib": 76491,
+        "utilization_gpu_percent": 100
+      },
+      {
+        "free_memory_mib": 4732,
+        "index": 2,
+        "used_memory_mib": 76490,
+        "utilization_gpu_percent": 100
+      },
+      {
+        "free_memory_mib": 4732,
+        "index": 3,
+        "used_memory_mib": 76491,
+        "utilization_gpu_percent": 100
+      },
+      {
+        "free_memory_mib": 52664,
+        "index": 4,
+        "used_memory_mib": 28558,
+        "utilization_gpu_percent": 53
+      },
+      {
+        "free_memory_mib": 52662,
+        "index": 5,
+        "used_memory_mib": 28560,
+        "utilization_gpu_percent": 96
+      },
+      {
+        "free_memory_mib": 52664,
+        "index": 6,
+        "used_memory_mib": 28558,
+        "utilization_gpu_percent": 50
+      },
+      {
+        "free_memory_mib": 52662,
+        "index": 7,
+        "used_memory_mib": 28560,
+        "utilization_gpu_percent": 88
+      }
+    ],
+    "ledger_sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc",
+    "libero_config": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/libero_config/config.yaml",
+      "sha256": "c23f84407c90e7ae21f9b55cdf14ac245811bffe3d1e5d66bf04c074eb8b8a61"
+    },
+    "openpi": {
+      "commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "status": "CLEAN",
+      "tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be"
+    },
+    "openvla_oft": {
+      "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "status": "CLEAN",
+      "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32"
+    },
+    "protocol_status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+    "runner_git_binding": {
+      "commit": "4befce16931ef830f39e9865733fa20edfa9becf",
+      "launcher_git_blob": "6b14b3fa933660977451cc808a3d68ba06689723",
+      "loader_static_receipt": "reports/STAGE_Z_Z1R6_OFT_IMAGE_CARDINALITY_PARITY_STATIC_V1.json",
+      "loader_static_receipt_sha256": "700770ae4eb2ad9b21a9491699103f351c22dbeacc1a46ca9cb4dfefe4407c88",
+      "preflight_git_blob": "414acc538ee2d43d25460ea89a36677f899a4a9d",
+      "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+      "runner_git_blob": "5f09afe8a59c91930d490ca26de9e6a1e9895a96",
+      "runner_path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+      "smoke_git_blob": "0f02de48e4368dbd786d8cec36a08f9ca5743e4c",
+      "test_git_blob": "a82a144e9cc59eb8a57adbbba177e4d3f28c054d",
+      "test_path": "tests/stage_z/test_stage_z_z1r1_optional_import.py",
+      "tree": "b769850482afa48932ec586f1e3f1ea0b921dce0"
+    },
+    "scientific_overlap_count": 0,
+    "source_authority_sha256": "27317100cff0b8041db5f9650f06a8be9cd6b3f93d80ec9bf9ace534040061d0"
+  },
+  "claim_boundary": "Pre-GPU engineering/source/resource audit only; no model or simulator execution.",
+  "counters": {
+    "attacked_env_steps": 0,
+    "env_step": 0,
+    "eval160": 0,
+    "gpu_workers": 0,
+    "model_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "simulator": 0,
+    "v_phys": 0
+  },
+  "gate": "STAGE_Z_Z1R6_OFFICIAL_IMAGE_INPUT_CARDINALITY_PARITY_RECOVERY",
+  "next_legal_action": "RUN_Z1_ENGINEERING_CANARY_CELLS",
+  "schema": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_V1",
+  "status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS",
+  "timestamp_utc": "2026-08-24T20:18:16Z"
+}
