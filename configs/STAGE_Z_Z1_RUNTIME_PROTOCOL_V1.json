@@ -85,7 +85,8 @@
     "eval160_reads": 0,
     "protected_reads": 0,
     "scientific_parent_exposure": 0,
-    "branch_replay": "snapshot exact simulator state, one clean action, restore, replay same clean action, require exact state equality",
+    "branch_replay": "snapshot exact simulator state, restore and require exact pre-state equality, then reinstantiate the same frozen official canary environment and replay the same clean action, requiring exact post-state equality",
+    "same_instance_restore_note": "The official robosuite binding leaves MuJoCo solver internals across set_state; same-instance post-action byte replay is therefore diagnostic-only and not the Z1 branch authority.",
     "task_success_and_physical_outcome": "not read or persisted"
   },
   "authorized_scope": {
