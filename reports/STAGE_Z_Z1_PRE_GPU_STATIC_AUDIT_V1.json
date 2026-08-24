@@ -59,31 +59,31 @@
         "free_memory_mib": 4732,
         "index": 0,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 100
+        "utilization_gpu_percent": 81
       },
       {
         "free_memory_mib": 4732,
         "index": 1,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 100
+        "utilization_gpu_percent": 93
       },
       {
         "free_memory_mib": 4732,
         "index": 2,
         "used_memory_mib": 76490,
-        "utilization_gpu_percent": 100
+        "utilization_gpu_percent": 93
       },
       {
         "free_memory_mib": 4732,
         "index": 3,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 100
+        "utilization_gpu_percent": 84
       },
       {
         "free_memory_mib": 29578,
         "index": 4,
         "used_memory_mib": 51644,
-        "utilization_gpu_percent": 96
+        "utilization_gpu_percent": 97
       },
       {
         "free_memory_mib": 29578,
@@ -121,16 +121,16 @@
     },
     "protocol_status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
     "runner_git_binding": {
-      "commit": "8e931dafff7b7a5591931bcdf897e804cfac695e",
+      "commit": "7baddf396a370269eb69927c508ba8b8136659ca",
       "preflight_git_blob": "414acc538ee2d43d25460ea89a36677f899a4a9d",
       "preflight_path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py",
       "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-      "runner_git_blob": "b141f4a8a86e3c1ea467a1bf45880fb0a75ed85d",
+      "runner_git_blob": "6a5a60958ab29eb68f27986548a6e494a60e0312",
       "runner_path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
-      "tree": "1c626df11049ea87f2a0fa769b3d88e4e36b5298"
+      "tree": "fbea366319e5db1d3b17b853c0c24ba129cbbce3"
     },
     "scientific_overlap_count": 0,
-    "source_authority_sha256": "c2f49d16adab7932a3bdad8f9d03742cfe40d50aee5c9a3362b3af854216e40e"
+    "source_authority_sha256": "8d62f64e8c87b6e59dc728df93f1e2d0c70cfddd8684cfce9204508d1c5da367"
   },
   "claim_boundary": "Pre-GPU engineering/source/resource audit only; no model or simulator execution.",
   "counters": {
@@ -150,5 +150,5 @@
   "next_legal_action": "RUN_Z1_ENGINEERING_CANARY_CELLS",
   "schema": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_V1",
   "status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS",
-  "timestamp_utc": "2026-08-24T12:04:04Z"
+  "timestamp_utc": "2026-08-24T12:10:54Z"
 }
