@@ -194,6 +194,29 @@ def configure_libero(config: dict[str, Any]) -> None:
     common_python_root = str(Path(common_root) / "libero")
     if common_python_root not in sys.path:
         sys.path.insert(0, common_python_root)
+    import importlib
+    import importlib.util
+
+    official_init = (Path(common_python_root) / "libero" / "__init__.py").resolve()
+    parent = importlib.import_module("libero")
+    loaded = sys.modules.get("libero.libero")
+    if loaded is None or Path(str(getattr(loaded, "__file__", ""))).resolve() != official_init:
+        for name in list(sys.modules):
+            if name == "libero.libero" or name.startswith("libero.libero."):
+                del sys.modules[name]
+        spec = importlib.util.spec_from_file_location(
+            "libero.libero",
+            official_init,
+            submodule_search_locations=[str(official_init.parent)],
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError("OFFICIAL_LIBERO_SPEC_UNAVAILABLE")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["libero.libero"] = module
+        setattr(parent, "libero", module)
+        spec.loader.exec_module(module)
+    if Path(str(getattr(sys.modules["libero.libero"], "__file__", ""))).resolve() != official_init:
+        raise RuntimeError("OFFICIAL_LIBERO_MODULE_PATH_MISMATCH")
 
 
 def make_libero_env(config: dict[str, Any], suite: str, task_idx: int):
