@@ -135,6 +135,13 @@ def test_m2_binds_official_src_layout_package_roots() -> None:
     assert 'Path(source) / "packages/openpi-client"' not in load_source
 
 
+def test_m2_python310_datetime_compatibility_alias_is_scoped_to_openpi_load() -> None:
+    source = (ROOT / "scripts/stage_z/run_stage_z_z1_runtime_canary.py").read_text(encoding="utf-8")
+    load_source = source[source.index("def load_pi05("):]
+    assert 'if not hasattr(datetime, "UTC"):' in load_source
+    assert "datetime.UTC = datetime.timezone.utc" in load_source
+
+
 def test_oft_key_resolution_does_not_rewrite_checkpoint_json(tmp_path) -> None:
     runner = importlib.import_module(RUNNER_MODULE)
     stats_path = tmp_path / "dataset_statistics.json"

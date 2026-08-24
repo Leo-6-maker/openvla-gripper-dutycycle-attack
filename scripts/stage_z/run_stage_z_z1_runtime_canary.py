@@ -418,6 +418,13 @@ def load_pi05(checkpoint: str):
     # package roots instead of relying on the repository root being importable.
     sys.path.insert(0, str(Path(source) / "src"))
     sys.path.insert(0, str(Path(source) / "packages/openpi-client/src"))
+    # The mandated A800 runtime is Python 3.10 while the frozen OpenPI source
+    # uses the Python 3.11 datetime.UTC spelling. Preserve the source checkout
+    # and supply only this equivalent standard-library compatibility alias.
+    import datetime
+
+    if not hasattr(datetime, "UTC"):
+        datetime.UTC = datetime.timezone.utc
     from openpi.policies import policy_config  # type: ignore
     from openpi.training import config as openpi_config  # type: ignore
 
