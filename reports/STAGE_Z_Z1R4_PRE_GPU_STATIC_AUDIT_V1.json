@@ -83,25 +83,25 @@
         "free_memory_mib": 52664,
         "index": 4,
         "used_memory_mib": 28558,
-        "utilization_gpu_percent": 3
+        "utilization_gpu_percent": 57
       },
       {
         "free_memory_mib": 52662,
         "index": 5,
         "used_memory_mib": 28560,
-        "utilization_gpu_percent": 56
+        "utilization_gpu_percent": 79
       },
       {
         "free_memory_mib": 52664,
         "index": 6,
         "used_memory_mib": 28558,
-        "utilization_gpu_percent": 16
+        "utilization_gpu_percent": 100
       },
       {
         "free_memory_mib": 52662,
         "index": 7,
         "used_memory_mib": 28560,
-        "utilization_gpu_percent": 14
+        "utilization_gpu_percent": 78
       }
     ],
     "ledger_sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc",
@@ -134,7 +134,7 @@
       "tree": "2c345ff07d36645af0d5342b21da892604c8a197"
     },
     "scientific_overlap_count": 0,
-    "source_authority_sha256": "b88181d63a25e15bdb41bb0077875f8fc46e0263195de7aa5e8c5c3826792958"
+    "source_authority_sha256": "cf174413a64521b32b8b436040d894803f48d6e4175a90c736dee635bb7d7aae"
   },
   "claim_boundary": "Pre-GPU engineering/source/resource audit only; no model or simulator execution.",
   "counters": {
@@ -154,5 +154,5 @@
   "next_legal_action": "RUN_Z1_ENGINEERING_CANARY_CELLS",
   "schema": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_V1",
   "status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS",
-  "timestamp_utc": "2026-08-24T19:04:25Z"
+  "timestamp_utc": "2026-08-24T19:07:59Z"
 }
