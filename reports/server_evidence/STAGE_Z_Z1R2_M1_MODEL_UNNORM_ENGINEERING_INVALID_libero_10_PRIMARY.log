@@ -1,0 +1,40 @@
+2026-08-25 01:50:05.481851: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-08-25 01:50:05.562991: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2026-08-25 01:50:05.563095: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2026-08-25 01:50:05.565602: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2026-08-25 01:50:05.577548: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-08-25 01:50:07.117832: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+Using LIBERO constants:
+  NUM_ACTIONS_CHUNK = 8
+  ACTION_DIM = 7
+  PROPRIO_DIM = 8
+  ACTION_PROPRIO_NORMALIZATION_TYPE = bounds_q99
+If needed, manually set the correct constants in `prismatic/vla/constants.py`!
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:05<00:15,  5.17s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:10<00:10,  5.01s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:15<00:05,  5.02s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:15<00:00,  3.37s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:15<00:00,  3.99s/it]
+Traceback (most recent call last):
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/launch_stage_z_z1_runtime.py", line 37, in <module>
+    main()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/launch_stage_z_z1_runtime.py", line 33, in main
+    runpy.run_path(str(RUNNER), run_name="__main__")
+  File "/home/sz/miniconda3/envs/hallo/lib/python3.10/runpy.py", line 289, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/home/sz/miniconda3/envs/hallo/lib/python3.10/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/home/sz/miniconda3/envs/hallo/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 579, in <module>
+    main()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 572, in main
+    result = run_cell(config, ledger, args)
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 530, in run_cell
+    result = authorized_runtime()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 523, in authorized_runtime
+    return run_authorized_callback(
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/src/stage_z_preparation/runner.py", line 25, in run_authorized_callback
+    return callback()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 459, in execute
+    infer, model = load_openvla(checkpoint, oft=True, suite=args.suite)
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 315, in load_openvla
+    raise RuntimeError(f"MODEL_UNNORM_KEY_MISSING:{suite}")
+RuntimeError: MODEL_UNNORM_KEY_MISSING:libero_10
