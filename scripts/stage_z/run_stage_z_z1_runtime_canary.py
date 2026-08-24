@@ -414,8 +414,10 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
 
 def load_pi05(checkpoint: str):
     source = "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822"
-    sys.path.insert(0, source)
-    sys.path.insert(0, str(Path(source) / "packages/openpi-client"))
+    # The frozen official checkout uses src-layout packages; bind those exact
+    # package roots instead of relying on the repository root being importable.
+    sys.path.insert(0, str(Path(source) / "src"))
+    sys.path.insert(0, str(Path(source) / "packages/openpi-client/src"))
     from openpi.policies import policy_config  # type: ignore
     from openpi.training import config as openpi_config  # type: ignore
 
