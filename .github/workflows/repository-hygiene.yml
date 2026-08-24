@@ -33,7 +33,9 @@ jobs:
           python -m py_compile \
             scripts/repository/audit_immutable_authority_paths.py \
             scripts/paper/check_paper_v1_claims.py \
-            scripts/paper_v2/export_paper_v2_evidence.py
+            scripts/paper_v2/export_paper_v2_evidence.py \
+            scripts/stage_z/launch_stage_z_z1_runtime.py \
+            scripts/stage_z/smoke_stage_z_z1r2_m1_import.py
       - name: Check sealed Paper V1 claims read-only
         run: python scripts/paper/check_paper_v1_claims.py
       - name: Check deterministic Paper V2 exports
