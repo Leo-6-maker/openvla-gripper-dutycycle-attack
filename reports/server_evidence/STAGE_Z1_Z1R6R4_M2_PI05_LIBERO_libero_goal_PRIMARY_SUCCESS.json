@@ -1,0 +1,88 @@
+{
+  "action_before_intervention": [
+    0.015853067860007286,
+    0.0005343691445887089,
+    -0.013022609055042267,
+    0.0007374804699793458,
+    -0.0011292032431811094,
+    -0.0033345771953463554,
+    -1.0
+  ],
+  "action_meta": {
+    "action_after_libero_clip": [
+      0.015853067860007286,
+      0.0005343691445887089,
+      -0.013022609055042267,
+      0.0007374804699793458,
+      -0.0011292032431811094,
+      -0.0033345771953463554,
+      -1.0
+    ],
+    "action_was_clipped": true,
+    "chunk_length": 10,
+    "raw_action": [
+      0.015853067860007286,
+      0.0005343691445887089,
+      -0.013022609055042267,
+      0.0007374804699793458,
+      -0.0011292032431811094,
+      -0.0033345771953463554,
+      -1.0016127824783325
+    ],
+    "replan": "fresh_policy_infer"
+  },
+  "branch_replay": {
+    "mode": "FRESH_OFFICIAL_ENV_AFTER_SNAPSHOT_RESTORE_PROBE",
+    "post_state_a_sha256": "cc54f38d8324c610ae691a9f7fa02696a31e86785c9b90c8b8f5a53391e89fa4",
+    "post_state_b_sha256": "cc54f38d8324c610ae691a9f7fa02696a31e86785c9b90c8b8f5a53391e89fa4",
+    "post_state_exact": true,
+    "pre_state_exact": true,
+    "pre_state_sha256": "afe12b3eaa3158c98d000352dbff81867d08fe72ce177110ecc633dad6691512"
+  },
+  "canonical_parent_key": "libero_goal/task_08/state_05",
+  "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+  "checkpoint_manifest": null,
+  "cuda_visible_devices": "4",
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3",
+        "pid": "3923068",
+        "used_memory_mib": "28538"
+      }
+    ],
+    "free_memory_mib": 52664,
+    "index": 4,
+    "used_memory_mib": 28558,
+    "utilization_gpu_percent": 56
+  },
+  "intervention": false,
+  "model_family": "M2_PI05_LIBERO",
+  "normalization": {
+    "checkpoint_mutated": false
+  },
+  "physical_outcome_read": false,
+  "role": "PRIMARY",
+  "runtime_counters": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 22,
+    "eval160_reads": 0,
+    "model_inference_calls": 1,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z1_RUNTIME_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_ENGINEERING_ONLY",
+  "selection_rank_sha256": "2aee7f62956c0539410c50fcb9cf9b4ee4dd7a0d05d686258c2c97ed17927e9f",
+  "state_id": 5,
+  "status": "PASS",
+  "suite": "libero_goal",
+  "task_idx": 8,
+  "task_language": "put the bowl on the plate",
+  "task_success_read": false,
+  "timestamp_utc": "2026-08-24T21:28:18Z"
+}
