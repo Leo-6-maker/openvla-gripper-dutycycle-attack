@@ -65,43 +65,43 @@
         "free_memory_mib": 4732,
         "index": 1,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 0
+        "utilization_gpu_percent": 100
       },
       {
         "free_memory_mib": 4732,
         "index": 2,
         "used_memory_mib": 76490,
-        "utilization_gpu_percent": 0
+        "utilization_gpu_percent": 100
       },
       {
         "free_memory_mib": 4732,
         "index": 3,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 0
+        "utilization_gpu_percent": 100
       },
       {
         "free_memory_mib": 52664,
         "index": 4,
         "used_memory_mib": 28558,
-        "utilization_gpu_percent": 90
+        "utilization_gpu_percent": 58
       },
       {
         "free_memory_mib": 52662,
         "index": 5,
         "used_memory_mib": 28560,
-        "utilization_gpu_percent": 31
+        "utilization_gpu_percent": 74
       },
       {
         "free_memory_mib": 52664,
         "index": 6,
         "used_memory_mib": 28558,
-        "utilization_gpu_percent": 0
+        "utilization_gpu_percent": 45
       },
       {
         "free_memory_mib": 52662,
         "index": 7,
         "used_memory_mib": 28560,
-        "utilization_gpu_percent": 3
+        "utilization_gpu_percent": 77
       }
     ],
     "ledger_sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc",
@@ -121,16 +121,16 @@
     },
     "protocol_status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
     "runner_git_binding": {
-      "commit": "125e30896b3d4b2d5a92bde9f8dc6ffe00a42c62",
+      "commit": "e62c1bb44593e00bc050742f7af72e737e6df5d0",
       "preflight_git_blob": "414acc538ee2d43d25460ea89a36677f899a4a9d",
       "preflight_path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py",
       "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-      "runner_git_blob": "0c55ae8fa791f4de5eb7ec592f51a8c284a8637c",
+      "runner_git_blob": "80bf607a3df54fc8fa1529d689322fd9d16f75f1",
       "runner_path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
-      "tree": "65d48d9a7cd3c216992031112a8889d04083b96c"
+      "tree": "fae27406dc7b8b91190d7220b37beac16808310a"
     },
     "scientific_overlap_count": 0,
-    "source_authority_sha256": "6ffdb70182df86e0cbc4691a180dd1a6da3e8f9ad6199e1662a4b0aa8573a957"
+    "source_authority_sha256": "34c528cc21ac74d1c007b452c9f801a976c4600d9e98cad62fa5aa2d0539b275"
   },
   "claim_boundary": "Pre-GPU engineering/source/resource audit only; no model or simulator execution.",
   "counters": {
@@ -150,5 +150,5 @@
   "next_legal_action": "RUN_Z1_ENGINEERING_CANARY_CELLS",
   "schema": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_V1",
   "status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS",
-  "timestamp_utc": "2026-08-24T15:00:55Z"
+  "timestamp_utc": "2026-08-24T15:25:10Z"
 }
