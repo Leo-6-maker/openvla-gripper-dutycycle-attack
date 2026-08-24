@@ -13,12 +13,12 @@
     "sha256": "e37acb1fa88fe38a27c847042c25e19937171ab4feafe8d652b9fecb323c12cb"
   },
   "git_binding": {
-    "commit": "ebb4b6d5e3df4418f5db01df2c5a4dd839dce9ec",
-    "tree": "e273bd647a3ae726a231a34f13989b5ce82260d9",
+    "commit": "d4b1d659bb8263de1913c851f6629beeeddc4f1f",
+    "tree": "8a5ebd130e3e2cdc95e7aa32f78498197b92c0f6",
     "runner": {
       "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
-      "git_blob": "68d9f0201dadde2f93734a9cd8d67f4f3ee304ed",
-      "sha256": "b1206ca7624c109de2073d5bacce8b79eb76f59ca45e90b9131578752f643ba7"
+      "git_blob": "cf0dd0469c323be8123cf6bb06b28c1e7107f45f",
+      "sha256": "c4340a24c304c76b8404b5203bb342f6e26e6993c3a1dc017def1ba235daa041"
     },
     "loader": {
       "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
