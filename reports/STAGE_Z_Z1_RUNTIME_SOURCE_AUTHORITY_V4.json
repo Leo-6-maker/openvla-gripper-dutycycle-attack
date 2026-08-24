@@ -74,6 +74,26 @@
     "config_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/libero_config",
     "config_must_point_to_checkout": true
   },
+  "external_source_checkouts": {
+    "common_libero": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+      "commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+      "tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60",
+      "git_status_required": "CLEAN"
+    },
+    "openvla_oft": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+      "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+      "git_status_required": "CLEAN"
+    },
+    "openpi": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822",
+      "commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be",
+      "git_status_required": "CLEAN"
+    }
+  },
   "r1_and_r2_evidence": {
     "r1_terminal_synthesis": {
       "path": "reports/STAGE_Z_Z1R1_TERMINAL_SYNTHESIS_V1.json",
