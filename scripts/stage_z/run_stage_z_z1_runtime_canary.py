@@ -30,6 +30,21 @@ FREE_MEMORY_MIN_MIB = 20_480
 PHASE = "Z1"
 
 
+class OFTUnnormKeyResolutionError(RuntimeError):
+    """Dedicated engineering-invalid failure for missing OFT norm statistics."""
+
+
+def resolve_official_unnorm_key(norm_stats: dict[str, Any], suite: str) -> tuple[str, str]:
+    """Match frozen OpenVLA-OFT ``check_unnorm_key`` semantics exactly."""
+    candidate = suite
+    if candidate in norm_stats:
+        return candidate, "EXACT_SUITE_KEY"
+    fallback = f"{candidate}_no_noops"
+    if fallback in norm_stats:
+        return fallback, "OFFICIAL_NO_NOOPS_FALLBACK"
+    raise OFTUnnormKeyResolutionError(f"MODEL_UNNORM_KEY_MISSING:{suite}")
+
+
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -311,8 +326,17 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
     if not hasattr(model, "norm_stats"):
         stats = Path(checkpoint) / "dataset_statistics.json"
         model.norm_stats = json.loads(stats.read_text(encoding="utf-8"))
-    if suite not in model.norm_stats:
-        raise RuntimeError(f"MODEL_UNNORM_KEY_MISSING:{suite}")
+    resolved_unnorm_key, resolution_mode = resolve_official_unnorm_key(model.norm_stats, suite)
+    dataset_statistics_path = Path(checkpoint) / "dataset_statistics.json"
+    normalization_metadata = {
+        "requested_task_suite": suite,
+        "available_norm_stats_keys": sorted(str(key) for key in model.norm_stats),
+        "resolved_unnorm_key": resolved_unnorm_key,
+        "resolution_mode": resolution_mode,
+        "dataset_statistics_path": str(dataset_statistics_path),
+        "dataset_statistics_sha256": sha256_file(dataset_statistics_path) if dataset_statistics_path.is_file() else None,
+        "checkpoint_mutated": False,
+    }
 
     if not oft:
         # M0's checkpoint API returns one 7-D action; the official evaluator
@@ -353,7 +377,7 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
         num_images_in_input=2 if oft else 1,
         use_proprio=oft,
         center_crop=True,
-        unnorm_key=suite,
+        unnorm_key=resolved_unnorm_key,
     )
 
     def infer(obs: dict[str, Any], instruction: str) -> tuple[np.ndarray, dict[str, Any]]:
@@ -371,7 +395,7 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
         env_action = validate_action(process_action(raw_first.copy(), "openvla"))
         return env_action, {"raw_action": raw_first.tolist(), "chunk_length": len(raw), "postprocess": "official_openvla"}
 
-    return infer, model
+    return infer, model, normalization_metadata
 
 
 def load_pi05(checkpoint: str):
@@ -454,11 +478,12 @@ def run_cell(config: dict[str, Any], ledger: dict[str, Any], args: argparse.Name
 
         def execute() -> dict[str, Any]:
             if args.model_family == "M0_OPENVLA":
-                infer, model = load_openvla(checkpoint, oft=False, suite=args.suite)
+                infer, model, normalization_metadata = load_openvla(checkpoint, oft=False, suite=args.suite)
             elif args.model_family == "M1_OPENVLA_OFT":
-                infer, model = load_openvla(checkpoint, oft=True, suite=args.suite)
+                infer, model, normalization_metadata = load_openvla(checkpoint, oft=True, suite=args.suite)
             else:
                 infer, model = load_pi05(checkpoint)
+                normalization_metadata = {"checkpoint_mutated": False}
             env, task_suite, task = make_libero_env(config, args.suite, args.task_idx)
             try:
                 env.reset()
@@ -516,6 +541,7 @@ def run_cell(config: dict[str, Any], ledger: dict[str, Any], args: argparse.Name
                         "pre_state_exact": True,
                         "post_state_exact": True,
                     },
+                    "normalization": normalization_metadata,
                 }
             finally:
                 env.close()

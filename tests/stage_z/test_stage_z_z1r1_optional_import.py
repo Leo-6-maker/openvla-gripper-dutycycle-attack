@@ -3,6 +3,7 @@ from __future__ import annotations
 import builtins
 import importlib
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -67,3 +68,53 @@ def test_runtime_launcher_binds_root_src_and_cwd(monkeypatch) -> None:
     assert changed == [ROOT]
     assert launcher.sys.path[0] == str(ROOT / "src")
     assert launcher.os.environ["PYTHONPATH"].split(launcher.os.pathsep)[0] == str(ROOT / "src")
+
+
+def test_oft_unnorm_key_exact_suite_wins() -> None:
+    runner = importlib.import_module(RUNNER_MODULE)
+    resolved, mode = runner.resolve_official_unnorm_key({"libero_10": {}, "libero_10_no_noops": {}}, "libero_10")
+    assert resolved == "libero_10"
+    assert mode == "EXACT_SUITE_KEY"
+
+
+def test_oft_unnorm_key_uses_official_no_noops_fallback() -> None:
+    runner = importlib.import_module(RUNNER_MODULE)
+    resolved, mode = runner.resolve_official_unnorm_key({"libero_10_no_noops": {}}, "libero_10")
+    assert resolved == "libero_10_no_noops"
+    assert mode == "OFFICIAL_NO_NOOPS_FALLBACK"
+
+
+def test_oft_unnorm_key_missing_fails_closed() -> None:
+    runner = importlib.import_module(RUNNER_MODULE)
+    try:
+        runner.resolve_official_unnorm_key({"libero_goal": {}}, "libero_10")
+    except runner.OFTUnnormKeyResolutionError as exc:
+        assert str(exc) == "MODEL_UNNORM_KEY_MISSING:libero_10"
+    else:
+        raise AssertionError("missing OFT norm key did not fail closed")
+
+
+def test_oft_resolved_key_reaches_get_vla_action_config() -> None:
+    source = (ROOT / "scripts/stage_z/run_stage_z_z1_runtime_canary.py").read_text(encoding="utf-8")
+    load_source = source[source.index("def load_openvla("):]
+    assert "unnorm_key=resolved_unnorm_key" in load_source
+    assert "unnorm_key=suite" not in load_source
+    assert "get_vla_action(" in load_source
+
+
+def test_oft_key_resolution_does_not_rewrite_checkpoint_json(tmp_path) -> None:
+    runner = importlib.import_module(RUNNER_MODULE)
+    stats_path = tmp_path / "dataset_statistics.json"
+    original = b'{"libero_10_no_noops": {"q01": [0], "q99": [1]}}\n'
+    stats_path.write_bytes(original)
+    stats = json.loads(stats_path.read_text(encoding="utf-8"))
+    runner.resolve_official_unnorm_key(stats, "libero_10")
+    assert stats_path.read_bytes() == original
+
+
+def test_m0_compatibility_branch_remains_unchanged() -> None:
+    source = (ROOT / "scripts/stage_z/run_stage_z_z1_runtime_canary.py").read_text(encoding="utf-8")
+    load_source = source[source.index("def load_openvla("):]
+    assert "if not oft:" in load_source
+    assert "predict_action_compat" in load_source
+    assert "M0_PREDICT_ACTION_SHAPE_INVALID" in load_source
