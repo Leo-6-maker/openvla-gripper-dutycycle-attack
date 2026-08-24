@@ -18,7 +18,7 @@
     "code_commit": "7500d78ca7a3c8bc97c675f6a67fd0050c8b24fa",
     "code_tree": "2c345ff07d36645af0d5342b21da892604c8a197",
     "protocol_path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V5.json",
-    "protocol_sha256": "8819901b0971987cfe3a4719209dfc3dccb197fca4b3a7c2aa01238d38f67f78",
+    "protocol_sha256": "d711e695b38a5fa5e005029efb344b8230ce5d02ac37be59c5c0e1b2f6c3cc17",
     "files": [
       {
         "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
