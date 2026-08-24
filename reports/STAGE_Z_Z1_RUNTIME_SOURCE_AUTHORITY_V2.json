@@ -12,7 +12,7 @@
     "commit": "9b56067f2077523bfaf3b66d49e2f2eaa125eb56",
     "tree": "84dcc14e33b73fcdbc551d0eb03ae321caf4c207",
     "files": [
-      {"path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V1.json", "git_blob_sha": "267208554c1fc690a3d754c027022a334a41358b"},
+      {"path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V1.json", "git_blob_sha": "7c11cecf7b94f36260b2138a818f00baa48e2481"},
       {"path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py", "git_blob_sha": "5aa475bf6d0e547d2ae09b632a31345ef91edf12"},
       {"path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py", "git_blob_sha": "414acc538ee2d43d25460ea89a36677f899a4a9d", "role": "read-only pre-GPU source/resource audit"},
       {"path": "src/stage_z_preparation/contract.py", "role": "ExecutionAuthorization guard"},
