@@ -266,7 +266,29 @@ def model_observation(obs: dict[str, Any]) -> dict[str, Any]:
     return {"full_image": image(obs["agentview_image"]), "wrist_image": image(obs["robot0_eye_in_hand_image"]), "state": state}
 
 
+def _install_optional_import_shims() -> None:
+    # The official dynamic model module imports these optional packages before
+    # the evaluator import below; install the no-op Z1 shims first.
+    try:
+        import json_numpy  # type: ignore  # noqa: F401
+    except ImportError:
+        json_numpy = ModuleType("json_numpy")
+        json_numpy.__spec__ = ModuleSpec("json_numpy", loader=None)
+        json_numpy.patch = lambda: None  # type: ignore[attr-defined]
+        sys.modules["json_numpy"] = json_numpy
+    try:
+        import wandb  # type: ignore  # noqa: F401
+    except ImportError:
+        wandb = ModuleType("wandb")
+        wandb.__spec__ = ModuleSpec("wandb", loader=None)
+        sys.modules["wandb"] = wandb
+
+
 def load_openvla(checkpoint: str, *, oft: bool, suite: str):
+    source = "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823"
+    sys.path.insert(0, source)
+    _install_optional_import_shims()
+
     import torch
     from transformers import AutoProcessor
 
@@ -310,8 +332,6 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
 
     action_head = proprio_projector = None
     if oft:
-        source = "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823"
-        sys.path.insert(0, source)
         from prismatic.models.action_heads import L1RegressionActionHead  # type: ignore
         from prismatic.models.projectors import ProprioProjector  # type: ignore
 
@@ -323,23 +343,6 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
         proprio_file = next(Path(checkpoint).glob("proprio_projector-*checkpoint.pt"))
         proprio_projector.load_state_dict(torch.load(proprio_file, map_location="cpu", weights_only=True))
         proprio_projector = proprio_projector.to(dtype=dtype, device="cuda:0").eval()
-    source = "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823"
-    sys.path.insert(0, source)
-    try:
-        import json_numpy  # type: ignore  # noqa: F401
-    except ImportError:
-        # The official loader only calls this optional serialization hook at import time.
-        json_numpy = ModuleType("json_numpy")
-        json_numpy.__spec__ = ModuleSpec("json_numpy", loader=None)
-        json_numpy.patch = lambda: None  # type: ignore[attr-defined]
-        sys.modules["json_numpy"] = json_numpy
-    try:
-        import wandb  # type: ignore  # noqa: F401
-    except ImportError:
-        # The official evaluator imports optional logging at module import; Z1 never enables it.
-        wandb = ModuleType("wandb")
-        wandb.__spec__ = ModuleSpec("wandb", loader=None)
-        sys.modules["wandb"] = wandb
     from experiments.robot.libero.run_libero_eval import process_action  # type: ignore
     from experiments.robot.openvla_utils import get_vla_action  # type: ignore
 

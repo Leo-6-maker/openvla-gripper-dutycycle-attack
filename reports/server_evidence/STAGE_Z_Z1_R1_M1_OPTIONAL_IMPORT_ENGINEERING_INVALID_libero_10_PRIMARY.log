@@ -1,0 +1,71 @@
+2026-08-25 00:25:08.999063: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-08-25 00:25:09.084235: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2026-08-25 00:25:09.084324: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2026-08-25 00:25:09.086878: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2026-08-25 00:25:09.102680: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-08-25 00:25:11.003032: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+Using LIBERO constants:
+  NUM_ACTIONS_CHUNK = 8
+  ACTION_DIM = 7
+  PROPRIO_DIM = 8
+  ACTION_PROPRIO_NORMALIZATION_TYPE = bounds_q99
+If needed, manually set the correct constants in `prismatic/vla/constants.py`!
+Traceback (most recent call last):
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 576, in <module>
+    main()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 569, in main
+    result = run_cell(config, ledger, args)
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 527, in run_cell
+    result = authorized_runtime()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 520, in authorized_runtime
+    return run_authorized_callback(
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/src/stage_z_preparation/runner.py", line 25, in run_authorized_callback
+    return callback()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 456, in execute
+    infer, model = load_openvla(checkpoint, oft=True, suite=args.suite)
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 280, in load_openvla
+    model = ModelClass.from_pretrained(
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/transformers/models/auto/auto_factory.py", line 550, in from_pretrained
+    model_class = get_class_from_dynamic_module(
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/transformers/dynamic_module_utils.py", line 501, in get_class_from_dynamic_module
+    return get_class_in_module(class_name, final_module)
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/transformers/dynamic_module_utils.py", line 201, in get_class_in_module
+    module = importlib.machinery.SourceFileLoader(name, module_path).load_module()
+  File "<frozen importlib._bootstrap_external>", line 548, in _check_name_wrapper
+  File "<frozen importlib._bootstrap_external>", line 1063, in load_module
+  File "<frozen importlib._bootstrap_external>", line 888, in load_module
+  File "<frozen importlib._bootstrap>", line 290, in _load_module_shim
+  File "<frozen importlib._bootstrap>", line 719, in _load
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/dty_user/.cache/huggingface/modules/transformers_modules/libero_10/modeling_prismatic.py", line 24, in <module>
+    from prismatic.training.train_utils import (
+  File "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823/prismatic/training/__init__.py", line 1, in <module>
+    from .materialize import get_train_strategy
+  File "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823/prismatic/training/materialize.py", line 13, in <module>
+    from prismatic.training.strategies import FSDPStrategy, TrainingStrategy
+  File "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823/prismatic/training/strategies/__init__.py", line 1, in <module>
+    from .base_strategy import TrainingStrategy
+  File "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823/prismatic/training/strategies/base_strategy.py", line 24, in <module>
+    from prismatic.training.metrics import Metrics, VLAMetrics
+  File "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823/prismatic/training/metrics.py", line 16, in <module>
+    import wandb
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/wandb/__init__.py", line 25, in <module>
+    from wandb import sdk as wandb_sdk
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/wandb/sdk/__init__.py", line 24, in <module>
+    from . import wandb_helper as helper
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/wandb/sdk/wandb_helper.py", line 6, in <module>
+    from .lib import config_util
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/wandb/sdk/lib/config_util.py", line 12, in <module>
+    from . import filesystem
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/wandb/sdk/lib/filesystem.py", line 19, in <module>
+    from wandb.sdk.wandb_settings import Settings
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/wandb/sdk/wandb_settings.py", line 33, in <module>
+    from wandb.sdk.lib import deprecation, settings_file, urls
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/wandb/sdk/lib/deprecation.py", line 6, in <module>
+    from wandb.sdk.lib import telemetry
+  File "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/wandb/sdk/lib/telemetry.py", line 10, in <module>
+    from wandb.proto.wandb_telemetry_pb2 import Imports as TelemetryImports
+ImportError: cannot import name 'Imports' from 'wandb.proto.wandb_telemetry_pb2' (/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/wandb/proto/wandb_telemetry_pb2.py)
