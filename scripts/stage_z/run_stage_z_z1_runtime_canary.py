@@ -302,7 +302,7 @@ def _install_optional_import_shims() -> None:
         sys.modules["wandb"] = wandb
 
 
-def load_openvla(checkpoint: str, *, oft: bool, suite: str):
+def load_openvla(checkpoint: str, *, oft: bool, suite: str, return_chunk: bool = False):
     source = "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823"
     sys.path.insert(0, source)
     _install_optional_import_shims()
@@ -408,6 +408,17 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
             action_head=action_head,
             proprio_projector=proprio_projector,
         )
+        if return_chunk:
+            raw_chunk = np.asarray(raw, dtype=np.float32)
+            if raw_chunk.ndim != 2 or raw_chunk.shape[1] != ACTION_DIM or raw_chunk.shape[0] < 1:
+                raise RuntimeError(f"OPENVLA_ACTION_CHUNK_INVALID:{raw_chunk.shape}")
+            env_chunk = np.stack([validate_action(process_action(row.copy(), "openvla")) for row in raw_chunk])
+            return env_chunk, {
+                "raw_action_chunk": raw_chunk.tolist(),
+                "chunk_length": int(raw_chunk.shape[0]),
+                "postprocess": "official_openvla",
+                "fresh_boundary": "FRESH_OFT_ACTION_QUEUE" if oft else "FRESH_PER_STEP",
+            }
         raw_first = validate_action(raw[0])
         env_action = validate_action(process_action(raw_first.copy(), "openvla"))
         return env_action, {"raw_action": raw_first.tolist(), "chunk_length": len(raw), "postprocess": "official_openvla"}
@@ -415,7 +426,7 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
     return infer, model, normalization_metadata
 
 
-def load_pi05(checkpoint: str):
+def load_pi05(checkpoint: str, *, return_chunk: bool = False):
     source = "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822"
     # The frozen official checkout uses src-layout packages; bind those exact
     # package roots instead of relying on the repository root being importable.
@@ -447,6 +458,17 @@ def load_pi05(checkpoint: str):
         chunk = np.asarray(policy.infer(element)["actions"])
         if chunk.ndim != 2 or chunk.shape[1] != ACTION_DIM or chunk.shape[0] < 1:
             raise RuntimeError(f"PI05_ACTION_CHUNK_INVALID:{chunk.shape}")
+        if return_chunk:
+            raw_chunk = np.asarray(chunk, dtype=np.float32)
+            clipped_chunk = np.stack([validate_action(row, clip=True) for row in raw_chunk])
+            return clipped_chunk, {
+                "chunk_length": int(raw_chunk.shape[0]),
+                "replan": "fresh_policy_infer",
+                "raw_action_chunk": raw_chunk.tolist(),
+                "action_after_libero_clip_chunk": clipped_chunk.tolist(),
+                "action_was_clipped": bool(not np.array_equal(raw_chunk, clipped_chunk)),
+                "fresh_boundary": "FRESH_PI05_REPLAN",
+            }
         raw_action = np.asarray(chunk[0], dtype=np.float32).reshape(-1)
         action = validate_action(raw_action, clip=True)
         return action, {
