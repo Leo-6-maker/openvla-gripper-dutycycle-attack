@@ -9,11 +9,11 @@
   "claim_boundary": "Static source binding only; no model inference, simulator, env.step, scientific outcome, or physical result.",
   "runtime_code": {
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "commit": "dddb9f3409615b74019311e02dfffc0d238c76d4",
-    "tree": "8d075a0172a1ac9b887760ceb1a76267a08a1617",
+    "commit": "9b56067f2077523bfaf3b66d49e2f2eaa125eb56",
+    "tree": "84dcc14e33b73fcdbc551d0eb03ae321caf4c207",
     "files": [
       {"path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V1.json", "git_blob_sha": "267208554c1fc690a3d754c027022a334a41358b"},
-      {"path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py", "git_blob_sha": "3ee96f85ee4d399324b75386be992189a507ed48"},
+      {"path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py", "git_blob_sha": "5aa475bf6d0e547d2ae09b632a31345ef91edf12"},
       {"path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py", "git_blob_sha": "414acc538ee2d43d25460ea89a36677f899a4a9d", "role": "read-only pre-GPU source/resource audit"},
       {"path": "src/stage_z_preparation/contract.py", "role": "ExecutionAuthorization guard"},
       {"path": "src/stage_z_preparation/runner.py", "role": "guarded callback entry"}
