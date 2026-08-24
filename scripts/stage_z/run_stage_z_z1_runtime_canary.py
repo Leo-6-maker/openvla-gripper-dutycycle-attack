@@ -278,6 +278,13 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
     source = "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823"
     sys.path.insert(0, source)
     try:
+        import json_numpy  # type: ignore  # noqa: F401
+    except ImportError:
+        # The official loader only calls this optional serialization hook at import time.
+        json_numpy = ModuleType("json_numpy")
+        json_numpy.patch = lambda: None  # type: ignore[attr-defined]
+        sys.modules["json_numpy"] = json_numpy
+    try:
         import wandb  # type: ignore  # noqa: F401
     except ImportError:
         # The official evaluator imports optional logging at module import; Z1 never enables it.
