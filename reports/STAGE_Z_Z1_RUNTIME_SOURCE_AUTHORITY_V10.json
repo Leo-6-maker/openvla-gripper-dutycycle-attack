@@ -21,7 +21,7 @@
     "code_commit": "e4a39251c21ba7be9da9c54ea60dcbf3181baf8d",
     "code_tree": "ed9a949bc21ef60b0707ebc558df2d47eafaff1e",
     "protocol_path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V9.json",
-    "protocol_sha256": "7651ed59ff0e96b696247e6c54e2d90ee5751ad231ca0d23062b1f90e07d03d3",
+    "protocol_sha256": "a8cbf757a3c938ddaaccb3d76debac6393002ed0b290e81fdfb6d7b94c444aef",
     "files": [
       {
         "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
@@ -57,6 +57,7 @@
       "flax": "0.10.2",
       "tensorstore": "0.1.74",
       "jaxtyping": "0.2.36",
+      "numpydantic": "1.8.1",
       "transformers": "4.53.2",
       "tokenizers": "0.21.4",
       "huggingface_hub": "0.36.2",
