@@ -188,10 +188,17 @@ def static_authority(config: dict[str, Any], ledger: dict[str, Any], *, parent_k
     return row
 
 
-def make_libero_env(config: dict[str, Any], suite: str, task_idx: int):
+def configure_libero(config: dict[str, Any]) -> None:
     os.environ["LIBERO_CONFIG_PATH"] = config["environment"]["libero_config_path"]
     common_root = config["environment"]["common_libero_checkout"]
-    sys.path.insert(0, str(Path(common_root) / "libero"))
+    common_python_root = str(Path(common_root) / "libero")
+    if common_python_root not in sys.path:
+        sys.path.insert(0, common_python_root)
+
+
+def make_libero_env(config: dict[str, Any], suite: str, task_idx: int):
+    configure_libero(config)
+    common_root = config["environment"]["common_libero_checkout"]
     from libero.libero import benchmark, get_libero_path  # type: ignore
     from libero.libero.envs import OffScreenRenderEnv  # type: ignore
 
@@ -305,11 +312,12 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
     )
 
     def infer(obs: dict[str, Any], instruction: str) -> tuple[np.ndarray, dict[str, Any]]:
+        policy_obs = model_observation(obs)
         raw = get_vla_action(
             cfg,
             model,
             processor,
-            obs,
+            policy_obs,
             instruction,
             action_head=action_head,
             proprio_projector=proprio_projector,
@@ -357,6 +365,7 @@ def run_cell(config: dict[str, Any], ledger: dict[str, Any], args: argparse.Name
     if args.model_family not in MODEL_FAMILIES or args.suite not in SUITES:
         raise RuntimeError("CELL_ARGUMENT_INVALID")
     model_spec = config["model_families"][args.model_family]
+    configure_libero(config)
     if args.model_family == "M0_OPENVLA":
         checkpoint = model_spec["paths"][args.suite]
     elif args.model_family == "M1_OPENVLA_OFT":
