@@ -5,7 +5,7 @@
     "historical_z0r1_snapshot_preserved": true,
     "immutable_authority": {
       "path": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
-      "sha256": "d78c6e77547f0f0c3d0a05c75d3a114477adba0971ef8fdd9f4db4446ff63776"
+      "sha256": "eeb9fa0be922c34937d90caf849bc750db9b0ff707dc5187c35e1f6522f6fed8"
     },
     "re_audit": {
       "libero_10": {
@@ -116,7 +116,7 @@
   "M1": {
     "materialization_ledger": {
       "path": "reports/STAGE_Z_Z0R2_M1_MATERIALIZATION_LEDGER_V1.json",
-      "sha256": "fa36f9e8de4f522ef02e30f587ecbfed1e64060a042a70a900c040ca3e50bf82"
+      "sha256": "073b9372b3d5439a178dc99ff9ab462575b2ecb8d28f412dcbabbb448c4f5e5a"
     },
     "schema": "STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V1",
     "sequential_policy": "one suite at a time; no /dev/shm; no old evidence deletion; only newly created Stage-Z cache may be deleted after server seal",
@@ -126,12 +126,12 @@
       "status": "CLEAN_FIXED_COMMIT",
       "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32"
     },
-    "status": "PASS_SEALED_FOUR_OFT_BYTE_MANIFESTS",
+    "status": "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED",
     "suites": {
       "libero_10": {
         "api_manifest_sha256": "30b2bf0b4b7c6e71847e45e572df7f6187c607439552d17696fd25be12fdba82",
         "bytes": 15939159245,
-        "cache_deletion": "DELETED_AFTER_SERVER_SEAL_FOR_NEXT_SEQUENTIAL_SUITE",
+        "cache_deletion": "NOT_YET_AUTHORIZED_BY_RECEIPT",
         "files": 25,
         "lfs_bytes": 15936583209,
         "local_bytes": 15939159245,
@@ -268,14 +268,14 @@
             "size": 1192
           }
         ],
-        "server_cache_verified": true,
-        "server_manifest_sha256": "8f970517dcf81c8eff754edca6816b8c7c2c7813f909b6d1ef481c3a6f2dbc15",
-        "server_materialization_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z0r2_cache/libero_10"
+        "server_cache_verified": false,
+        "server_manifest_sha256": null,
+        "server_materialization_path": null
       },
       "libero_goal": {
         "api_manifest_sha256": "7a5ff5fda6bd5a56ad84b133744195dce81a680df57aeb40b2513d0c91f52f01",
         "bytes": 15939159075,
-        "cache_deletion": "DELETED_AFTER_SERVER_SEAL_FOR_NEXT_SEQUENTIAL_SUITE",
+        "cache_deletion": "NOT_YET_AUTHORIZED_BY_RECEIPT",
         "files": 25,
         "lfs_bytes": 15936583117,
         "local_bytes": 15939159075,
@@ -412,14 +412,14 @@
             "size": 1192
           }
         ],
-        "server_cache_verified": true,
-        "server_manifest_sha256": "15e7c7f0b97d87d53dc7e7f6ed280d483e766ccc313adc8f5f93c1d4cbc56bb3",
-        "server_materialization_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z0r2_cache/libero_goal"
+        "server_cache_verified": false,
+        "server_manifest_sha256": null,
+        "server_materialization_path": null
       },
       "libero_object": {
         "api_manifest_sha256": "126ac5dc8607deafd70b08665e2070c328ec66a4d36b43427eb4a57eeff10f70",
         "bytes": 15939159270,
-        "cache_deletion": "DELETED_AFTER_SERVER_SEAL_FOR_NEXT_SEQUENTIAL_SUITE",
+        "cache_deletion": "NOT_YET_AUTHORIZED_BY_RECEIPT",
         "files": 25,
         "lfs_bytes": 15936583209,
         "local_bytes": 15939159270,
@@ -556,9 +556,9 @@
             "size": 1192
           }
         ],
-        "server_cache_verified": true,
-        "server_manifest_sha256": "aa74388cc3851fdb2998a46f472c4a54e3c4ca7c79082f14087c834e2b89d3df",
-        "server_materialization_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z0r2_cache/libero_object"
+        "server_cache_verified": false,
+        "server_manifest_sha256": null,
+        "server_materialization_path": null
       },
       "libero_spatial": {
         "api_manifest_sha256": "091cec71d0f5a6e31de9041d7b2ae26cde70454a1aeae88567b95aa9cd17befe",
@@ -10981,5 +10981,5 @@
     }
   },
   "schema": "STAGE_Z_Z0R2_MODEL_AUTHORITY_MAP_V1",
-  "status": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_CLOSURE_PASS"
+  "status": "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED"
 }

@@ -1,7 +1,7 @@
 {
   "authority": {
     "M0": "PASS_M0_LOAD_BEARING_BYTES_EXACT",
-    "M1": "PASS_SEALED_FOUR_OFT_BYTE_MANIFESTS",
+    "M1": "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED",
     "M2": "PASS_EXISTING_PI05_LIBERO_REVERIFIED",
     "common_libero": "PASS_STATIC_OFFLINE_NO_SIMULATOR"
   },
@@ -15,8 +15,8 @@
   },
   "gate": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_RECOVERY_AND_COMMON_LIBERO_CLOSURE",
   "git_binding": {
-    "head_commit": "c3862d3d88ce2dcf65d51ec16b03b1a093f10b52",
-    "head_tree": "10b8e13f3c44e3d735902d4d56c6d1c23370ad66"
+    "head_commit": "b16f1df274a401c39e993d53dce1ea3cff985721",
+    "head_tree": "a0dd71008354f98f490200126dd8d9e692262303"
   },
   "population": {
     "denominators": {
@@ -41,6 +41,6 @@
     "protected": "UNREAD"
   },
   "schema": "STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V3",
-  "status": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_CLOSURE_PASS",
+  "status": "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED",
   "z0r1_panel_row_count": 40
 }

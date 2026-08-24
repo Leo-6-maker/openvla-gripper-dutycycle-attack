@@ -2,24 +2,24 @@
   "artifact_manifest": {
     "entries": [
       {
-        "bytes": 1442,
+        "bytes": 1476,
         "path": "configs/STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V3.json",
-        "sha256": "9e50c6b3defe85d88019b26040e04a372775f4bcae0bdf433617094ee38bff29"
+        "sha256": "b7f61231100a53effa11b468c07ac978645e615fd6ee96461a4eeb3d16336b17"
       },
       {
-        "bytes": 456019,
+        "bytes": 445765,
         "path": "reports/STAGE_Z_Z0R2_COMMON_LIBERO_AUTHORITY_V1.json",
-        "sha256": "bf2f85f6a8719349d18daa80e36b4a70571bb7044f14b2addc0de555c3b4b118"
+        "sha256": "413ea761392807d95d6030b825529d0fb141980a2e77494489182d4405c47527"
       },
       {
         "bytes": 1573,
         "path": "reports/STAGE_Z_Z0R2_ENVIRONMENT_ACTION_BRANCH_PARITY_V1.json",
-        "sha256": "b392e59154c4fd14f189020d3ca626590a3baa84efaaa040c6dce3443f51d543"
+        "sha256": "a516f1ba6e908d563384d78219b79a41beee0e380c9dc72e0e65038c5d7222f4"
       },
       {
         "bytes": 6447,
         "path": "reports/STAGE_Z_Z0R2_M0_FILE_LEVEL_AUTHORITY_DIFF_V1.json",
-        "sha256": "ca2458a83c77d75491d5ceb189589bc66f43bd05dc4fef7673695c1fb924a5ba"
+        "sha256": "88cd5549c19fe47cfac1738ee780aec6d6fe4603c3bc678f6944fa1b1ebe60c7"
       },
       {
         "bytes": 1909,
@@ -27,14 +27,14 @@
         "sha256": "c4bffdda45687e6ef76552e507477d055d44fbba07243787a3654e008aa8fd01"
       },
       {
-        "bytes": 1814,
+        "bytes": 551,
         "path": "reports/STAGE_Z_Z0R2_M1_MATERIALIZATION_LEDGER_V1.json",
-        "sha256": "fa36f9e8de4f522ef02e30f587ecbfed1e64060a042a70a900c040ca3e50bf82"
+        "sha256": "073b9372b3d5439a178dc99ff9ab462575b2ecb8d28f412dcbabbb448c4f5e5a"
       },
       {
-        "bytes": 23200,
+        "bytes": 22791,
         "path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V1.json",
-        "sha256": "baf0d3120141b1f5143dff9a07c4fcf5201d17040dfcc43d2cd29e5d41e9b9d9"
+        "sha256": "caf7e9d171e12aa0489d285efe1836cb11586ab01723ee85bf176e7c7eb2f1db"
       },
       {
         "bytes": 749,
@@ -42,25 +42,27 @@
         "sha256": "4c2c8a99deae45e9fcda109fbdfb795bcf62f847fdbe349bc31f4af2b17213fe"
       },
       {
-        "bytes": 508537,
+        "bytes": 508139,
         "path": "reports/STAGE_Z_Z0R2_MODEL_AUTHORITY_MAP_V1.json",
-        "sha256": "944d9c58dab09a91c99d02d735dfc80977b36ae9233c6cad69857aa9bea266b6"
+        "sha256": "911bffb1e5a8080c9f0425866d0ff6f5726f05ed24415e38b2f6bff465e4aafc"
       },
       {
-        "bytes": 542,
+        "bytes": 540,
         "path": "reports/STAGE_Z_Z0R2_STORAGE_PREFLIGHT_V1.json",
-        "sha256": "56275cc9cf5ade4a88460579c5a59a3c3ed8e01bff1b803e01cf621246511ff9"
+        "sha256": "96c6f06ac84ffd813bdadc5fefd670f9985664ef33af1c679a615ac092f03747"
       },
       {
-        "bytes": 2110,
+        "bytes": 2120,
         "path": "reports/STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V1.json",
-        "sha256": "9cd4dd7b536a31d502f287116e5e0a8f46a6d79c1743cfde712dfc401ba8ad86"
+        "sha256": "57a55e1904b803c8abda41c01524e570019f471f5b8f4bcb3f185000a80ebd1a"
       }
     ],
     "path": "reports/STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V1.json",
-    "sha256": "9cd4dd7b536a31d502f287116e5e0a8f46a6d79c1743cfde712dfc401ba8ad86"
+    "sha256": "57a55e1904b803c8abda41c01524e570019f471f5b8f4bcb3f185000a80ebd1a"
   },
-  "blockers": [],
+  "blockers": [
+    "M1 four-suite server byte manifests not yet sealed"
+  ],
   "counters": {
     "env_step": 0,
     "eval160": 0,
@@ -72,10 +74,10 @@
     "v_phys": 0
   },
   "git_binding": {
-    "head_commit": "c3862d3d88ce2dcf65d51ec16b03b1a093f10b52",
-    "head_tree": "10b8e13f3c44e3d735902d4d56c6d1c23370ad66"
+    "head_commit": "b16f1df274a401c39e993d53dce1ea3cff985721",
+    "head_tree": "a0dd71008354f98f490200126dd8d9e692262303"
   },
-  "next_legal_action": "STOP_FOR_PI",
+  "next_legal_action": "repair only the listed authority blocker; no Z1",
   "population": {
     "denominators": {
       "libero_10": 10,
@@ -95,5 +97,5 @@
   },
   "schema": "STAGE_Z_Z0R2_ROOT_SEAL_V1",
   "scientific_rollout_started": false,
-  "status": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_CLOSURE_PASS"
+  "status": "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED"
 }
