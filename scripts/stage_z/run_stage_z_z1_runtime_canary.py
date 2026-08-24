@@ -77,12 +77,15 @@ def validate_canary(ledger: dict[str, Any], parent_key: str, suite: str, role: s
     return row
 
 
-def validate_action(action: Any) -> np.ndarray:
+def validate_action(action: Any, *, clip: bool = False) -> np.ndarray:
     values = np.asarray(action, dtype=np.float32).reshape(-1)
     if values.size != ACTION_DIM or not np.isfinite(values).all():
         raise RuntimeError("FINAL_ACTION_NOT_EXACTLY_SEVEN_FINITE_VALUES")
     if np.any(values < -1.000001) or np.any(values > 1.000001):
-        raise RuntimeError("FINAL_ACTION_OUTSIDE_LIBERO_RANGE")
+        if not clip:
+            raise RuntimeError("FINAL_ACTION_OUTSIDE_LIBERO_RANGE")
+        # The official robosuite controller clips the input at this boundary.
+        values = np.clip(values, -1.0, 1.0).astype(np.float32)
     return values
 
 
@@ -444,8 +447,15 @@ def load_pi05(checkpoint: str):
         chunk = np.asarray(policy.infer(element)["actions"])
         if chunk.ndim != 2 or chunk.shape[1] != ACTION_DIM or chunk.shape[0] < 1:
             raise RuntimeError(f"PI05_ACTION_CHUNK_INVALID:{chunk.shape}")
-        action = validate_action(chunk[0])
-        return action, {"chunk_length": int(chunk.shape[0]), "replan": "fresh_policy_infer", "raw_action": action.tolist()}
+        raw_action = np.asarray(chunk[0], dtype=np.float32).reshape(-1)
+        action = validate_action(raw_action, clip=True)
+        return action, {
+            "chunk_length": int(chunk.shape[0]),
+            "replan": "fresh_policy_infer",
+            "raw_action": raw_action.tolist(),
+            "action_after_libero_clip": action.tolist(),
+            "action_was_clipped": bool(not np.array_equal(raw_action, action)),
+        }
 
     return infer, policy
 

@@ -158,3 +158,16 @@ def test_m0_compatibility_branch_remains_unchanged() -> None:
     assert "if not oft:" in load_source
     assert "predict_action_compat" in load_source
     assert "M0_PREDICT_ACTION_SHAPE_INVALID" in load_source
+
+
+def test_m2_action_boundary_matches_official_libero_clip() -> None:
+    runner = importlib.import_module(RUNNER_MODULE)
+    raw = [1.2, -1.2, 0.0, 0.0, 0.0, 0.0, 0.0]
+    clipped = runner.validate_action(raw, clip=True)
+    assert clipped.tolist() == [1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    try:
+        runner.validate_action(raw)
+    except RuntimeError as exc:
+        assert str(exc) == "FINAL_ACTION_OUTSIDE_LIBERO_RANGE"
+    else:
+        raise AssertionError("strict action validator unexpectedly accepted out-of-range input")
