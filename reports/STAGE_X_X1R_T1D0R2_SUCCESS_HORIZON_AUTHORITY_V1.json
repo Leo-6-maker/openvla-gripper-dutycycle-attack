@@ -1,0 +1,454 @@
+{
+  "errors": [],
+  "horizon_authority": {
+    "configured_episode_length_definition": "hard maximum number of policy-decision actions after the canonical ten dummy wait steps",
+    "dummy_wait_counts_toward_policy_horizon": false,
+    "num_steps_wait": 10,
+    "reset_counts_toward_policy_horizon": false,
+    "rows": [
+      {
+        "configured_episode_length": 520,
+        "policy_decision_indices": [
+          0,
+          519
+        ],
+        "suite": "libero_10",
+        "task_index": 0
+      },
+      {
+        "configured_episode_length": 520,
+        "policy_decision_indices": [
+          0,
+          519
+        ],
+        "suite": "libero_10",
+        "task_index": 1
+      },
+      {
+        "configured_episode_length": 520,
+        "policy_decision_indices": [
+          0,
+          519
+        ],
+        "suite": "libero_10",
+        "task_index": 2
+      },
+      {
+        "configured_episode_length": 520,
+        "policy_decision_indices": [
+          0,
+          519
+        ],
+        "suite": "libero_10",
+        "task_index": 3
+      },
+      {
+        "configured_episode_length": 520,
+        "policy_decision_indices": [
+          0,
+          519
+        ],
+        "suite": "libero_10",
+        "task_index": 4
+      },
+      {
+        "configured_episode_length": 520,
+        "policy_decision_indices": [
+          0,
+          519
+        ],
+        "suite": "libero_10",
+        "task_index": 5
+      },
+      {
+        "configured_episode_length": 520,
+        "policy_decision_indices": [
+          0,
+          519
+        ],
+        "suite": "libero_10",
+        "task_index": 6
+      },
+      {
+        "configured_episode_length": 520,
+        "policy_decision_indices": [
+          0,
+          519
+        ],
+        "suite": "libero_10",
+        "task_index": 7
+      },
+      {
+        "configured_episode_length": 520,
+        "policy_decision_indices": [
+          0,
+          519
+        ],
+        "suite": "libero_10",
+        "task_index": 8
+      },
+      {
+        "configured_episode_length": 520,
+        "policy_decision_indices": [
+          0,
+          519
+        ],
+        "suite": "libero_10",
+        "task_index": 9
+      },
+      {
+        "configured_episode_length": 300,
+        "policy_decision_indices": [
+          0,
+          299
+        ],
+        "suite": "libero_goal",
+        "task_index": 0
+      },
+      {
+        "configured_episode_length": 300,
+        "policy_decision_indices": [
+          0,
+          299
+        ],
+        "suite": "libero_goal",
+        "task_index": 1
+      },
+      {
+        "configured_episode_length": 300,
+        "policy_decision_indices": [
+          0,
+          299
+        ],
+        "suite": "libero_goal",
+        "task_index": 2
+      },
+      {
+        "configured_episode_length": 300,
+        "policy_decision_indices": [
+          0,
+          299
+        ],
+        "suite": "libero_goal",
+        "task_index": 3
+      },
+      {
+        "configured_episode_length": 300,
+        "policy_decision_indices": [
+          0,
+          299
+        ],
+        "suite": "libero_goal",
+        "task_index": 4
+      },
+      {
+        "configured_episode_length": 300,
+        "policy_decision_indices": [
+          0,
+          299
+        ],
+        "suite": "libero_goal",
+        "task_index": 5
+      },
+      {
+        "configured_episode_length": 300,
+        "policy_decision_indices": [
+          0,
+          299
+        ],
+        "suite": "libero_goal",
+        "task_index": 6
+      },
+      {
+        "configured_episode_length": 300,
+        "policy_decision_indices": [
+          0,
+          299
+        ],
+        "suite": "libero_goal",
+        "task_index": 7
+      },
+      {
+        "configured_episode_length": 300,
+        "policy_decision_indices": [
+          0,
+          299
+        ],
+        "suite": "libero_goal",
+        "task_index": 8
+      },
+      {
+        "configured_episode_length": 300,
+        "policy_decision_indices": [
+          0,
+          299
+        ],
+        "suite": "libero_goal",
+        "task_index": 9
+      },
+      {
+        "configured_episode_length": 280,
+        "policy_decision_indices": [
+          0,
+          279
+        ],
+        "suite": "libero_object",
+        "task_index": 0
+      },
+      {
+        "configured_episode_length": 280,
+        "policy_decision_indices": [
+          0,
+          279
+        ],
+        "suite": "libero_object",
+        "task_index": 1
+      },
+      {
+        "configured_episode_length": 280,
+        "policy_decision_indices": [
+          0,
+          279
+        ],
+        "suite": "libero_object",
+        "task_index": 2
+      },
+      {
+        "configured_episode_length": 280,
+        "policy_decision_indices": [
+          0,
+          279
+        ],
+        "suite": "libero_object",
+        "task_index": 3
+      },
+      {
+        "configured_episode_length": 280,
+        "policy_decision_indices": [
+          0,
+          279
+        ],
+        "suite": "libero_object",
+        "task_index": 4
+      },
+      {
+        "configured_episode_length": 280,
+        "policy_decision_indices": [
+          0,
+          279
+        ],
+        "suite": "libero_object",
+        "task_index": 5
+      },
+      {
+        "configured_episode_length": 280,
+        "policy_decision_indices": [
+          0,
+          279
+        ],
+        "suite": "libero_object",
+        "task_index": 6
+      },
+      {
+        "configured_episode_length": 280,
+        "policy_decision_indices": [
+          0,
+          279
+        ],
+        "suite": "libero_object",
+        "task_index": 7
+      },
+      {
+        "configured_episode_length": 280,
+        "policy_decision_indices": [
+          0,
+          279
+        ],
+        "suite": "libero_object",
+        "task_index": 8
+      },
+      {
+        "configured_episode_length": 280,
+        "policy_decision_indices": [
+          0,
+          279
+        ],
+        "suite": "libero_object",
+        "task_index": 9
+      },
+      {
+        "configured_episode_length": 220,
+        "policy_decision_indices": [
+          0,
+          219
+        ],
+        "suite": "libero_spatial",
+        "task_index": 0
+      },
+      {
+        "configured_episode_length": 220,
+        "policy_decision_indices": [
+          0,
+          219
+        ],
+        "suite": "libero_spatial",
+        "task_index": 1
+      },
+      {
+        "configured_episode_length": 220,
+        "policy_decision_indices": [
+          0,
+          219
+        ],
+        "suite": "libero_spatial",
+        "task_index": 2
+      },
+      {
+        "configured_episode_length": 220,
+        "policy_decision_indices": [
+          0,
+          219
+        ],
+        "suite": "libero_spatial",
+        "task_index": 3
+      },
+      {
+        "configured_episode_length": 220,
+        "policy_decision_indices": [
+          0,
+          219
+        ],
+        "suite": "libero_spatial",
+        "task_index": 4
+      },
+      {
+        "configured_episode_length": 220,
+        "policy_decision_indices": [
+          0,
+          219
+        ],
+        "suite": "libero_spatial",
+        "task_index": 5
+      },
+      {
+        "configured_episode_length": 220,
+        "policy_decision_indices": [
+          0,
+          219
+        ],
+        "suite": "libero_spatial",
+        "task_index": 6
+      },
+      {
+        "configured_episode_length": 220,
+        "policy_decision_indices": [
+          0,
+          219
+        ],
+        "suite": "libero_spatial",
+        "task_index": 7
+      },
+      {
+        "configured_episode_length": 220,
+        "policy_decision_indices": [
+          0,
+          219
+        ],
+        "suite": "libero_spatial",
+        "task_index": 8
+      },
+      {
+        "configured_episode_length": 220,
+        "policy_decision_indices": [
+          0,
+          219
+        ],
+        "suite": "libero_spatial",
+        "task_index": 9
+      }
+    ],
+    "semantic_origin": "OPENVLA_LIBERO_CANONICAL_POLICY_DECISION_HORIZON",
+    "source": {
+      "byte_size": 11936,
+      "git_blob_sha": "5c3f58178d7c827df829379354f7aefddc0458bc",
+      "path": "experiments/robot/libero/run_libero_eval.py",
+      "raw_sha256": "369d9fc3d59067998ebfadafbd516872c7ff6f9f06a0a48cda8b6ca48051de77",
+      "ref": "c8f03f48af692657d3060c19588038c7220e9af9"
+    },
+    "status": "BOUND"
+  },
+  "legal_horizon_boundary_tests": {
+    "episode_length_14": false,
+    "episode_length_15": true,
+    "t_emit": 0,
+    "t_emit_5_length_19": false,
+    "t_emit_5_length_20": true
+  },
+  "schema": "STAGE_X_X1R_T1D0R2_SUCCESS_HORIZON_AUTHORITY_V1",
+  "source_records": {
+    "libero_bddl_domain": {
+      "byte_size": 33490,
+      "exists": true,
+      "expected_raw_sha256": "9626f2995514474a4fa3cc3d36ace1de091e2293d96f61399688178c56ca1750",
+      "match": true,
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/LIBERO-official-8f1084e/libero/libero/envs/bddl_base_domain.py",
+      "raw_sha256": "9626f2995514474a4fa3cc3d36ace1de091e2293d96f61399688178c56ca1750"
+    },
+    "libero_env_wrapper": {
+      "byte_size": 9059,
+      "exists": true,
+      "expected_raw_sha256": "2880cad5b3fe46ea105816f42798faf4c22e16839098b679ebcad7b51acfdbd0",
+      "match": true,
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/LIBERO-official-8f1084e/libero/libero/envs/env_wrapper.py",
+      "raw_sha256": "2880cad5b3fe46ea105816f42798faf4c22e16839098b679ebcad7b51acfdbd0"
+    },
+    "upstream_evaluator": {
+      "byte_size": 11936,
+      "git_blob_sha": "5c3f58178d7c827df829379354f7aefddc0458bc",
+      "path": "experiments/robot/libero/run_libero_eval.py",
+      "raw_sha256": "369d9fc3d59067998ebfadafbd516872c7ff6f9f06a0a48cda8b6ca48051de77",
+      "ref": "c8f03f48af692657d3060c19588038c7220e9af9"
+    }
+  },
+  "status": "PASS_SUCCESS_AND_HORIZON_BINDING",
+  "success_authority": {
+    "benchmark_native_predicate": "BDDL task _check_success() invoked by bddl_base_domain.step",
+    "call_expression": "obs, reward, done, info = env.step(action.tolist()); if done: task_successes += 1",
+    "canonical_evaluator": {
+      "byte_size": 11936,
+      "git_blob_sha": "5c3f58178d7c827df829379354f7aefddc0458bc",
+      "path": "experiments/robot/libero/run_libero_eval.py",
+      "raw_sha256": "369d9fc3d59067998ebfadafbd516872c7ff6f9f06a0a48cda8b6ca48051de77",
+      "ref": "c8f03f48af692657d3060c19588038c7220e9af9"
+    },
+    "comparison_candidates": [
+      {
+        "name": "project_SC5_clean_runner",
+        "reason": "three-suite local runner with 400-step override semantics",
+        "status": "COMPARISON_ONLY"
+      },
+      {
+        "name": "ControlEnv.check_success",
+        "source": {
+          "byte_size": 9059,
+          "exists": true,
+          "path": "/mnt/sdc/dty_user/openvla_attack/repos/LIBERO-official-8f1084e/libero/libero/envs/env_wrapper.py",
+          "raw_sha256": "2880cad5b3fe46ea105816f42798faf4c22e16839098b679ebcad7b51acfdbd0"
+        },
+        "status": "EQUIVALENT_DELEGATE_NOT_CALLSITE"
+      }
+    ],
+    "first_success": "first post-step done=True terminates the task loop",
+    "semantic_origin": "OPENVLA_LIBERO_CANONICAL_ENV_STEP_DONE",
+    "status": "BOUND",
+    "step_index": "t=0 at first policy decision after dummy wait; wait steps are outside policy index",
+    "suite_coverage": [
+      "libero_10",
+      "libero_goal",
+      "libero_object",
+      "libero_spatial"
+    ],
+    "transition_position": "after env.step transition",
+    "wrapper_delegate": "ControlEnv.step -> self.env.step(action)"
+  }
+}

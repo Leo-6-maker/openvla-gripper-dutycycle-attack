@@ -1,0 +1,201 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_1",
+  "version": "V1.1",
+  "supersedes": "configs/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1.json",
+  "status": "FROZEN_FOR_VALIDATION",
+  "runtime_authorized": false,
+  "requires_explicit_owner_authorization": true,
+  "protocol_role": "pre_v7_m3_5_semantics_and_label_validity_diagnostic",
+  "historical_roots_immutable": true,
+  "protected_eval160": {
+    "reads_allowed": false,
+    "rollouts_allowed": false,
+    "hard_stop": true
+  },
+  "source_binding": {
+    "contract_source_commit": "4e125034623c61e732752b8c3e011e2048804fb6",
+    "contract_source_tree": "a6831c9afa81490200a42c4d85e83b3facb9d7ba",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "phase_classifier_source_commit": "4e125034623c61e732752b8c3e011e2048804fb6",
+    "phase_classifier_source_tree": "a6831c9afa81490200a42c4d85e83b3facb9d7ba",
+    "selection_source_commit": "911905d3ead5036808e33e27b5a0640f0bbea4db",
+    "selection_source_tree": "c0f2a3b596a9d6f25c739b29f1b8198fc0cc6d04"
+  },
+  "contract_bindings": {
+    "label_contract": {
+      "path": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1.json",
+      "sha256": "6fb9318b1e636c36b6edf56d4bdb0e7a1deb723fa63b809e67c983708290d8d2",
+      "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1"
+    },
+    "fresh_parent_contract": {
+      "path": "configs/STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1.json",
+      "sha256": "1277a5e7c4501e3854075df2880147c3c1aec9295b29c83355fe1feb0c5af345",
+      "schema": "STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1"
+    }
+  },
+  "freshness_bindings": {
+    "exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4_20260810T104027Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4.json",
+      "sha256": "b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612",
+      "union_sha256": "62012ba0246d123fb6caa59a8dbc80bc3bd4fb27ea32a6a6c4f87bb3c111dc4a",
+      "count": 53,
+      "schema": "STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4"
+    },
+    "clean_attempt_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2_20260810T104027Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2.json",
+      "sha256": "a8be0582c5cbe3ae2224cf6786ac18a0558f2105962aef73ea69fffd462e81e6",
+      "union_sha256": "bbe427d645efcaa683d7cfb305014333317ed9cd1e369a1825406b08c2e6302a",
+      "count": 357,
+      "schema": "STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2"
+    }
+  },
+  "diagnostic_parent_selection": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1_20260810T110240Z/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1.json",
+    "sha256": "af4f5a3925c6de51a0e8fa0cf7436ca41d2212523feb4c45293e34f2c4a297eb",
+    "schema": "STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1",
+    "selected_count": 8,
+    "selected_counts_by_suite": {
+      "libero_10": 2,
+      "libero_goal": 2,
+      "libero_object": 2,
+      "libero_spatial": 2
+    },
+    "branch_results_read": false,
+    "outcomes_read": false
+  },
+  "phase_classifier": {
+    "schema": "STAGE_V_M3_5_PHASE_CLASSIFIER_V1",
+    "version": "V1",
+    "module_path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py",
+    "sha256": "94f46e45aec00c96a18a86230c516b535511c21d2e6a068a9b7ac6bd455fc8e1",
+    "registered_phase_labels": [
+      "PRE_CONTACT",
+      "CONTACT_MANIPULATION",
+      "ENGAGED_LIFT",
+      "CARRY"
+    ],
+    "unknown_label": "UNKNOWN",
+    "required_fields": [
+      "step",
+      "clean_record_valid",
+      "clean_terminal",
+      "remaining_horizon",
+      "object_identity",
+      "object_position",
+      "eef_position",
+      "object_eef_distance_m",
+      "object_gripper_contact",
+      "object_support_contact",
+      "contact_telemetry_valid",
+      "raw_gripper",
+      "env_gripper"
+    ],
+    "clean_only": true,
+    "outcome_blind": true,
+    "minimum_remaining_steps": 20,
+    "thresholds": {
+      "raw_open_threshold": 0.5,
+      "lift_delta_m": 0.015,
+      "object_eef_distance_m": 0.12,
+      "carry_relative_distance_m": 0.04,
+      "carry_stability_steps": 3
+    },
+    "post_release_policy": "UNKNOWN; never map contact loss to a negative phase",
+    "missing_telemetry_policy": "UNKNOWN; no default-zero fill"
+  },
+  "probe_plan_builder": {
+    "schema": "STAGE_V_M3_5_PROBE_PLAN_V1",
+    "script_path": "scripts/detector_v5/build_stage_v_m3_5_probe_plan.py",
+    "sha256": "62bd87fd4fd9b9a1fd3a42e988e9754b9a8921a657b85c6a5abb21bb99b57a85",
+    "selection_salt": "STAGE_V_M3_5_PROBE_SELECTION_V1_1",
+    "probe_count": 24,
+    "probes_per_phase": 6,
+    "minimum_remaining_steps": 20,
+    "backfill_allowed": false,
+    "outcome_blind": true,
+    "required_output": "exact probe steps, phase labels, eligibility evidence, ranking SHA, trajectory SHA",
+    "insufficient_coverage_status": "PROBE_PLAN_INSUFFICIENT"
+  },
+  "diagnostic_execution_accounting": {
+    "selected_parents": 8,
+    "probes_per_parent": 24,
+    "repetitions_per_probe_and_condition": 3,
+    "conditions_per_probe": ["CONTROL", "T3", "T5", "T10"],
+    "physical_branches_per_probe": 12,
+    "physical_branches_per_parent": 288,
+    "formal_diagnostic_physical_branches": 2304,
+    "formal_m4_accounting_is_separate": "M4 uses 96 physical executions and 72 treatment labels per parent; M3.5 repeats are diagnostic validation and are not M4 labels"
+  },
+  "intervention_contract": {
+    "control_branch": "one registered clean control execution per probe snapshot",
+    "treatment_branches": ["T3", "T5", "T10"],
+    "dose_steps": {"T3": 3, "T5": 5, "T10": 10},
+    "treatment_window": {
+      "control_arm": "frozen matched-control arm action",
+      "open_arm": "exact same frozen matched-control arm action",
+      "only_gripper_component_may_change": true,
+      "arm_delta_must_equal_zero": true,
+      "forced_gripper_raw_action": 1.0,
+      "forced_gripper_env_action": -1.0
+    },
+    "post_treatment_mode": "each branch resumes its own frozen-policy closed-loop from its own post-treatment state",
+    "control_replay_after_treatment": false
+  },
+  "horizon_contract": {
+    "dose_steps": {"T3": 3, "T5": 5, "T10": 10},
+    "H_phys_steps": 10,
+    "H_task": "separate official task consequence horizon",
+    "probe_eligibility": "remaining clean horizon >= T10 + H_phys",
+    "insufficient_physical_horizon": "ABSTAIN_HORIZON_CENSORED"
+  },
+  "required_tests": [
+    "TREATMENT_SEMANTICS_AND_ENV_STEP_COMPLIANCE",
+    "COUNTERFACTUAL_STATE_SUFFICIENCY",
+    "SURGICAL_ARM_ISOLATION",
+    "INTERVENTION_REPEATABILITY_3_OF_3",
+    "BLINDED_FAILURE_TAXONOMY",
+    "DOSE_SANITY"
+  ],
+  "repeatability_gate": {
+    "control_repetitions": 3,
+    "treatment_repetitions_each": 3,
+    "discordant_valid_outcome": "HOLD_STOCHASTIC_INTERVENTION_OUTCOME",
+    "stable_abstain_is_not_negative": true
+  },
+  "resource_contract": {
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "partial_fleet_allowed": true,
+    "foreign_workloads_allowed_if_admitted": true,
+    "gpu3_foreign_process_must_not_be_modified": true,
+    "parent_atomicity": "all registered branches for one parent stay on one physical GPU",
+    "lease_sequence": ["check_free_memory", "atomic_acquire", "recheck_free_memory", "launch", "flush_artifacts", "release"]
+  },
+  "freshness_and_boundary": {
+    "source_population": "only canonical identities in the bound V4 exposure union",
+    "future_v7_candidates_allowed": false,
+    "formal40_allowed": false,
+    "eval160_allowed": false,
+    "selection_outcome_blind": true,
+    "historical_roots_immutable": true,
+    "protected_counters_must_be_zero": true
+  },
+  "static_audit_binding": {
+    "auditor_script_path": "scripts/detector_v5/audit_stage_v_m3_5_static_contract_v1_1.py",
+    "auditor_script_sha256": "c454cc2e0141113861b272e6cb1df4dc850baade83dce8efc11770255dffd5cc",
+    "receipt_schema": "STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1",
+    "receipt_binds_this_protocol_sha256": true,
+    "receipt_status": "REQUIRED_AFTER_PROTOCOL_FREEZE"
+  },
+  "runtime_prerequisites": {
+    "intervention_runner_status": "NOT_YET_BOUND",
+    "runtime_authorization_receipt_required": true,
+    "no_gpu_launch_under_this_freeze": true,
+    "v7_and_m4_before_m3_5_pass": false
+  },
+  "launch_policy": {
+    "runtime_authorized": false,
+    "m3_5_pass_required_before_v7": true,
+    "outcome_informed_revision": "forbidden; prospective V1.2 required"
+  }
+}

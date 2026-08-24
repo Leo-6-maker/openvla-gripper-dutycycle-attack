@@ -1,0 +1,15 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R2_CLEAN_DETERMINISM_PROTOCOL_V1",
+  "status": "FROZEN_ENGINEERING_ONLY_CLEAN_EXECUTION",
+  "scientific_authority": false,
+  "pool": {"path": "reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json", "git_blob_sha256": "2f567ccf16fdd42479a566b48a9ac9893fd027cb", "server_raw_sha256": "9177b54262acb969619b577f50c8e4aa58dfde83ce13a40434b8ab26386460b1", "scan_order": "selected array order within suite", "per_suite_max_candidates": 12},
+  "runtime_authority": {"path": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json", "status_required": "STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_PASS", "runtime_code_commit": "85fa8e678ca599f21f5a69d180c7179f9ef99478", "runtime_code_tree": "f6555a5d49dda45f29ef64ca8ae4b65b7b08d3f9"},
+  "seed": {"salt": "STAGE_X_X1R2_Q3R2_CLEAN_DETERMINISM_SEED_V1_20260820", "rule": "uint32(sha256(salt|canonical_parent_key)[:8])", "outcome_blind": true},
+  "repeat": {"count": 2, "fresh_env_per_repeat": true, "same_loaded_frozen_model_process": true, "primary_comparison": "exact observation/token/Student trace through first emit inclusive", "post_emit_full_trace": "recorded diagnostic; not silently promoted if prefix fails"},
+  "clean_execution": {"policy_horizons": {"libero_10": 520, "libero_goal": 300, "libero_object": 280, "libero_spatial": 220}, "dummy_wait_steps": 10, "success": "done=True after policy env.step", "student_emit": "current frozen Student scheduler only", "legal_window": "t_emit + 5 + 10 <= configured horizon"},
+  "allowed": ["current-runtime clean OpenVLA inference", "current-runtime Student inference", "simulator reset", "clean env.step", "observation/token/Student trace telemetry"],
+  "forbidden": ["PGD", "RAND", "SHUFFLED", "physical intervention", "V_phys", "attack outcome", "Eval160", "protected evaluation", "rerun exposed fixture after source change", "replacement based on outcome"],
+  "resource": {"official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800", "free_memory_mib_strictly_greater_than": 20480, "one_project_worker_per_physical_gpu": true, "foreign_processes_untouched": true, "durable_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820", "minimum_free_bytes": 4294967296},
+  "protected_boundary": {"eval160": "UNREAD", "protected_evaluation": "UNREAD", "counters_must_remain_zero": ["pgd_calls", "physical_interventions", "vphys_reads", "attack_outcome_reads", "eval160_reads", "protected_reads", "attacked_env_steps"]},
+  "next_gate": "STAGE_X1R2_Q3R2_CLEAN_PREFIX_DETERMINISM_AUDIT"
+}

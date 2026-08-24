@@ -18,6 +18,7 @@ artifacts/
 
 # Python/cache artifacts
 __pycache__/
+*.egg-info/
 *.py[cod]
 *.pyo
 .pytest_cache/

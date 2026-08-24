@@ -1,0 +1,8 @@
+{
+  "schema": "B3_OFFICIAL_V3_ATTACK_PROTOCOL_V1",
+  "status": "PREPARATION_ONLY",
+  "exact_t10": 10,
+  "conditions": ["CLEAN", "R9Q_DETECTOR_T10", "RAND_VALID_T10", "COMMAND_OPEN_ORACLE", "DETECTOR_SHUFFLED_GRAD_T10", "R9Q_GRIPPER_ONLY_T10"],
+  "formal_attack_authorized": false,
+  "attack_execution_authorized": false
+}

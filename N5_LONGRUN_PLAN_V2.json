@@ -1,0 +1,293 @@
+{
+  "plan": "N5_LONGRUN_PLAN_V2",
+  "frozen_at": "2026-07-26",
+  "status": "RUNNING",
+  "current_gate": "G8_N5_TRAINING",
+
+  "progress_summary": {
+    "G0_VIS_VALIDATION": {"status": "PASS", "date": "2026-07-26", "summary": "PGD-20 at epsilon=0.03 flips gripper; ORACLE confirms physical vulnerability"},
+    "G1_V4D_OPEN_BASELINE_SEAL": {"status": "PASS", "date": "2026-07-26", "summary": "V4D-CLOSE sealed; canonical ledger committed"},
+    "G2_TEACHER_CANARY": {"status": "PASS", "date": "2026-07-26", "summary": "32/32 PASS, 0 unk2neg"},
+    "G3_COHORT_JOIN": {"status": "PASS", "date": "2026-07-26", "summary": "800 training IDs, CS200 verified"},
+    "G4_FULL_LABEL_PRODUCTION": {"status": "PASS", "date": "2026-07-26", "summary": "800/800 episodes, 176,336 steps, 0 unk2neg"},
+    "G5_LABEL_SEAL": {"status": "PASS", "date": "2026-07-26", "summary": "goal 43.7% critical (V4 was 0%), cc_false_crit=58,904"},
+    "G6_TRAINING_DATA_SEAL": {"status": "PASS", "date": "2026-07-26", "summary": "640/80/80 split, 51D feature schema SHA frozen, normalizer on train only"},
+    "G7_BASELINES": {"status": "PASS", "date": "2026-07-26", "summary": "Prior=0.647, MLP=0.881, RF32=0.909, RF128=0.904 crit_acc"},
+    "G8_N5_TRAINING": {"status": "RUNNING", "date": "2026-07-26", "summary": "Seed 19903 crit_acc=0.918; seeds 20903, 21903 in progress"}
+  },
+
+  "hard_rules": {
+    "auto_advance_on_pass": true,
+    "stop_on_fail": true,
+    "no_threshold_tuning_after_fail": true,
+    "no_identity_swapping": true,
+    "no_overwriting_artifacts": true,
+    "no_modifying_v4_formal": true,
+    "exit_codes": {
+      "0": "GATE_PASS",
+      "2": "CONTRACT_FAIL_GLOBAL_HOLD",
+      "3": "INFRA_RETRY_ONCE",
+      "4": "VALID_SCIENTIFIC_NEGATIVE"
+    }
+  },
+
+  "gates": [
+    {
+      "id": "G0_VIS_VALIDATION",
+      "description": "Gate B+C+D: objective A/B, PGD-20 restarts, three-arm canary",
+      "gpu_count": 8,
+      "estimated_minutes": 10,
+      "pass_conditions": [
+        "Gate B: single-token 31745 vs OPEN-region results collected",
+        "Gate C: PGD-20 at ε=0.03 consistently flips >=2/10 frames in >=3/5 restarts",
+        "Gate D: CLEAN success + ORACLE OPEN K10=10 + TRUE PGD-20 OPEN frames confirmed",
+        "all results committed to repo with receipts"
+      ],
+      "fail_action": "HOLD — investigate objective or budget; report to user"
+    },
+    {
+      "id": "G1_V4D_OPEN_BASELINE_SEAL",
+      "description": "Freeze V4D-OPEN baseline: V4 Detector + corrected VIS-OPEN executor",
+      "depends_on": ["G0_VIS_VALIDATION"],
+      "pass_conditions": [
+        "V4D-OPEN verdict document written (frozen Detector + fixed VIS executor)",
+        "ORACLE physical vulnerability confirmed (matched-state or same-init)",
+        "VIS optimal config frozen (PGD-20, ε=0.03, objective chosen from Gate B)",
+        "V4 Formal canonical ledger committed",
+        "V4D-OPEN baseline SHA sealed"
+      ]
+    },
+    {
+      "id": "G2_TEACHER_CANARY",
+      "description": "32-48 episode Label V2 production canary",
+      "gpu_count": 0,
+      "estimated_minutes": 15,
+      "pass_conditions": [
+        "32-48 episodes selected across all 4 suites",
+        "At least 8 per suite covering: stable-grasp positive, transport positive, known negative, safe-release, instability, unsupported articulated unknown, short-horizon K10 negative, critical && old_cc=false",
+        "all atomic outputs written",
+        "identity mismatch = 0",
+        "unknown→negative = 0",
+        "critical && cc=false > 0",
+        "eligible Goal positive > 0",
+        "safe_release positive > 0",
+        "deterministic replay step-identical"
+      ],
+      "fail_action": "HOLD_TEACHER — investigate false positive/negative patterns"
+    },
+    {
+      "id": "G3_COHORT_JOIN",
+      "description": "2000→1400 cohort exact identity binding",
+      "depends_on": ["G2_TEACHER_CANARY"],
+      "pass_conditions": [
+        "CS200 clean identities = 2000",
+        "V4 training identities = 1400",
+        "exact intersection = 1400",
+        "extra cohort = 600 (held-out)",
+        "missing old identity = 0",
+        "duplicate identity = 0"
+      ],
+      "fail_action": "HOLD — identity mismatch indicates data corruption"
+    },
+    {
+      "id": "G4_FULL_LABEL_PRODUCTION",
+      "description": "1400 episode full Label V2 production (16 CPU shards)",
+      "depends_on": ["G3_COHORT_JOIN"],
+      "estimated_hours": 4,
+      "pass_conditions": [
+        "1400/1400 atomic outputs",
+        "missing/duplicate = 0",
+        "unknown→negative = 0",
+        "candidate_close NOT in physical evaluator",
+        "output overwrite = 0",
+        "step length mismatch = 0",
+        "NaN/Inf known=true = 0",
+        "identity collision = 0",
+        "Formal V4 paths unchanged"
+      ],
+      "fail_action": "GLOBAL_HOLD — any schema/hash/identity error"
+    },
+    {
+      "id": "G5_LABEL_SEAL",
+      "description": "Label Seal — per-suite, per-head distribution audit",
+      "depends_on": ["G4_FULL_LABEL_PRODUCTION"],
+      "pass_conditions": [
+        "1400/1400 disposition closed",
+        "Goal no longer structurally all-negative",
+        "critical && cc=false > 0 where physical evidence supports",
+        "positive/negative/unknown per head reported",
+        "safe-release events > 0",
+        "instability events > 0",
+        "unsupported articulated unknown > 0 (correct abstain)",
+        "train/val/cal split no crossover",
+        "Label Seal self-hash PASS"
+      ],
+      "fail_action": "HOLD — if any head all-negative or all-unknown, investigate Teacher"
+    },
+    {
+      "id": "G6_TRAINING_DATA_SEAL",
+      "description": "Freeze input schema, splits, normalization, sampler",
+      "depends_on": ["G5_LABEL_SEAL"],
+      "pass_conditions": [
+        "ordered input feature schema frozen with SHA",
+        "parent-level train/val/cal split frozen",
+        "train-only pos_weight computed and frozen",
+        "suite-balanced sampler seed frozen",
+        "padding strategy frozen",
+        "normalization frozen (train-only stats)",
+        "per-head valid mask handling frozen"
+      ],
+      "fail_action": "HOLD"
+    },
+    {
+      "id": "G7_BASELINES",
+      "description": "Train 4 baselines: Prior, Last-frame MLP, RF32 TCN, RF128 TCN",
+      "depends_on": ["G6_TRAINING_DATA_SEAL"],
+      "gpu_count": 1,
+      "estimated_hours": 2,
+      "pass_conditions": [
+        "all 4 training runs finite loss",
+        "checkpoint roundtrip PASS",
+        "causal/padding parity PASS",
+        "validation metrics complete",
+        "no future leakage",
+        "no test-set calibration"
+      ],
+      "fail_action": "HOLD — training infrastructure issue"
+    },
+    {
+      "id": "G8_N5_TRAINING",
+      "description": "N5 Dual TCN (RF32+RF128) × 3 frozen seeds",
+      "depends_on": ["G7_BASELINES"],
+      "gpu_count": 1,
+      "estimated_hours": 4,
+      "pass_conditions": [
+        "all 3 seeds finite loss",
+        "all heads receive valid samples (non-zero gradient)",
+        "no zero-loss hidden head",
+        "checkpoint/source/data SHA complete",
+        "N5 criticality AUPRC > Prior",
+        "N5 K10 AUPRC > Prior",
+        "N5 > Last-frame MLP on >=2/3 seeds",
+        "eligible suite recall > 0 for every supported suite",
+        "Goal Teacher-positive episodes not structural zero"
+      ],
+      "fail_action": "HOLD_MODEL_VALUE — if not better than simple baselines"
+    },
+    {
+      "id": "G9_CALIBRATION_SCHEDULER",
+      "description": "Freeze calibration + scheduler on calibration split",
+      "depends_on": ["G8_N5_TRAINING"],
+      "pass_conditions": [
+        "τ_c, τ_k, τ_s frozen from calibration split only",
+        "persistence D frozen",
+        "one-shot latch (first emit only)",
+        "horizon abstain (remaining < K → no emit)",
+        "candidate_close NOT hard gate",
+        "instability NOT hard veto",
+        "gripper_closing_state auxiliary only",
+        "no suite-specific thresholds"
+      ],
+      "fail_action": "HOLD — calibration instability"
+    },
+    {
+      "id": "G10_DETECTOR_REPLAY",
+      "description": "Detector-only replay on held-out identities",
+      "depends_on": ["G9_CALIBRATION_SCHEDULER"],
+      "pass_conditions": [
+        "V4 vs V5 comparison complete",
+        "eligible Goal recall: V5 > V4",
+        "Spatial s1/s3: V5 covers previously no-emit parents",
+        "unsupported articulated correctly abstain",
+        "K10 containment: V5 >= V4",
+        "known-negative false emit: V5 <= V4",
+        "safe-release false trigger: <= 0.10/episode",
+        "test identities NEVER used in training/calibration"
+      ],
+      "fail_action": "HOLD — V5 not better than V4; investigate Teacher/Student"
+    },
+    {
+      "id": "G11_V5_SMOKE",
+      "description": "V5 smoke with frozen executor + exact-prefix runner",
+      "depends_on": ["G10_DETECTOR_REPLAY"],
+      "gpu_count": 1,
+      "pass_conditions": [
+        "attack_errors = 0",
+        "fallback = 0",
+        "SHA mismatch = 0",
+        "prefix mismatch = 0",
+        "OPEN action truth PASS",
+        "immutable artifacts PASS",
+        "all 5 arms path coverage",
+        "triggered and no-emit paths both covered"
+      ],
+      "fail_action": "HOLD — attack integration failure"
+    },
+    {
+      "id": "G12_V5_FORMAL_WAVE0",
+      "description": "V5 Formal Wave-0: 1 parent × 5 arms",
+      "depends_on": ["G11_V5_SMOKE"],
+      "gpu_count": 1,
+      "pass_conditions": [
+        "snapshot restore verified",
+        "seed/lease/fencing verified",
+        "five-arm anchor verified",
+        "OPEN direction verified",
+        "K10 accounting verified",
+        "terminal classification verified",
+        "contact log verified",
+        "receipt SHA verified"
+      ],
+      "fail_action": "HOLD — fix before unlocking remaining 19 parents"
+    },
+    {
+      "id": "G13_V5_FORMAL_20",
+      "description": "V5 complete formal matrix: 20 parents × 5 arms",
+      "depends_on": ["G12_V5_FORMAL_WAVE0"],
+      "gpu_count": 8,
+      "estimated_hours": 2,
+      "pass_conditions": [
+        "20/20 parents computed",
+        "100/100 arm dispositions",
+        "CLEAN/TRUE/RAND/ORACLE/RANDOM_TIME all accounted",
+        "ITT includes no-emit and abstain",
+        "official task success reported",
+        "contact-quality failure reported",
+        "qpos/width opening reported",
+        "target contact loss reported",
+        "K10 planned vs executed reported",
+        "treatment-induced truncation flagged",
+        "immutable artifact per parent"
+      ],
+      "fail_action": "formal_complete_as_is — scientific negative is valid"
+    },
+    {
+      "id": "G14_FINAL_REPORT",
+      "description": "Final report: V4 vs V5, OPEN vs CLOSE, VIS vs ORACLE",
+      "depends_on": ["G13_V5_FORMAL_20"],
+      "pass_conditions": [
+        "V5 vs V4 emission recall comparison",
+        "ORACLE vs TRUE VIS gap analysis",
+        "TRUE vs RAND vs RANDOM_TIME statistical tests",
+        "Goal coverage delta quantified",
+        "Terminal censor impact on ITT reported",
+        "V4D-CLOSE-LEGACY vs V5-OPEN mechanism comparison",
+        "all receipts immutable and self-verifying"
+      ]
+    }
+  ],
+
+  "current_parallel_track": {
+    "track": "G0_VIS_VALIDATION",
+    "gpu_assignments": {
+      "0": "Gate B: single-token 31745 baseline",
+      "1": "Gate B: OPEN-region CE objective",
+      "2": "Gate C: PGD-20 restart 1",
+      "3": "Gate C: PGD-20 restart 2",
+      "4": "Gate C: PGD-20 restart 3",
+      "5": "Gate C: PGD-20 restart 4",
+      "6": "Gate C: PGD-20 restart 5",
+      "7": "Gate D: three-arm (CLEAN+ORACLE+TRUE)"
+    }
+  }
+}

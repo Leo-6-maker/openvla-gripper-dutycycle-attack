@@ -1,0 +1,35 @@
+{
+  "checks": {
+    "attacked_step_gate": true,
+    "branch_state_equal": true,
+    "common_first_observation": "branch",
+    "prebranch_model_calls": 0,
+    "prebranch_student_calls": 0,
+    "prefix_count": 3,
+    "prefix_steps": [
+      0,
+      1,
+      2
+    ],
+    "reference_student_calls": true
+  },
+  "next_gate": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS",
+  "protected_boundary": {
+    "env_step_calls": 0,
+    "eval160": "UNREAD",
+    "model_inference_calls": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "real_model_or_simulator_executed": false,
+  "schema": "STAGE_X1R2_Q3R3_BRANCH_RUNNER_STATIC_AUDIT_V1",
+  "scientific_authority": false,
+  "source": {
+    "commit": "b8b4fe5d588a5ef6e8ffa32ba44f8c993c7d26be",
+    "tree": "3a82fb5a6e6d2c35fb898bad8378a5d9fb49382d"
+  },
+  "status": "STAGE_X1R2_Q3R3_BRANCH_RUNNER_STATIC_PASS"
+}

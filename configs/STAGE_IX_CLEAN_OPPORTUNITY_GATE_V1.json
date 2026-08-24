@@ -1,0 +1,37 @@
+{
+  "schema": "STAGE_IX_CLEAN_OPPORTUNITY_GATE_V1",
+  "stage": "STAGE_IX_FACTORIZED_PGD_TIMING_UTILITY",
+  "status": "FROZEN_BEFORE_F0_EXECUTION",
+  "gate_name": "CLEAN_GRIPPER_CLOSED_INTENT",
+  "role": "PHYSICAL_OPPORTUNITY_GATE",
+  "scientific_scope": "coarse runtime-safe eligibility only; not a V_phys detector",
+  "selection_basis": "deterministic clean-only rule; no training and no outcome input",
+  "inputs": {
+    "raw_action_7d[6]": "OpenVLA native clean gripper command",
+    "action_env_7d[6]": "clean LIBERO env gripper command",
+    "clean_record_valid": "clean snapshot/replay integrity flag",
+    "finite_state": "all required clean action/proprio values finite"
+  },
+  "rule": {
+    "gate": "finite_state AND clean_record_valid AND raw_action_7d[6] < 0.5 AND action_env_7d[6] > 0.5",
+    "meaning": "clean policy is issuing a physically closed/close-intent command, so a gripper-open perturbation could plausibly matter",
+    "boundary": "strict inequalities; equality is ineligible",
+    "uses_privileged_simulator_geometry": false,
+    "uses_future_state": false,
+    "uses_task_outcome": false,
+    "uses_v_phys": false,
+    "uses_eval160": false
+  },
+  "invalid_policy": "G_t=0 and no exploitability probe when any required clean value is missing/nonfinite",
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0,
+      "env_steps_with_perturbed_action": 0
+    }
+  }
+}

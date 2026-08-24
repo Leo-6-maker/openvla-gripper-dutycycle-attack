@@ -1,0 +1,169 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1",
+  "version": "V1",
+  "status": "FROZEN_FOR_VALIDATION",
+  "runtime_authorized": false,
+  "requires_explicit_owner_authorization": true,
+  "protocol_role": "pre_v7_m3_5_semantics_and_label_validity_diagnostic",
+  "historical_roots_immutable": true,
+  "protected_eval160": {
+    "reads_allowed": false,
+    "rollouts_allowed": false,
+    "hard_stop": true
+  },
+  "freeze_order": [
+    "static_contract_patch",
+    "independent_static_audit",
+    "diagnostic_parent_selection",
+    "protocol_sha_freeze",
+    "only_then_runtime_if_explicitly_authorized",
+    "independent_post_runtime_audit"
+  ],
+  "source_binding": {
+    "contract_source_commit": "918300781babb6b20b5accefe34ad89919711453",
+    "contract_source_tree": "75fe17c2ee77c8601a2a7e32d4b58ea688ac7efa",
+    "selection_source_commit": "911905d3ead5036808e33e27b5a0640f0bbea4db",
+    "selection_source_tree": "c0f2a3b596a9d6f25c739b29f1b8198fc0cc6d04",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python"
+  },
+  "contract_bindings": {
+    "label_contract": {
+      "path": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1.json",
+      "sha256": "6fb9318b1e636c36b6edf56d4bdb0e7a1deb723fa63b809e67c983708290d8d2",
+      "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1"
+    },
+    "fresh_parent_contract": {
+      "path": "configs/STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1.json",
+      "sha256": "1277a5e7c4501e3854075df2880147c3c1aec9295b29c83355fe1feb0c5af345",
+      "schema": "STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1"
+    }
+  },
+  "freshness_bindings": {
+    "exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4_20260810T104027Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4.json",
+      "sha256": "b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612",
+      "union_sha256": "62012ba0246d123fb6caa59a8dbc80bc3bd4fb27ea32a6a6c4f87bb3c111dc4a",
+      "count": 53,
+      "schema": "STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4"
+    },
+    "clean_attempt_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2_20260810T104027Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2.json",
+      "sha256": "a8be0582c5cbe3ae2224cf6786ac18a0558f2105962aef73ea69fffd462e81e6",
+      "union_sha256": "bbe427d645efcaa683d7cfb305014333317ed9cd1e369a1825406b08c2e6302a",
+      "count": 357,
+      "schema": "STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2"
+    }
+  },
+  "static_audit_binding": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_STATIC_AUDIT_V1_20260810T110048Z/M3_5_STATIC_INDEPENDENT_AUDIT_V1.json",
+    "sha256": "1d94ade68ba43b5e83d9fb7d31a27d65d4b4208ca650622b0e69b19debdaf14c",
+    "schema": "STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1",
+    "status": "PASS",
+    "failure_count": 0,
+    "check_count": 37
+  },
+  "diagnostic_parent_selection": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1_20260810T110240Z/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1.json",
+    "sha256": "af4f5a3925c6de51a0e8fa0cf7436ca41d2212523feb4c45293e34f2c4a297eb",
+    "schema": "STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1",
+    "status": "FROZEN_FOR_VALIDATION",
+    "selected_count": 8,
+    "selected_counts_by_suite": {
+      "libero_10": 2,
+      "libero_goal": 2,
+      "libero_object": 2,
+      "libero_spatial": 2
+    },
+    "branch_results_read": false,
+    "outcomes_read": false
+  },
+  "diagnostic_scope": {
+    "source_population": "only canonical identities in the bound V4 exposure union",
+    "future_v7_candidates_allowed": false,
+    "formal40_allowed": false,
+    "eval160_allowed": false,
+    "all_four_suites_required": true,
+    "selection_is_outcome_blind": true,
+    "selection_after_runtime_outcomes": false,
+    "no_positive_parent_backfill": true
+  },
+  "diagnostic_execution_accounting": {
+    "selected_parents": 8,
+    "probes_per_parent": 24,
+    "repetitions_per_probe_and_condition": 3,
+    "conditions_per_probe": ["CONTROL", "T3", "T5", "T10"],
+    "physical_branches_per_probe": 12,
+    "physical_branches_per_parent": 288,
+    "formal_diagnostic_physical_branches": 2304,
+    "formal_m4_accounting_is_separate": "M4 uses 96 physical executions and 72 treatment labels per parent; M3.5 repeats are diagnostic validation and are not M4 labels"
+  },
+  "tests": [
+    {
+      "id": "M3_5_TEST_1_TREATMENT_SEMANTICS_COMPLIANCE",
+      "requires": ["raw_policy_gripper_1.0", "env_action_gripper_-1.0", "env_step_receipt", "already_open_classification"],
+      "hard_gate": true
+    },
+    {
+      "id": "M3_5_TEST_2_COUNTERFACTUAL_STATE_REPLAY",
+      "requires": ["exact_snapshot_restore", "full_simulator_state_sha256", "policy_input_sha256", "model_source_sha256", "source_commit_tree"],
+      "hard_gate": true
+    },
+    {
+      "id": "M3_5_TEST_3_SURGICAL_ARM_ISOLATION",
+      "requires": ["arm_delta_zero_with_preregistered_tolerance", "forced_open_only_gripper_channel"],
+      "hard_gate": true
+    },
+    {
+      "id": "M3_5_TEST_4_INTERVENTION_REPEATABILITY",
+      "requires": ["CONTROL_x3", "T3_x3", "T5_x3", "T10_x3", "3_of_3_registered_outcome_class"],
+      "hard_gate": true
+    },
+    {
+      "id": "M3_5_TEST_5_BLINDED_FAILURE_TAXONOMY",
+      "requires": ["machine_readable_predicate", "telemetry_evidence", "failure_latency", "blinded_manual_subset"],
+      "hard_gate": true
+    },
+    {
+      "id": "M3_5_TEST_6_DOSE_SANITY",
+      "requires": ["delivered_open_steps", "aperture_response", "F_phys_rate", "T3_T5_T10_intensity_summary"],
+      "hard_gate": true
+    }
+  ],
+  "horizon_contract": {
+    "T3": 3,
+    "T5": 5,
+    "T10": 10,
+    "H_phys_steps": 10,
+    "H_task": "separate official task consequence horizon",
+    "insufficient_horizon": "ABSTAIN_HORIZON_CENSORED",
+    "H_phys_frozen_before_runtime": true
+  },
+  "atomicity_and_resources": {
+    "one_parent_bundle_per_gpu": true,
+    "parent_branches_must_not_migrate": true,
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "partial_fleet_allowed": true,
+    "foreign_workloads_allowed_if_admitted": true,
+    "gpu3_foreign_process_must_not_be_modified": true,
+    "lease_sequence": ["check_free_memory", "atomic_acquire", "recheck_free_memory", "launch", "flush_artifacts", "release"]
+  },
+  "required_post_runtime_outputs": [
+    "GRIPPER_EXECUTION_SEMANTICS.json",
+    "TREATMENT_COMPLIANCE_AUDIT.json",
+    "COUNTERFACTUAL_STATE_AUDIT.json",
+    "SURGICAL_INTERVENTION_AUDIT.json",
+    "PHYSICAL_FAILURE_TAXONOMY.json",
+    "REPEATABILITY_AUDIT.json",
+    "PROBE_AND_DOSE_PROTOCOL.json",
+    "M3_5_INDEPENDENT_AUDIT.json",
+    "M3_5_VALIDATION_RECEIPT.json"
+  ],
+  "launch_policy": {
+    "runtime_authorized": false,
+    "no_gpu_launch_under_this_freeze": true,
+    "m3_5_pass_required_before_v7": true,
+    "v7_and_m4_before_m3_5_pass": false,
+    "outcome_informed_revision": "forbidden; prospective V2 required"
+  }
+}

@@ -1,0 +1,1278 @@
+{
+  "alias_invariance": {
+    "alias_keys": [
+      "libero_10/task_08/state_28"
+    ],
+    "alias_rows": [
+      {
+        "canonical_parent_key": "libero_10/task_08/state_28",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_LIBERO10_TASK08_STATE28_20260816T170500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "NOT_IDENTIFIABLE",
+        "source_kind": "EXPLICIT_CANONICAL_ALIAS"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_00/state_27",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task00_state_27_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_00/state_34",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task00_state_34_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_29",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task01_state_29_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_02/state_32",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task02_state_32_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_39",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task05_state_39_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_42",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task05_state_42_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_30",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task06_state_30_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_39",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task06_state_39_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_07/state_29",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_10_task07_state_29_20260816T171500Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_01/state_41",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task01_state_41_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_02/state_44",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task02_state_44_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_03/state_36",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task03_state_36_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_03/state_41",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task03_state_41_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_04/state_25",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task04_state_25_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_23",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task05_state_23_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_25",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task05_state_25_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_41",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task05_state_41_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_08/state_33",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_goal_task08_state_33_20260816T171700Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_01/state_45",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task01_state_45_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_32",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task04_state_32_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_41",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task04_state_41_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_43",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task04_state_43_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_26",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task06_state_26_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_46",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task06_state_46_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_23",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task07_state_23_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_26",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task07_state_26_20260816T171900Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_09/state_29",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_object_task09_state_29_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_25",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task01_state_25_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_42",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task01_state_42_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_04/state_44",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task04_state_44_20260816T172300Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_06/state_24",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task06_state_24_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_06/state_34",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task06_state_34_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_07/state_24",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task07_state_24_20260816T172100Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_23",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task09_state_23_20260816T172300Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_34",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task09_state_34_20260816T172300Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_44",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_FULL_libero_spatial_task09_state_44_20260816T172300Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_08/state_28",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SMOKE_LIBERO10_TASK08_STATE28_20260816T170000Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "NOT_IDENTIFIABLE",
+        "source_kind": "EXPLICIT_CANONICAL_ALIAS"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_02/state_40",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SUITE_SMOKE_libero_goal_task02_state40_20260816T171000Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_00/state_23",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SUITE_SMOKE_libero_object_task00_state23_20260816T171000Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_04/state_36",
+        "directory_name": "STAGE_VI_M4_R3_RECONSTRUCTION_SUITE_SMOKE_libero_spatial_task04_state36_20260816T171000Z",
+        "historical_outcome_read": false,
+        "physical_intervention_semantics_from_directory_name": "IDENTITY_ONLY",
+        "source_kind": "CANONICAL_DIRECTORY_NAME"
+      }
+    ],
+    "baseline_with_explicit_aliases": {
+      "fresh_count": 210,
+      "selected_parent_keys": [
+        "libero_10/task_00/state_36",
+        "libero_10/task_01/state_36",
+        "libero_10/task_02/state_39",
+        "libero_10/task_03/state_21",
+        "libero_10/task_04/state_30",
+        "libero_10/task_05/state_22",
+        "libero_10/task_06/state_34",
+        "libero_10/task_07/state_27",
+        "libero_10/task_08/state_20",
+        "libero_10/task_09/state_43",
+        "libero_goal/task_00/state_21",
+        "libero_goal/task_02/state_34",
+        "libero_goal/task_03/state_45",
+        "libero_goal/task_04/state_38",
+        "libero_goal/task_05/state_26",
+        "libero_goal/task_06/state_28",
+        "libero_goal/task_07/state_30",
+        "libero_goal/task_08/state_20",
+        "libero_goal/task_09/state_46",
+        "libero_object/task_00/state_45",
+        "libero_object/task_01/state_40",
+        "libero_object/task_02/state_42",
+        "libero_object/task_03/state_25",
+        "libero_object/task_04/state_35",
+        "libero_object/task_05/state_31",
+        "libero_object/task_06/state_44",
+        "libero_object/task_07/state_43",
+        "libero_object/task_08/state_43",
+        "libero_object/task_09/state_23",
+        "libero_spatial/task_00/state_37",
+        "libero_spatial/task_01/state_38",
+        "libero_spatial/task_02/state_31",
+        "libero_spatial/task_03/state_29",
+        "libero_spatial/task_04/state_33",
+        "libero_spatial/task_05/state_27",
+        "libero_spatial/task_06/state_45",
+        "libero_spatial/task_07/state_28",
+        "libero_spatial/task_08/state_28",
+        "libero_spatial/task_09/state_21"
+      ],
+      "union_count": 990
+    },
+    "diagnostic_canonical_only": {
+      "fresh_count": 210,
+      "selected_parent_keys": [
+        "libero_10/task_00/state_36",
+        "libero_10/task_01/state_36",
+        "libero_10/task_02/state_39",
+        "libero_10/task_03/state_21",
+        "libero_10/task_04/state_30",
+        "libero_10/task_05/state_22",
+        "libero_10/task_06/state_34",
+        "libero_10/task_07/state_27",
+        "libero_10/task_08/state_20",
+        "libero_10/task_09/state_43",
+        "libero_goal/task_00/state_21",
+        "libero_goal/task_02/state_34",
+        "libero_goal/task_03/state_45",
+        "libero_goal/task_04/state_38",
+        "libero_goal/task_05/state_26",
+        "libero_goal/task_06/state_28",
+        "libero_goal/task_07/state_30",
+        "libero_goal/task_08/state_20",
+        "libero_goal/task_09/state_46",
+        "libero_object/task_00/state_45",
+        "libero_object/task_01/state_40",
+        "libero_object/task_02/state_42",
+        "libero_object/task_03/state_25",
+        "libero_object/task_04/state_35",
+        "libero_object/task_05/state_31",
+        "libero_object/task_06/state_44",
+        "libero_object/task_07/state_43",
+        "libero_object/task_08/state_43",
+        "libero_object/task_09/state_23",
+        "libero_spatial/task_00/state_37",
+        "libero_spatial/task_01/state_38",
+        "libero_spatial/task_02/state_31",
+        "libero_spatial/task_03/state_29",
+        "libero_spatial/task_04/state_33",
+        "libero_spatial/task_05/state_27",
+        "libero_spatial/task_06/state_45",
+        "libero_spatial/task_07/state_28",
+        "libero_spatial/task_08/state_28",
+        "libero_spatial/task_09/state_21"
+      ],
+      "union_count": 990
+    },
+    "status": "PASS"
+  },
+  "authorization": {
+    "attack_outcome_authorized": false,
+    "clean_parent_materialization_authorized": false,
+    "env_step_authorized": false,
+    "model_inference_authorized": false,
+    "next_gate": "CLEAN_PARENT_MATERIALIZATION_REVIEW_REQUIRED",
+    "pgd_authorized": false,
+    "physical_intervention_authorized": false,
+    "protected_authorized": false
+  },
+  "derived_population": {
+    "design_cell_count": 40,
+    "exclusion_source_counts": {
+      "prior_clean_attempt": 958,
+      "prior_exposure": 53,
+      "prior_physical_intervention_named_roots": 40,
+      "rejected_v2_candidate": 16,
+      "stage_v_formal_population": 40,
+      "stage_v_physical_matrix_6d39860": 8,
+      "stage_v_physical_matrix_f696f582": 8,
+      "stage_vi_b2_development": 40,
+      "stage_vi_b2_population": 16
+    },
+    "exclusion_union_count": 990,
+    "exclusion_union_digest": "3439db4306668dfbb734122135c6f327c6ab27ee80b7ebc8db498b222ef6b22b",
+    "executable_parent_count": 39,
+    "executable_parent_counts_by_suite": {
+      "libero_10": 10,
+      "libero_goal": 9,
+      "libero_object": 10,
+      "libero_spatial": 10
+    },
+    "fresh_candidate_count": 210,
+    "fresh_candidate_digest": "cf2242d85ddd266e1af29442f768343ae43e8645e36c6de72614a78371f6816b",
+    "g10_identity_count": 1200,
+    "g10_identity_digest": "b65027f75a84a1c151f7bef4d138575107402bdb6de9481db2e8030069368e15",
+    "missing_design_cells": [
+      "libero_goal/task_01"
+    ],
+    "pairwise_exclusion_intersections": {
+      "prior_clean_attempt&prior_exposure": 50,
+      "prior_clean_attempt&prior_physical_intervention_named_roots": 25,
+      "prior_clean_attempt&rejected_v2_candidate": 2,
+      "prior_clean_attempt&stage_v_formal_population": 25,
+      "prior_clean_attempt&stage_v_physical_matrix_6d39860": 5,
+      "prior_clean_attempt&stage_v_physical_matrix_f696f582": 5,
+      "prior_clean_attempt&stage_vi_b2_development": 25,
+      "prior_clean_attempt&stage_vi_b2_population": 2,
+      "prior_exposure&prior_physical_intervention_named_roots": 0,
+      "prior_exposure&rejected_v2_candidate": 0,
+      "prior_exposure&stage_v_formal_population": 0,
+      "prior_exposure&stage_v_physical_matrix_6d39860": 0,
+      "prior_exposure&stage_v_physical_matrix_f696f582": 0,
+      "prior_exposure&stage_vi_b2_development": 0,
+      "prior_exposure&stage_vi_b2_population": 0,
+      "prior_physical_intervention_named_roots&rejected_v2_candidate": 2,
+      "prior_physical_intervention_named_roots&stage_v_formal_population": 40,
+      "prior_physical_intervention_named_roots&stage_v_physical_matrix_6d39860": 8,
+      "prior_physical_intervention_named_roots&stage_v_physical_matrix_f696f582": 8,
+      "prior_physical_intervention_named_roots&stage_vi_b2_development": 40,
+      "prior_physical_intervention_named_roots&stage_vi_b2_population": 0,
+      "rejected_v2_candidate&stage_v_formal_population": 2,
+      "rejected_v2_candidate&stage_v_physical_matrix_6d39860": 0,
+      "rejected_v2_candidate&stage_v_physical_matrix_f696f582": 0,
+      "rejected_v2_candidate&stage_vi_b2_development": 2,
+      "rejected_v2_candidate&stage_vi_b2_population": 14,
+      "stage_v_formal_population&stage_v_physical_matrix_6d39860": 8,
+      "stage_v_formal_population&stage_v_physical_matrix_f696f582": 8,
+      "stage_v_formal_population&stage_vi_b2_development": 40,
+      "stage_v_formal_population&stage_vi_b2_population": 0,
+      "stage_v_physical_matrix_6d39860&stage_v_physical_matrix_f696f582": 8,
+      "stage_v_physical_matrix_6d39860&stage_vi_b2_development": 8,
+      "stage_v_physical_matrix_6d39860&stage_vi_b2_population": 0,
+      "stage_v_physical_matrix_f696f582&stage_vi_b2_development": 8,
+      "stage_v_physical_matrix_f696f582&stage_vi_b2_population": 0,
+      "stage_vi_b2_development&stage_vi_b2_population": 0
+    },
+    "zero_replacement": true
+  },
+  "errors": [
+    "RUNTIME_FILE_BINDING_MISMATCH:/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py",
+    "TASK_SUCCESS_EVALUATOR_PATH_NOT_UNIQUELY_BOUND",
+    "EPISODE_HORIZON_PATH_NOT_UNIQUELY_BOUND"
+  ],
+  "historical_records": {
+    "d0_selection_list_is_comparison_only": true,
+    "historical_d0r_execution_authority": "NOT_ACCEPTED_FOR_EXECUTION",
+    "new_outcome_information_used": false,
+    "preserves_T1D0R_as_historical_record": true,
+    "preserves_T1D0_as_historical_record": true,
+    "scientific_change": "RESTORE_PREVIOUSLY_FROZEN_D0_SALT_ONLY",
+    "supersedes_future_execution_authority_of": [
+      "T1-D0",
+      "T1-D0R"
+    ]
+  },
+  "historical_selection_comparison": {
+    "d0_declared_selected_parent_keys": [
+      "libero_10/task_00/state_36",
+      "libero_10/task_01/state_36",
+      "libero_10/task_02/state_39",
+      "libero_10/task_03/state_21",
+      "libero_10/task_04/state_30",
+      "libero_10/task_05/state_22",
+      "libero_10/task_06/state_34",
+      "libero_10/task_07/state_27",
+      "libero_10/task_08/state_20",
+      "libero_10/task_09/state_43",
+      "libero_goal/task_00/state_21",
+      "libero_goal/task_02/state_34",
+      "libero_goal/task_03/state_45",
+      "libero_goal/task_04/state_38",
+      "libero_goal/task_05/state_26",
+      "libero_goal/task_06/state_28",
+      "libero_goal/task_07/state_30",
+      "libero_goal/task_08/state_20",
+      "libero_goal/task_09/state_46",
+      "libero_object/task_00/state_45",
+      "libero_object/task_01/state_40",
+      "libero_object/task_02/state_42",
+      "libero_object/task_03/state_25",
+      "libero_object/task_04/state_35",
+      "libero_object/task_05/state_31",
+      "libero_object/task_06/state_44",
+      "libero_object/task_07/state_43",
+      "libero_object/task_08/state_43",
+      "libero_object/task_09/state_23",
+      "libero_spatial/task_00/state_37",
+      "libero_spatial/task_01/state_38",
+      "libero_spatial/task_02/state_31",
+      "libero_spatial/task_03/state_29",
+      "libero_spatial/task_04/state_33",
+      "libero_spatial/task_05/state_27",
+      "libero_spatial/task_06/state_45",
+      "libero_spatial/task_07/state_28",
+      "libero_spatial/task_08/state_28",
+      "libero_spatial/task_09/state_21"
+    ],
+    "d0_selection_salt": "STAGE_X_X1R_T1D0_PARENT_AUTHORITY_V1_20260818",
+    "d0r_historical_selected_parent_keys": [
+      "libero_10/task_00/state_33",
+      "libero_10/task_01/state_35",
+      "libero_10/task_02/state_45",
+      "libero_10/task_03/state_31",
+      "libero_10/task_04/state_20",
+      "libero_10/task_05/state_41",
+      "libero_10/task_06/state_38",
+      "libero_10/task_07/state_36",
+      "libero_10/task_08/state_44",
+      "libero_10/task_09/state_40",
+      "libero_goal/task_00/state_29",
+      "libero_goal/task_02/state_37",
+      "libero_goal/task_03/state_38",
+      "libero_goal/task_04/state_43",
+      "libero_goal/task_05/state_21",
+      "libero_goal/task_06/state_28",
+      "libero_goal/task_07/state_43",
+      "libero_goal/task_08/state_32",
+      "libero_goal/task_09/state_46",
+      "libero_object/task_00/state_43",
+      "libero_object/task_01/state_39",
+      "libero_object/task_02/state_40",
+      "libero_object/task_03/state_30",
+      "libero_object/task_04/state_21",
+      "libero_object/task_05/state_22",
+      "libero_object/task_06/state_28",
+      "libero_object/task_07/state_43",
+      "libero_object/task_08/state_35",
+      "libero_object/task_09/state_31",
+      "libero_spatial/task_00/state_36",
+      "libero_spatial/task_01/state_32",
+      "libero_spatial/task_02/state_31",
+      "libero_spatial/task_03/state_29",
+      "libero_spatial/task_04/state_43",
+      "libero_spatial/task_05/state_25",
+      "libero_spatial/task_06/state_29",
+      "libero_spatial/task_07/state_28",
+      "libero_spatial/task_08/state_31",
+      "libero_spatial/task_09/state_41"
+    ],
+    "d0r_selection_diff_count": 33,
+    "d0r_selection_is_not_an_input": true,
+    "derived_selected_parent_keys": [
+      "libero_10/task_00/state_36",
+      "libero_10/task_01/state_36",
+      "libero_10/task_02/state_39",
+      "libero_10/task_03/state_21",
+      "libero_10/task_04/state_30",
+      "libero_10/task_05/state_22",
+      "libero_10/task_06/state_34",
+      "libero_10/task_07/state_27",
+      "libero_10/task_08/state_20",
+      "libero_10/task_09/state_43",
+      "libero_goal/task_00/state_21",
+      "libero_goal/task_02/state_34",
+      "libero_goal/task_03/state_45",
+      "libero_goal/task_04/state_38",
+      "libero_goal/task_05/state_26",
+      "libero_goal/task_06/state_28",
+      "libero_goal/task_07/state_30",
+      "libero_goal/task_08/state_20",
+      "libero_goal/task_09/state_46",
+      "libero_object/task_00/state_45",
+      "libero_object/task_01/state_40",
+      "libero_object/task_02/state_42",
+      "libero_object/task_03/state_25",
+      "libero_object/task_04/state_35",
+      "libero_object/task_05/state_31",
+      "libero_object/task_06/state_44",
+      "libero_object/task_07/state_43",
+      "libero_object/task_08/state_43",
+      "libero_object/task_09/state_23",
+      "libero_spatial/task_00/state_37",
+      "libero_spatial/task_01/state_38",
+      "libero_spatial/task_02/state_31",
+      "libero_spatial/task_03/state_29",
+      "libero_spatial/task_04/state_33",
+      "libero_spatial/task_05/state_27",
+      "libero_spatial/task_06/state_45",
+      "libero_spatial/task_07/state_28",
+      "libero_spatial/task_08/state_28",
+      "libero_spatial/task_09/state_21"
+    ],
+    "matches_d0_declaration": true
+  },
+  "local_binding_reconciliation": {
+    "comparisons": {
+      "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json": {
+        "actual_raw_sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+        "all_refs_byte_identical": true,
+        "byte_identical_to_pr124": true,
+        "byte_identical_to_pr125": true,
+        "byte_identical_to_pr126": true,
+        "classification": "D0_HISTORICAL_DIGEST_STALE_D0R_CANONICAL_BYTES",
+        "historical_d0_claim": "bf27a237ba9fd9be255d5371d160705cc3c55e000e119062934deb4c2a6dee38",
+        "historical_d0r_claim": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+        "rows": [
+          {
+            "byte_size": 5930,
+            "git_blob_sha": "f9a6b36f7b0548914140bfde17c871f74953aae1",
+            "path": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
+            "raw_sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+            "ref": "c6a4c5a9e7d63121a75814b3071c9047e1d9e0d0"
+          },
+          {
+            "byte_size": 5930,
+            "git_blob_sha": "f9a6b36f7b0548914140bfde17c871f74953aae1",
+            "path": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
+            "raw_sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+            "ref": "2881722b51cc5365205a575eddb42f4d22456f09"
+          },
+          {
+            "byte_size": 5930,
+            "git_blob_sha": "f9a6b36f7b0548914140bfde17c871f74953aae1",
+            "path": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
+            "raw_sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+            "ref": "aabd419942b7a5de27b2f11da90160d4a7affebc"
+          }
+        ]
+      },
+      "src/gripper_attack/stage_x_t1_native_token_authority.py": {
+        "actual_raw_sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
+        "all_refs_byte_identical": true,
+        "byte_identical_to_pr124": true,
+        "byte_identical_to_pr125": true,
+        "byte_identical_to_pr126": true,
+        "classification": "D0_HISTORICAL_DIGEST_STALE_D0R_CANONICAL_BYTES",
+        "historical_d0_claim": "b319a9c64300e4297c81a415279c7f2d65eac1bbac62eb22293ce14c7d9734d6",
+        "historical_d0r_claim": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
+        "rows": [
+          {
+            "byte_size": 10691,
+            "git_blob_sha": "44ac1a460868aa48a81a07eb74d99738e93a74cf",
+            "path": "src/gripper_attack/stage_x_t1_native_token_authority.py",
+            "raw_sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
+            "ref": "c6a4c5a9e7d63121a75814b3071c9047e1d9e0d0"
+          },
+          {
+            "byte_size": 10691,
+            "git_blob_sha": "44ac1a460868aa48a81a07eb74d99738e93a74cf",
+            "path": "src/gripper_attack/stage_x_t1_native_token_authority.py",
+            "raw_sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
+            "ref": "2881722b51cc5365205a575eddb42f4d22456f09"
+          },
+          {
+            "byte_size": 10691,
+            "git_blob_sha": "44ac1a460868aa48a81a07eb74d99738e93a74cf",
+            "path": "src/gripper_attack/stage_x_t1_native_token_authority.py",
+            "raw_sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
+            "ref": "aabd419942b7a5de27b2f11da90160d4a7affebc"
+          }
+        ]
+      }
+    },
+    "errors": []
+  },
+  "outcome_firewall": {
+    "attack_outcome_read": false,
+    "clean_success_read": false,
+    "emit_read": false,
+    "eval160_read": false,
+    "new_model_inference": false,
+    "new_simulator_execution": false,
+    "protected_registry_read": false,
+    "selection_outcomes_read": false,
+    "vphys_read": false
+  },
+  "protected_boundary": {
+    "counters": {
+      "adversarial_images": 0,
+      "attack_backward_calls": 0,
+      "attack_outcome_reads": 0,
+      "attacked_env_step_calls": 0,
+      "clean_rollout_attempts": 0,
+      "env_step_calls": 0,
+      "eval160_reads": 0,
+      "model_inference_calls": 0,
+      "pgd_calls": 0,
+      "physical_interventions": 0,
+      "protected_reads": 0,
+      "vphys_reads": 0
+    },
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "reviewed_source": {
+    "base_branch": "codex/stage-x-x1r-t1d0-attack-parent-authority-20260818",
+    "base_commit": "2881722b51cc5365205a575eddb42f4d22456f09",
+    "base_pr": 125,
+    "base_tree": "77a17257c609f5c98200697ebd7d83f309766bda",
+    "governing_comment": "5323186497",
+    "head_commit": "aabd419942b7a5de27b2f11da90160d4a7affebc",
+    "head_tree": "f31aa395cbd082f921b19d8b3c6ed50dcefd26f7",
+    "number": 126,
+    "supersession_comment": "5323188393"
+  },
+  "runtime_authority_audit": {
+    "clean_runtime_semantics": {
+      "action_preprocessing_postprocessing": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+      "episode_horizon": "NOT_YET_UNIQUE_PATH_BOUND_IN_T1_AUTHORITY",
+      "required_before_clean_materialization": true,
+      "task_success_evaluator": "NOT_YET_UNIQUE_PATH_BOUND_IN_T1_AUTHORITY"
+    },
+    "declared_contract": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1d0r-final3/configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+      "sha256": "37f5d4ea205835fedc8f4d02c3e722c80581aa5c04d9349c7eed0dd4f6364265"
+    },
+    "detector_files": [
+      {
+        "actual_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+        "byte_size": 479586,
+        "exists": true,
+        "expected_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/checkpoint.pt"
+      },
+      {
+        "actual_sha256": "ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b",
+        "byte_size": 33934,
+        "exists": true,
+        "expected_sha256": "7945e464130d8bcb4b4fd85475dffc3024ef2bc419b5d1ea812b29156b96a0fd",
+        "match": false,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py"
+      },
+      {
+        "actual_sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3",
+        "byte_size": 10486,
+        "exists": true,
+        "expected_sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1-detector-pgd-matrix-20260818-r3/src/gripper_attack/d8_streaming_features_v3.py"
+      },
+      {
+        "actual_sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9",
+        "byte_size": 7868,
+        "exists": true,
+        "expected_sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1-detector-pgd-matrix-20260818-r3/src/gripper_attack/v5_r3_features.py"
+      },
+      {
+        "actual_sha256": "66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c",
+        "byte_size": 3423,
+        "exists": true,
+        "expected_sha256": "66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_G1_SPLITS_FIREWALL_20260813T160000Z/NORMALIZATION.json"
+      },
+      {
+        "actual_sha256": "5236884ea746adc6a5388ab6e8058adb717b86ee2814b71a748c7792d051de3e",
+        "byte_size": 99358,
+        "exists": true,
+        "expected_sha256": "5236884ea746adc6a5388ab6e8058adb717b86ee2814b71a748c7792d051de3e",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/thresholds.json"
+      },
+      {
+        "actual_sha256": "fdc98fcbf5b0926ef2181db71946d23ffbfa052cf8443dc933d52c42a191352c",
+        "byte_size": 3758,
+        "exists": true,
+        "expected_sha256": "fdc98fcbf5b0926ef2181db71946d23ffbfa052cf8443dc933d52c42a191352c",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4/prismatic/vla/action_tokenizer.py"
+      },
+      {
+        "actual_sha256": "a23e83751870296c2500048becfc4241e5245e123ee69b01b4e584b1c4d3b2cd",
+        "byte_size": 3580,
+        "exists": true,
+        "expected_sha256": "a23e83751870296c2500048becfc4241e5245e123ee69b01b4e584b1c4d3b2cd",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/config.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "54ca346948d5e62e9519a9ed93e45f0a069b9ec997ad1f48f1d8867d4d2d86d2",
+        "byte_size": 2129,
+        "exists": true,
+        "expected_sha256": "54ca346948d5e62e9519a9ed93e45f0a069b9ec997ad1f48f1d8867d4d2d86d2",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/dataset_statistics.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "byte_size": 94764,
+        "exists": true,
+        "expected_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/model.safetensors.index.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+        "byte_size": 12718,
+        "exists": true,
+        "expected_sha256": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/processing_prismatic.py",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "byte_size": 1842976,
+        "exists": true,
+        "expected_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/tokenizer.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "byte_size": 499723,
+        "exists": true,
+        "expected_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/tokenizer.model",
+        "role": "suite_model_key_file",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "byte_size": 26072,
+        "exists": true,
+        "expected_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/modeling_prismatic.py",
+        "role": "suite_model_decoder",
+        "suite": "libero_10"
+      },
+      {
+        "actual_sha256": "06135f79f1010f85837ec4b8373bdda3a9387ab4937bc959e91a0ef4208ed237",
+        "byte_size": 3465,
+        "exists": true,
+        "expected_sha256": "06135f79f1010f85837ec4b8373bdda3a9387ab4937bc959e91a0ef4208ed237",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/config.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "5ea8e0815367f6d684736050d6635e1327ed19d011b002f68a56fae1ab980a6a",
+        "byte_size": 2066,
+        "exists": true,
+        "expected_sha256": "5ea8e0815367f6d684736050d6635e1327ed19d011b002f68a56fae1ab980a6a",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/dataset_statistics.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "byte_size": 94764,
+        "exists": true,
+        "expected_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/model.safetensors.index.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+        "byte_size": 12718,
+        "exists": true,
+        "expected_sha256": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/processing_prismatic.py",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "byte_size": 1842976,
+        "exists": true,
+        "expected_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/tokenizer.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "byte_size": 499723,
+        "exists": true,
+        "expected_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/tokenizer.model",
+        "role": "suite_model_key_file",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "byte_size": 26072,
+        "exists": true,
+        "expected_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/modeling_prismatic.py",
+        "role": "suite_model_decoder",
+        "suite": "libero_goal"
+      },
+      {
+        "actual_sha256": "72566b15b9ce4a5f5452aa50b5cc949811ab0a12b72a79a713b6355875813cff",
+        "byte_size": 3720,
+        "exists": true,
+        "expected_sha256": "72566b15b9ce4a5f5452aa50b5cc949811ab0a12b72a79a713b6355875813cff",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/config.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "a4b953c2ab889176a019ce92b86b855bc5990312d1a46cd7a2d9da1abbece861",
+        "byte_size": 2153,
+        "exists": true,
+        "expected_sha256": "a4b953c2ab889176a019ce92b86b855bc5990312d1a46cd7a2d9da1abbece861",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/dataset_statistics.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "byte_size": 94764,
+        "exists": true,
+        "expected_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/model.safetensors.index.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+        "byte_size": 12864,
+        "exists": true,
+        "expected_sha256": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/processing_prismatic.py",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "byte_size": 1842976,
+        "exists": true,
+        "expected_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/tokenizer.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "byte_size": 499723,
+        "exists": true,
+        "expected_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/tokenizer.model",
+        "role": "suite_model_key_file",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "byte_size": 26072,
+        "exists": true,
+        "expected_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object/modeling_prismatic.py",
+        "role": "suite_model_decoder",
+        "suite": "libero_object"
+      },
+      {
+        "actual_sha256": "0f8e15765a60995234ab8b0128da37864577a7ef7c4e8f40a3a35ab1a145634f",
+        "byte_size": 3615,
+        "exists": true,
+        "expected_sha256": "0f8e15765a60995234ab8b0128da37864577a7ef7c4e8f40a3a35ab1a145634f",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/config.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "7636449e2a70f48b42713237c57031bb95a6df1dfd81ef913d756d7d2626b1df",
+        "byte_size": 2109,
+        "exists": true,
+        "expected_sha256": "7636449e2a70f48b42713237c57031bb95a6df1dfd81ef913d756d7d2626b1df",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/dataset_statistics.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "byte_size": 94764,
+        "exists": true,
+        "expected_sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/model.safetensors.index.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+        "byte_size": 12864,
+        "exists": true,
+        "expected_sha256": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/processing_prismatic.py",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "byte_size": 1842976,
+        "exists": true,
+        "expected_sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/tokenizer.json",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "byte_size": 499723,
+        "exists": true,
+        "expected_sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/tokenizer.model",
+        "role": "suite_model_key_file",
+        "suite": "libero_spatial"
+      },
+      {
+        "actual_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "byte_size": 26072,
+        "exists": true,
+        "expected_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+        "match": true,
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/modeling_prismatic.py",
+        "role": "suite_model_decoder",
+        "suite": "libero_spatial"
+      }
+    ],
+    "errors": [
+      "RUNTIME_FILE_BINDING_MISMATCH:/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py",
+      "TASK_SUCCESS_EVALUATOR_PATH_NOT_UNIQUELY_BOUND",
+      "EPISODE_HORIZON_PATH_NOT_UNIQUELY_BOUND"
+    ],
+    "historical_model_source_note": "T1 handoff model-source declaration must match the current prospective file; no current directory hash is used to rewrite historical identity.",
+    "repository_handoff": {
+      "actual_sha256": "7585baf34e4f8ebef7b35d01c8dc0f1a6abf21c56cd1564b768ebe1e177a95a9",
+      "byte_size": 5443,
+      "exists": true,
+      "expected_sha256": "7585baf34e4f8ebef7b35d01c8dc0f1a6abf21c56cd1564b768ebe1e177a95a9",
+      "match": true,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1d0r-final3/docs/handoffs/STAGE_X_X1R_T1_DETECTOR_PGD_MATRIX_HANDOFF_20260818.md"
+    },
+    "status": "HOLD"
+  },
+  "runtime_contract_audit": {
+    "contract": {
+      "attack_steps_7": [
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "clean_materialization_plan": {
+        "binds_schedule_module": "src/gripper_attack/stage_x_x1r_v2_schedule_contract.py",
+        "enabled": false,
+        "execution_authorized": false,
+        "future_efficacy_clean_reuse_forbidden": true,
+        "requires_new_owner_review": true,
+        "runner_bound": false,
+        "runner_path": "scripts/stage_x/run_stage_x1r_t1d1_clean_parent_materialization.py",
+        "screening_condition_name": "SCREENING_CLEAN",
+        "status": "DECLARED_NOT_EXECUTABLE"
+      },
+      "followup_steps_7": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "legal_horizon_7_21": false,
+      "legal_horizon_7_22": true,
+      "prev_delta_boundaries": {
+        "carry": "same_condition_same_episode_same_5_step_window_only",
+        "entry": "reset_to_zero_at_attack_window_entry",
+        "reset_boundaries": [
+          "parent",
+          "condition",
+          "episode",
+          "attack_window"
+        ]
+      }
+    },
+    "errors": [],
+    "module_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-x-t1d0r-final3/src/gripper_attack/stage_x_x1r_v2_schedule_contract.py",
+    "module_sha256": "b0f94a6ecbbae95ba193fb874e4c32d067aa21af2e526f3188a12630cf05f97d",
+    "status": "PASS"
+  },
+  "runtime_source": {
+    "commit": "96ca947bc0bf591fd9e5cbe68627de96bbf64a00",
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "tree": "106456176ddd4b23f88302a8b82b6d9c95f6473f",
+    "worktree_status_before_evidence": ""
+  },
+  "schema": "STAGE_X_X1R_T1D0R1_PARENT_RECOMPUTE_AUDIT_V1",
+  "seed_authority": {
+    "formula": "uint32(first_8_hex(sha256(namespace + | + canonical_parent_key)))",
+    "namespace": "STAGE_X_X1R_T1D0R1_CLEAN_SEED_V1",
+    "outcome_blind": true,
+    "seed_count": 39
+  },
+  "source_files": [
+    {
+      "identity_count": 1200,
+      "identity_digest": "b65027f75a84a1c151f7bef4d138575107402bdb6de9481db2e8030069368e15",
+      "item_field": null,
+      "json_path": [
+        "identities"
+      ],
+      "kind": "g10_identities",
+      "name": "g10_manifest",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json",
+      "sha256": "06bd43fe5666b6bacb763e0ae7dbba12ef317911ba923b469dab8628cc8bb7ef"
+    },
+    {
+      "identity_count": 958,
+      "identity_digest": "ca733f0fe35dc64b214860cfea1848f55037b0c3b46eb8358f3c4de3916cc17b",
+      "item_field": null,
+      "json_path": [
+        "excluded_parent_keys"
+      ],
+      "kind": "json_identity_list",
+      "name": "prior_clean_attempt",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V10.json",
+      "sha256": "369749925e09e58a3a6b0b96d59e4583cdbc34355a760f53a4e03659c5dda325"
+    },
+    {
+      "identity_count": 53,
+      "identity_digest": "d8d98335166f4b1afa8ccfb5435730316869cc072f7f70cea69b91b9b83b94bd",
+      "item_field": null,
+      "json_path": [
+        "excluded_parent_keys"
+      ],
+      "kind": "json_identity_list",
+      "name": "prior_exposure",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V7.json",
+      "sha256": "efab2f0ebd8981628f7bb489fd6a6d58cf4254bbb30e8feabbbb83cb70d047c5"
+    },
+    {
+      "base_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student",
+      "directory_count": 41,
+      "duplicate_identity_keys": [
+        "libero_10/task_08/state_28"
+      ],
+      "explicit_alias_count": 2,
+      "glob": "STAGE_VI_M4_R3_RECONSTRUCTION_*",
+      "identity_count": 40,
+      "identity_digest": "202d35eb1e4e6e8daae39ed7627e97dc0f61f02efaa573ea83b75ab25befbe21",
+      "ignored_noncanonical_directories": [],
+      "kind": "directory_identity_listing",
+      "listing_sha256": "f059cf14ee69c5dc05cb6ec42558c80cf36b6de4f9289f360ef9b0f3d9a2cfad",
+      "name": "prior_physical_intervention_named_roots",
+      "resolved_directory_count": 41
+    },
+    {
+      "identity_count": 16,
+      "identity_digest": "8222fe03136dbf60cef91acbfa80cdc0a588c69f1b546fc0ba373026186dca58",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "parents"
+      ],
+      "kind": "json_parent_list",
+      "name": "rejected_v2_candidate",
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-vi-b2-formal-source-be753c6/configs/STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V2_REPLACEMENT.json",
+      "sha256": "62e96e779aac57fb681fad030b35c6c76c76a9d82d33250e524c4a126e1942b1"
+    },
+    {
+      "identity_count": 40,
+      "identity_digest": "202d35eb1e4e6e8daae39ed7627e97dc0f61f02efaa573ea83b75ab25befbe21",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "parents"
+      ],
+      "kind": "json_parent_list",
+      "name": "stage_v_formal_population",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json",
+      "sha256": "890382bcd9a88d3646dfc66b080265c90c2fda666bf08b14fc3994d05ab492cd"
+    },
+    {
+      "identity_count": 8,
+      "identity_digest": "f34896769c90aa1088f40cbf4caadbfd639cc226f1e3f85725a8874106faf885",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "parents"
+      ],
+      "kind": "json_parent_list",
+      "name": "stage_v_physical_matrix_6d39860",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_6D39860_20260815T183500Z/PARENT_MANIFEST.json",
+      "sha256": "9938cfe5ba157b2da21fcdae561137f9a2791c995a1bb79e611a5eb5629b2890"
+    },
+    {
+      "identity_count": 8,
+      "identity_digest": "f34896769c90aa1088f40cbf4caadbfd639cc226f1e3f85725a8874106faf885",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "parents"
+      ],
+      "kind": "json_parent_list",
+      "name": "stage_v_physical_matrix_f696f582",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_F696F582_20260816T040000Z/PARENT_MANIFEST.json",
+      "sha256": "9938cfe5ba157b2da21fcdae561137f9a2791c995a1bb79e611a5eb5629b2890"
+    },
+    {
+      "identity_count": 40,
+      "identity_digest": "202d35eb1e4e6e8daae39ed7627e97dc0f61f02efaa573ea83b75ab25befbe21",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "parents"
+      ],
+      "kind": "json_parent_list",
+      "name": "stage_vi_b2_development",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json",
+      "sha256": "890382bcd9a88d3646dfc66b080265c90c2fda666bf08b14fc3994d05ab492cd"
+    },
+    {
+      "identity_count": 16,
+      "identity_digest": "a36cd2599147059e62cadd144ee817f5a15b4bb40bf7b7b5543fd90bae1ede6c",
+      "item_field": "canonical_parent_key",
+      "json_path": [
+        "selected_parents"
+      ],
+      "kind": "json_selected_parent_list",
+      "name": "stage_vi_b2_population",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_ZERO_TREATMENT_PLAN_33061E0/B2_SELECTION_MANIFEST.json",
+      "sha256": "6e20894d660c473a78ffb91db55385f35fc1e83887417226f35e458882c2ec81"
+    }
+  ],
+  "status": "STAGE_X_X1R_T1D0R1_HOLD_CLEAN_RUNTIME_AUTHORITY"
+}

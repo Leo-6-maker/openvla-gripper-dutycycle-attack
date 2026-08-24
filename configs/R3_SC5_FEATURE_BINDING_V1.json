@@ -1,0 +1,53 @@
+{
+  "schema": "V5_R3_SC5_FEATURE_BINDING_V1",
+  "status": "FROZEN_ENGINEERING_BINDING",
+  "adapter_source": "src/gripper_attack/sc5_streaming_features_v2.py",
+  "adapter_source_sha256": "09798a210e782335a19e5a7a414fef3219806b80aecd8695912a5ea834078ac0",
+  "adapter_source_hash_algorithm": "SHA256",
+  "adapter_source_hash_normalization": "UTF-8 text with CRLF normalized to LF",
+  "adapter_contract": "SC5StreamingFeatureAdapterV2 implementation is authoritative for R3 25D values",
+  "feature_order": [
+    "gripper_command",
+    "gripper_qpos",
+    "gripper_opening_proxy",
+    "eef_x",
+    "eef_y",
+    "eef_z",
+    "eef_vx",
+    "eef_vy",
+    "eef_vz",
+    "action_dx",
+    "action_dy",
+    "action_dz",
+    "action_gripper",
+    "recent_close_streak",
+    "recent_open_streak",
+    "recent_gripper_flip_count",
+    "close_onset",
+    "time_since_close",
+    "eef_speed",
+    "eef_z_delta_since_close",
+    "qpos_delta_1",
+    "qpos_delta_3",
+    "opening_proxy_delta_3",
+    "opening_proxy_variance_5",
+    "eef_speed_variance_5"
+  ],
+  "feature_order_sha256": "3d1101d26567a41bf688587a70c5100a3629ad62f12f9568947ee178a8a63366",
+  "action_gripper": {
+    "source": "raw_action_7d[6]",
+    "range": [0.0, 1.0],
+    "reason": "matches the frozen SC5StreamingFeatureAdapterV2 implementation and existing official runtime call site"
+  },
+  "legacy_schema_conflict": {
+    "path": "configs/v2_sc5_schema_aliases.yaml",
+    "legacy_action_gripper_range": "[-1,1]",
+    "status": "NOT_CONSUMABLE_FOR_R3",
+    "superseded_by": "V5_R3_SC5_FEATURE_BINDING_V1"
+  },
+  "causal_rule": "current step plus history through t only",
+  "future_fields_used": false,
+  "teacher_fields_used": false,
+  "outcome_fields_used": false,
+  "attack_enabled": false
+}

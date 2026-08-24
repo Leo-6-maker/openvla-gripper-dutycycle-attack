@@ -1,0 +1,90 @@
+{
+  "freeze_status": "NOT_FROZEN_A2_HOLD",
+  "g10_state_range": "20..49",
+  "outcome_read": false,
+  "permanent_exclusion_applied": false,
+  "protected": "UNREAD",
+  "row_count": 15,
+  "rows": [
+    {
+      "canonical_parent_key": "libero_10/task_05/state_21",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_06/state_21",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_06/state_35",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_07/state_22",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_09/state_24",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_02/state_27",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_05/state_27",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_05/state_33",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_06/state_31",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_09/state_25",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_01/state_34",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_21",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_26",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_05/state_46",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_07/state_43",
+      "identity_only": true,
+      "source_domain": "BRIDGE_SOURCE_V2"
+    }
+  ],
+  "runtime_read": false,
+  "salt": "STAGE_X_X1R2_F1A2_BRIDGE_SOURCE_V2_SALT_20260821",
+  "schema": "STAGE_X_X1R2_F1A2_BRIDGE_LEDGER_V2",
+  "source_domain": "BRIDGE_SOURCE_V2",
+  "status": "NOT_FROZEN_A2_HOLD"
+}

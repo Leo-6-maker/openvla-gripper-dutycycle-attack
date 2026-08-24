@@ -1,0 +1,121 @@
+{
+  "f1b_dev": {
+    "advancement_over_m0_first_two_criteria": {
+      "M1": true,
+      "M2": true
+    },
+    "dev_parent_count": 24,
+    "methods": [
+      {
+        "complexity_rank": 0,
+        "iterations": 10,
+        "mean_selected_linf_secondary": 0.021875,
+        "method": "M0",
+        "min_per_suite_successful_parent_count": 0,
+        "per_suite_successful_parent_count": {
+          "libero_10": 2,
+          "libero_goal": 1,
+          "libero_object": 0,
+          "libero_spatial": 1
+        },
+        "status_counts": {
+          "F1B_NO_STRICT_CANDIDATE": 67,
+          "PASS_F1B_VALID_CANDIDATE": 5
+        },
+        "strict_valid_probe_count_secondary": 5,
+        "total_successful_dev_parent_count": 4
+      },
+      {
+        "complexity_rank": 1,
+        "iterations": 10,
+        "mean_selected_linf_secondary": 0.01953125,
+        "method": "M1",
+        "min_per_suite_successful_parent_count": 1,
+        "per_suite_successful_parent_count": {
+          "libero_10": 2,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "status_counts": {
+          "F1B_NO_STRICT_CANDIDATE": 64,
+          "PASS_F1B_VALID_CANDIDATE": 8
+        },
+        "strict_valid_probe_count_secondary": 8,
+        "total_successful_dev_parent_count": 5
+      },
+      {
+        "complexity_rank": 2,
+        "iterations": 10,
+        "mean_selected_linf_secondary": 0.022430419921875,
+        "method": "M2",
+        "min_per_suite_successful_parent_count": 1,
+        "per_suite_successful_parent_count": {
+          "libero_10": 2,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "status_counts": {
+          "F1B_NO_STRICT_CANDIDATE": 63,
+          "PASS_F1B_VALID_CANDIDATE": 9
+        },
+        "strict_valid_probe_count_secondary": 9,
+        "total_successful_dev_parent_count": 5
+      }
+    ],
+    "per_suite_parent_count": 6,
+    "scientific_scope": "engineering/model-side method development only",
+    "selected_method": "M1",
+    "selection_reason": [
+      "M1-10 and M2-10 both strictly improved over M0-10 on the first two preregistered parent-level criteria.",
+      "M1-10 and M2-10 tied on minimum per-suite successful parents (1) and total successful DEV parents (5).",
+      "M1-10 then won the frozen lexicographic tie-break with lower mean selected Linf (0.01953125) than M2-10 (0.022430419921875) and the lower complexity rank (1 vs 2)."
+    ],
+    "source_decision_sha256": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
+    "unit": "parent"
+  },
+  "f1c4_canary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_step_count": 1,
+    "attempted_step_count": 70,
+    "candidate_audit_complete_step_count": 70,
+    "candidate_row_count_diagnostic_only": 770,
+    "clean_fallback_step_count": 69,
+    "completed_parent_with_zero_strict_valid_executed_steps": 6,
+    "completed_temporal_arm_count": 14,
+    "parent_denominator": 8,
+    "parent_with_at_least_one_strict_valid_executed_step": 1,
+    "parent_with_at_least_one_strict_valid_executed_step_keys": [
+      "libero_goal/task_06/state_03"
+    ],
+    "pgd_call_count": 1,
+    "physical_interventions": 0,
+    "replay_hold_parent_count": 1,
+    "replay_hold_parent_keys": [
+      "libero_spatial/task_02/state_13"
+    ],
+    "result_root_sha256": "8d5fce1e4fa89c84d187b861eab929258e6c21edb1ca0974898ccf6118223ac6",
+    "strict_valid_attacked_step_count": 1,
+    "temporal_arm_denominator": 16,
+    "temporal_selection": "NOT_APPLICABLE_TERMINAL_HOLD",
+    "terminal_status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL",
+    "unit_policy": "parent primary; candidate and step rows are repeated-within-parent engineering diagnostics, not iid observations",
+    "vphys_reads": 0
+  },
+  "gate": "STAGE_X_X1R2_F1T_TERMINAL_SYNTHESIS_AND_PAPER_V2_DELTA_V1",
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "new_adversarial_image_generation": 0,
+    "new_openvla_inference": 0,
+    "new_pgd_or_backward": 0,
+    "new_physical_intervention": 0,
+    "new_simulator_or_env_step": 0,
+    "new_vphys_read": 0,
+    "protected_evaluation": "UNREAD"
+  },
+  "schema": "STAGE_X1R2_F1T_DEV_C4_SUMMARY_V1",
+  "status": "F1T_TERMINAL_SYNTHESIS_SEALED_FOR_PI",
+  "temporal_selection": "not selected; terminal HOLD prevents superiority claim",
+  "unit_policy": "parent-level primary; repeated candidate/step rows diagnostic only"
+}

@@ -1,0 +1,42 @@
+{
+  "entries": [
+    {
+      "bytes": 7367,
+      "path": "configs/STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V2.json",
+      "sha256": "bdba2c18247d1d1a0fbe3a3fc4372f87145fead6a3d5c87d2f46b985ca671054"
+    },
+    {
+      "bytes": 1686,
+      "path": "reports/STAGE_Z_Z0R1_STRUCTURAL_MISSINGNESS_AMENDMENT_V1.json",
+      "sha256": "afd9330d9a99e39f78fad948e4f6adb4785a277443f0212c6be4bf648f6eaa48"
+    },
+    {
+      "bytes": 19254,
+      "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+      "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+    },
+    {
+      "bytes": 8629,
+      "path": "reports/STAGE_Z_Z0R1_MODEL_AUTHORITY_MAP_V2.json",
+      "sha256": "db03f3952331ff910c8318bc57ceb6c4edd23f347c0e28594b36f6469a010ccf"
+    },
+    {
+      "bytes": 3008,
+      "path": "reports/STAGE_Z_Z0R1_ENVIRONMENT_ACTION_PARITY_V2.json",
+      "sha256": "214bf8ca3026b002f2021dbb94e0868d96a0f06f76e43aa7fe63b4a6ea390ee0"
+    },
+    {
+      "bytes": 1178,
+      "path": "reports/STAGE_Z_Z0R1_STORAGE_PREFLIGHT_V1.json",
+      "sha256": "abbda03dafd2556a4447dfbd7eaf65faf2d513eaea15c2a3bb8d9be57de96990"
+    },
+    {
+      "bytes": 21906,
+      "path": "scripts/stage_z/build_stage_z_z0r1.py",
+      "sha256": "bb48d19f09eaa61332835083c9d92504c04f7a0490824766fcb459a801f5a9eb"
+    }
+  ],
+  "root_and_sidecar_excluded": true,
+  "schema": "STAGE_Z_Z0R1_ARTIFACT_MANIFEST_V1",
+  "status": "HOLD_STAGE_Z_Z0R1_THREE_MODEL_AUTHORITY_NOT_ESTABLISHED"
+}

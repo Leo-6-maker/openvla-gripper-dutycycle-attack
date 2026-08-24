@@ -1,0 +1,12 @@
+{
+  "schema": "DETECTOR_V5_WINDOW_PROTOCOL_V2",
+  "rankable_requires": ["student_valid", "candidate_close", "teacher_known", "phase_not_UNKNOWN", "not_none_window", "contiguous_segment"],
+  "minimum_candidate_dwell": 10,
+  "decision_anchor": "start_plus_9_for_length_at_least_10_else_segment_end",
+  "non_contiguous_policy": "split_with_segment_suffix",
+  "unknown_is_not_negative": true,
+  "retrospective_score": "secondary_only",
+  "causal_score": "primary",
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

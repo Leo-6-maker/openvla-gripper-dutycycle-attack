@@ -1,0 +1,88 @@
+{
+  "contract": "V5_SCIENTIFIC_CONTRACT_V1",
+  "frozen_at": "2026-07-27",
+  "supersedes": "V4_RELEASE_BLOCKING_LEGACY",
+
+  "primary_mechanism": "POST_GRASP_PREMATURE_OPEN",
+  "description": "Detector emits when stable grasp is established, target object is gripper-dependent, and safe release has NOT begun. VIS attack then targets physical OPEN to induce contact loss, slip, drop, or task failure.",
+
+  "phase_taxonomy": {
+    "PREGRASP": "Before any grasp contact. Gripper open, no target contact.",
+    "GRASP_TRANSITION": "Gripper closing, contact being established. Not yet stable.",
+    "STABLE_GRASP": "Target object firmly held. Sustained finger-target contact, gripper closed, object lifted or supported.",
+    "TRANSPORT_OR_MANIPULATION": "Grasped object being moved, lifted, or manipulated. Object-EEF comotion, support removed.",
+    "RELEASE_APPROACH": "Approaching placement region. Target progress high but not yet safe.",
+    "SAFE_RELEASE": "Object placed, gripper opening, placement confirmed. Normal planned release.",
+    "POST_RELEASE": "After safe release. Object at target, gripper open, task may be complete.",
+    "UNKNOWN": "Insufficient privileged data to determine phase."
+  },
+
+  "emission_criteria": {
+    "positive_phases": ["STABLE_GRASP", "TRANSPORT_OR_MANIPULATION"],
+    "forbidden_phases": ["PREGRASP", "GRASP_TRANSITION", "RELEASE_APPROACH", "SAFE_RELEASE", "POST_RELEASE"],
+    "requirements": [
+      "physical_criticality = 1 AND valid_mask = true",
+      "stable_grasp established (sustained target-finger contact + gripper closed + dwell)",
+      "target object is gripper-dependent (lifted or support removed)",
+      "safe_release = 0 (NOT in planned release phase)",
+      "K10 feasible (remaining horizon >= 10 AND no safe_release in window)",
+      "task NOT already succeeded"
+    ],
+    "forbidden_gates": [
+      "candidate_close as hard gate",
+      "policy OPEN intent as trigger",
+      "instability as K10 veto"
+    ]
+  },
+
+  "attack_payload": {
+    "mechanism": "TRUE_VIS_OPEN",
+    "target": "CANONICAL_RAW_OPEN = 1.0",
+    "objective": "maximize OPEN token log-mass, minimize CLOSE token log-mass, preserve arm dimensions",
+    "constraints": ["L∞ ≤ ε=0.03", "PGD steps = 5", "arm dimensions within KL tolerance"],
+    "forbidden": [
+      "target_action = clean_action (release-blocking bug)",
+      "direct env action override (ORACLE only)",
+      "mixing OPEN and CLOSE mechanisms in same statistic"
+    ]
+  },
+
+  "matched_arms": {
+    "CLEAN_REPLAY": "Clean execution from exact snapshot, no attack",
+    "TRUE_VIS_OPEN_T10": "VIS-PGD targeting CANONICAL_RAW_OPEN, K=10 burst from emit",
+    "RAND_DIRECTION_T10": "Same ε/steps/dims but random direction (no gradient), K=10 burst",
+    "COMMAND_OPEN_ORACLE_T10": "Direct env action gripper=-1 override (physical ground truth for OPEN effect)",
+    "RANDOM_TIME_VIS_OPEN_T10": "VIS-OPEN payload at pre-registered random anchor, K=10 burst"
+  },
+
+  "outcome_metrics": {
+    "primary": ["target_contact_loss", "object_slip_or_drop", "qpos_width_opening"],
+    "secondary": ["official_task_success", "contact_quality_failure", "object_eef_divergence"],
+    "accounting": ["OPEN_command_duty", "planned_K", "executed_K", "terminal_reason", "treatment_induced_truncation"]
+  },
+
+  "teacher_heads": {
+    "physical_criticality": "Object is in a gripper-dependent critical phase (STABLE_GRASP or TRANSPORT_OR_MANIPULATION)",
+    "safe_release": "Planned normal release confirmed by placement + gripper opening",
+    "instability": "Contact loss, slip, unplanned opening, pose anomaly during grasp",
+    "gripper_closing_state": "Physical qpos measurement of gripper closure (NOT policy intent)",
+    "k10_feasible": "K=10 attack window available without safe_release or terminal in window"
+  },
+
+  "scheduler": {
+    "trigger": "p_critical ≥ τ_c AND p_k10 ≥ τ_k AND p_safe < τ_r AND persistence_D",
+    "first_emit_only": true,
+    "horizon_abstain": "remaining steps < K → hard abstain",
+    "forbidden_hard_gates": ["candidate_close", "instability"]
+  },
+
+  "design_constraints": {
+    "no_suite_specific_thresholds": true,
+    "no_candidate_close_in_physics": true,
+    "no_unknown_to_negative": true,
+    "no_cc_dependent_labels": true,
+    "articulated_unsupported_abstain": true,
+    "VIS_executor_shared_v4d_v5": true,
+    "no_test_set_calibration": true
+  }
+}

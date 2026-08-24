@@ -1,0 +1,200 @@
+{
+  "authority_inputs": [
+    {
+      "declared_bindings": [],
+      "git_blob": "4054b782cbbb6051654c5797e2a0fd455a961cf2",
+      "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+      "sha256_git_blob_bytes": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1"
+    },
+    {
+      "declared_bindings": [],
+      "git_blob": "d0b685d5eb6610734760381d25e7f90e10f429ad",
+      "path": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json",
+      "sha256_git_blob_bytes": "4b9cc1368cd88a7a7a299881bd67fda9cb4d2ba43c90b7c27dd0741a8864d1bb"
+    },
+    {
+      "declared_bindings": [],
+      "git_blob": "02a8784bd59dd4cd59ed9a7354d7304ea4ad78a8",
+      "path": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+      "sha256_git_blob_bytes": "61118293f0d0faa714c6269c85d2f76d456b319eefbc17b58c2117d6976bd69e"
+    },
+    {
+      "declared_bindings": [
+        {
+          "declared_by": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json",
+          "digest_basis": "canonical_git_blob_bytes",
+          "sha256": "830c55dee96477e87c36437a33760a9dced0d1217ea01b3e72905f26fd142336"
+        }
+      ],
+      "git_blob": "248ea08a6fbf521e3da4ceb0aeb8496caefe94d4",
+      "path": "paper/PAPER_V1_FINAL_ROOT_SEAL_V1.json",
+      "sha256_git_blob_bytes": "830c55dee96477e87c36437a33760a9dced0d1217ea01b3e72905f26fd142336"
+    },
+    {
+      "declared_bindings": [],
+      "git_blob": "4dacbedb524bf11508ac437237c99455cb4c9a9a",
+      "path": "paper/PAPER_V1_SUPPLEMENT_BINDINGS_V1.json",
+      "sha256_git_blob_bytes": "002dec74c06ce67ecfc681b08f2c572ce42cf52852dcfbed91e78b5e4ec8d4ab"
+    },
+    {
+      "declared_bindings": [
+        {
+          "declared_by": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+          "digest_basis": "historical_crlf_materialization",
+          "sha256": "cd642e0ed15fc0df2cc95bdb3e4c9c869cd4a20223afea90fd8c2a1619689354"
+        }
+      ],
+      "git_blob": "ef32af9e411dfc9f4ae765e03f8cbafd4acaf7e9",
+      "path": "paper/data/PAPER_V1_FIGURE2_X0_DOSE_RESPONSE.csv",
+      "sha256_git_blob_bytes": "6629585c6387d78b1ab740d31f76db74df28d2495a0ee10281e3fa9ec34e83e6"
+    },
+    {
+      "declared_bindings": [
+        {
+          "declared_by": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+          "digest_basis": "historical_crlf_materialization",
+          "sha256": "05de99f4c8e91b34b926f0244f4849bf6008f594b702b3359fe86d43cd855816"
+        }
+      ],
+      "git_blob": "c02bbd9e834bdb0cbf72dcc20ad087f5a22de076",
+      "path": "paper/data/PAPER_V1_FIGURE3_TIMING_NEGATIVE_CASCADE.csv",
+      "sha256_git_blob_bytes": "8a8a28664d752b8620927a7e45f4fe5658e3a1aa9cad6a29ec3a7ce2b1cb8dd8"
+    },
+    {
+      "declared_bindings": [
+        {
+          "declared_by": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+          "digest_basis": "historical_crlf_materialization",
+          "sha256": "5c1a46be48093aa9098855bc37f088dcc04fde99e0801b006a48b7ba53829afc"
+        }
+      ],
+      "git_blob": "94ffe6bdffb0a95f799f8fa033752c965ceac54d",
+      "path": "paper/data/PAPER_V1_FIGURE4_FACTORIZATION_GAP.csv",
+      "sha256_git_blob_bytes": "dc8ed93a46b24126fd78a1507c4ee62c61dce913632bf6b16f4542114b4e8420"
+    },
+    {
+      "declared_bindings": [
+        {
+          "declared_by": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+          "digest_basis": "historical_crlf_materialization",
+          "sha256": "8d34b4c6537ceb6e47de6a7c138c10b50d68785025a9c005d18adc22185b0128"
+        }
+      ],
+      "git_blob": "99b38a5c54519c93e369da2849e35b85678266eb",
+      "path": "paper/data/PAPER_V1_FIGURE5_E3_E4_PARENT_REALIZABILITY.csv",
+      "sha256_git_blob_bytes": "1c052227f0d90cbcab14fc553215cfbca6268cbf2e6a86df961dcd440c0ca51e"
+    },
+    {
+      "declared_bindings": [
+        {
+          "declared_by": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json",
+          "digest_basis": "canonical_git_blob_bytes",
+          "sha256": "b136a74b5c34fbd8417f2a7edf66f408e41303e3be43d300b4bdd5cb7345e8b0"
+        }
+      ],
+      "git_blob": "a3bb5eee43e533fa725e2a6f253735286b260ab4",
+      "path": "reports/STAGE_X_X1R2_F1T_CLAIM_LEDGER_DELTA_V1.json",
+      "sha256_git_blob_bytes": "b136a74b5c34fbd8417f2a7edf66f408e41303e3be43d300b4bdd5cb7345e8b0"
+    },
+    {
+      "declared_bindings": [
+        {
+          "declared_by": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json",
+          "digest_basis": "canonical_git_blob_bytes",
+          "sha256": "41b19d12cb3278f50a3e2b6e6285ba1d1fc8acaa61aa89bc7c31b287c09c4efa"
+        }
+      ],
+      "git_blob": "f0930566b13ddc700f27205702a4eab26652a32f",
+      "path": "reports/STAGE_X_X1R2_F1T_DEV_C4_SUMMARY_V1.json",
+      "sha256_git_blob_bytes": "41b19d12cb3278f50a3e2b6e6285ba1d1fc8acaa61aa89bc7c31b287c09c4efa"
+    },
+    {
+      "declared_bindings": [
+        {
+          "declared_by": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json",
+          "digest_basis": "canonical_git_blob_bytes",
+          "sha256": "ed3e1436d6f22ceac9db4b1a9cc5ef111f379b2952b6290433352cf7b2423bf3"
+        }
+      ],
+      "git_blob": "575305f6e60a3e3c13bd741d87ff63cc91822ce2",
+      "path": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+      "sha256_git_blob_bytes": "ed3e1436d6f22ceac9db4b1a9cc5ef111f379b2952b6290433352cf7b2423bf3"
+    },
+    {
+      "declared_bindings": [],
+      "git_blob": "c98717c4d2d132b3e8b9d3bbdd2eb0151db9b89b",
+      "path": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json",
+      "sha256_git_blob_bytes": "697fe0584b55c676c964836471581d5f7cea05cdae6b5346a3e8b9a85ef10c10"
+    },
+    {
+      "declared_bindings": [],
+      "git_blob": "9b9c937e86018df5ddc062afe0cf177bc93aabd7",
+      "path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json",
+      "sha256_git_blob_bytes": "a5403173c57f27c5e3e931b468358a4cdf2e4b908b5e1eb9ce2670d36c530c7a"
+    }
+  ],
+  "generated_at": "2026-08-24T03:36:23+08:00",
+  "generated_files": [
+    {
+      "bytes": 17714,
+      "path": "exports/paper_v2/evidence_hierarchy.json",
+      "sha256": "b583294b78b4afcf73ef17456c22d9774f7f3564b1b91901d6115eb7857bc9e2"
+    },
+    {
+      "bytes": 2246,
+      "path": "exports/paper_v2/x0_mechanism.json",
+      "sha256": "e4893f805006f183c46886ab90a24070565f8deaa8fa280c03abc61954d9d763"
+    },
+    {
+      "bytes": 6060,
+      "path": "exports/paper_v2/timing_generalization_cascade.json",
+      "sha256": "4478e15a44cccd196c2f6c7bb44871604c214035fc84a1ef43fc3e6fa44170a4"
+    },
+    {
+      "bytes": 2120,
+      "path": "exports/paper_v2/stage_ix_factorization_gap.json",
+      "sha256": "b69b8687269d96fe394254d6e53666125bfa9fd425a8f68b7683388bd96cb77b"
+    },
+    {
+      "bytes": 9037,
+      "path": "exports/paper_v2/execution_layer_evidence.json",
+      "sha256": "c5d27174bf7f3200ca0f0fce575ad56043493b83b7d47d0f606679103379b462"
+    },
+    {
+      "bytes": 3967,
+      "path": "exports/paper_v2/plot_quantitative.csv",
+      "sha256": "3fbf2d50df2455c44c8fefb0447079b27a014e653ba432f9882de43e3458382f"
+    },
+    {
+      "bytes": 1193,
+      "path": "exports/paper_v2/core_numbers.tex",
+      "sha256": "530da4a521dec10ba8de2961bca0fd7d9863741d6c285c22b4172cb85c7265ed"
+    }
+  ],
+  "generator": {
+    "git_blob": "cf341aced763463989b266b40164c9a371afef12",
+    "path": "scripts/paper_v2/export_paper_v2_evidence.py",
+    "sha256_git_blob_bytes": "3c9464072056bf492f9a61ab3cff999b0f954a2f039358166ed655bb82201831"
+  },
+  "no_manual_scientific_number_transcription": true,
+  "paper_repository_role": "presentation consumer; not scientific source-of-truth",
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "new_openvla_inference": 0,
+    "new_pgd_or_backward": 0,
+    "new_physical_intervention": 0,
+    "new_simulator_or_env_step": 0,
+    "new_vphys_read": 0,
+    "protected_evaluation": "UNREAD"
+  },
+  "schema": "PAPER_V2_EXPORT_MANIFEST_V1",
+  "source_repository": {
+    "commit_timestamp": "2026-08-24T03:36:23+08:00",
+    "head": "a3a1846939df4be4c04de5c1de8bfee541b4d656",
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "tree": "a919b788041286ede2ae2425efacd8b677e0d884"
+  },
+  "statement": "Eval160/protected were not read; committed sealed static authorities only.",
+  "status": "PAPER_V2_DETERMINISTIC_EXPORT_PASS",
+  "timestamp_policy": "source commit timestamp; no wall-clock input"
+}

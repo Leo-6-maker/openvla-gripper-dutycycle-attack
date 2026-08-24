@@ -1,0 +1,52 @@
+{
+  "schema": "STAGE_X_X1R_PRIMARY_MATRIX_CANARY_RUNTIME_HOLD_V1",
+  "status": "STAGE_X_X1R_PRIMARY_MATRIX_HOLD_CANARY_RUNTIME_INVALID",
+  "runtime_source_commit": "c96f4079fa8c466160e6d07521e9f82cb34eb829",
+  "runtime_source_tree": "18cfe3263af6c79860aca3a2b1cd9141bf6bd16d",
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/STAGE_X_X1R_PRIMARY_MATRIX_V1_20260819",
+  "canary": {
+    "review_id": "M001",
+    "ordinal": 32,
+    "canonical_parent_key": "libero_spatial/task_02/state_31",
+    "physical_gpu": 1,
+    "first_attempted_arm": "RAND_UNIFORM_T5",
+    "first_policy_decision": false,
+    "retry_authorized": false,
+    "replacement_authorized": false
+  },
+  "runtime_failure": {
+    "exception": "TypeError:tuple indices must be integers or slices, not str",
+    "root_cause": "update_feature returns (telemetry_dict, eef); runner treated the tuple as telemetry_dict",
+    "policy_decisions": 0,
+    "model_inference_calls": 1,
+    "env_reset_calls": 1,
+    "env_step_calls": 0,
+    "student_forward_calls": 0,
+    "attack_backward_calls": 0,
+    "pgd_calls": 0,
+    "adversarial_images": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0
+  },
+  "remote_artifacts": {
+    "claim_sha256": "ba2bea764eadec21fd6fb02db6cedb69e89bf3a7f5cad99535fd8e222df4a01b",
+    "parent_manifest_sha256": "d9b72c9dea1da9c181dc144cce4cf36dd8f1b63d71510280ae4d97bf612aca2b",
+    "parent_receipt_sha256": "a09f5248bc6d8eeca596ca7f739c07a535a197632b69f4280bb0f145355b2850",
+    "branch_receipt_sha256": "8ad63445d9994a2aefdd8daafe5f46a61603a4b10e59ea9dc176c137efdbae44",
+    "parent_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/STAGE_X_X1R_PRIMARY_MATRIX_V1_20260819/parents/032_libero_spatial_task_02_state_31/parent_receipt.json",
+    "branch_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/STAGE_X_X1R_PRIMARY_MATRIX_V1_20260819/parents/032_libero_spatial_task_02_state_31/RAND_UNIFORM_T5/branch_receipt.json"
+  },
+  "continuation": "STOP_GLOBAL_NO_RERUN_NO_REPLACEMENT",
+  "eval160": "UNREAD",
+  "protected_evaluation": "UNREAD"
+}

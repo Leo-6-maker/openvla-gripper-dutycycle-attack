@@ -1,0 +1,19 @@
+{
+  "claim_count": 48,
+  "file_count": 24,
+  "mandatory_stop": "OWNER_PI_REVIEW_REQUIRED; no new experiment or attack escalation",
+  "manifest_path": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json",
+  "manifest_sha256": "e393ea105986d6d5c0fedb24990989ff881538d14132711400abc06298972671",
+  "protected_boundary": {
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "gpu": 0,
+    "openvla_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected": "UNREAD",
+    "vphys": 0
+  },
+  "schema": "PAPER_V1_FINAL_ROOT_SEAL_V1",
+  "status": "PAPER_V1_MECHANISM_FACTORIZATION_DRAFT_BUNDLE_READY_FOR_PI"
+}

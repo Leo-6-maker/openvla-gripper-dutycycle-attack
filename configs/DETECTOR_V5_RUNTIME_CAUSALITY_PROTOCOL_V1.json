@@ -1,0 +1,18 @@
+{
+  "schema": "DETECTOR_V5_RUNTIME_CAUSALITY_PROTOCOL_V1",
+  "scope": "FIT_ONLY_DEVELOPMENT_DIAGNOSTIC",
+  "observed_runner": {
+    "path": "scripts/run_attack_pipeline.py",
+    "sha256": "036d1e1d4f44d1666783b21e089ad6bd8014cf842a2e84020515c9b60dc17435",
+    "observed_behavior": "fixed_window_attack_cli",
+    "clean_probe_then_attack_same_step": false,
+    "previous_step_policy_intent_consumption": false,
+    "policy_intent_consumption_implemented": false
+  },
+  "v5_b_runtime_status": "HOLD_RUNTIME_INTEGRATION_MISSING",
+  "required_future_binding": "previous_step_intent_only_until_a_same_step_clean_probe_is_implemented_and_sealed",
+  "student_future_leakage": false,
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false,
+  "attack_execution_authorized": false
+}

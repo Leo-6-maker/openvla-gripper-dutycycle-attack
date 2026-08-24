@@ -1,0 +1,10 @@
+{
+  "schema": "B3_OFFICIAL_V3_RUNTIME_PROTOCOL_V1",
+  "status": "PREPARATION_ONLY",
+  "persistence_steps": 3,
+  "persistence_required": 2,
+  "scheduler": "ONE_SHOT_T10",
+  "teacher_inputs_consumed": false,
+  "contact_or_object_state_consumed": false,
+  "formal_attack_authorized": false
+}

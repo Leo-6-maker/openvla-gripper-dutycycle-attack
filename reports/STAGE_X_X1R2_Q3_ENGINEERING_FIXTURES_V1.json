@@ -1,0 +1,141 @@
+{
+  "schema": "STAGE_X_X1R2_Q3_ENGINEERING_FIXTURES_V1",
+  "status": "STAGE_X_X1R2_Q3_ENGINEERING_FIXTURES_FROZEN",
+  "scientific_use": false,
+  "selection": {
+    "salt": "STAGE_X_X1R2_Q3_ENGINEERING_FIXTURE_V1_20260819",
+    "rank_formula": "sha256(salt + '|' + canonical_parent_key)",
+    "per_suite_rule": "lowest rank among previously clean-screened manual FAIL/ABSTAIN identities after all historical/protected exclusions",
+    "outcome_blind_after_eligibility": true,
+    "replacement": false,
+    "top_up": false
+  },
+  "source_artifacts": {
+    "manual_mapping": {
+      "path": "reports/STAGE_X_X1R_T1D1M0_MANUAL_REVIEW_MAPPING_V1.json",
+      "sha256": "32ee4643625bb3f08ad98b3a23690d70c2f406f745dc11a82091c8e666bea73c"
+    },
+    "manual_disposition": {
+      "path": "reports/STAGE_X_X1R_T1D1M1_MANUAL_DISPOSITION_LEDGER_V1.json",
+      "sha256": "c7b88b5c8c73a36525f74f01c3a6bcab76ee94690d3095805797f496da8cd67e"
+    },
+    "manual_root_seal": {
+      "path": "reports/STAGE_X_X1R_T1D1M1_ROOT_SEAL.json",
+      "sha256": "57fccd63e582803e940df23e88bed9ac7a035f99a945065577af046594112b23"
+    },
+    "suite_victim_contract": {
+      "path": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+      "sha256": "0cafca3d585ff87c1125639b95f558ef6f3501ea24b258842da1a34b2148bec4"
+    },
+    "d1_screening_protocol": {
+      "path": "configs/STAGE_X_X1R_T1D1R_SCREENING_CLEAN_PROTOCOL_V1.json",
+      "sha256": "2b66a3998d6df73af3db5788efae20cc2b51ccbd19c60a1fd31293f5d9b05d4d"
+    },
+    "d1r_root_seal": {
+      "path": "reports/STAGE_X_X1R_T1D1R_ROOT_SEAL.json",
+      "sha256": "f4d12541b7df2de89bf48bb59adda8c824610bb460d737896d535725e1cc2a3d"
+    }
+  },
+  "exclusion_sets": {
+    "x1r_v1_cohort_review_ids": ["M001", "M002", "M008", "M009", "M010", "M011", "M014"],
+    "d1_runtime_invalid_ordinals": [1, 11, 20, 30],
+    "all_d1m1_owner_review_ids": ["M001", "M002", "M003", "M004", "M005", "M006", "M007", "M008", "M009", "M010", "M011", "M012", "M013", "M014"],
+    "protected_eval160": "EXCLUDED_BY_FIREWALL",
+    "future_x1r2_scientific_population": "EXCLUDED_BY_ENGINEERING_ONLY_ROLE"
+  },
+  "fixtures": [
+    {
+      "fixture_id": "Q3-F01",
+      "review_id": "M007",
+      "suite": "libero_10",
+      "ordinal": 5,
+      "canonical_parent_key": "libero_10/task_04/state_30",
+      "engineering_rank_key": "04bc2afdd534fbc3859143990338da18e89ba03093d69b7eff7118be89426320",
+      "manual_contact_label": "FAIL",
+      "manual_reason_code": "PRECONTACT_OR_APPROACH",
+      "clean_success": true,
+      "student_status": "PASS_CAUSAL_TRACE",
+      "first_emit_step": 90,
+      "policy_horizon": 520,
+      "expected_clean_seed": 1839308868,
+      "task_instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+      "parent_receipt_sha256": "cd1ed787c815bad53d4558bcf59472a669225eb952db0165c0102402b95e2534",
+      "clean_video_sha256": "ec2bc02e6586f249ce626aa55e7e10e8213b5bcfec5c97b8017cdee2ea20bbbe",
+      "clean_telemetry_sha256": "7d9b0ffb0e3626206532d45f3e6df1171e2a7d6f66ea4c97bba89232b8c1b003",
+      "permanent_exclusion": true
+    },
+    {
+      "fixture_id": "Q3-F02",
+      "review_id": "M003",
+      "suite": "libero_goal",
+      "ordinal": 12,
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "engineering_rank_key": "72c17025866b0aa5655693063670f97a85ac32a30b5e4a17ee98768402df72aa",
+      "manual_contact_label": "FAIL",
+      "manual_reason_code": "PRECONTACT_OR_APPROACH",
+      "clean_success": true,
+      "student_status": "PASS_CAUSAL_TRACE",
+      "first_emit_step": 77,
+      "policy_horizon": 300,
+      "expected_clean_seed": 2806598006,
+      "task_instruction": "put the wine bottle on top of the cabinet",
+      "parent_receipt_sha256": "11fcfc5ef7d756eee3938cb0d2107d24ec24a3d725004d4e2184bdd0a4b16cf1",
+      "clean_video_sha256": "c3375a26a7f536758218789b99975bb5c65c2bfea49f95cf9369230954bfbbc1",
+      "clean_telemetry_sha256": "c6a6d6e34070e7335ff4e04706d94a1cc9e10298aeeef6ad99e954a7fe682610",
+      "permanent_exclusion": true
+    },
+    {
+      "fixture_id": "Q3-F03",
+      "review_id": "M004",
+      "suite": "libero_object",
+      "ordinal": 24,
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "engineering_rank_key": "6b2cacd18d93d7f099deb9014d66ba56601c5e5b12bfffca6ee5ba13ae05d32d",
+      "manual_contact_label": "FAIL",
+      "manual_reason_code": "PRECONTACT_OR_APPROACH",
+      "clean_success": true,
+      "student_status": "PASS_CAUSAL_TRACE",
+      "first_emit_step": 81,
+      "policy_horizon": 280,
+      "expected_clean_seed": 742553466,
+      "task_instruction": "pick up the ketchup and place it in the basket",
+      "parent_receipt_sha256": "b3e1120135e3fe1530c28d57f4c3602fbe2fd47bbcecfe3a7fec62f1865466f4",
+      "clean_video_sha256": "f0f2efedfbc0cdb67d952cf1a4be7284bc036e3b5ec9ee03730737c7cb71f086",
+      "clean_telemetry_sha256": "2af06994f6ad9c726f94425ba76f76d3268c574bd194374a131667727e21a958",
+      "permanent_exclusion": true
+    },
+    {
+      "fixture_id": "Q3-F04",
+      "review_id": "M006",
+      "suite": "libero_spatial",
+      "ordinal": 31,
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "engineering_rank_key": "866ff2edc1247a35ae9b5a595035a2b3151780956e0c45fa5db70c36c60602ac",
+      "manual_contact_label": "ABSTAIN",
+      "manual_reason_code": "",
+      "clean_success": true,
+      "student_status": "PASS_CAUSAL_TRACE",
+      "first_emit_step": 64,
+      "policy_horizon": 220,
+      "expected_clean_seed": 3956798880,
+      "task_instruction": "pick up the black bowl next to the ramekin and place it on the plate",
+      "parent_receipt_sha256": "22ab681582231d2b581ec45d5d00445ee265cf90717d8de80aa9c5c45479d0e7",
+      "clean_video_sha256": "d85e97f69c83b922a02d3f3caf5b5775daad21d5e72089a339af0a28acc3e00e",
+      "clean_telemetry_sha256": "a8a41b5c5967c663d212a6584d419b54ad9c477627d231697e2f05ca2107fe8c",
+      "permanent_exclusion": true
+    }
+  ],
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "model_inference_calls": 0,
+    "env_step_calls": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0
+  },
+  "next_gate": "STAGE_X_X1R2_Q3_ENGINEERING_PROTOCOL_FREEZE"
+}

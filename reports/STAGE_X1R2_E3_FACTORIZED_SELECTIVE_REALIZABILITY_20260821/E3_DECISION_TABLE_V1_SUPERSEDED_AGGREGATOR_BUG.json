@@ -1,0 +1,1036 @@
+{
+  "by_suite": {
+    "libero_10": {
+      "parents": 3,
+      "probes": 0,
+      "valid": 0
+    },
+    "libero_goal": {
+      "parents": 3,
+      "probes": 0,
+      "valid": 0
+    },
+    "libero_object": {
+      "parents": 3,
+      "probes": 1,
+      "valid": 0
+    },
+    "libero_spatial": {
+      "parents": 3,
+      "probes": 3,
+      "valid": 1
+    }
+  },
+  "claim_boundary": "Model-side timing-decoupled selective realizability only; not physical efficacy, timing utility, task outcome, or protected evaluation.",
+  "counts": {
+    "clean_runtime_valid": 4,
+    "probe_available": 4,
+    "six_candidate_evidence_complete": 4,
+    "strict_valid_candidate": 1,
+    "true_invocation_reached": 4
+  },
+  "fixed_denominator": 12,
+  "incomplete_evidence_rows": [],
+  "mandatory_stop": "OWNER_PI_REVIEW_REQUIRED; no R0/R1/R2, physical follow-up, RAND, SHUFFLED, tuning, or protected reads",
+  "parent_rows": [
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-01/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-01/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_10/task_05/state_41",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_10-01",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-01/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_10",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-02/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-02/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_10/task_04/state_36",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_10-02",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-02/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_10",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-03/attempt_01/parent_receipt.json",
+          "status": "PASS_E3_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-03/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_10/task_03/state_21",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_10-03",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-03/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_10",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-01/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-01/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_goal/task_06/state_28",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_GOAL-01",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-01/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_goal",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-02/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-02/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_goal/task_09/state_46",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_GOAL-02",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-02/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_goal",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-03/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-03/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_goal/task_04/state_38",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_GOAL-03",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-03/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_goal",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-01/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-01/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_object/task_08/state_40",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_OBJECT-01",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-01/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_object",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-02/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-02/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_object/task_03/state_30",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_OBJECT-02",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-02/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_object",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-03/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        }
+      ],
+      "candidate_count": 6,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_object/task_09/state_28",
+      "clean_runtime_status": "PASS_E3_CLEAN_RUNTIME",
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 1,
+        "env_step_calls": 122,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 123,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 1,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_OBJECT-03",
+      "probe_available": true,
+      "probe_step": 121,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-03/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+      "strict_valid_candidate": false,
+      "suite": "libero_object",
+      "true_invocation_reached": true
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_spatial/E3-LIBERO_SPATIAL-01/parent_receipt.json",
+          "status": "PASS_E3_VALID_CANDIDATE"
+        }
+      ],
+      "candidate_count": 6,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_spatial/task_09/state_30",
+      "clean_runtime_status": "PASS_E3_CLEAN_RUNTIME",
+      "counters": {
+        "attack_backward_calls": 5,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 1,
+        "env_step_calls": 219,
+        "eval160_reads": 0,
+        "loss_forward_count": 6,
+        "model_inference_calls": 221,
+        "pgd_calls": 1,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 1,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_SPATIAL-01",
+      "probe_available": true,
+      "probe_step": 43,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_spatial/E3-LIBERO_SPATIAL-01/parent_receipt.json",
+      "selected_candidate_index": 2,
+      "selected_candidate_source": "pgd_iteration_2",
+      "status": "PASS_E3_VALID_CANDIDATE",
+      "strict_valid_candidate": true,
+      "suite": "libero_spatial",
+      "true_invocation_reached": true
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_spatial/E3-LIBERO_SPATIAL-02/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        }
+      ],
+      "candidate_count": 6,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_spatial/task_03/state_32",
+      "clean_runtime_status": "PASS_E3_CLEAN_RUNTIME",
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 1,
+        "env_step_calls": 77,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 78,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 1,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_SPATIAL-02",
+      "probe_available": true,
+      "probe_step": 73,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_spatial/E3-LIBERO_SPATIAL-02/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+      "strict_valid_candidate": false,
+      "suite": "libero_spatial",
+      "true_invocation_reached": true
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_spatial/E3-LIBERO_SPATIAL-03/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        }
+      ],
+      "candidate_count": 6,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_spatial/task_06/state_29",
+      "clean_runtime_status": "PASS_E3_CLEAN_RUNTIME",
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 1,
+        "env_step_calls": 109,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 110,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 1,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_SPATIAL-03",
+      "probe_available": true,
+      "probe_step": 31,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_spatial/E3-LIBERO_SPATIAL-03/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE",
+      "strict_valid_candidate": false,
+      "suite": "libero_spatial",
+      "true_invocation_reached": true
+    }
+  ],
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "protocol_path": "configs/STAGE_X_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_PROTOCOL_V1_STORAGE_REPAIR_20260821.json",
+  "protocol_sha256": "d720a1bd6f4e8c4c69ab26c25f03619cb91a9db76fcccd5aea2f83b00437b3d8",
+  "runtime_hold_rows": [
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-01/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-01/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_10/task_05/state_41",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_10-01",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-01/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_10",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-02/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-02/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_10/task_04/state_36",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_10-02",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-02/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_10",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-03/attempt_01/parent_receipt.json",
+          "status": "PASS_E3_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-03/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_10/task_03/state_21",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_10-03",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_10/E3-LIBERO_10-03/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_10",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-01/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-01/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_goal/task_06/state_28",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_GOAL-01",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-01/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_goal",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-02/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-02/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_goal/task_09/state_46",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_GOAL-02",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-02/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_goal",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-03/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-03/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_goal/task_04/state_38",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_GOAL-03",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_goal/E3-LIBERO_GOAL-03/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_goal",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-01/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-01/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_object/task_08/state_40",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_OBJECT-01",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-01/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_object",
+      "true_invocation_reached": false
+    },
+    {
+      "attempt_history": [
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-02/attempt_01/parent_receipt.json",
+          "status": "COMPLETE_E3_TRUE_NO_VALID_CANDIDATE"
+        },
+        {
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-02/parent_receipt.json",
+          "status": "HOLD_E3_RUNTIME"
+        }
+      ],
+      "candidate_count": 0,
+      "candidate_evidence_complete": true,
+      "canonical_parent_key": "libero_object/task_03/state_30",
+      "clean_runtime_status": null,
+      "counters": {
+        "attack_backward_calls": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_reset_calls": 0,
+        "env_step_calls": 0,
+        "eval160_reads": 0,
+        "loss_forward_count": 0,
+        "model_inference_calls": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "true_invocation_reached": 0,
+        "vphys_reads": 0
+      },
+      "fixture_id": "E3-LIBERO_OBJECT-02",
+      "probe_available": false,
+      "probe_step": null,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_evaluation": "UNREAD",
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/libero_object/E3-LIBERO_OBJECT-02/parent_receipt.json",
+      "selected_candidate_index": null,
+      "selected_candidate_source": null,
+      "status": "HOLD_E3_RUNTIME",
+      "strict_valid_candidate": false,
+      "suite": "libero_object",
+      "true_invocation_reached": false
+    }
+  ],
+  "schema": "STAGE_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_DECISION_V1",
+  "status": "HOLD_E3_EXECUTABLE_EVIDENCE_INSUFFICIENT"
+}

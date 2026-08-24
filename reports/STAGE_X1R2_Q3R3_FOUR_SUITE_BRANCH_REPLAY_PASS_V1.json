@@ -1,0 +1,49 @@
+{
+  "schema": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS_V1",
+  "status": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS",
+  "scientific_authority": false,
+  "execution_source": {
+    "commit": "3df84eaf0a4a137eaaee05b58974088463ffacff",
+    "tree": "bb18054d9e2251feb8ee5472253777ee36013893"
+  },
+  "receipt_repair_source": {
+    "commit": "a6bf6f654a6b4f065398cf940fe024234f7ab907",
+    "tree": "413ee30245ac262b359107305e167149adf1bd2e"
+  },
+  "durable_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_c_20260820",
+  "root_seal": {
+    "path": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_ROOT_SEAL_V1.json",
+    "sha256": "9159b6601c856b45fee13e9e1dfb689cd7194949fd0094f6951d54e3fe19b698",
+    "files": 4835
+  },
+  "receipt_schema_repair": {
+    "status": "PASS_APPEND_ONLY_RECEIPT_SCHEMA_REPAIR",
+    "repairs": 8,
+    "raw_receipts_unchanged": true
+  },
+  "suites": [
+    {"suite": "libero_10", "status": "PASS_SUITE_BRANCH_REPLAY", "scan_count": 4, "selected_fixture": "Q3R2-LIBERO_10-05", "selected_parent_key": "libero_10/task_06/state_38", "t_emit": 68, "branch_repeats": 2, "state_equal": true, "direct_tokens_match": true, "post_branch_steps": 15, "report_sha256": "b177df4b322c2562d4b75988dcc644b24822c21440ae670f8cd151272f95e32c"},
+    {"suite": "libero_goal", "status": "PASS_SUITE_BRANCH_REPLAY", "scan_count": 5, "selected_fixture": "Q3R2-LIBERO_GOAL-06", "selected_parent_key": "libero_goal/task_04/state_39", "t_emit": 53, "branch_repeats": 2, "state_equal": true, "direct_tokens_match": true, "post_branch_steps": 15, "report_sha256": "1496e716b32ed7adfc30d082f238cf377b29a0d3c92689d877d37467452f6265"},
+    {"suite": "libero_object", "status": "PASS_SUITE_BRANCH_REPLAY", "scan_count": 8, "selected_fixture": "Q3R2-LIBERO_OBJECT-09", "selected_parent_key": "libero_object/task_04/state_46", "t_emit": 62, "branch_repeats": 2, "state_equal": true, "direct_tokens_match": true, "post_branch_steps": 15, "report_sha256": "805245567cfe0724bec9812b10aef92f9f1f59bed1a043f857a768d5077edaaf"},
+    {"suite": "libero_spatial", "status": "PASS_SUITE_BRANCH_REPLAY", "scan_count": 3, "selected_fixture": "Q3R2-LIBERO_SPATIAL-04", "selected_parent_key": "libero_spatial/task_08/state_35", "t_emit": 64, "branch_repeats": 2, "state_equal": true, "direct_tokens_match": true, "post_branch_steps": 15, "report_sha256": "3a75d4bae98d4144b7605c6559875fc0cb5ea0afa2d686b1cbc343bc2f843bee"}
+  ],
+  "resource": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "worker_gpus": [0, 1, 2, 3],
+    "free_memory_gate_mib_strictly_greater_than": 20480,
+    "one_worker_per_gpu": true,
+    "foreign_processes_touched": false
+  },
+  "protected_boundary": {
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "protected_reads": 0,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "historical_q3r2_c_hold_preserved": true,
+  "next_gate": "STAGE_X1R2_Q3R3_ENGINEERING_MATRIX"
+}

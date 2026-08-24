@@ -1,0 +1,151 @@
+{
+  "alternative_source": {
+    "binary_files_skipped": 0,
+    "candidate_count": 800,
+    "candidate_definition": "four suites x ten tasks x state 0..19",
+    "conservative_identity_mentions": 20,
+    "mentioned_by_suite": {
+      "libero_10": 7,
+      "libero_goal": 6,
+      "libero_object": 4,
+      "libero_spatial": 3
+    },
+    "mentioned_identity_sources": {
+      "libero_10/task_00/state_00": [
+        "reports/OFFICIAL_V3_DETECTOR_V5_TAKEOVER.md"
+      ],
+      "libero_10/task_00/state_05": [
+        "reports/G2_CANARY_32_RECEIPT.json"
+      ],
+      "libero_10/task_00/state_10": [
+        "reports/FEC_SMOKE_IDENTITY_MANIFEST_V3.json",
+        "reports/G2_CANARY_32_RECEIPT.json",
+        "reports/fec_audit_v1/FEC_V4_REPLAY_PARITY_V1.json"
+      ],
+      "libero_10/task_00/state_15": [
+        "reports/CODEX_C3_T1D_GREC_R1_HANDOFF.md",
+        "reports/PROTOCOL_AMENDMENT_V5_G_REC_DIRECT_POSE.json"
+      ],
+      "libero_10/task_02/state_05": [
+        "reports/G2_CANARY_32_RECEIPT.json"
+      ],
+      "libero_10/task_02/state_10": [
+        "reports/G2_CANARY_32_RECEIPT.json"
+      ],
+      "libero_10/task_03/state_18": [
+        "reports/CODEX_C3_T1D_GREC_R1_HANDOFF.md"
+      ],
+      "libero_goal/task_00/state_10": [
+        "reports/FEC_SMOKE_IDENTITY_MANIFEST_V3.json",
+        "reports/G2_CANARY_32_RECEIPT.json",
+        "reports/fec_audit_v1/FEC_V4_REPLAY_PARITY_V1.json"
+      ],
+      "libero_goal/task_00/state_11": [
+        "reports/FEC_SMOKE_IDENTITY_MANIFEST_V3.json",
+        "reports/fec_audit_v1/FEC_V4_REPLAY_PARITY_V1.json"
+      ],
+      "libero_goal/task_01/state_10": [
+        "reports/G2_CANARY_32_RECEIPT.json"
+      ],
+      "libero_goal/task_01/state_11": [
+        "reports/CODEX_C3_T1D_GREC_R1_HANDOFF.md"
+      ],
+      "libero_goal/task_06/state_10": [
+        "reports/G2_CANARY_32_RECEIPT.json"
+      ],
+      "libero_goal/task_09/state_16": [
+        "reports/CODEX_C3_T1D_GREC_R1_HANDOFF.md"
+      ],
+      "libero_object/task_00/state_09": [
+        "reports/CODEX_C3_T1D_GREC_R1_HANDOFF.md"
+      ],
+      "libero_object/task_00/state_10": [
+        "reports/FEC_SMOKE_IDENTITY_MANIFEST_V3.json",
+        "reports/G2_CANARY_32_RECEIPT.json",
+        "reports/fec_audit_v1/FEC_V4_REPLAY_PARITY_V1.json"
+      ],
+      "libero_object/task_05/state_10": [
+        "reports/G2_CANARY_32_RECEIPT.json"
+      ],
+      "libero_object/task_06/state_10": [
+        "reports/G2_CANARY_32_RECEIPT.json"
+      ],
+      "libero_spatial/task_00/state_04": [
+        "reports/CODEX_C3_T1D_GREC_R1_HANDOFF.md"
+      ],
+      "libero_spatial/task_00/state_10": [
+        "reports/FEC_SMOKE_IDENTITY_MANIFEST_V3.json",
+        "reports/G2_CANARY_32_RECEIPT.json",
+        "reports/fec_audit_v1/FEC_V4_REPLAY_PARITY_V1.json"
+      ],
+      "libero_spatial/task_06/state_10": [
+        "reports/G2_CANARY_32_RECEIPT.json"
+      ]
+    },
+    "potential_remaining_after_mentions": 780,
+    "potential_remaining_by_suite": {
+      "libero_10": 193,
+      "libero_goal": 194,
+      "libero_object": 196,
+      "libero_spatial": 197
+    },
+    "potential_remaining_key_sha256": "3c5ab5aff59244ec74650e12a83aa8ff43e123acfc9eb41a70244de3bf862b7a",
+    "tracked_files_scanned": 649,
+    "tracked_scan_prefixes": [
+      "configs/",
+      "reports/",
+      "docs/handoffs/",
+      "paper/"
+    ]
+  },
+  "authority_and_risk": {
+    "current_stage_x_authority_path": "scripts/stage_x/audit_stage_x1r_t1d0r_authority.py",
+    "current_stage_x_authority_sha256": "b7242b85ff94d522913480e368ed0587f535b68363459eb576a72b807abe2461",
+    "current_stage_x_authority_state_rule": "20 <= state <= 49",
+    "not_authorized_by_this_audit": [
+      "changing_F1_source_universe",
+      "changing_parent_ranking_or_denominator",
+      "freezing_DEV_or_BRIDGE_from_state_0_19",
+      "opening_BRIDGE_outcomes",
+      "starting_F1_B_GPU"
+    ],
+    "source_change_is_scientific": true,
+    "state_0_19_may_overlap_detector_fit_train_or_old_canaries": true
+  },
+  "current_f1_hold": {
+    "current_g10_state_range": "20..49",
+    "current_remaining_by_suite": {
+      "libero_10": 33,
+      "libero_goal": 5,
+      "libero_object": 51,
+      "libero_spatial": 52
+    },
+    "path": "reports/STAGE_X_X1R2_F1A_STATIC_FEASIBILITY_AUDIT_V1.json",
+    "sha256": "d2b1e2c8d565c7224bb84cf10515713657beaa73a2be7ddcbe836d1e217d8b4a",
+    "status": "HOLD_F1A_FRESH_POPULATION_INSUFFICIENT"
+  },
+  "decision": {
+    "classification": "ALTERNATIVE_SOURCE_CAPACITY_PRESENT_BUT_PI_AUTH_REQUIRED",
+    "meaning": "The existing G10 source is capacity-insufficient only because libero_goal has five remaining parents; a larger state source has static capacity, but its split/leakage and scientific authority are unresolved.",
+    "next_legal_action": "PI must explicitly authorize the alternative source and its held-out/leakage contract before any new F1-A population freeze."
+  },
+  "f1_requirement": {
+    "bridge_per_suite": 8,
+    "capacity_sufficient_under_conservative_scan": true,
+    "combined_required_per_suite": 14,
+    "dev_per_suite": 6
+  },
+  "protected_boundary": {
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "gpu": 0,
+    "model_inference": 0,
+    "pgd": 0,
+    "protected": "UNREAD",
+    "simulator": 0,
+    "vphys": 0
+  },
+  "schema": "STAGE_X_X1R2_F1A_SOURCE_OPTIONS_AUDIT_V1",
+  "scope": "CPU/static/read-only identity census; no rollout, outcome, Student, model, simulator, GPU, V_phys, or protected read",
+  "status": "ALTERNATIVE_SOURCE_CAPACITY_PRESENT_BUT_PI_AUTH_REQUIRED"
+}

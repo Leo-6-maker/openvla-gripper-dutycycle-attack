@@ -1,0 +1,36 @@
+{
+  "schema": "V23_RECORDED_GEOMETRY_ALIAS_LEDGER_V1",
+  "status": "FROZEN_TASK_SPECIFIC_EXCEPTION",
+  "unique_alias_mappings": 1,
+  "affected_relation_step_rows": 217,
+  "entries": [
+    {
+      "suite": "libero_10",
+      "task_id": 5,
+      "bddl_object": "black_book_1",
+      "registry_resolution": "EXACT_GEOM",
+      "registry_geom_id": 5,
+      "registry_geom_name": "black_book_1",
+      "registry_geom_parent_body_id": 0,
+      "registry_geom_parent_body_name": "world",
+      "index_map_object_index": 0,
+      "index_map_body_id": 23,
+      "index_map_body_name": "black_book_1_main",
+      "object_state_slice_start": 0,
+      "object_state_slice_end_exclusive": 14,
+      "object_state_slice_width": 14,
+      "bddl_sha256": "07ca32c940d70c065e870452ef9c63e6dfa1d8506e6a86cf9b3763f652ba2d9f",
+      "registry_task_sha256": "89906ce6856bb9ed424478c712a087e672823fe3ce4d1fe31d8dd574a7e64985",
+      "model_inventory_sha256": "a987326034b528e31e4c6a06d3e5d00c3f92ed16a98f86849f61214949364c03",
+      "index_map_relation": "INIT_GEOM_ALIAS_TO_INDEX_BODY",
+      "expected_relation_step_rows": 217,
+      "registry_geom_ancestor_chain": [
+        {"body_id": 0, "body_name": "world"}
+      ],
+      "index_map_body_ancestor_chain": [
+        {"body_id": 0, "body_name": "world"},
+        {"body_id": 23, "body_name": "black_book_1_main"}
+      ]
+    }
+  ]
+}

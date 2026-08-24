@@ -1,0 +1,108 @@
+{
+  "action_contract": {
+    "arm_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "gripper_index": 6,
+    "intervention_is_not_run_in_Z0": true,
+    "libero_native_close": 1.0,
+    "libero_native_open": -1.0,
+    "open_command": "replace only final gripper action after model output; no sign guess; no decode/re-encode"
+  },
+  "audit_scope": "CPU/static/offline authority audit only; no scientific rollout was authorized or executed",
+  "blocking_reasons": [
+    "shared 40-identity panel is structurally incomplete: four Goal tasks have no remaining fresh identity under the frozen exclusion union",
+    "official OFT checkpoints are not materialized on the server for exact byte-level authority sealing",
+    "official OpenPI source checkout is not materialized separately from the modified fork",
+    "current M0 server model trees require an exact re-audit against the immutable runtime authority"
+  ],
+  "branch_decision_contract": {
+    "Z-M0": "per-step policy decision as bound by existing authority",
+    "Z-M1": "fresh policy decision at official OFT action-queue boundary; NUM_ACTIONS_CHUNK=8 / num_open_loop_steps=8 requires runtime verification",
+    "Z-M2": "fresh policy decision at official LIBERO replan boundary; replan_steps=5 with action_horizon=10 requires runtime verification",
+    "exact_runtime_boundary_sealed": false
+  },
+  "common_task_contract": {
+    "candidate_state_range": [
+      0,
+      49
+    ],
+    "common_action_dim": 7,
+    "fresh_panel": "4 suites x 10 tasks x 1 state, frozen before outcomes",
+    "suites": [
+      "libero_10",
+      "libero_goal",
+      "libero_object",
+      "libero_spatial"
+    ],
+    "tasks_per_suite": 10
+  },
+  "frozen_parameters": {
+    "camera_size": 256,
+    "dummy_wait_steps": 10,
+    "horizons": {
+      "libero_10": 520,
+      "libero_goal": 300,
+      "libero_object": 280,
+      "libero_spatial": 220
+    },
+    "intervention_horizon": 10
+  },
+  "git_binding": {
+    "head_commit": "d54b431a7ac186dcaf8a645a4fa9bfab9b9dde18",
+    "head_tree": "c5e44859e095eaa5f153cabfefd8a671864abc89"
+  },
+  "models": [
+    {
+      "id": "Z-M0",
+      "name": "existing suite-matched OpenVLA authority",
+      "role": "paper/X0 reference authority",
+      "runtime_authority": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json"
+    },
+    {
+      "checkpoint_materialized_for_Z0": false,
+      "checkpoint_revisions": {
+        "libero_10": "95220f9a3421a7ff12d4218e73d09ade830fa9a3",
+        "libero_goal": "c2d0f9fbbd82674683b397ff923168a12f6a307b",
+        "libero_object": "4c89574e1c538b6c102f43f0526d60a9d3650148",
+        "libero_spatial": "6d0231af0e48c5985f1ff86908f4674b84bc049b"
+      },
+      "id": "Z-M1",
+      "name": "official OpenVLA-OFT",
+      "source_commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "source_tree": "0ae110ee28943b9e46feffad84429d2d6e026a32"
+    },
+    {
+      "checkpoint": "gs://openpi-assets/checkpoints/pi05_libero",
+      "checkpoint_materialized_for_Z0": true,
+      "checkpoint_object_count": 16,
+      "config": "pi05_libero",
+      "id": "Z-M2",
+      "local_checkpoint_path": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+      "name": "official OpenPI pi0.5-LIBERO",
+      "official_source_checkout_materialized_for_Z0": false,
+      "source_commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "source_tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be"
+    }
+  ],
+  "prohibited_until_Z0_pass": [
+    "GPU/model inference",
+    "Z1/Z2/Z3/Z4",
+    "VIS-PGD/RAND/SHUFFLED",
+    "Student/detector timing selection",
+    "protected Eval160 or V_phys reads",
+    "new identity replacement/top-up"
+  ],
+  "references": {
+    "official_oft": "https://github.com/moojink/openvla-oft/tree/e4287e94541f459edc4feabc4e181f537cd569a8",
+    "official_openpi": "https://github.com/Physical-Intelligence/openpi/tree/15a9616a00943ada6c20a0f158e3adb39df2ccac"
+  },
+  "schema": "STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V1",
+  "stage": "STAGE_Z_Z0_CROSS_MODEL_STATIC_AUTHORITY_AND_PROTOCOL_FREEZE",
+  "status": "HOLD_STAGE_Z_Z0_CROSS_MODEL_AUTHORITY_NOT_ESTABLISHED"
+}

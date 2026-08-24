@@ -1,0 +1,401 @@
+{
+  "schema": "FEC_GPU_SMOKE_RECEIPT_V3",
+  "primary_completed": 7,
+  "primary_total": 16,
+  "spares_used": 1,
+  "total_identities": 8,
+  "dispositions": {
+    "DONE_VALID": [
+      "worker_smoke_p01",
+      "worker_smoke_p00",
+      "worker_smoke_s04",
+      "worker_smoke_p04",
+      "worker_smoke_p13"
+    ],
+    "FAIL": [
+      "worker_smoke_p08",
+      "worker_smoke_p14"
+    ],
+    "HOLD_ORACLE_CONTRACT": [
+      "worker_smoke_p12"
+    ]
+  },
+  "attack_coverage": {
+    "TRUE_full10": 4,
+    "RAND_full10": 4,
+    "ORACLE_full10": 4,
+    "RANDOM_full10": 5
+  },
+  "triggered_emit_count": 5,
+  "attack_errors_total": 2,
+  "results": [
+    {
+      "worker": "worker_smoke_p01",
+      "disposition": "DONE_VALID",
+      "arms": {
+        "CLEAN": {
+          "emit": "76",
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "TRUE_T10": {
+          "emit": "76",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        },
+        "RAND_T10": {
+          "emit": "76",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "COMMAND_OPEN_ORACLE": {
+          "emit": "76",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        },
+        "RANDOM_TIME_T10": {
+          "emit": "76",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        }
+      }
+    },
+    {
+      "worker": "worker_smoke_p00",
+      "disposition": "DONE_VALID",
+      "arms": {
+        "CLEAN": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        },
+        "TRUE_T10": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        },
+        "RAND_T10": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        },
+        "COMMAND_OPEN_ORACLE": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        },
+        "RANDOM_TIME_T10": {
+          "emit": null,
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        }
+      }
+    },
+    {
+      "worker": "worker_smoke_p08",
+      "disposition": "FAIL",
+      "arms": {
+        "CLEAN": {
+          "emit": "69",
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "TRUE_T10": {
+          "emit": "69",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "RAND_T10": {
+          "emit": "69",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "COMMAND_OPEN_ORACLE": {
+          "emit": "69",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        },
+        "RANDOM_TIME_T10": {
+          "emit": "69",
+          "atk_exec": "3",
+          "atk_plan": "3",
+          "atk_err": "1",
+          "term": "SUCCESS",
+          "success": "True"
+        }
+      }
+    },
+    {
+      "worker": "worker_smoke_s04",
+      "disposition": "DONE_VALID",
+      "arms": {
+        "CLEAN": {
+          "emit": "67",
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "TRUE_T10": {
+          "emit": "67",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "RAND_T10": {
+          "emit": "67",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "COMMAND_OPEN_ORACLE": {
+          "emit": "67",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        },
+        "RANDOM_TIME_T10": {
+          "emit": "67",
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        }
+      }
+    },
+    {
+      "worker": "worker_smoke_p04",
+      "disposition": "DONE_VALID",
+      "arms": {
+        "CLEAN": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "TRUE_T10": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "RAND_T10": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "COMMAND_OPEN_ORACLE": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "RANDOM_TIME_T10": {
+          "emit": null,
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        }
+      }
+    },
+    {
+      "worker": "worker_smoke_p12",
+      "disposition": "HOLD_ORACLE_CONTRACT",
+      "arms": {
+        "CLEAN": {
+          "emit": "66",
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "TRUE_T10": {
+          "emit": "68",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "RAND_T10": {
+          "emit": "68",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "COMMAND_OPEN_ORACLE": {
+          "emit": "59",
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        },
+        "RANDOM_TIME_T10": {
+          "emit": null,
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "POLICY_HORIZON",
+          "success": "False"
+        }
+      }
+    },
+    {
+      "worker": "worker_smoke_p13",
+      "disposition": "DONE_VALID",
+      "arms": {
+        "CLEAN": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "TRUE_T10": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "RAND_T10": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "COMMAND_OPEN_ORACLE": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "RANDOM_TIME_T10": {
+          "emit": null,
+          "atk_exec": "10",
+          "atk_plan": "10",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        }
+      }
+    },
+    {
+      "worker": "worker_smoke_p14",
+      "disposition": "FAIL",
+      "arms": {
+        "CLEAN": {
+          "emit": "72",
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "TRUE_T10": {
+          "emit": "71",
+          "atk_exec": "5",
+          "atk_plan": "5",
+          "atk_err": "1",
+          "term": "SUCCESS",
+          "success": "True"
+        },
+        "RAND_T10": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "?",
+          "success": null
+        },
+        "COMMAND_OPEN_ORACLE": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "?",
+          "success": null
+        },
+        "RANDOM_TIME_T10": {
+          "emit": null,
+          "atk_exec": "0",
+          "atk_plan": "0",
+          "atk_err": "0",
+          "term": "?",
+          "success": null
+        }
+      }
+    }
+  ]
+}

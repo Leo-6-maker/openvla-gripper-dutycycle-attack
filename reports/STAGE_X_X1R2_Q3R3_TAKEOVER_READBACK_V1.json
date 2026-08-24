@@ -1,0 +1,102 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_TAKEOVER_READBACK_V1",
+  "status": "TAKEOVER_READBACK_COMPLETE_FOR_E0",
+  "date": "2026-08-20",
+  "scope": "Stage X / X1R2 / Q3R3 strict selective attack line",
+  "live_pr": {
+    "number": 135,
+    "url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/135",
+    "state": "OPEN",
+    "draft": true,
+    "mergeable": "MERGEABLE",
+    "merge_state": "CLEAN",
+    "head_branch": "codex/stage-x-x1r2-q3-arm-isolation-repair-20260820",
+    "head_commit": "9ae3ba4fe1af4f8064cc76d29a54ae1e6b26451a",
+    "head_tree": "a0682095f2df27cbe628d4f3ff987b5741fca2a",
+    "ci": "source-registry, detector-v5-cpu, and stageb-cpu SUCCESS",
+    "superseding_pi_comment_id": "5355951554"
+  },
+  "source_binding": {
+    "local_worktree": "D:\\vla_attack\\_work_stagex_goal",
+    "local_head_commit": "9ae3ba4fe1af4f8064cc76d29a54ae1e6b26451a",
+    "local_head_tree": "a0682095f2df27cbe628d4f3ff987b5741fca2a",
+    "tracked_worktree_diff": "CLEAN",
+    "server_checkout": "/mnt/sdc/dty_user/openvla_attack",
+    "server_checkout_head": "ff25b5ef69026264f3115518997ceb0eabcc6f7f",
+    "server_checkout_tree": "6302650f2487d26a847aef077c07e138e224f7dc",
+    "server_checkout_contains_pr_head": false,
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "official_python": "Python 3.10.16"
+  },
+  "scientific_readback": {
+    "strongest_positive": "X0 physical duty-cycle mechanism supported under its sealed non-protected contract",
+    "factorization_and_detector": [
+      "VI-B2: STUDENT_HELDOUT_GENERALIZATION_NOT_ESTABLISHED",
+      "VII: STAGE_VII_DEVELOPMENT_NO_GENERALIZABLE_DETECTOR",
+      "VIII: STAGE_VIII_R1_NO_GENERALIZABLE_RELATIVE_SELECTOR",
+      "IX F0: STAGE_IX_NO_MODEL_SIDE_TIMING_SIGNAL"
+    ],
+    "X1": "STAGE_X_SEQUENTIAL_PGD_SIGNAL_WEAK; not authorization for X2",
+    "T0_and_V1": "tokenizer/endpoint and runtime exposure issues closed or blocked; no valid scientific PGD cohort",
+    "RCA1": "clean trajectory drift and historical emit mismatch; affected fixture permanently excluded",
+    "Q3R3_A_to_C": "branch estimand frozen; CPU/mock runner and four-suite branch replay passed engineering checks",
+    "D2": {
+      "status": "OWNER_REVIEW_X1R2_EXACT_ARM_ISOLATION_FEASIBILITY_REQUIRED",
+      "scientific_role": "engineering-only hold, not a physical negative",
+      "true_accounting": "attack invoked; candidate not accepted/materialized; attacked_env_steps=0",
+      "failure": "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE",
+      "candidate_level_evidence": "NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE"
+    }
+  },
+  "frozen_d2_binding": {
+    "source_commit": "b86006d95b20b82b1dbdf91d159e8269c112b6fa",
+    "source_tree": "1e10664e02541fac5287c36e6514f3d5df2c71eb",
+    "protocol_sha256": "e2d53e32d4091cf5b8abc233fdc38a78b877fed52452869b5d3f4799cde8db94",
+    "c2_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_c2_20260820",
+    "c2_root_seal_sha256": "fe23991c94852bc65269d740a6c67f782350dc61e600f766fdfbf85461abbdcc",
+    "d2_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_d2_20260820",
+    "d2_logs_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_d2_logs_20260820",
+    "true_receipt_sha256": {
+      "libero_10": "a159bc833f1346d50e804ab9b7027139b0067b3db185f58d5322ff45cb19b6e5",
+      "libero_goal": "f8c9fb1b373717bd69ee03b060f1a4779f749d7ed3a1bc3c2ac98dde9a40af1a",
+      "libero_object": "db8495f709dfc7d01e5cc516cbe9bf5a3a6b4c576f30187f23dfee5c8696379e",
+      "libero_spatial": "2eaa09dfa282452bba9caf4c1b4a96218840e2fe34a43035d28b535c63999b5b"
+    }
+  },
+  "resource_contract": {
+    "worker_eligibility": "free_memory_mib_strictly_greater_than_20480",
+    "max_workers_per_physical_gpu": 1,
+    "max_physical_gpus": 8,
+    "current_action": "no_worker_mount authorized by E0"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0,
+    "physical_interventions": 0,
+    "new_gpu_or_simulator_work": "FORBIDDEN for E0"
+  },
+  "authorized_next_gate": {
+    "name": "STAGE_X_X1R2_Q3R3_E0_EXACT_ARM_ISOLATION_FEASIBILITY_AUDIT",
+    "mode": "read-only static offline CPU",
+    "allowed": [
+      "parse and hash already sealed receipts/logs/source",
+      "deterministic arithmetic over sealed candidate fields if present",
+      "CPU/mock contract checks"
+    ],
+    "forbidden": [
+      "model load or generation",
+      "simulator reset/step",
+      "GPU or worker launch",
+      "new PGD/backprop or adversarial image generation",
+      "new fixture exposure",
+      "RAND/SHUFFLED/random-time branches",
+      "R0/R1/R2, physical/Vphys/outcome, Eval160/protected access"
+    ],
+    "decision_cases": {
+      "A": "contract-preserving selector/implementation defect with a recoverable frozen candidate; minimal repair/mock test, then stop before GPU",
+      "B": "complete sealed candidate audit proves feasibility absent under the frozen method; formally close strict efficacy escalation",
+      "C": "sealed candidate fields remain insufficient; hold and do not infer feasibility or infeasibility"
+    }
+  }
+}

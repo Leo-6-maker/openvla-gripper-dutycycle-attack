@@ -1,0 +1,14 @@
+{
+  "schema": "C3_S3_NUMERICAL_THRESHOLDS_V1",
+  "status": "FROZEN",
+  "source_document": "n5/codex_execution/CODEX_DETECTOR_COMPLETION_PLAN_V1.md",
+  "source_document_sha256": "0d05549604076ac6cee69a1bafe2ccab59ce27301c5b7d1858c29957cfaab57f",
+  "static_position_max_error_m": 1e-6,
+  "static_rotation_max_error_rad": 1e-6,
+  "dynamic_position_p99_m": 1e-4,
+  "dynamic_rotation_p99_rad": 1e-3,
+  "denominator_rule": "all_static_and_dynamic_denominators_must_be_positive",
+  "unknown_articulated_rule": "hold_not_negative",
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

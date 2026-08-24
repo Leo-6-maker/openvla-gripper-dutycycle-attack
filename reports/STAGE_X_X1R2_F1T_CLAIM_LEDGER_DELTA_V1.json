@@ -1,0 +1,89 @@
+{
+  "f1t_interpretation": "single-step strict realizability != sustained T5 selective delivery != matched physical efficacy",
+  "factorization_layers": {
+    "C_t": "clean timing/opportunity",
+    "E_t(T5)": "strict selective delivery across five attempted steps",
+    "E_t(single)": "single-state strict model-side realization",
+    "V_t(d)": "physical command-OPEN vulnerability",
+    "Y_t(vis)": "physical response of the full visual pipeline"
+  },
+  "gate": "STAGE_X_X1R2_F1T_TERMINAL_SYNTHESIS_AND_PAPER_V2_DELTA_V1",
+  "not_promotable_claims": [
+    "reliable or generalizable T5 selective delivery",
+    "cross-suite visual attack capability",
+    "F1 physical attack efficacy",
+    "prevalence estimates from the 8 engineering canaries",
+    "temporal-init superiority",
+    "a claim that the one attacked env.step caused physical failure",
+    "any V_phys, task-outcome, Eval160, or protected conclusion",
+    "a causal claim that M1 resolves the Paper V1 factorization gap"
+  ],
+  "paper_v1_immutable": true,
+  "paper_v1_root_sha256": "830c55dee96477e87c36437a33760a9dced0d1217ea01b3e72905f26fd142336",
+  "promotable_claims": [
+    {
+      "claim": "M1-10 improved over M0-10 on the preregistered first two DEV parent-level advancement criteria.",
+      "evidence": [
+        "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_DECISION_V3.json",
+        "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json"
+      ],
+      "id": "F1T-P01",
+      "restrictions": [
+        "not physical efficacy",
+        "not protected evaluation"
+      ],
+      "scope": "engineering/model-side method development"
+    },
+    {
+      "claim": "Under the frozen M1-10 direct-token contract, strict selective visual execution was observed at least once in the fresh F1-C4 canaries.",
+      "evidence": [
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RUNTIME_AUDIT_V1.json",
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RESULT_ROOT_SEAL_V1.json"
+      ],
+      "id": "F1T-P02",
+      "restrictions": [
+        "one step only",
+        "engineering canary diagnostic",
+        "no physical efficacy"
+      ],
+      "scope": "bounded E_t(single) execution-layer evidence"
+    },
+    {
+      "claim": "Full T5 executable qualification was not established under the finite F1 track.",
+      "evidence": [
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_TERMINAL_DECISION_V1.json",
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RESULT_ROOT_SEAL_V1.json"
+      ],
+      "id": "F1T-P03",
+      "restrictions": [
+        "do not reinterpret as targetability failure"
+      ],
+      "scope": "terminal executable qualification result"
+    },
+    {
+      "claim": "Fail-closed clean fallback operated on the other 69 attempted steps, with no invalid candidate promoted to the attack path.",
+      "evidence": [
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RUNTIME_AUDIT_V1.json"
+      ],
+      "id": "F1T-P04",
+      "restrictions": [
+        "candidate/step rows are repeated engineering diagnostics, not iid observations"
+      ],
+      "scope": "F1-C4 runtime contract behavior"
+    },
+    {
+      "claim": "BRIDGE/F1-D was never opened because the executable qualification gate did not pass.",
+      "evidence": [
+        "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json",
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_TERMINAL_DECISION_V1.json"
+      ],
+      "id": "F1T-P05",
+      "restrictions": [
+        "future bridge use requires separate PI authorization"
+      ],
+      "scope": "governance and protected-boundary disposition"
+    }
+  ],
+  "schema": "STAGE_X1R2_F1T_CLAIM_LEDGER_DELTA_V1",
+  "status": "F1T_TERMINAL_SYNTHESIS_SEALED_FOR_PI"
+}

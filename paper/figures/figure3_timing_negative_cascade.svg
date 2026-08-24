@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560">
+<style>text{font-family:Arial,sans-serif;fill:#202124} .title{font-size:24px;font-weight:700} .subtitle{font-size:15px;fill:#5f6368} .axis{stroke:#5f6368;stroke-width:1} .grid{stroke:#dadce0;stroke-width:1} .label{font-size:14px} .small{font-size:12px} .box{stroke:#202124;stroke-width:2;rx:12} .arrow{stroke:#5f6368;stroke-width:2;fill:none;marker-end:url(#arrow)} .dash{stroke-dasharray:7 6}</style>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5f6368"/></marker></defs>
+<text x="40" y="42" class="title">Figure 3. Timing-selector negative cascade</text>
+<rect x="75" y="155" width="245" height="250" class="box" fill="#fdd0a2" fill-opacity="0.25"/>
+<text x="197" y="198" text-anchor="middle" style="font-size:25px;font-weight:700">VI-B2</text>
+<text x="197" y="238" text-anchor="middle" class="label">held-out Student</text>
+<text x="197" y="285" text-anchor="middle" class="label">AUROC 0.624643</text>
+<text x="197" y="315" text-anchor="middle" class="label">ECE-10 0.460636</text>
+<text x="197" y="365" text-anchor="middle" class="small">causal/actionable gate not established</text>
+<path d="M320 280 L370 280" class="arrow"/>
+<rect x="375" y="155" width="245" height="250" class="box" fill="#fdae6b" fill-opacity="0.25"/>
+<text x="497" y="198" text-anchor="middle" style="font-size:25px;font-weight:700">VII</text>
+<text x="497" y="238" text-anchor="middle" class="label">three frozen candidates</text>
+<text x="497" y="285" text-anchor="middle" class="label">S7-A/B/C all fail</text>
+<text x="497" y="315" text-anchor="middle" class="label">none promoted</text>
+<text x="497" y="365" text-anchor="middle" class="small">cross-suite gates fail</text>
+<path d="M620 280 L670 280" class="arrow"/>
+<rect x="675" y="155" width="245" height="250" class="box" fill="#e6550d" fill-opacity="0.25"/>
+<text x="797" y="198" text-anchor="middle" style="font-size:25px;font-weight:700">VIII</text>
+<text x="797" y="238" text-anchor="middle" class="label">relative selector R1</text>
+<text x="797" y="285" text-anchor="middle" class="label">AUC 0.577615/0.658572</text>
+<text x="797" y="315" text-anchor="middle" class="label">both gates FAIL</text>
+<text x="797" y="365" text-anchor="middle" class="small">generalizable deployment selector absent</text>
+<text x="500" y="465" text-anchor="middle" class="label">overall discrimination ≠ cross-suite generalization ≠ within-parent actionable timing</text>
+<text x="40" y="536" class="subtitle">Negative scientific evidence is stage-specific; it is not a claim that every feature is uninformative.</text>
+</svg>

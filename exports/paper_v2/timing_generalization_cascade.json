@@ -1,0 +1,129 @@
+{
+  "rows": [
+    {
+      "authority_binding": {
+        "local_artifact_sha256": [
+          "2c550b1ec8f906212bc1f92223b801bcb0efe07381caf94d1b116e4f5e66d006"
+        ],
+        "sealed_artifact_sha256": [
+          "04ebc2f8179b7954ac188d791b4a06640cd88c62d88e7709ce6bbf8200887c11"
+        ],
+        "source_commit": "800b19341e39e71ce75991dc9a13f796bdf5ffdf",
+        "source_tree": "71e5c28a99752960b092ab2a21d732069ed438ab"
+      },
+      "authority_paths": [
+        "docs/handoffs/STAGE_VI_B2_FRESH_M4_AND_NEGATIVE_CAUSAL_HANDOFF_20260816.md"
+      ],
+      "denominator_censoring": "16 fresh parents; 384 probes; T5 333 consumable and 51 abstain/censored; overall AUROC 0.6246432939; ECE-10 0.4606357016",
+      "gate_or_status": "held-out causal/actionable gate not established",
+      "missing_value_policy": "retain censoring/non-identifiable; no imputation",
+      "primary_metric": "overall_AUROC",
+      "primary_unit": "fresh parent with abstains/censoring retained",
+      "stage": "VI-B2",
+      "value": "0.6246432939"
+    },
+    {
+      "authority_binding": {
+        "local_artifact_sha256": [
+          "2c550b1ec8f906212bc1f92223b801bcb0efe07381caf94d1b116e4f5e66d006"
+        ],
+        "sealed_artifact_sha256": [
+          "04ebc2f8179b7954ac188d791b4a06640cd88c62d88e7709ce6bbf8200887c11"
+        ],
+        "source_commit": "800b19341e39e71ce75991dc9a13f796bdf5ffdf",
+        "source_tree": "71e5c28a99752960b092ab2a21d732069ed438ab"
+      },
+      "authority_paths": [
+        "docs/handoffs/STAGE_VI_B2_FRESH_M4_AND_NEGATIVE_CAUSAL_HANDOFF_20260816.md"
+      ],
+      "denominator_censoring": "16 fresh parents; 384 probes; T5 333 consumable and 51 abstain/censored; overall AUROC 0.6246432939; ECE-10 0.4606357016",
+      "gate_or_status": "above frozen 0.25 limit",
+      "missing_value_policy": "retain censoring/non-identifiable; no imputation",
+      "primary_metric": "ECE10",
+      "primary_unit": "fresh parent with abstains/censoring retained",
+      "stage": "VI-B2",
+      "value": "0.4606357016"
+    },
+    {
+      "authority_binding": {
+        "local_artifact_sha256": [
+          "9ee6782530f730e7bf5eaee90ced94134ec6a569d5c9713b7b19f85662a1c33f"
+        ],
+        "sealed_artifact_sha256": [],
+        "source_commit": "8ad9859a61a0083948c4e7b73eed72d7bf1d2aad",
+        "source_tree": "d4f6da984041924db3f35eb2be812cd9e8c444fb"
+      },
+      "authority_paths": [
+        "docs/handoffs/STAGE_VII_DEVELOPMENT_NEGATIVE_HANDOFF_20260816.md"
+      ],
+      "denominator_censoring": "Three frozen detector candidates S7-A/S7-B/S7-C; parent-grouped cross-suite promotion gates",
+      "gate_or_status": "S7-A/S7-B/S7-C all failed at least one gate",
+      "missing_value_policy": "retain censoring/non-identifiable; no imputation",
+      "primary_metric": "promoted_candidates",
+      "primary_unit": "parent-grouped candidate evaluation",
+      "stage": "VII",
+      "value": "0"
+    },
+    {
+      "authority_binding": {
+        "immutable_git_blob_sha256": [
+          "0e01f0115eada6dcdf183524438f458c0db03fa3",
+          "75341759abd9cb7859466927661dba67efadee39"
+        ],
+        "local_artifact_sha256": [],
+        "sealed_artifact_sha256": [
+          "3ace17e589529c420e59deceeada7d8dbf84efb775d1402999b53702e5f51b06",
+          "552a7180b37ce337560e541ea2a264c246888bb6aa2e219694296ce99fab0ea6",
+          "cbcc55b350e59cc222e76f944a19f1f430b69e6f64363531823637530593f7a"
+        ],
+        "source_commit": "c03cb32b14d38978239e53adc953cc8620b775a1",
+        "source_tree": "6f5cff89855fbab3bbc06b92c170586db9e0091d"
+      },
+      "authority_paths": [
+        "git-history:docs/handoffs/STAGE_VIII_R1_RELATIVE_SELECTOR_NEGATIVE_HANDOFF_20260817.md@34b8d435264737734f7d4e4ecc9a3343e57d7c1e",
+        "git-history:docs/handoffs/PR117_STAGE_VIII_DOCUMENTATION_CLOSURE_20260817.md@b918104e2e6279364891590fd37a17720dbb6628"
+      ],
+      "denominator_censoring": "1,344 T5 rows; 1,191 consumable; 56 parents; R1-A/R1-B parent-macro AUC 0.577615/0.658572; both frozen gates FAIL",
+      "gate_or_status": "FAIL",
+      "missing_value_policy": "retain censoring/non-identifiable; no imputation",
+      "primary_metric": "R1-A_parent_macro_AUC",
+      "primary_unit": "parent-grouped selector evaluation",
+      "stage": "VIII",
+      "value": "0.577615"
+    },
+    {
+      "authority_binding": {
+        "immutable_git_blob_sha256": [
+          "0e01f0115eada6dcdf183524438f458c0db03fa3",
+          "75341759abd9cb7859466927661dba67efadee39"
+        ],
+        "local_artifact_sha256": [],
+        "sealed_artifact_sha256": [
+          "3ace17e589529c420e59deceeada7d8dbf84efb775d1402999b53702e5f51b06",
+          "552a7180b37ce337560e541ea2a264c246888bb6aa2e219694296ce99fab0ea6",
+          "cbcc55b350e59cc222e76f944a19f1f430b69e6f64363531823637530593f7a"
+        ],
+        "source_commit": "c03cb32b14d38978239e53adc953cc8620b775a1",
+        "source_tree": "6f5cff89855fbab3bbc06b92c170586db9e0091d"
+      },
+      "authority_paths": [
+        "git-history:docs/handoffs/STAGE_VIII_R1_RELATIVE_SELECTOR_NEGATIVE_HANDOFF_20260817.md@34b8d435264737734f7d4e4ecc9a3343e57d7c1e",
+        "git-history:docs/handoffs/PR117_STAGE_VIII_DOCUMENTATION_CLOSURE_20260817.md@b918104e2e6279364891590fd37a17720dbb6628"
+      ],
+      "denominator_censoring": "1,344 T5 rows; 1,191 consumable; 56 parents; R1-A/R1-B parent-macro AUC 0.577615/0.658572; both frozen gates FAIL",
+      "gate_or_status": "FAIL",
+      "missing_value_policy": "retain censoring/non-identifiable; no imputation",
+      "primary_metric": "R1-B_parent_macro_AUC",
+      "primary_unit": "parent-grouped selector evaluation",
+      "stage": "VIII",
+      "value": "0.658572"
+    }
+  ],
+  "schema": "PAPER_V2_TIMING_GENERALIZATION_CASCADE_V1",
+  "source_data": {
+    "git_blob": "c02bbd9e834bdb0cbf72dcc20ad087f5a22de076",
+    "path": "paper/data/PAPER_V1_FIGURE3_TIMING_NEGATIVE_CASCADE.csv",
+    "sha256_git_blob_bytes": "8a8a28664d752b8620927a7e45f4fe5658e3a1aa9cad6a29ec3a7ce2b1cb8dd8"
+  },
+  "status": "PAPER_V2_TIMING_CASCADE_EXPORT_PASS"
+}

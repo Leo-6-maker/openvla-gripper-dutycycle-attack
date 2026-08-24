@@ -1,0 +1,155 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_ENGINEERING_MATRIX_PROTOCOL_V1",
+  "status": "FROZEN_ENGINEERING_ONLY_PRE_GPU",
+  "scientific_authority": false,
+  "purpose": "Validate the branch-controlled five-arm visual attack interface on the four permanently excluded Q3R3-C fixtures.",
+  "historical_boundary": {
+    "q3r2_c_status": "OWNER_REVIEW_Q3R2_CLEAN_PREFIX_DETERMINISM_NOT_ESTABLISHED",
+    "q3r2_c_immutable": true,
+    "q3r2_c_not_relabelled_scientific_pass": true,
+    "engineering_fixtures_permanently_excluded": true,
+    "new_scientific_population": false,
+    "replacement": false
+  },
+  "q3r3_c_binding": {
+    "durable_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_c_20260820",
+    "root_seal": {
+      "path": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_ROOT_SEAL_V1.json",
+      "sha256": "9159b6601c856b45fee13e9e1dfb689cd7194949fd0094f6951d54e3fe19b698"
+    },
+    "execution_source": {
+      "commit": "3df84eaf0a4a137eaaee05b58974088463ffacff",
+      "tree": "bb18054d9e2251feb8ee5472253777ee36013893"
+    },
+    "receipt_repair_source": {
+      "commit": "a6bf6f654a6b4f065398cf940fe024234f7ab907",
+      "tree": "413ee30245ac262b359107305e167149adf1bd2e"
+    }
+  },
+  "fixtures": [
+    {
+      "suite": "libero_10",
+      "fixture_id": "Q3R2-LIBERO_10-05",
+      "canonical_parent_key": "libero_10/task_06/state_38",
+      "t_emit": 68,
+      "report_sha256": "b177df4b322c2562d4b75988dcc644b24822c21440ae670f8cd151272f95e32c"
+    },
+    {
+      "suite": "libero_goal",
+      "fixture_id": "Q3R2-LIBERO_GOAL-06",
+      "canonical_parent_key": "libero_goal/task_04/state_39",
+      "t_emit": 53,
+      "report_sha256": "1496e716b32ed7adfc30d082f238cf377b29a0d3c92689d877d37467452f6265"
+    },
+    {
+      "suite": "libero_object",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-09",
+      "canonical_parent_key": "libero_object/task_04/state_46",
+      "t_emit": 62,
+      "report_sha256": "805245567cfe0724bec9812b10aef92f9f1f59bed1a043f857a768d5077edaaf"
+    },
+    {
+      "suite": "libero_spatial",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-04",
+      "canonical_parent_key": "libero_spatial/task_08/state_35",
+      "t_emit": 64,
+      "report_sha256": "3a75d4bae98d4144b7605c6559875fc0cb5ea0afa2d686b1cbc343bc2f843bee"
+    }
+  ],
+  "branch_contract": {
+    "fresh_env_per_arm": true,
+    "reference_action_prefix": "sealed reference clean action_env_7d rows [0,start)",
+    "branch_point": "immediately before the action at start",
+    "common_first_observation": "Q3R3-C reference observation bytes at t_emit; exact two-replay observation bytes at random time",
+    "post_branch_observations": "live branch observations allowed after the first action",
+    "state_compare": {
+      "atol": 1e-12,
+      "rtol": 0.0,
+      "missing_field": "HOLD",
+      "widening": false
+    },
+    "window": {
+      "t5": 5,
+      "h_phys": 10,
+      "attack_steps": 5,
+      "followup_steps": 10,
+      "required_actions_per_arm": 15
+    },
+    "prebranch_calls": {
+      "openvla": 0,
+      "student": 0,
+      "policy_actions": 0
+    },
+    "arm_action_rule": "only directly decoded clean/adversarial action may reach env.step; no actuator overwrite or decode-reencode"
+  },
+  "arms": [
+    {"label": "CLEAN_ENGINEERING", "kind": "clean", "attack_window": false},
+    {"label": "TRUE_PGD_T5_ENGINEERING", "kind": "true_pgd", "timing": "student_emit"},
+    {"label": "RAND_UNIFORM_T5_ENGINEERING", "kind": "random_uniform", "timing": "student_emit"},
+    {"label": "SHUFFLED_GRAD_T5_ENGINEERING", "kind": "shuffled_pgd", "timing": "student_emit"},
+    {"label": "TRUE_RANDOM_TIME_T5_ENGINEERING", "kind": "true_pgd", "timing": "deterministic_random_time"}
+  ],
+  "attack_contract": {
+    "path": "configs/STAGE_X_X1R2_GRIPPER_SELECTIVE_ATTACK_CONTRACT_V1.json",
+    "file_sha256": "872001CF521D21A8AEDA5762C55ACE8975D844DC22CB8E05E0D6EA6032F950D1",
+    "git_blob_sha": "986d6735177b2d21a45c2137302b1efa43fd5e32",
+    "epsilon_processor_pixel_values": 0.03,
+    "step_size_processor_pixel_values": 0.006,
+    "num_steps": 5,
+    "random_start": false,
+    "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+    "target_execution_class": "NATIVE_OPEN",
+    "target_token_id_secondary": 31745,
+    "arm_token_dims": [0, 1, 2, 3, 4, 5],
+    "gripper_token_dim": 6,
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "strict_route": true,
+    "allow_fallback": false,
+    "no_reencode": true,
+    "no_actuator_overwrite": true
+  },
+  "random_time": {
+    "salt": "STAGE_X1R2_Q3R3_RANDOM_TIME_V1_20260820",
+    "selection": "sha256(salt|canonical_parent_key) modulo sorted starts",
+    "domain": "starts with a complete sealed reference 15-action window",
+    "legal_constraint": "start + 14 <= last sealed reference step",
+    "exclude": "[t_emit,t_emit+4]",
+    "outcome_blind": true,
+    "no_student_or_attack_inputs": true
+  },
+  "source_binding": {
+    "runtime_source": "runner receipts bind observed commit/tree and clean status from the immutable execution checkout",
+    "audit_source": "aggregate audit binds its observed commit/tree and clean status",
+    "c_source_is_separate": true
+  },
+  "resource": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "free_memory_mib_strictly_greater_than": 20480,
+    "one_project_worker_per_physical_gpu": true,
+    "max_project_workers": 8,
+    "planned_workers": 4,
+    "foreign_processes_untouched": true,
+    "durable_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_d_20260820",
+    "minimum_free_bytes": 4294967296
+  },
+  "protected_boundary": {
+    "model_inference_authorized": true,
+    "simulator_reset_step_authorized": true,
+    "pgd_calls_authorized": true,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "protected_reads": 0,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "scientific_boundary": {
+    "engineering_only": true,
+    "scientific_efficacy_claim": false,
+    "scientific_population_selection": false,
+    "promotional_use": false,
+    "formal_x1r2_authority": false,
+    "next_gate_after_pass": "STAGE_X1R2_Q3R3_ENGINEERING_MATRIX_PASS_R0_STATIC_AUDIT"
+  },
+  "next_gate": "STAGE_X1R2_Q3R3_ENGINEERING_MATRIX"
+}

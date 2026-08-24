@@ -1,0 +1,135 @@
+{
+  "schema": "FEC_SMOKE_IDENTITY_MANIFEST_V3",
+  "frozen_at": "2026-07-25T15:15:00Z",
+  "scientific_role": "SMOKE_ONLY",
+  "counts_toward_formal": false,
+  "formal_overlap": "ZERO_VERIFIED",
+  "formal_parent_cohort_manifest": "/mnt/sdc/dty_user/openvla_attack_evidence/fec_phase_b_parent_cohort_20260724T212848Z/FEC_PARENT_MANIFEST_V1.json",
+  "formal_parent_count": 20,
+  "smoke_identity_count": 24,
+  "primary_count": 16,
+  "spare_count": 8,
+  "selection_rule": "deterministic consecutive state ranges, fixed before any V4 run, not based on attack/detector outcomes",
+
+  "provider": {
+    "version": "n4_provider_v4",
+    "sha256": "6a7ab61d8dba8cb331a748c62317d2513b1e397def2adee8119204be44cecb61",
+    "g9d_schema_sha256": "4f6ec7ff6c61037062d6a776d82da8ce0f5c2122b0343cab0536872c6251e6d5",
+    "g9d_schema_version": "n4_g9d_train_v23_v1",
+    "checkpoint_sha256": "685ddadf90ad2ac4ec83bcadbe970d6ad74f07baa4e498a4936c78c0b0695f88",
+    "norm_sha256": "491e65a60a900d384bed4c3aa95baa6ca465b51bd303b2f1a3dcd1baa69f0389",
+    "attacker_sha256": "26cfb9f5d8a5a29e7ac2729f5c9cdd58dadfd75e45eebe935ee66214cc9402be"
+  },
+
+  "config": {
+    "tau": 0.855,
+    "d_persist": 6,
+    "platt_a": 0.5190011735319306,
+    "platt_b": 0.812702331013635,
+    "epsilon": 0.03,
+    "pgd_steps": 5,
+    "step_size": 0.006,
+    "random_start": false,
+    "gradient_transform_true": "none",
+    "gradient_transform_rand": "rademacher"
+  },
+
+  "horizons": {
+    "num_steps_wait": 10,
+    "libero_10": {"policy": 520, "env": 530},
+    "libero_goal": {"policy": 300, "env": 310},
+    "libero_object": {"policy": 280, "env": 290},
+    "libero_spatial": {"policy": 220, "env": 230}
+  },
+
+  "model_paths": {
+    "libero_10": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+    "libero_goal": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+    "libero_object": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+    "libero_spatial": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"
+  },
+
+  "seeds": {
+    "base_seed": 42,
+    "rand_direction_seed_base": 10000,
+    "random_time_seed_base": 20000
+  },
+
+  "state_index_existence": {
+    "libero_10": {"task_0_init_states": 50, "required_max": 41, "exists": true},
+    "libero_goal": {"task_0_init_states": 50, "required_max": 5, "exists": true},
+    "libero_object": {"task_0_init_states": 50, "required_max": 5, "exists": true},
+    "libero_spatial": {"task_0_init_states": 50, "required_max": 5, "exists": true}
+  },
+
+  "formal_identities": [
+    "libero_10/task_00/state_100", "libero_10/task_00/state_101",
+    "libero_10/task_00/state_103", "libero_10/task_00/state_105",
+    "libero_10/task_00/state_107",
+    "libero_goal/task_00/state_100", "libero_goal/task_00/state_102",
+    "libero_goal/task_00/state_108", "libero_goal/task_00/state_109",
+    "libero_goal/task_00/state_110",
+    "libero_object/task_00/state_101", "libero_object/task_00/state_102",
+    "libero_object/task_00/state_103", "libero_object/task_00/state_104",
+    "libero_object/task_00/state_106",
+    "libero_spatial/task_00/state_100", "libero_spatial/task_00/state_101",
+    "libero_spatial/task_00/state_102", "libero_spatial/task_00/state_103",
+    "libero_spatial/task_00/state_104"
+  ],
+
+  "overlap_audit": {
+    "formal_state_ranges": {
+      "libero_10": [100, 101, 103, 105, 107],
+      "libero_goal": [100, 102, 108, 109, 110],
+      "libero_object": [101, 102, 103, 104, 106],
+      "libero_spatial": [100, 101, 102, 103, 104]
+    },
+    "smoke_state_ranges": {
+      "libero_10": [36, 37, 38, 39, 40, 41],
+      "libero_goal": [0, 1, 2, 3, 4, 5],
+      "libero_object": [0, 1, 2, 3, 4, 5],
+      "libero_spatial": [0, 1, 2, 3, 4, 5]
+    },
+    "overlap_found": false,
+    "overlap_details": "ALL CLEAR: formal states are 100-110, smoke states are 0-5 and 36-41"
+  },
+
+  "primary": [
+    {"identity_id": "smoke_p00", "suite": "libero_10", "task": "task_00", "state": "state_36", "task_index": 0, "state_index": 36, "replacement_order": 0},
+    {"identity_id": "smoke_p01", "suite": "libero_10", "task": "task_00", "state": "state_37", "task_index": 0, "state_index": 37, "replacement_order": 1},
+    {"identity_id": "smoke_p02", "suite": "libero_10", "task": "task_00", "state": "state_38", "task_index": 0, "state_index": 38, "replacement_order": 2},
+    {"identity_id": "smoke_p03", "suite": "libero_10", "task": "task_00", "state": "state_39", "task_index": 0, "state_index": 39, "replacement_order": 3},
+    {"identity_id": "smoke_p04", "suite": "libero_goal", "task": "task_00", "state": "state_0", "task_index": 0, "state_index": 0, "replacement_order": 4},
+    {"identity_id": "smoke_p05", "suite": "libero_goal", "task": "task_00", "state": "state_1", "task_index": 0, "state_index": 1, "replacement_order": 5},
+    {"identity_id": "smoke_p06", "suite": "libero_goal", "task": "task_00", "state": "state_2", "task_index": 0, "state_index": 2, "replacement_order": 6},
+    {"identity_id": "smoke_p07", "suite": "libero_goal", "task": "task_00", "state": "state_3", "task_index": 0, "state_index": 3, "replacement_order": 7},
+    {"identity_id": "smoke_p08", "suite": "libero_object", "task": "task_00", "state": "state_0", "task_index": 0, "state_index": 0, "replacement_order": 8},
+    {"identity_id": "smoke_p09", "suite": "libero_object", "task": "task_00", "state": "state_1", "task_index": 0, "state_index": 1, "replacement_order": 9},
+    {"identity_id": "smoke_p10", "suite": "libero_object", "task": "task_00", "state": "state_2", "task_index": 0, "state_index": 2, "replacement_order": 10},
+    {"identity_id": "smoke_p11", "suite": "libero_object", "task": "task_00", "state": "state_3", "task_index": 0, "state_index": 3, "replacement_order": 11},
+    {"identity_id": "smoke_p12", "suite": "libero_spatial", "task": "task_00", "state": "state_0", "task_index": 0, "state_index": 0, "replacement_order": 12},
+    {"identity_id": "smoke_p13", "suite": "libero_spatial", "task": "task_00", "state": "state_1", "task_index": 0, "state_index": 1, "replacement_order": 13},
+    {"identity_id": "smoke_p14", "suite": "libero_spatial", "task": "task_00", "state": "state_2", "task_index": 0, "state_index": 2, "replacement_order": 14},
+    {"identity_id": "smoke_p15", "suite": "libero_spatial", "task": "task_00", "state": "state_3", "task_index": 0, "state_index": 3, "replacement_order": 15}
+  ],
+
+  "spare": [
+    {"identity_id": "smoke_s00", "suite": "libero_10", "task": "task_00", "state": "state_40", "task_index": 0, "state_index": 40, "replacement_order": 0, "replaces": "any libero_10 primary terminal-censored"},
+    {"identity_id": "smoke_s01", "suite": "libero_10", "task": "task_00", "state": "state_41", "task_index": 0, "state_index": 41, "replacement_order": 1, "replaces": "any libero_10 primary terminal-censored"},
+    {"identity_id": "smoke_s02", "suite": "libero_goal", "task": "task_00", "state": "state_4", "task_index": 0, "state_index": 4, "replacement_order": 0, "replaces": "any libero_goal primary terminal-censored"},
+    {"identity_id": "smoke_s03", "suite": "libero_goal", "task": "task_00", "state": "state_5", "task_index": 0, "state_index": 5, "replacement_order": 1, "replaces": "any libero_goal primary terminal-censored"},
+    {"identity_id": "smoke_s04", "suite": "libero_object", "task": "task_00", "state": "state_4", "task_index": 0, "state_index": 4, "replacement_order": 0, "replaces": "any libero_object primary terminal-censored"},
+    {"identity_id": "smoke_s05", "suite": "libero_object", "task": "task_00", "state": "state_5", "task_index": 0, "state_index": 5, "replacement_order": 1, "replaces": "any libero_object primary terminal-censored"},
+    {"identity_id": "smoke_s06", "suite": "libero_spatial", "task": "task_00", "state": "state_4", "task_index": 0, "state_index": 4, "replacement_order": 0, "replaces": "any libero_spatial primary terminal-censored"},
+    {"identity_id": "smoke_s07", "suite": "libero_spatial", "task": "task_00", "state": "state_5", "task_index": 0, "state_index": 5, "replacement_order": 1, "replaces": "any libero_spatial primary terminal-censored"}
+  ],
+
+  "spare_replacement_rules": {
+    "oom": "reduce concurrency, retry SAME identity, do NOT use spare",
+    "terminal_censored_k10": "use next spare in fixed replacement order for that suite",
+    "provider_schema_hash_mismatch": "GLOBAL_HOLD",
+    "fallback_attack_exception_linf_violation": "GLOBAL_HOLD",
+    "task_success_failure": "VALID_RESULT, do NOT replace",
+    "no_emit": "VALID_RESULT, do NOT replace"
+  }
+}

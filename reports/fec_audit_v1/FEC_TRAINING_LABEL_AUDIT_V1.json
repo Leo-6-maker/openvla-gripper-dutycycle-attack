@@ -1,0 +1,28 @@
+{
+  "global_stats": {
+    "total_steps": 312440,
+    "total_episodes": 1400,
+    "cc_true": 134025,
+    "cc_false": 178415,
+    "label_pos": 58814,
+    "label_known": 301622,
+    "cc_true_label_pos": 58814,
+    "cc_false_label_pos": 0,
+    "cc_true_label_known": 132306,
+    "cc_false_label_known": 169316
+  },
+  "summary": {
+    "p_label_given_cc": 0.4388285767580675,
+    "p_label_given_not_cc": 0.0,
+    "ratio_notcc_vs_cc": 0.0,
+    "p_cc_given_label": 1.0,
+    "p_notcc_given_label": 0.0,
+    "max_consecutive_joint": 406,
+    "max_consecutive_joint_feasible": 406,
+    "emit_feasible_episodes": 1049,
+    "emit_feasible_feasible_episodes": 1049,
+    "total_episodes": 1400,
+    "total_steps": 312440,
+    "total_label_files": 1400
+  }
+}

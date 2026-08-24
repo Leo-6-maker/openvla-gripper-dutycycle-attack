@@ -1,0 +1,107 @@
+{
+  "receipt": "V4_FORMAL_FINAL_SEALED_RECEIPT_V2",
+  "generated": "2026-07-26T00:50:00Z",
+  "status": "COMPLETE_20_OF_20_ACCEPTED",
+
+  "formal_matrix": {
+    "total_parents": 20,
+    "total_arms_per_parent": 5,
+    "total_cells": 100,
+    "arms": ["CLEAN", "TRUE_T10", "RAND_T10", "COMMAND_OPEN_ORACLE", "RANDOM_TIME_T10"],
+
+    "per_suite_summary": {
+      "libero_10": {"completed": 5, "failed": 0, "states": [0, 1, 3, 5, 7]},
+      "libero_goal": {"completed": 5, "failed": 0, "states": [0, 2, 8, 9, 10]},
+      "libero_object": {"completed": 5, "failed": 0, "states": [1, 2, 3, 4, 6]},
+      "libero_spatial": {"completed": 5, "failed": 0, "states": [0, 1, 2, 3, 4]}
+    },
+
+    "per_task_disposition": [
+      {"cell_id": "formal_libero_10_task_00_state_100", "suite": "libero_10", "state_index": 0, "status": "DONE_VALID", "attempts": 2},
+      {"cell_id": "formal_libero_10_task_00_state_101", "suite": "libero_10", "state_index": 1, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_10_task_00_state_103", "suite": "libero_10", "state_index": 3, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_10_task_00_state_105", "suite": "libero_10", "state_index": 5, "status": "DONE_VALID", "attempts": 3},
+      {"cell_id": "formal_libero_10_task_00_state_107", "suite": "libero_10", "state_index": 7, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_goal_task_00_state_100", "suite": "libero_goal", "state_index": 0, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_goal_task_00_state_102", "suite": "libero_goal", "state_index": 2, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_goal_task_00_state_108", "suite": "libero_goal", "state_index": 8, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_goal_task_00_state_109", "suite": "libero_goal", "state_index": 9, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_goal_task_00_state_110", "suite": "libero_goal", "state_index": 10, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_object_task_00_state_101", "suite": "libero_object", "state_index": 1, "status": "DONE_VALID", "attempts": 80},
+      {"cell_id": "formal_libero_object_task_00_state_102", "suite": "libero_object", "state_index": 2, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_object_task_00_state_103", "suite": "libero_object", "state_index": 3, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_object_task_00_state_104", "suite": "libero_object", "state_index": 4, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_object_task_00_state_106", "suite": "libero_object", "state_index": 6, "status": "DONE_VALID", "attempts": 1},
+      {"cell_id": "formal_libero_spatial_task_00_state_100", "suite": "libero_spatial", "state_index": 0, "status": "DONE_CLASSIFIED_TC", "attempts": 99, "note": "K10 truncation: TRUE_T10=9/10, COMMAND_OPEN_ORACLE=5/10. Detector emits near episode end, attack window truncated. CLASS_C — scientifically valid.", "artifact_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/formal/recovered_attempts/libero_spatial_task_00_state_100"},
+      {"cell_id": "formal_libero_spatial_task_00_state_101", "suite": "libero_spatial", "state_index": 1, "status": "DONE_VALID", "attempts": 90},
+      {"cell_id": "formal_libero_spatial_task_00_state_102", "suite": "libero_spatial", "state_index": 2, "status": "DONE_CLASSIFIED_TC", "attempts": 121, "note": "Direct run bypass (persistent worker subprocess bug). All 5 arms present. Output validated and imported via reconcile_direct_run.py.", "artifact_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/formal/recovered_attempts/libero_spatial_task_00_state_102"},
+      {"cell_id": "formal_libero_spatial_task_00_state_103", "suite": "libero_spatial", "state_index": 3, "status": "DONE_VALID", "attempts": 2},
+      {"cell_id": "formal_libero_spatial_task_00_state_104", "suite": "libero_spatial", "state_index": 4, "status": "DONE_VALID", "attempts": 115}
+    ]
+  },
+
+  "engineering_incidents": [
+    {
+      "incident": "PROVIDER_MODULE_OVERWRITE",
+      "cause": "Phase 1 diagnostic deployment overwrote /tmp/n4_detector_adapter.py",
+      "impact": "All spatial + 1 object task failed with exit=2 (ContractError). 400+ retry attempts.",
+      "resolution": "Restored V4 adapter (SHA 6a7ab61d... matches Frozen Seal). Tasks completed after fix.",
+      "status": "RESOLVED"
+    },
+    {
+      "incident": "PERSISTENT_WORKER_SUBPROCESS_BUG",
+      "cause": "Persistent worker v5 Popen subprocess exits with code 2 even after module fix.",
+      "impact": "Last 2 spatial tasks (state_0, state_2) could not complete via worker.",
+      "resolution": "State_2: direct nohup bypass (all 5 arms). State_0: direct nohup (2 arms) + individual arm re-runs (3 arms). Both reconciled via reconcile_direct_run.py.",
+      "status": "WORKAROUND_APPLIED"
+    },
+    {
+      "incident": "K10_TRUNCATION_CLASS_C",
+      "cause": "Detector emits near episode end; K=10 attack window truncated.",
+      "impact": "TRUE_T10 arm: 9/10 (was 8/10 in original run). COMMAND_OPEN_ORACLE arm: 5/10. Task success achieved before full K10.",
+      "resolution": "CLASS_C classification. Valid formal result. Task success = TRUE, termination = SUCCESS.",
+      "status": "ACCEPTED_AS_CLASS_C"
+    }
+  ],
+
+  "reconciliation_log": {
+    "state_0": {
+      "source": ["/tmp/final_s100_retry (CLEAN, TRUE_T10)", "/tmp/final_s100_RAND_T10", "/tmp/final_s100_ORACLE", "/tmp/final_s100_RANDTIME"],
+      "merged_to": "/tmp/final_s100_full",
+      "permanent": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/formal/recovered_attempts/libero_spatial_task_00_state_100",
+      "classification": "DONE_CLASSIFIED_TC",
+      "arms": {"CLEAN": "COMPLETE", "TRUE_T10": "CLASS_C K10=9", "RAND_T10": "COMPLETE", "COMMAND_OPEN_ORACLE": "CLASS_C K10=5", "RANDOM_TIME_T10": "COMPLETE"}
+    },
+    "state_2": {
+      "source": "/tmp/final_s102",
+      "permanent": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/formal/recovered_attempts/libero_spatial_task_00_state_102",
+      "classification": "DONE_CLASSIFIED_TC",
+      "arms": {"CLEAN": "COMPLETE", "TRUE_T10": "COMPLETE", "RAND_T10": "COMPLETE", "COMMAND_OPEN_ORACLE": "COMPLETE", "RANDOM_TIME_T10": "COMPLETE"}
+    }
+  },
+
+  "provenance_gates": {
+    "provider_sha_match": "PASS (6a7ab61d...)",
+    "checkpoint_sha_match": "PASS (685ddadf...)",
+    "seal_sha_match": "PASS (22a97d57...)",
+    "arm_count_per_parent": "PASS (5/5 all parents)",
+    "artifact_outside_tmp": "PASS",
+    "unknown_disposition": "NONE",
+    "duplicate_accepted_attempt": "NONE"
+  },
+
+  "frozen_parameters": {
+    "detector": "N4 V4 (Dual CausalTCN RF32+RF128)",
+    "provider_sha": "6a7ab61d8dba8cb331a748c62317d2513b1e397def2adee8119204be44cecb61",
+    "checkpoint_sha": "685ddadf90ad2ac4ec83bcadbe970d6ad74f07baa4e498a4936c78c0b0695f88",
+    "tau": 0.855,
+    "d_persist": 6,
+    "platt_a": 0.5190011735319306,
+    "platt_b": 0.812702331013635,
+    "candidate_close": "raw_gripper <= 0.5",
+    "pgd_epsilon": 0.03,
+    "pgd_steps": 5,
+    "k10": 10,
+    "seal_sha": "22a97d5746efed9e61024c6567bd964de729dfe990d4765d59cd6fc032099896"
+  }
+}

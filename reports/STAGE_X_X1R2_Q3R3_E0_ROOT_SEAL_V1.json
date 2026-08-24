@@ -1,0 +1,39 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E0_ROOT_SEAL_V1",
+  "status": "SEALED_READ_ONLY_CASE_C",
+  "date": "2026-08-20",
+  "decision": "HOLD_Q3R3_E0_FEASIBILITY_EVIDENCE_INSUFFICIENT",
+  "source_commit": "9ae3ba4fe1af4f8064cc76d29a54ae1e6b26451a",
+  "source_tree": "a0682095f2df27cbe628d4f3ff987b5741fca2a",
+  "artifacts": [
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_TAKEOVER_READBACK_V1.json",
+      "sha256": "d947f3905a862e5d1223411184fafe114ec5897a490a9598b84dad8a834d19d0"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E0_EXACT_ARM_ISOLATION_FEASIBILITY_AUDIT_V1.json",
+      "sha256": "4aabadbaf8a262ae39b349fb40905f10e9560cb5f1e5de23411d90723f0e349e"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E0_CANDIDATE_MATRIX_V1.csv",
+      "sha256": "b911043ab64746f3f3af367f2fae00bba22918a05dc42b014bf64d0f5d7511fc"
+    },
+    {
+      "path": "docs/handoffs/STAGE_X_X1R2_Q3R3_E0_EXACT_ARM_ISOLATION_FEASIBILITY_20260820.md",
+      "sha256": "3456b4019c8a87dcac877ea5cf639f70695d734af40e55cb97e1a1b3dc2dddc7"
+    }
+  ],
+  "remote_evidence": {
+    "d2_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_d2_20260820",
+    "d2_aggregate_sha256": "daa74f4279ac4672adc7b233b2c7c72ea444aa9e13f24c0d4c03b8c2fb6617ca",
+    "c2_root_seal_sha256": "fe23991c94852bc65269d740a6c67f782350dc61e600f766fdfbf85461abbdcc"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0,
+    "physical_interventions": 0,
+    "attack_outcome_reads": 0
+  },
+  "requalification": "not authorized by this seal"
+}

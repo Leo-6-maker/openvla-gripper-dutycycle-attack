@@ -1,0 +1,42 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E1_AUTHORIZATION_RECEIPT_V1",
+  "status": "AUTHORIZED_CPU_STATIC_MOCK_ONLY",
+  "gate": "STAGE_X_X1R2_Q3R3_E1_FAILURE_PATH_CANDIDATE_EVIDENCE_PRESERVATION",
+  "pr": "135",
+  "pi_comment_id": "5357390655",
+  "pi_comment_url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/135#issuecomment-5357390655",
+  "frozen_method": {
+    "epsilon": 0.03,
+    "step_size": 0.006,
+    "num_steps": 5,
+    "random_start": false,
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "candidate_order": ["delta0", "pgd_iteration_1", "pgd_iteration_2", "pgd_iteration_3", "pgd_iteration_4", "pgd_iteration_5"],
+    "arm_dimensions": [0, 1, 2, 3, 4, 5],
+    "gripper_authority": "NATIVE_OPEN",
+    "secondary_token_diagnostic": 31745,
+    "strict_route": true,
+    "fallback": false,
+    "decode_reencode_substitution": false,
+    "actuator_overwrite": false
+  },
+  "allowed": [
+    "append-only E0 publication",
+    "failure-path compact diagnostics persistence",
+    "exception/attacker diagnostics parity check",
+    "CPU/static/mock regression"
+  ],
+  "forbidden": [
+    "GPU",
+    "OpenVLA inference",
+    "simulator",
+    "PGD",
+    "new fixture",
+    "RAND/SHUFFLED/random-time",
+    "R0/R1/R2",
+    "V_phys",
+    "Eval160",
+    "protected evaluation"
+  ],
+  "mandatory_stop": "STOP_AFTER_E1"
+}

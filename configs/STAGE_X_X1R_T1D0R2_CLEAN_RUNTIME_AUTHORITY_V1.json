@@ -1,0 +1,108 @@
+{
+  "schema": "STAGE_X_X1R_T1D0R2_CLEAN_RUNTIME_AUTHORITY_V1",
+  "status": "STATIC_CPU_ONLY_HOLD_UNTIL_REPLAY_REFERENCE_IS_AVAILABLE",
+  "reviewed_pr": 127,
+  "reviewed_source": {
+    "commit": "e9db0bfadf3822e8b3fc4771bbdd644e5c07b14e",
+    "tree": "a2772e4b3a2e7dfd060a06bfe2462b7c728d1b14",
+    "base_commit": "aabd419942b7a5de27b2f11da90160d4a7affebc",
+    "branch": "codex/stage-x-x1r-t1d0r1-preclean-integrity-20260818"
+  },
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "d0r1_protocol": "configs/STAGE_X_X1R_T1D0R1_PRECLEAN_INTEGRITY_AUTHORITY_V1.json",
+  "student": {
+    "checkpoint_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/checkpoint.pt",
+    "checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+    "prospective_source_path": "n5/phase3_student/n5_student_model.py",
+    "prospective_source_raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+    "historical_t1_handoff_source_sha256": "7945e464130d8bcb4b4fd85475dffc3024ef2bc419b5d1ea812b29156b96a0fd",
+    "historical_receipt_source_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+    "current_server_file_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/n5_student_model.py",
+    "current_server_file_sha256": "ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b",
+    "input_dim": 25,
+    "hidden": 64,
+    "short_rf": 32,
+    "long_rf": 128,
+    "dropout_eval": 0.0,
+    "active_heads": [
+      "physical_criticality",
+      "k10_feasibility",
+      "instability",
+      "gripper_closing_state"
+    ],
+    "feature_source_sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9",
+    "adapter_sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3",
+    "normalization_sha256": "66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c",
+    "thresholds_sha256": "5236884ea746adc6a5388ab6e8058adb717b86ee2814b71a748c7792d051de3e",
+    "physical_threshold": 0.55,
+    "closing_threshold": 0.8,
+    "one_shot": true
+  },
+  "historical_t1_receipt": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x_t1_detector_authority_20260818T034500Z/DETECTOR_AUTHORITY_RECEIPT_V1.json",
+    "schema": "DETECTOR_AUTHORITY_RECEIPT_V1",
+    "replay_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z"
+  },
+  "success_horizon_lineage": {
+    "upstream_repo": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream",
+    "upstream_commit": "c8f03f48af692657d3060c19588038c7220e9af9",
+    "upstream_tree": "c326be57bb61629a3efd2b968ef141fa576a623f",
+    "evaluator_path": "experiments/robot/libero/run_libero_eval.py",
+    "evaluator_raw_sha256": "369d9fc3d59067998ebfadafbd516872c7ff6f9f06a0a48cda8b6ca48051de77",
+    "evaluator_git_blob_sha": "5c3f58178d7c827df829379354f7aefddc0458bc",
+    "libero_source_root": "/mnt/sdc/dty_user/openvla_attack/repos/LIBERO-official-8f1084e",
+    "env_wrapper_path": "libero/libero/envs/env_wrapper.py",
+    "env_wrapper_raw_sha256": "2880cad5b3fe46ea105816f42798faf4c22e16839098b679ebcad7b51acfdbd0",
+    "bddl_domain_path": "libero/libero/envs/bddl_base_domain.py",
+    "bddl_domain_raw_sha256": "9626f2995514474a4fa3cc3d36ace1de091e2293d96f61399688178c56ca1750",
+    "external_source_id": "LIBERO-official-8f1084e",
+    "num_steps_wait": 10,
+    "horizons": {
+      "libero_10": 520,
+      "libero_goal": 300,
+      "libero_object": 280,
+      "libero_spatial": 220
+    }
+  },
+  "frozen_contract": {
+    "pure_module": "src/gripper_attack/stage_x_x1r_d1_clean_runtime_contract.py",
+    "t5_steps": 5,
+    "h_phys": 10,
+    "attack_window": "[t_emit, t_emit+4]",
+    "followup_window": "[t_emit+5, t_emit+14]",
+    "legal_horizon": "t_emit + 5 + 10 <= configured_episode_length",
+    "success_semantic_origin": "OPENVLA_LIBERO_CANONICAL_ENV_STEP_DONE",
+    "horizon_semantic_origin": "OPENVLA_LIBERO_CANONICAL_POLICY_DECISION_HORIZON"
+  },
+  "authorization": {
+    "openvla_model_inference_authorized": false,
+    "clean_parent_materialization_authorized": false,
+    "env_step_authorized": false,
+    "pgd_authorized": false,
+    "physical_intervention_authorized": false,
+    "attack_outcome_authorized": false,
+    "protected_authorized": false,
+    "next_gate": "CLEAN_PARENT_MATERIALIZATION_REVIEW_REQUIRED"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters_must_remain_zero": [
+      "openvla_weight_loads",
+      "openvla_model_inference_calls",
+      "prospective_parent_student_forward_calls",
+      "prospective_parent_clean_rollouts",
+      "env_reset_for_prospective_parent",
+      "env_step_calls",
+      "pgd_calls",
+      "attack_backward_calls",
+      "adversarial_images",
+      "physical_interventions",
+      "vphys_reads",
+      "attack_outcome_reads",
+      "eval160_reads",
+      "protected_reads"
+    ]
+  },
+  "scientific_claim": "STUDENT_HELDOUT_GENERALIZATION_NOT_ESTABLISHED"
+}

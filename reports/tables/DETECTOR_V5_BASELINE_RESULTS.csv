@@ -1,0 +1,5 @@
+baseline,true_mixed_hit_count,true_mixed_count,true_mixed_top1,pure_negative_abstain_count,pure_negative_count,selection_budget
+B0_RANDOM,125,507,0.2465483235,0,9,one_shot
+B1_EARLIEST,405,507,0.7988165680,0,9,one_shot
+B2_LATEST,85,507,0.1676528599,0,9,one_shot
+B3_LONGEST,471,507,0.9289940828,0,9,one_shot

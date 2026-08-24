@@ -1,0 +1,103 @@
+{
+  "schema": "DETECTOR_V5_FACTORIZED_STUDENT_PROTOCOL_V1",
+  "frozen_at": "2026-07-21",
+  "supersedes": null,
+  "design_constraint": "no architecture, loss, route, or threshold may be changed based on OOF, CAL, CHECK, or attack results",
+
+  "primary_model": "FACTORIZED_ROUTED_25D9D",
+  "paper_ablation": "FACTORIZED_ROUTED_25D",
+
+  "encoder": {
+    "type": "causal_GRU",
+    "hidden_dim": 128,
+    "num_layers": 1,
+    "dropout": 0.0,
+    "input_features_25d": true,
+    "input_features_9d": true,
+    "9d_source": "V5_POLICY_INTENT_BINDING_V1",
+    "9d_fusion": "concat_256_to_128_linear",
+    "25d_feature_order_sha": "frozen_at_build_time",
+    "9d_feature_order_sha": "frozen_at_build_time"
+  },
+
+  "routes": {
+    "single_object_pick_place": {
+      "supported": true,
+      "heads": ["grasp_established", "manipulation_active", "release_or_instability"]
+    },
+    "multi_object_transfer": {
+      "supported": true,
+      "heads": ["grasp_established", "manipulation_active", "release_or_instability"]
+    },
+    "unsupported": {
+      "supported": false,
+      "action": "deterministic_abstain",
+      "emit_allowed": false,
+      "heads_output": [0.0, 0.0, 0.0]
+    }
+  },
+
+  "targets": {
+    "grasp_established": {
+      "source": "Factorized Teacher V1",
+      "teacher_field": "grasp_established",
+      "known_mask_field": "grasp_established_known_mask",
+      "training_target": true
+    },
+    "manipulation_active": {
+      "source": "Factorized Teacher V1",
+      "teacher_field": "manipulation_active",
+      "known_mask_field": "manipulation_active_known_mask",
+      "training_target": true
+    },
+    "release_or_instability": {
+      "source": "Factorized Teacher V1",
+      "teacher_field": "release_or_instability",
+      "known_mask_field": "release_or_instability_known_mask",
+      "training_target": true
+    },
+    "strict_k10_feasible": {
+      "source": "Corrected K10 V1.2.2",
+      "training_target": false,
+      "evaluation_only": true,
+      "future_allowed": true,
+      "runtime_unavailable": true
+    }
+  },
+
+  "loss": {
+    "type": "masked_binary_cross_entropy",
+    "head_weights": {"grasp": 1.0, "manipulation": 1.0, "release": 1.0},
+    "consistency_weight": 0.1,
+    "consistency_type": "relu_manipulation_minus_grasp",
+    "aggregation": "head_step → event_mean → route_mean",
+    "sampling": "route_event_head_balanced",
+    "background_known_negative_unit": "one_per_episode",
+    "class_weights_from_training_fold_only": true
+  },
+
+  "training": {
+    "folds": 4,
+    "seeds": [42, 123, 456],
+    "epochs": 30,
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 1e-5,
+    "gradient_clip": 5.0,
+    "dtype": "float32",
+    "batch_size": 8,
+    "early_stopping": "disabled",
+    "normalization": "train_fold_only",
+    "held_out_no_tuning": true
+  },
+
+  "checkpoint": {
+    "format": "sealed_bundle",
+    "includes": ["state_dict", "normalization", "protocol", "source_binding", "SHA256SUMS"],
+    "write_authorized": false
+  },
+
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false,
+  "full_fit_authorized": false
+}

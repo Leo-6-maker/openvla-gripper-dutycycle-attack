@@ -1,0 +1,75 @@
+{
+  "schema": "STAGE_V_M1_V2_FAILURE_BASELINE_ATTRIBUTION_V1",
+  "status": "BASELINE_ATTRIBUTION_COMPLETE_RUNTIME_HOLD",
+  "baseline_commit": "bd382c7971d1653e944102707e3f257796eab98b",
+  "baseline_tree": "c8eb77f8ffda069fff159ec62e196fba54a5fbe0",
+  "v2_commit": "6fc32c976ece08f233a6be5e3b8981badbf797f1",
+  "v2_tree": "bffc12258538fa508fd761a95b2aacbd47ea86d0",
+  "baseline_attribution_v2_commit": "6fc32c976ece08f233a6be5e3b8981badbf797f1",
+  "baseline_attribution_note": "The latest full detector_v5 run on the final V2 HEAD has two failures; both were rerun with the same isolated command on parent and V2. Runtime remains on HOLD pending owner review.",
+  "latest_full_detector_v5": {
+    "passed": 213,
+    "skipped": 6,
+    "failed": 2,
+    "failures": [
+      "tests/detector_v5/test_stage_v1_m1_visual_determinism.py::test_m1_v1_protocol_blob_is_frozen",
+      "tests/detector_v5/test_stage_v_local_supervisor.py::test_ssh_probe_failure_is_telemetry_only_and_heartbeat_repeats"
+    ]
+  },
+  "comparison": {
+    "python": "D:/Users/anaconda/python.exe",
+    "pytest": "D:/Users/anaconda/Scripts/pytest.exe",
+    "pytest_args": "-q --tb=long",
+    "working_directory": "each checkout root",
+    "environment": "PYTHONPATH=(Get-Location).Path"
+  },
+  "full_detector_v5_v2_observations": {
+    "v1_protocol_blob_test": {
+      "test_name": "test_m1_v1_protocol_blob_is_frozen",
+      "test_file": "tests/detector_v5/test_stage_v1_m1_visual_determinism.py",
+      "failure_message": "AssertionError: assert '3f53adfb8973a55ed60f1b9fa061f444a3145278b219643b820dcac82a2e97b8' == '18d2421b172cef881b8de70c4bccf0c65174dd66a8402b75f0696d1878f96a69'",
+      "stack_trace": "tests\\detector_v5\\test_stage_v1_m1_visual_determinism.py:37 in test_m1_v1_protocol_blob_is_frozen",
+      "v2_result": "failed"
+    },
+    "local_supervisor_ssh_probe": {
+      "test_name": "test_ssh_probe_failure_is_telemetry_only_and_heartbeat_repeats",
+      "test_file": "tests/detector_v5/test_stage_v_local_supervisor.py",
+      "failure_message": "AssertionError: assert heartbeat[\"ssh_probe_failure_count\"] > 0; assert 0 > 0",
+      "stack_trace": "tests\\detector_v5\\test_stage_v_local_supervisor.py:134 in test_ssh_probe_failure_is_telemetry_only_and_heartbeat_repeats",
+      "v2_result": "failed"
+    }
+  },
+  "tests": [
+    {
+      "test_name": "tests/detector_v5/test_stage_v1_m1_visual_determinism.py::test_m1_v1_protocol_blob_is_frozen",
+      "fails_on_parent": true,
+      "fails_on_v2": true,
+      "parent_failure_signature": "AssertionError: worktree bytes SHA256 3f53adfb8973a55ed60f1b9fa061f444a3145278b219643b820dcac82a2e97b8 != frozen expected 18d2421b172cef881b8de70c4bccf0c65174dd66a8402b75f0696d1878f96a69",
+      "v2_failure_signature": "AssertionError: worktree bytes SHA256 3f53adfb8973a55ed60f1b9fa061f444a3145278b219643b820dcac82a2e97b8 != frozen expected 18d2421b172cef881b8de70c4bccf0c65174dd66a8402b75f0696d1878f96a69",
+      "signature_equivalent": true,
+      "introduced_by_v2": false,
+      "classification": "PRE_EXISTING_FAILURE"
+    },
+    {
+      "test_name": "tests/detector_v5/test_stage_v_local_supervisor.py::test_ssh_probe_failure_is_telemetry_only_and_heartbeat_repeats",
+      "fails_on_parent": true,
+      "fails_on_v2": true,
+      "parent_failure_signature": "AssertionError: heartbeat[\"ssh_probe_failure_count\"] > 0; observed 0 > 0 at tests/detector_v5/test_stage_v_local_supervisor.py:134",
+      "v2_failure_signature": "AssertionError: heartbeat[\"ssh_probe_failure_count\"] > 0; observed 0 > 0 at tests/detector_v5/test_stage_v_local_supervisor.py:134",
+      "signature_equivalent": true,
+      "introduced_by_v2": false,
+      "classification": "PRE_EXISTING_FAILURE"
+    },
+    {
+      "test_name": "tests/detector_v5/test_stage_v_dynamic8.py::test_dynamic8_end_to_end_accepts_all_parents",
+      "fails_on_parent": false,
+      "fails_on_v2": false,
+      "parent_failure_signature": "PASS in isolated parent-baseline invocation",
+      "v2_failure_signature": "PASS in isolated V2 invocation",
+      "signature_equivalent": false,
+      "introduced_by_v2": null,
+      "classification": "HISTORICAL_NON_REPRODUCED_OBSERVATION",
+      "note": "A prior full-suite run observed WORKER_HEARTBEAT_MISSING; the latest full-suite run and isolated parent/V2 invocations passed it. It is not one of the latest two failures."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "DETECTOR_V5_DECISION_CONFIG_V2",
+  "true_mixed_denominator_required": true,
+  "minimum_candidate_dwell": 10,
+  "required_scheduler": "V5_ONE_SHOT_BUDGETED_SCHEDULER_V2",
+  "uncertainty_veto_enabled": false,
+  "fold_smoke_gate": {
+    "true_mixed_top1_min": 0.8,
+    "pure_negative_abstention_min": 0.6,
+    "one_shot_compliance": 1.0,
+    "must_beat_longest_window": true
+  },
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

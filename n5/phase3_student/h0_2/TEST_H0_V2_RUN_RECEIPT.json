@@ -1,0 +1,22 @@
+{
+  "gate": "TEST_H0_V2_RUN_H0_2",
+  "status": "NOT_EXECUTED",
+  "producer_agent": "DeepSeek",
+  "timestamp": "2026-07-26T10:20:00Z",
+  "self_hash_algorithm": "SHA256(UTF-8(json.dumps(object_without_top_level_self_sha256, sort_keys=true, separators=(\",\", \":\"), ensure_ascii=false)))",
+  "reason_not_executed": "C1 rerun produced PROVENANCE_FAIL before V2 tests could be executed in full server environment. Per protocol: any critical runtime test that cannot be executed before C1 resolution means H0.2=HOLD. V2 tests require numpy, torch, LIBERO, MuJoCo, and project imports in clean server environment.",
+  "test_file": "n5/phase3_student/tests/test_h0_contracts_v2.py",
+  "test_file_sha256": "080026e0a3fcc5ca322609c18f174b726517ebf13b1830f4309dcefa4bfa7521",
+  "test_source": "Codex H0.1 independent audit (branch: codex/h0-1-independent-audit-20260726)",
+  "required_tests": [
+    "import/path validation (numpy, torch, LIBERO, MuJoCo, project imports)",
+    "receipt self-hash verification using canonical algorithm",
+    "C2 pre-action AST/order verification",
+    "Teacher success/terminal invariance perturbation test",
+    "N5 full/prefix/streaming logit parity for RF32/Dual lengths [1,2,8,16,31,32,33,64,78,127,128,129]",
+    "short sequence non-blocked by RF128"
+  ],
+  "blocked_by": "C1_PROVENANCE_UNRESOLVED",
+  "will_execute_after": "C1 source lineage resolved, merged remediation committed to server repo",
+  "self_sha256": "a565f5d10fd1a29dad76a20ea2e22b7122021599bd7b08f03c0cda690804f8d9"
+}

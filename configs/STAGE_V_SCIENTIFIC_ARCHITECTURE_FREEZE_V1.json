@@ -1,0 +1,200 @@
+{
+  "schema": "STAGE_V_SCIENTIFIC_ARCHITECTURE_FREEZE_V1",
+  "version": "SCIENTIFIC_ARCHITECTURE_FREEZE_20260812_V1",
+  "status": "FROZEN_PROSPECTIVE_SCIENTIFIC_ARCHITECTURE",
+  "append_only": true,
+  "scope": "PRIMARY_PAPER_PIPELINE",
+  "frozen_at": "2026-08-12",
+  "source_commit": "eb05ae20ead190e91221ede6ae6d18fca70c2b30",
+  "source_tree": "092f55c3fbce82421bfa8bca67cd192f321048d7",
+  "primary_claim": "Clean executions define a privileged physical criticality teacher; a causal student is trained only from clean teacher labels and deployment-facing causal inputs; held-out matched counterfactual interventions then test physical vulnerability without outcome-informed redesign.",
+  "architecture": [
+    "CLEAN_ROLLOUT",
+    "PRIVILEGED_CLEAN_TEACHER_C_t",
+    "CLEAN_TEACHER_SUPERVISED_CAUSAL_STUDENT_C_HAT_t",
+    "HELD_OUT_MATCHED_COUNTERFACTUAL_VALIDATION_V_t_d",
+    "TIMING_VIS_DEFENSE_LATER"
+  ],
+  "variables": {
+    "C_t": {
+      "name": "clean_physical_criticality",
+      "definition": "A clean-derived physical criticality or critical-opportunity label computed from clean state, clean telemetry, clean action history, and registered clean phase semantics only.",
+      "source_boundary": "CLEAN_ONLY_PRIVILEGED",
+      "is_causal_outcome": false
+    },
+    "V_t(d)": {
+      "name": "matched_counterfactual_physical_outcome",
+      "definition": "A valid physical outcome under a prospectively frozen matched intervention condition and dose d, with CONTROL/T3/T5/T10 conditions and explicit unknown/abstain taxonomy.",
+      "doses": ["T3", "T5", "T10"],
+      "source_boundary": "HELD_OUT_COUNTERFACTUAL_VALIDATION",
+      "is_teacher_input": false
+    },
+    "E_t": {
+      "name": "visual_exploitability",
+      "definition": "A separate visual or policy-input exploitability construct evaluated by a separately authorized VIS protocol.",
+      "source_boundary": "SEPARATE_VIS_PIPELINE",
+      "is_m4_proxy": false
+    },
+    "separation": "C_t != V_t(d) != E_t"
+  },
+  "primary_teacher": {
+    "name": "CLEAN_PRIVILEGED_TEACHER",
+    "inputs": [
+      "clean state and physical telemetry",
+      "clean action/gripper/eef history",
+      "clean contact and phase evidence",
+      "clean horizon/mask metadata"
+    ],
+    "label_source": "CLEAN_ONLY_PRIVILEGED",
+    "m4_outcome_supervision": false,
+    "attack_outcome_supervision": false,
+    "vis_outcome_supervision": false,
+    "semantics": "Teacher labels clean-derived physical criticality; they are not ground-truth counterfactual vulnerability labels.",
+    "selection_rule": "Teacher protocol and thresholds are frozen before M4 outcomes are read.",
+    "failure_reporting": "If clean Teacher coverage, reliability, or semantic validity fails, report the Teacher failure and do not tune it on M4."
+  },
+  "primary_student": {
+    "name": "CLEAN_TEACHER_SUPERVISED_CAUSAL_STUDENT",
+    "supervision": "CLEAN_TEACHER_LABELS_ONLY",
+    "deployment_facing": true,
+    "allowed_feature_classes": [
+      "current observation and short causal history",
+      "past action and gripper command/state history",
+      "deployment-visible eef motion and object-relative features",
+      "deployment-visible contact/phase/timing features",
+      "causal masks and finite-history indicators"
+    ],
+    "forbidden_feature_classes": [
+      "privileged clean state unavailable at deployment",
+      "M4 CONTROL/T3/T5/T10 outcomes",
+      "attack, VIS, PGD, random, oracle, or defense outcomes",
+      "future frames, future success, or post-treatment variables",
+      "Teacher prediction shortcuts or copied privileged Teacher fields",
+      "identity, task, scene, or split leakage",
+      "M4 dose or intervention condition as a training feature"
+    ],
+    "m4_outcome_supervision": false,
+    "attack_outcome_supervision": false,
+    "model_selection_source": "CLEAN_ONLY_LOCKED_SPLITS"
+  },
+  "held_out_m4": {
+    "role": "CAUSAL_VALIDATION_NOT_TRAINING",
+    "conditions": ["CONTROL", "T3", "T5", "T10"],
+    "primary_dose": "T5",
+    "secondary_doses": ["T3", "T10"],
+    "label": "V_phys only when the intervention taxonomy is valid; unknown/abstain is not negative.",
+    "m4_outcomes_available_during_primary_development": false,
+    "current_status": "HOLD_FORMAL_M4_CORRIDOR_INSUFFICIENT",
+    "current_stable_parents": 29,
+    "required_parents": 40,
+    "valid_qualification_additions": 7,
+    "remaining_suite_deficit": {
+      "libero_spatial": 4
+    },
+    "labels_started": false
+  },
+  "secondary_historical_designs": {
+    "counterfactual_or_hybrid_teacher": "HISTORICAL_SECONDARY_ABLATION_ONLY",
+    "m4_supervised_student": "HISTORICAL_SECONDARY_ABLATION_ONLY",
+    "historical_r3_teacher_student_artifacts": "PRESERVE_AS_HISTORICAL_PRE_FREEZE_EVIDENCE",
+    "primary_replacement_allowed": false,
+    "outcome_informed_retrofit_allowed": false
+  },
+  "split_policy": {
+    "clean_teacher_student": "Clean-only train/validation/test identities and clean labels are frozen before any M4 outcome access.",
+    "m4_parent_exclusion": "The final M4 parent manifest must be excluded from FIT, CAL, CHECK, threshold selection, model selection, and any outcome-informed redesign.",
+    "known_current_set": "The present audit covers 29 stable corridor parents plus 7 valid replenishment parents; the final 4 spatial identities remain pending.",
+    "g10_overlap_rule": "G10 identity-level overlap is quarantined as historical held-out registry overlap; its outcomes remain unread and cannot be used as primary evidence without a prospective resolution.",
+    "unknown_semantics": "Unknown or abstained labels remain unknown and are never recoded as negative."
+  },
+  "model_selection_boundary": {
+    "allowed": [
+      "clean Teacher supervision and clean-only validation",
+      "clean-only feature, threshold, and checkpoint decisions before M4 lock"
+    ],
+    "forbidden": [
+      "M4 outcome inspection before lock",
+      "using M4 outcomes to revise Teacher semantics",
+      "using M4 outcomes to revise Student features or thresholds",
+      "rerun-to-pass selection"
+    ],
+    "lock_event": "A complete clean Teacher/Student evidence package and final 40-parent M4 manifest must be sealed before M4 outcomes are read."
+  },
+  "planned_m4_analysis": {
+    "physical_level": "Report paired CONTROL/T3/T5/T10 physical outcomes within the frozen critical-opportunity corridor; primary dose is T5.",
+    "teacher_level": "Test whether clean Teacher criticality localizes held-out physical vulnerability; do not infer causality from Teacher labels alone.",
+    "student_level": "Test whether the frozen causal Student preserves clean-only localization against held-out V_phys.",
+    "unsupported_without_new_protocol": [
+      "high-risk versus low-risk enrichment",
+      "safe/background negative-control comparison",
+      "visual exploitability claims",
+      "timing or defense utility claims"
+    ],
+    "negative_controls": "Any additional safe/background panel requires a separate prospective protocol before its outcomes are read."
+  },
+  "protected_boundary": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0,
+    "no_new_scientific_runtime_started_for_correction": true
+  },
+  "small_attack_matrix_extension": {
+    "status": "PROSPECTIVE_PREPARATION_ONLY",
+    "student_freeze_required": true,
+    "student_freeze_status": "NOT_STARTED",
+    "attack_outcomes_read": false,
+    "attack_protocol_selection": "MECHANICAL_GITHUB_RECEIPT_BINDING_ONLY",
+    "current_attack_authority_status": "HOLD_AUTHORITATIVE_OWNER_APPROVAL_UNRESOLVED",
+    "ambiguity_action": "HOLD_ATTACK_EXECUTION",
+    "primary_arms": [
+      "C0_CLEAN_REPLAY",
+      "C1_TRUE_AT_STUDENT_TIME",
+      "C2_RAND_AT_STUDENT_TIME",
+      "C3_TRUE_AT_RANDOM_TIME"
+    ],
+    "optional_arm": "C4_COMMAND_OPEN_ORACLE_AT_STUDENT_TIME_ONLY_IF_ALREADY_FROZEN_AND_COMPATIBLE",
+    "preferred_parent_count": 8,
+    "suite_stratification": "Prefer 2 per suite when mechanism-eligible; do not force unsupported fill",
+    "primary_branch_count": 32,
+    "no_emit_disposition": [
+      "STUDENT_EMIT",
+      "NO_EMIT",
+      "ABSTAIN",
+      "RUNTIME_INVALID"
+    ],
+    "denominator_policy": [
+      "Keep all preregistered parents in ITT accounting",
+      "Report conditional-on-valid-emission matched analysis separately",
+      "Never lower thresholds or replace no-emits after outcomes"
+    ],
+    "estimands": {
+      "payload_specificity": "C1_TRUE_AT_STUDENT_TIME_vs_C2_RAND_AT_STUDENT_TIME",
+      "timing_specificity": "C1_TRUE_AT_STUDENT_TIME_vs_C3_TRUE_AT_RANDOM_TIME",
+      "end_to_end_effect": "C1_TRUE_AT_STUDENT_TIME_vs_C0_CLEAN_REPLAY",
+      "optional_physical_ceiling": "C4_COMMAND_OPEN_ORACLE_AT_STUDENT_TIME"
+    },
+    "same_prefix_preference": true,
+    "independent_rollout_must_be_labeled_honestly": true,
+    "attack_outcome_feedback_forbidden": true,
+    "attack_parameter_retuning_forbidden": true,
+    "large_matrix_auto_launch": false,
+    "negative_canary_is_valid_completion": true,
+    "required_prelaunch_artifacts": [
+      "configs/STAGE_V_SMALL_ATTACK_MATRIX_PROTOCOL_V1.json",
+      "configs/STAGE_V_SMALL_ATTACK_PARENT_MANIFEST_V1.json",
+      "configs/STAGE_V_SMALL_ATTACK_FROZEN_PROTOCOL_BINDING_V1.json",
+      "reports/STAGE_V_SMALL_ATTACK_STATIC_AUDIT_V1.json",
+      "reports/STAGE_V_SMALL_ATTACK_RUNTIME_AUTHORIZATION_V1.json"
+    ],
+    "provenance_binding_record": "configs/STAGE_V_SMALL_ATTACK_FROZEN_PROTOCOL_BINDING_V1.json",
+    "protected_eval160_reads": 0
+  },
+  "evidence_artifacts": [
+    "docs/handoffs/STAGE_V_SCIENTIFIC_ARCHITECTURE_FREEZE_20260812.md",
+    "reports/STAGE_V_CLAIM_EVIDENCE_ALIGNMENT_AUDIT_V1.json",
+    "reports/STAGE_V_PRIMARY_DATA_FIREWALL_OVERLAP_AUDIT_V1.json",
+    "reports/STAGE_V_M4_PROBE_SUPPORT_AUDIT_V1.json",
+    "docs/handoffs/STAGE_V_M4_CURRENT_TAKEOVER_UPDATE_20260812.md"
+  ]
+}

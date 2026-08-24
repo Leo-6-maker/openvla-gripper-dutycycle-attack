@@ -1,0 +1,126 @@
+{
+  "schema": "STAGE_V_PRIMARY_DATA_FIREWALL_OVERLAP_AUDIT_V1",
+  "status": "HOLD_FINAL_M4_PARENT_SET_PENDING",
+  "source_commit": "eb05ae20ead190e91221ede6ae6d18fca70c2b30",
+  "source_tree": "092f55c3fbce82421bfa8bca67cd192f321048d7",
+  "purpose": "Identity-level audit for the primary clean Teacher/Student versus held-out M4 boundary; this is not an outcome audit.",
+  "current_m4_parent_inventory": {
+    "stable_corridor_count": 29,
+    "valid_replenishment_count": 7,
+    "known_count": 36,
+    "required_final_count": 40,
+    "remaining_deficit": {
+      "libero_spatial": 4
+    },
+    "formal_m4_labels_started": false,
+    "final_parent_manifest_frozen": false
+  },
+  "firewall_rules": {
+    "m4_parent_excluded_from": ["FIT", "CAL", "CHECK", "threshold_selection", "model_selection", "outcome_informed_redesign"],
+    "teacher_student_supervision": "clean Teacher labels only",
+    "m4_outcome_access_during_primary_development": false,
+    "g10_outcomes": "unread and quarantined",
+    "unknown_not_negative": true
+  },
+  "identity_overlap_results": [
+    {
+      "source": "FIT670 allowlist",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/fit670_allowlist/FIT670_IDENTITY_ALLOWLIST.json",
+      "identity_count": 670,
+      "known_m4_overlap": 0,
+      "result": "PASS_IDENTITY_DISJOINT_FOR_KNOWN_SET"
+    },
+    {
+      "source": "FIT670 shard plan",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/fit670_shard_plan_v2/FIT670_GPU_SHARD_PLAN.json",
+      "identity_count": 670,
+      "known_m4_overlap": 0,
+      "result": "PASS_IDENTITY_DISJOINT_FOR_KNOWN_SET"
+    },
+    {
+      "source": "G1 episode train",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/r3_g1_generalization_splits_c90d333d_20260730T113000Z/EPISODE_TRAIN_MANIFEST.json",
+      "identity_count": 445,
+      "known_m4_overlap": 0,
+      "result": "PASS_IDENTITY_DISJOINT_FOR_KNOWN_SET"
+    },
+    {
+      "source": "G1 episode validation",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/r3_g1_generalization_splits_c90d333d_20260730T113000Z/EPISODE_VAL_MANIFEST.json",
+      "identity_count": 81,
+      "known_m4_overlap": 0,
+      "result": "PASS_IDENTITY_DISJOINT_FOR_KNOWN_SET"
+    },
+    {
+      "source": "G1 episode test",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/r3_g1_generalization_splits_c90d333d_20260730T113000Z/EPISODE_TEST_MANIFEST.json",
+      "identity_count": 144,
+      "known_m4_overlap": 0,
+      "result": "PASS_IDENTITY_DISJOINT_FOR_KNOWN_SET"
+    },
+    {
+      "source": "G1 task train",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/r3_g1_generalization_splits_c90d333d_20260730T113000Z/TASK_TRAIN_MANIFEST.json",
+      "identity_count": 498,
+      "known_m4_overlap": 0,
+      "result": "PASS_IDENTITY_DISJOINT_FOR_KNOWN_SET"
+    },
+    {
+      "source": "G1 task validation",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/r3_g1_generalization_splits_c90d333d_20260730T113000Z/TASK_VAL_MANIFEST.json",
+      "identity_count": 91,
+      "known_m4_overlap": 0,
+      "result": "PASS_IDENTITY_DISJOINT_FOR_KNOWN_SET"
+    },
+    {
+      "source": "G1 task test",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/r3_g1_generalization_splits_c90d333d_20260730T113000Z/TASK_TEST_MANIFEST.json",
+      "identity_count": 81,
+      "known_m4_overlap": 0,
+      "result": "PASS_IDENTITY_DISJOINT_FOR_KNOWN_SET"
+    },
+    {
+      "source": "G10 historical held-out registry",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json",
+      "identity_count": 1200,
+      "known_m4_overlap": 36,
+      "stable_overlap": 29,
+      "replenishment_overlap": 7,
+      "outcome_access_status": "NOT_READ_G10_READ_FALSE",
+      "result": "IDENTITY_OVERLAP_QUARANTINED_NO_OUTCOME_EVIDENCE",
+      "primary_use": false
+    },
+    {
+      "source": "libero_10 replenishment qualification",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_REPLENISHMENT_V7_QUALIFICATION_LIBERO10_V2_20260812T145500Z/STAGE_V_FORMAL_PARENT_MANIFEST_V2.json",
+      "identity_count": 1,
+      "known_m4_overlap": 1,
+      "result": "EXPECTED_NEW_M4_QUALIFICATION_IDENTITY"
+    },
+    {
+      "source": "libero_goal replenishment qualification",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_REPLENISHMENT_V7_QUALIFICATION_LIBERO_GOAL_20260812T151000Z/STAGE_V_FORMAL_PARENT_MANIFEST_V2.json",
+      "identity_count": 6,
+      "known_m4_overlap": 6,
+      "result": "EXPECTED_NEW_M4_QUALIFICATION_IDENTITIES"
+    }
+  ],
+  "historical_r3_boundary": {
+    "teacher_transition": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/r3_teacher_student_transition_v4e_c90d333d_20260730T110000Z/TEACHER_STUDENT_TRANSITION.json",
+    "teacher_identity_count": 670,
+    "teacher_status": "PASS_DEVELOPMENT_ELIGIBLE_HEADS",
+    "coverage_status": "HOLD_COVERAGE",
+    "formal_training_authorized": false,
+    "protected_reads": 0,
+    "g1_split_audit_formal_training_consumable": false,
+    "primary_status": "HISTORICAL_PRE_FREEZE_SECONDARY_OR_UNCLASSIFIED",
+    "action": "Preserve; do not delete, rewrite, or silently consume as the primary Teacher/Student line."
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "closure_requirement": "After the four spatial identities are obtained, regenerate this audit against the exact final 40-parent manifest and all primary FIT/CAL/CHECK/model-selection manifests before any M4 outcome read."
+}

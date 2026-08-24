@@ -1,0 +1,139 @@
+{
+  "f1a3_root_seal_sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+  "frozen_attack": {
+    "allow_fallback": false,
+    "candidate_order": [
+      "delta0",
+      "pgd_iteration_1",
+      "pgd_iteration_2",
+      "pgd_iteration_3",
+      "pgd_iteration_4",
+      "pgd_iteration_5",
+      "pgd_iteration_6",
+      "pgd_iteration_7",
+      "pgd_iteration_8",
+      "pgd_iteration_9",
+      "pgd_iteration_10"
+    ],
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "direct_action_token_count": 7,
+    "epsilon_processor_pixel_values": 0.03,
+    "exact_arm_dimensions": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "no_actuator_overwrite": true,
+    "no_attacked_env_step": true,
+    "no_decode_reencode": true,
+    "prefix_refresh_interval": 1,
+    "random_start": false,
+    "step_size_by_iterations": {
+      "10": 0.003,
+      "5": 0.006
+    },
+    "strict_route": true,
+    "surrogate_score_path": "cached_autoregressive_generate_v1",
+    "target_execution_class": "NATIVE_OPEN",
+    "target_token_id_secondary": 31745,
+    "temporal_init": "none",
+    "temporal_smooth_lambda": 0.0
+  },
+  "methods": {
+    "M0": {
+      "complexity_rank": 0,
+      "iterations": [
+        5,
+        10
+      ],
+      "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+      "optimization_target": "secondary_token_31745_logratio_with_clean_arm_surrogate"
+    },
+    "M1": {
+      "complexity_rank": 1,
+      "iterations": [
+        5,
+        10
+      ],
+      "objective": "autoregressive_prefix_gripper_native_open_logratio_v4",
+      "optimization_target": "cached_native_open_set_logsumexp_minus_non_open_logsumexp"
+    },
+    "M2": {
+      "complexity_rank": 2,
+      "iterations": [
+        5,
+        10
+      ],
+      "objective": "autoregressive_prefix_gripper_native_open_logratio_arm_v5",
+      "optimization_target": "M1_plus_clean_generated_arm_token_preservation_surrogate"
+    }
+  },
+  "probe": {
+    "eligibility": [
+      "clean runtime valid through step",
+      "exactly seven direct generated tokens",
+      "clean gripper is not NATIVE_OPEN",
+      "step+14 < official horizon"
+    ],
+    "max_per_parent": 3,
+    "no_replacement": true,
+    "outcome_blind": true,
+    "selection_salt": "STAGE_X_X1R2_F1B_DEV_PROBE_V3_20260821",
+    "student_emit_used": false,
+    "student_used": false
+  },
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "protocol_sha256": "391d4d4047a72b7d0979b8dbbc2f2d4491a2c0c2466bc314c8e9146117384d45",
+  "schema": "STAGE_X1R2_F1B_METHOD_SPEC_V3",
+  "selection": {
+    "advancement_requires_strict_improvement_over_M0_on_first_two_criteria": true,
+    "lexicographic": [
+      "maximize minimum per-suite parent success count",
+      "maximize total DEV parents with >=1 strict-valid probe",
+      "minimize mean Linf then method complexity",
+      "tie simpler method then fewer iterations"
+    ],
+    "no_clear_improvement_status": "F1_TARGETABILITY_DEVELOPMENT_NO_CLEAR_IMPROVEMENT",
+    "unit": "parent"
+  },
+  "source": {
+    "branch": "codex/stage-x-x1r2-q3-arm-isolation-repair-20260820",
+    "commit": "ad4e4adbf0d020e114f861322159c55a9dc61407",
+    "git_blob_sha1": {
+      "configs/STAGE_X_X1R2_F1B_DEV_PROTOCOL_V3.json": "d8443a2ebfc0a9b81a4364848f34415d9d5a80b2",
+      "configs/STAGE_X_X1R2_GRIPPER_SELECTIVE_ATTACK_CONTRACT_V1.json": "986d6735177b2d21a45c2137302b1efa43fd5e32",
+      "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_DEV_V3_LEDGER_V3.json": "1fb67b139c4116dac1a8bcf0cca01d08e31d9640",
+      "scripts/stage_x/run_stage_x1r2_f1b_dev.py": "3f0614354e64226053a4cf7300776a741f895e56",
+      "scripts/stage_x/run_stage_x1r_primary_matrix.py": "6ad6760eccef1bf01e5b5780fc85e36692bb24bb",
+      "src/gripper_attack/attack_adapter.py": "7419c672630275f2e18ed9334ef690e2fbfdc5cc",
+      "src/gripper_attack/execution_target.py": "20a7264c0d0d1c9e7a8612b26c4e9758a7da5dc9",
+      "src/gripper_attack/failure_evidence.py": "7b954c97325e4da82a1f7f0c402edf030eea3228",
+      "src/gripper_attack/route_contract.py": "671e1d4b319c939bb557c9823bd32ea2f69c71bb"
+    },
+    "raw_sha256": {
+      "configs/STAGE_X_X1R2_F1B_DEV_PROTOCOL_V3.json": "391d4d4047a72b7d0979b8dbbc2f2d4491a2c0c2466bc314c8e9146117384d45",
+      "configs/STAGE_X_X1R2_GRIPPER_SELECTIVE_ATTACK_CONTRACT_V1.json": "872001cf521d21a8aeda5762c55ace8975d844dc22cb8e05e0d6ea6032f950d1",
+      "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_DEV_V3_LEDGER_V3.json": "f114505a7ea6aee9959f9db3aa1aedea1cebf89f09b820a4b7746236de46ef9a",
+      "scripts/stage_x/run_stage_x1r2_f1b_dev.py": "a4a708ceb20c00809f9af17da1dd75a1ce6545f14cc3ca2579fd7bea12b3418f",
+      "scripts/stage_x/run_stage_x1r_primary_matrix.py": "75aac917d393113458e68ced5de5f1721420ef4671406cd1f0395c0e1014aa10",
+      "src/gripper_attack/attack_adapter.py": "02dbad9ffa30aa1d00e5e2d2688a0f580a1f57ab1e0957f3082bcdf43d715e23",
+      "src/gripper_attack/execution_target.py": "ce27747e1dfc06c7a05c0393566e59d90b11dee1c9d9d579713b0df6a208e201",
+      "src/gripper_attack/failure_evidence.py": "ce4c02da1ca9bc74698bc083f5c91e7927f34d64be982b80612c2d2415f9752b",
+      "src/gripper_attack/route_contract.py": "2c07fa19fc651cfb9a32aa54cae610888d28a795d72a28d1733620f5c0b9a53e"
+    },
+    "status_porcelain": "?? contract_git_content.tmp\n?? reports/STAGE_X1R2_Q3R2_CLEAN_DETERMINISM_20260820/telemetry/\n?? stage_x1r2_q3r3_c_16d1131a7e5c4228a1b8aa3b11a58ede.bundle\n?? stage_x1r2_q3r3_c_afff24a3909f459c9d180fa6dbc4bf11.bundle\n?? stage_x1r2_q3r3_c_c41c29b127a04bdc8dfe22f6876eacc6.bundle\n?? stage_x1r2_q3r3_d_3225c1c_20260820.bundle\n?? stage_x1r2_q3r3_d_3d43fa9356ff5569581c7dbf4374dcc22c9bcb33.bundle\n?? stagex_e3_0efdf1e.pack\n?? stagex_e3_198a401.pack\n?? stagex_e3_54ce807.pack\n?? stagex_e3_a031a21.pack\n?? stagex_e3_b215c4d.pack\n?? stagex_e3_b215c4d_v2.pack\n?? stagex_e4_d642ab5.pack\n?? stagex_e4_full_d642.pack\n?? stagex_f1b_full_20260821.bundle\n?? stagex_requal_b86006d.bundle\n?? stagex_requal_e8c3df1.bundle",
+    "tree": "2cc1bbad3746d2937c7d9dd8b9d1c5664318ca83"
+  },
+  "status": "PASS_F1B_METHOD_SPEC_SEALED"
+}

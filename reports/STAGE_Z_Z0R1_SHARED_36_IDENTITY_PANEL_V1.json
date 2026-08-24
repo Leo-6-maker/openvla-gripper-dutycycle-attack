@@ -1,0 +1,439 @@
+{
+  "denominator_policy": "36 frozen shared identities per model; four cells remain structural-missing and are not model failures, censoring, negative V_phys, or complete-case exclusions",
+  "git_binding": {
+    "head_commit": "d2671ceecb758f88eb2bce494545fb75ae927914",
+    "head_tree": "0e4ef9aed1da4fc536d3bca7a68e1c9412b7a000"
+  },
+  "missing_task_cells": [
+    "libero_goal/task_01",
+    "libero_goal/task_04",
+    "libero_goal/task_06",
+    "libero_goal/task_09"
+  ],
+  "nominal_task_cells": 40,
+  "protected_boundary": {
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "model_inference": 0,
+    "physical_intervention": 0,
+    "protected": "UNREAD",
+    "simulator": 0,
+    "v_phys": 0
+  },
+  "rows": [
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "selected_rank_sha256": "05593efb43a73a9d9e73f20b5ae0a33ec239d095da1a371b3bdb0e6631ed5f97",
+      "source_v1_row_digest": "239965c82da34c58dd2d3176475b0139ee7aef0d04ccaae70174087cab6b2840",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_10",
+      "task_idx": 0
+    },
+    {
+      "candidate_count_after_union_exclusion": 2,
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "selected_rank_sha256": "4e91f8e7603bae527365aca79334e366ac5e5a4e5075e7c1d7d66f359fc1eef8",
+      "source_v1_row_digest": "4854171b1991315bae485a475f7406f594e0487071b30f7f354b490c90a6e260",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_10",
+      "task_idx": 1
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "canonical_parent_key": "libero_10/task_02/state_30",
+      "selected_rank_sha256": "7e551121e424390fd82cf36899451965e6bd7e8799fad1996f5136db51854c04",
+      "source_v1_row_digest": "ac1d6b46f67a00e224663d1e76c7c7ac95f581a70d8ff89e7568fe8ed79c1bf3",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_10",
+      "task_idx": 2
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "canonical_parent_key": "libero_10/task_03/state_45",
+      "selected_rank_sha256": "2124d743fee792808d155367be7886af6e7949e572105bb9c846bc8b3e7d8080",
+      "source_v1_row_digest": "87b3e280a50338ec6f22d11fdd1ef3666383cc3f2599a783db8181d2d01bf48d",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_10",
+      "task_idx": 3
+    },
+    {
+      "candidate_count_after_union_exclusion": 6,
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "selected_rank_sha256": "36f127f54a062a45d8d2c58e903b31e864406bb74974abea971903cb5461a813",
+      "source_v1_row_digest": "93c1ca010107e393288df5095798bf4e58040c4fbc28a68e518a9dde33b2fc18",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_10",
+      "task_idx": 4
+    },
+    {
+      "candidate_count_after_union_exclusion": 6,
+      "canonical_parent_key": "libero_10/task_05/state_21",
+      "selected_rank_sha256": "3b28375640b8d3a6e0227df7667858aaeef14f5c184280b653bebcad3b4e7f14",
+      "source_v1_row_digest": "cc7e55fcd569fa3f8b83124e74a98f0b29fd79c331d9ef14a0823fb6033b8a20",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_10",
+      "task_idx": 5
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "selected_rank_sha256": "13f34507e8f99f7464d2f3f80a41dc793ccf5e87f2d2ac0ce854b4333a3a33e8",
+      "source_v1_row_digest": "16a2fb63511c0cebfb1bee204c687085d50be09b622f731ba1dfd7335bdb5928",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_10",
+      "task_idx": 6
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "canonical_parent_key": "libero_10/task_07/state_20",
+      "selected_rank_sha256": "2dfe788677b1d993948fd81d5be684175fe1b13bc130f6a77e18a3d9ae3807c0",
+      "source_v1_row_digest": "613003d929fcb240ff2e2b831fcfa94ee5692bc274c6ed1d1651e8e332506c54",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_10",
+      "task_idx": 7
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "canonical_parent_key": "libero_10/task_08/state_20",
+      "selected_rank_sha256": "ea1ec893fe2683076c9ac90f999b5647fa7424f0713426723fd569087d707e25",
+      "source_v1_row_digest": "8edeb06646879e5c012f759fb652f323d904b83577ccb15a6d755b249d6b26e6",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_10",
+      "task_idx": 8
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "canonical_parent_key": "libero_10/task_09/state_24",
+      "selected_rank_sha256": "820261010c837b290189c4f89ab2b4d851f2100a490eeb4a42b19851f8ae3338",
+      "source_v1_row_digest": "c3815d13c2796a6996c666dd9890c13f3c477cd5b5f62177da82cacaf2827ab2",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_10",
+      "task_idx": 9
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "canonical_parent_key": "libero_goal/task_00/state_21",
+      "selected_rank_sha256": "d1f3742ba303a77fe959b7cab8e5326416e4a3f2684d3b48c66aeec281455cd4",
+      "source_v1_row_digest": "da36ffaa3ad655f03ffa47db1fcb418b0fd04aa4859a4e9518462474ef2733fc",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_goal",
+      "task_idx": 0
+    },
+    {
+      "candidate_count_after_union_exclusion": 0,
+      "canonical_parent_key": null,
+      "selected_rank_sha256": null,
+      "source_v1_row_digest": "ba47d1ab30686f4758c544f1f70eca9064451400c4ab3baf904a0911c3bec03f",
+      "state": "STRUCTURAL_MISSING_NO_FRESH_IDENTITY",
+      "suite": "libero_goal",
+      "task_idx": 1
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "selected_rank_sha256": "2bcc7a1728b754138054eb21c0c70ef115965aa98d4a64287410f55aa385042d",
+      "source_v1_row_digest": "5f84f6fabdfadcf861b5ba95faeec683db49dc5f868cbae5419c387ff06d1d44",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_goal",
+      "task_idx": 2
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "canonical_parent_key": "libero_goal/task_03/state_45",
+      "selected_rank_sha256": "0c452f4b462aab3eb8725e8382b0da2de9b749d53d1a39b6cda7f95086f034fa",
+      "source_v1_row_digest": "b8b1643a6d8114498ac8900b331b135099ac74c7046824b01a971e7fe921d173",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_goal",
+      "task_idx": 3
+    },
+    {
+      "candidate_count_after_union_exclusion": 0,
+      "canonical_parent_key": null,
+      "selected_rank_sha256": null,
+      "source_v1_row_digest": "e0f1ee4fefb863306d7a8f3eca61a8c7a43f6097fc4a5c75dc58c9050f00c2f6",
+      "state": "STRUCTURAL_MISSING_NO_FRESH_IDENTITY",
+      "suite": "libero_goal",
+      "task_idx": 4
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "canonical_parent_key": "libero_goal/task_05/state_26",
+      "selected_rank_sha256": "ec4f2f019da63fb56963ea4305d4648b97385a70d37bd615dff38d619b7b4d72",
+      "source_v1_row_digest": "e7bfba2fd6e9f07e40ef92eb1c0267690970688fb78ff4230be2a9a57344c0ea",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_goal",
+      "task_idx": 5
+    },
+    {
+      "candidate_count_after_union_exclusion": 0,
+      "canonical_parent_key": null,
+      "selected_rank_sha256": null,
+      "source_v1_row_digest": "02ec287a82e0eac7e08b9255684f20255118bb55c5fd92ae937a8126b1423b15",
+      "state": "STRUCTURAL_MISSING_NO_FRESH_IDENTITY",
+      "suite": "libero_goal",
+      "task_idx": 6
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "canonical_parent_key": "libero_goal/task_07/state_30",
+      "selected_rank_sha256": "3cbffc1c6320f10c19deeb210ee259624eba51354f220741cf656db79219dc6b",
+      "source_v1_row_digest": "79b4249d78e1e94a4f0165acbeb4638357b2f27439f55bf9d33cae177c03716c",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_goal",
+      "task_idx": 7
+    },
+    {
+      "candidate_count_after_union_exclusion": 1,
+      "canonical_parent_key": "libero_goal/task_08/state_20",
+      "selected_rank_sha256": "3ee781bd6216dbcbf5a6cf514cdcb06e2c8cca1e771c6f6aef35d54acf37305c",
+      "source_v1_row_digest": "a8d753881e578e920ebbdcbae358916950612990c67ebe0b99c250c99680e242",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_goal",
+      "task_idx": 8
+    },
+    {
+      "candidate_count_after_union_exclusion": 0,
+      "canonical_parent_key": null,
+      "selected_rank_sha256": null,
+      "source_v1_row_digest": "8958359b22b5ad4a97163b73d5f6f3c5e5c9e20b9211e74ba20b217a34d15be3",
+      "state": "STRUCTURAL_MISSING_NO_FRESH_IDENTITY",
+      "suite": "libero_goal",
+      "task_idx": 9
+    },
+    {
+      "candidate_count_after_union_exclusion": 7,
+      "canonical_parent_key": "libero_object/task_00/state_22",
+      "selected_rank_sha256": "01d1cbcb598801f0e51510068062696d48211d4f308e659e482d93234442e67c",
+      "source_v1_row_digest": "9bd4b7267d483756192fb881dae1a44401f9d86ca87c169974e8c27079f75a3b",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_object",
+      "task_idx": 0
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "canonical_parent_key": "libero_object/task_01/state_40",
+      "selected_rank_sha256": "86be2c9bfc2f975a348b1c15b69b8378706e5199a5d00c575715d27805117e70",
+      "source_v1_row_digest": "8428d9afb2824185d81c8a49a31186d6b3334e66f2c462ae04b2871425cfeaa8",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_object",
+      "task_idx": 1
+    },
+    {
+      "candidate_count_after_union_exclusion": 8,
+      "canonical_parent_key": "libero_object/task_02/state_26",
+      "selected_rank_sha256": "47659ffb3998e43010ed5bf971e58653c036a7ab3dd9713a06ca2395b150f673",
+      "source_v1_row_digest": "8a20d2b39375f2cc2542856ee15beeb39beace2b51bb4b590d8a5e0c53b50e8b",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_object",
+      "task_idx": 2
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "canonical_parent_key": "libero_object/task_03/state_29",
+      "selected_rank_sha256": "133e71bcc2d4a0e56b7df0abd39f845220dc4a7be1e5767b66a4d46c583a667a",
+      "source_v1_row_digest": "aad2f9155e0f614d5fafed55499779fdaa55fa3743947aa7418541792fb8b3fb",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_object",
+      "task_idx": 3
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "selected_rank_sha256": "5a63e1c507d65ee4ff25c9c2cf1f6aae169e36d3a95a2d71b0b4d9c6e861db8c",
+      "source_v1_row_digest": "ffed0749111936bb9f1cbc0c6bf0afb5937d549de38e105b5e70931f7a5a3f7e",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_object",
+      "task_idx": 4
+    },
+    {
+      "candidate_count_after_union_exclusion": 5,
+      "canonical_parent_key": "libero_object/task_05/state_27",
+      "selected_rank_sha256": "54c7ecc7dbef1ce6bfd311e2729ff2075107701f6cda42d5e079179b35c8532d",
+      "source_v1_row_digest": "762a2e329df1a07ed84f67094e6742ada983b4a1793198d4a3e5eb677f76aba7",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_object",
+      "task_idx": 5
+    },
+    {
+      "candidate_count_after_union_exclusion": 6,
+      "canonical_parent_key": "libero_object/task_06/state_31",
+      "selected_rank_sha256": "225167e2e3dc51b74f21cb47b3e7d2a9bddafc7315c44aa8afe159bd35c88384",
+      "source_v1_row_digest": "84f22fb30477ac690315c3f9dfa4cf3d2f659f074543034e58b9c432b56e5383",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_object",
+      "task_idx": 6
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "canonical_parent_key": "libero_object/task_07/state_45",
+      "selected_rank_sha256": "0958f08059a720ce1db1a63405c9ee89922b315019eb1e1b57d6d264e74f28a6",
+      "source_v1_row_digest": "37f651796ac3ff6dae51da5b24da6cf6e3d89129ab5119e8fd55103a14da30dd",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_object",
+      "task_idx": 7
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "canonical_parent_key": "libero_object/task_08/state_35",
+      "selected_rank_sha256": "22ac8ef6af3ca70b70ce195e8610279494a2fa05f3381be7fbf1237348cd0f4b",
+      "source_v1_row_digest": "c71bd2322ff8319c6739fa79b0bd74e9699d1dcd3d94392251384333396db74c",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_object",
+      "task_idx": 8
+    },
+    {
+      "candidate_count_after_union_exclusion": 8,
+      "canonical_parent_key": "libero_object/task_09/state_23",
+      "selected_rank_sha256": "49d1584cf3e9336149a4ff8f92d4eb067ce38b9ec8aad0691ca4ea32ac8e9e69",
+      "source_v1_row_digest": "008e3cc7260881d1ab5d7ddfab09e82b9b0b4d7676ba493b7e25e0d7772fea1b",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_object",
+      "task_idx": 9
+    },
+    {
+      "candidate_count_after_union_exclusion": 2,
+      "canonical_parent_key": "libero_spatial/task_00/state_37",
+      "selected_rank_sha256": "dced18383524a344278a50124618588c14ec318c6ad0ccb8ccaaa2d874710797",
+      "source_v1_row_digest": "3098e9bf0821a5f258e527d471e804b4950760d55d13f0386583ec669fa76861",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_spatial",
+      "task_idx": 0
+    },
+    {
+      "candidate_count_after_union_exclusion": 4,
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "selected_rank_sha256": "1db5b5be25b375b7a64df09b091663f9d0f54b9e1f11afa0bdc42f2721da6726",
+      "source_v1_row_digest": "91a2baa438677424a7530b0b38d975b12cc656a9aa556dc0beef55578e56ee4f",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_spatial",
+      "task_idx": 1
+    },
+    {
+      "candidate_count_after_union_exclusion": 11,
+      "canonical_parent_key": "libero_spatial/task_02/state_40",
+      "selected_rank_sha256": "12ef3c17813db315fbe1f285ed1ce028aaa3e8a814c09adc9f2997997debeb90",
+      "source_v1_row_digest": "ee070004ff56b4d659059e2032fb14154aeb6b1e7d97ba7142d9931be8e3518b",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_spatial",
+      "task_idx": 2
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "canonical_parent_key": "libero_spatial/task_03/state_33",
+      "selected_rank_sha256": "4cb3ae7fb375c5c3b366410d83ca5a32d96c6fae726e5fb99772fbe4139f0707",
+      "source_v1_row_digest": "8b2484a338524f765cb110cb2e5625826621951196ee954076aa521351a8dc66",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_spatial",
+      "task_idx": 3
+    },
+    {
+      "candidate_count_after_union_exclusion": 7,
+      "canonical_parent_key": "libero_spatial/task_04/state_31",
+      "selected_rank_sha256": "007690494d185eb2e19a2b21d0e63532ca89ddab91e0d7a793867afe0fbee38b",
+      "source_v1_row_digest": "d500c8024f4894864fa026dfe7430c82da2c7e624ea2758c97e821321f195533",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_spatial",
+      "task_idx": 4
+    },
+    {
+      "candidate_count_after_union_exclusion": 7,
+      "canonical_parent_key": "libero_spatial/task_05/state_23",
+      "selected_rank_sha256": "12adf9dbea7e7910b7f9654b9efd4774f1a4dfba13e62db1bf261c3b7ddd836e",
+      "source_v1_row_digest": "170ab414001316077695da7cdabf372d9e6bb0f4d88c930f49d0e581441014d0",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_spatial",
+      "task_idx": 5
+    },
+    {
+      "candidate_count_after_union_exclusion": 3,
+      "canonical_parent_key": "libero_spatial/task_06/state_27",
+      "selected_rank_sha256": "4cef4105639bc71bd13acae60597bbc6e6c70847d4aa9dd80a0b5446f3e5b221",
+      "source_v1_row_digest": "14a787f018f0b8f43019089ab52643307d23ea8d0a17a8b77952e46b610a1eb5",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_spatial",
+      "task_idx": 6
+    },
+    {
+      "candidate_count_after_union_exclusion": 5,
+      "canonical_parent_key": "libero_spatial/task_07/state_28",
+      "selected_rank_sha256": "3c4ba10a6392609dae2e455f7fdc1d5b188a4b019c49282a70bff0455205cff5",
+      "source_v1_row_digest": "05f20067f87a1480ee8c2470ce652d7ffc10281f2418649aac11471bc97d750d",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_spatial",
+      "task_idx": 7
+    },
+    {
+      "candidate_count_after_union_exclusion": 6,
+      "canonical_parent_key": "libero_spatial/task_08/state_32",
+      "selected_rank_sha256": "39e4d78436224c86088735f1e314ce7b89828fab9cbb317e71b09f36490ec5cf",
+      "source_v1_row_digest": "2c40b632b3792111d9af992072eb05e319d007f00904d9c2651790419adda5b1",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_spatial",
+      "task_idx": 8
+    },
+    {
+      "candidate_count_after_union_exclusion": 7,
+      "canonical_parent_key": "libero_spatial/task_09/state_21",
+      "selected_rank_sha256": "0fbb2e137983be952165b38406ca68f7d14249f65b3d23d8c9e4b5aad0dedaa6",
+      "source_v1_row_digest": "e13e879f3b8d18cbea81373f5e56a7e2627abba2559ef9202905e699ddb5d0bf",
+      "state": "FROZEN_SHARED_FRESH",
+      "suite": "libero_spatial",
+      "task_idx": 9
+    }
+  ],
+  "schema": "STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1",
+  "selected_parent_keys": [
+    "libero_10/task_00/state_33",
+    "libero_10/task_01/state_35",
+    "libero_10/task_02/state_30",
+    "libero_10/task_03/state_45",
+    "libero_10/task_04/state_34",
+    "libero_10/task_05/state_21",
+    "libero_10/task_06/state_34",
+    "libero_10/task_07/state_20",
+    "libero_10/task_08/state_20",
+    "libero_10/task_09/state_24",
+    "libero_goal/task_00/state_21",
+    "libero_goal/task_02/state_34",
+    "libero_goal/task_03/state_45",
+    "libero_goal/task_05/state_26",
+    "libero_goal/task_07/state_30",
+    "libero_goal/task_08/state_20",
+    "libero_object/task_00/state_22",
+    "libero_object/task_01/state_40",
+    "libero_object/task_02/state_26",
+    "libero_object/task_03/state_29",
+    "libero_object/task_04/state_35",
+    "libero_object/task_05/state_27",
+    "libero_object/task_06/state_31",
+    "libero_object/task_07/state_45",
+    "libero_object/task_08/state_35",
+    "libero_object/task_09/state_23",
+    "libero_spatial/task_00/state_37",
+    "libero_spatial/task_01/state_38",
+    "libero_spatial/task_02/state_40",
+    "libero_spatial/task_03/state_33",
+    "libero_spatial/task_04/state_31",
+    "libero_spatial/task_05/state_23",
+    "libero_spatial/task_06/state_27",
+    "libero_spatial/task_07/state_28",
+    "libero_spatial/task_08/state_32",
+    "libero_spatial/task_09/state_21"
+  ],
+  "shared_fresh_identities": 36,
+  "source_v1_panel": {
+    "path": "reports/STAGE_Z_Z0_SHARED_40_IDENTITY_PANEL_V1.json",
+    "selection_rule": "sha256(salt|suite|task|state), then canonical_parent_key",
+    "selection_salt": "STAGE_Z_CROSS_MODEL_PANEL_V1_20260822",
+    "sha256": "6523c1f2e514a2f329e369d17a38810e08669d23bcdbb63c0cf48462e0b0f84e"
+  },
+  "status": "STAGE_Z_Z0R1_36_PANEL_SEALED",
+  "structural_missing_cells": 4,
+  "suite_counts": {
+    "libero_10": 10,
+    "libero_goal": 6,
+    "libero_object": 10,
+    "libero_spatial": 10
+  }
+}

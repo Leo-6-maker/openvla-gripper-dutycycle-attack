@@ -1,0 +1,78 @@
+{
+  "state_file": "CODEX_RUNTIME_STATE_V1",
+  "owner": "Codex",
+  "branch": "codex/detector-completion-20260726",
+  "base_commit": "7550bf0ae5647df6afb062450b64ef4a3ff1bb9a",
+  "plan_commit": "9e1906a0a5b7dc34602b1d83840a5b1278ca2bdb",
+  "current_gate": "H0.3-R6_PROVENANCE_AND_ROLE_SAFE_RESOLVER",
+  "status": "H0.3-R6_SOURCE_READY_AWAITING_SERVER",
+  "codex_verdicts": {
+    "H0.3-R5_RESOLVER": "HOLD",
+    "H0.3-R5_PROVENANCE": "FAIL_NON_CONSUMABLE",
+    "H0.3-R6": "IN_PROGRESS",
+    "C3-S3": "BLOCKED",
+    "C3-G": "BLOCKED",
+    "C3-T0": "BLOCKED",
+    "C3-T": "BLOCKED",
+    "T2R-D": "BLOCKED",
+    "L23-800": "BLOCKED",
+    "STUDENT_TRAINING": "BLOCKED",
+    "ATTACK_INTEGRATION": "BLOCKED"
+  },
+  "r5_blockers": [
+    "Region role is inferred circularly from site existence, making production region-to-body/geom guards unreachable",
+    "Manipulated object role can accept EXACT_SITE",
+    "Alias verifier checks direct body equality rather than ancestor-chain hierarchy",
+    "Run A/B artifacts and canonical equality evidence are not committed or otherwise immutable/verifiable",
+    "Gate amendment and review packet chronology is not Git-valid",
+    "Provenance test receipt contains failures and errors"
+  ],
+  "authorized_now": [
+    "Create role-safe resolver and end-to-end tests",
+    "Create deterministic finalization/comparison tooling",
+    "Run non-protected unit/integration tests after server session is connected",
+    "Generate fresh non-protected C1 run_A/run_B after source freeze"
+  ],
+  "protected_boundaries": {
+    "cal_read": false,
+    "g10_read": false,
+    "t2rd_read": false,
+    "training_started": false,
+    "inference_started": false,
+    "attack_started": false
+  },
+  "compute_authorization": {
+    "max_a800_gpus": 8,
+    "multicore_cpu": true,
+    "high_memory": true,
+    "condition": "Only for the currently unlocked gate; bind every run to a clean full commit SHA"
+  },
+  "execution_blocker": {
+    "code": "SERVER_SESSION_NOT_CONNECTED",
+    "detail": "This Codex work session has GitHub access but no SSH/cluster connector, host, key, or mounted server checkout. Server execution cannot start until a session is connected."
+  },
+  "next_actions": [
+    "Connect the A800 server session",
+    "Fetch this Codex branch and create a detached clean worktree at the final source commit",
+    "Run full server unit/integration suites",
+    "Generate immutable run_A and run_B using distinct empty directories",
+    "Run finalize_h03_r6.py and commit the complete evidence package",
+    "Create a later transition receipt before independently unlocking C3-S3"
+  ],
+  "h03_r6_source": {
+    "resolver_commit": "89d6473f46c0a47fec069c5df0980df28cebcccf",
+    "tests_commit": "2dfb79f883684b419f188298a69fdfe46a355e9a",
+    "finalizer_commit": "a4979ad9d1f6020b3e3d287f8ca10fe426a70661",
+    "local_contract_tests": {
+      "passed": 20,
+      "failed": 0,
+      "errors": 0
+    },
+    "python_compile": "PASS",
+    "limitations": [
+      "No LIBERO/MuJoCo production integration run in this work session",
+      "No server run_A/run_B generated",
+      "No protected data accessed"
+    ]
+  }
+}

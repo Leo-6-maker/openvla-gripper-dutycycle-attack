@@ -1,0 +1,67 @@
+{
+  "document": "FACTORIZED_CALIBRATION_DESIGN_DECISION_V1",
+  "frozen_date": "2026-07-22",
+  "revised_date": "2026-07-23",
+  "status": "IDENTITY_CLOSURE_PASS_AWAITING_AUTHORITATIVE_TEACHER_COVERAGE",
+  "revision_note": "2026-07-23: Five-way identity and cohort closure passed via sealed deterministic C/P allocation. The next hard gate is authoritative external-R7 K10 Teacher coverage for exact C/P/H identities before any Student inference.",
+  "current_state": {
+    "phase_a_complete": true,
+    "w32_seal_pass": true,
+    "identity_audit": "PASS_DETERMINISTIC_ALLOCATION",
+    "chosen_scheme": "DETERMINISTIC_C_P_ALLOCATION_WITH_INDEPENDENT_H",
+    "reason": "T/C/P/H/A disjointness and cohort closure are proven. C/P Student inference remains blocked until authoritative external-R7 K10 Teacher bundles pass contract, source-step, seal, identity, and statistical-coverage checks."
+  },
+  "phase_b_prerequisite": {
+    "description": "Identity manifests are available and five-way disjointness has passed. Complete authoritative C/P/H Teacher materialization and Phase B V3.1 validation.",
+    "codex_deliverables": [
+      "FACTORIZED_IDENTITY_SOURCE_DISCOVERY_V1.json",
+      "FACTORIZED_CHECKPOINT_TRAINING_IDENTITY_LEDGER_V1.json",
+      "FACTORIZED_IDENTITY_ALLOCATION_PLAN_V1.json",
+      "FACTORIZED_PREINFERENCE_IDENTITY_FEASIBILITY_AUDIT_V1.json",
+      "FACTORIZED_IDENTITY_COUNTS_BY_SPLIT.csv"
+    ],
+    "deepseek_validator": "validate_factorized_identity_disjointness.py",
+    "status": "IDENTITY_COMPLETE_TEACHER_COVERAGE_HOLD"
+  },
+  "scheme_decision_tree": {
+    "PASS_EXISTING_ROOTS": {
+      "conditions": [
+        "Original CLEAN2000 cohort manifests (1200/200/200/400) recovered and SHA-verified",
+        "DETECTOR_VAL never entered checkpoint training",
+        "DETECTOR_TEST never used for model or threshold selection",
+        "ATTACK_EVAL never participated in detector development",
+        "All 12 splits have sufficient per-role identity coverage",
+        "Five-way pairwise disjointness proven by validator"
+      ],
+      "action": "Allocate DETECTOR_VAL→C+P (deterministic split), DETECTOR_TEST→H, ATTACK_EVAL→A. Proceed to Phase C.",
+      "status": "NOT_SELECTED"
+    },
+    "PASS_DETERMINISTIC_ALLOCATION": {
+      "conditions": [
+        "CLEAN2000 cohorts exist but C/P not pre-split",
+        "DETECTOR_VAL identities proven independent of checkpoint training",
+        "Deterministic split algorithm pre-registered before any inference",
+        "Split uses only allowed stratification variables (suite, route, task_family, Teacher_label_class, canonical_identity_hash)",
+        "Split salt, sort key, algorithm SHA frozen",
+        "Pre-inference timestamp proves allocation precedes any prediction generation"
+      ],
+      "action": "Execute deterministic C/P split, seal allocation manifest, then proceed to Phase C.",
+      "status": "SELECTED_PENDING_TEACHER_COVERAGE"
+    },
+    "NESTED_RETRAIN_REQUIRED": {
+      "conditions": [
+        "Proven cross-role canonical identity contamination between checkpoint training and C/P/H/A",
+        "Proven C/P/H/A identity reuse that invalidates the pre-registered independent evaluation design"
+      ],
+      "action": "Re-establish frozen training identities → inner-CV model selection → independent C/P/H/A allocation → new inference. PR #98/#99/#100 interfaces unchanged.",
+      "status": "NOT_CURRENTLY_REQUIRED"
+    }
+  },
+  "holding_rules": {
+    "no_heldout_OOF_reuse": "Heldout OOF predictions cannot serve as BOTH calibration data AND evaluation data",
+    "five_way_disjointness": "T ∩ C = T ∩ P = T ∩ H = T ∩ A = ∅, C ∩ P = C ∩ H = P ∩ H = ∅, A isolated from all",
+    "production_data_frozen": "No scheme can proceed without sealed, authorized calibration/policy artifacts",
+    "training_provenance": "Training identities must come from actual training records, never set subtraction",
+    "no_post_hoc_allocation": "Identity allocation must be frozen BEFORE any prediction is generated for those identities"
+  }
+}

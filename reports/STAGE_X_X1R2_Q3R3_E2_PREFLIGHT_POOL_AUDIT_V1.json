@@ -1,0 +1,199 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E2_PREFLIGHT_POOL_AUDIT_V1",
+  "status": "HOLD_Q3R3_E2_FEASIBILITY_EVIDENCE_INSUFFICIENT_FROZEN_POOL_EXHAUSTED",
+  "date": "2026-08-20",
+  "gate": "STAGE_X_X1R2_Q3R3_E2_PROSPECTIVE_STRICT_FEASIBILITY",
+  "decision": "HOLD_Q3R3_E2_FEASIBILITY_EVIDENCE_INSUFFICIENT_FROZEN_POOL_EXHAUSTED",
+  "scientific_interpretation": "This is a pre-attack authority/evidence hold, not a strict-method infeasibility result and not an efficacy result. No E2 TRUE candidate audit was started.",
+  "authority": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "pull_request": 135,
+    "superseding_pi_comment_id": "5358055857",
+    "superseding_pi_comment_url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/135#issuecomment-5358055857",
+    "e2_rule": "Use only never-started identities from the frozen Q3R2 engineering pool; no replacement, top-up, outcome-ranked pool, or scientific/protected identity."
+  },
+  "source_binding": {
+    "audit_source_commit": "782a00db94cf0644ebec96caf4134dc3b2187ff7",
+    "audit_source_tree": "15303ec92b0c39e69d7c9a62d04880cf1798c5a4",
+    "pool_path": "reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json",
+    "pool_raw_sha256": "4a703459336c7fa1c93d7e8dc7fe6c9391ac9c3c2986bd5bf443d083ef7fa0cb",
+    "pool_remote_blob_sha1_observed_in_c_and_c2": "2f567ccf16fdd42479a566b48a9ac9893fd027cb",
+    "branch_replay_protocol_raw_sha256": "dfe0ae401132b995671f40f42f834b29220559e49acb8a5b2bdc39231cf3fe7a",
+    "c2_protocol_raw_sha256": "480684b69d4c73cfe4708e79a94eb36ac1b631ae1e8ddc7062edda1ca6dc8d86",
+    "d2_protocol_raw_sha256": "e2d53e32d4091cf5b8abc233fdc38a78b877fed52452869b5d3f4799cde8db94"
+  },
+  "pool": {
+    "status": "STAGE_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_FROZEN",
+    "selected_count": 48,
+    "per_suite_count": 12,
+    "selection_salt": "STAGE_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1_20260820",
+    "source_g10_ledger_sha256": "eadad7440ee67b9aeff0bb73ceab7af3b27fc1cf1ccb6e4bebf953660f75a015",
+    "stage_x_scientific_ledger_sha256": "11d57fb28ad497be51f3627dcfdefe43b7bfebb782a31bcec5b8d3b9f922e61d",
+    "selection_is_outcome_blind": true,
+    "all_selected_permanently_excluded": true,
+    "scientific_use": false,
+    "outcome_read": false
+  },
+  "static_union_check": {
+    "status": "PASS",
+    "method": "Pool JSON selected identities were joined to the sealed Q3R2 already-exposed binding, Q3R3-C scan lists, and Q3R3-C2 scan lists by fixture_id; the D2 selected identity was checked for duplicate reuse rather than counted as a new identity.",
+    "pool_identities_consumed": 33,
+    "pool_identities_remaining": 15,
+    "duplicate_or_unknown_consumed_ids": [],
+    "object_suite_remaining_count": 0
+  },
+  "suite_accounting": [
+    {
+      "suite": "libero_10",
+      "pool_count": 12,
+      "consumed_count": 7,
+      "consumed_fixture_ids": [
+        "Q3R2-LIBERO_10-01",
+        "Q3R2-LIBERO_10-02",
+        "Q3R2-LIBERO_10-03",
+        "Q3R2-LIBERO_10-04",
+        "Q3R2-LIBERO_10-05",
+        "Q3R2-LIBERO_10-06",
+        "Q3R2-LIBERO_10-07"
+      ],
+      "exposure_sources": {
+        "q3r2_already_exposed": ["Q3R2-LIBERO_10-01"],
+        "q3r3_c_scan": ["Q3R2-LIBERO_10-02", "Q3R2-LIBERO_10-03", "Q3R2-LIBERO_10-04", "Q3R2-LIBERO_10-05"],
+        "q3r3_c2_scan": ["Q3R2-LIBERO_10-06", "Q3R2-LIBERO_10-07"],
+        "d2_reused_selected": ["Q3R2-LIBERO_10-07"]
+      },
+      "remaining_count": 5,
+      "remaining": [
+        {"fixture_id": "Q3R2-LIBERO_10-08", "canonical_parent_key": "libero_10/task_08/state_39"},
+        {"fixture_id": "Q3R2-LIBERO_10-09", "canonical_parent_key": "libero_10/task_03/state_31"},
+        {"fixture_id": "Q3R2-LIBERO_10-10", "canonical_parent_key": "libero_10/task_02/state_34"},
+        {"fixture_id": "Q3R2-LIBERO_10-11", "canonical_parent_key": "libero_10/task_02/state_45"},
+        {"fixture_id": "Q3R2-LIBERO_10-12", "canonical_parent_key": "libero_10/task_09/state_29"}
+      ]
+    },
+    {
+      "suite": "libero_goal",
+      "pool_count": 12,
+      "consumed_count": 8,
+      "consumed_fixture_ids": [
+        "Q3R2-LIBERO_GOAL-01",
+        "Q3R2-LIBERO_GOAL-02",
+        "Q3R2-LIBERO_GOAL-03",
+        "Q3R2-LIBERO_GOAL-04",
+        "Q3R2-LIBERO_GOAL-05",
+        "Q3R2-LIBERO_GOAL-06",
+        "Q3R2-LIBERO_GOAL-07",
+        "Q3R2-LIBERO_GOAL-08"
+      ],
+      "exposure_sources": {
+        "q3r2_already_exposed": ["Q3R2-LIBERO_GOAL-01"],
+        "q3r3_c_scan": ["Q3R2-LIBERO_GOAL-02", "Q3R2-LIBERO_GOAL-03", "Q3R2-LIBERO_GOAL-04", "Q3R2-LIBERO_GOAL-05", "Q3R2-LIBERO_GOAL-06"],
+        "q3r3_c2_scan": ["Q3R2-LIBERO_GOAL-07", "Q3R2-LIBERO_GOAL-08"],
+        "d2_reused_selected": ["Q3R2-LIBERO_GOAL-08"]
+      },
+      "remaining_count": 4,
+      "remaining": [
+        {"fixture_id": "Q3R2-LIBERO_GOAL-09", "canonical_parent_key": "libero_goal/task_07/state_43"},
+        {"fixture_id": "Q3R2-LIBERO_GOAL-10", "canonical_parent_key": "libero_goal/task_08/state_32"},
+        {"fixture_id": "Q3R2-LIBERO_GOAL-11", "canonical_parent_key": "libero_goal/task_05/state_21"},
+        {"fixture_id": "Q3R2-LIBERO_GOAL-12", "canonical_parent_key": "libero_goal/task_09/state_24"}
+      ]
+    },
+    {
+      "suite": "libero_object",
+      "pool_count": 12,
+      "consumed_count": 12,
+      "consumed_fixture_ids": [
+        "Q3R2-LIBERO_OBJECT-01",
+        "Q3R2-LIBERO_OBJECT-02",
+        "Q3R2-LIBERO_OBJECT-03",
+        "Q3R2-LIBERO_OBJECT-04",
+        "Q3R2-LIBERO_OBJECT-05",
+        "Q3R2-LIBERO_OBJECT-06",
+        "Q3R2-LIBERO_OBJECT-07",
+        "Q3R2-LIBERO_OBJECT-08",
+        "Q3R2-LIBERO_OBJECT-09",
+        "Q3R2-LIBERO_OBJECT-10",
+        "Q3R2-LIBERO_OBJECT-11",
+        "Q3R2-LIBERO_OBJECT-12"
+      ],
+      "exposure_sources": {
+        "q3r2_already_exposed": ["Q3R2-LIBERO_OBJECT-01"],
+        "q3r3_c_scan": ["Q3R2-LIBERO_OBJECT-02", "Q3R2-LIBERO_OBJECT-03", "Q3R2-LIBERO_OBJECT-04", "Q3R2-LIBERO_OBJECT-05", "Q3R2-LIBERO_OBJECT-06", "Q3R2-LIBERO_OBJECT-07", "Q3R2-LIBERO_OBJECT-08", "Q3R2-LIBERO_OBJECT-09"],
+        "q3r3_c2_scan": ["Q3R2-LIBERO_OBJECT-10", "Q3R2-LIBERO_OBJECT-11", "Q3R2-LIBERO_OBJECT-12"],
+        "d2_reused_selected": ["Q3R2-LIBERO_OBJECT-12"]
+      },
+      "remaining_count": 0,
+      "remaining": []
+    },
+    {
+      "suite": "libero_spatial",
+      "pool_count": 12,
+      "consumed_count": 6,
+      "consumed_fixture_ids": [
+        "Q3R2-LIBERO_SPATIAL-01",
+        "Q3R2-LIBERO_SPATIAL-02",
+        "Q3R2-LIBERO_SPATIAL-03",
+        "Q3R2-LIBERO_SPATIAL-04",
+        "Q3R2-LIBERO_SPATIAL-05",
+        "Q3R2-LIBERO_SPATIAL-06"
+      ],
+      "exposure_sources": {
+        "q3r2_already_exposed": ["Q3R2-LIBERO_SPATIAL-01"],
+        "q3r3_c_scan": ["Q3R2-LIBERO_SPATIAL-02", "Q3R2-LIBERO_SPATIAL-03", "Q3R2-LIBERO_SPATIAL-04"],
+        "q3r3_c2_scan": ["Q3R2-LIBERO_SPATIAL-05", "Q3R2-LIBERO_SPATIAL-06"],
+        "d2_reused_selected": ["Q3R2-LIBERO_SPATIAL-06"]
+      },
+      "remaining_count": 6,
+      "remaining": [
+        {"fixture_id": "Q3R2-LIBERO_SPATIAL-07", "canonical_parent_key": "libero_spatial/task_05/state_25"},
+        {"fixture_id": "Q3R2-LIBERO_SPATIAL-08", "canonical_parent_key": "libero_spatial/task_06/state_37"},
+        {"fixture_id": "Q3R2-LIBERO_SPATIAL-09", "canonical_parent_key": "libero_spatial/task_02/state_23"},
+        {"fixture_id": "Q3R2-LIBERO_SPATIAL-10", "canonical_parent_key": "libero_spatial/task_07/state_39"},
+        {"fixture_id": "Q3R2-LIBERO_SPATIAL-11", "canonical_parent_key": "libero_spatial/task_03/state_20"},
+        {"fixture_id": "Q3R2-LIBERO_SPATIAL-12", "canonical_parent_key": "libero_spatial/task_03/state_37"}
+      ]
+    }
+  ],
+  "sealed_evidence": {
+    "q3r3_c_audit_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_c_20260820/STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_AUDIT_V1.json",
+    "q3r3_c_audit_sha256": "ddd25e2eb4c7c377d4765174b9d276fa29dbe5149c3e9ef6dbf2b98503cfd31d",
+    "q3r3_c_root_seal_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_c_20260820/STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_ROOT_SEAL_V1.json",
+    "q3r3_c_root_seal_sha256": "9159b6601c856b45fee13e9e1dfb689cd7194949fd0094f6951d54e3fe19b698",
+    "q3r3_c2_audit_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_c2_20260820/STAGE_X1R2_Q3R3_C2_BRANCH_REPLAY_AUDIT_V1.json",
+    "q3r3_c2_audit_sha256": "ca8f5075073b04ee8db4ff9c83faa7382ed90aecffb3f7b21e6fbf5b2721f571",
+    "q3r3_c2_root_seal_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_c2_20260820/STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_ROOT_SEAL_V1.json",
+    "q3r3_c2_root_seal_sha256": "fe23991c94852bc65269d740a6c67f782350dc61e600f766fdfbf85461abbdcc",
+    "q3r3_d2_audit_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_d2_20260820/STAGE_X1R2_Q3R3_ENGINEERING_MATRIX_AUDIT_V1.json",
+    "q3r3_d2_audit_sha256": "daa74f4279ac4672adc7b233b2c7c72ea444aa9e13f24c0d4c03b8c2fb6617ca"
+  },
+  "evidence_semantics": {
+    "c_and_c2_are_branch_replay_only": true,
+    "d2_is_already_consumed_and_not_a_new_identity": true,
+    "no_e2_candidate_audit_exists": true,
+    "no_method_infeasibility_claim": true,
+    "no_attack_efficacy_claim": true
+  },
+  "protected_boundary": {
+    "e2_gpu_worker_mounted": 0,
+    "openvla_inference": 0,
+    "simulator_steps": 0,
+    "pgd_or_backward": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "attack_outcome_reads": 0
+  },
+  "resource_rule_recorded": {
+    "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "eligibility": "free GPU memory > 20480 MiB at immediate pre-launch check",
+    "max_workers": 8,
+    "max_workers_per_physical_gpu": 1,
+    "foreign_gpu_processes": "must remain untouched",
+    "not_used_because": "E2 cannot legally complete the four-suite prospective gate with zero never-started object identities."
+  },
+  "next_legal_action": "OWNER_OR_PI_REVIEW_REQUIRED_FOR_A_NEW_FROZEN_ENGINEERING_POOL_OR_EXPLICIT_AUTHORITY_CHANGE; do not create a top-up, use scientific identities, or run only the three non-exhausted suites as if E2 were complete.",
+  "mandatory_stop": "STOP_BEFORE_E2_GPU_OR_MODEL_EXECUTION"
+}

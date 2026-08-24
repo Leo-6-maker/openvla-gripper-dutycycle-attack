@@ -1,0 +1,114 @@
+{
+  "changed_paths": [],
+  "claim_boundary": "exact current four-suite inventory; prior Z0R1 mismatch remains historical and is not relabeled",
+  "historical_z0r1_snapshot_preserved": true,
+  "immutable_authority": {
+    "path": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
+    "sha256": "eeb9fa0be922c34937d90caf849bc750db9b0ff707dc5187c35e1f6522f6fed8"
+  },
+  "re_audit": {
+    "libero_10": {
+      "bytes": 15085093727,
+      "exact_match": true,
+      "file_classes": {
+        "README_gitattributes": "NON_SEMANTIC_METADATA",
+        "config_tokenizer_processor_dataset_statistics": "LOAD_BEARING_SEMANTIC_BYTES",
+        "safetensors": "LOAD_BEARING_MODEL_BYTES"
+      },
+      "file_level_diff": [],
+      "files": 18,
+      "inventory_source": "remote_read_only_full_inventory_reaudit",
+      "load_bearing_bytes_exact": true,
+      "load_bearing_key_file_sha256": {
+        "config.json": "a23e83751870296c2500048becfc4241e5245e123ee69b01b4e584b1c4d3b2cd",
+        "dataset_statistics.json": "54ca346948d5e62e9519a9ed93e45f0a069b9ec997ad1f48f1d8867d4d2d86d2",
+        "model.safetensors.index.json": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "processing_prismatic.py": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+        "tokenizer.json": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "tokenizer.model": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347"
+      },
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+      "semantic": "70c660d7a3d1d6e1f86107d76ae9213cc75e77b9c483cfdfe91c8ea6f61aedad",
+      "tree": "4a83f512232909d34ec2f835acf492713b4c174f0b016ac00cbb330ed5ff8dbd",
+      "weights": "3e67f96dfa0b2295a7bb016709c6bdfd0a8f7c8e7c5a8b9c8476dd5728e860819"
+    },
+    "libero_goal": {
+      "bytes": 15085095390,
+      "exact_match": true,
+      "file_classes": {
+        "README_gitattributes": "NON_SEMANTIC_METADATA",
+        "config_tokenizer_processor_dataset_statistics": "LOAD_BEARING_SEMANTIC_BYTES",
+        "safetensors": "LOAD_BEARING_MODEL_BYTES"
+      },
+      "file_level_diff": [],
+      "files": 19,
+      "inventory_source": "remote_read_only_full_inventory_reaudit",
+      "load_bearing_bytes_exact": true,
+      "load_bearing_key_file_sha256": {
+        "config.json": "06135f79f1010f85837ec4b8373bdda3a9387ab4937bc959e91a0ef4208ed237",
+        "dataset_statistics.json": "5ea8e0815367f6d684736050d6635e1327ed19d011b002f68a56fae1ab980a6a",
+        "model.safetensors.index.json": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "processing_prismatic.py": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+        "tokenizer.json": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "tokenizer.model": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347"
+      },
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+      "semantic": "c9c38cd09de70076cba28b410df2868389e5f27472fe2b83b9926509821a7cdb",
+      "tree": "5354cfe948abd56789ea3b50976fb3693d68a8b617771ca0db8fee368dfd542d",
+      "weights": "aac0c7f827825d699d1385851e3aae06383882228f4261c395dab8e9cc7bfca3"
+    },
+    "libero_object": {
+      "bytes": 15085095882,
+      "exact_match": true,
+      "file_classes": {
+        "README_gitattributes": "NON_SEMANTIC_METADATA",
+        "config_tokenizer_processor_dataset_statistics": "LOAD_BEARING_SEMANTIC_BYTES",
+        "safetensors": "LOAD_BEARING_MODEL_BYTES"
+      },
+      "file_level_diff": [],
+      "files": 19,
+      "inventory_source": "remote_read_only_full_inventory_reaudit",
+      "load_bearing_bytes_exact": true,
+      "load_bearing_key_file_sha256": {
+        "config.json": "72566b15b9ce4a5f5452aa50b5cc949811ab0a12b72a79a713b6355875813cff",
+        "dataset_statistics.json": "a4b953c2ab889176a019ce92b86b855bc5990312d1a46cd7a2d9da1abbece861",
+        "model.safetensors.index.json": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "processing_prismatic.py": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+        "tokenizer.json": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "tokenizer.model": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347"
+      },
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+      "semantic": "1e5360756623157afa024b38ef7fd26f5add93beaaa7f7794108cfdc1312f243",
+      "tree": "f3e5c61db14bd2670e98ea742bfec6baace25533ce8ad2c11685d68e20957f6c",
+      "weights": "3497559622046335ebf0e250f49924af35313338a346086ce6dfc78f6084398d"
+    },
+    "libero_spatial": {
+      "bytes": 15085095735,
+      "exact_match": true,
+      "file_classes": {
+        "README_gitattributes": "NON_SEMANTIC_METADATA",
+        "config_tokenizer_processor_dataset_statistics": "LOAD_BEARING_SEMANTIC_BYTES",
+        "safetensors": "LOAD_BEARING_MODEL_BYTES"
+      },
+      "file_level_diff": [],
+      "files": 19,
+      "inventory_source": "remote_read_only_full_inventory_reaudit",
+      "load_bearing_bytes_exact": true,
+      "load_bearing_key_file_sha256": {
+        "config.json": "0f8e15765a60995234ab8b0128da37864577a7ef7c4e8f40a3a35ab1a145634f",
+        "dataset_statistics.json": "7636449e2a70f48b42713237c57031bb95a6df1dfd81ef913d756d7d2626b1df",
+        "model.safetensors.index.json": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+        "processing_prismatic.py": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+        "tokenizer.json": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+        "tokenizer.model": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347"
+      },
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620",
+      "semantic": "8575f7f16376d79dbf824dd65379b2e6e787c42343ee60c50e51c57f7850fd0f",
+      "tree": "b3faccff2e0c1b401973aca6e12e98ae23482441d85199ae9507251ac1dea1b5",
+      "weights": "4cb8f0a23a9cbd9331a9f70bce6880d4042ae7acf29078d73802e447be3b3c93"
+    }
+  },
+  "schema": "STAGE_Z_Z0R2_M0_FILE_LEVEL_AUTHORITY_DIFF_V1",
+  "status": "PASS_M0_LOAD_BEARING_BYTES_EXACT",
+  "unresolved_paths": []
+}

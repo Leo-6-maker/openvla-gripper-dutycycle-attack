@@ -1,0 +1,47 @@
+{
+  "schema": "STAGE_VII_RUNTIME_INPUT_CONTRACT_V1",
+  "stage": "STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR",
+  "status": "FROZEN_BEFORE_CANDIDATE_TRAINING",
+  "allowed_runtime_safe_inputs": [
+    "historical_or_current_25D_causal_feature_stream",
+    "frozen_clean_rgb_embedding_if_materialized_by_an_authorized_clean_encoder",
+    "task_language_embedding_from_a_frozen_clean_encoder",
+    "clean_OpenVLA_outputs_and_metadata",
+    "decoded_clean_action_intent"
+  ],
+  "embedding_rules": {
+    "OpenVLA_finetuning": false,
+    "SigLIP_finetuning": false,
+    "language_encoder_finetuning": false,
+    "train_only_projection_allowed": true,
+    "raw_rgb_or_token_bytes_are_not_embeddings": true
+  },
+  "forbidden_runtime_inputs": [
+    "privileged_simulator_state",
+    "V_phys_or_any_intervention_outcome",
+    "attacked_input",
+    "post_intervention_observation",
+    "reward",
+    "done",
+    "info",
+    "post_intervention_telemetry",
+    "Eval160",
+    "protected_evaluation",
+    "explicit_suite_id",
+    "explicit_task_id",
+    "outcome_derived_parent_or_probe_selection"
+  ],
+  "diagnostic_only_exceptions": [
+    "oracle_suite_or_task_identity_upper_bound",
+    "raw_clean_snapshot_availability_audit"
+  ],
+  "diagnostic_exceptions_cannot_enter_final_model": true,
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0
+    }
+  }
+}

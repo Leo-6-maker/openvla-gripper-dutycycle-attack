@@ -1,0 +1,54 @@
+{
+  "claim_safe_wording": "36 shared fresh task/state identities spanning all four LIBERO suites, from a 40-task design frame with four prospectively sealed structural-missing Goal cells",
+  "forbidden_repairs": [
+    "replacement",
+    "top_up",
+    "reusing exposed identities",
+    "BRIDGE_V3",
+    "protected/Eval160",
+    "widening state range",
+    "post-outcome selection"
+  ],
+  "frozen_missing_cells": [
+    "libero_goal/task_01",
+    "libero_goal/task_04",
+    "libero_goal/task_06",
+    "libero_goal/task_09"
+  ],
+  "frozen_shared_identity_count": 36,
+  "git_binding": {
+    "head_commit": "d2671ceecb758f88eb2bce494545fb75ae927914",
+    "head_tree": "0e4ef9aed1da4fc536d3bca7a68e1c9412b7a000"
+  },
+  "nominal_design": {
+    "nominal_task_cells": 40,
+    "state_range": [
+      0,
+      49
+    ],
+    "suite_count": 4,
+    "tasks_per_suite": 10
+  },
+  "preserves": [
+    "model panel",
+    "doses",
+    "physical endpoint",
+    "mechanism criteria",
+    "protected firewall",
+    "no replacement after exposure"
+  ],
+  "schema": "STAGE_Z_Z0R1_STRUCTURAL_MISSINGNESS_AMENDMENT_V1",
+  "source_panel": {
+    "path": "reports/STAGE_Z_Z0_SHARED_40_IDENTITY_PANEL_V1.json",
+    "selected_rows_are_reused_without_reranking": true,
+    "sha256": "6523c1f2e514a2f329e369d17a38810e08669d23bcdbb63c0cf48462e0b0f84e"
+  },
+  "status": "STAGE_Z_Z0R1_STRUCTURAL_36_PANEL_AMENDMENT_SEALED",
+  "suite_denominators": {
+    "libero_10": 10,
+    "libero_goal": 6,
+    "libero_object": 10,
+    "libero_spatial": 10
+  },
+  "supersedes_only": "the exact-40 denominator requirement for Stage Z, prospectively before any Stage-Z model outcome"
+}

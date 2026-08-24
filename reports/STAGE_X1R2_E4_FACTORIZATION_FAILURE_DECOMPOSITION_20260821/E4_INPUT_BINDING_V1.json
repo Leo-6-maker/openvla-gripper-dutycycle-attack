@@ -1,0 +1,26 @@
+{
+  "artifact_count": 60,
+  "candidate_slot_denominator": "12 parents x 6 ordered candidates = 72; parent-level aggregation is primary",
+  "decision_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/E3_DECISION_TABLE_V1.json",
+  "decision_sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24",
+  "e3_status": "E3_STRICT_SELECTIVE_REALIZABILITY_PARTIAL_SUITE_DEPENDENT",
+  "execution_mode": "offline_cpu_static_sealed_artifact_analysis",
+  "forbidden_execution": {
+    "backward": 0,
+    "env_step": 0,
+    "eval160": 0,
+    "gpu": 0,
+    "openvla_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected": 0,
+    "simulator": 0,
+    "vphys": 0
+  },
+  "root_seal_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_e3_factorized_selective_realizability_20260821/E3_ROOT_SEAL_V1.json",
+  "root_seal_sha256": "20f5be64be1884aded25385e08c69ba3f5982422d546a532a737fd89e1bec16b",
+  "root_seal_status": "SEALED_E3_STRICT_SELECTIVE_REALIZABILITY_PARTIAL_SUITE_DEPENDENT",
+  "source_commit": "d642ab5a57d23f44933e1907991c845e2f30e294",
+  "source_status": "",
+  "source_tree": "1533bcec345c1b9ee06c46281291700c47527489"
+}

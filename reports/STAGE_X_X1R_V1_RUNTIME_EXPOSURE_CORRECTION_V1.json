@@ -1,0 +1,73 @@
+{
+  "schema": "STAGE_X_X1R_V1_RUNTIME_EXPOSURE_CORRECTION_V1",
+  "status": "STAGE_X_X1R_V1_RUNTIME_EXPOSURE_CORRECTION_PASS",
+  "purpose": "append-only bookkeeping correction; historical receipts and scientific identity are unchanged",
+  "historical_receipts_mutated": false,
+  "parents": [
+    {
+      "review_id": "M001",
+      "ordinal": 32,
+      "canonical_parent_key": "libero_spatial/task_02/state_31",
+      "runtime_source_commit": "c96f4079fa8c466160e6d07521e9f82cb34eb829",
+      "runtime_source_tree": "18cfe3263af6c79860aca3a2b1cd9141bf6bd16d",
+      "historical_branch_receipt_sha256": "8ad63445d9994a2aefdd8aafe5f46a61603a4b10e59ea9dc176c137efdbae44",
+      "exposure": {
+        "attack_invocation_started": false,
+        "attack_result_returned": false,
+        "attack_result_accepted": false,
+        "pgd_counter_recorded": 0,
+        "backward_counter_recorded": 0,
+        "adversarial_action_executed": false,
+        "attacked_env_step_executed": false,
+        "attack_outcome_produced": false,
+        "vphys_read": false
+      },
+      "evidence_basis": "failure occurred before the first policy decision and before the attack branch was entered"
+    },
+    {
+      "review_id": "M002",
+      "ordinal": 34,
+      "canonical_parent_key": "libero_spatial/task_04/state_33",
+      "runtime_source_commit": "353d5594da430b30b16f6dd288155fa52a016c84",
+      "runtime_source_tree": "a7975415c5bff6e23170538007d4cd2060d5478f",
+      "historical_branch_receipt_sha256": "07b00e4e665f069ee403bbb87de38a127d23a9749278a3d981377ff54c6f7890",
+      "observed_failure": "RouteContractError:strict route result missing strict_route=True",
+      "counters_at_receipt": {
+        "model_inference_calls": 73,
+        "env_step_calls": 72,
+        "rows_materialized": 72,
+        "pgd_calls_recorded": 0,
+        "attack_backward_calls_recorded": 0,
+        "adversarial_images": 0,
+        "attacked_env_steps": 0,
+        "physical_interventions": 0,
+        "vphys_reads": 0,
+        "attack_outcome_reads": 0
+      },
+      "exposure": {
+        "attack_invocation_started": true,
+        "attack_result_returned": true,
+        "attack_result_accepted": false,
+        "pgd_counter_recorded": 0,
+        "backward_counter_recorded": 0,
+        "backward_computation_internal_possible": true,
+        "adversarial_action_executed": false,
+        "attacked_env_step_executed": false,
+        "attack_outcome_produced": false,
+        "vphys_read": false
+      },
+      "evidence_basis": "the old runner invoked attacker.attack before validate_true_pgd_attack_result; counter increments occurred only after validation, so recorded zero counters do not prove zero internal optimizer work",
+      "safe_scientific_statement": "no adversarial result was accepted for execution, no attacked env.step occurred, no attack outcome was produced, and no V_phys was read"
+    }
+  ],
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "vphys_reads": 0,
+    "physical_interventions": 0,
+    "attack_outcome_reads": 0
+  },
+  "next_gate": "X1R2_Q0_AUTHORITATIVE_ATTACK_ENTRYPOINT"
+}

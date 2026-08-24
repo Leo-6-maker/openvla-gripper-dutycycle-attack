@@ -1,0 +1,384 @@
+{
+  "authority": {
+    "clarification_comment_id": 5367846534,
+    "controlling_comment_id": 5367840153,
+    "gate": "STAGE_X_X1R2_F1_MATCHED_CVE_BRIDGE",
+    "paper_v1_immutable_root_sha256": "830c55dee96477e87c36437a33760a9dced0d1217ea01b3e72905f26fd142336",
+    "pull_request": 135,
+    "subgate": "F1-A"
+  },
+  "errors": [],
+  "feasibility": {
+    "available_by_suite": {
+      "libero_10": 33,
+      "libero_goal": 5,
+      "libero_object": 51,
+      "libero_spatial": 52
+    },
+    "deficit_by_suite": {
+      "libero_10": 0,
+      "libero_goal": 9,
+      "libero_object": 0,
+      "libero_spatial": 0
+    },
+    "exact_f1a_freeze_possible": false,
+    "reason": "libero_goal has only 5 remaining fresh G10 identities but requires 14 disjoint DEV+BRIDGE identities; exact F1-A cannot be frozen.",
+    "required_by_suite": {
+      "libero_10": 14,
+      "libero_goal": 14,
+      "libero_object": 14,
+      "libero_spatial": 14
+    }
+  },
+  "forbidden_repairs": [
+    "reuse_any_previous_engineering_identity",
+    "replacement_or_top_up",
+    "suite_substitution",
+    "state_range_expansion_to_0..19_without_new_scientific_authority",
+    "running_F1_B_before_exact_F1_A_freeze"
+  ],
+  "g10_population": {
+    "excluded_union_rows": 990,
+    "fresh_by_suite": {
+      "libero_10": 49,
+      "libero_goal": 21,
+      "libero_object": 70,
+      "libero_spatial": 70
+    },
+    "fresh_rows": 210,
+    "g10_authority_reconciliation": "1200 -> 990 exclusion union -> 210 fresh",
+    "rows": 1200
+  },
+  "next_legal_action": "PI review required for a new identity source or changed exact cohort sizes; do not run F1-B GPU.",
+  "post_g10_consumption": {
+    "consumed_union_key_count": 125,
+    "fresh_consumed_union_overlap_count": 69,
+    "remaining_fresh_by_suite": {
+      "libero_10": 33,
+      "libero_goal": 5,
+      "libero_object": 51,
+      "libero_spatial": 52
+    },
+    "remaining_fresh_count": 141,
+    "remaining_key_sha256": "028294ee7969bc18355bbac4f846913a575cc93c8066882159d60ce192f74057",
+    "source_bindings": {
+      "configs/STAGE_VI_B2_FRESH_PARENT_MANIFEST_V3.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 2
+        },
+        "fresh_overlap_count": 2,
+        "key_count": 16,
+        "sha256": "cbf5125b64c09815bd79ef05ba40d948797f99638294eab8808e65f37c0dbedd"
+      },
+      "configs/STAGE_V_M4_POST_HOLD_CANDIDATE_PARENT_MANIFEST_V1_1.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 22,
+        "sha256": "1ca15ea62cef54f5ad3612f8f164db7cc2c3e53a6fb3858b477212457d4bbb2c"
+      },
+      "paper/data/PAPER_V1_FIGURE5_E3_E4_PARENT_REALIZABILITY.csv": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 0,
+        "sha256": "8d34b4c6537ceb6e47de6a7c138c10b50d68785025a9c005d18adc22185b0128"
+      },
+      "paper/tables/PAPER_V1_E3_E4_PARENT_REALIZABILITY.csv": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 0,
+        "sha256": "88276a56800a2391285156aaac25765cd38d06913671f7b840f9c09e35bfd027"
+      },
+      "reports/STAGE_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_20260821/E3_DECISION_TABLE_V1.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "key_count": 12,
+        "sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24"
+      },
+      "reports/STAGE_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_20260821/STAGE_X1R2_E4_E3_CANDIDATE_FAILURE_DECOMPOSITION_V1.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "key_count": 12,
+        "sha256": "c4ac212f6998cd0c12b4c427aa2314a0f5a75cfb4cafca118bb78edfd43cd412"
+      },
+      "reports/STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS_V1.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 0,
+        "sha256": "dbd2e63e2b93f1511673494fd2015707881f50c821c729e07c2ad1a78b9abf16"
+      },
+      "reports/STAGE_X1R2_Q3R3_VISUAL_DIVERGENCE_AUDIT_V1.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 0,
+        "sha256": "df71fce77552ee95663a1583565159dc0d14eee2ee70f78edf56d17794d36ec0"
+      },
+      "reports/STAGE_X_X1R2_E3_SELECTIVE_REALIZABILITY_POOL_V1.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "key_count": 12,
+        "sha256": "221a4f071a395ef739b647cdb8da9aee8060475cd0f9b35248f13f651c08cf31"
+      },
+      "reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 12,
+          "libero_goal": 12,
+          "libero_object": 12,
+          "libero_spatial": 12
+        },
+        "fresh_overlap_count": 48,
+        "key_count": 48,
+        "sha256": "4a703459336c7fa1c93d7e8dc7fe6c9391ac9c3c2986bd5bf443d083ef7fa0cb"
+      },
+      "reports/STAGE_X_X1R2_Q3R3_E0_CANDIDATE_MATRIX_V1.csv": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 0,
+        "sha256": "b911043ab64746f3f3af367f2fae00bba22918a05dc42b014bf64d0f5d7511fc"
+      },
+      "reports/STAGE_X_X1R2_Q3R3_E2_GOAL_NO_LEGAL_EMIT_DIAGNOSTIC_V1.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 3,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 3,
+        "key_count": 3,
+        "sha256": "6eb80949c6b72560b75c9fa588bfd2234443da5ebb7f1936790de9685d01c232"
+      },
+      "reports/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_ENGINEERING_POOL_V1.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 3,
+          "libero_goal": 3,
+          "libero_object": 3,
+          "libero_spatial": 3
+        },
+        "fresh_overlap_count": 12,
+        "key_count": 12,
+        "sha256": "b7774b7f6bcfcb6e46056b739c86f764c5bc7dfb4304ed0eb2b31898c690acda"
+      },
+      "reports/STAGE_X_X1R2_Q3_ENGINEERING_FIXTURES_V1.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 1,
+          "libero_goal": 1,
+          "libero_object": 1,
+          "libero_spatial": 1
+        },
+        "fresh_overlap_count": 4,
+        "key_count": 4,
+        "sha256": "17d38891ce9ba1a3cb93f229946c32089abafcdc286bf32a900abd357940ab22"
+      },
+      "reports/server_evidence/STAGE_V_M4_ELIGIBLE_FORMAL_PARENT_MANIFEST_V2.json": {
+        "fresh_overlap_by_suite": {
+          "libero_10": 0,
+          "libero_goal": 0,
+          "libero_object": 0,
+          "libero_spatial": 0
+        },
+        "fresh_overlap_count": 0,
+        "key_count": 40,
+        "sha256": "8026d9310a58caa74e8a8b44fb8c5e56dead3d6fa35718c1a4e3f457c3cec7ad"
+      }
+    },
+    "source_count": 15
+  },
+  "protected_boundary": {
+    "backward": 0,
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "gpu": 0,
+    "openvla_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected": "UNREAD",
+    "simulator": 0,
+    "vphys": 0
+  },
+  "requested_populations": {
+    "bridge": {
+      "count": 32,
+      "per_suite": 8
+    },
+    "combined_required_by_suite": {
+      "libero_10": 14,
+      "libero_goal": 14,
+      "libero_object": 14,
+      "libero_spatial": 14
+    },
+    "dev": {
+      "count": 24,
+      "per_suite": 6
+    },
+    "disjoint_required": true,
+    "no_replacement_or_top_up": true
+  },
+  "schema": "STAGE_X_X1R2_F1A_STATIC_FEASIBILITY_AUDIT_V1",
+  "scope": "CPU/static/offline only; no GPU, model load, inference, simulator, env.step, PGD, V_phys, or protected read",
+  "source": {
+    "branch": "codex/stage-x-x1r2-q3-arm-isolation-repair-20260820",
+    "commit": "718792c6ebfc4d4d6ce81101bf25205391cc6758",
+    "g10_path": "reports/STAGE_X_X1R_T1D0R_G10_IDENTITY_EXCLUSION_LEDGER_V1.json",
+    "g10_sha256": "eadad7440ee67b9aeff0bb73ceab7af3b27fc1cf1ccb6e4bebf953660f75a015",
+    "g10_source_is_jsonl": true,
+    "g10_state_range": "20..49",
+    "tree": "f76a0cb8d1d8541a640f71208a15d7f28782a6e5"
+  },
+  "status": "HOLD_F1A_FRESH_POPULATION_INSUFFICIENT",
+  "y1": {
+    "all_native_open_token_ids_observed": [
+      31745
+    ],
+    "candidate_evidence_complete": true,
+    "candidate_rows": 72,
+    "direct_generated_gripper_token_ids_by_suite": {
+      "libero_10": [
+        31744,
+        31745,
+        31872
+      ],
+      "libero_goal": [
+        31744,
+        31745,
+        31872
+      ],
+      "libero_object": [
+        31744,
+        31872
+      ],
+      "libero_spatial": [
+        31744,
+        31745,
+        31872
+      ]
+    },
+    "native_open_rows": 5,
+    "native_open_token_ids_observed_by_suite": {
+      "libero_10": [
+        31745
+      ],
+      "libero_goal": [
+        31745
+      ],
+      "libero_object": [],
+      "libero_spatial": [
+        31745
+      ]
+    },
+    "not_established": [
+      "SURROGATE_PATH_MISMATCH",
+      "OPTIMIZATION_BUDGET_LIMITED",
+      "TRUE_MODEL_TARGETABILITY_LIMIT"
+    ],
+    "objective_vs_acceptance": {
+      "acceptance_gate": "checkpoint-local native OPEN token-set membership plus exact direct arm-token equality",
+      "acceptance_gate_source": "src/gripper_attack/attack_adapter.py::_select_strict_arm_candidate",
+      "historical_m0_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+      "historical_m0_target_token_id": 31745,
+      "historical_surrogate_score_path": "cached_autoregressive_generate_v1",
+      "open_region_comparator_path": "configs/fec_attack_v5_open_region.yaml",
+      "open_region_comparator_sha256": "310a63c5d890057744124accbedc640d5794bf09fec10a0ef57589c3a58189c0",
+      "target_token_only_vs_set_alignment": "SINGLE_TOKEN_OBJECTIVE_MISALIGNED_WITH_NATIVE_OPEN_SET"
+    },
+    "predeclared_y1_classifications": [
+      "SINGLE_TOKEN_OBJECTIVE_MISALIGNED_WITH_NATIVE_OPEN_SET",
+      "NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE"
+    ],
+    "sealed_score_evidence": {
+      "checkpoint_local_open_set_reconstructible_without_model_or_runtime": false,
+      "classification": "NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE",
+      "expected_margin_fields": [
+        "best_native_open_score",
+        "best_non_open_competitor_score",
+        "competitor_logsumexp_score",
+        "target_minus_best_competitor_margin",
+        "target_minus_competitor_logsumexp_margin",
+        "target_token_score"
+      ],
+      "margin_fields_missing": [
+        "best_native_open_score",
+        "best_non_open_competitor_score",
+        "competitor_logsumexp_score",
+        "target_minus_best_competitor_margin",
+        "target_minus_competitor_logsumexp_margin",
+        "target_token_score"
+      ],
+      "margin_fields_present": [],
+      "observed_candidate_fields": [
+        "arm_exact",
+        "arm_mismatch_dimensions",
+        "candidate_index",
+        "candidate_source",
+        "classification",
+        "delta_sha256",
+        "direct_generated_arm_token_ids",
+        "direct_generated_gripper_token_id",
+        "direct_generated_token_ids",
+        "evidence_missing_fields",
+        "gripper_token_changed",
+        "native_open",
+        "pixel_budget_adv_inputs_linf",
+        "processor_input_sha256",
+        "structural_errors",
+        "suite"
+      ]
+    },
+    "source_path": "reports/STAGE_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_20260821/STAGE_X1R2_E4_E3_CANDIDATE_FAILURE_DECOMPOSITION_V1.json",
+    "source_sha256": "c4ac212f6998cd0c12b4c427aa2314a0f5a75cfb4cafca118bb78edfd43cd412",
+    "status": "Y1_STATIC_AUDIT_COMPLETE",
+    "strict_valid_candidate_rows_by_suite": {
+      "libero_10": 2,
+      "libero_goal": 0,
+      "libero_object": 0,
+      "libero_spatial": 2
+    },
+    "strict_valid_rows": 4
+  }
+}

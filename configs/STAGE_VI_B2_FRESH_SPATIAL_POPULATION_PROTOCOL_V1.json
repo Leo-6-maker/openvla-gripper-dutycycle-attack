@@ -1,0 +1,86 @@
+{
+  "schema": "STAGE_VI_B2_FRESH_SPATIAL_POPULATION_PROTOCOL_V1",
+  "status": "FROZEN_OUTCOME_BLIND_PRE_CLEAN_ROLLOUT",
+  "append_only": true,
+  "purpose": "Freeze the complete non-protected LIBERO spatial universe, all static exclusion sets, and deterministic order before any new clean rollout for Stage VI-B2 population recovery.",
+  "selection": {
+    "salt": "STAGE_VI_B2_FRESH_SPATIAL_V3_20260816",
+    "rule": "First two identities in deterministic SHA rank that later pass the complete clean-only Gate-A; no score, label, horizon outcome, or intervention result is consulted.",
+    "target_new_spatial_parents": 2,
+    "clean_rollouts_permitted_before_freeze": false
+  },
+  "inputs": {
+    "g10_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json",
+      "expected_sha256": "06bd43fe5666b6bacb763e0ae7dbba12ef317911ba923b469dab8628cc8bb7ef",
+      "role": "non-protected held-out LIBERO identity universe"
+    },
+    "exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V7.json",
+      "expected_sha256": "efab2f0ebd8981628f7bb489fd6a6d58cf4254bbb30e8feabbbb83cb70d047c5",
+      "role": "prior physical-exposure exclusion"
+    },
+    "clean_attempt_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V10.json",
+      "expected_sha256": "369749925e09e58a3a6b0b96d59e4583cdbc34355a760f53a4e03659c5dda325",
+      "role": "prior clean-execution freshness exclusion"
+    },
+    "stage_v_formal_manifests": [
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json",
+        "expected_sha256": "890382bcd9a88d3646dfc66b080265c90c2fda666bf08b14fc3994d05ab492cd",
+        "role": "immutable Stage V formal parent population"
+      }
+    ],
+    "stage_v_physical_matrix_manifests": [
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_6D39860_20260815T183500Z/PARENT_MANIFEST.json",
+        "role": "Stage V physical timing matrix identity registry"
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_F696F582_20260816T040000Z/PARENT_MANIFEST.json",
+        "role": "Stage V physical timing matrix successor identity registry"
+      }
+    ],
+    "stage_vi_b2_manifests": [
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_ZERO_TREATMENT_PLAN_33061E0/B2_SELECTION_MANIFEST.json",
+        "role": "all prior Stage VI-B2 holdout identities, including failed zero-treatment parents"
+      }
+    ],
+    "stage_vi_b2_development_manifests": [
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json",
+        "role": "B2 development/model-selection parent firewall"
+      }
+    ],
+    "rejected_v2_manifest": {
+      "path": "configs/STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V2_REPLACEMENT.json",
+      "role": "rejected prospective replacement; identities remain excluded"
+    },
+    "prior_physical_named_roots": [
+      {
+        "base": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student",
+        "glob": "STAGE_VI_M4_R3_RECONSTRUCTION_*",
+        "role": "prior Stage VI physical/diagnostic identity namespaces; directory names only, no outcome files read"
+      }
+    ]
+  },
+  "protected_boundary": {
+    "eval160_status": "UNREAD",
+    "protected_status": "UNREAD",
+    "source_universe_non_protected_assertion": true,
+    "protected_registry_read": false,
+    "protected_reads": 0,
+    "eval160_reads": 0
+  },
+  "downstream": {
+    "clean_only_gate_a_required": true,
+    "new_clean_rollout_namespace_required": true,
+    "formal_m4_locked_contract": "16 parents x 24 probes x CONTROL/T3/T5/T10; T5 primary; censor-aware",
+    "student_candidate": "B2-C_SOFT_TV_DISTILL_DIRECT_VPHYS",
+    "student_threshold": 0.69,
+    "student_input": "16x25D_causal_window",
+    "teacher_student_weights_and_thresholds_frozen": true
+  }
+}

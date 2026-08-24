@@ -1,0 +1,34 @@
+{
+  "decision": "do not materialize OFT checkpoints until a new durable root or provenance-safe archival relocation is authorized and verified",
+  "destructive_cleanup_performed": false,
+  "durable_available_bytes_sum": 73208406016,
+  "durable_mounts": {
+    "/": {
+      "available_bytes": 927940608,
+      "capacity_pct": 100
+    },
+    "/llm_jzm": {
+      "available_bytes": 44635054080,
+      "capacity_pct": 99
+    },
+    "/mnt/sdc": {
+      "available_bytes": 27645411328,
+      "capacity_pct": 100
+    }
+  },
+  "existing_openpi_checkpoint_bytes": 12439122345,
+  "headroom_after_frozen_checkpoints_bytes": -2987353135,
+  "required_frozen_checkpoint_bytes": 76195759151,
+  "required_oft_checkpoint_bytes": 63756636806,
+  "safe_archival_root_found": false,
+  "schema": "STAGE_Z_Z0R1_STORAGE_PREFLIGHT_V1",
+  "snapshot_utc": "2026-08-22T16:03:47Z",
+  "status": "HOLD_STAGE_Z_Z0R1_THREE_MODEL_AUTHORITY_NOT_ESTABLISHED",
+  "sufficient_for_all_checkpoints_and_future_stage_artifacts": false,
+  "volatile_space_excluded": {
+    "/dev/shm": {
+      "reason": "tmpfs; not durable authority storage",
+      "usable_for_stage_z": false
+    }
+  }
+}

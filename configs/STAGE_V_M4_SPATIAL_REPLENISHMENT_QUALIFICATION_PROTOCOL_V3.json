@@ -1,0 +1,139 @@
+{
+  "schema": "STAGE_V_M4_SPATIAL_REPLENISHMENT_QUALIFICATION_PROTOCOL_V3",
+  "version": "M4-SPATIAL-REPLENISHMENT-V3",
+  "status": "FROZEN_OUTCOME_BLIND_PRE_ROLLOUT",
+  "append_only": true,
+  "purpose": "Clean-only A/B qualification of four frozen spatial candidates needed to close the 40-parent M4 corridor; this output is qualification evidence, not M4 intervention evidence.",
+  "supersedes_for_new_launch": "configs/STAGE_V_M4_SPATIAL_REPLENISHMENT_QUALIFICATION_PROTOCOL_V2.json",
+  "supersession_reason": "The Teacher-Student small-attack addendum changed the bound scientific-architecture-freeze artifact SHA; V2 remains historical and is not reused for a new runtime.",
+  "scientific_architecture_freeze": {
+    "path": "configs/STAGE_V_SCIENTIFIC_ARCHITECTURE_FREEZE_V1.json",
+    "sha256": "377912a916bd155f2217084ba7385d42b5eae1803c48e0497cd8982a51e1571b",
+    "m4_outcomes_read": false,
+    "teacher_student_started": false,
+    "attack_or_vis_started": false
+  },
+  "source_binding": {
+    "runtime_commit": "73bc7287a03457b105c035025a91dcb03883876f",
+    "runtime_tree": "763291b23174affe63296941efc4dc65ee7ec829",
+    "runtime_binding_semantics": "Immutable code snapshot; this protocol bundle is versioned separately and is not included in the runtime code tree binding.",
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "runner": {
+      "path": "scripts/detector_v5/run_stage_v_clean_replay_frozen.py",
+      "sha256": "87b8ec5e161c6a1f64195dd29a49e990dcb3c8530e77cf7a14db1d95f6e26ec6"
+    },
+    "qualification_orchestrator": {
+      "path": "scripts/detector_v5/run_stage_v_control_qualification.py",
+      "sha256": "12b045091e58ca7550f5b269b2f61c72e09a4f3b44bb85745c131f219dee5736"
+    },
+    "dynamic_common": {
+      "path": "scripts/detector_v5/stage_v_dynamic_common.py",
+      "sha256": "c240611a690199930f3e7b0044317dcbb3e8c84d32fc7c61c0b1a89e28829102"
+    },
+    "resource_contract": {
+      "path": "scripts/detector_v5/stage_v_gpu_resource_contract.py",
+      "sha256": "d0e85f74269fc8588fdd342cdba59dd2099cf5ffdaaf5979b7017978e54b1d21"
+    }
+  },
+  "freshness": {
+    "source_universe": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json",
+      "sha256": "06bd43fe5666b6bacb763e0ae7dbba12ef317911ba923b469dab8628cc8bb7ef",
+      "identity_count": 1200
+    },
+    "exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V7.json",
+      "sha256": "efab2f0ebd8981628f7bb489fd6a6d58cf4254bbb30e8feabbbb83cb70d047c5",
+      "excluded_count": 53,
+      "outcome_blind": true
+    },
+    "clean_attempt_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V10.json",
+      "sha256": "369749925e09e58a3a6b0b96d59e4583cdbc34355a760f53a4e03659c5dda325",
+      "excluded_count": 958,
+      "corridor_roots_included": true,
+      "postprocess_failure_root_included": true
+    },
+    "candidate_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_M4_REPLENISHMENT_CANDIDATE_MANIFEST_V2.json",
+      "sha256": "d884026751e273efefa62ff4bfd10fc11c7bd9053ac5267140addf9499c3a294",
+      "status": "FROZEN",
+      "candidate_count": 120,
+      "candidate_counts_by_suite": {
+        "libero_10": 30,
+        "libero_goal": 30,
+        "libero_object": 30,
+        "libero_spatial": 30
+      },
+      "overlap_with_clean_attempt_union": 0,
+      "overlap_with_exposure_union": 0,
+      "selection_before_new_rollouts": true,
+      "outcome_blind": true
+    },
+    "selection_salt": "4a8b2c1d6e7f8091a2b3c4d5e6f70819",
+    "candidate_order": "The orchestrator's deterministic rank under the frozen salt; no reseed, replacement, or failure-driven reorder.",
+    "source_clean_root": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_REPLENISHMENT_CLEAN_SOURCE_V2_20260812T145110Z",
+      "materialized": false,
+      "role": "Declared candidate provenance namespace only; no source artifact is read or reused by the clean replay runner.",
+      "candidate_source_artifact_read": false
+    }
+  },
+  "formal_corridor_context": {
+    "historical_stable_parent_count": 29,
+    "already_valid_replenishment_count": 7,
+    "required_final_parent_count": 40,
+    "target_new_spatial_count": 4,
+    "old_m4_authorization_consumable": false,
+    "new_spatial_rows_are_formal_m4_labels": false
+  },
+  "qualification": {
+    "mode": "FRESH_CLEAN_AB_REPLAY",
+    "suites": [
+      "libero_spatial"
+    ],
+    "replicates": [
+      "A",
+      "B"
+    ],
+    "target_per_suite": 4,
+    "initial_per_suite": 4,
+    "batch_size": 4,
+    "gpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "resource_mode": "MODE_B_THROUGHPUT_SCIENCE",
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "foreign_workload_allowed": true,
+    "foreign_process_interference": false,
+    "partial_fleet_allowed": true,
+    "initial_state_identity_exact": true,
+    "clean_success_required_for_both": true,
+    "engineering_invalid_is_non_consumable": true,
+    "labels_generated": false,
+    "protected_eval160_reads_allowed": false,
+    "attack_rollouts_allowed": false,
+    "vis_pgd_attack_rollouts_allowed": false,
+    "runner_command_template": "OPENVLA_ATTN_IMPLEMENTATION=eager /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python /mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-governed-20260812/scripts/detector_v5/run_stage_v_clean_replay_frozen.py --candidate-path {candidate_path} --output-dir {output_dir} --replicate {replicate} --gpu {gpu} --worker-id stage-v-spatial-replenishment-v3 --worker-script /mnt/sdc/dty_user/openvla_attack_official_v3_legacy_20260716/scripts/official_clean_worker.py --provenance-source /mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_PROVENANCE_V2_20260812T020000Z/UPSTREAM_PROVENANCE.json --upstream-root /mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4 --source-commit {source_commit} --source-tree {source_tree} --seed 7",
+    "stopping_rule": "Consume the frozen spatial candidate order until four A/B clean-qualified identities are reached or the spatial pool is exhausted; do not inspect or use M4/attack/VIS outcomes.",
+    "output_consumability": "Only an independent PASS clean qualification may add rows to a future final M4 parent manifest; this run itself is not a formal M4 manifest or label source."
+  },
+  "non_consumable_historical_attempts": [
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_REPLENISHMENT_V7_QUALIFICATION_LIBERO10_20260812T144500Z"
+  ],
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "downstream_gate": "After PASS plus independent audit, merge only the clean-qualified spatial identities into a new final 40-parent corridor manifest; the historical M4 supersession HOLD remains binding until the complete final corridor is independently reconciled."
+}

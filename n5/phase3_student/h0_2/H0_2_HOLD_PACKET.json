@@ -1,0 +1,55 @@
+{
+  "packet": "H0_2_HOLD_PACKET",
+  "status": "HOLD_REVIEW",
+  "producer_agent": "DeepSeek",
+  "created_at": "2026-07-26T10:20:00Z",
+  "self_hash_algorithm": "SHA256(UTF-8(json.dumps(object_without_top_level_self_sha256, sort_keys=true, separators=(\",\", \":\"), ensure_ascii=false)))",
+  "upstream": {
+    "codex_h0_1_verdict": "PROVENANCE_FAIL",
+    "codex_audit_commit": "c6fdadbed2894aa6f9e5983fde19fa4075a6cfa8",
+    "codex_audit_receipt_sha": "9f4c7175d333a57102670328eda0cf7ad05df1c9e438b26349ff6a162682694b"
+  },
+  "remediation_attempted": {
+    "branch": "deepseek/h0-2-remediation-20260726",
+    "parent_commit": "00c54f93c1dbd00b2ea42e34de7cdfbbad9d3756",
+    "c1_rerun": "EXECUTED — produced PROVENANCE_FAIL",
+    "v2_tests_server": "NOT_EXECUTED — blocked by C1 failure"
+  },
+  "critical_findings": [
+    {
+      "id": "C1_SOURCE_LINEAGE_UNRESOLVABLE",
+      "severity": "BLOCKING",
+      "detail": "Three different C1 script versions exist (claimed b5c9634: 3360bb17..., server: b0567f3d..., current: 953e2b6e...). Claimed source commit b5c9634 not resolvable in server repo. None of the three versions produce identical results. The original 40/40 OK claim is not reproducible with the current strict source.",
+      "required_resolution": "Reconcile the three script versions. Either: (a) restore the original working script with verified SHA and documented resolution policy, or (b) accept 26/40 with documented naming gap and create explicit BDDL-to-MuJoCo body name alias map for libero_spatial tasks."
+    },
+    {
+      "id": "RECEIPT_SELF_HASH_ALGORITHM_UNDEFINED",
+      "severity": "RESOLVED_IN_H0_2",
+      "detail": "H0.1 receipt lacked self_hash_algorithm field. H0.2 adopts Codex canonical algorithm: json.dumps(obj, sort_keys=true, separators=(\",\", \":\"), ensure_ascii=false), SHA256 of UTF-8 bytes.",
+      "required_resolution": "All H0.2 receipts use this algorithm. Historical H0 receipts retained as-is in h0_evidence_baseline/."
+    },
+    {
+      "id": "FILE_BINDING_SHAS_STALE",
+      "severity": "RESOLVED_IN_H0_2",
+      "detail": "H0 receipt bound file SHAs that don't match current files at the source commit. H0.2 receipts bind to explicit commit SHAs and document the staleness.",
+      "required_resolution": "H0.2 receipts bind to explicit commit 00c54f9 and document that historical H0 bindings are not current."
+    },
+    {
+      "id": "PROTOCOL_CHRONOLOGY_NOT_INDEPENDENTLY_PROVEN",
+      "severity": "RESOLVED_IN_H0_2",
+      "detail": "V3 protocol amendment claimed pre-training allocation but no independent pre-training receipt exists. H0.2 adopts Codex V4 provenance correction with accurate chronology disclosure.",
+      "required_resolution": "PROTOCOL_AMENDMENT_V4_PROVENANCE_CORRECTION.json adopted from Codex. V3 preserved unmodified."
+    }
+  ],
+  "downstream_blocks": {
+    "c3_s2": "HOLD — upstream H0 not proven",
+    "c3_g": "HOLD — upstream H0 not proven",
+    "c3_t": "HOLD",
+    "t2r_d": "NOT_AUTHORIZED — do not unblind",
+    "training": "NOT_AUTHORIZED",
+    "inference": "NOT_AUTHORIZED",
+    "attack": "NOT_AUTHORIZED"
+  },
+  "next_step": "Submit commit SHA of this remediation branch to Codex for independent H0.2 review. Do not self-declare Joint PASS.",
+  "self_sha256": "fb6492937c628a066d8075489448f47dee26408af529bb602362f30cdf0c414a"
+}

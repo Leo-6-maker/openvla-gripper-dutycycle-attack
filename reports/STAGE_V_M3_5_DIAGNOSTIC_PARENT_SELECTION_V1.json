@@ -1,0 +1,81 @@
+{
+  "builder_source_commit": "911905d3ead5036808e33e27b5a0640f0bbea4db",
+  "builder_source_tree": "c0f2a3b596a9d6f25c739b29f1b8198fc0cc6d04",
+  "generated_utc": "2026-08-10T11:03:01.178702+00:00",
+  "old_artifacts_reused": false,
+  "protected_counters": {
+    "attack_rollouts": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "runtime_authorized": false,
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1",
+  "selected_count": 8,
+  "selected_counts_by_suite": {
+    "libero_10": 2,
+    "libero_goal": 2,
+    "libero_object": 2,
+    "libero_spatial": 2
+  },
+  "selected_parents": [
+    {
+      "canonical_parent_key": "libero_10/task_01/state_49",
+      "selection_rank_sha256": "01039daf0ec6138bbab10f893ecb4b4b2fadca44374b8d7ab0c931d86f7c575f",
+      "suite": "libero_10"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_04/state_47",
+      "selection_rank_sha256": "06c678f85989df82cbf7b22489b0309e3d84f1b0313246d89c070fa471323ea1",
+      "suite": "libero_10"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_01/state_47",
+      "selection_rank_sha256": "03436aff13c9b96bd11d4a35bc26109f8737b859eda88fbfb56df27422f7fb64",
+      "suite": "libero_goal"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_47",
+      "selection_rank_sha256": "286b6db186e98ec6391adc1ed57fa756b240c38349a22a5dc367648150a02076",
+      "suite": "libero_goal"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_04/state_48",
+      "selection_rank_sha256": "35eed7974aa6797a547de0d486d99aafb443a3deda078051b0005d61054fdd6c",
+      "suite": "libero_object"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_00/state_48",
+      "selection_rank_sha256": "4ed28e29250f43c53429adb92a1ba5e97df3ce02f2bccfd065285a2c5495435d",
+      "suite": "libero_object"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_03/state_49",
+      "selection_rank_sha256": "2750a46c3048fd3cd24e2a0dce7fb055ee21d0894ca1b34ffe6f223b637a23e5",
+      "suite": "libero_spatial"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_48",
+      "selection_rank_sha256": "47dc563f90522ede6f88b78c9b04575e8681a3e0c92b8c6774e5c647d356a620",
+      "suite": "libero_spatial"
+    }
+  ],
+  "selection_algorithm": "sha256(selection_salt + '::' + canonical_parent_key), ascending rank",
+  "selection_reads": {
+    "branch_results_read": false,
+    "outcomes_read": false,
+    "protected_reads": 0,
+    "teacher_student_predictions_read": false
+  },
+  "selection_role": "outcome_blind_m3_5_diagnostic_only; exposed identities only",
+  "selection_salt": "STAGE_V_M3_5_DIAGNOSTIC_SELECTION_V1",
+  "source_artifacts_modified": false,
+  "source_exposure_manifest": {
+    "excluded_parent_count": 53,
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4_20260810T104027Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4.json",
+    "schema": "STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4",
+    "sha256": "b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612"
+  },
+  "status": "FROZEN_FOR_VALIDATION",
+  "target_per_suite": 2
+}

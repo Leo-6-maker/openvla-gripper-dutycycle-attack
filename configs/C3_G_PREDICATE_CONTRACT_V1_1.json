@@ -1,0 +1,41 @@
+{
+  "schema": "C3_G_PREDICATE_CONTRACT_V1_1",
+  "status": "FROZEN",
+  "version": 1.1,
+  "coordinate_frame": "right_handed_world_and_target_local",
+  "quaternion_order": "wxyz",
+  "position_unit": "meter",
+  "tolerance": {
+    "numerical_epsilon_m": 0.000000000001,
+    "comparison_epsilon_m": 0.000000000001,
+    "containment_margin_m": 0.000001,
+    "support_vertical_tolerance_m": 0.000001,
+    "horizontal_overlap_threshold_m": 0.0,
+    "boundary_rule": "inclusive_within_declared_tolerance"
+  },
+  "tolerance_provenance": "SYNTHETIC_FIXTURE_ONLY_NOT_LIBERO_PHYSICAL_CONTACT_TOLERANCE",
+  "tri_state": ["TRUE", "FALSE", "UNKNOWN"],
+  "predicates": {
+    "In": {
+      "target_roles": ["REGION_TARGET"],
+      "rule": "object_aabb_contained_in_target_local_aabb"
+    },
+    "On": {
+      "target_roles": ["OBJECT_TARGET", "REGION_TARGET"],
+      "rule": "object_bottom_on_target_top_and_xy_supported"
+    },
+    "Stack": {
+      "target_roles": ["OBJECT_TARGET"],
+      "rule": "object_bottom_on_stack_target_top_and_xy_supported"
+    }
+  },
+  "unknown_rules": [
+    "invalid_predicate",
+    "identity_mismatch",
+    "role_mismatch",
+    "missing_geometry",
+    "non_finite_geometry",
+    "degenerate_geometry"
+  ],
+  "forbidden_inputs": ["task_success", "reward", "teacher", "outcome", "attack", "future"]
+}

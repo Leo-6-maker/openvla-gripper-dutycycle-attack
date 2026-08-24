@@ -1,0 +1,92 @@
+{
+  "schema": "STAGE_X1R2_Q3R2_CLEAN_PREFIX_DETERMINISM_HOLD_V1",
+  "gate": "STAGE_X1R2_Q3R2_CLEAN_PREFIX_DETERMINISM",
+  "status": "OWNER_REVIEW_Q3R2_CLEAN_PREFIX_DETERMINISM_NOT_ESTABLISHED",
+  "repository_source": {
+    "commit": "af8dbcf6c1a8f22bd80b974dc5836a9a0d2e724b",
+    "tree": "077b9bcaa41d7e312cf509f01b4122dced98142a"
+  },
+  "runtime_authority": {
+    "commit": "85fa8e678ca599f21f5a69d180c7179f9ef99478",
+    "tree": "f6555a5d49dda45f29ef64ca8ae4b65b7b08d3f9",
+    "status": "STAGE_X1R2_Q3R2_RUNTIME_AUTHORITY_PASS"
+  },
+  "output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820",
+  "aggregate_auditor": {
+    "status": "NOT_COMPLETED_AFTER_AUTHORIZED_STOP",
+    "result": "MISSING_SUITE_REPORT:libero_10"
+  },
+  "suite_results": [
+    {
+      "suite": "libero_10",
+      "status": "MISSING_SUITE_REPORT_AFTER_STOP",
+      "first_scanned_parent": "libero_10/task_08/state_44",
+      "clean_success": false,
+      "first_emit_step": 138,
+      "policy_steps_executed": 520,
+      "fixture_id": "Q3R2-LIBERO_10-01",
+      "protected_counters": {
+        "pgd_calls": 0,
+        "attacked_env_steps": 0,
+        "physical_interventions": 0,
+        "vphys_reads": 0,
+        "protected_reads": 0
+      }
+    },
+    {
+      "suite": "libero_goal",
+      "status": "OWNER_REVIEW_Q3R2_CLEAN_PREFIX_DETERMINISM_NOT_ESTABLISHED",
+      "selected_parent": "libero_goal/task_02/state_37",
+      "first_emit_repeat_0": 63,
+      "first_emit_repeat_1": 63,
+      "prefix_steps": 64,
+      "first_divergent_step": 13,
+      "first_divergent_fields": ["processor_pixel_values_sha256", "raw_agentview_sha256"],
+      "control_fields_equal_at_first_divergence": ["action_env_7d", "robot0_eef_pos", "robot0_gripper_qpos", "direct_generated_token_ids"],
+      "report_sha256": "d441656f26889995b741781a7f8f1d0556b0b1a5ad878435362143b36cc24563",
+      "telemetry_sha256": {
+        "repeat_0": "b2e659975ec0e156034593e8d57ec564a2c13c4dfe9705a92e0d269548156845",
+        "repeat_1": "eba7e2a7eb7b5df7db89430ea8acb7237c1213428a38bdbc779017a9e215365c"
+      }
+    },
+    {
+      "suite": "libero_object",
+      "status": "PASS_SUITE_CLEAN_PREFIX_DETERMINISM",
+      "selected_parent": "libero_object/task_01/state_34",
+      "first_emit_step": 86,
+      "prefix_steps": 87,
+      "full_exact": true,
+      "report_sha256": "1eec732c3d998d4bf55d0817a41a54cb0bc3dacb3dbdc5c11221f8ccfc5b30c9"
+    },
+    {
+      "suite": "libero_spatial",
+      "status": "OWNER_REVIEW_Q3R2_CLEAN_PREFIX_DETERMINISM_NOT_ESTABLISHED",
+      "selected_parent": "libero_spatial/task_09/state_29",
+      "first_emit_repeat_0": 68,
+      "first_emit_repeat_1": 65,
+      "prefix_steps": 69,
+      "first_divergent_step": 14,
+      "first_divergent_fields": ["processor_pixel_values_sha256", "raw_agentview_sha256"],
+      "control_fields_equal_at_first_divergence": ["action_env_7d", "robot0_eef_pos", "robot0_gripper_qpos", "direct_generated_token_ids"],
+      "report_sha256": "8cfd4b89a9a578ccfcbdc74ce987b9c2f620d9576847f421373dd1275a620bf9",
+      "telemetry_sha256": {
+        "repeat_0": "bae89f21d4fa548f6ec9f6c744ef8ad591af94b2d46c5dc3323a6bc91614054c",
+        "repeat_1": "4a7850a38ced2abcd26860b7a781a2f3dbefbed49dd26dcace3193647cfec2d4"
+      }
+    }
+  ],
+  "protected_boundary": {
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "protected_reads": 0,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "next_gate": "OWNER_REVIEW_Q3R2_CLEAN_PREFIX_DETERMINISM_NOT_ESTABLISHED",
+  "q3r2_d_authorized": false,
+  "pgd_authorized": false,
+  "scientific_population_selection_authorized": false
+}

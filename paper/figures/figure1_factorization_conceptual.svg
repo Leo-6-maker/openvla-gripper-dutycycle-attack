@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560">
+<style>text{font-family:Arial,sans-serif;fill:#202124} .title{font-size:24px;font-weight:700} .subtitle{font-size:15px;fill:#5f6368} .axis{stroke:#5f6368;stroke-width:1} .grid{stroke:#dadce0;stroke-width:1} .label{font-size:14px} .small{font-size:12px} .box{stroke:#202124;stroke-width:2;rx:12} .arrow{stroke:#5f6368;stroke-width:2;fill:none;marker-end:url(#arrow)} .dash{stroke-dasharray:7 6}</style>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5f6368"/></marker></defs>
+<text x="40" y="42" class="title">Figure 1. Factorization of timing, physics, and visual exploitability</text>
+<rect x="80" y="180" width="230" height="150" class="box" fill="#eef4fb"/>
+<text x="195.0" y="234" text-anchor="middle" style="font-size:34px;font-weight:700">C_t</text>
+<text x="195.0" y="271" text-anchor="middle" class="label">clean criticality / opportunity</text>
+<text x="195.0" y="299" text-anchor="middle" class="small">timing selector</text>
+<rect x="385" y="180" width="230" height="150" class="box" fill="#eef4fb"/>
+<text x="500.0" y="234" text-anchor="middle" style="font-size:34px;font-weight:700">V_t(d)</text>
+<text x="500.0" y="271" text-anchor="middle" class="label">physical vulnerability</text>
+<text x="500.0" y="299" text-anchor="middle" class="small">duration-d OPEN counterfactual</text>
+<rect x="690" y="180" width="230" height="150" class="box" fill="#eef4fb"/>
+<text x="805.0" y="234" text-anchor="middle" style="font-size:34px;font-weight:700">E_t</text>
+<text x="805.0" y="271" text-anchor="middle" class="label">visual exploitability</text>
+<text x="805.0" y="299" text-anchor="middle" class="small">strict selective realization</text>
+<path d="M310 255 L385 255" class="arrow dash"/>
+<path d="M615 255 L690 255" class="arrow dash"/>
+<text x="347" y="236" text-anchor="middle" class="small">not assumed causal</text>
+<text x="652" y="236" text-anchor="middle" class="small">not assumed causal</text>
+<text x="500" y="410" text-anchor="middle" class="label">Paper result: partial alignment, not one latent vulnerability score</text>
+<text x="500" y="445" text-anchor="middle" class="small">X0 informs V; VI–IX constrain C and timing utility; E3/E4 test E without Student timing.</text>
+<text x="40" y="536" class="subtitle">Conceptual separation; dashed arrows are not demonstrated causal mediation.</text>
+</svg>

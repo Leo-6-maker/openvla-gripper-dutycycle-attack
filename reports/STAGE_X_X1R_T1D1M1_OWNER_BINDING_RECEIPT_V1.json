@@ -1,0 +1,43 @@
+{
+  "schema": "STAGE_X_X1R_T1D1M1_OWNER_BINDING_RECEIPT_V1",
+  "status": "RAW_OWNER_ARTIFACT_BOUND_BEFORE_LABEL_INGESTION",
+  "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+  "base_pr": 132,
+  "base_commit": "14f7df98995262ede4fc129578001ffe40431582",
+  "base_tree": "8e59bdeee666a92a776e9ef99f7c4ac1dd6801f2",
+  "goal_branch": "codex/stage-x-x1r-goal-d1m1-primary-matrix-20260819",
+  "owner_submission": {
+    "path": "reports/STAGE_X_X1R_T1D1M1_OWNER_LABEL_SUBMISSION_V1.csv",
+    "raw_sha256": "76c835c292c76190b2a764da7be746a568697deea1cb4009d63e306fdc610c2c",
+    "expected_raw_sha256": "76c835c292c76190b2a764da7be746a568697deea1cb4009d63e306fdc610c2c",
+    "sha_match": true,
+    "semantic_label_parse_performed_by_this_gate": false
+  },
+  "owner_declaration": {
+    "reviewer": "GPT_OWNER",
+    "completion_timestamp": "2026-08-18T16:12:30.187Z",
+    "substantive_correction": false,
+    "blinding_intact": true
+  },
+  "upstream_binding": {
+    "safe_sheet_raw_sha256": "9c42b3d6486f2082c414ff799d9efe2f2633e797d2b92e1f45fb23426470a7b2",
+    "private_mapping_sha256": "3d7f59a736cc2c7bcb5ecdc49e9e57a7e8b547c9e7554251e88158017366f0fe",
+    "candidate_ledger_sha256": "5f1f036b47b1c9a8c1bafe7a400b6be9269cd3e67587691018005c824dc8d89e",
+    "review_order_digest": "30a73b0e4ab13e149d8c991906fc9067844797e39113201e9e76a10a8be40d67"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "attack_authorized": false,
+    "model_inference_authorized": false,
+    "env_step_authorized": false,
+    "pgd_calls": 0,
+    "env_step_calls": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0
+  },
+  "next_gate": "STAGE_X_X1R_T1D1M1_LABEL_INTEGRITY_AUDIT_REQUIRED"
+}

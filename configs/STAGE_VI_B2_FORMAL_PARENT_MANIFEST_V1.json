@@ -1,0 +1,67 @@
+{
+  "schema": "STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V1",
+  "status": "FROZEN",
+  "selection_status": "FROZEN_OUTCOME_BLIND_PRE_HOLDOUT",
+  "selection_rule": "Take post-hold V7-qualified parents in frozen manifest order after excluding every identity in the immutable Stage-V formal split; append stable A3/B3 clean-only reserve PASS parents in frozen reserve-manifest order until 16 parents. No score, outcome, horizon, or detector result is consulted.",
+  "target": {
+    "parent_count": 16,
+    "probes_per_parent": 24,
+    "arms_per_probe": 4,
+    "branch_count": 1536,
+    "primary_dose": "T5",
+    "secondary_doses": ["T3", "T10"]
+  },
+  "inputs": {
+    "post_hold_manifest_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/codex-stage-v-m4-official-python-hardening-b83d6f3c/configs/STAGE_V_M4_POST_HOLD_CANDIDATE_PARENT_MANIFEST_V1_1.json",
+    "post_hold_manifest_sha256": "8f13e8427d19118cf7988be57a46c19fd1226af1941e00156b626e42f1c88be3",
+    "stable_reserve_manifest_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_RESERVE_MANIFEST_V1_20260812T121054Z/STAGE_V_M4_CORRIDOR_RESERVE_PARENT_MANIFEST_V1.json",
+    "stable_reserve_manifest_sha256": "d883d120d4daf4b7481db3a9c23b87269c6a72119661a7593ee6da82eb869849",
+    "stable_reserve_replicates": [
+      "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_RESERVE_PREFLIGHT_A3_20260812T123000Z",
+      "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_RESERVE_PREFLIGHT_B3_20260812T123500Z"
+    ],
+    "prior_formal_split_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json",
+    "prior_formal_split_sha256": "890382bcd9a88d3646dfc66b080265c90c2fda666bf08b14fc3994d05ab492cd",
+    "student_fit_cal_check_manifest": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_G1_SPLITS_FIREWALL_20260813T160000Z"
+  },
+  "eligibility_closure": {
+    "post_hold_eligible_count_after_prior_formal_exclusion": 14,
+    "stable_a3_b3_pass_count": 3,
+    "prior_formal_intervention_overlap_count": 0,
+    "student_fit_cal_check_exact_parent_overlap_count": 0,
+    "outcomes_read": false,
+    "outcome_blind": true,
+    "replacement_or_outcome_selection": false,
+    "eval160_status": "UNREAD",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0
+    }
+  },
+  "parents": [
+    {"ordinal": 1, "canonical_parent_key": "libero_10/task_09/state_42", "suite": "libero_10", "source": "post_hold", "source_rank": 1},
+    {"ordinal": 2, "canonical_parent_key": "libero_10/task_07/state_37", "suite": "libero_10", "source": "post_hold", "source_rank": 3},
+    {"ordinal": 3, "canonical_parent_key": "libero_10/task_01/state_37", "suite": "libero_10", "source": "post_hold", "source_rank": 4},
+    {"ordinal": 4, "canonical_parent_key": "libero_10/task_08/state_22", "suite": "libero_10", "source": "post_hold", "source_rank": 5},
+    {"ordinal": 5, "canonical_parent_key": "libero_10/task_06/state_31", "suite": "libero_10", "source": "post_hold", "source_rank": 6},
+    {"ordinal": 6, "canonical_parent_key": "libero_10/task_07/state_40", "suite": "libero_10", "source": "post_hold", "source_rank": 7},
+    {"ordinal": 7, "canonical_parent_key": "libero_10/task_04/state_22", "suite": "libero_10", "source": "post_hold", "source_rank": 8},
+    {"ordinal": 8, "canonical_parent_key": "libero_goal/task_02/state_45", "suite": "libero_goal", "source": "post_hold", "source_rank": 3},
+    {"ordinal": 9, "canonical_parent_key": "libero_goal/task_05/state_33", "suite": "libero_goal", "source": "post_hold", "source_rank": 5},
+    {"ordinal": 10, "canonical_parent_key": "libero_goal/task_04/state_23", "suite": "libero_goal", "source": "post_hold", "source_rank": 6},
+    {"ordinal": 11, "canonical_parent_key": "libero_spatial/task_08/state_44", "suite": "libero_spatial", "source": "post_hold", "source_rank": 1},
+    {"ordinal": 12, "canonical_parent_key": "libero_spatial/task_00/state_45", "suite": "libero_spatial", "source": "post_hold", "source_rank": 5},
+    {"ordinal": 13, "canonical_parent_key": "libero_spatial/task_08/state_41", "suite": "libero_spatial", "source": "post_hold", "source_rank": 7},
+    {"ordinal": 14, "canonical_parent_key": "libero_spatial/task_05/state_37", "suite": "libero_spatial", "source": "post_hold", "source_rank": 8},
+    {"ordinal": 15, "canonical_parent_key": "libero_object/task_03/state_28", "suite": "libero_object", "source": "reserve_a_b_pass", "source_rank": null},
+    {"ordinal": 16, "canonical_parent_key": "libero_object/task_06/state_27", "suite": "libero_object", "source": "reserve_a_b_pass", "source_rank": null}
+  ],
+  "suite_counts": {
+    "libero_10": 7,
+    "libero_goal": 3,
+    "libero_object": 2,
+    "libero_spatial": 4
+  }
+}

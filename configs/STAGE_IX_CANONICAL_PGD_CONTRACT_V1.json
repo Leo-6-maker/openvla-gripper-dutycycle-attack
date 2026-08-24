@@ -1,0 +1,125 @@
+{
+  "schema": "STAGE_IX_CANONICAL_PGD_CONTRACT_V1",
+  "stage": "STAGE_IX_FACTORIZED_PGD_TIMING_UTILITY",
+  "status": "FROZEN_BEFORE_F0_EXECUTION",
+  "namespace": "STAGE_IX_FACTORIZED_PGD_TIMING_UTILITY",
+  "selection_basis": {
+    "rule": "current_public_paper_quickstart_priority",
+    "primary_config": "configs/paper_black_bowl_attack.yaml",
+    "primary_cli_condition": "vis_margin_prevdelta",
+    "historical_variants_not_selected": [
+      "configs/v4_attack.yaml",
+      "configs/fec_attack_v5_open.yaml",
+      "configs/fec_attack_v5_open_region.yaml",
+      "configs/sweep_v5_e0.03_s5.yaml",
+      "configs/sweep_v5_e0.06_s5.yaml",
+      "configs/sweep_v5_e0.1_s5.yaml",
+      "configs/sweep_v5_e0.03_s20.yaml",
+      "configs/sweep_v5_e0.06_s20.yaml",
+      "docs/protocol_baseline_20260523.md"
+    ],
+    "outcome_data_used_for_selection": false
+  },
+  "victim": {
+    "model_id": "openvla-7b-finetuned-libero-10",
+    "model_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+    "model_inventory_authority": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_FROZEN_CONTEXT_ENCODER_EMBEDDINGS_20260816T083224Z/SUMMARY.json",
+      "sha256": "fb777fe6fe3b4019f2890b3509f502237daff7e055ebdaf4318fcc9e87d97f77"
+    },
+    "clean_snapshot_model_selection_basis": "STAGE_VII_FROZEN_CONTEXT_ENCODER_PROTOCOL_V1",
+    "model_changed_for_stage_ix": false
+  },
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "preprocessing": {
+    "backend": "official_pil_lanczos",
+    "raw_input": "canonical_policy_rgb_224_or_exact_saved_pixel_values",
+    "rotate_180": true,
+    "resize": "PIL_RGB_LANCZOS_to_224",
+    "center_crop": true,
+    "jpeg_round_trip": false,
+    "processor_output": "saved_or_recomputed_OpenVLA_pixel_values",
+    "attention_mask": "dropped_for_model_forward_when_matching_official_predict_action",
+    "prompt": "In: What action should the robot take to {instruction.lower()}?\\nOut:"
+  },
+  "target_semantics": {
+    "objective": "gripper_logit_margin_cw",
+    "target_action_source": "current_clean_reference_raw_action_with_last_dimension_set_to_1.0",
+    "target_raw_gripper": 1.0,
+    "postprocess_gripper": true,
+    "physical_open_rule": "raw_gripper > 0.5 -> normalized gripper -> LIBERO env -1.0",
+    "target_token_rule": "derive_with_action_to_token_ids_using_victim_norm_stats_and_bin_centers",
+    "fixed_target_token_id": false,
+    "target_action_arm_dimensions": "current_clean_reference_action_0_through_5",
+    "loss_labels": "only_target_gripper_action_token_is_active_for_gripper_logit_margin_cw",
+    "margin_definition": "target_gripper_logit_minus_max_non_target_logit",
+    "target_success": "target_gripper_token_rank_1_and_target_margin_nonnegative"
+  },
+  "optimization": {
+    "method": "token_prefix_pgd",
+    "strict_route": true,
+    "allow_fallback": false,
+    "fallback_allowed": false,
+    "epsilon": 0.1,
+    "step_size": 0.02,
+    "num_steps": 20,
+    "cw_margin": 5.0,
+    "gradient_update": "adv = adv - step_size * sign(gradient_of_cw_loss)",
+    "random_start": false,
+    "temporal_init": "prev_delta",
+    "temporal_smoothing_lambda": 0.0,
+    "step_candidates": [0, 1, 3, 20],
+    "normalized_step_definition": "sign_gradient_step_in_processor_pixel_values_with_fixed_step_size"
+  },
+  "norm_and_clipping": {
+    "space": "processor_pixel_values",
+    "master_dtype": "torch.float32",
+    "projection": "x_orig_minus_epsilon_to_x_orig_plus_epsilon",
+    "model_dtype_cast": true,
+    "quantized_budget_correction": true,
+    "raw_rgb_clip_0_1": false,
+    "config_clip_min_max_not_used_for_processor_projection": true,
+    "budget_check": "actual_saved_adv_inputs_linf <= epsilon + 1e-6"
+  },
+  "runtime_semantics": {
+    "trigger_timing": "current_step_observer_decode",
+    "physical_attack_window": "fixed_step_window_budgeted",
+    "historical_default_windows": {
+      "state_7": [75, 84],
+      "state_5": [78, 87]
+    },
+    "physical_duration_steps": 10,
+    "f0_repeated_frame": false,
+    "f0_env_step": false,
+    "f0_intervention": false,
+    "f0_temporal_order": "canonical_parent_probe_step_ascending",
+    "f0_temporal_reset": "reset_prev_delta_when_clean_opportunity_gate_is_false"
+  },
+  "source_binding": {
+    "audit_commit": "67890e04a83f912b12ee80f108483a3e348634ba",
+    "audit_tree": "0fafa9b6fc3ae9ce920e130363369f0e9a1e1a4e",
+    "files": {
+      "configs/paper_black_bowl_attack.yaml": "8e1c05da22d00818949a0e36c5708ee374708cba7bd12c061c6f9cde6c187f3a",
+      "scripts/run_attack_pipeline.py": "077e25fad6af3cee5a6a42ee1052ad0d3d40347ff3053824c4d029b9e4ef4a05",
+      "scripts/v4_run_eval_openvla.py": "0a2ac5d519ad35c6a070d9b2cd3a4a7e6469d319065bcdcca00af85ee85d7910",
+      "src/gripper_attack/attack_adapter.py": "26cfb9f5d8a5a29e7ac2729f5c9cdd58dadfd75e45eebe935ee66214cc9402be",
+      "src/gripper_attack/m3_controls.py": "d665f1345b953d5bb3e15ee102321d5130db828c92fdd2f48a175a20c467598b",
+      "src/gripper_attack/openvla_preprocess.py": "14bd80b28495ae06c7855a5347005c8e0522c62bbfb2597103c34d7d07be5828",
+      "src/gripper_attack/openvla_libero_exec_spec.py": "13ea43ffe674dae22c5d1c5a1a2c54c92a27c9fcc79ef13dc057594bbe31bf92",
+      "src/gripper_attack/route_contract.py": "1fd53e0ce09ed7e97b02aac0ca76cb173082178135131392e1e9f9ae50d132a9",
+      "src/gripper_attack/action_contract.py": "2ce44b41799961403747edf5838d457aee323a74f41098e7187f8230818bf829",
+      "docs/reproducibility.md": "aced9d2231cced05658770c2a4a95f584317d34f95e3084e66c68b8196ab387a"
+    }
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0,
+      "env_steps_with_perturbed_action": 0
+    }
+  }
+}

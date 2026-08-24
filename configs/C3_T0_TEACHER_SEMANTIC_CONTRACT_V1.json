@@ -1,0 +1,103 @@
+{
+  "schema": "C3_T0_TEACHER_SEMANTIC_CONTRACT_V1",
+  "status": "SYNTHETIC_CONTRACT_ONLY",
+  "truth_values": ["TRUE", "FALSE", "UNKNOWN"],
+  "mask_semantics": {
+    "mask": "true only for TRUE or FALSE; UNKNOWN always has mask=false",
+    "unknown_is_not_false": true
+  },
+  "persistence": {
+    "positive_min_steps": 2,
+    "requires_contiguous_known_steps": true,
+    "unconfirmed_positive": "UNKNOWN",
+    "per_head_min_steps": {
+      "physical_criticality": 2,
+      "safe_release": 2,
+      "instability": 1,
+      "k10_feasible": 1,
+      "gripper_closing_state": 1
+    }
+  },
+  "right_censor": {
+    "k10": 10,
+    "insufficient_observed_horizon": "UNKNOWN",
+    "input": "observed_future_steps_available",
+    "protocol_input": "protocol_steps_remaining",
+    "protocol_horizons": {
+      "libero_10": 520,
+      "libero_goal": 300,
+      "libero_object": 280,
+      "libero_spatial": 220
+    },
+    "null_protocol_steps_remaining": "UNKNOWN",
+    "protocol_steps_remaining_0_to_9": "FALSE",
+    "protocol_steps_remaining_gte_10": "TRUE only when safe_release_computed is FALSE",
+    "future_outcome_forbidden": true
+  },
+  "input_allowlists": {
+    "physical_criticality": ["physical_known", "stable_grasp", "transport_or_manipulation"],
+    "safe_release": ["placement", "released_state", "placement_stability"],
+    "k10_feasible": ["protocol_steps_remaining", "safe_release_computed"],
+    "instability": ["slip", "regrasp", "contact_loss"],
+    "gripper_closing_state": ["gripper_qpos", "qpos_close_threshold"]
+  },
+  "cross_head_invariants": [
+    "safe_release TRUE implies k10_feasible FALSE",
+    "k10_feasible TRUE implies safe_release_computed FALSE and protocol_steps_remaining >= 10",
+    "UNKNOWN is never converted to FALSE"
+  ],
+  "truth_semantics": {
+    "physical_criticality": {
+      "TRUE": "known stable grasp or transport/manipulation physical evidence",
+      "FALSE": "known physical evidence shows neither critical condition",
+      "UNKNOWN": "physical evidence is absent, ambiguous, nonfinite, or right-censored"
+    },
+    "k10_feasible": {
+      "TRUE": "known protocol_steps_remaining is at least 10 and safe_release_computed is FALSE",
+      "FALSE": "known protocol_steps_remaining is below 10 or safe_release_computed is TRUE",
+      "UNKNOWN": "horizon/release evidence is unknown or right-censored"
+    },
+    "safe_release": {
+      "TRUE": "placement AND released_state AND placement_stability are all TRUE",
+      "FALSE": "all three components are known and at least one is FALSE",
+      "UNKNOWN": "any component is UNKNOWN"
+    },
+    "instability": {
+      "TRUE": "known slip, regrasp, or contact-loss evidence is TRUE",
+      "FALSE": "all instability components are known FALSE",
+      "UNKNOWN": "any required physical instability component is UNKNOWN"
+    },
+    "gripper_closing_state": {
+      "TRUE": "finite physical gripper qpos is at or below the frozen threshold",
+      "FALSE": "finite physical gripper qpos is above the frozen threshold",
+      "UNKNOWN": "physical qpos or threshold is missing/nonfinite"
+    }
+  },
+  "heads": {
+    "physical_criticality": {
+      "evidence": ["physical_known", "stable_grasp", "transport_or_manipulation"],
+      "forbidden": ["task_success", "terminal", "reward", "outcome", "attack", "future"]
+    },
+    "k10_feasible": {
+      "evidence": ["protocol_steps_remaining", "safe_release_computed"],
+      "safe_release_is_computed_once": true
+    },
+    "safe_release": {
+      "formula": "placement AND released_state AND placement_stability",
+      "unknown_dominates": true
+    },
+    "instability": {
+      "evidence": ["slip", "regrasp", "contact_loss"]
+    },
+    "gripper_closing_state": {
+      "evidence": ["gripper_qpos", "qpos_close_threshold"],
+      "policy_command_forbidden": true
+    }
+  },
+  "provenance": {
+    "real_episode_consumption": false,
+    "protected_data_consumption": false,
+    "model_or_rollout": false,
+    "student_training": false
+  }
+}

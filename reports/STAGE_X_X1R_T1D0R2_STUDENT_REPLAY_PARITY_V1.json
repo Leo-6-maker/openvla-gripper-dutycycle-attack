@@ -1,0 +1,160 @@
+{
+  "counters": {
+    "adversarial_images": 0,
+    "attack_backward_calls": 0,
+    "attack_outcome_reads": 0,
+    "env_reset_for_prospective_parent": 0,
+    "env_step_calls": 0,
+    "eval160_reads": 0,
+    "historical_replay_student_forward_calls": 23,
+    "openvla_model_inference_calls": 0,
+    "openvla_weight_loads": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "prospective_parent_clean_rollouts": 0,
+    "prospective_parent_student_forward_calls": 0,
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "errors": [
+    "STAGE_X_X1R_T1D0R2_HOLD_STUDENT_REPLAY_PARITY:MISSING_SEALED_PER_STEP_REFERENCE"
+  ],
+  "historical_replay_student_forward_calls": 23,
+  "prospective_implementation": {
+    "checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+    "dropout_eval": 0.0,
+    "git_source": {
+      "byte_size": 34112,
+      "git_blob_sha": "7e2aceabe4a9cfc871b51fc2ceee46fed5019c65",
+      "path": "n5/phase3_student/n5_student_model.py",
+      "raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+      "ref": "HEAD"
+    },
+    "hidden": 64,
+    "input_dim": 25,
+    "long_rf": 128,
+    "short_rf": 32,
+    "source_path": "n5/phase3_student/n5_student_model.py"
+  },
+  "replays": {
+    "libero_10": {
+      "active_heads": [
+        "physical_criticality",
+        "k10_feasibility",
+        "instability",
+        "gripper_closing_state"
+      ],
+      "canonical_parent_key": "libero_10/task_08/state_28",
+      "feature_dim": 25,
+      "first_emit_step": 155,
+      "per_step_max_abs_diff": null,
+      "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+      "prefix_max_probability_abs_diff": 1.4901161193847656e-08,
+      "prefix_parity_indices": [
+        0,
+        155,
+        192,
+        384
+      ],
+      "repeat_max_probability_abs_diff": 0.0,
+      "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/00_libero_10__task_08__state_28/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+      "replay_sha256": "f048f600a5e552e0dd05d985552ae60fb7cad78ad867b917b581b74bb5e0141a",
+      "row_count": 385,
+      "sealed_per_step_reference_available": false,
+      "sealed_summary_first_emit_step": 155,
+      "strict_checkpoint_load": true,
+      "summary_emit_match": true,
+      "trace_sha256": "a9f4f8603ca8dcff169441221453581f6d8825b4f3815ed7ac7361abdf4c154d"
+    },
+    "libero_goal": {
+      "active_heads": [
+        "physical_criticality",
+        "k10_feasibility",
+        "instability",
+        "gripper_closing_state"
+      ],
+      "canonical_parent_key": "libero_goal/task_02/state_40",
+      "feature_dim": 25,
+      "first_emit_step": 62,
+      "per_step_max_abs_diff": null,
+      "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+      "prefix_max_probability_abs_diff": 7.450580596923828e-09,
+      "prefix_parity_indices": [
+        0,
+        44,
+        62,
+        87
+      ],
+      "repeat_max_probability_abs_diff": 0.0,
+      "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/10_libero_goal__task_02__state_40/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+      "replay_sha256": "7edb3bbda9e6138cf687016734f7eff4a1d1ab1a6042c2f508ee684c8a50a6b6",
+      "row_count": 88,
+      "sealed_per_step_reference_available": false,
+      "sealed_summary_first_emit_step": 62,
+      "strict_checkpoint_load": true,
+      "summary_emit_match": true,
+      "trace_sha256": "c81dc6431402756ee557d7a3f33af439fde0d91992378d9f24773383da9069e5"
+    },
+    "libero_object": {
+      "active_heads": [
+        "physical_criticality",
+        "k10_feasibility",
+        "instability",
+        "gripper_closing_state"
+      ],
+      "canonical_parent_key": "libero_object/task_00/state_23",
+      "feature_dim": 25,
+      "first_emit_step": null,
+      "per_step_max_abs_diff": null,
+      "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+      "prefix_max_probability_abs_diff": 5.587935447692871e-09,
+      "prefix_parity_indices": [
+        0,
+        109,
+        218
+      ],
+      "repeat_max_probability_abs_diff": 0.0,
+      "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/20_libero_object__task_00__state_23/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+      "replay_sha256": "140a0b817b641b6b746a19b17ea6f7f217e014105e646265514297d074103560",
+      "row_count": 219,
+      "sealed_per_step_reference_available": false,
+      "sealed_summary_first_emit_step": null,
+      "strict_checkpoint_load": true,
+      "summary_emit_match": true,
+      "trace_sha256": "be7e77ecbf30f40880d110978186a17f15a140abc4701ca61d8cb36413b31fab"
+    },
+    "libero_spatial": {
+      "active_heads": [
+        "physical_criticality",
+        "k10_feasibility",
+        "instability",
+        "gripper_closing_state"
+      ],
+      "canonical_parent_key": "libero_spatial/task_04/state_36",
+      "feature_dim": 25,
+      "first_emit_step": 57,
+      "per_step_max_abs_diff": null,
+      "per_step_reference_note": "T1-C receipt contains summary-only fields and no sealed per-step probability arrays.",
+      "prefix_max_probability_abs_diff": 3.725290298461914e-09,
+      "prefix_parity_indices": [
+        0,
+        57,
+        59,
+        118
+      ],
+      "repeat_max_probability_abs_diff": 0.0,
+      "replay_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z/parents/30_libero_spatial__task_04__state_36/CLEAN_REPLAY_STUDENT_INPUTS_V1.json",
+      "replay_sha256": "e562ba4a58b9d83edfb9ffd5afd10f9de01b93fafdccbd5b6bbcbc929f5115fe",
+      "row_count": 119,
+      "sealed_per_step_reference_available": false,
+      "sealed_summary_first_emit_step": 57,
+      "strict_checkpoint_load": true,
+      "summary_emit_match": true,
+      "trace_sha256": "0ec0c530f76cd9dffd8fab1ffea66d1f5bdacc71eb1bd1190c804414da2ea424"
+    }
+  },
+  "schema": "STAGE_X_X1R_T1D0R2_STUDENT_REPLAY_PARITY_V1",
+  "sealed_per_step_reference_available": false,
+  "sealed_per_step_reference_required": true,
+  "status": "HOLD_STUDENT_REPLAY_PARITY"
+}

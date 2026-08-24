@@ -1,0 +1,57 @@
+{
+  "schema": "STAGE_V_M1_VISUAL_DETERMINISM_PROTOCOL_V1",
+  "status": "FROZEN_DIAGNOSTIC_ONLY_NO_SCIENCE_AUTHORIZATION",
+  "protocol_id": "STAGE_V_M1_VISUAL_DETERMINISM_20260808",
+  "starting_commit": "561721902fa49a162f96f8f392b286ef9f4889fc",
+  "starting_tree": "d603841e75be8edfa94b70891655588325694a43",
+  "rb1_v1_protocol_sha256": "18d2421b172cef881b8de70c4bccf0c65174dd66a8402b75f0696d1878f96a69",
+  "equality_mode": "EXACT_CANONICAL_JSON_AND_TRACE_SHA256",
+  "tolerance_allowed": false,
+  "modes": [
+    "CLEAN_QUALIFICATION",
+    "COUNTERFACTUAL_CLEAN_PREFIX"
+  ],
+  "replicates_per_mode": 2,
+  "run_order": ["Q1", "C1", "Q2", "C2"],
+  "pair_names": ["SAME_MODE_Q", "SAME_MODE_C", "CROSS_MODE_R1", "CROSS_MODE_R2"],
+  "diagnostic_only": true,
+  "new_science_rollouts_authorized": false,
+  "formal_parent_promotion_authorized": false,
+  "vulnerability_label_generation_authorized": false,
+  "student_training_authorized": false,
+  "protected_evaluation_authorized": false,
+  "eval160_authorized": false,
+  "vis_pgd_authorized": false,
+  "gpu5_authorized": false,
+  "required_trace_files": [
+    "observation_trace.jsonl",
+    "physical_state_trace.jsonl",
+    "full_sim_state_trace.jsonl",
+    "policy_rgb_224_trace.jsonl",
+    "model_input_trace.jsonl",
+    "policy_token_trace.jsonl",
+    "postprocessed_action_trace.jsonl"
+  ],
+  "protected_boundaries": [
+    "eval160_reads",
+    "protected_eval_reads",
+    "vis_pgd_attack_rollouts",
+    "attack_rollouts",
+    "intervention_applied_steps",
+    "counterfactual_open_steps"
+  ],
+  "raw_capture_required_after_r1": true,
+  "raw_capture_window_rule": "step_0_plus_t_star_minus_2_through_t_star_plus_2",
+  "classification_enum": [
+    "RAW_OBSERVATION_NON_POLICY_DIFFERENCE",
+    "SAME_MODE_RENDER_OR_OBSERVATION_NONDETERMINISM",
+    "MODE_PATH_SPECIFIC_VISUAL_DIVERGENCE",
+    "PROCESSOR_OR_MODEL_INPUT_NONDETERMINISM",
+    "SIMULATOR_RUNTIME_NONDETERMINISM",
+    "POLICY_VISUAL_INPUT_NONDETERMINISM_ACTION_STABLE",
+    "MULTI_LAYER_NONDETERMINISM",
+    "UNCLASSIFIED"
+  ],
+  "rb1_v1_modified": false,
+  "rb1_v1_relaxed": false
+}

@@ -1,0 +1,71 @@
+{
+  "comparisons": {
+    "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json": {
+      "actual_raw_sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+      "all_refs_byte_identical": true,
+      "byte_identical_to_pr124": true,
+      "byte_identical_to_pr125": true,
+      "byte_identical_to_pr126": true,
+      "classification": "D0_HISTORICAL_DIGEST_STALE_D0R_CANONICAL_BYTES",
+      "historical_d0_claim": "bf27a237ba9fd9be255d5371d160705cc3c55e000e119062934deb4c2a6dee38",
+      "historical_d0r_claim": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+      "rows": [
+        {
+          "byte_size": 5930,
+          "git_blob_sha": "f9a6b36f7b0548914140bfde17c871f74953aae1",
+          "path": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
+          "raw_sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+          "ref": "c6a4c5a9e7d63121a75814b3071c9047e1d9e0d0"
+        },
+        {
+          "byte_size": 5930,
+          "git_blob_sha": "f9a6b36f7b0548914140bfde17c871f74953aae1",
+          "path": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
+          "raw_sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+          "ref": "2881722b51cc5365205a575eddb42f4d22456f09"
+        },
+        {
+          "byte_size": 5930,
+          "git_blob_sha": "f9a6b36f7b0548914140bfde17c871f74953aae1",
+          "path": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
+          "raw_sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+          "ref": "aabd419942b7a5de27b2f11da90160d4a7affebc"
+        }
+      ]
+    },
+    "src/gripper_attack/stage_x_t1_native_token_authority.py": {
+      "actual_raw_sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
+      "all_refs_byte_identical": true,
+      "byte_identical_to_pr124": true,
+      "byte_identical_to_pr125": true,
+      "byte_identical_to_pr126": true,
+      "classification": "D0_HISTORICAL_DIGEST_STALE_D0R_CANONICAL_BYTES",
+      "historical_d0_claim": "b319a9c64300e4297c81a415279c7f2d65eac1bbac62eb22293ce14c7d9734d6",
+      "historical_d0r_claim": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
+      "rows": [
+        {
+          "byte_size": 10691,
+          "git_blob_sha": "44ac1a460868aa48a81a07eb74d99738e93a74cf",
+          "path": "src/gripper_attack/stage_x_t1_native_token_authority.py",
+          "raw_sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
+          "ref": "c6a4c5a9e7d63121a75814b3071c9047e1d9e0d0"
+        },
+        {
+          "byte_size": 10691,
+          "git_blob_sha": "44ac1a460868aa48a81a07eb74d99738e93a74cf",
+          "path": "src/gripper_attack/stage_x_t1_native_token_authority.py",
+          "raw_sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
+          "ref": "2881722b51cc5365205a575eddb42f4d22456f09"
+        },
+        {
+          "byte_size": 10691,
+          "git_blob_sha": "44ac1a460868aa48a81a07eb74d99738e93a74cf",
+          "path": "src/gripper_attack/stage_x_t1_native_token_authority.py",
+          "raw_sha256": "b86a6abcb7842cc990a2af09ab0d734128b0b805ec6206fe26cb37ffb1933203",
+          "ref": "aabd419942b7a5de27b2f11da90160d4a7affebc"
+        }
+      ]
+    }
+  },
+  "errors": []
+}

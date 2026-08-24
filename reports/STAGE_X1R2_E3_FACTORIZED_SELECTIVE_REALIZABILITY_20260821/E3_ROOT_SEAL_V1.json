@@ -1,0 +1,319 @@
+{
+  "artifact_count": 60,
+  "artifact_manifest": [
+    {
+      "bytes": 24252,
+      "path": "E3_DECISION_TABLE_V1.json",
+      "sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24"
+    },
+    {
+      "bytes": 39204,
+      "path": "E3_DECISION_TABLE_V1_SUPERSEDED_AGGREGATOR_BUG.json",
+      "sha256": "1ef2c2111db191ac9e47cc6faca8967b511515a58c91dd9c380338de6f86ee45"
+    },
+    {
+      "bytes": 11721,
+      "path": "E3_ROOT_SEAL_V1_SUPERSEDED_AGGREGATOR_BUG.json",
+      "sha256": "efe6c96648525866d423cbfdcfc97ebd47272f78882ae378da21e97ffbf1e192"
+    },
+    {
+      "bytes": 87,
+      "path": "E3_ROOT_SEAL_V1_SUPERSEDED_AGGREGATOR_BUG.sha256",
+      "sha256": "b76df8d7e4259409724ff3a126a0eb1b063dd0fde76f36432a36962eb69fd5a2"
+    },
+    {
+      "bytes": 113201,
+      "path": "libero_10/E3-LIBERO_10-01/attempt_01/clean_probe_receipt.json",
+      "sha256": "9155a3476227630c15ed7aeea0991d41f64042d5c4c5655f9be0934eadf74223"
+    },
+    {
+      "bytes": 154270,
+      "path": "libero_10/E3-LIBERO_10-01/attempt_01/e3_true_receipt.json",
+      "sha256": "e855fbce52623325f01cd6ae334548750e803283f8e7a29b80f33ab0e7761133"
+    },
+    {
+      "bytes": 289210,
+      "path": "libero_10/E3-LIBERO_10-01/attempt_01/parent_receipt.json",
+      "sha256": "2d49b535e86716f25228bcfa439d4ba778d3b9c148881f1f35a7712e2c593dc5"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_10/E3-LIBERO_10-01/attempt_01/probe_observation.bin",
+      "sha256": "800cda6efa3e653ba960a9436c847599d1aa42c38db79053879edd1ec382c68a"
+    },
+    {
+      "bytes": 2144,
+      "path": "libero_10/E3-LIBERO_10-01/parent_receipt.json",
+      "sha256": "5091a6365660796742c6cfa3d64e7615a3f11df5e7756bebbee69ccf493a9b5a"
+    },
+    {
+      "bytes": 136067,
+      "path": "libero_10/E3-LIBERO_10-02/attempt_01/clean_probe_receipt.json",
+      "sha256": "6e6a8e384063b92bbb2e3ee5d570388e0e0558d6c74319684b24c2a28ac3feb1"
+    },
+    {
+      "bytes": 178314,
+      "path": "libero_10/E3-LIBERO_10-02/attempt_01/e3_true_receipt.json",
+      "sha256": "7dd9f38c89cd9676d2e453606cb80c4d552ebbea22f8b87ac53a56b86380bae3"
+    },
+    {
+      "bytes": 339158,
+      "path": "libero_10/E3-LIBERO_10-02/attempt_01/parent_receipt.json",
+      "sha256": "bc13b8324b490fc5e32275ecd9a39fe5e331f71c9d8af0d98474a727f1d1ba6a"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_10/E3-LIBERO_10-02/attempt_01/probe_observation.bin",
+      "sha256": "11b2003e127b24ed97f9a7f091f99b99e3cbdecc071746309c06708b243a1764"
+    },
+    {
+      "bytes": 2144,
+      "path": "libero_10/E3-LIBERO_10-02/parent_receipt.json",
+      "sha256": "f3488cb1440ccb9451643ab1f31d4e48ffade9f48f282d4da0e93675c2ccc6be"
+    },
+    {
+      "bytes": 294053,
+      "path": "libero_10/E3-LIBERO_10-03/attempt_01/clean_probe_receipt.json",
+      "sha256": "d001d4f6063b760494d870a0b379aa6a458fe69ed61952283cfeddb4ce27238a"
+    },
+    {
+      "bytes": 21074,
+      "path": "libero_10/E3-LIBERO_10-03/attempt_01/e3_true_receipt.json",
+      "sha256": "b63ba10a006782dc4b8d1c54c62556de081eccee444973db4857295e46b87062"
+    },
+    {
+      "bytes": 341318,
+      "path": "libero_10/E3-LIBERO_10-03/attempt_01/parent_receipt.json",
+      "sha256": "fe278edffe40f55b5ddaaf2ea0719fb3fef8f1af94124df5df117246b688848b"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_10/E3-LIBERO_10-03/attempt_01/probe_observation.bin",
+      "sha256": "bad863b62fe10a4c04fd2190dc5f5beb35fa91c8717adc02f6773d42ec85d562"
+    },
+    {
+      "bytes": 2145,
+      "path": "libero_10/E3-LIBERO_10-03/parent_receipt.json",
+      "sha256": "dbae473de15a64096aceef2548a70b89f92a991649cb462513b928933399dc4a"
+    },
+    {
+      "bytes": 61709,
+      "path": "libero_goal/E3-LIBERO_GOAL-01/attempt_01/clean_probe_receipt.json",
+      "sha256": "8c94d7535dbc58dac0441b4fe7a81008c80e183a46bad1292dc4045f2e9c654c"
+    },
+    {
+      "bytes": 98558,
+      "path": "libero_goal/E3-LIBERO_GOAL-01/attempt_01/e3_true_receipt.json",
+      "sha256": "1e698c749b26afe72dd08c2563573084fb9845a3845cdb9bfd27223a30f8bb36"
+    },
+    {
+      "bytes": 174241,
+      "path": "libero_goal/E3-LIBERO_GOAL-01/attempt_01/parent_receipt.json",
+      "sha256": "d62aeb6302a21726caeae6506fdf9e2ae9209d505ab68411abe3d37bbfdb44a2"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_goal/E3-LIBERO_GOAL-01/attempt_01/probe_observation.bin",
+      "sha256": "44ef4723ff5e4414457d45d055c859cbf39eab9dff8912dd0e34a59c804e68b9"
+    },
+    {
+      "bytes": 2151,
+      "path": "libero_goal/E3-LIBERO_GOAL-01/parent_receipt.json",
+      "sha256": "cc581245907a4b79f4a305e8a31d88314fe89748219e76bf0b6765a961ccc829"
+    },
+    {
+      "bytes": 174490,
+      "path": "libero_goal/E3-LIBERO_GOAL-02/attempt_01/clean_probe_receipt.json",
+      "sha256": "3d9a3f38ec237272f4a1cfbc6d1a1e03e54291adad838ad87611d64577a9c286"
+    },
+    {
+      "bytes": 219969,
+      "path": "libero_goal/E3-LIBERO_GOAL-02/attempt_01/e3_true_receipt.json",
+      "sha256": "7d025ba36316ad550f57bec587221384b0a61a8a89a23225e8353d65fadfddb3"
+    },
+    {
+      "bytes": 424960,
+      "path": "libero_goal/E3-LIBERO_GOAL-02/attempt_01/parent_receipt.json",
+      "sha256": "12ce0da3c374d8342221ac9d50f81d2be69470fd959044e789b0aa6f884196be"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_goal/E3-LIBERO_GOAL-02/attempt_01/probe_observation.bin",
+      "sha256": "faa81a13d55611b8a1fb8ae1ed154bcae92b6ff05b331dd60e820d7c4df23472"
+    },
+    {
+      "bytes": 2150,
+      "path": "libero_goal/E3-LIBERO_GOAL-02/parent_receipt.json",
+      "sha256": "af528c5d2c9b5a4c46125d9fd732ba7b2c698bb5505b2428bf4407c82fac8511"
+    },
+    {
+      "bytes": 58614,
+      "path": "libero_goal/E3-LIBERO_GOAL-03/attempt_01/clean_probe_receipt.json",
+      "sha256": "04d85d0c7798396474b18ccb819c1f607c0355cd5b76842d1332d1ec53cb7670"
+    },
+    {
+      "bytes": 95924,
+      "path": "libero_goal/E3-LIBERO_GOAL-03/attempt_01/e3_true_receipt.json",
+      "sha256": "7f65bc721861d5a8220f42a4a6323238cb0c621876627ed3cc4a7faf31c0126c"
+    },
+    {
+      "bytes": 168187,
+      "path": "libero_goal/E3-LIBERO_GOAL-03/attempt_01/parent_receipt.json",
+      "sha256": "b5d1e0776039eb2e371608791686ea658e0606f04965af9d92a631a8f99d370f"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_goal/E3-LIBERO_GOAL-03/attempt_01/probe_observation.bin",
+      "sha256": "5f84ef4a415d2140a33722bd9947e052f8c83719b92e3b99a5e07f2c21da575e"
+    },
+    {
+      "bytes": 2150,
+      "path": "libero_goal/E3-LIBERO_GOAL-03/parent_receipt.json",
+      "sha256": "c5566072c0ed2acde495a9f406014765ae4104b15504ea365501918c507db580"
+    },
+    {
+      "bytes": 89327,
+      "path": "libero_object/E3-LIBERO_OBJECT-01/attempt_01/clean_probe_receipt.json",
+      "sha256": "967daf3fa4bd337a384369e3f862b1d1c35fda7da916da03270abb194980edf2"
+    },
+    {
+      "bytes": 127766,
+      "path": "libero_object/E3-LIBERO_OBJECT-01/attempt_01/e3_true_receipt.json",
+      "sha256": "e79e8c1c1a947d542f5606509515f3992c9037496d28355198e3bd75a8af787b"
+    },
+    {
+      "bytes": 235099,
+      "path": "libero_object/E3-LIBERO_OBJECT-01/attempt_01/parent_receipt.json",
+      "sha256": "a0719ad86293df5fc3e9895e13606d2a01ba46893251716be2bf932b66468dbd"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_object/E3-LIBERO_OBJECT-01/attempt_01/probe_observation.bin",
+      "sha256": "d8ecde445d48b223756313cc216d676e0a0747f8d04d3782a793a1a5aeb8f66c"
+    },
+    {
+      "bytes": 2157,
+      "path": "libero_object/E3-LIBERO_OBJECT-01/parent_receipt.json",
+      "sha256": "0881688a46b73959d8a96b8618986df515b8915ad1f9a49c089e80eca9bc8d29"
+    },
+    {
+      "bytes": 92921,
+      "path": "libero_object/E3-LIBERO_OBJECT-02/attempt_01/clean_probe_receipt.json",
+      "sha256": "711f8f25d09c7876272df083fdd16a2efc22e50c7aa4eb28d9460da7e60efb8d"
+    },
+    {
+      "bytes": 132462,
+      "path": "libero_object/E3-LIBERO_OBJECT-02/attempt_01/e3_true_receipt.json",
+      "sha256": "bf8fffe20c6f8f549de782414e2e01c4a4b7815f4c183f9209039b6e790d827d"
+    },
+    {
+      "bytes": 244038,
+      "path": "libero_object/E3-LIBERO_OBJECT-02/attempt_01/parent_receipt.json",
+      "sha256": "bf4b048bc1e98445ff6b49b135df98d745a3268f662919ddfca12d17d3dedf8f"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_object/E3-LIBERO_OBJECT-02/attempt_01/probe_observation.bin",
+      "sha256": "8f7f4ada7adb4ff6e11091a070a1d6a40797c52eb018f975dcc57248d86fbe25"
+    },
+    {
+      "bytes": 2156,
+      "path": "libero_object/E3-LIBERO_OBJECT-02/parent_receipt.json",
+      "sha256": "59bea0729520d5a18f6bf22198c917208d88d0c3661c14f92a352ccf7308c223"
+    },
+    {
+      "bytes": 71583,
+      "path": "libero_object/E3-LIBERO_OBJECT-03/clean_probe_receipt.json",
+      "sha256": "9c1fa4d4a713843bcbc5abd2d8a31bf707387525484721cf0b49bcb5b9bafe08"
+    },
+    {
+      "bytes": 109052,
+      "path": "libero_object/E3-LIBERO_OBJECT-03/e3_true_receipt.json",
+      "sha256": "5c198bfd28db30911b048820c14837c259700c1018752ff7c672d79a955841ea"
+    },
+    {
+      "bytes": 196152,
+      "path": "libero_object/E3-LIBERO_OBJECT-03/parent_receipt.json",
+      "sha256": "3af0a7ba41af6464d3a17d54a2682c593e0d95c3a26ab92fe5169cc317db77b7"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_object/E3-LIBERO_OBJECT-03/probe_observation.bin",
+      "sha256": "e385e4095ccc994881d4a678f92056ff7d78be0551e00b630d2cf24289b5da5d"
+    },
+    {
+      "bytes": 127842,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-01/clean_probe_receipt.json",
+      "sha256": "180b7ffcb15a61be9beb4414df9faf4ba23af08b0a724aa287eb97b762f8d7a4"
+    },
+    {
+      "bytes": 21362,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-01/e3_true_receipt.json",
+      "sha256": "24d3584ed509871d833897c94e261cafa1601e06283bcc9b8ed75d39f5bfb172"
+    },
+    {
+      "bytes": 162831,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-01/parent_receipt.json",
+      "sha256": "95f7a93de6485127e66091e96322759526df4f852b076ac3994c2e1df044b1e2"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-01/probe_observation.bin",
+      "sha256": "dd28893a00c24a38dd47afcfea44cf08f10fdab32c1ad9fad6b0c06f54a2ffe0"
+    },
+    {
+      "bytes": 46153,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-02/clean_probe_receipt.json",
+      "sha256": "e9249a1095c2b82254f64c36ba32683beac47d16591ea536009723dff20c65b0"
+    },
+    {
+      "bytes": 80987,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-02/e3_true_receipt.json",
+      "sha256": "0152742f4a79f9ed94624b6bf0c51c1b6110cbff4a422a349b9bb5d66db827df"
+    },
+    {
+      "bytes": 138679,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-02/parent_receipt.json",
+      "sha256": "254a313b69dfb5b9515ee65ea94b16263c22bc1d2f28f763890d67ed87b140c4"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-02/probe_observation.bin",
+      "sha256": "29c447a021de23482b5626fd0c50c0f6c615906343441fddcfd015b2e6d10b9d"
+    },
+    {
+      "bytes": 64254,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-03/clean_probe_receipt.json",
+      "sha256": "3480e5fac9ea7ec9aa011eeaff5ce7ed3db533972ebd2c90225f7782dd827860"
+    },
+    {
+      "bytes": 101594,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-03/e3_true_receipt.json",
+      "sha256": "45d4ea6fbdac1adb0e8dcbcdf982f0379b996bb223df3ef2fdac33c621e4fe21"
+    },
+    {
+      "bytes": 180264,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-03/parent_receipt.json",
+      "sha256": "0fbd5c047cd2482eff7c4049724a903ea2a899c1c3372e330cc85392e35e71dc"
+    },
+    {
+      "bytes": 196608,
+      "path": "libero_spatial/E3-LIBERO_SPATIAL-03/probe_observation.bin",
+      "sha256": "af4cf183e3492f50e3b10a26e909b3b527002407d72a19159a337340dc83edf8"
+    }
+  ],
+  "decision_path": "E3_DECISION_TABLE_V1.json",
+  "decision_sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "protocol_sha256": "d720a1bd6f4e8c4c69ab26c25f03619cb91a9db76fcccd5aea2f83b00437b3d8",
+  "schema": "STAGE_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_ROOT_SEAL_V1",
+  "status": "SEALED_E3_STRICT_SELECTIVE_REALIZABILITY_PARTIAL_SUITE_DEPENDENT"
+}

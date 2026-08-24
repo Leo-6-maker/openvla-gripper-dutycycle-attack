@@ -1,0 +1,78 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_BRANCH_REPLAY_PROTOCOL_V1",
+  "status": "FROZEN_ENGINEERING_BRANCH_REPLAY_ONLY",
+  "scientific_authority": false,
+  "q3r2_pool": {
+    "path": "reports/STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1.json",
+    "git_blob_sha256": "2f567ccf16fdd42479a566b48a9ac9893fd027cb",
+    "per_suite_count": 12,
+    "scan_order": "existing selected array order",
+    "scientific_use": false,
+    "permanent_exclusion": true
+  },
+  "already_exposed_q3r2_keys": [
+    "libero_10/task_08/state_44",
+    "libero_goal/task_02/state_37",
+    "libero_object/task_01/state_34",
+    "libero_spatial/task_09/state_29"
+  ],
+  "candidate_policy": {
+    "skip_already_exposed_keys": true,
+    "reference_clean_once_per_candidate": true,
+    "first_reference_clean_success_emit_legal_candidate_only": true,
+    "candidate_consumed_after_exposure": true,
+    "replacement": false,
+    "selection_inputs": ["current-runtime validity", "clean success", "one-shot emit", "legal T5+H_phys window"],
+    "outcome_inputs_forbidden": ["attack result", "V_phys", "contact outcome", "semantic failure", "visual efficacy"]
+  },
+  "reference_clean": {
+    "t5": 5,
+    "h_phys": 10,
+    "dummy_wait_steps": 10,
+    "student_timing_once": true,
+    "sealed_action_prefix": "env_action_7d steps [0,t_emit)",
+    "sealed_observation": "raw agentview bytes at t_emit",
+    "sealed_reference_tokens": "direct generated 7 tokens at t_emit"
+  },
+  "branch_replay": {
+    "repeat_count": 2,
+    "fresh_env_per_repeat": true,
+    "prebranch_openvla_calls": 0,
+    "prebranch_student_calls": 0,
+    "branch_point": "immediately before action at t_emit",
+    "live_branch_render": "diagnostic only; never first-decision input",
+    "first_decision_input": "same captured REFERENCE_CLEAN observation bytes",
+    "first_clean_action_must_match_reference_tokens": true,
+    "post_branch_clean_steps": 15,
+    "post_branch_full_bitwise_equality_required": false
+  },
+  "state_contract": {
+    "required_fields": ["model_identity", "suite_task_state_identity", "seed_and_dummy_wait", "wrapper_step_index", "qpos", "qvel", "act", "ctrl", "time", "mocap_state", "task_object_state", "controller_state"],
+    "stable_fields_exact": true,
+    "float_atol": 1e-12,
+    "float_rtol": 0.0,
+    "widen_after_first_run": false,
+    "missing_field": "HOLD"
+  },
+  "resource": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "free_memory_mib_strictly_greater_than": 20480,
+    "one_project_worker_per_physical_gpu": true,
+    "max_project_workers": 8,
+    "foreign_processes_untouched": true,
+    "durable_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_c_20260820",
+    "minimum_free_bytes": 4294967296
+  },
+  "protected_boundary": {
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "protected_reads": 0,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "source_binding": "runner receipt must bind the committed source commit/tree; no implicit current-directory identity",
+  "next_gate": "STAGE_X1R2_Q3R3_FOUR_SUITE_BRANCH_REPLAY_PASS"
+}

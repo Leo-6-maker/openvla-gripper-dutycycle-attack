@@ -1,0 +1,16 @@
+{
+  "file_count": 13,
+  "manifest_path": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+  "manifest_sha256": "61118293f0d0faa714c6269c85d2f76d456b319eefbc17b58c2117d6976bd69e",
+  "protected_boundary": {
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "gpu": 0,
+    "openvla_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected": "UNREAD"
+  },
+  "schema": "PAPER_V1_FIGURE_TABLE_ROOT_SEAL_V1",
+  "status": "SEALED_PAPER_V1_FIGURE_TABLE_PACKAGE"
+}

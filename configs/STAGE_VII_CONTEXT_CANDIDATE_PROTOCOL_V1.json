@@ -1,0 +1,76 @@
+{
+  "schema": "STAGE_VII_CONTEXT_CANDIDATE_PROTOCOL_V1",
+  "status": "FROZEN_BEFORE_S7_BC_TRAINING",
+  "candidates": ["S7-B", "S7-C"],
+  "input_order": {
+    "temporal": "16x25D_causal_history",
+    "language": "frozen_clean_language_embedding",
+    "policy": "clean_policy_intent_9d",
+    "visual": "frozen_clean_visual_embedding_only_for_S7_C"
+  },
+  "projection": {
+    "fit_scope": "TRAIN_PARENTS_ONLY",
+    "standardization": "train_only_mean_std",
+    "language": {"method": "PCA", "components": 16, "svd_solver": "full", "random_state": 20260816},
+    "visual": {"method": "PCA", "components": 16, "svd_solver": "full", "random_state": 20260816},
+    "policy": "train_only_mean_std_no_projection"
+  },
+  "model": {
+    "temporal_channels": [32, 32],
+    "context_hidden": 32,
+    "fusion": "late_concat_temporal_context",
+    "dose_heads": ["T3", "T5", "T10"],
+    "primary_dose": "T5",
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "epochs": 120,
+    "seed": 20260816,
+    "ranking_weight": 0.25,
+    "class_balanced_bce": true,
+    "sampling": "suite_balanced_parent_balanced_inverse_row_weight"
+  },
+  "evaluation": {
+    "threshold": 0.69,
+    "abstains": "MASKED_NEVER_NEGATIVES",
+    "parent_grouped_devtest": true,
+    "leave_one_suite_out": true,
+    "row_level_random_split": false,
+    "threshold_selection": "FROZEN_BEFORE_HOLDOUT_ONLY"
+  },
+  "visual_authorization": {
+    "required_for_S7_C": true,
+    "forensic_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR/STAGE_VII_DOMAIN_SHIFT_FORENSIC_V2_20260816T093631Z",
+    "required_loso_mean_auroc_gain_over_P0": 0.05,
+    "observed_loso_mean_auroc_gain_over_P0": 0.0675227672
+  },
+  "promotion": {
+    "overall_auroc": 0.75,
+    "overall_auprc_lift": 1.25,
+    "overall_top_decile_lift": 1.5,
+    "overall_ece_10bin_max": 0.2,
+    "overall_emission_min": 0.05,
+    "overall_emission_max": 0.8,
+    "identifiable_suite_auroc": 0.65,
+    "identifiable_suite_auprc_lift": 1.05,
+    "identifiable_suite_emission_min": 0.05,
+    "identifiable_suite_emission_max": 0.9,
+    "multimodal_loso_mean_auroc_gain_over_s7_a": 0.05
+  },
+  "forbidden": [
+    "Teacher_or_Student_retraining",
+    "B2_C_threshold_or_weight_changes",
+    "outcome_informed_parent_selection",
+    "explicit_suite_or_task_id_model_feature",
+    "privileged_state",
+    "intervention_outcome",
+    "reward_done_info",
+    "Eval160",
+    "protected_evaluation"
+  ],
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters_must_remain_zero": true
+  }
+}

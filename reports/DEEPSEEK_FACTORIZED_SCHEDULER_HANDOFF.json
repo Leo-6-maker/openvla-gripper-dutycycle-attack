@@ -1,0 +1,65 @@
+{
+  "schema": "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V1",
+  "status": "READY_FOR_REVIEW_AUTHORITATIVE_L3_HOLD",
+  "branch": "codex/factorized-v2-scheduler-inputs-20260722",
+  "base_branch": "codex/v2b-exact-w32-recommended-canary-20260721",
+  "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
+  "full_head": "976c9be",
+  "candidate_close": {
+    "status": "DERIVABLE_FROM_SEALED_RUNTIME_FIELD",
+    "preferred_field": "clean_action_raw_7d[6]",
+    "fallback_field": "action_raw[6]",
+    "fallback_requires_manifest_certification": true,
+    "runtime_definition": "classify_openvla_raw_gripper(raw) == CLOSE",
+    "twelve_split_audit": "NOT_EXECUTED_INPUT_ROOTS_NOT_MOUNTED"
+  },
+  "student_valid": {
+    "status": "DERIVABLE_ONLY_DURING_REMATERIALIZATION",
+    "definition": "feature_window_valid AND action_known AND route_supported AND required_head_inputs_available AND no_schema_error",
+    "old_prediction_field": "MISSING"
+  },
+  "head_semantics": {
+    "grasp": {"field": "grasp_prob", "target": "grasp_established", "status": "CONDITIONALLY_COMPATIBLE"},
+    "manipulation": {"field": "manipulation_prob", "target": "manipulation_active", "status": "CONDITIONALLY_COMPATIBLE"},
+    "release": {"field": "release_prob", "target": "release_or_instability", "status": "CONDITIONALLY_COMPATIBLE", "pure_release_equivalence": false},
+    "utility_probability": {"status": "MISSING", "forbidden_substitutions": ["grasp_prob", "manipulation_prob"]},
+    "regrasp_probability": {"status": "MISSING", "forbidden_substitutions": ["manipulation_prob", "release_prob"]}
+  },
+  "legacy_v5_compatibility": "LEGACY_V5_SCHEDULER_NOT_COMPATIBLE_WITH_FACTORIZED_V2",
+  "factorized_scheduler": {
+    "class": "FactorizedV2OneShotScheduler",
+    "config": "configs/FACTORIZED_V2_SCHEDULER_PROTOCOL_V1.json",
+    "attack_enabled": false,
+    "state_contract": ["IDLE", "GRASP_EVIDENCE", "MANIPULATION_READY", "EMIT_ONCE", "DONE"],
+    "unknown_policy": "pause",
+    "source": "src/gripper_attack/factorized_scheduler.py"
+  },
+  "scheduler_ready_schema": "schemas/factorized_v2_scheduler_ready_prediction.schema.json",
+  "rematerialization": {
+    "script": "scripts/detector_v5/rematerialize_factorized_v2_scheduler_inputs.py",
+    "status": "IMPLEMENTED_FAIL_CLOSED",
+    "production_run": false
+  },
+  "inner_train_inference": {
+    "schema": "FACTORIZED_V2_INNER_TRAIN_CALIBRATION_PREDICTION_V1",
+    "runner": "scripts/detector_v5/run_factorized_v2_inner_train_calibration.py",
+    "status": "PREPARATION_ONLY",
+    "production_run": false,
+    "fit_heldout_disjointness_required": true
+  },
+  "authorization_template": {
+    "path": "configs/OFFLINE_FACTORIZED_V2_INNER_TRAIN_INFERENCE_AUTH_V1.json",
+    "status": "TEMPLATE_ONLY_DISABLED",
+    "training_authorized": false,
+    "full_fit_authorized": false,
+    "cal_check_authorized": false,
+    "attack_authorized": false,
+    "formal_selection_eligible": false
+  },
+  "route_decision": "RECOMMEND_ROUTE_FACTORIZED",
+  "authoritative_replay": "HOLD",
+  "blocked_fields": ["sealed 12-split runtime coverage", "student_valid in current legacy prediction", "inner-train production logits", "calibration authorization"],
+  "forbidden_substitutions": ["event_id -> candidate_close", "Teacher phase -> runtime gate", "grasp_prob -> utility_probability", "manipulation_prob -> regrasp_probability", "zero/default fill", "env_action -> raw_gripper"],
+  "execution_boundary": {"training": false, "production_prediction": false, "full_fit": false, "openvla_rollout": false, "shadow": false, "attack": false, "cal_check_read": false},
+  "tests": {"targeted": "63 passed", "compileall": "PASS", "json_parse": "PASS", "production_audit": "NOT_RUN"}
+}

@@ -1,0 +1,8 @@
+{
+  "run_A_summary": "8e657c4c7de6b108eaecfc554782faa37d645f683c2317b35212b84402ce1085",
+  "run_A_alias_ledger": "1cce56515bfcf3e80488deb747e508129ebd14880e1ea2ae6f8f0a7e137ff1db",
+  "run_B_summary": "d59cbb9e408cbc76197b54efdb1bad0ff91782eb54c9b4a165a6e430c0db9628",
+  "run_B_alias_ledger": "1cce56515bfcf3e80488deb747e508129ebd14880e1ea2ae6f8f0a7e137ff1db",
+  "alias_ledger_identical_across_runs": true,
+  "canonical_payload_identical_across_runs": true
+}

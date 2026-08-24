@@ -1,0 +1,28 @@
+{
+  "schema": "OFFICIAL_V3_SPRINT0_PROVENANCE_V1",
+  "status": "PREPARATION_ONLY",
+  "bridge": {
+    "schema": "OFFICIAL_V3_LEGACY_BRIDGE_BASELINE_V1",
+    "status": "FROZEN_PROVENANCE_ONLY",
+    "legacy_25d_pilot_only": true,
+    "official_v3_formal_eligible": false,
+    "teacher_labels_read": false,
+    "detector_outputs_read": false,
+    "attack_results_read": false
+  },
+  "remediation": {
+    "schema": "OFFICIAL_V3_FIT_REMEDIATION_QUEUE_V1",
+    "fit_split": "FIT_TRAIN",
+    "replacement_identity_policy": "EXACT_SAME_CANONICAL_IDENTITY",
+    "result_based_ordering": false,
+    "overwrite_existing_artifact": false
+  },
+  "stale_lease": {
+    "schema": "OFFICIAL_V3_STALE_LEASE_RECOVERY_AUDIT_V1",
+    "stale_after_seconds": 600,
+    "late_result_policy": "QUARANTINE",
+    "ledger_mutation": false
+  },
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

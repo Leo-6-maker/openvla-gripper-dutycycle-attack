@@ -1,0 +1,81 @@
+{
+  "schema": "STAGE_X_X1R2_GRIPPER_SELECTIVE_ATTACK_CONTRACT_V1",
+  "status": "FROZEN_ENGINEERING_REPAIR_PRE_GPU",
+  "scientific_authority": false,
+  "purpose": "Define the engineering/scientific interface for a genuinely gripper-selective visual attack before any new real-model qualification exposure.",
+  "definition": {
+    "visual_only": true,
+    "input_perturbation_space": "processor_pixel_values",
+    "direct_actuator_edit": false,
+    "clean_reference": "direct generated action token sequence from the official clean model.generate path using the frozen prompt/input_ids",
+    "adversarial_reference": "direct generated action token sequence from the same official model.generate path using the frozen prompt/input_ids and adversarial pixel_values",
+    "action_token_count": 7,
+    "arm_dimensions": [0, 1, 2, 3, 4, 5],
+    "gripper_dimension": 6,
+    "arm_invariant": "adversarial direct-generated token_ids[0:6] == clean direct-generated token_ids[0:6]",
+    "gripper_authority": "adversarial direct-generated token_ids[6]",
+    "clean_gripper_requirement": "clean direct-generated token_ids[6] is not in the native OPEN class",
+    "gripper_transition": "clean direct-generated gripper token is not native OPEN and adversarial direct-generated gripper token is native OPEN",
+    "target_execution_class": "NATIVE_OPEN",
+    "target_token_id": 31745,
+    "target_token_id_role": "secondary diagnostic; native OPEN class is primary",
+    "arm_mismatch_is": "STRUCTURAL_INVALIDITY",
+    "clean_vs_adv_comparison": "same prompt/input_ids, same deterministic decoding, no decode-to-action-to-token re-encoding",
+    "physical_action_execution": "only the directly decoded adversarial action may reach env.step after all structural gates pass"
+  },
+  "required_gates_before_attacked_env_step": [
+    "strict_route=true",
+    "allow_fallback=false",
+    "fallback_used=false",
+    "canonical OpenVLAVisualAttacker route",
+    "processor-space Linf <= 0.03",
+    "direct generated token count = 7",
+    "clean direct-generated gripper execution class != NATIVE_OPEN",
+    "arm token IDs exact equality at dimensions 0..5",
+    "adversarial direct-generated gripper execution class = NATIVE_OPEN",
+    "clean/adversarial direct-generated gripper token transition"
+  ],
+  "mismatch_diagnosis": {
+    "prefix_spillover": "clean and adversarial prompt/input_ids are identical, token counts are valid, and one or more direct generated arm tokens differ",
+    "decode_index_mismatch": "prompt length or exact generated-token extraction differs before the arm comparison",
+    "validator_error": "direct generated token arrays are equal but the validator reports an arm mismatch",
+    "actuator_overwrite": "any env action/token replacement after direct generation; forbidden"
+  },
+  "repair_candidate_policy": {
+    "name": "STRICT_CANDIDATE_AUDIT_V1",
+    "freeze_before_fixture": true,
+    "candidate_sources": ["delta0", "pgd_iteration_1", "pgd_iteration_2", "pgd_iteration_3", "pgd_iteration_4", "pgd_iteration_5"],
+    "candidate_order": "ascending predeclared trajectory index",
+    "selection_rule": "select the first candidate satisfying every required gate, including clean non-OPEN to adversarial native-OPEN transition; otherwise return STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE",
+    "selection_inputs_forbidden": ["task outcome", "Student score", "V_phys", "attack effect", "manual outcome", "protected data"],
+    "candidate_selection_is_not": "post-hoc scientific outcome tuning",
+    "old_final_only_route": "immutable historical Q3-F01 context; not reused"
+  },
+  "frozen_semantics": {
+    "epsilon_processor_pixel_values": 0.03,
+    "step_size_processor_pixel_values": 0.006,
+    "num_steps": 5,
+    "random_start": false,
+    "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+    "no_fallback": true,
+    "no_reencode": true,
+    "no_protected_reads": true
+  },
+  "historical_boundary": {
+    "q3_f01": "IMMUTABLE_RUNTIME_INVALID; do not rerun",
+    "q3_f02": "SEALED_NOT_STARTED; do not start under old Q3 authority",
+    "q3_f03": "SEALED_NOT_STARTED; do not start under old Q3 authority",
+    "q3_f04": "SEALED_NOT_STARTED; do not start under old Q3 authority",
+    "new_fixture_required": true
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "scientific_population_selection": false,
+    "formal_attack_matrix": false,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "protected_reads": 0
+  },
+  "next_gate": "STAGE_X1R2_Q3_ARM_REPAIR_STATIC_AUDIT"
+}

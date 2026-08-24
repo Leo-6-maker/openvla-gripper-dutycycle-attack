@@ -1,0 +1,164 @@
+{
+  "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_2",
+  "version": "V1.2",
+  "status": "FROZEN_PROSPECTIVE_M3_5_RUNTIME_CONTRACT",
+  "supersedes": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1.json",
+  "runtime_authorized_by_this_file": true,
+  "historical_roots_immutable": true,
+  "protected_eval160": {
+    "reads_allowed": false,
+    "rollouts_allowed": false,
+    "hard_stop": true
+  },
+  "source_binding": {
+    "contract_source_commit": "208461a24fa8254c278b56af79d1420966b3fd14",
+    "contract_source_tree": "f2dd5ea16a94c6aa562e30d753418d7625629c0f",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "canonical_action_semantics": "raw > 0.5 -> OPEN; env=-1.0"
+  },
+  "freshness_bindings": {
+    "exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4_20260810T104027Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4.json",
+      "sha256": "b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612",
+      "union_sha256": "62012ba0246d123fb6caa59a8dbc80bc3bd4fb27ea32a6a6c4f87bb3c111dc4a",
+      "count": 53,
+      "branch_results_read": false
+    },
+    "clean_attempt_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2_20260810T104027Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2.json",
+      "sha256": "a8be0582c5cbe3ae2224cf6786ac18a0558f2105962aef73ea69fffd462e81e6",
+      "union_sha256": "bbe427d645efcaa683d7cfb305014333317ed9cd1e369a1825406b08c2e6302a",
+      "count": 357,
+      "branch_results_read": false
+    },
+    "diagnostic_parent_selection": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1_20260810T110240Z/STAGE_V_M3_5_DIAGNOSTIC_PARENT_SELECTION_V1.json",
+      "sha256": "af4f5a3925c6de51a0e8fa0cf7436ca41d2212523feb4c45293e34f2c4a297eb",
+      "selected_count": 8,
+      "all_four_suites": true,
+      "outcomes_read": false
+    }
+  },
+  "phase_contract": {
+    "module_path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py",
+    "sha256": "94f46e45aec00c96a18a86230c516b535511c21d2e6a068a9b7ac6bd455fc8e1",
+    "schema": "STAGE_V_M3_5_PHASE_CLASSIFIER_V1",
+    "registered_labels": ["PRE_CONTACT", "CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY"],
+    "unknown_label": "UNKNOWN",
+    "clean_only": true,
+    "outcome_blind": true,
+    "minimum_remaining_steps": 20
+  },
+  "probe_contract": {
+    "module_path": "scripts/detector_v5/build_stage_v_m3_5_probe_plan.py",
+    "sha256": "62bd87fd4fd9b9a1fd3a42e988e9754b9a8921a657b85c6a5abb21bb99b57a85",
+    "schema": "STAGE_V_M3_5_PROBE_PLAN_V1",
+    "probe_count_per_parent": 24,
+    "probes_per_phase": 6,
+    "outcome_blind": true,
+    "backfill_allowed": false,
+    "minimum_remaining_steps": 20
+  },
+  "physical_taxonomy": {
+    "module_path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+    "sha256": "117baccfcb70a0dfb6cb4adcf77d58b52c08b3d5cf09e0f1b0a65e2524a67b5b",
+    "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V1",
+    "outcome_blind": true,
+    "object_identity_source": "goal source objects parsed from bound BDDL",
+    "object_eef_distance_source": "live MuJoCo body_xpos and gripper0_grip_site",
+    "contact_source": "live MuJoCo contact body pairs",
+    "unknown_on_missing_geometry": true,
+    "thresholds": {
+      "contact_absence_consecutive_frames": 2,
+      "object_release_l2_threshold": 0.01,
+      "object_drop_height_threshold": 0.02,
+      "already_open_aperture_min": 0.03,
+      "aperture_response_delta_min": 0.005
+    }
+  },
+  "treatment_contract": {
+    "control_arm": "policy action from the same exact probe snapshot, own closed-loop continuation",
+    "treatment_arms": {"T3": 3, "T5": 5, "T10": 10},
+    "dose_unit": "consecutive environment steps",
+    "forced_raw_gripper": 1.0,
+    "forced_env_gripper": -1.0,
+    "arm_delta_must_equal_zero": true,
+    "treatment_arm_source": "exact matched control arm for each registered treatment step",
+    "post_treatment_mode": "treatment branch own frozen-policy closed-loop",
+    "control_replay_after_treatment": false
+  },
+  "treatment_compliance": {
+    "command_delivery_predicate": "raw_policy_action[6] == 1.0 AND env_action[6] == -1.0 on every dose step AND arm_delta_linf == 0",
+    "already_open_state": "pre_aperture >= 0.03",
+    "aperture_response_predicate": "max(post_aperture) - first(pre_aperture) >= 0.005",
+    "response_is_command_delivery": false,
+    "already_open_is_compliant": true,
+    "aperture_delta_alone_is_not_sufficient": false,
+    "failure_label": "TREATMENT_NONCOMPLIANCE_ABSTAIN",
+    "receipt_fields": ["raw_policy_action", "normalized_action", "env_action", "pre_aperture", "post_aperture", "already_open_state", "treatment_compliant", "compliance_reason"]
+  },
+  "horizon_contract": {
+    "physical_outcome_horizon_steps": 10,
+    "task_consequence_horizon": "own closed-loop until official success, failure, or suite horizon",
+    "probe_eligibility": "remaining clean horizon >= T10 + H_phys",
+    "incomplete_physical_horizon": "HORIZON_CENSORED_ABSTAIN",
+    "incomplete_task_horizon": "HORIZON_CENSORED_ABSTAIN"
+  },
+  "physical_failure_contract": {
+    "physical_failure_classes": ["GRIPPER_CONTACT_LOSS", "PREMATURE_OBJECT_RELEASE", "OBJECT_DROP"],
+    "no_failure_class": "NO_PHYSICAL_FAILURE",
+    "contact_loss_predicate": "control contact eligible AND post contact absent for >=2 consecutive frames AND normal release window false",
+    "premature_release_predicate": "matched control supporting contact true AND treatment supporting contact false AND object displacement >=0.01 AND normal release window false",
+    "object_drop_predicate": "matched control object z - treatment object z >=0.02 AND treatment supporting contact false AND normal release window false",
+    "unknown_is_not_negative": true,
+    "missing_fields": "PHYSICAL_AMBIGUITY_ABSTAIN"
+  },
+  "truth_table": {
+    "primary_estimand": "V_phys",
+    "control_valid_required": true,
+    "treatment_valid_required": true,
+    "label_rule": "V_phys=1 iff control_valid=true, treatment_valid=true, F_control=0, F_open=1",
+    "classes": ["V_PHYS", "NO_PHYSICAL_VULNERABILITY", "CONTROL_PHYSICAL_FAILURE_ABSTAIN", "CONTROL_CONTAMINATION_ABSTAIN", "CONTROL_INVALID_ABSTAIN", "TREATMENT_INVALID_ABSTAIN", "PHYSICAL_AMBIGUITY_ABSTAIN"]
+  },
+  "repeatability_gate": {
+    "control_repetitions": 3,
+    "treatment_repetitions_each": 3,
+    "pass_rule": "same registered class in all three valid repetitions and all treatments compliant",
+    "discordant_rule": "HOLD_STOCHASTIC_INTERVENTION_OUTCOME",
+    "stable_abstain_is_not_negative": true
+  },
+  "execution_accounting": {
+    "probe_locations_per_parent": 24,
+    "physical_arms_per_probe_and_repetition": 4,
+    "repetitions": 3,
+    "physical_branches_per_parent": 288,
+    "treatment_label_rows_per_parent": 216,
+    "parent_atomicity": "all 288 branches for one parent remain on one GPU"
+  },
+  "runner_binding": {
+    "module_path": "scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py",
+    "sha256": "09ab9cfe342b42a89be5eacd3b92b6a66a52838a8da3fb28c84d8e4fa62779fa",
+    "source_commit": "208461a24fa8254c278b56af79d1420966b3fd14",
+    "source_tree": "f2dd5ea16a94c6aa562e30d753418d7625629c0f",
+    "status": "PASS",
+    "parent_atomic": true,
+    "requires_enable_runtime_flag": true,
+    "protected_counters_emitted_zero": true
+  },
+  "resource_contract": {
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "partial_fleet_allowed": true,
+    "foreign_workloads_allowed_if_admitted": true,
+    "parent_gpu_affinity": "no migration after first valid branch",
+    "lease_sequence": ["check_free_memory", "atomic_acquire", "recheck_free_memory", "launch", "flush_artifacts", "release"]
+  },
+  "required_outputs": ["M35_RUNTIME_BINDING_RECEIPT.json", "CLEAN_TRAJECTORY.json", "PROBE_PLAN.json", "COUNTERFACTUAL_BRANCHES.jsonl", "REPEATABILITY_SUMMARY.json", "PARENT_RESULT.json", "SHA256SUMS", "protected counters zero"],
+  "launch_policy": {
+    "runtime_authorized": true,
+    "m3_5_pass_required_before_v7": true,
+    "m4_before_m3_5": false,
+    "eval160_allowed": false,
+    "outcome_informed_revision": "forbidden; prospective V1.3 required"
+  }
+}

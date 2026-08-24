@@ -1,0 +1,56 @@
+{
+  "bridge_runtime_reads": 0,
+  "errors": [],
+  "eval160": "UNREAD",
+  "next_gate": "STAGE_X_X1R2_F1C_METHOD_FREEZE_AND_T5_CANARY",
+  "physical_interventions": 0,
+  "protected_evaluation": "UNREAD",
+  "protected_reads": 0,
+  "schema": "STAGE_X1R2_F1B_DEV_DECISION_V3",
+  "scientific_authority": false,
+  "selected_method": {
+    "candidate_audit_complete_count": 72,
+    "complexity_rank": 1,
+    "expected_attack_count": 72,
+    "failure_categories": {
+      "STRICT_INTERSECTION_LIMITED": 37,
+      "STRICT_REALIZABLE": 8,
+      "TARGETABILITY_LIMITED": 27
+    },
+    "iterations": 10,
+    "mean_selected_linf": 0.01953125,
+    "mean_strict_valid_probes_per_parent": 0.3333333333333333,
+    "method": "M1",
+    "min_per_suite_parent_success": 1,
+    "parent_success_count": 5,
+    "per_suite_parent_success_count": {
+      "libero_10": 2,
+      "libero_goal": 1,
+      "libero_object": 1,
+      "libero_spatial": 1
+    },
+    "status_counts": {
+      "F1B_NO_STRICT_CANDIDATE": 64,
+      "PASS_F1B_VALID_CANDIDATE": 8
+    },
+    "strict_valid_probe_count": 8,
+    "total_parent_count": 24
+  },
+  "selection_rule": {
+    "advancement_requires_strict_improvement_over_M0_on_first_two_criteria": true,
+    "lexicographic": [
+      "maximize minimum per-suite parent success count",
+      "maximize total DEV parents with >=1 strict-valid probe",
+      "minimize mean Linf then method complexity",
+      "tie simpler method then fewer iterations"
+    ],
+    "no_clear_improvement_status": "F1_TARGETABILITY_DEVELOPMENT_NO_CLEAR_IMPROVEMENT",
+    "unit": "parent"
+  },
+  "status": "F1B_NEW_METHOD_SELECTED_FOR_F1C",
+  "strict_improvement_over_m0_on_first_two_criteria": {
+    "M1": true,
+    "M2": true
+  },
+  "vphys_reads": 0
+}

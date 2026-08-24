@@ -1,0 +1,74 @@
+{
+  "manifest": "CS200_READ_ONLY_MANIFEST_V1",
+  "timestamp": "2026-07-25T23:15:00Z",
+  "status": "AWAITING_AUTHORIZATION",
+  "requested_access": {
+    "CS200_READ_ONLY": 1,
+    "CS200_WRITE": 0,
+    "CS200_DELETE": 0,
+    "CS200_RENAME": 0,
+    "CS200_PERMISSION_CHANGE": 0
+  },
+
+  "files": [
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/FACTORIZED_TEACHER_STATES_35_49_20260725/labels/",
+      "pattern": "**/factorized_teacher_v1.jsonl",
+      "count": 600,
+      "total_size": "139 MB",
+      "purpose": "Input to Label Contract V2: per-step K10 labels, candidate_close, action_intent, student_valid. Used for close_intent head and cross-reference with V22 physics output.",
+      "read_only_commands": ["cat", "python3 -c 'open(...).read()'"],
+      "contains": "Per-step JSONL with action labels, K10 feasibility, candidate_close flags"
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_DETECTOR_V5_TEACHER_PHYSICS_V21C_STATES_35_49_20260725/labels/",
+      "pattern": "**/physics_teacher_v21c.jsonl",
+      "count": 600,
+      "total_size": "183 MB",
+      "purpose": "Diagnostic reference: V21C physics output for comparison with V22. NOT used for Label V2 production. Read-only comparison.",
+      "read_only_commands": ["cat", "python3 -c 'open(...).read()'"],
+      "contains": "Per-step JSONL with physics teacher V21C output (known_mask=False for goal tasks)"
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/clean/",
+      "pattern": "**/*.npz",
+      "count": "~2400 (1400 episodes × ~1.7 states avg)",
+      "total_size": "3.5 GB",
+      "purpose": "Clean trajectory data: observations, actions, rewards, privileged state. REQUIRED for Physics Teacher V22 to compute independent physical factors (grasp, contact, comotion, lift, instability) from raw simulation state. This is the minimal data needed to replace V21C with V22.",
+      "read_only_commands": ["python3 -c 'import numpy; numpy.load(...)'"],
+      "contains": "Image observations, robot state, gripper qpos, object poses (privileged), actions, rewards, task metadata"
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_R7_K10_OPPORTUNITY_LABELER_V1_2_1_8e4f5ff_20260719/",
+      "pattern": "AUDIT.json + EPISODE_SUMMARY.csv + TASK_GEOMETRY.csv",
+      "count": 3,
+      "total_size": "< 10 MB",
+      "purpose": "K10 labeler audit metadata: per-task funnel statistics. Used for cross-validation of V22 criticality windows against K10 labeler's internal funnel stages.",
+      "read_only_commands": ["cat", "python3 -c 'open(...).read()'"],
+      "contains": "JSON audit + CSV summaries of K10 labeler funnel per task"
+    }
+  ],
+
+  "n5_output_paths": {
+    "label_v2_production": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase2_labels/production_v2/",
+    "v22_physics_output": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase2_labels/v22_physics/",
+    "diagnostic_legacy": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase2_labels/diagnostic_legacy/",
+    "note": "All outputs written to N5 isolated root. No writes to CS200 paths."
+  },
+
+  "input_integrity": {
+    "strategy": "SHA256 of each input file before processing; manifest records all input SHAs",
+    "cs200_root_sha": "TO_BE_COMPUTED_ON_ACCESS",
+    "verification": "All input files exist and match expected count before any processing"
+  },
+
+  "exclusions": {
+    "not_requested": [
+      "CS200 training/evaluation scripts",
+      "Model weights or checkpoints (already accessible)",
+      "Other OPS outputs beyond those listed",
+      "Any CS200 directory not listed above"
+    ],
+    "formal_isolation": "No Formal matrix files, queue, seal, or attempts accessed"
+  }
+}

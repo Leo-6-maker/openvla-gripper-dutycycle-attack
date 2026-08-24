@@ -1,0 +1,179 @@
+{
+  "document": "INDEPENDENT_FACTORIZED_CALIBRATION_REQUIREMENTS_V1",
+  "frozen_date": "2026-07-22",
+  "revised_date": "2026-07-23",
+  "status": "IDENTITY_CLOSURE_PASS_AWAITING_AUTHORITATIVE_TEACHER_COVERAGE",
+  "revision_history": [
+    "2026-07-22: Initial three-way requirement (C, P, H disjointness)",
+    "2026-07-23 r1: Expanded to five-way identity closure (T, C, P, H, A)",
+    "2026-07-23 r2: Split identity disjointness (hard gate) from statistical coverage (soft gate). Removed uniform 20-identity threshold. Added HOLD_INPUTS_MISSING verdict. NESTED_RETRAIN_REQUIRED only for proven contamination."
+  ],
+  "two_independent_gates": {
+    "gate_1_identity_disjointness": {
+      "type": "HARD",
+      "description": "Proves or disproves five-way identity independence. Contamination → NESTED_RETRAIN_REQUIRED.",
+      "checks": [
+        "T ∩ C = T ∩ P = T ∩ H = T ∩ A = ∅",
+        "C ∩ P = C ∩ H = P ∩ H = ∅",
+        "A ∩ (T ∪ C ∪ P ∪ H) = ∅",
+        "Training identities from actual sampler ledger (never set subtraction)",
+        "Cohort membership: T∈DETECTOR_TRAIN, C/P∈DETECTOR_VAL, H∈DETECTOR_TEST, A∈ATTACK_EVAL",
+        "Deterministic allocation: parent cohort SHA, canonical sort, salt, algorithm SHA, code SHA, C/P union closure, unassigned accounting"
+      ],
+      "failure_verdict": "NESTED_RETRAIN_REQUIRED",
+      "pass_verdict": "PASS_EXISTING_ROOTS or PASS_DETERMINISTIC_ALLOCATION (depending on source_status)"
+    },
+    "gate_2_statistical_coverage": {
+      "type": "SOFT",
+      "description": "Checks whether per-role samples are sufficient for valid statistical inference. Insufficiency → HOLD, never retrain.",
+      "possible_statuses": [
+        "PASS",
+        "HOLD_INSUFFICIENT_STATISTICAL_COVERAGE",
+        "NOT_AUDITABLE"
+      ],
+      "checks": {
+        "calibration": {
+          "description": "Per-head known positive AND known negative for all 3 heads (grasp, manipulation, release). No unknown→negative conversion.",
+          "data_required": "calibration_head_summaries per split from Teacher labels",
+          "no_arbitrary_threshold": "No minimum identity count. Only checks positive/negative class presence.",
+          "failure": "HOLD_INSUFFICIENT_STATISTICAL_COVERAGE (not NESTED_RETRAIN_REQUIRED)"
+        },
+        "policy_selection": {
+          "description": "Each split has negative episodes (false-start defined), strict-K10 positive opportunities (recall defined), eligible/known denominators.",
+          "data_required": "policy_selection_summaries per split from Teacher labels",
+          "no_arbitrary_threshold": "No minimum identity count. Only checks denominator/opportunity presence.",
+          "failure": "HOLD_INSUFFICIENT_STATISTICAL_COVERAGE (not NESTED_RETRAIN_REQUIRED)"
+        },
+        "heldout_l3": {
+          "description": "12-split evaluation denominator closure. All splits have heldout identities. No arbitrary 20-identity threshold.",
+          "data_required": "heldout identity manifest",
+          "failure": "HOLD_INSUFFICIENT_STATISTICAL_COVERAGE (not NESTED_RETRAIN_REQUIRED)"
+        },
+        "attack_eval": {
+          "description": "Isolation from all detector identities only. No sample size requirement at this stage.",
+          "no_coverage_threshold": true
+        }
+      }
+    },
+    "gate_0_input_completeness": {
+      "type": "PREREQUISITE",
+      "description": "All six required manifests must be present before any classification.",
+      "required_manifests": [
+        "identity_source_discovery (FACTORIZED_IDENTITY_SOURCE_DISCOVERY_V1.json)",
+        "checkpoint_training_ledger (FACTORIZED_CHECKPOINT_TRAINING_IDENTITY_LEDGER_V1.json)",
+        "calibrator_fit_manifest",
+        "policy_selection_manifest",
+        "heldout_l3_manifest",
+        "attack_eval_manifest"
+      ],
+      "missing_verdict": "HOLD_INPUTS_MISSING",
+      "critical_rule": "HOLD_INPUTS_MISSING must NEVER be converted to NESTED_RETRAIN_REQUIRED. Missing evidence ≠ proven contamination."
+    }
+  },
+  "verdict_rules": {
+    "precedence": [
+      "1. Inputs incomplete → HOLD_INPUTS_MISSING (regardless of any other finding)",
+      "2. Proven identity contamination → NESTED_RETRAIN_REQUIRED (regardless of coverage)",
+      "3. Clean identity closure + RECOVERED_EXISTING_ROOTS → PASS_EXISTING_ROOTS",
+      "4. Clean identity closure + DETERMINISTIC_ALLOCATION → PASS_DETERMINISTIC_ALLOCATION",
+      "5. Clean identity closure + unclear source → HOLD_INPUTS_MISSING (do not guess)"
+    ],
+    "what_never_triggers_NESTED_RETRAIN_REQUIRED": [
+      "Insufficient per-split sample counts (C≈8, P≈9 are valid CLEAN2000 outcomes)",
+      "Missing calibration_head_summaries (NOT_AUDITABLE, not RETRAIN)",
+      "Missing policy_selection_summaries (NOT_AUDITABLE, not RETRAIN)",
+      "Missing input manifests (HOLD_INPUTS_MISSING, not RETRAIN)",
+      "Low identity counts below any arbitrary threshold",
+      "Statistical coverage issues of any kind"
+    ],
+    "what_triggers_NESTED_RETRAIN_REQUIRED": [
+      "Checkpoint training identities overlap with C, P, H, or A",
+      "Training identities derived by set subtraction (not actual training records)",
+      "Training provenance method invalid or unknown",
+      "Checkpoint training identities cannot be proven",
+      "Heldout identities were used in training, checkpoint, model, or threshold selection",
+      "No canonical unused pool exists or cannot form independent roles",
+      "Cohort membership violations (e.g., TEST identity used for training)"
+    ]
+  },
+  "phase_c_authorization": {
+    "CP_INFERENCE_AUTHORIZED": "Identity closure PASS + authoritative C/P Teacher contract integrity PASS + calibration coverage PASS + policy coverage PASS + K10 parity PASS",
+    "CP_INFERENCE_HOLD": "Any C/P identity, source-step, bundle-seal, Teacher-contract, K10, or statistical-coverage gate is not PASS",
+    "HELDOUT_L3_DATA_READY": "Identity closure PASS + authoritative H Teacher identity/step/source/K10 closure PASS",
+    "HELDOUT_L3_INFERENCE_AUTHORIZED": "Never issued by the Phase B validator; requires independent calibrator-freeze and scheduler-freeze receipt verification"
+  },
+  "cleaned2000_realistic_counts": {
+    "DETECTOR_TRAIN": {
+      "total": 1200,
+      "per_split_avg": 100
+    },
+    "DETECTOR_VAL": {
+      "total": 200,
+      "per_split_avg": 16.7,
+      "note": "Split into C≈8 and P≈8 per split"
+    },
+    "DETECTOR_TEST": {
+      "total": 200,
+      "per_split_avg": 16.7
+    },
+    "ATTACK_EVAL": {
+      "total": 400,
+      "per_split_avg": 33.3
+    },
+    "validation": "C≈8 and P≈8 per split is VALID under CLEAN2000. Must not trigger retrain."
+  },
+  "five_identity_roles": {
+    "T_checkpoint_training": {
+      "expected_cohort": "DETECTOR_TRAIN",
+      "provenance_methods_accepted": [
+        "TRAINING_DATALOADER_LOG",
+        "CANONICAL_TRAINING_LEDGER",
+        "CHECKPOINT_SAMPLER_STATE"
+      ],
+      "provenance_methods_rejected": [
+        "SET_SUBTRACTION",
+        "INFERRED",
+        "UNKNOWN"
+      ]
+    },
+    "C_calibrator_fit": {
+      "expected_cohort": "DETECTOR_VAL",
+      "min_identities_per_split": null,
+      "note": "No arbitrary minimum. Per-head known pos/neg checked instead."
+    },
+    "P_policy_selection": {
+      "expected_cohort": "DETECTOR_VAL",
+      "min_identities_per_split": null,
+      "note": "No arbitrary minimum. Negative episodes and K10 opportunities checked instead."
+    },
+    "H_heldout_l3": {
+      "expected_cohort": "DETECTOR_TEST",
+      "min_identities_per_split": null,
+      "note": "Only requires 12-split evaluation denominator closure."
+    },
+    "A_attack_eval": {
+      "expected_cohort": "ATTACK_EVAL",
+      "min_identities_per_split": null,
+      "note": "Isolation check only. No sample size requirement."
+    }
+  },
+  "phase_b_deliverables": {
+    "from_codex": [
+      "FACTORIZED_IDENTITY_SOURCE_DISCOVERY_V1.json",
+      "FACTORIZED_CHECKPOINT_TRAINING_IDENTITY_LEDGER_V1.json",
+      "calibrator_fit identity manifest (with optional calibration_head_summaries)",
+      "policy_selection identity manifest (with optional policy_selection_summaries)",
+      "heldout_l3 identity manifest",
+      "attack_eval identity manifest"
+    ],
+    "from_deepseek": [
+      "DEEPSEEK_PHASE_B_VALIDATION_RECEIPT_V1.json",
+      "DEEPSEEK_PHASE_B_PAIRWISE_INTERSECTIONS_V1.csv",
+      "DEEPSEEK_PHASE_B_COHORT_MEMBERSHIP_V1.csv",
+      "DEEPSEEK_PHASE_B_STATISTICAL_COVERAGE_V1.csv",
+      "DEEPSEEK_PHASE_B_MISSING_INPUTS_V1.json",
+      "SHA256SUMS",
+      "SHA256SUMS.sha256"
+    ]
+  }
+}

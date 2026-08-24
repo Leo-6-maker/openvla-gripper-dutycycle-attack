@@ -1,0 +1,106 @@
+{
+  "equivalent_to_historical_f1c_method_spec_sha256": "1d26c843cfeb1432cd1656ed6be4a32a5067b3715f5738da015c5174a9ee1ca3",
+  "execution": {
+    "attack_invoked_only_for_clean_non_native_open": true,
+    "attempted_steps": 5,
+    "done_is_only_termination_signal": true,
+    "execute_attacked_action_only_after_strict_validation": true,
+    "invalid_or_missing_candidate_action": "EXECUTE_CLEAN_ACTION",
+    "student_emit_used": false,
+    "student_used": false
+  },
+  "method": {
+    "allow_fallback": false,
+    "candidate_order": [
+      "delta0",
+      "pgd_iteration_1",
+      "pgd_iteration_2",
+      "pgd_iteration_3",
+      "pgd_iteration_4",
+      "pgd_iteration_5",
+      "pgd_iteration_6",
+      "pgd_iteration_7",
+      "pgd_iteration_8",
+      "pgd_iteration_9",
+      "pgd_iteration_10"
+    ],
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "direct_action_token_count": 7,
+    "epsilon_processor_pixel_values": 0.03,
+    "exact_arm_dimensions": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "iterations": 10,
+    "method": "M1",
+    "no_actuator_overwrite": true,
+    "no_decode_reencode": true,
+    "objective": "autoregressive_prefix_gripper_native_open_logratio_v4",
+    "random_start": false,
+    "step_size": 0.003,
+    "strict_route": true,
+    "target_execution_class": "NATIVE_OPEN",
+    "target_token_id_secondary": 31745
+  },
+  "population": {
+    "canary_ledger_sha256": "d6cd9c3ab753fcef5dd79376e03dba5dd3e8e9b7ac1c1755a93d4f5a30bd9c34",
+    "f1a3_root_seal_path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json",
+    "f1a3_root_seal_sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+    "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_FRESH_CANARY_LEDGER_V1.json",
+    "per_suite_count": 2,
+    "role": "F1C4_FRESH_CANARY_V1",
+    "row_count": 8,
+    "source_split_salt": "STAGE_X_X1R2_F1A3_SOURCE_V3_SPLIT_20260821"
+  },
+  "probe": {
+    "clean_only_selection": true,
+    "eligibility": [
+      "clean runtime valid through step",
+      "exactly seven direct generated tokens",
+      "clean gripper is not NATIVE_OPEN",
+      "step+14 < official horizon"
+    ],
+    "max_per_parent": 1,
+    "no_replacement": true,
+    "selection_salt": "STAGE_X1R2_F1C4_PROBE_V1_20260822"
+  },
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "bridge_outcome_read": 0,
+    "bridge_runtime": 0,
+    "eval160": "UNREAD",
+    "physical_interventions": 0,
+    "physical_outcome": 0,
+    "protected": "UNREAD",
+    "vphys": 0
+  },
+  "protocol_sha256": "0b1b86bf6bd3882c5874658d1487e4db4cad121a56a18973c28ccc7bd5b17216",
+  "schema": "STAGE_X1R2_F1C4_METHOD_SPEC_V1",
+  "source": {
+    "branch": "codex/stage-x-x1r2-q3-arm-isolation-repair-20260820",
+    "commit": "5bb45c004c3aa23a2a0b4dfebeb25959b90c5f71",
+    "status_porcelain": "",
+    "tree": "9e5d63c92b6fb88a78d17a1fc18e721db6540b98"
+  },
+  "status": "PASS_F1C4_METHOD_SPEC_SEALED",
+  "temporal_arms": [
+    "none",
+    "prev_delta"
+  ],
+  "temporal_selection": {
+    "lexicographic": [
+      "maximize minimum per-suite canary parent count with strict-valid T5 step",
+      "maximize total canary parents with strict-valid T5 step",
+      "maximize total delivered strict-valid steps",
+      "tie prefer none temporal initialization"
+    ],
+    "outcome_blind": true,
+    "physical_signal_forbidden": true,
+    "unit": "parent"
+  }
+}

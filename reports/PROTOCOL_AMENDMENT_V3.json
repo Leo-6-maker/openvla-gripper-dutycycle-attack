@@ -1,0 +1,61 @@
+﻿{
+    "amendment":  "PROTOCOL_AMENDMENT_V3",
+    "date":  "2026-07-26",
+    "type":  "TRAINING_COHORT_SIZE_REDUCTION",
+    "status":  "PRE_COMMITTED_BEFORE_G10",
+    "original_plan":  {
+                          "document":  "N5_LONGRUN_PLAN_V2",
+                          "gate":  "G3_COHORT_JOIN",
+                          "target":  1400,
+                          "note":  "Plan assumed 1400 V4 training identities would carry forward to N5"
+                      },
+    "actual":  {
+                   "target":  800,
+                   "training_used":  800,
+                   "train_split":  640,
+                   "val_split":  80,
+                   "cal_split":  80,
+                   "held_out_total":  1200
+               },
+    "reason":  {
+                   "root_cause":  "CS200 inner-CV allocation (FACTORIZED_PHASE_B2_DETERMINISTIC_ALLOCATION_V3) provides exactly 800 unique training identities (200 per suite × 4 suites) across 12 cross-validation folds. The original 1400 estimate was based on V4 training which used a different sampling strategy. N5 uses the CS200 official training ledger directly.",
+                   "discovery_date":  "2026-07-26",
+                   "decision_made_before_training":  true,
+                   "decision_made_before_viewing_any_g6_g7_g8_results":  true,
+                   "not_a_post_hoc_adjustment":  true
+               },
+    "held_out_usage":  {
+                           "total":  1200,
+                           "per_suite":  {
+                                             "libero_10":  300,
+                                             "libero_goal":  300,
+                                             "libero_object":  300,
+                                             "libero_spatial":  300
+                                         },
+                           "intended_use":  "G10 detector-only replay (V4 vs V5)",
+                           "rule":  "held-out identities NEVER appear in any training, validation, or calibration fold. G10 test manifest is frozen here and MUST NOT be modified after any model training or threshold selection.",
+                           "manifest_path":  "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json"
+                       },
+    "remaining_600_from_original_2000":  {
+                                             "total_cs200":  2000,
+                                             "training_800":  "INNER_CV_TRAINING_LEDGER identities",
+                                             "held_out_1200":  "available for G10",
+                                             "unaccounted":  0,
+                                             "note":  "All 2000 CS200 identities accounted for. No identities lost or unlabeled."
+                                         },
+    "impact_on_gates":  {
+                            "G3":  "PASS with amendment — 800 identities from canonical training ledger",
+                            "G4":  "PASS with amendment — 800 labels produced instead of 1400",
+                            "G5":  "PASS with amendment — distribution audited on 800 episodes",
+                            "G6":  "PASS — split frozen on 800 identities (640/80/80)",
+                            "G7":  "PASS — baselines trained on 640, validated on 80",
+                            "G8":  "PASS — N5 trained on 640, validated on 80",
+                            "G10":  "PENDING — 1200 held-out identities frozen as test set"
+                        },
+    "binding":  {
+                    "amendment_sha256":  null,
+                    "upstream_plan":  "N5_LONGRUN_PLAN_V2 (UNCHANGED — original plan preserved as historical record)",
+                    "supersedes":  "G3_COHORT_JOIN target of 1400",
+                    "does_not_supersede":  "any other gate requirement"
+                }
+}

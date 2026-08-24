@@ -1,0 +1,118 @@
+{
+  "action_semantics": {
+    "arm_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "common_dim": 7,
+    "decode_reencode_allowed": false,
+    "gripper_index": 6,
+    "m0": "existing project authority; exact runtime source/tree re-audit pending",
+    "m1_oft": "official source normalizes gripper [0,1] to [-1,+1] and inverts for LIBERO; exact installed runtime re-audit pending",
+    "m2_openpi": "official LIBERO path emits 7D actions directly to env; exact installed runtime/source checkout re-audit pending",
+    "native_close": 1.0,
+    "native_open": -1.0,
+    "silent_fallback_allowed": false
+  },
+  "disk_snapshot": {
+    "/llm_jzm": {
+      "available_1024_blocks": 43588920,
+      "capacity_pct": 99
+    },
+    "/mnt/sdc": {
+      "available_1024_blocks": 27000148,
+      "capacity_pct": 100
+    },
+    "snapshot_utc": "2026-08-22T15:27:41Z"
+  },
+  "environment": {
+    "env": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "numpy": "1.26.4",
+    "python": "3.10.16",
+    "server": "pm-364c0001",
+    "snapshot_utc": "2026-08-22T15:27:41Z",
+    "torch": "2.2.2+cu118",
+    "transformers": "4.40.1",
+    "user": "dty_user"
+  },
+  "git_binding": {
+    "head_commit": "d54b431a7ac186dcaf8a645a4fa9bfab9b9dde18",
+    "head_tree": "c5e44859e095eaa5f153cabfefd8a671864abc89"
+  },
+  "gpu_admission_snapshot": {
+    "contract": "free_memory_mib > 20480; max one project worker per physical GPU; foreign processes coexist untouched",
+    "devices": [
+      {
+        "admissible_by_memory": false,
+        "free_memory_mib": 4732,
+        "index": 0,
+        "utilization_pct": 99
+      },
+      {
+        "admissible_by_memory": false,
+        "free_memory_mib": 4732,
+        "index": 1,
+        "utilization_pct": 94
+      },
+      {
+        "admissible_by_memory": false,
+        "free_memory_mib": 4732,
+        "index": 2,
+        "utilization_pct": 99
+      },
+      {
+        "admissible_by_memory": false,
+        "free_memory_mib": 4732,
+        "index": 3,
+        "utilization_pct": 98
+      },
+      {
+        "admissible_by_memory": true,
+        "free_memory_mib": 81210,
+        "index": 4,
+        "utilization_pct": 0
+      },
+      {
+        "admissible_by_memory": true,
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 29578,
+        "index": 5,
+        "utilization_pct": 94
+      },
+      {
+        "admissible_by_memory": true,
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 29578,
+        "index": 6,
+        "utilization_pct": 91
+      },
+      {
+        "admissible_by_memory": true,
+        "free_memory_mib": 81210,
+        "index": 7,
+        "utilization_pct": 0
+      }
+    ],
+    "project_workers_launched": 0,
+    "snapshot_utc": "2026-08-22T15:27:41Z"
+  },
+  "parity_checks": {
+    "checkpoint_bytes_bound_for_all_models": false,
+    "chunk_and_replan_bound_for_all_models": false,
+    "common_libero_assets_and_bddl_bound": false,
+    "fresh_branch_boundary_bound_for_all_models": false,
+    "normalization_bound_for_all_models": false,
+    "preprocessing_bound_for_all_models": false
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "scientific_outcomes": "UNREAD",
+    "v_phys": "UNREAD"
+  },
+  "schema": "STAGE_Z_Z0_ENVIRONMENT_ACTION_PARITY_V1",
+  "status": "HOLD_STAGE_Z_Z0_CROSS_MODEL_AUTHORITY_NOT_ESTABLISHED"
+}

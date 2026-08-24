@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Factorized V2 offline evaluation labels",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "episode", "step", "event_id", "event_role", "strict_k10_feasible", "strict_k10_known_mask"],
+  "properties": {
+    "schema": {"const": "FACTORIZED_V2_OFFLINE_EVALUATION_LABELS_V1"},
+    "episode": {"type": "string"}, "step": {"type": "integer", "minimum": 0},
+    "event_id": {"type": "integer"}, "event_role": {"type": "string"},
+    "strict_k10_feasible": {"type": "boolean"}, "strict_k10_known_mask": {"type": "boolean"}
+  }
+}

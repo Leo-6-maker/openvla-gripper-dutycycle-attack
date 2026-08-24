@@ -1,0 +1,119 @@
+{
+  "schema": "STAGE_VI_B2_DEVELOPMENT_PROMOTION_CRITERIA_V1",
+  "status": "FROZEN_BEFORE_CANDIDATE_TRAINING",
+  "scientific_scope": {
+    "target": "V_phys@T5",
+    "primary_dose": "T5",
+    "auxiliary_doses": [],
+    "teacher_student_frozen": true,
+    "stage_v_m4_used_as_development_only": true,
+    "fresh_m4_execution": false,
+    "eval160_status": "UNREAD",
+    "protected_boundary": "UNREAD"
+  },
+  "data_contract": {
+    "m4_labels_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_FORMAL_M4_AGGREGATE_F696F582_20260815T175500Z",
+    "m4_student_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_STUDENT_VPHYS_HELDOUT_F696F582_20260816T031500Z",
+    "clean_feature_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CLEAN_REPLAY_STUDENT_INPUTS_F696F582_20260816T021500Z",
+    "parent_split": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json",
+    "parent_group_key": "canonical_parent_key",
+    "parent_split_counts": {
+      "TRAIN": 24,
+      "VAL": 8,
+      "TEST": 8
+    },
+    "expected_t5_rows": 858,
+    "split_rule": "frozen Stage V parent split; no row or step randomization",
+    "feature_schema": "frozen 25D v5_r3 feature order",
+    "causal_window_steps": 16
+  },
+  "candidates": {
+    "B2-A_DIRECT_25D_BALANCED_LOGISTIC": {
+      "family": "direct_vphys",
+      "input": "25D_instantaneous",
+      "model": "StandardScaler+LogisticRegression",
+      "C": 1.0,
+      "class_weight": "balanced",
+      "max_iter": 2000,
+      "random_state": 0
+    },
+    "B2-B_CAUSAL_TCN_BALANCED_BCE_RANKING": {
+      "family": "direct_vphys",
+      "input": "16x25D_causal_window",
+      "model": "two_block_causal_tcn",
+      "channels": [32, 32],
+      "kernel_size": 3,
+      "dropout": 0.0,
+      "loss": "class_balanced_bce+within_parent_pairwise_logistic_ranking",
+      "ranking_weight": 0.2,
+      "optimizer": "Adam",
+      "learning_rate": 0.001,
+      "weight_decay": 0.0001,
+      "epochs": 120,
+      "seed": 20260816,
+      "batch_mode": "full_train_rows_with_parent_grouped_ranking"
+    },
+    "B2-C_SOFT_TV_DISTILL_DIRECT_VPHYS": {
+      "family": "soft_privileged_distillation_plus_direct_vphys",
+      "input": "16x25D_causal_window",
+      "privileged_teacher": "StandardScaler+LogisticRegression_on_16D_clean_privileged_state",
+      "teacher_C": 1.0,
+      "teacher_class_weight": null,
+      "student_model": "two_block_causal_tcn",
+      "channels": [32, 32],
+      "kernel_size": 3,
+      "dropout": 0.0,
+      "direct_loss": "class_balanced_bce",
+      "soft_distill_loss": "unweighted_bce_to_teacher_probability",
+      "direct_loss_weight": 0.5,
+      "soft_distill_loss_weight": 0.5,
+      "optimizer": "Adam",
+      "learning_rate": 0.001,
+      "weight_decay": 0.0001,
+      "epochs": 120,
+      "seed": 20260816,
+      "hard_teacher_threshold": null
+    }
+  },
+  "threshold_policy": {
+    "selection_split": "VAL",
+    "grid_start": 0.05,
+    "grid_stop": 0.95,
+    "grid_step": 0.01,
+    "objective": "max_f1",
+    "tie_break": "lowest_threshold",
+    "test_threshold_reuse": true
+  },
+  "metrics": {
+    "primary_split": "TEST",
+    "baseline": "frozen Stage V Student physical_criticality probability on the same T5 rows",
+    "auprc_lift_definition": "AUPRC / positive_prevalence",
+    "top_decile_definition": "highest-scoring ceil(10 percent) of rows",
+    "calibration": ["brier", "ece_10bin"],
+    "per_suite": true,
+    "bootstrap": {
+      "resampling_unit": "canonical_parent_key",
+      "replicates": 1000,
+      "seed": 20260816,
+      "confidence_level": 0.95,
+      "use_for_gate": false
+    }
+  },
+  "promotion_gate": {
+    "minimum_overall_auroc_gain_vs_frozen_student": 0.10,
+    "minimum_overall_auprc_lift_gain_vs_frozen_student": 0.10,
+    "minimum_overall_top_decile_lift": 1.10,
+    "minimum_per_suite_auroc": 0.60,
+    "minimum_per_suite_auprc_lift": 1.00,
+    "maximum_overall_brier_ratio_vs_frozen_student": 1.00,
+    "maximum_overall_ece_10bin": 0.25,
+    "emission_coverage_at_selected_threshold": {
+      "minimum": 0.05,
+      "maximum": 0.95
+    },
+    "bootstrap_cis_are_report_only": true,
+    "selection_after_gate": "highest_TEST_auprc_lift_then_TEST_auroc_then_candidate_id",
+    "no_outcome_informed_hyperparameter_tuning": true,
+    "create_pre_holdout_lock_only_if_candidate_passes": true
+  }
+}

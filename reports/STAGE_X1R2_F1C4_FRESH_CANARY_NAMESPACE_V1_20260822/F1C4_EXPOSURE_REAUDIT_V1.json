@@ -1,0 +1,55 @@
+{
+  "current_head_scan": {
+    "base_commit": "86c5c26f193a243051b30385d24d6c45abba9a96",
+    "head_commit": "5bb45c004c3aa23a2a0b4dfebeb25959b90c5f71",
+    "outcome_values_not_read": true,
+    "path_count": 86
+  },
+  "fresh_candidate_pool_by_suite": {
+    "libero_10": 180,
+    "libero_goal": 181,
+    "libero_object": 183,
+    "libero_spatial": 184
+  },
+  "intersection_audit": {
+    "BRIDGE_V3": 0,
+    "C_CANARY_V3": 0,
+    "DEV_V3": 0
+  },
+  "namespace": "STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822",
+  "old_f1a3_role_union_count": 52,
+  "protected_boundary": {
+    "bridge_outcome_read": 0,
+    "bridge_runtime": 0,
+    "eval160": "UNREAD",
+    "physical_outcome": 0,
+    "protected": "UNREAD",
+    "vphys": 0
+  },
+  "schema": "STAGE_X1R2_F1C4_EXPOSURE_REAUDIT_V1",
+  "selected_by_suite": {
+    "libero_10": 2,
+    "libero_goal": 2,
+    "libero_object": 2,
+    "libero_spatial": 2
+  },
+  "selected_current_head_identity_hits": {
+    "libero_10/task_04/state_03": [],
+    "libero_10/task_05/state_08": [],
+    "libero_goal/task_06/state_03": [],
+    "libero_goal/task_08/state_05": [],
+    "libero_object/task_03/state_13": [],
+    "libero_object/task_05/state_14": [],
+    "libero_spatial/task_02/state_13": [],
+    "libero_spatial/task_08/state_01": []
+  },
+  "source_class_counts": {
+    "V3_DETECTOR_TRAIN_ONLY_ALLOWED_WITH_FLAG": 1,
+    "V3_HARD_EXECUTION_EXPOSURE_EXCLUDE": 19,
+    "V3_PRISTINE_NO_RELEVANT_IDENTITY_EXPOSURE": 780,
+    "V3_STATIC_MENTION_ONLY_NOT_EXECUTION": 0,
+    "V3_UNRESOLVED_EXPOSURE_EXCLUDE": 0
+  },
+  "source_universe_row_count": 800,
+  "status": "PASS_F1C4_FRESH_NAMESPACE_EXPOSURE_REAUDIT"
+}

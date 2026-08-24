@@ -1,0 +1,68 @@
+{
+  "authority_binding": {
+    "claim_ledger": {
+      "git_blob": "4054b782cbbb6051654c5797e2a0fd455a961cf2",
+      "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+      "sha256_git_blob_bytes": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1"
+    },
+    "figure_data": {
+      "git_blob": "ef32af9e411dfc9f4ae765e03f8cbafd4acaf7e9",
+      "path": "paper/data/PAPER_V1_FIGURE2_X0_DOSE_RESPONSE.csv",
+      "sha256_git_blob_bytes": "6629585c6387d78b1ab740d31f76db74df28d2495a0ee10281e3fa9ec34e83e6"
+    },
+    "source": {
+      "local_artifact_sha256": [
+        "7626e020ec524ce124be9b93685a3861b85176ad4bfd749bfc495f89482d3c55"
+      ],
+      "sealed_artifact_sha256": [
+        "ff2e18c905a108cb51dbecf82473d1cd4e301e02a86c5e87bf39aab723fd35af",
+        "fb8da5b1f9ce30bef7884563ec9579c1c9c7d3c2e3fb749efc89c56be3d6fbd1"
+      ],
+      "source_commit": "7c36489a262ee5da4826936da4520608eb30fe46",
+      "source_tree": "f2c9d01d72bcded05fbf887cdf2b4cfe96f18dbb"
+    }
+  },
+  "authority_paths": [
+    "paper/data/PAPER_V1_FIGURE2_X0_DOSE_RESPONSE.csv",
+    "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+    "docs/handoffs/STAGE_X_X0_RESULT_20260817.md"
+  ],
+  "claim_ids": [
+    "C201",
+    "C202"
+  ],
+  "complete_three_dose_patterns": {
+    "all_monotone": true,
+    "count": 1126,
+    "nonmonotone_count": 0,
+    "observed_patterns": [
+      "000",
+      "001",
+      "011",
+      "111"
+    ],
+    "per_pattern_counts": null,
+    "per_pattern_counts_note": "not present in sealed Paper V1 data"
+  },
+  "doses": [
+    {
+      "dose": "T3",
+      "raw_positive_rate": "0.39438",
+      "source_defined_consumable_rows": 1245
+    },
+    {
+      "dose": "T5",
+      "raw_positive_rate": "0.67758",
+      "source_defined_consumable_rows": 1191
+    },
+    {
+      "dose": "T10",
+      "raw_positive_rate": "0.87300",
+      "source_defined_consumable_rows": 1126
+    }
+  ],
+  "mechanism_consistent_telemetry": "Supports a dose- and phase-dependent physical OPEN duty-cycle mechanism through command delivery, aperture excess, contact loss, and displacement; no formal mediation.",
+  "schema": "PAPER_V2_X0_MECHANISM_V1",
+  "status": "STAGE_X_PHYSICAL_DUTY_CYCLE_MECHANISM_SUPPORTED",
+  "uncertainty_policy": "no iid uncertainty exported"
+}
