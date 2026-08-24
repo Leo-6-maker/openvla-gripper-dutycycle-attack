@@ -343,6 +343,7 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
         "dataset_statistics_path": str(dataset_statistics_path),
         "dataset_statistics_sha256": sha256_file(dataset_statistics_path) if dataset_statistics_path.is_file() else None,
         "stats_loader": "official_openvla_utils._load_dataset_stats" if oft else "checkpoint_embedded_or_existing_norm_stats",
+        "component_state_dict_loader": "official_openvla_utils.load_component_state_dict" if oft else None,
         "checkpoint_mutated": False,
     }
 
@@ -366,14 +367,15 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
     if oft:
         from prismatic.models.action_heads import L1RegressionActionHead  # type: ignore
         from prismatic.models.projectors import ProprioProjector  # type: ignore
+        from experiments.robot.openvla_utils import load_component_state_dict  # type: ignore
 
         action_head = L1RegressionActionHead(input_dim=model.llm_dim, hidden_dim=model.llm_dim, action_dim=7)
         action_file = next(Path(checkpoint).glob("action_head-*checkpoint.pt"))
-        action_head.load_state_dict(torch.load(action_file, map_location="cpu", weights_only=True))
+        action_head.load_state_dict(load_component_state_dict(str(action_file)))
         action_head = action_head.to(dtype=dtype, device="cuda:0").eval()
         proprio_projector = ProprioProjector(model.llm_dim, proprio_dim=8)
         proprio_file = next(Path(checkpoint).glob("proprio_projector-*checkpoint.pt"))
-        proprio_projector.load_state_dict(torch.load(proprio_file, map_location="cpu", weights_only=True))
+        proprio_projector.load_state_dict(load_component_state_dict(str(proprio_file)))
         proprio_projector = proprio_projector.to(dtype=dtype, device="cuda:0").eval()
     from experiments.robot.libero.run_libero_eval import process_action  # type: ignore
     from experiments.robot.openvla_utils import get_vla_action  # type: ignore
