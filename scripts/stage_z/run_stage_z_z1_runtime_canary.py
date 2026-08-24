@@ -292,6 +292,22 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
     if suite not in model.norm_stats:
         raise RuntimeError(f"MODEL_UNNORM_KEY_MISSING:{suite}")
 
+    if not oft:
+        # M0's checkpoint API returns one 7-D action; the official evaluator
+        # consumes the OFT-style (action_chunk, auxiliary) pair.
+        native_predict_action = model.predict_action
+
+        def predict_action_compat(**kwargs: Any):
+            result = native_predict_action(**kwargs)
+            if isinstance(result, tuple) and len(result) == 2:
+                return result
+            action = np.asarray(result, dtype=np.float32).reshape(-1)
+            if action.size != ACTION_DIM:
+                raise RuntimeError("M0_PREDICT_ACTION_SHAPE_INVALID")
+            return action[None, :], None
+
+        model.predict_action = predict_action_compat
+
     action_head = proprio_projector = None
     if oft:
         source = "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823"
