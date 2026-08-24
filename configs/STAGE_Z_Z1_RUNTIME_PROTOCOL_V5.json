@@ -102,6 +102,22 @@
     "dummy_wait_steps": 10,
     "control_freq": 20
   },
+  "model_families": {
+    "M0_OPENVLA": {
+      "paths": {
+        "libero_10": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+        "libero_goal": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+        "libero_object": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+        "libero_spatial": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"
+      }
+    },
+    "M1_OPENVLA_OFT": {
+      "checkpoint_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache"
+    },
+    "M2_PI05_LIBERO": {
+      "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero"
+    }
+  },
   "execution_contract": {
     "identities": "F1C4 permanently excluded engineering namespace only",
     "one_worker_per_gpu": true,
