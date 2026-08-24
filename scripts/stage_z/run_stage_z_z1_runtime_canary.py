@@ -330,7 +330,7 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
     cfg = SimpleNamespace(
         model_family="openvla",
         num_images_in_input=2,
-        use_proprio=True,
+        use_proprio=oft,
         center_crop=True,
         unnorm_key=suite,
     )
