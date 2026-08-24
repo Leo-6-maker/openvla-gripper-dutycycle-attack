@@ -117,6 +117,52 @@ def require_single_visible_gpu(gpu_id: int) -> None:
         raise RuntimeError(f"CUDA_VISIBLE_DEVICES_MUST_BE_SINGLE_PHYSICAL_GPU:{gpu_id}:{visible}")
 
 
+def verify_m1_materialization(
+    manifest_path: Path,
+    checkpoint: Path,
+    suite: str,
+    expected_manifest_sha256: str,
+) -> dict[str, Any]:
+    manifest_sha256 = sha256_file(manifest_path)
+    if manifest_sha256 != expected_manifest_sha256:
+        raise RuntimeError("M1_MANIFEST_SHA256_MISMATCH")
+    manifest = load_json(manifest_path)
+    if manifest.get("status") != "PASS_SEALED_FOUR_OFT_BYTE_MANIFESTS":
+        raise RuntimeError("M1_MANIFEST_NOT_SEALED")
+    suite_spec = manifest.get("suites", {}).get(suite)
+    if not isinstance(suite_spec, dict) or not isinstance(suite_spec.get("rows"), list):
+        raise RuntimeError(f"M1_MANIFEST_SUITE_MISSING:{suite}")
+    expected: dict[str, dict[str, Any]] = {}
+    for row in suite_spec["rows"]:
+        relative = str(row["path"]).replace("\\", "/")
+        candidate = (checkpoint / relative).resolve()
+        if checkpoint.resolve() not in candidate.parents:
+            raise RuntimeError(f"M1_MANIFEST_PATH_ESCAPE:{relative}")
+        expected[relative] = {"sha256": str(row["sha256"]), "size": int(row["size"])}
+    actual_paths = {
+        path.relative_to(checkpoint).as_posix(): path
+        for path in checkpoint.rglob("*")
+        if path.is_file()
+    }
+    if set(actual_paths) != set(expected):
+        raise RuntimeError("M1_CHECKPOINT_FILE_SET_MISMATCH")
+    total_bytes = 0
+    for relative, spec in expected.items():
+        path = actual_paths[relative]
+        size = path.stat().st_size
+        if size != spec["size"] or sha256_file(path) != spec["sha256"]:
+            raise RuntimeError(f"M1_CHECKPOINT_MANIFEST_MISMATCH:{relative}")
+        total_bytes += size
+    return {
+        "manifest_path": str(manifest_path),
+        "manifest_sha256": manifest_sha256,
+        "suite": suite,
+        "files": len(expected),
+        "bytes": total_bytes,
+        "verified": True,
+    }
+
+
 def static_authority(config: dict[str, Any], ledger: dict[str, Any], *, parent_key: str, suite: str, role: str) -> dict[str, Any]:
     if config["status"] != "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN":
         raise RuntimeError("Z1_RUNTIME_SOURCE_NOT_FROZEN")
@@ -302,6 +348,17 @@ def run_cell(config: dict[str, Any], ledger: dict[str, Any], args: argparse.Name
     else:
         checkpoint = model_spec["checkpoint"]
 
+    checkpoint_manifest = None
+    if args.model_family == "M1_OPENVLA_OFT":
+        if args.m1_manifest is None:
+            raise RuntimeError("M1_MANIFEST_REQUIRED")
+        checkpoint_manifest = verify_m1_materialization(
+            args.m1_manifest,
+            Path(checkpoint),
+            args.suite,
+            str(model_spec["checkpoint_manifests_sha256"]),
+        )
+
     counters = {"model_inference_calls": 0, "env_step_calls": 0, "physical_interventions": 0, "pgd_calls": 0, "attacked_env_steps": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "stage_z_scientific_parent_exposure": 0, "eval160_reads": 0, "protected_reads": 0}
 
     def authorized_runtime() -> dict[str, Any]:
@@ -395,6 +452,7 @@ def run_cell(config: dict[str, Any], ledger: dict[str, Any], args: argparse.Name
             "state_id": args.state_id,
             "selection_rank_sha256": canary["selection_rank_sha256"],
             "checkpoint": checkpoint,
+            "checkpoint_manifest": checkpoint_manifest,
             "gpu": gpu,
             "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
             "runtime_counters": counters,
@@ -420,6 +478,7 @@ def main() -> None:
     parser.add_argument("--task-idx", type=int, required=True)
     parser.add_argument("--state-id", type=int, required=True)
     parser.add_argument("--gpu-id", type=int, required=True)
+    parser.add_argument("--m1-manifest", type=Path)
     args = parser.parse_args()
     config = load_json(args.config)
     ledger = load_json(args.ledger)
