@@ -1,0 +1,96 @@
+{
+  "action_before_intervention": [
+    0.4555951952934265,
+    0.020034348592162132,
+    0.022659307345747948,
+    -0.0009673147578723729,
+    -0.00027622393099591136,
+    -0.0024965088814496994,
+    -1.0
+  ],
+  "action_meta": {
+    "chunk_length": 8,
+    "postprocess": "official_openvla",
+    "raw_action": [
+      0.4555951952934265,
+      0.020034348592162132,
+      0.022659307345747948,
+      -0.0009673147578723729,
+      -0.00027622393099591136,
+      -0.0024965088814496994,
+      0.69140625
+    ]
+  },
+  "branch_replay": {
+    "mode": "FRESH_OFFICIAL_ENV_AFTER_SNAPSHOT_RESTORE_PROBE",
+    "post_state_a_sha256": "54ee7741ec2cbb727abf3ef316a9f3af9fe096ef9926503e7e8cbd320f74bd2c",
+    "post_state_b_sha256": "54ee7741ec2cbb727abf3ef316a9f3af9fe096ef9926503e7e8cbd320f74bd2c",
+    "post_state_exact": true,
+    "pre_state_exact": true,
+    "pre_state_sha256": "98bee622e3fd409426e3e733e0b441d50b2911b8f9079bb62e82895d10cbec50"
+  },
+  "canonical_parent_key": "libero_object/task_03/state_13",
+  "checkpoint": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_object",
+  "checkpoint_manifest": {
+    "bytes": 15939159270,
+    "files": 25,
+    "manifest_path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+    "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "suite": "libero_object",
+    "verified": true
+  },
+  "cuda_visible_devices": "4",
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3",
+        "pid": "3923068",
+        "used_memory_mib": "28538"
+      }
+    ],
+    "free_memory_mib": 52664,
+    "index": 4,
+    "used_memory_mib": 28558,
+    "utilization_gpu_percent": 9
+  },
+  "intervention": false,
+  "model_family": "M1_OPENVLA_OFT",
+  "normalization": {
+    "available_norm_stats_keys": [
+      "libero_object_no_noops"
+    ],
+    "checkpoint_mutated": false,
+    "component_state_dict_loader": "official_openvla_utils.load_component_state_dict",
+    "dataset_statistics_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_object/dataset_statistics.json",
+    "dataset_statistics_sha256": "2bff9cb26fea5d50522fc327f71362dda38252dfc9003aae444259ff96371aa7",
+    "requested_task_suite": "libero_object",
+    "resolution_mode": "OFFICIAL_NO_NOOPS_FALLBACK",
+    "resolved_unnorm_key": "libero_object_no_noops",
+    "stats_loader": "official_openvla_utils._load_dataset_stats",
+    "vision_num_images_in_input": 2
+  },
+  "physical_outcome_read": false,
+  "role": "PRIMARY",
+  "runtime_counters": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 22,
+    "eval160_reads": 0,
+    "model_inference_calls": 1,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z1_RUNTIME_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_ENGINEERING_ONLY",
+  "selection_rank_sha256": "8deee4ce8f1e0725d411d63b426fdedc203c06b48d6195d4df8224a201095d5b",
+  "state_id": 13,
+  "status": "PASS",
+  "suite": "libero_object",
+  "task_idx": 3,
+  "task_language": "pick up the bbq sauce and place it in the basket",
+  "task_success_read": false,
+  "timestamp_utc": "2026-08-24T20:07:54Z"
+}
