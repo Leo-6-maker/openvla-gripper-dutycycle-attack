@@ -476,12 +476,28 @@ def run_cell(config: dict[str, Any], ledger: dict[str, Any], args: argparse.Name
                 del clean_result_a
                 restore_state(env, pre_state)
                 restored_pre_state = snapshot_state(env)
-                clean_result_b = env.step(action.tolist())
-                counters["env_step_calls"] += 1
-                post_state_b = snapshot_state(env)
-                del clean_result_b
                 if not np.array_equal(pre_state, restored_pre_state):
                     raise RuntimeError("BRANCH_REPLAY_PRE_STATE_NOT_EXACT")
+                # The official robosuite binding restores qpos/qvel/time but
+                # retains MuJoCo solver internals; replaying in that same
+                # instance is not byte-deterministic. Reinstantiate the same
+                # frozen canary environment for the clean branch instead.
+                branch_env, _, _ = make_libero_env(config, args.suite, args.task_idx)
+                try:
+                    branch_env.reset()
+                    branch_env.set_init_state(initial_states[args.state_id])
+                    for _ in range(int(config["environment"]["dummy_wait_steps"])):
+                        branch_env.step(dummy)
+                        counters["env_step_calls"] += 1
+                    branch_pre_state = snapshot_state(branch_env)
+                    clean_result_b = branch_env.step(action.tolist())
+                    counters["env_step_calls"] += 1
+                    post_state_b = snapshot_state(branch_env)
+                    del clean_result_b
+                finally:
+                    branch_env.close()
+                if not np.array_equal(pre_state, branch_pre_state):
+                    raise RuntimeError("BRANCH_REPLAY_FRESH_PRE_STATE_NOT_EXACT")
                 if not np.array_equal(post_state_a, post_state_b):
                     raise RuntimeError("BRANCH_REPLAY_POST_STATE_NOT_EXACT")
                 return {
@@ -490,6 +506,7 @@ def run_cell(config: dict[str, Any], ledger: dict[str, Any], args: argparse.Name
                     "action_before_intervention": action_before_intervention.tolist(),
                     "action_meta": action_meta,
                     "branch_replay": {
+                        "mode": "FRESH_OFFICIAL_ENV_AFTER_SNAPSHOT_RESTORE_PROBE",
                         "pre_state_sha256": hashlib.sha256(pre_state.tobytes()).hexdigest(),
                         "post_state_a_sha256": hashlib.sha256(post_state_a.tobytes()).hexdigest(),
                         "post_state_b_sha256": hashlib.sha256(post_state_b.tobytes()).hexdigest(),
