@@ -1,0 +1,39 @@
+{
+  "schema": "STAGE_Z_Z0R2_M0_SEMANTIC_CHECKPOINT_MANIFEST_V2",
+  "semantic_file_policy": "all non-safetensors files are load-bearing unless explicitly classified as metadata; current full tree is exact, so no unresolved semantic drift remains",
+  "status": "PASS_M0_LOAD_BEARING_BYTES_EXACT",
+  "suites": {
+    "libero_10": {
+      "bytes": 15085093727,
+      "files": 18,
+      "load_bearing_exact": true,
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+      "semantic_files_sha256": "70c660d7a3d1d6e1f86107d76ae9213cc75e77b9c483cfdfe91c8ea6f61aedad",
+      "weights_sha256": "3e67f96dfa0b2295a7bb016709c6bdfd0a8f7c8e7c5a8b9c8476dd5728e860819"
+    },
+    "libero_goal": {
+      "bytes": 15085095390,
+      "files": 19,
+      "load_bearing_exact": true,
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+      "semantic_files_sha256": "c9c38cd09de70076cba28b410df2868389e5f27472fe2b83b9926509821a7cdb",
+      "weights_sha256": "aac0c7f827825d699d1385851e3aae06383882228f4261c395dab8e9cc7bfca3"
+    },
+    "libero_object": {
+      "bytes": 15085095882,
+      "files": 19,
+      "load_bearing_exact": true,
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+      "semantic_files_sha256": "1e5360756623157afa024b38ef7fd26f5add93beaaa7f7794108cfdc1312f243",
+      "weights_sha256": "3497559622046335ebf0e250f49924af35313338a346086ce6dfc78f6084398d"
+    },
+    "libero_spatial": {
+      "bytes": 15085095735,
+      "files": 19,
+      "load_bearing_exact": true,
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620",
+      "semantic_files_sha256": "8575f7f16376d79dbf824dd65379b2e6e787c42343ee60c50e51c57f7850fd0f",
+      "weights_sha256": "4cb8f0a23a9cbd9331a9f70bce6880d4042ae7acf29078d73802e447be3b3c93"
+    }
+  }
+}

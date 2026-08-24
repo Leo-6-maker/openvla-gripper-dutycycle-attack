@@ -1,0 +1,55 @@
+{
+  "action_contract": {
+    "action_dim": 7,
+    "arm_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "decode_reencode": false,
+    "gripper_index": 6,
+    "native_close": 1.0,
+    "native_open": -1.0,
+    "silent_fallback": false
+  },
+  "branch_contract": {
+    "Z-M0": "fresh per-step",
+    "Z-M1": {
+      "fresh_boundary": "official OFT action queue",
+      "num_actions_chunk": 8,
+      "num_open_loop_steps": 8
+    },
+    "Z-M2": {
+      "action_horizon": 10,
+      "fresh_boundary": "official OpenPI replan",
+      "replan_steps": 5
+    },
+    "residual_queue_at_branch": "forbidden"
+  },
+  "common_libero_manifest": {
+    "path": "reports/STAGE_Z_Z0R2_COMMON_LIBERO_AUTHORITY_V1.json",
+    "sha256": "bf2f85f6a8719349d18daa80e36b4a70571bb7044f14b2addc0de555c3b4b118"
+  },
+  "protected_counters": {
+    "env_step": 0,
+    "eval160": 0,
+    "gpu_workers": 0,
+    "model_inference": 0,
+    "physical_intervention": 0,
+    "protected_reads": 0,
+    "simulator": 0,
+    "v_phys": 0
+  },
+  "schema": "STAGE_Z_Z0R2_ENVIRONMENT_ACTION_BRANCH_PARITY_V2",
+  "source_bindings": {
+    "OFT_libero_utils.py": "8e2c23458cbf48a9d78bf61e7cf0cbd5e196d635",
+    "OFT_run_libero_eval.py": "cdf27f56c5464808481d56af0898475541e10817",
+    "OpenPI_action_chunk_broker.py": "8fa9d83d023b7c0c60a1d05531343af01e72d09",
+    "OpenPI_libero_policy.py": "fe5aab0add5795531913363d7c46d916c81d1f9b",
+    "OpenPI_main.py": "dc015a61740f2d3174152bebb60176fac52f3f40"
+  },
+  "status": "PASS_STATIC_SOURCE_PARITY"
+}

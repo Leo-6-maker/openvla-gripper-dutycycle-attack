@@ -16,7 +16,19 @@ SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
 Z0R1_MAP = "reports/STAGE_Z_Z0R1_MODEL_AUTHORITY_MAP_V2.json"
 Z0R1_PANEL = "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json"
 COMMON = "reports/STAGE_Z_Z0R2_COMMON_LIBERO_AUTHORITY_V1.json"
-LEDGER = "reports/STAGE_Z_Z0R2_M1_MATERIALIZATION_LEDGER_V1.json"
+LEGACY_LEDGER = "reports/STAGE_Z_Z0R2_M1_MATERIALIZATION_LEDGER_V1.json"
+PROTOCOL = "configs/STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V4.json"
+M0_DIFF = "reports/STAGE_Z_Z0R2_M0_FILE_LEVEL_AUTHORITY_DIFF_V2.json"
+M0_SEMANTIC = "reports/STAGE_Z_Z0R2_M0_SEMANTIC_CHECKPOINT_MANIFEST_V2.json"
+LEDGER = "reports/STAGE_Z_Z0R2_M1_MATERIALIZATION_LEDGER_V2.json"
+M1_MANIFEST = "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json"
+M2 = "reports/STAGE_Z_Z0R2_M2_OPENPI_REVERIFICATION_V2.json"
+PARITY = "reports/STAGE_Z_Z0R2_ENVIRONMENT_ACTION_BRANCH_PARITY_V2.json"
+STORAGE = "reports/STAGE_Z_Z0R2_STORAGE_PREFLIGHT_V2.json"
+MODEL_MAP = "reports/STAGE_Z_Z0R2_MODEL_AUTHORITY_MAP_V2.json"
+ARTIFACT_MANIFEST = "reports/STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V2.json"
+ROOT_SEAL = "reports/STAGE_Z_Z0R2_ROOT_SEAL_V2.json"
+ROOT_SIDECAR = "reports/STAGE_Z_Z0R2_ROOT_SEAL_V2.sha256"
 M0_AUDIT = "reports/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_AUDIT_V1.json"
 TRANSFER_ROOT = ROOT.parent / "_stage_z_z0r2_transfer"
 
@@ -52,6 +64,10 @@ def write(rel: str, value: dict) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def serialized(value: dict) -> bytes:
+    return (json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
 def git(*args: str) -> str:
     return subprocess.check_output(("git", *args), cwd=ROOT, text=True).strip()
 
@@ -81,7 +97,7 @@ def main() -> None:
         for suite, facts in M0.items()
     }
     m0_diff = {
-        "schema": "STAGE_Z_Z0R2_M0_FILE_LEVEL_AUTHORITY_DIFF_V1",
+        "schema": "STAGE_Z_Z0R2_M0_FILE_LEVEL_AUTHORITY_DIFF_V2",
         "status": "PASS_M0_LOAD_BEARING_BYTES_EXACT",
         "immutable_authority": {"path": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json", "sha256": sha256_file(ROOT / "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json")},
         "historical_z0r1_snapshot_preserved": True,
@@ -91,7 +107,7 @@ def main() -> None:
         "claim_boundary": "exact current four-suite inventory; prior Z0R1 mismatch remains historical and is not relabeled",
     }
     semantic = {
-        "schema": "STAGE_Z_Z0R2_M0_SEMANTIC_CHECKPOINT_MANIFEST_V1",
+        "schema": "STAGE_Z_Z0R2_M0_SEMANTIC_CHECKPOINT_MANIFEST_V2",
         "status": "PASS_M0_LOAD_BEARING_BYTES_EXACT",
         "suites": {suite: {"path": facts["path"], "files": facts["files"], "bytes": facts["bytes"], "weights_sha256": facts["weights"], "semantic_files_sha256": facts["semantic"], "load_bearing_exact": True} for suite, facts in M0.items()},
         "semantic_file_policy": "all non-safetensors files are load-bearing unless explicitly classified as metadata; current full tree is exact, so no unresolved semantic drift remains",
@@ -99,7 +115,9 @@ def main() -> None:
 
     m1_suites = {}
     ledger_path = ROOT / LEDGER
-    ledger = json.loads(ledger_path.read_text(encoding="utf-8")) if ledger_path.exists() else {"suites": {}}
+    legacy_ledger_path = ROOT / LEGACY_LEDGER
+    ledger_source = ledger_path if ledger_path.exists() else legacy_ledger_path
+    ledger = json.loads(ledger_source.read_text(encoding="utf-8")) if ledger_source.exists() else {"suites": {}}
     for suite, expected in OFT.items():
         stage = TRANSFER_ROOT / suite
         rows = local_rows(stage) if stage.is_dir() else []
@@ -120,16 +138,16 @@ def main() -> None:
         }
     m1_pass = all(row["local_exact_revision_materialization"] and row["server_cache_verified"] for row in m1_suites.values())
     m1 = {
-        "schema": "STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V1",
+        "schema": "STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2",
         "status": "PASS_SEALED_FOUR_OFT_BYTE_MANIFESTS" if m1_pass else STATUS_HOLD,
         "source_checkout": {"commit": "e4287e94541f459edc4feabc4e181f537cd569a8", "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32", "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823", "status": "CLEAN_FIXED_COMMIT"},
         "suites": m1_suites,
         "sequential_policy": "one suite at a time; no /dev/shm; no old evidence deletion; only newly created Stage-Z cache may be deleted after server seal",
-        "materialization_ledger": {"path": LEDGER, "sha256": sha256_file(ledger_path) if ledger_path.exists() else None},
+        "materialization_ledger": {"path": LEDGER, "sha256": hashlib.sha256(serialized(ledger)).hexdigest()},
     }
 
     m2 = {
-        "schema": "STAGE_Z_Z0R2_M2_OPENPI_REVERIFICATION_V1",
+        "schema": "STAGE_Z_Z0R2_M2_OPENPI_REVERIFICATION_V2",
         "status": "PASS_EXISTING_PI05_LIBERO_REVERIFIED",
         "source": {"checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822", "commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac", "tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be", "working_tree": "CLEAN"},
         "checkpoint": {"config": "pi05_libero", "path": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero", "files": 16, "file_bytes": 12439085481, "du_sb_bytes": 12439122345, "manifest_sha256": "d9104dfdea46eca2fadf05ec7fc478b19d39b19aa8dfda0e6adedcd6d6b6efac", "matches_z0r1_manifest": True},
@@ -139,7 +157,7 @@ def main() -> None:
     common_path = ROOT / COMMON
     common = json.loads(common_path.read_text(encoding="utf-8")) if common_path.exists() else {"status": "MISSING"}
     parity = {
-        "schema": "STAGE_Z_Z0R2_ENVIRONMENT_ACTION_BRANCH_PARITY_V1",
+        "schema": "STAGE_Z_Z0R2_ENVIRONMENT_ACTION_BRANCH_PARITY_V2",
         "status": "PASS_STATIC_SOURCE_PARITY" if common.get("status") == "PASS_STATIC_OFFLINE_NO_SIMULATOR" else STATUS_HOLD,
         "source_bindings": {"OFT_run_libero_eval.py": "cdf27f56c5464808481d56af0898475541e10817", "OFT_libero_utils.py": "8e2c23458cbf48a9d78bf61e7cf0cbd5e196d635", "OpenPI_main.py": "dc015a61740f2d3174152bebb60176fac52f3f40", "OpenPI_libero_policy.py": "fe5aab0add5795531913363d7c46d916c81d1f9b", "OpenPI_action_chunk_broker.py": "8fa9d83d023b7c0c60a1d05531343af01e72d09"},
         "branch_contract": {"Z-M0": "fresh per-step", "Z-M1": {"num_actions_chunk": 8, "num_open_loop_steps": 8, "fresh_boundary": "official OFT action queue"}, "Z-M2": {"replan_steps": 5, "action_horizon": 10, "fresh_boundary": "official OpenPI replan"}, "residual_queue_at_branch": "forbidden"},
@@ -150,7 +168,7 @@ def main() -> None:
 
     panel = json.loads((ROOT / Z0R1_PANEL).read_text(encoding="utf-8"))
     protocol = {
-        "schema": "STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V3",
+        "schema": "STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V4",
         "status": STATUS_PASS if m1_pass and common.get("status") == "PASS_STATIC_OFFLINE_NO_SIMULATOR" else STATUS_HOLD,
         "gate": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_RECOVERY_AND_COMMON_LIBERO_CLOSURE",
         "git_binding": {"head_commit": head, "head_tree": tree},
@@ -161,7 +179,7 @@ def main() -> None:
         "z0r1_panel_row_count": len(panel.get("rows", [])),
     }
     storage = {
-        "schema": "STAGE_Z_Z0R2_STORAGE_PREFLIGHT_V1",
+        "schema": "STAGE_Z_Z0R2_STORAGE_PREFLIGHT_V2",
         "status": "PASS_SEQUENTIAL_ONLY" if m1_pass else "HOLD_M1_NOT_SEALED",
         "snapshot_source": "Z0R1 durable preflight plus sequential materialization policy",
         "durable_mounts": {"/mnt/sdc": {"available_bytes": 26997472 * 1024}, "/llm_jzm": {"available_bytes": 43588920 * 1024}},
@@ -173,15 +191,15 @@ def main() -> None:
     }
 
     generated = {
-        "configs/STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V3.json": protocol,
-        "reports/STAGE_Z_Z0R2_M0_FILE_LEVEL_AUTHORITY_DIFF_V1.json": m0_diff,
-        "reports/STAGE_Z_Z0R2_M0_SEMANTIC_CHECKPOINT_MANIFEST_V1.json": semantic,
-        "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V1.json": m1,
+        PROTOCOL: protocol,
+        M0_DIFF: m0_diff,
+        M0_SEMANTIC: semantic,
+        M1_MANIFEST: m1,
         LEDGER: ledger,
-        "reports/STAGE_Z_Z0R2_M2_OPENPI_REVERIFICATION_V1.json": m2,
-        "reports/STAGE_Z_Z0R2_ENVIRONMENT_ACTION_BRANCH_PARITY_V1.json": parity,
-        "reports/STAGE_Z_Z0R2_STORAGE_PREFLIGHT_V1.json": storage,
-        "reports/STAGE_Z_Z0R2_MODEL_AUTHORITY_MAP_V1.json": {"schema": "STAGE_Z_Z0R2_MODEL_AUTHORITY_MAP_V1", "status": protocol["status"], "M0": m0_diff, "M1": m1, "M2": m2, "common_libero": common},
+        M2: m2,
+        PARITY: parity,
+        STORAGE: storage,
+        MODEL_MAP: {"schema": "STAGE_Z_Z0R2_MODEL_AUTHORITY_MAP_V2", "status": protocol["status"], "M0": m0_diff, "M1": m1, "M2": m2, "common_libero": common},
     }
     for rel, value in generated.items():
         write(rel, value)
@@ -189,14 +207,14 @@ def main() -> None:
     # so the root manifest must bind its existing bytes without rewriting it.
     manifest_paths = sorted((*generated, COMMON))
     entries = [{"path": rel, "bytes": (ROOT / rel).stat().st_size, "sha256": sha256_file(ROOT / rel)} for rel in manifest_paths]
-    manifest_rel = "reports/STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V1.json"
-    write(manifest_rel, {"schema": "STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V1", "status": protocol["status"], "entries": entries, "root_excluded": True})
+    manifest_rel = ARTIFACT_MANIFEST
+    write(manifest_rel, {"schema": "STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V2", "status": protocol["status"], "entries": entries, "root_excluded": True})
     entries.append({"path": manifest_rel, "bytes": (ROOT / manifest_rel).stat().st_size, "sha256": sha256_file(ROOT / manifest_rel)})
-    root_rel = "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
-    root = {"schema": "STAGE_Z_Z0R2_ROOT_SEAL_V1", "status": protocol["status"], "git_binding": {"head_commit": head, "head_tree": tree}, "artifact_manifest": {"path": manifest_rel, "sha256": sha256_file(ROOT / manifest_rel), "entries": entries}, "population": protocol["population"], "scientific_rollout_started": False, "counters": parity["protected_counters"], "blockers": [] if protocol["status"] == STATUS_PASS else ["M1 four-suite server byte manifests not yet sealed" if not m1_pass else "common official LIBERO static manifest missing"], "next_legal_action": "STOP_FOR_PI" if protocol["status"] == STATUS_PASS else "repair only the listed authority blocker; no Z1"}
+    root_rel = ROOT_SEAL
+    root = {"schema": "STAGE_Z_Z0R2_ROOT_SEAL_V2", "status": protocol["status"], "git_binding": {"head_commit": head, "head_tree": tree}, "artifact_manifest": {"path": manifest_rel, "sha256": sha256_file(ROOT / manifest_rel), "entries": entries}, "population": protocol["population"], "scientific_rollout_started": False, "counters": parity["protected_counters"], "blockers": [] if protocol["status"] == STATUS_PASS else ["M1 four-suite server byte manifests not yet sealed" if not m1_pass else "common official LIBERO static manifest missing"], "next_legal_action": "STOP_FOR_PI" if protocol["status"] == STATUS_PASS else "repair only the listed authority blocker; no Z1"}
     write(root_rel, root)
     root_hash = sha256_file(ROOT / root_rel)
-    (ROOT / "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.sha256").write_text(root_hash + "  STAGE_Z_Z0R2_ROOT_SEAL_V1.json\n", encoding="utf-8")
+    (ROOT / ROOT_SIDECAR).write_text(root_hash + "  STAGE_Z_Z0R2_ROOT_SEAL_V2.json\n", encoding="utf-8")
     print(json.dumps({"status": protocol["status"], "head": head, "tree": tree, "m1_pass": m1_pass, "common_status": common.get("status", "MISSING"), "root_sha256": root_hash}, sort_keys=True))
 
 

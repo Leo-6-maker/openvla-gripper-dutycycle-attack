@@ -1,0 +1,46 @@
+{
+  "authority": {
+    "M0": "PASS_M0_LOAD_BEARING_BYTES_EXACT",
+    "M1": "PASS_SEALED_FOUR_OFT_BYTE_MANIFESTS",
+    "M2": "PASS_EXISTING_PI05_LIBERO_REVERIFIED",
+    "common_libero": "PASS_STATIC_OFFLINE_NO_SIMULATOR"
+  },
+  "frozen_execution_contract": {
+    "future_z1_requires_pi_review": true,
+    "no_env_step": true,
+    "no_gpu": true,
+    "no_model_inference": true,
+    "no_new_identity": true,
+    "no_simulator": true
+  },
+  "gate": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_RECOVERY_AND_COMMON_LIBERO_CLOSURE",
+  "git_binding": {
+    "head_commit": "c3862d3d88ce2dcf65d51ec16b03b1a093f10b52",
+    "head_tree": "10b8e13f3c44e3d735902d4d56c6d1c23370ad66"
+  },
+  "population": {
+    "denominators": {
+      "libero_10": 10,
+      "libero_goal": 6,
+      "libero_object": 10,
+      "libero_spatial": 10
+    },
+    "nominal_task_cells": 40,
+    "shared_fresh_identities": 36,
+    "source_panel_sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1",
+    "structural_missing_cells": [
+      "libero_goal/task_01",
+      "libero_goal/task_04",
+      "libero_goal/task_06",
+      "libero_goal/task_09"
+    ]
+  },
+  "protected_firewall": {
+    "bridge_v3": "UNOPENED",
+    "eval160": "UNREAD",
+    "protected": "UNREAD"
+  },
+  "schema": "STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V4",
+  "status": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_CLOSURE_PASS",
+  "z0r1_panel_row_count": 40
+}
