@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+from importlib.machinery import ModuleSpec
 import json
 import os
 import subprocess
@@ -282,13 +283,16 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
     except ImportError:
         # The official loader only calls this optional serialization hook at import time.
         json_numpy = ModuleType("json_numpy")
+        json_numpy.__spec__ = ModuleSpec("json_numpy", loader=None)
         json_numpy.patch = lambda: None  # type: ignore[attr-defined]
         sys.modules["json_numpy"] = json_numpy
     try:
         import wandb  # type: ignore  # noqa: F401
     except ImportError:
         # The official evaluator imports optional logging at module import; Z1 never enables it.
-        sys.modules["wandb"] = ModuleType("wandb")
+        wandb = ModuleType("wandb")
+        wandb.__spec__ = ModuleSpec("wandb", loader=None)
+        sys.modules["wandb"] = wandb
     from experiments.robot.libero.run_libero_eval import process_action  # type: ignore
     from experiments.robot.openvla_utils import get_vla_action  # type: ignore
 
