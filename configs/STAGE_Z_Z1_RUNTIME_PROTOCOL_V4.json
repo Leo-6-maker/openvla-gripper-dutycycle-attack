@@ -1,0 +1,155 @@
+{
+  "schema": "STAGE_Z_Z1_RUNTIME_PROTOCOL_V4",
+  "supersedes": {
+    "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V3.json",
+    "sha256": "461e3d4b402ab8a57973623c78441182beb26d590d21c15e5e6137e9a29d4b05"
+  },
+  "gate": "STAGE_Z_Z1R3_OFT_UNNORM_KEY_PARITY_REPAIR_AND_RUNTIME_QUALIFICATION_CONTINUATION",
+  "status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+  "purpose": "Engineering-only Z1 runtime qualification with exact official OpenVLA-OFT normalization-key parity; no scientific parent exposure.",
+  "revision_scope": {
+    "change": "Restore the frozen upstream check_unnorm_key rule in the M1/OFT adapter and record the resolved key in successful runtime receipts.",
+    "scientific_estimand_unchanged": true,
+    "checkpoint_bytes_unchanged": true,
+    "normalization_numbers_unchanged": true,
+    "checkpoint_mutation_forbidden": true,
+    "optional_import_and_entrypoint_repairs_unchanged": true,
+    "authorized_first_cell": "M1_OPENVLA_OFT libero_10 PRIMARY libero_10/task_04/state_03 exactly once under Z1R3-E",
+    "conditional_matrix": "Only after the new recovered M1 libero_10 cell PASSes may Z1R3-F run remaining M1 then M2 cells sequentially.",
+    "old_receipts_and_authorities_immutable": true
+  },
+  "z0r2": {
+    "status": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_CLOSURE_PASS",
+    "root_seal_sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d",
+    "model_authority_sha256": "7abcc9505c42a15c143d1333c1b3eda3254b46f2d210d5b15fcb5a5db684ea79",
+    "common_libero_sha256": "bf2f85f6a8719349d18daa80e36b4a70571bb7044f14b2addc0de555c3b4b118",
+    "panel_sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+  },
+  "canary_ledger": {
+    "path": "reports/STAGE_Z_Z1_ENGINEERING_CANARY_LEDGER_V1.json",
+    "sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc"
+  },
+  "r2_terminal_binding": {
+    "path": "reports/STAGE_Z_Z1R2_TERMINAL_SYNTHESIS_V1.json",
+    "sha256": "8b9858a4cc7f4d70f283a63b2fa59fe0038c67d497d9ae41884e2926478237da",
+    "required_status": "STAGE_Z_Z1R2_TERMINAL_SYNTHESIS_PASS_4_OF_12_ENGINEERING_ONLY",
+    "matrix_before_r3": {"M0": "4/4", "M1": "0/4", "M2": "0/4", "total": "4/12"}
+  },
+  "runtime_code_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "commit": "7228f71ceb8e451a71c5e9941498b325c3968e0d",
+    "tree": "1cd6ac2f4d82372078467b691f00a57461e4fa83",
+    "runner_path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+    "runner_git_blob": "72e62be7ef927a1012379d877bcb4f7f616a4031",
+    "launcher_path": "scripts/stage_z/launch_stage_z_z1_runtime.py",
+    "launcher_git_blob": "6b14b3fa933660977451cc808a3d68ba06689723",
+    "smoke_path": "scripts/stage_z/smoke_stage_z_z1r2_m1_import.py",
+    "smoke_git_blob": "0f02de48e4368dbd786d8cec36a08f9ca5743e4c",
+    "preflight_path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py",
+    "preflight_git_blob": "414acc538ee2d43d25460ea89a36677f899a4a9d",
+    "parity_static_receipt": "reports/STAGE_Z_Z1R3_OFT_UNNORM_KEY_PARITY_STATIC_V1.json",
+    "parity_static_receipt_sha256": "255df9d22616863f34d7b84d6fa7ebfe862345080fcb3ec0434523c212848b4f"
+  },
+  "upstream_oft_binding": {
+    "repository": "moojink/openvla-oft",
+    "checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+    "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+    "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+    "run_libero_eval_blob": "cdf27f56c5464808481d56af0898475541e10817",
+    "openvla_utils_blob": "c14c9dcfd3d10bbf80191dd64120e8746e72bb6a",
+    "resolver": "check_unnorm_key"
+  },
+  "unnorm_key_resolution": {
+    "rule": "candidate=suite; exact candidate wins; otherwise select f'{suite}_no_noops' when present; otherwise fail closed",
+    "exact_mode": "EXACT_SUITE_KEY",
+    "fallback_mode": "OFFICIAL_NO_NOOPS_FALLBACK",
+    "missing_error": "OFTUnnormKeyResolutionError:MODEL_UNNORM_KEY_MISSING:<suite>",
+    "runtime_receipt_fields": ["requested_task_suite", "available_norm_stats_keys", "resolved_unnorm_key", "resolution_mode", "dataset_statistics_sha256", "checkpoint_mutated"],
+    "checkpoint_mutation": false
+  },
+  "runtime_entrypoint": {
+    "runtime_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime",
+    "runtime_src": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/src",
+    "working_directory": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime",
+    "pythonpath_prepend": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/src",
+    "launcher_contract": "launcher sets cwd to runtime_root, prepends runtime_src to PYTHONPATH and sys.path, removes duplicate runtime_src entries, then runpy-executes the unchanged runner",
+    "launcher_cpu_smoke_receipt": "reports/STAGE_Z_Z1R2_M1_ENTRYPOINT_AND_IMPORT_STATIC_SMOKE_V1.json"
+  },
+  "environment": {
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "libero_config_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/libero_config",
+    "common_libero_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+    "common_libero_commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+    "common_libero_tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60",
+    "camera": "agentview",
+    "camera_height": 256,
+    "camera_width": 256,
+    "resize": 224,
+    "rotate_180": true,
+    "env_seed": 0,
+    "dummy_wait_steps": 10,
+    "control_freq": 20
+  },
+  "model_families": {
+    "M0_OPENVLA": {
+      "loader": "transformers.AutoModelForVision2Seq.from_pretrained_trust_remote_code_local_only",
+      "source_authority": "checkpoint_embedded_load_bearing_code_and_bytes",
+      "paths": {
+        "libero_10": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+        "libero_goal": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+        "libero_object": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+        "libero_spatial": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"
+      }
+    },
+    "M1_OPENVLA_OFT": {
+      "loader": "official_openvla_oft_prismatic_loader_without_checkpoint_mutation_with_official_unnorm_key_resolution",
+      "source_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+      "source_commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "source_tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+      "checkpoint_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache",
+      "checkpoint_manifests": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+      "checkpoint_manifests_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd"
+    },
+    "M2_PI05_LIBERO": {
+      "loader": "official_openpi_create_trained_policy",
+      "source_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822",
+      "source_commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "source_tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be",
+      "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+      "checkpoint_manifest_sha256": "d9104dfdea46eca2fadf05ec7fc478b19d39b19aa8dfda0e6adedcd6d6b6efac",
+      "config": "pi05_libero"
+    }
+  },
+  "execution_contract": {
+    "identities": "F1C4 permanently excluded engineering namespace only",
+    "one_worker_per_gpu": true,
+    "gpu_admission": "free_memory_mib > 20480 immediately before launch",
+    "foreign_processes": "allowed and recorded; never touched",
+    "action_dim": 7,
+    "arm_indices": [0, 1, 2, 3, 4, 5],
+    "gripper_index": 6,
+    "native_open": -1.0,
+    "native_close": 1.0,
+    "interventions": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "v_phys_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "branch_replay": "snapshot exact simulator state, restore and require exact pre-state equality, then reinstantiate the same frozen official canary environment and replay the same clean action, requiring exact post-state equality",
+    "same_instance_restore_note": "The official robosuite binding leaves MuJoCo solver internals across set_state; same-instance post-action byte replay is diagnostic-only and not the Z1 branch authority.",
+    "task_success_and_physical_outcome": "not read or persisted",
+    "checkpoint_mutation": false,
+    "unnorm_key_selection": "official exact-suite-then-no-noops fallback; no suite-specific exception"
+  },
+  "authorized_scope": {
+    "original_z1_cells": 12,
+    "current_matrix_before_r3": "M0=4/4, M1=0/4, M2=0/4, total=4/12",
+    "current_required_first_cell": "M1_OPENVLA_OFT/libero_10/PRIMARY/libero_10/task_04/state_03",
+    "conditional_remaining_m1": ["libero_goal", "libero_object", "libero_spatial"],
+    "conditional_m2": ["libero_10", "libero_goal", "libero_object", "libero_spatial"],
+    "terminal_action": "STOP_FOR_PI",
+    "forbidden_scientific_gates": ["Z2", "Z3", "Z4", "Z5", "F1", "BRIDGE"]
+  }
+}
