@@ -328,11 +328,11 @@
     },
     {
       "authority_binding": {
-        "git_blob": "617bb37a162764c7ea8a7dfd3d0d5384d7244321",
+        "git_blob": "9b9c937e86018df5ddc062afe0cf177bc93aabd7",
         "path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json",
-        "sha256_git_blob_bytes": "e457fa1c2c51ce61d2d78841ff7c7f5075d8a43b0e38a48893db82a27df42c28",
-        "source_commit": "c3862d3d88ce2dcf65d51ec16b03b1a093f10b52",
-        "source_tree": "10b8e13f3c44e3d735902d4d56c6d1c23370ad66"
+        "sha256_git_blob_bytes": "a5403173c57f27c5e3e931b468358a4cdf2e4b908b5e1eb9ce2670d36c530c7a",
+        "source_commit": "b16f1df274a401c39e993d53dce1ea3cff985721",
+        "source_tree": "a0dd71008354f98f490200126dd8d9e692262303"
       },
       "authority_paths": [
         "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
@@ -365,7 +365,7 @@
       "promotable_wording_key": null,
       "question": "Can the frozen physical mechanism replicate across the prospective model panel?",
       "stage": "Stage Z pending",
-      "status": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_CLOSURE_PASS"
+      "status": "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED"
     }
   ],
   "schema": "PAPER_V2_EVIDENCE_HIERARCHY_V1",
