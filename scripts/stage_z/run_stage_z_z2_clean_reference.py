@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import importlib.util
 import json
 import os
@@ -157,7 +158,8 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
 
     taxonomy = load_module(ROOT / "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "stage_z_physical_taxonomy")
     phases = load_module(ROOT / "src/gripper_attack/stage_v_m3_5_phase_classifier.py", "stage_z_phase_classifier")
-    anchors = load_module(ROOT / "src/stage_z_preparation/anchors.py", "stage_z_anchor_selection")
+    sys.path.insert(0, str(ROOT / "src"))
+    anchors = importlib.import_module("stage_z_preparation.anchors")
     z1.configure_libero(config)
     env, task_suite, task = z1.make_libero_env(config, args.suite, args.task_idx)
     counters = {"model_inference_calls": 0, "env_step_calls": 0, "anchor_telemetry_reads": 0, "physical_interventions": 0, "pgd_calls": 0, "attacked_env_steps": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "eval160_reads": 0, "protected_reads": 0, "stage_z_scientific_parent_exposure": 1}
