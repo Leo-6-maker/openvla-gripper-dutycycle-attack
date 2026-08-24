@@ -1,0 +1,69 @@
+{
+  "schema": "STAGE_Z_Z1R5_M1_IMAGE_CHANNEL_RUNTIME_DISCREPANCY_V1",
+  "status": "ENGINEERING_INVALID_M1_RUNTIME_IMAGE_CHANNEL_CONTRACT_DISCREPANCY",
+  "gate": "STAGE_Z_Z1R5_OFFICIAL_COMPONENT_STATE_DICT_PARITY_RECOVERY",
+  "append_only": true,
+  "claim_boundary": "Engineering-invalid runtime receipt only; not a scientific negative, not a vulnerability outcome, and not eligible for any scientific denominator or Paper-V2 claim.",
+  "execution": {
+    "model_family": "M1_OPENVLA_OFT",
+    "suite": "libero_10",
+    "role": "PRIMARY",
+    "canonical_parent_key": "libero_10/task_04/state_03",
+    "task_idx": 4,
+    "state_id": 3,
+    "gpu_id": 4,
+    "cuda_visible_devices": "4",
+    "runner_commit": "feafb5e29bd053ff39072c92ae204a3b3b7cf791",
+    "runner_tree": "f1048498ab71dd134f6797f186f6c9f901876ea6",
+    "runner_git_blob": "0797623eb3d1e7830c2063f78d8a8754821befb3",
+    "protocol": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V6.json",
+    "protocol_sha256": "b217fffbbe8dabddfc0f27a845bea9690e6e2fa64c42491ea993b7885b7051db",
+    "source_authority": "reports/STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V7.json",
+    "source_authority_sha256": "cf141345642af5d704f54528270d61e8b8207223e25653ff46423c969cc4d7ac",
+    "pre_gpu_audit": "reports/STAGE_Z_Z1R5_PRE_GPU_STATIC_AUDIT_V1.json",
+    "pre_gpu_audit_sha256": "783c8817f5d43784fd9d7a761f327ce7cc70bb1a2bf1b6ff6466d352d1b8cdb9"
+  },
+  "checkpoint": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10",
+    "manifest": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+    "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "files_verified": 25,
+    "bytes_verified": 15939159245,
+    "dataset_statistics_sha256": "dbe516987e8124416af39c32d3f39ce2137ccb4e282adc590bb4bcede09fb5e1",
+    "checkpoint_mutated": false,
+    "components_loaded": ["model_4_of_4_shards", "action_head", "proprio_projector"]
+  },
+  "failure": {
+    "boundary": "Model and both auxiliary components loaded; official LIBERO environment constructed and 10 dummy clean env.step calls completed; get_vla_action entered vla.predict_action but raised before returning an action, so no accepted policy action, branch replay, action env.step, task-success read, physical-outcome read, or scientific counting occurred.",
+    "exception_type": "RuntimeError",
+    "exception_marker": "split_with_sizes expects split_sizes to sum exactly to 12 (input tensor's size at dimension 1), but got split_sizes=[3, 3]",
+    "observed_pixel_value_channels": 12,
+    "expected_single_image_fused_channels": 6,
+    "official_model_state": "vision_backbone.num_images_in_input remained at 1 because the runner did not call the frozen upstream set_num_images_in_input(2) contract.",
+    "official_upstream_contract": "experiments.robot.openvla_utils.get_vla sets vla.vision_backbone.set_num_images_in_input(cfg.num_images_in_input) before inference",
+    "classification": "ENGINEERING_INVALID_M1_RUNTIME_IMAGE_CHANNEL_CONTRACT_DISCREPANCY"
+  },
+  "archived_log": {
+    "path": "reports/server_evidence/STAGE_Z_Z1R5_M1_IMAGE_CHANNEL_RUNTIME_DISCREPANCY_libero_10_PRIMARY.log",
+    "sha256": "b150aa552ca90c8cb35cc07efc83bf8e30299b634ce74625ab6d981bcd606640"
+  },
+  "runtime_counters": {
+    "model_load": "COMPLETED",
+    "model_predict_path_invoked": true,
+    "model_inference_calls_counter": 0,
+    "model_inference_output": "NOT_MATERIALIZED",
+    "simulator": "CONSTRUCTED",
+    "env_step_calls": 10,
+    "clean_action_env_step_calls": 0,
+    "physical_interventions": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0
+  },
+  "next_legal_action": "STAGE_Z_Z1R6_OFFICIAL_IMAGE_INPUT_CARDINALITY_PARITY_STATIC_REPAIR",
+  "timestamp_utc": "2026-08-24T19:25:16Z"
+}
