@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install minimal test dependency
-        run: python -m pip install pytest
+        run: python -m pip install pytest numpy
       - name: Audit immutable authority paths
         run: python scripts/repository/audit_immutable_authority_paths.py
       - name: Parse repository index JSON
