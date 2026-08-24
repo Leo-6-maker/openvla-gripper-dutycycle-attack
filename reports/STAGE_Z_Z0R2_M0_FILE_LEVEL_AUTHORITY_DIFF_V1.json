@@ -4,7 +4,7 @@
   "historical_z0r1_snapshot_preserved": true,
   "immutable_authority": {
     "path": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
-    "sha256": "eeb9fa0be922c34937d90caf849bc750db9b0ff707dc5187c35e1f6522f6fed8"
+    "sha256": "d78c6e77547f0f0c3d0a05c75d3a114477adba0971ef8fdd9f4db4446ff63776"
   },
   "re_audit": {
     "libero_10": {

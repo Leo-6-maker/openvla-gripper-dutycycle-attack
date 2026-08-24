@@ -13,6 +13,6 @@
   "openpi_checkpoint_bytes": 12439122345,
   "schema": "STAGE_Z_Z0R2_STORAGE_PREFLIGHT_V1",
   "snapshot_source": "Z0R1 durable preflight plus sequential materialization policy",
-  "status": "HOLD_M1_NOT_SEALED",
+  "status": "PASS_SEQUENTIAL_ONLY",
   "volatile_space_excluded": true
 }

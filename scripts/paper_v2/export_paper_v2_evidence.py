@@ -35,6 +35,10 @@ F1T_SUMMARY = "reports/STAGE_X_X1R2_F1T_DEV_C4_SUMMARY_V1.json"
 F1T_CLAIMS = "reports/STAGE_X_X1R2_F1T_CLAIM_LEDGER_DELTA_V1.json"
 F1T_ROOT = "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
 STAGE_Z_ROOT = "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+STAGE_Z_AUTHORITY_STATUSES = {
+    "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED",
+    "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_CLOSURE_PASS",
+}
 
 AUTHORITY_INPUTS = (
     PAPER_MAP,
@@ -256,10 +260,7 @@ def validate(
         "f1c4_root_binding",
     )
 
-    require(
-        stage_z["status"] == "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED",
-        "stage_z_status",
-    )
+    require(stage_z["status"] in STAGE_Z_AUTHORITY_STATUSES, "stage_z_status")
     require(stage_z["scientific_rollout_started"] is False, "stage_z_rollout")
     require(all(value == 0 for value in stage_z["counters"].values()), "stage_z_counters")
     return checks

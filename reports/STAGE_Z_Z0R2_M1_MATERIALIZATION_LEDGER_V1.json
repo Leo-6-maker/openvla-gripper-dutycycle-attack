@@ -2,6 +2,30 @@
   "schema": "STAGE_Z_Z0R2_M1_MATERIALIZATION_LEDGER_V1",
   "status": "PASS_SEQUENTIAL_RECEIPTS",
   "suites": {
+    "libero_10": {
+      "cache_deletion": "DELETED_AFTER_SERVER_SEAL_FOR_NEXT_SEQUENTIAL_SUITE",
+      "server_bytes": 15939159245,
+      "server_cache_verified": true,
+      "server_file_count": 25,
+      "server_manifest_sha256": "8f970517dcf81c8eff754edca6816b8c7c2c7813f909b6d1ef481c3a6f2dbc15",
+      "server_materialization_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z0r2_cache/libero_10"
+    },
+    "libero_goal": {
+      "cache_deletion": "DELETED_AFTER_SERVER_SEAL_FOR_NEXT_SEQUENTIAL_SUITE",
+      "server_bytes": 15939159075,
+      "server_cache_verified": true,
+      "server_file_count": 25,
+      "server_manifest_sha256": "15e7c7f0b97d87d53dc7e7f6ed280d483e766ccc313adc8f5f93c1d4cbc56bb3",
+      "server_materialization_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z0r2_cache/libero_goal"
+    },
+    "libero_object": {
+      "cache_deletion": "DELETED_AFTER_SERVER_SEAL_FOR_NEXT_SEQUENTIAL_SUITE",
+      "server_bytes": 15939159270,
+      "server_cache_verified": true,
+      "server_file_count": 25,
+      "server_manifest_sha256": "aa74388cc3851fdb2998a46f472c4a54e3c4ca7c79082f14087c834e2b89d3df",
+      "server_materialization_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z0r2_cache/libero_object"
+    },
     "libero_spatial": {
       "cache_deletion": "DELETED_AFTER_SERVER_SEAL_FOR_NEXT_SEQUENTIAL_SUITE",
       "server_bytes": 15939159216,

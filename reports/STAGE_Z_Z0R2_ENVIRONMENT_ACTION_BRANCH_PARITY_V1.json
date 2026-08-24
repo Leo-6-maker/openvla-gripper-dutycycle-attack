@@ -31,7 +31,7 @@
   },
   "common_libero_manifest": {
     "path": "reports/STAGE_Z_Z0R2_COMMON_LIBERO_AUTHORITY_V1.json",
-    "sha256": "413ea761392807d95d6030b825529d0fb141980a2e77494489182d4405c47527"
+    "sha256": "bf2f85f6a8719349d18daa80e36b4a70571bb7044f14b2addc0de555c3b4b118"
   },
   "protected_counters": {
     "env_step": 0,
