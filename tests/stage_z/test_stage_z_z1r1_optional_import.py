@@ -120,6 +120,13 @@ def test_oft_uses_official_component_state_dict_loader_for_both_components() -> 
     assert '"component_state_dict_loader": "official_openvla_utils.load_component_state_dict" if oft else' in load_source
 
 
+def test_oft_configures_fused_backbone_for_primary_and_wrist_images() -> None:
+    source = (ROOT / "scripts/stage_z/run_stage_z_z1_runtime_canary.py").read_text(encoding="utf-8")
+    load_source = source[source.index("def load_openvla("):]
+    assert "model.vision_backbone.set_num_images_in_input(2)" in load_source
+    assert '"vision_num_images_in_input": 2 if oft else 1' in load_source
+
+
 def test_oft_key_resolution_does_not_rewrite_checkpoint_json(tmp_path) -> None:
     runner = importlib.import_module(RUNNER_MODULE)
     stats_path = tmp_path / "dataset_statistics.json"

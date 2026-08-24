@@ -324,6 +324,9 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
     )
     model.eval()
     if oft:
+        # Match frozen upstream get_vla: configure the fused backbone for the
+        # primary plus wrist image pair before get_vla_action concatenates them.
+        model.vision_backbone.set_num_images_in_input(2)
         # Match frozen upstream OpenVLA-OFT: always load the checkpoint's
         # dataset statistics, even when Transformers supplied a config-level
         # norm_stats attribute during from_pretrained().
@@ -344,6 +347,7 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
         "dataset_statistics_sha256": sha256_file(dataset_statistics_path) if dataset_statistics_path.is_file() else None,
         "stats_loader": "official_openvla_utils._load_dataset_stats" if oft else "checkpoint_embedded_or_existing_norm_stats",
         "component_state_dict_loader": "official_openvla_utils.load_component_state_dict" if oft else None,
+        "vision_num_images_in_input": 2 if oft else 1,
         "checkpoint_mutated": False,
     }
 
