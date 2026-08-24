@@ -34,8 +34,16 @@ def git(path: str, *args: str) -> str:
 
 
 def inventory(path: Path) -> tuple[int, int]:
-    files = [p for p in path.rglob("*") if p.is_file()]
+    files = [p for p in path.rglob("*") if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"]
     return len(files), sum(p.stat().st_size for p in files)
+
+
+def ignored_generated_files(path: Path) -> list[str]:
+    return sorted(
+        p.relative_to(path).as_posix()
+        for p in path.rglob("*")
+        if p.is_file() and ("__pycache__" in p.parts or p.suffix == ".pyc")
+    )
 
 
 def gpu_rows() -> list[dict]:
@@ -105,13 +113,23 @@ def main() -> None:
         actual = inventory(p)
         if actual != M0_EXPECTED[suite]:
             raise SystemExit(f"M0_CHECKPOINT_INVENTORY_MISMATCH:{suite}:{actual}")
-        m0[suite] = {"path": str(p), "files": actual[0], "bytes": actual[1]}
+        m0[suite] = {
+            "path": str(p),
+            "files": actual[0],
+            "bytes": actual[1],
+            "ignored_generated_files": ignored_generated_files(p),
+        }
     checks["M0_checkpoints"] = m0
 
     m2_path = Path(config["model_families"]["M2_PI05_LIBERO"]["checkpoint"])
     if inventory(m2_path) != M2_EXPECTED:
         raise SystemExit(f"M2_CHECKPOINT_INVENTORY_MISMATCH:{inventory(m2_path)}")
-    checks["M2_checkpoint"] = {"path": str(m2_path), "files": M2_EXPECTED[0], "bytes": M2_EXPECTED[1]}
+    checks["M2_checkpoint"] = {
+        "path": str(m2_path),
+        "files": M2_EXPECTED[0],
+        "bytes": M2_EXPECTED[1],
+        "ignored_generated_files": ignored_generated_files(m2_path),
+    }
     m1_root = Path(config["model_families"]["M1_OPENVLA_OFT"]["checkpoint_root"])
     checks["M1_sequential_materialization"] = {"root": str(m1_root), "pre_gpu_status": "PENDING_PER_CELL_MANIFEST_VERIFICATION"}
 
