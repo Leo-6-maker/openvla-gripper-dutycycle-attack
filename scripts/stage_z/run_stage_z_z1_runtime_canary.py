@@ -16,7 +16,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -277,6 +277,11 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
         proprio_projector = proprio_projector.to(dtype=dtype, device="cuda:0").eval()
     source = "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823"
     sys.path.insert(0, source)
+    try:
+        import wandb  # type: ignore  # noqa: F401
+    except ImportError:
+        # The official evaluator imports optional logging at module import; Z1 never enables it.
+        sys.modules["wandb"] = ModuleType("wandb")
     from experiments.robot.libero.run_libero_eval import process_action  # type: ignore
     from experiments.robot.openvla_utils import get_vla_action  # type: ignore
 
