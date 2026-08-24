@@ -329,7 +329,9 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
 
     cfg = SimpleNamespace(
         model_family="openvla",
-        num_images_in_input=2,
+        # M0's fused DINO+SigLIP processor emits 6 channels for one image;
+        # only OFT checkpoints are configured for the additional wrist image.
+        num_images_in_input=2 if oft else 1,
         use_proprio=oft,
         center_crop=True,
         unnorm_key=suite,
