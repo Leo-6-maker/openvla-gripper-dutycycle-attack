@@ -102,6 +102,15 @@ def test_oft_resolved_key_reaches_get_vla_action_config() -> None:
     assert "get_vla_action(" in load_source
 
 
+def test_oft_uses_official_dataset_stats_loader_before_key_resolution() -> None:
+    source = (ROOT / "scripts/stage_z/run_stage_z_z1_runtime_canary.py").read_text(encoding="utf-8")
+    load_source = source[source.index("def load_openvla("):]
+    import_line = "from experiments.robot.openvla_utils import _load_dataset_stats"
+    assert import_line in load_source
+    assert load_source.index("_load_dataset_stats(model, checkpoint)") < load_source.index("resolve_official_unnorm_key")
+    assert '"stats_loader": "official_openvla_utils._load_dataset_stats" if oft else' in load_source
+
+
 def test_oft_key_resolution_does_not_rewrite_checkpoint_json(tmp_path) -> None:
     runner = importlib.import_module(RUNNER_MODULE)
     stats_path = tmp_path / "dataset_statistics.json"

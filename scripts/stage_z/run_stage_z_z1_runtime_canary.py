@@ -323,7 +323,14 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
         device_map={"": 0},
     )
     model.eval()
-    if not hasattr(model, "norm_stats"):
+    if oft:
+        # Match frozen upstream OpenVLA-OFT: always load the checkpoint's
+        # dataset statistics, even when Transformers supplied a config-level
+        # norm_stats attribute during from_pretrained().
+        from experiments.robot.openvla_utils import _load_dataset_stats  # type: ignore
+
+        _load_dataset_stats(model, checkpoint)
+    elif not hasattr(model, "norm_stats"):
         stats = Path(checkpoint) / "dataset_statistics.json"
         model.norm_stats = json.loads(stats.read_text(encoding="utf-8"))
     resolved_unnorm_key, resolution_mode = resolve_official_unnorm_key(model.norm_stats, suite)
@@ -335,6 +342,7 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str):
         "resolution_mode": resolution_mode,
         "dataset_statistics_path": str(dataset_statistics_path),
         "dataset_statistics_sha256": sha256_file(dataset_statistics_path) if dataset_statistics_path.is_file() else None,
+        "stats_loader": "official_openvla_utils._load_dataset_stats" if oft else "checkpoint_embedded_or_existing_norm_stats",
         "checkpoint_mutated": False,
     }
 
