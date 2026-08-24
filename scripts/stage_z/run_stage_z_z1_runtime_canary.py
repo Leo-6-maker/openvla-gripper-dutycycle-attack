@@ -253,9 +253,10 @@ def restore_state(env, state: np.ndarray) -> None:
 def model_observation(obs: dict[str, Any]) -> dict[str, Any]:
     from PIL import Image
 
-    def image(value: Any) -> Image.Image:
+    def image(value: Any) -> np.ndarray:
         array = np.ascontiguousarray(np.asarray(value)[::-1, ::-1])
-        return Image.fromarray(array).convert("RGB").resize((224, 224), Image.Resampling.LANCZOS)
+        resized = Image.fromarray(array).convert("RGB").resize((224, 224), Image.Resampling.LANCZOS)
+        return np.asarray(resized, dtype=np.uint8)
 
     quat = np.asarray(obs["robot0_eef_quat"], dtype=np.float32).copy()
     quat[3] = np.clip(quat[3], -1.0, 1.0)
