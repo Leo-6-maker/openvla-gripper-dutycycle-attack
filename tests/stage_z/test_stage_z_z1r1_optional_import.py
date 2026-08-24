@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import builtins
 import importlib
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -48,3 +49,21 @@ def test_runner_module_import_is_cpu_only(monkeypatch) -> None:
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")
     runner = importlib.import_module(RUNNER_MODULE)
     assert runner.PHASE == "Z1"
+
+
+def test_runtime_launcher_binds_root_src_and_cwd(monkeypatch) -> None:
+    path = ROOT / "scripts/stage_z/launch_stage_z_z1_runtime.py"
+    spec = importlib.util.spec_from_file_location("stage_z_z1_launcher_test", path)
+    assert spec is not None and spec.loader is not None
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    changed: list[Path] = []
+    monkeypatch.setattr(launcher.os, "chdir", changed.append)
+    monkeypatch.setenv("PYTHONPATH", "existing-path")
+    monkeypatch.setattr(launcher.sys, "path", list(sys.path))
+    runtime_root, runtime_src = launcher.configure_runtime_environment()
+    assert runtime_root == ROOT
+    assert runtime_src == ROOT / "src"
+    assert changed == [ROOT]
+    assert launcher.sys.path[0] == str(ROOT / "src")
+    assert launcher.os.environ["PYTHONPATH"].split(launcher.os.pathsep)[0] == str(ROOT / "src")
