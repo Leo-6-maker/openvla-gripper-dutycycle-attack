@@ -83,13 +83,13 @@
         "free_memory_mib": 29578,
         "index": 4,
         "used_memory_mib": 51644,
-        "utilization_gpu_percent": 94
+        "utilization_gpu_percent": 96
       },
       {
         "free_memory_mib": 29578,
         "index": 5,
         "used_memory_mib": 51644,
-        "utilization_gpu_percent": 95
+        "utilization_gpu_percent": 96
       },
       {
         "free_memory_mib": 29578,
@@ -101,7 +101,7 @@
         "free_memory_mib": 29578,
         "index": 7,
         "used_memory_mib": 51644,
-        "utilization_gpu_percent": 94
+        "utilization_gpu_percent": 96
       }
     ],
     "ledger_sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc",
@@ -121,16 +121,16 @@
     },
     "protocol_status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
     "runner_git_binding": {
-      "commit": "a7bf092b45867af8a35a12d7486e91dca2e03ae2",
+      "commit": "8e931dafff7b7a5591931bcdf897e804cfac695e",
       "preflight_git_blob": "414acc538ee2d43d25460ea89a36677f899a4a9d",
       "preflight_path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py",
       "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-      "runner_git_blob": "97f1926cb8801c6adb4ada81cbca0e182ea88326",
+      "runner_git_blob": "b141f4a8a86e3c1ea467a1bf45880fb0a75ed85d",
       "runner_path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
-      "tree": "8111fb560c9a55505dd3d73ac5617bae96142fac"
+      "tree": "1c626df11049ea87f2a0fa769b3d88e4e36b5298"
     },
     "scientific_overlap_count": 0,
-    "source_authority_sha256": "1b3abeddbe3dd89d195a4c6e929fd8552be5b24169e249a45ea2e703fd6c93bd"
+    "source_authority_sha256": "c2f49d16adab7932a3bdad8f9d03742cfe40d50aee5c9a3362b3af854216e40e"
   },
   "claim_boundary": "Pre-GPU engineering/source/resource audit only; no model or simulator execution.",
   "counters": {
@@ -150,5 +150,5 @@
   "next_legal_action": "RUN_Z1_ENGINEERING_CANARY_CELLS",
   "schema": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_V1",
   "status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS",
-  "timestamp_utc": "2026-08-24T11:50:54Z"
+  "timestamp_utc": "2026-08-24T12:04:04Z"
 }
