@@ -20,6 +20,13 @@ def test_optional_shims_precede_oft_dynamic_model_import() -> None:
     assert load_source.index("_install_optional_import_shims()") < load_source.index("ModelClass.from_pretrained")
 
 
+def test_openvla_uses_official_vision2seq_auto_class() -> None:
+    source = (ROOT / "scripts/stage_z/run_stage_z_z1_runtime_canary.py").read_text(encoding="utf-8")
+    load_source = source[source.index("def load_openvla("):]
+    assert "from transformers import AutoModelForVision2Seq as ModelClass" in load_source
+    assert "AutoModelForImageTextToText" not in load_source
+
+
 def test_broken_optional_imports_are_replaced_by_module_spec_shims(monkeypatch) -> None:
     runner = importlib.import_module(RUNNER_MODULE)
     original = {name: sys.modules.get(name) for name in ("wandb", "json_numpy")}

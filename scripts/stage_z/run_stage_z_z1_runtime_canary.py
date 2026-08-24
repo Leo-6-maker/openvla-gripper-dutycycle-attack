@@ -310,10 +310,10 @@ def load_openvla(checkpoint: str, *, oft: bool, suite: str, return_chunk: bool =
     import torch
     from transformers import AutoProcessor
 
-    try:
-        from transformers import AutoModelForImageTextToText as ModelClass
-    except ImportError:
-        from transformers import AutoModelForVision2Seq as ModelClass
+    # OpenVLA's frozen custom OpenVLAConfig is registered on the official
+    # Vision2Seq auto class; ImageTextToText exists in newer Transformers but
+    # rejects this config before trust_remote_code can resolve the model.
+    from transformers import AutoModelForVision2Seq as ModelClass
 
     dtype = torch.bfloat16
     processor = AutoProcessor.from_pretrained(checkpoint, trust_remote_code=True, local_files_only=True, use_fast=False)
