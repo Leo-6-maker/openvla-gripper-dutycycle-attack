@@ -88,6 +88,11 @@
     "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
     "launcher_contract": "launcher sets cwd to runtime_root, prepends runtime_src to PYTHONPATH and sys.path, removes duplicate runtime_src entries, then runpy-executes the bound runner"
   },
+  "pre_gpu_audit_binding": {
+    "path": "reports/STAGE_Z_Z1R4_PRE_GPU_STATIC_AUDIT_V1.json",
+    "required_status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS",
+    "claim_boundary": "read-only source/resource/GPU admission audit; no model or simulator execution"
+  },
   "environment": {
     "common_libero_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
     "common_libero_commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
