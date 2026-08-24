@@ -1,0 +1,5 @@
+assets: /mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/assets
+bddl_files: /mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/bddl_files
+benchmark_root: /mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero
+datasets: /mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/datasets
+init_states: /mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/init_files
