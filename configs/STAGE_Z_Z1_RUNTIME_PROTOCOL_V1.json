@@ -14,6 +14,13 @@
     "path": "reports/STAGE_Z_Z1_ENGINEERING_CANARY_LEDGER_V1.json",
     "sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc"
   },
+  "runtime_code_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "commit": "217bd92a87a33264556a8d6d4694841f2dc437f5",
+    "tree": "777a36b10650a31cc8f372fc137102eeaa238dbe",
+    "runner_path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+    "runner_git_blob": "2865392beedffc9cde44eea0421e6b829b75332f"
+  },
   "environment": {
     "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
     "libero_config_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/libero_config",
