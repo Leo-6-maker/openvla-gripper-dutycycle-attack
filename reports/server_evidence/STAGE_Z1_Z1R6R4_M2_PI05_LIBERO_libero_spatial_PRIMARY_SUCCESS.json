@@ -1,0 +1,88 @@
+{
+  "action_before_intervention": [
+    0.055333562195301056,
+    0.0862259492278099,
+    0.058374278247356415,
+    0.0003311828477308154,
+    -0.01653054729104042,
+    0.012355905026197433,
+    -1.0
+  ],
+  "action_meta": {
+    "action_after_libero_clip": [
+      0.055333562195301056,
+      0.0862259492278099,
+      0.058374278247356415,
+      0.0003311828477308154,
+      -0.01653054729104042,
+      0.012355905026197433,
+      -1.0
+    ],
+    "action_was_clipped": true,
+    "chunk_length": 10,
+    "raw_action": [
+      0.055333562195301056,
+      0.0862259492278099,
+      0.058374278247356415,
+      0.0003311828477308154,
+      -0.01653054729104042,
+      0.012355905026197433,
+      -1.001246690750122
+    ],
+    "replan": "fresh_policy_infer"
+  },
+  "branch_replay": {
+    "mode": "FRESH_OFFICIAL_ENV_AFTER_SNAPSHOT_RESTORE_PROBE",
+    "post_state_a_sha256": "75598a155fea9d028c2f8f1e487be5d5f83092de0d0bb7725326d07e138f4018",
+    "post_state_b_sha256": "75598a155fea9d028c2f8f1e487be5d5f83092de0d0bb7725326d07e138f4018",
+    "post_state_exact": true,
+    "pre_state_exact": true,
+    "pre_state_sha256": "544bbac0f6314e51e2aaf65c6fcd866c8bef9084bda61414d863f1452669ab13"
+  },
+  "canonical_parent_key": "libero_spatial/task_08/state_01",
+  "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+  "checkpoint_manifest": null,
+  "cuda_visible_devices": "4",
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3",
+        "pid": "3923068",
+        "used_memory_mib": "28538"
+      }
+    ],
+    "free_memory_mib": 52664,
+    "index": 4,
+    "used_memory_mib": 28558,
+    "utilization_gpu_percent": 71
+  },
+  "intervention": false,
+  "model_family": "M2_PI05_LIBERO",
+  "normalization": {
+    "checkpoint_mutated": false
+  },
+  "physical_outcome_read": false,
+  "role": "PRIMARY",
+  "runtime_counters": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 22,
+    "eval160_reads": 0,
+    "model_inference_calls": 1,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z1_RUNTIME_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_ENGINEERING_ONLY",
+  "selection_rank_sha256": "62c39b2f34326f2f64dc339821dbb60a91a49e9bd4fd6b4639237655583151aa",
+  "state_id": 1,
+  "status": "PASS",
+  "suite": "libero_spatial",
+  "task_idx": 8,
+  "task_language": "pick up the black bowl next to the plate and place it on the plate",
+  "task_success_read": false,
+  "timestamp_utc": "2026-08-24T21:34:07Z"
+}
