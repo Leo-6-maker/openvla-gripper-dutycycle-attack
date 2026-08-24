@@ -1,0 +1,181 @@
+{
+  "schema": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V6",
+  "supersedes": {
+    "path": "reports/STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V5.json",
+    "sha256": "aee61576a329a0413b08fd687e4fc06b06e868b2a1955302df76dd1422f52713"
+  },
+  "status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+  "gate": "STAGE_Z_Z1R4_OFT_DATASET_STATS_LOADER_PARITY_RECOVERY",
+  "authorization": {
+    "source": "user_direct_autonomous_continuation",
+    "instruction": "不用等待PI,自主往下推进",
+    "prior_pi_comment": "5399571767"
+  },
+  "claim_boundary": "Static runtime-source, loader-parity, engineering-authority, and resource-admission binding only; no scientific vulnerability, physical mechanism, visual exploitability, V_phys, Eval160, protected, F1, BRIDGE, or Paper-V2 scientific promotion claim.",
+  "runtime_revision": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "code_commit": "7500d78ca7a3c8bc97c675f6a67fd0050c8b24fa",
+    "code_tree": "2c345ff07d36645af0d5342b21da892604c8a197",
+    "protocol_path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V5.json",
+    "protocol_sha256": "9684e197d1d6cc472d9712f634e7536d5a5b3accef85960ce5cbb3b81138591a",
+    "files": [
+      {
+        "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+        "git_blob_sha": "0d0dc820d0b660d73d7bea4e2bfc9efb4a6499",
+        "sha256": "585bfab4eb1aaa93e96010c3b80bcb1b87e3362324ba028e7d91dedfa7d4289",
+        "role": "Z1 runner with official M1/OFT dataset-statistics loading and exact unnorm-key resolution"
+      },
+      {
+        "path": "tests/stage_z/test_stage_z_z1r1_optional_import.py",
+        "git_blob_sha": "f8e6ae6a2e0f77c5b085349bde1c460948a7f4d6",
+        "sha256": "6574b3ab8834e5694ab3553339f2dbf1b46c07c44574a723abc48dfa654abb90",
+        "role": "optional-import, launcher, unnorm-key, and official-loader-order regression"
+      },
+      {
+        "path": "scripts/stage_z/launch_stage_z_z1_runtime.py",
+        "git_blob_sha": "6b14b3fa933660977451cc808a3d68ba06689723",
+        "role": "deterministic runtime-root/cwd/PYTHONPATH launcher"
+      },
+      {
+        "path": "scripts/stage_z/smoke_stage_z_z1r2_m1_import.py",
+        "git_blob_sha": "0f02de48e4368dbd786d8cec36a08f9ca5743e4c",
+        "role": "CPU-only exact OFT import smoke"
+      },
+      {
+        "path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py",
+        "git_blob_sha": "414acc538ee2d43d25460ea89a36677f899a4a9d",
+        "role": "read-only pre-GPU source/resource audit"
+      },
+      {
+        "path": "reports/STAGE_Z_Z1R4_OFT_DATASET_STATS_LOADER_PARITY_STATIC_V1.json",
+        "sha256": "c2bee72eb4f8a105274f730f5b60bb0e81c88b8abe19c722af71a5cac1a34786",
+        "role": "read-only upstream loader-parity receipt"
+      }
+    ]
+  },
+  "upstream_oft_authority": {
+    "repository": "moojink/openvla-oft",
+    "checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+    "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+    "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+    "openvla_utils_blob": "c14c9dcfd3d10bbf80191dd64120e8746e72bb6a",
+    "loader_function": "_load_dataset_stats",
+    "loader_contract": "For local checkpoints, read dataset_statistics.json and unconditionally set vla.norm_stats to the parsed object; no alias, no rewrite, no checkpoint mutation.",
+    "resolver_function": "check_unnorm_key",
+    "resolver_contract": "candidate=suite; exact candidate wins; otherwise suite_no_noops fallback; otherwise fail closed; store the resolved key in cfg.unnorm_key"
+  },
+  "z0r2_bindings": {
+    "root_seal_sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d",
+    "model_authority_sha256": "7abcc9505c42a15c143d1333c1b3eda3254b46f2d210d5b15fcb5a5db684ea79",
+    "common_libero_sha256": "bf2f85f6a8719349d18daa80e36b4a70571bb7044f14b2addc0de555c3b4b118",
+    "scientific_panel_sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1",
+    "canary_ledger_sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc"
+  },
+  "historical_evidence": {
+    "r2_terminal": {
+      "path": "reports/STAGE_Z_Z1R2_TERMINAL_SYNTHESIS_V1.json",
+      "sha256": "8b9858a4cc7f4d70f283a63b2fa59fe0038c67d497d9ae41884e2926478237da"
+    },
+    "r3_terminal": {
+      "path": "reports/STAGE_Z_Z1R3_TERMINAL_SYNTHESIS_V1.json",
+      "sha256": "057ecca6abe9a54e3b6da71aefe6a731d11f80bd61cbabd9aa7330e786e36f94"
+    },
+    "r3_failure_receipt": {
+      "path": "reports/STAGE_Z_Z1R3_M1_MODEL_UNNORM_RUNTIME_DISCREPANCY_libero_10_PRIMARY_V1.json",
+      "sha256": "eda5576ec7331575dc9a192d83774b3f23d06ca2a0469bbeee951051dd8a9f08",
+      "classification": "ENGINEERING_INVALID_M1_RUNTIME_NORM_STATS_DISCREPANCY_AFTER_OFFICIAL_RESOLVER"
+    },
+    "r3_static": {
+      "path": "reports/STAGE_Z_Z1R3_OFT_UNNORM_KEY_PARITY_STATIC_V1.json",
+      "sha256": "255df9d22616863f34d7b84d6fa7ebfe862345080fcb3ec0434523c212848b4f"
+    },
+    "r4_static": {
+      "path": "reports/STAGE_Z_Z1R4_OFT_DATASET_STATS_LOADER_PARITY_STATIC_V1.json",
+      "sha256": "c2bee72eb4f8a105274f730f5b60bb0e81c88b8abe19c722af71a5cac1a34786"
+    }
+  },
+  "runtime_entrypoint": {
+    "runtime_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime",
+    "runtime_src": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/src",
+    "working_directory": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime",
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "libero_config_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/libero_config",
+    "launcher_contract": "launcher sets cwd to runtime_root, prepends runtime_src to PYTHONPATH and sys.path, removes duplicate runtime_src entries, then runpy-executes the unchanged runner"
+  },
+  "model_authority": {
+    "M0_OPENVLA": {
+      "authority": "Z0R2 exact load-bearing checkpoint bytes and checkpoint-embedded model/processor code; M0 loader branch unchanged in this revision"
+    },
+    "M1_OPENVLA_OFT": {
+      "authority": "Z0R2 four sealed 25-file exact revisions; sequential materialization only; no checkpoint mutation",
+      "source_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+      "source_commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "source_tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+      "checkpoint_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache",
+      "manifest_path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+      "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+      "dataset_stats_loader": "experiments.robot.openvla_utils._load_dataset_stats",
+      "unnorm_key_rule": "official exact suite key first, then suite_no_noops fallback",
+      "checkpoint_mutation": false
+    },
+    "M2_PI05_LIBERO": {
+      "authority": "Z0R2 existing official pi05_libero checkpoint; not entered by this first-cell recovery",
+      "source_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822",
+      "source_commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "source_tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be",
+      "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+      "checkpoint_manifest_sha256": "d9104dfdea46eca2fadf05ec7fc478b19d39b19aa8dfda0e6adedcd6d6b6efac"
+    }
+  },
+  "external_source_checkouts": {
+    "common_libero": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+      "commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+      "tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60",
+      "git_status_required": "CLEAN"
+    },
+    "openvla_oft": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+      "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+      "git_status_required": "CLEAN"
+    },
+    "openpi": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822",
+      "commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be",
+      "git_status_required": "CLEAN"
+    }
+  },
+  "execution_contract": {
+    "identities": "F1C4 permanently excluded engineering namespace only",
+    "one_worker_per_gpu": true,
+    "gpu_admission": "free_memory_mib > 20480 immediately before launch",
+    "foreign_processes": "allowed and recorded; never touched",
+    "interventions": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "v_phys_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "checkpoint_mutation": false,
+    "task_success_and_physical_outcome": "not read or persisted",
+    "branch_replay": "snapshot exact simulator state, restore and require exact pre-state equality, then reinstantiate the same frozen official canary environment and replay the same clean action, requiring exact post-state equality"
+  },
+  "current_matrix_before_retry": {
+    "M0_OPENVLA": "4/4 PASS immutable",
+    "M1_OPENVLA_OFT": "0/4 PASS; prior attempts engineering-invalid",
+    "M2_PI05_LIBERO": "0/4 PASS; not attempted",
+    "total": "4/12",
+    "scientific_parent_exposure": "0/36"
+  },
+  "authorized_scope": {
+    "current_required_first_cell": "M1_OPENVLA_OFT/libero_10/PRIMARY/libero_10/task_04/state_03",
+    "conditional_remaining_m1": ["libero_goal", "libero_object", "libero_spatial"],
+    "conditional_m2": ["libero_10", "libero_goal", "libero_object", "libero_spatial"],
+    "terminal_after_new_engineering_defect_or_12_of_12": "STOP_FOR_PI",
+    "forbidden_scientific_gates": ["Z2", "Z3", "Z4", "Z5", "F1", "BRIDGE"]
+  }
+}
