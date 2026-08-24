@@ -13,8 +13,8 @@
     "sha256": "e37acb1fa88fe38a27c847042c25e19937171ab4feafe8d652b9fecb323c12cb"
   },
   "git_binding": {
-    "commit": "faf8ea5fb0b925e05af9e906c127f3da652243e3",
-    "tree": "21d85ba6e3159f7439d626a077e40b4b97a4d54b",
+    "commit": "a37f486f19d2fb05620dcf0d864f92762d0725b6",
+    "tree": "60ee62577eb3b85fedd33e1fc9b67511f055bcf1",
     "runner": {
       "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
       "git_blob": "cf0dd0469c323be8123cf6bb06b28c1e7107f45f",
@@ -22,8 +22,8 @@
     },
     "loader": {
       "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
-      "git_blob": "0b45444861d3191a1829229bf3e88426eb439fff",
-      "sha256": "89ca1958990e6771de2d81669fbe92865ccf942682ff70f027a4561d445a7603"
+      "git_blob": "5be4607203c45d91b978d876aa6f66cc7045c4e7",
+      "sha256": "16a9b4c655238cf02b4d1a0c7c5ebe30fe5fbd79bdaa1290691de6d7a6933d00"
     }
   },
   "authority": {
