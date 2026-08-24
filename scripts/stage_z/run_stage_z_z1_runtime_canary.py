@@ -300,6 +300,19 @@ def _install_optional_import_shims() -> None:
         wandb = ModuleType("wandb")
         wandb.__spec__ = ModuleSpec("wandb", loader=None)
         sys.modules["wandb"] = wandb
+    # The mandated A800 venv inherits a foreign base site-packages surface
+    # containing diffusers 0.27.x, whose import still requests the removed
+    # huggingface_hub.cached_download symbol.  Keep this process-local and
+    # fail closed if any code attempts the legacy download path.
+    try:
+        import huggingface_hub  # type: ignore
+        if not hasattr(huggingface_hub, "cached_download"):
+            def cached_download(*args: Any, **kwargs: Any) -> str:
+                raise RuntimeError("LEGACY_CACHED_DOWNLOAD_FORBIDDEN_IN_FROZEN_LOCAL_RUNTIME")
+
+            huggingface_hub.cached_download = cached_download  # type: ignore[attr-defined]
+    except ImportError:
+        pass
 
 
 def load_openvla(checkpoint: str, *, oft: bool, suite: str, return_chunk: bool = False):

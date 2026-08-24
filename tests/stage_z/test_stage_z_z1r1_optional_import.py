@@ -53,6 +53,12 @@ def test_broken_optional_imports_are_replaced_by_module_spec_shims(monkeypatch) 
                 sys.modules[name] = value
 
 
+def test_legacy_huggingface_download_is_fail_closed() -> None:
+    source = (ROOT / "scripts/stage_z/run_stage_z_z1_runtime_canary.py").read_text(encoding="utf-8")
+    assert "cached_download" in source
+    assert "LEGACY_CACHED_DOWNLOAD_FORBIDDEN_IN_FROZEN_LOCAL_RUNTIME" in source
+
+
 def test_runner_module_import_is_cpu_only(monkeypatch) -> None:
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")
     runner = importlib.import_module(RUNNER_MODULE)
