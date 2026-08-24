@@ -59,25 +59,25 @@
         "free_memory_mib": 4732,
         "index": 0,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 87
+        "utilization_gpu_percent": 100
       },
       {
         "free_memory_mib": 4732,
         "index": 1,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 87
+        "utilization_gpu_percent": 100
       },
       {
         "free_memory_mib": 4732,
         "index": 2,
         "used_memory_mib": 76490,
-        "utilization_gpu_percent": 86
+        "utilization_gpu_percent": 100
       },
       {
         "free_memory_mib": 4732,
         "index": 3,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 82
+        "utilization_gpu_percent": 100
       },
       {
         "free_memory_mib": 29578,
@@ -121,16 +121,16 @@
     },
     "protocol_status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
     "runner_git_binding": {
-      "commit": "9b56067f2077523bfaf3b66d49e2f2eaa125eb56",
+      "commit": "860dcbcda6c9bacc62de9a0a3f0ab56ce4cda658",
       "preflight_git_blob": "414acc538ee2d43d25460ea89a36677f899a4a9d",
       "preflight_path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py",
       "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-      "runner_git_blob": "5aa475bf6d0e547d2ae09b632a31345ef91edf12",
+      "runner_git_blob": "30679ca0bebdb2869133b0efe90f00b4d4245fe9",
       "runner_path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
-      "tree": "84dcc14e33b73fcdbc551d0eb03ae321caf4c207"
+      "tree": "7f44f9a8d0e4c5a28292f8294c830e5d10ad490d"
     },
     "scientific_overlap_count": 0,
-    "source_authority_sha256": "5b08b3395ad6c295fea6e8f2955cf920dd3d2d3050ddc0da70d996135b9fded6"
+    "source_authority_sha256": "081764f30e82a2777edd57c000e28d8ce5ae7d3f9a44b8ba28e84f3281b8fb3c"
   },
   "claim_boundary": "Pre-GPU engineering/source/resource audit only; no model or simulator execution.",
   "counters": {
@@ -150,5 +150,5 @@
   "next_legal_action": "RUN_Z1_ENGINEERING_CANARY_CELLS",
   "schema": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_V1",
   "status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS",
-  "timestamp_utc": "2026-08-24T11:24:18Z"
+  "timestamp_utc": "2026-08-24T11:34:55Z"
 }
