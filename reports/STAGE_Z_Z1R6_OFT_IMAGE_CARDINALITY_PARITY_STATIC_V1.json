@@ -1,0 +1,95 @@
+{
+  "schema": "STAGE_Z_Z1R6_OFT_IMAGE_CARDINALITY_PARITY_STATIC_V1",
+  "status": "STAGE_Z_Z1R6_OFT_IMAGE_CARDINALITY_PARITY_STATIC_PASS",
+  "gate": "STAGE_Z_Z1R6_OFFICIAL_IMAGE_INPUT_CARDINALITY_PARITY_RECOVERY",
+  "authorization": {
+    "source": "user_direct_autonomous_continuation",
+    "instruction": "不用等待PI,自主往下推进",
+    "prior_pi_gate": "5399571767"
+  },
+  "append_only": true,
+  "claim_boundary": "CPU/static official image-cardinality parity and archived engineering-failure evidence only; no GPU/model load, simulator/env.step, scientific parent exposure, V_phys, Eval160, protected, F1, BRIDGE, or Paper-V2 scientific promotion.",
+  "root_cause_and_repair": {
+    "observed": "The fused OFT processor emitted 6 channels per image and the runner concatenated primary+wrist to 12 channels, while the loaded vision backbone still had num_images_in_input=1 and therefore used the single-image [3,3] split.",
+    "frozen_upstream_repair": "Call model.vision_backbone.set_num_images_in_input(2) for M1/OFT immediately after model construction, matching frozen upstream get_vla(cfg).",
+    "official_semantics": "Configure the fused backbone for the primary plus wrist image pair before get_vla_action concatenates the two 6-channel image tensors.",
+    "scientific_estimand_unchanged": true,
+    "checkpoint_bytes_unchanged": true,
+    "checkpoint_mutation_forbidden": true,
+    "M0_branch_unchanged": true
+  },
+  "upstream_authority": {
+    "repository": "moojink/openvla-oft",
+    "checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+    "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+    "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+    "file": "experiments/robot/openvla_utils.py",
+    "git_blob": "c14c9dcfd3d10bbf80191dd64120e8746e72bb6a",
+    "function": "get_vla",
+    "verified_semantics": [
+      "call vla.vision_backbone.set_num_images_in_input(cfg.num_images_in_input)",
+      "use cfg.num_images_in_input=2 for the official OFT LIBERO evaluator",
+      "keep fused image tensors grouped as 6 channels per image"
+    ]
+  },
+  "archived_failure_binding": {
+    "receipt": {
+      "path": "reports/STAGE_Z_Z1R5_M1_IMAGE_CHANNEL_RUNTIME_DISCREPANCY_libero_10_PRIMARY_V1.json",
+      "sha256": "55cc3e685f645299000d03f5fa3310adaf91b894f9e7c63fd8257ffacb344f98"
+    },
+    "log": {
+      "path": "reports/server_evidence/STAGE_Z_Z1R5_M1_IMAGE_CHANNEL_RUNTIME_DISCREPANCY_libero_10_PRIMARY.log",
+      "sha256": "b150aa552ca90c8cb35cc07efc83bf8e30299b634ce74625ab6d981bcd606640"
+    },
+    "classification": "ENGINEERING_INVALID_M1_RUNTIME_IMAGE_CHANNEL_CONTRACT_DISCREPANCY",
+    "boundary": "Model and auxiliary components loaded; 10 dummy clean env.step calls completed; predict path invoked but no action returned, no accepted action env.step, no branch replay, no task or physical outcome read"
+  },
+  "checkpoint_read_only_evidence": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10",
+    "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "files": 25,
+    "bytes": 15939159245,
+    "dataset_statistics_sha256": "dbe516987e8124416af39c32d3f39ce2137ccb4e282adc590bb4bcede09fb5e1",
+    "checkpoint_mutated": false
+  },
+  "local_runtime_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "commit": "4befce16931ef830f39e9865733fa20edfa9becf",
+    "tree": "b769850482afa48932ec586f1e3f1ea0b921dce0",
+    "runner": {
+      "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+      "git_blob": "5f09afe8a59c91930d490ca26de9e6a1e9895a96",
+      "sha256": "c05940bc0b653518dc5ca31fe754d743bade77002415671f192aae07bf80a8ff"
+    },
+    "test": {
+      "path": "tests/stage_z/test_stage_z_z1r1_optional_import.py",
+      "git_blob": "a82a144e9cc59eb8a57adbbba177e4d3f28c054d",
+      "sha256": "436b35c1b3a371384252e9137337bd2ebc00da356e05db431714f46cd4bea1bc"
+    },
+    "unchanged_launcher_git_blob": "6b14b3fa933660977451cc808a3d68ba06689723",
+    "unchanged_smoke_git_blob": "0f02de48e4368dbd786d8cec36a08f9ca5743e4c",
+    "unchanged_preflight_git_blob": "414acc538ee2d43d25460ea89a36677f899a4a9d"
+  },
+  "static_regression": {
+    "command": "D:\\Users\\anaconda\\python.exe -m pytest -q tests/repository tests/paper_v2 tests/stage_z/test_stage_z_preparation.py tests/stage_z/test_stage_z_z1r1_optional_import.py",
+    "result": "37 passed in 5.01s",
+    "py_compile": "PASS",
+    "git_diff_check": "PASS",
+    "new_assertion": "OFT fused backbone is configured for two input images before official action inference"
+  },
+  "runtime_counters": {
+    "gpu_workers": 0,
+    "model_inference": 0,
+    "simulator": 0,
+    "env_step": 0,
+    "physical_intervention": 0,
+    "pgd": 0,
+    "attacked_env_steps": 0,
+    "v_phys": 0,
+    "eval160": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0
+  },
+  "timestamp_utc": "2026-08-24T19:31:00Z"
+}
