@@ -59,25 +59,25 @@
         "free_memory_mib": 4732,
         "index": 0,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 100
+        "utilization_gpu_percent": 89
       },
       {
         "free_memory_mib": 4732,
         "index": 1,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 100
+        "utilization_gpu_percent": 90
       },
       {
         "free_memory_mib": 4732,
         "index": 2,
         "used_memory_mib": 76490,
-        "utilization_gpu_percent": 100
+        "utilization_gpu_percent": 86
       },
       {
         "free_memory_mib": 4732,
         "index": 3,
         "used_memory_mib": 76491,
-        "utilization_gpu_percent": 100
+        "utilization_gpu_percent": 72
       },
       {
         "free_memory_mib": 29578,
@@ -89,7 +89,7 @@
         "free_memory_mib": 29578,
         "index": 5,
         "used_memory_mib": 51644,
-        "utilization_gpu_percent": 96
+        "utilization_gpu_percent": 95
       },
       {
         "free_memory_mib": 29578,
@@ -150,5 +150,5 @@
   "next_legal_action": "RUN_Z1_ENGINEERING_CANARY_CELLS",
   "schema": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_V1",
   "status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS",
-  "timestamp_utc": "2026-08-24T11:34:55Z"
+  "timestamp_utc": "2026-08-24T11:36:53Z"
 }
