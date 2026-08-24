@@ -1,0 +1,7 @@
+Using LIBERO constants:
+  NUM_ACTIONS_CHUNK = 8
+  ACTION_DIM = 7
+  PROPRIO_DIM = 8
+  ACTION_PROPRIO_NORMALIZATION_TYPE = bounds_q99
+If needed, manually set the correct constants in `prismatic/vla/constants.py`!
+{"checkpoint_reads": 0, "cuda_visible_devices": "", "env_step": 0, "get_vla_action_module": "experiments.robot.openvla_utils", "get_vla_action_path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823/experiments/robot/openvla_utils.py", "launcher_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/launch_stage_z_z1_runtime.py", "model_construction": false, "oft_root": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823", "process_action_module": "experiments.robot.libero.run_libero_eval", "process_action_path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823/experiments/robot/libero/run_libero_eval.py", "protected_reads": 0, "runner_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", "runtime_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime", "runtime_src": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/src", "schema": "STAGE_Z_Z1R2_M1_ENTRYPOINT_AND_IMPORT_STATIC_SMOKE_V1", "scientific_parent_exposure": 0, "simulator_creation": false, "status": "STAGE_Z_Z1R2_M1_ENTRYPOINT_AND_IMPORT_STATIC_PASS"}
