@@ -1,0 +1,880 @@
+{
+  "candidate_universe": {
+    "fresh_rows_after_stage_x_exclusion": 171,
+    "fresh_rows_before_stage_x_exclusion": 210,
+    "path": "reports/STAGE_X_X1R_T1D0R_G10_IDENTITY_EXCLUSION_LEDGER_V1.json",
+    "rows": 1200,
+    "sha256": "eadad7440ee67b9aeff0bb73ceab7af3b27fc1cf1ccb6e4bebf953660f75a015"
+  },
+  "exclusions": {
+    "explicit_historical_q3_keys": [
+      "libero_10/task_04/state_30",
+      "libero_10/task_09/state_43",
+      "libero_goal/task_02/state_34",
+      "libero_object/task_04/state_35",
+      "libero_spatial/task_01/state_38"
+    ],
+    "protected_boundary": "Eval160/protected identities are never eligible; no protected identity is admitted by this source-universe join; counters remain zero",
+    "stage_x1r_scientific_parent_ledger": {
+      "path": "reports/STAGE_X_X1R_T1D0R2_PARENT_SEED_INVARIANCE_V1.json",
+      "rows": 39,
+      "sha256": "11d57fb28ad497be51f3627dcfdefe43b7bfebb782a31bcec5b8d3b9f922e61d"
+    }
+  },
+  "next_gate": "STAGE_X1R2_Q3R2_CLEAN_PREFIX_DETERMINISM",
+  "protected_boundary": {
+    "counters": {
+      "env_step_calls": 0,
+      "model_inference_calls": 0,
+      "pgd_calls": 0,
+      "physical_interventions": 0,
+      "protected_reads": 0,
+      "vphys_reads": 0
+    },
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "purpose": "Outcome-blind engineering qualification only; every selected identity is permanently excluded from all scientific populations.",
+  "runtime": {
+    "authority": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
+    "clean_rollout_authorized": false,
+    "env_step_authorized": false,
+    "model_inference_authorized": false,
+    "pgd_authorized": false
+  },
+  "schema": "STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1",
+  "selected": [
+    {
+      "canonical_parent_key": "libero_10/task_08/state_44",
+      "fixture_id": "Q3R2-LIBERO_10-01",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0019052b09a8f04508d0d39e28a05eb6c067be9aa666bafb39413795b83b3b37",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 44,
+      "suite": "libero_10",
+      "task_idx": 8
+    },
+    {
+      "canonical_parent_key": "libero_10/task_00/state_44",
+      "fixture_id": "Q3R2-LIBERO_10-02",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0ad33795ca5ffdb95b626e76f9c331ba4902a044354fc5795574143e1a0daa23",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 44,
+      "suite": "libero_10",
+      "task_idx": 0
+    },
+    {
+      "canonical_parent_key": "libero_10/task_06/state_20",
+      "fixture_id": "Q3R2-LIBERO_10-03",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0c516c0aebbe8d224952faac75e41dc81db5061d00349b6f96934f661e777ba6",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 20,
+      "suite": "libero_10",
+      "task_idx": 6
+    },
+    {
+      "canonical_parent_key": "libero_10/task_09/state_34",
+      "fixture_id": "Q3R2-LIBERO_10-04",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0e1f193d1bc58c817e67ece94d3e2847c1fc6c6d826fe88d97e66726a3e08e0a",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 34,
+      "suite": "libero_10",
+      "task_idx": 9
+    },
+    {
+      "canonical_parent_key": "libero_10/task_06/state_38",
+      "fixture_id": "Q3R2-LIBERO_10-05",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "13bb07ae8612ff2ec9549217a6ba0ebd0b9496c0adb638f92059df1ba0026f36",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 38,
+      "suite": "libero_10",
+      "task_idx": 6
+    },
+    {
+      "canonical_parent_key": "libero_10/task_00/state_28",
+      "fixture_id": "Q3R2-LIBERO_10-06",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "15ab8da9ffd00d4bb9632b65085b5d613eb9ea7801fad637caf263cbff84cc92",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 28,
+      "suite": "libero_10",
+      "task_idx": 0
+    },
+    {
+      "canonical_parent_key": "libero_10/task_07/state_36",
+      "fixture_id": "Q3R2-LIBERO_10-07",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "1aa2f8d662bc99dd334c412e685fe78fc2de394640b0c8b5835e53e4c37decc7",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 36,
+      "suite": "libero_10",
+      "task_idx": 7
+    },
+    {
+      "canonical_parent_key": "libero_10/task_08/state_39",
+      "fixture_id": "Q3R2-LIBERO_10-08",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "23e92cdf4be3c54a916714dcf5fea21f28191ac6bf1c5a9c67b3588479d7ad74",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 39,
+      "suite": "libero_10",
+      "task_idx": 8
+    },
+    {
+      "canonical_parent_key": "libero_10/task_03/state_31",
+      "fixture_id": "Q3R2-LIBERO_10-09",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "35fab67b5459f4816f9baa0b780f6f9fe26190dadf203fc5cfaf1c849145046d",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 31,
+      "suite": "libero_10",
+      "task_idx": 3
+    },
+    {
+      "canonical_parent_key": "libero_10/task_02/state_34",
+      "fixture_id": "Q3R2-LIBERO_10-10",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "4200b5a94e1d014528b5f5abd92ee30d0c3e5ec474da352258671d54c7c1d08f",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 34,
+      "suite": "libero_10",
+      "task_idx": 2
+    },
+    {
+      "canonical_parent_key": "libero_10/task_02/state_45",
+      "fixture_id": "Q3R2-LIBERO_10-11",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "4d2353f8b41fb1a66494887c8a435dd6a265c80198b9e89128b9f5c27cb470c8",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 45,
+      "suite": "libero_10",
+      "task_idx": 2
+    },
+    {
+      "canonical_parent_key": "libero_10/task_09/state_29",
+      "fixture_id": "Q3R2-LIBERO_10-12",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "4ecafd2aa9b54e2866bf337dc90a590df1593f981e5e66c4be81c4dc20068669",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 29,
+      "suite": "libero_10",
+      "task_idx": 9
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_37",
+      "fixture_id": "Q3R2-LIBERO_GOAL-01",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0d3850f8234210560eb2022894a71bb0716a36e552416ab710074c9bb9cd1a5f",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 37,
+      "suite": "libero_goal",
+      "task_idx": 2
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_00/state_29",
+      "fixture_id": "Q3R2-LIBERO_GOAL-02",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "1d4b056ea5366a8f9e5dce1a681ef8975092efebda28a2877b2400f9dbfb84d3",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 29,
+      "suite": "libero_goal",
+      "task_idx": 0
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_07/state_41",
+      "fixture_id": "Q3R2-LIBERO_GOAL-03",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "2177bdb17386e1f81efde26232992a6b0031c8eee14b39d588c44bbcdb95ce8f",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 41,
+      "suite": "libero_goal",
+      "task_idx": 7
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_07/state_28",
+      "fixture_id": "Q3R2-LIBERO_GOAL-04",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "2ce3e2243f5dbf9850d3ca9035ec1d6b9f45289ec232f37dc86c61dcf58ea1bf",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 28,
+      "suite": "libero_goal",
+      "task_idx": 7
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_03/state_38",
+      "fixture_id": "Q3R2-LIBERO_GOAL-05",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "4c4ee8380414d6cafd921dc567529dd8c86174fcc20ce55f24a310accffd1763",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 38,
+      "suite": "libero_goal",
+      "task_idx": 3
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_04/state_39",
+      "fixture_id": "Q3R2-LIBERO_GOAL-06",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "5a26c2d9eb77ef775a9357d066d5f3e1bef7ad69f2b0039e9331d178689c08d5",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 39,
+      "suite": "libero_goal",
+      "task_idx": 4
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_07/state_39",
+      "fixture_id": "Q3R2-LIBERO_GOAL-07",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "67bf95d4d09dde8de4cddb68f4c40304c5d4e5d9cac7d1397d1ff5b519c8d631",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 39,
+      "suite": "libero_goal",
+      "task_idx": 7
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_04/state_43",
+      "fixture_id": "Q3R2-LIBERO_GOAL-08",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "69133197d79f5876d7c39f9393d063fde5315b616b16fe257fcd5bfea329425c",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 43,
+      "suite": "libero_goal",
+      "task_idx": 4
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_07/state_43",
+      "fixture_id": "Q3R2-LIBERO_GOAL-09",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "a20fa7370835e41ba39b762c4f7797880c1e4437a2d3507d4c458fedadca4e33",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 43,
+      "suite": "libero_goal",
+      "task_idx": 7
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_08/state_32",
+      "fixture_id": "Q3R2-LIBERO_GOAL-10",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "d46838e214ab2df97ff7bde444a8cfad564cc64dcebbe8b0db32837e1a3aa8e2",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 32,
+      "suite": "libero_goal",
+      "task_idx": 8
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_05/state_21",
+      "fixture_id": "Q3R2-LIBERO_GOAL-11",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "e0a3030b31a592d3ddf915f0bfe22d2ddd9f63caae8d16fccee31d3ff11457b9",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 21,
+      "suite": "libero_goal",
+      "task_idx": 5
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_09/state_24",
+      "fixture_id": "Q3R2-LIBERO_GOAL-12",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "f35d11e0da54bbc81d1574afbce53cbd198bcc1d8718d846104bdf6b369ff686",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 24,
+      "suite": "libero_goal",
+      "task_idx": 9
+    },
+    {
+      "canonical_parent_key": "libero_object/task_01/state_34",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-01",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0286b0ed2735578626d00f526ccc56f8d55786ea067cb0806ae095874443008d",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 34,
+      "suite": "libero_object",
+      "task_idx": 1
+    },
+    {
+      "canonical_parent_key": "libero_object/task_00/state_36",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-02",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "033034fc0d555816cbb69336186bf1ce7c6dd9f10961e19b21657eae7f866e78",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 36,
+      "suite": "libero_object",
+      "task_idx": 0
+    },
+    {
+      "canonical_parent_key": "libero_object/task_05/state_34",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-03",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "06c778ee249213d60f52918c1ee70e80d3670e8b2f694994b17aaa06cbbba3db",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 34,
+      "suite": "libero_object",
+      "task_idx": 5
+    },
+    {
+      "canonical_parent_key": "libero_object/task_08/state_46",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-04",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0a08cef672ac6f6bd0369489464cc2d052b0aa2ec091e8f01c6dacb266e1a603",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 46,
+      "suite": "libero_object",
+      "task_idx": 8
+    },
+    {
+      "canonical_parent_key": "libero_object/task_00/state_44",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-05",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0e113d38bc939f6c19d975ced2abaf42a8ad09377c0554c3842c029f43444c04",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 44,
+      "suite": "libero_object",
+      "task_idx": 0
+    },
+    {
+      "canonical_parent_key": "libero_object/task_06/state_45",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-06",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0eaf0436c0e2da4e22144c706f44034b4aad22152a5aa36837baba71195e20f1",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 45,
+      "suite": "libero_object",
+      "task_idx": 6
+    },
+    {
+      "canonical_parent_key": "libero_object/task_06/state_24",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-07",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0f3b8de3cc57cf68026a811dbeeade0c5124872f6b4ff1263ce209f2a0608aed",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 24,
+      "suite": "libero_object",
+      "task_idx": 6
+    },
+    {
+      "canonical_parent_key": "libero_object/task_08/state_37",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-08",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "102981b54c480681726832f4a292fcd43979e4f71ceebf698f0b72c85a4b334f",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 37,
+      "suite": "libero_object",
+      "task_idx": 8
+    },
+    {
+      "canonical_parent_key": "libero_object/task_04/state_46",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-09",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "12427e56204d5a49be6e107e1c5954e1c66848a8be3eb1a7a2e9f8fa67716450",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 46,
+      "suite": "libero_object",
+      "task_idx": 4
+    },
+    {
+      "canonical_parent_key": "libero_object/task_07/state_34",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-10",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "157172e28c34a825e572215d0ba08b4ec7affc6c9488f060b43333de2d2894a9",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 34,
+      "suite": "libero_object",
+      "task_idx": 7
+    },
+    {
+      "canonical_parent_key": "libero_object/task_05/state_38",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-11",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "1e01e322d442c86ee847f214fab206a15911bccb7b94ad78b2b076f3f2318200",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 38,
+      "suite": "libero_object",
+      "task_idx": 5
+    },
+    {
+      "canonical_parent_key": "libero_object/task_05/state_22",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-12",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "21bea1135dc986bcd8aee86c0fc5e91157b40825323f6ca37e5bbdcca050fb22",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 22,
+      "suite": "libero_object",
+      "task_idx": 5
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_09/state_29",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-01",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "011c2537d4c475dcebcaeb8ee5f7de0af25fedcdd3945698b0e0430441cfe5ba",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 29,
+      "suite": "libero_spatial",
+      "task_idx": 9
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_04/state_34",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-02",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "044dafa1583ba39402b20c68433232235326a0602a0bf3a4ca21f00166abcfad",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 34,
+      "suite": "libero_spatial",
+      "task_idx": 4
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_00/state_38",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-03",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "078d0c5c939acab6c599229207e86de39104e52e6950412370cc2b205dfb4cd8",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 38,
+      "suite": "libero_spatial",
+      "task_idx": 0
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_08/state_35",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-04",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "07bfed4b9038b1db622f77f5a7c0cde97d903149e783d2acb61e015d4737dd02",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 35,
+      "suite": "libero_spatial",
+      "task_idx": 8
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_07/state_41",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-05",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "0a57c072de92aa6ac08a201714c70aef92d47f39273f63aeb9936f9c0252c9e5",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 41,
+      "suite": "libero_spatial",
+      "task_idx": 7
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_07/state_46",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-06",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "1597d27f0066cf4ea432c6f7dd7f6ea4929424f84b24666fa0263b629eaaf34d",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 46,
+      "suite": "libero_spatial",
+      "task_idx": 7
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_05/state_25",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-07",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "1ab09417b8591ae16c6c70a2e7e52a2251d490db0a35e79bfb5e5a19efe5158c",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 25,
+      "suite": "libero_spatial",
+      "task_idx": 5
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_06/state_37",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-08",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "1d73e0c1792527c9cea436b64b386f004a18af021292df85855b952f08a6a43a",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 37,
+      "suite": "libero_spatial",
+      "task_idx": 6
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_23",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-09",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "1ecb8385136191c81f7ecd21a97468377a55101bd5640113dcd072cf6849a978",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 23,
+      "suite": "libero_spatial",
+      "task_idx": 2
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_07/state_39",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-10",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "2753138476404428d8ea606f2c3959cfffd349249d531d97a380856635d7b1a1",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 39,
+      "suite": "libero_spatial",
+      "task_idx": 7
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_03/state_20",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-11",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "2c5b0b249ac0c3d3acaa81a6703d053f560ff9dd7e0975b7ca0195ee09fed5e6",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 20,
+      "suite": "libero_spatial",
+      "task_idx": 3
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_03/state_37",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-12",
+      "outcome_read": false,
+      "permanent_exclusion": true,
+      "rank_sha256": "2e2c1e9f65145a521ee63539a240f7514111e8def01d847f68e1a70a5b5a7fe5",
+      "scientific_use": false,
+      "source_row": {
+        "excluded_union": false,
+        "fresh_after_exclusion": true,
+        "prior_clean_attempt": false,
+        "prior_exposure": false
+      },
+      "state_id": 37,
+      "suite": "libero_spatial",
+      "task_idx": 3
+    }
+  ],
+  "selection": {
+    "candidate_order": "sha256(salt|canonical_parent_key), then canonical_parent_key",
+    "per_suite_count": 12,
+    "salt": "STAGE_X_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_V1_20260820",
+    "selected_count": 48
+  },
+  "selection_inputs": {
+    "attack_outcomes": false,
+    "clean_outcomes": false,
+    "emit_outcomes": false,
+    "manual_outcomes": false,
+    "protected_data": false,
+    "student_scores": false,
+    "v_phys": false
+  },
+  "status": "STAGE_X1R2_Q3R2_ENGINEERING_FIXTURE_POOL_FROZEN"
+}

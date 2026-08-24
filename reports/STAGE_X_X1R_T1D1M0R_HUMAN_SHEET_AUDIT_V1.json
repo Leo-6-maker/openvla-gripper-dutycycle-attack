@@ -1,0 +1,93 @@
+{
+  "ancestry": {
+    "pr130_head": "f4da1c6683860757cc9775b573a158dd89505b15",
+    "pr131_head": "6dbf1ee287660a5f70ee90a0680e7c859fa155a8",
+    "pr131_tree": "e79c1aa77f3eab3a45e1c7e513e1239095c4c69c"
+  },
+  "artifact_rows": [
+    {
+      "kind": "repo",
+      "path": "reports/STAGE_X_X1R_T1D1M0_MANUAL_REVIEW_MAPPING_V1.json",
+      "sha256": "3d7f59a736cc2c7bcb5ecdc49e9e57a7e8b547c9e7554251e88158017366f0fe"
+    },
+    {
+      "kind": "repo",
+      "path": "reports/STAGE_X_X1R_T1D1M0_REVIEW_RENDER_MANIFEST_V1.json",
+      "sha256": "407bbd9aaf3dad12665772be5916e69008d88549c807e993135762249e037e6d"
+    },
+    {
+      "kind": "repo",
+      "path": "reports/STAGE_X_X1R_T1D1M0_SHA256SUMS.txt",
+      "sha256": "26026321baa8d9dd3e54af29b472855ad56d287c63bc54f9fc9977e49d1371b9"
+    },
+    {
+      "kind": "repo",
+      "path": "reports/STAGE_X_X1R_T1D1M0_ROOT_SEAL.json",
+      "sha256": "0722fa2dd1fc66db2b6744346aa1a407953d0f40f095fe1dbabf9213a5b31f40"
+    },
+    {
+      "kind": "repo",
+      "path": "reports/STAGE_X_X1R_T1D1M0R_HUMAN_REVIEW_SHEET_V1.csv",
+      "sha256": "9c42b3d6486f2082c414ff799d9efe2f2633e797d2b92e1f45fb23426470a7b2"
+    },
+    {
+      "kind": "repo",
+      "path": "reports/STAGE_X_X1R_T1D1M0R_HUMAN_REVIEW_SHEET_V1.json",
+      "sha256": "9742206be7e948a9e5df7903edb1c5a071819654e983fe950817dc8bed163eff"
+    },
+    {
+      "kind": "repo",
+      "path": "docs/handoffs/STAGE_X_X1R_T1D1M0R_OWNER_REVIEW_INSTRUCTIONS_20260818.md",
+      "sha256": "ab5bb8441eac4d64036ae9590c25a6b78c8a4c65dfceba6fa5134115ddb03d4c"
+    }
+  ],
+  "d1m0_bindings": {
+    "candidate_ledger_sha256": "5f1f036b47b1c9a8c1bafe7a400b6be9269cd3e67587691018005c824dc8d89e",
+    "d1m0_artifacts_byte_identical": true,
+    "mapping_sha256": "3d7f59a736cc2c7bcb5ecdc49e9e57a7e8b547c9e7554251e88158017366f0fe",
+    "review_order_digest": "30a73b0e4ab13e149d8c991906fc9067844797e39113201e9e76a10a8be40d67"
+  },
+  "human_fields": [
+    "review_id",
+    "task_instruction",
+    "review_clip_path",
+    "review_clip_sha256",
+    "review_frame_strip_path",
+    "review_frame_strip_sha256",
+    "contact_label",
+    "reason_code",
+    "reviewer",
+    "review_timestamp",
+    "optional_short_note"
+  ],
+  "next_gate": "OWNER_MANUAL_CONTACT_LABELS_REQUIRED",
+  "projection": {
+    "candidate_count": 14,
+    "clips_rerendered": false,
+    "order_unchanged": true,
+    "owner_labels_present": false,
+    "private_mapping_not_copied": true,
+    "raw_videos_changed": false,
+    "review_copy_source": "frozen render manifest",
+    "task_instruction_source": "frozen private mapping"
+  },
+  "protected_boundary": {
+    "attack_authorized": false,
+    "env_steps": 0,
+    "eval160": "UNREAD",
+    "model_inference": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "student_inference": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_X_X1R_T1D1M0R_HUMAN_SHEET_AUDIT_V1",
+  "source_before_evidence_outputs": {
+    "branch": "codex/stage-x-x1r-t1d1m0r-human-sheet-repair-20260818",
+    "commit": "8e02baf5261d27cf0e361102aea35d46456a6489",
+    "status_porcelain": "",
+    "tree": "f46e4fa701abc7776ca4db095f42143457d2d0ba"
+  },
+  "status": "STAGE_X_X1R_T1D1M0R_HUMAN_SHEET_PASS"
+}

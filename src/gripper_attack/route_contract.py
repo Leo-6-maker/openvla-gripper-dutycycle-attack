@@ -23,10 +23,14 @@ TARGET_TOKEN_OBJECTIVES = {
     "autoregressive_prefix_gripper_target_token_cw_v1",
     "autoregressive_prefix_gripper_target_token_logratio_v2",
     "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+    # F1-B keeps the secondary 31745 binding for route validation, but the
+    # optimization target is the checkpoint-local native OPEN class.
+    "autoregressive_prefix_gripper_native_open_logratio_v4",
+    "autoregressive_prefix_gripper_native_open_logratio_arm_v5",
 }
 
-EXPECTED_M3_TARGET_TOKEN_ID = 31744
-EXPECTED_M3_TARGET_EXECUTION_CLASS = "CLIP_MEDIATED_OPEN"
+EXPECTED_M3_TARGET_TOKEN_ID = 31745  # FIXED
+EXPECTED_M3_TARGET_EXECUTION_CLASS = "NATIVE_OPEN"  # FIXED
 
 
 class RouteContractError(RuntimeError):

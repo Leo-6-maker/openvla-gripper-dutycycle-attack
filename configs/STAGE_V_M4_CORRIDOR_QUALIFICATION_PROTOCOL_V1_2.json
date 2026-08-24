@@ -1,0 +1,68 @@
+{
+  "schema": "STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1",
+  "version": "M4-CORRIDOR-QUALIFICATION-V1.2-CLEAN-FAILURE-RECORDING",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "purpose": "Clean-only outcome-blind qualification of the exact 24-probe M4 corridor before formal matched-action counterfactual execution, recording registered clean engineering failures as non-qualifying receipts.",
+  "predecessor": {
+    "v1_3_4_immutable": true,
+    "m3_5_v1_4_status": "PASS",
+    "v7_status": "PASS_FORMAL_PARENT_QUALIFICATION",
+    "formal_m4_status": "HOLD_PROBE_CORRIDOR_22_OF_24",
+    "predecessor_protocol_path": "configs/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1_1.json",
+    "predecessor_protocol_sha256": "2784ab9b8a54d73a90da89442594ba29084a0a4a9a2984c7e7b3f4d807f90349"
+  },
+  "source_binding": {
+    "runtime_commit": "61080711b8d9976ca20f58f3fc0dbc2834309d2e",
+    "runtime_tree": "2a73adbeb2f9609dec70663f0550c33bddf0963e"
+  },
+  "inputs": {
+    "v7_formal_receipt_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_QUALIFICATION_PASS_V1_20260812T113000Z/V7_FORMAL_QUALIFICATION_PASS_RECEIPT.json",
+    "v7_formal_receipt_sha256": "36af16ea9c79a7a6a6537d5be2de3b18a69fed2cce523b05c368009c99709118",
+    "formal_parent_split_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_V7_FORMAL_PARENT_SPLIT_V1_20260812T110000Z/STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V1.json",
+    "formal_parent_split_sha256": "0811bb0890756a9e5078f8282dd0f049991e17f8e4b3c0b55ee1f19c88952a9f",
+    "exposure_union_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V5_POST_M35_20260811T162000Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V5.json",
+    "exposure_union_sha256": "2ef448f172dc2c8fa2304a6772a7024d76391ed2f6cbca1fc8e79b8a6425dd5a",
+    "outcomes_read": false,
+    "old_artifacts_reused": false,
+    "source_artifacts_modified": false
+  },
+  "qualification": {
+    "candidate_parent_count": 40,
+    "clean_replicates": ["A", "B"],
+    "minimum_corridor_candidates": 24,
+    "probe_count": 24,
+    "h_phys": 10,
+    "minimum_remaining_horizon": 20,
+    "selection_version": "STAGE_V_M3_5_CORRIDOR_QUANTILES_V1",
+    "selection_outcomes_read": false,
+    "parent_selection_rule": "retain only parents with both independent clean-only replicates PASS and corridor_candidate_count >= 24; clean failure and corridor ineligibility are recorded as non-qualifying, with no intervention outcome read"
+  },
+  "operation": {
+    "clean_only": true,
+    "intervention_executed": false,
+    "outcomes_read": false,
+    "fresh_render_primary_consumption": false,
+    "labels_generated": false,
+    "selection_outcomes_read": false,
+    "failure_policy": "record clean failure or corridor ineligibility; do not treat as negative vulnerability"
+  },
+  "resource_contract": {
+    "resource_contract_version": "STAGE_V_RESOURCE_CONTRACT_V2",
+    "resource_mode": "MODE_B_THROUGHPUT_SCIENCE",
+    "admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7],
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "foreign_workload_allowed": true,
+    "foreign_process_interference": false,
+    "partial_fleet_allowed": true
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "failure_action": "seal_classify_handoff_stop"
+}

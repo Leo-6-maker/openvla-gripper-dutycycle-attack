@@ -1,0 +1,64 @@
+{
+  "schema": "STAGE_V_PRIMARY_DATA_FIREWALL_OVERLAP_AUDIT_V2_1",
+  "status": "HOLD_PRIMARY_FIREWALL_CLOSURE_CURRENT_PRIMARY_LINE_NOT_STARTED",
+  "purpose": "Compact pointer to the server-side read-only identity firewall audit for the exact final 40-parent candidate.",
+  "architecture_freeze": {
+    "path": "configs/STAGE_V_SCIENTIFIC_ARCHITECTURE_FREEZE_V1.json",
+    "sha256": "377912a916bd155f2217084ba7385d42b5eae1803c48e0497cd8982a51e1571b",
+    "m4_outcomes_read": false
+  },
+  "final_parent_manifest": {
+    "count": 40,
+    "unique": true,
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_CANDIDATE_V2_20260812T164812Z/STAGE_V_M4_FORMAL_PARENT_MANIFEST_V4.json",
+    "sha256": "237c23eb639e96798decb6cad05206f1bfcb5bd3d43f3dd0c25a051c4ce9a021"
+  },
+  "final_split": {
+    "status": "FROZEN",
+    "counts": {
+      "TRAIN": 24,
+      "VAL": 8,
+      "TEST": 8
+    },
+    "counts_by_suite": {
+      "libero_10": {"TRAIN": 6, "VAL": 2, "TEST": 2},
+      "libero_goal": {"TRAIN": 6, "VAL": 2, "TEST": 2},
+      "libero_object": {"TRAIN": 6, "VAL": 2, "TEST": 2},
+      "libero_spatial": {"TRAIN": 6, "VAL": 2, "TEST": 2}
+    },
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_CANDIDATE_V2_20260812T164812Z/STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V2.json",
+    "sha256": "a2c3efc753a6a6762570d49c40d1fe65d97cdec80c8b497661426bfea4d849a9"
+  },
+  "primary_identity_firewall": {
+    "zero_overlap_manifest_count": 8,
+    "zero_overlap_groups": {
+      "FIT670": {"manifest_counts": [670, 670], "overlap": 0},
+      "G1_episode": {"manifest_counts": [445, 81, 144], "overlap": 0},
+      "G1_task": {"manifest_counts": [498, 91, 81], "overlap": 0}
+    },
+    "historical_g10": {
+      "registry_count": 1200,
+      "final_parent_overlap": 40,
+      "result": "IDENTITY_OVERLAP_QUARANTINED_OUTCOMES_UNREAD",
+      "primary_use": false
+    }
+  },
+  "current_primary_teacher_student_line": {
+    "status": "NOT_STARTED_OR_NOT_CONSUMABLE",
+    "formal_training_authorized": false,
+    "formal_inference_authorized": false,
+    "consumable_manifests_bound": false
+  },
+  "server_audit": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_DATA_FIREWALL_OVERLAP_AUDIT_V2_20260813T000000Z/STAGE_V_PRIMARY_DATA_FIREWALL_OVERLAP_AUDIT_V2_1.json",
+    "sha256": "a9f8ba607b0d90a204d25f27cfe6d8b72075ad485523023da7bb33bc5fda31ca"
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "source_artifacts_modified": false,
+  "next_action": "Keep historical Teacher/Student artifacts non-consumable; close the exact-probe HOLD and then seal a fresh clean-only primary line before any attack evaluation."
+}

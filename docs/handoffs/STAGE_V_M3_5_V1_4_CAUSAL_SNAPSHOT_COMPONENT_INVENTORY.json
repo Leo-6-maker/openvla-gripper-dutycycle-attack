@@ -1,0 +1,135 @@
+{
+  "schema": "STAGE_V_CAUSAL_SNAPSHOT_COMPONENT_INVENTORY_V1",
+  "status": "DESIGN_ONLY_HOLD",
+  "runtime_authorization_eligible": false,
+  "unknown_component_count": 0,
+  "implementation_unverified_component_count": 5,
+  "source_binding": {
+    "prospective_design_commit": "f7de0ef36ca96bbf2c10b13cc757db85531c638a",
+    "prospective_design_tree": "df25b59f3f7dec5c78fedc7038260b2d3cde1f28",
+    "sealed_predecessor_runtime_commit": "d104713027a82eeb858ba9036200d7ab010959cc",
+    "sealed_predecessor_runtime_tree": "3f22ea412975f294b59bc569ef9fb896eff8d410",
+    "sealed_predecessor_protocol_sha256": "2e3364e5e86894ff7b5b9300dbc03875d1e9b5acb10f923ec798b4d06babba41"
+  },
+  "disposition_rules": [
+    "CAPTURE",
+    "PROVED_STATELESS",
+    "DERIVED_FROM_CAPTURED_STATE",
+    "IRRELEVANT_TO_PRIMARY_WINDOW"
+  ],
+  "components": [
+    {
+      "component": "simulator.full_state",
+      "disposition": "CAPTURE",
+      "implementation_status": "IMPLEMENTED_CPU_SERIALIZER_NOT_RUNTIME_BOUND",
+      "hard_gate": true,
+      "evidence": "V1.3.4 captured only flattened get_sim_state(); V1.4 serializer stores exact array bytes.",
+      "evidence_refs": ["scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py:408", "src/gripper_attack/stage_v_causal_observation_snapshot.py"]
+    },
+    {
+      "component": "environment.wrapper_counters_and_done_state",
+      "disposition": "CAPTURE",
+      "implementation_status": "IMPLEMENTED_CPU_CAPTURE_NOT_RUNTIME_BOUND",
+      "hard_gate": true,
+      "evidence": "set_init_state writes only simulator state; timestep, cur_time, done, horizon and control timing remain wrapper state.",
+      "evidence_refs": ["server:libero/libero/envs/env_wrapper.py:a782fb76c9792268d28979474fe72849e1e98ada49c8e997a65359a8d6b6acd0", "server:robosuite/environments/base.py:3d55a1d8b0350478b7e7e8d1c7a1250c8f173b69a67016ecb9e65c6965e741f6"]
+    },
+    {
+      "component": "environment.observable_cache_delay_and_history",
+      "disposition": "CAPTURE",
+      "implementation_status": "IMPLEMENTED_CPU_CAPTURE_NOT_RUNTIME_BOUND",
+      "hard_gate": true,
+      "evidence": "Observable update/reset maintains sampling timers, delay, sampled flag and current value outside the MuJoCo flat state.",
+      "evidence_refs": ["server:robosuite/utils/observables.py:0368fbfca3b732915819f9618a30aa38b559cc343a45fc15fab8ef0d5e8f7446"]
+    },
+    {
+      "component": "robot.controller_goals_interpolators_and_buffers",
+      "disposition": "CAPTURE",
+      "implementation_status": "IMPLEMENTED_CPU_CAPTURE_NOT_RUNTIME_BOUND",
+      "hard_gate": true,
+      "evidence": "OSC controller goals/interpolators and SingleArm recent buffers are mutable and not restored by set_init_state.",
+      "evidence_refs": ["server:robosuite/controllers/osc.py:cfa62a0e719bc53ef0c701efa66f7b3e2272d4fca2150ec73c05bb145eba85cb", "server:robosuite/robots/single_arm.py:d233b1b785e8f88ffb5df1357666b02a397ae930ce98181b079e0496ab35fc57"]
+    },
+    {
+      "component": "runtime_rng.python_numpy_torch",
+      "disposition": "CAPTURE",
+      "implementation_status": "IMPLEMENTED_CPU_CAPTURE_NOT_RUNTIME_BOUND",
+      "hard_gate": true,
+      "evidence": "V1.3.4 binds env.seed(0) but not Python/NumPy/Torch RNG states; V1.4 captures states, not only the seed.",
+      "evidence_refs": ["scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py:298", "src/gripper_attack/stage_v_causal_observation_snapshot.py:capture_rng_state"]
+    },
+    {
+      "component": "canonical_raw_observation",
+      "disposition": "CAPTURE",
+      "implementation_status": "IMPLEMENTED_CPU_SERIALIZER_NOT_RUNTIME_BOUND",
+      "hard_gate": true,
+      "evidence": "Raw uncompressed observation arrays are stored as exact sidecar bytes; PNG is evidence-only.",
+      "evidence_refs": ["src/gripper_attack/stage_v_causal_observation_snapshot.py", "scripts/detector_v5/run_stage_v_canonical_clean.py:373"]
+    },
+    {
+      "component": "canonical_policy_rgb_224",
+      "disposition": "CAPTURE",
+      "implementation_status": "IMPLEMENTED_CPU_SERIALIZER_NOT_RUNTIME_BOUND",
+      "hard_gate": true,
+      "evidence": "Exact processed policy image bytes and descriptor are part of the frozen package; fresh render is not consumed.",
+      "evidence_refs": ["scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py:475", "src/gripper_attack/stage_v_causal_observation_snapshot.py"]
+    },
+    {
+      "component": "processed_policy_inputs",
+      "disposition": "CAPTURE",
+      "implementation_status": "IMPLEMENTED_CPU_SERIALIZER_NOT_RUNTIME_BOUND",
+      "hard_gate": true,
+      "evidence": "Actual model input tensors, including the EOS-appended input_ids/attention mask captured by the pinned wrapper, are byte-bound.",
+      "evidence_refs": ["scripts/detector_v5/run_stage_v_canonical_clean.py:139", "server:official_libero_protocol.py:da024de0243cc12926c90f2f53af4b70e36e9ff1c92cd691c2bd1e96d162ecfc"]
+    },
+    {
+      "component": "prompt_and_decode_config",
+      "disposition": "DERIVED_FROM_CAPTURED_STATE",
+      "implementation_status": "IMPLEMENTED_CPU_CAPTURE_NOT_RUNTIME_BOUND",
+      "hard_gate": true,
+      "evidence": "Prompt, center-crop, unnorm_key and do_sample=false are deterministic metadata of the canonical call and must be bound.",
+      "evidence_refs": ["scripts/detector_v5/run_stage_v_m3_5_intervention_parent.py:321", "server:official_openvla_adapter.py:38d2c272123002a6a6caaabefd0ce96f425ff5e06186199b3a2c4a96b05d0cf4"]
+    },
+    {
+      "component": "observation_history_frame_stack",
+      "disposition": "PROVED_STATELESS",
+      "implementation_status": "DESIGN_AUDITED",
+      "hard_gate": true,
+      "evidence": "Pinned OpenVLA adapter consumes one canonical image and one prompt per call; no recurrent/history input is exposed. Environment history is still captured separately.",
+      "evidence_refs": ["server:official_openvla_adapter.py:38d2c272123002a6a6caaabefd0ce96f425ff5e06186199b3a2c4a96b05d0cf4", "server:openvla.py:5a54e9f2f7975b7e8fa8676ddfb6ce3320b397f0bdd3632167a7044dbeb9b47b"]
+    },
+    {
+      "component": "model_step_generation_state",
+      "disposition": "PROVED_STATELESS",
+      "implementation_status": "DESIGN_AUDITED_RECEIPT_PENDING_RUNTIME_REBIND",
+      "hard_gate": true,
+      "evidence": "model.eval(), do_sample=false and a fresh generate call are used per policy step; no persistent KV cache crosses calls in the pinned path.",
+      "evidence_refs": ["scripts/detector_v5/run_stage_v_canonical_clean.py:122", "server:openvla.py:5a54e9f2f7975b7e8fa8676ddfb6ce3320b397f0bdd3632167a7044dbeb9b47b", "server:modeling_prismatic.py:9ce241c5ca09a4bed73654d0ca509baaff0fc5887d0bdd62e360ca8254f7794a"]
+    },
+    {
+      "component": "official_action_adapter_mutable_state",
+      "disposition": "PROVED_STATELESS",
+      "implementation_status": "DESIGN_AUDITED",
+      "hard_gate": true,
+      "evidence": "Adapter stores static token semantics and restores the temporary generate hook; no per-step cache/counter participates in primary replay.",
+      "evidence_refs": ["server:official_openvla_adapter.py:38d2c272123002a6a6caaabefd0ce96f425ff5e06186199b3a2c4a96b05d0cf4"]
+    },
+    {
+      "component": "canonical_clean_reference_action_window",
+      "disposition": "CAPTURE",
+      "implementation_status": "IMPLEMENTED_CPU_VALIDATOR_NOT_RUNTIME_BOUND",
+      "hard_gate": true,
+      "evidence": "V1.4 validates a contiguous raw/env action window and constructs CONTROL or gripper-only OPEN actions without policy decode.",
+      "evidence_refs": ["src/gripper_attack/stage_v_causal_observation_snapshot.py:reference_action_window", "src/gripper_attack/stage_v_causal_observation_snapshot.py:matched_action"]
+    },
+    {
+      "component": "fresh_renderer_output",
+      "disposition": "IRRELEVANT_TO_PRIMARY_WINDOW",
+      "implementation_status": "DESCRIPTIVE_ONLY_BY_PROTOCOL",
+      "hard_gate": false,
+      "evidence": "Fresh render may be hashed for divergence diagnostics but cannot supply primary actions, treatment, or labels.",
+      "evidence_refs": ["V1.4 goal pasted-text-1.txt:224-255"]
+    }
+  ],
+  "next_gate": "Complete runtime binding and independent audit of every CAPTURE disposition before authorization; do not launch Gate A from this design-only inventory."
+}

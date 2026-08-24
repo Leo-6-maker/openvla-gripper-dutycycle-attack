@@ -1,0 +1,49 @@
+{
+  "checks": {
+    "arm_isolation_hard_gate": true,
+    "arm_rotation_order_exact": true,
+    "cohort_protocol_owner_hashes": true,
+    "env_step_exposure": true,
+    "full_episode_outcome_semantics": true,
+    "m001_immutable": true,
+    "native_open_authority": true,
+    "policy_action_exposure": true,
+    "processor_epsilon_projection": true,
+    "protected_boundary": true,
+    "rand_no_gradient_accounting": true,
+    "seed_contract_exact": true,
+    "strict_route_no_fallback": true,
+    "t5_h10_intermediate_window": true,
+    "update_feature_tuple_contract": true
+  },
+  "cohort_sha256": "7b6d4d52ccf2f4e11ba241d5a8f4290863b786ffe33882c886d96edc28825423",
+  "errors": [],
+  "m001": {
+    "hold_report_sha256": "147f61f8ebdeb867e4c117a79652f6ded348f023bb81ab61ea19071aa4e820d4",
+    "status": "STAGE_X_X1R_PRIMARY_MATRIX_HOLD_CANARY_RUNTIME_INVALID"
+  },
+  "next_gate": "STAGE_X_X1R_G3R_M002_REPAIR_CANARY_REQUIRED",
+  "owner_submission_sha256": "76c835c292c76190b2a764da7be746a568697deea1cb4009d63e306fdc610c2c",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "eval160_reads": 0,
+    "model_inference": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "protocol_sha256": "37701fd8f4da1d7fc67d7c4adc776b957975a5735c66557c2385dbf21da5dea8",
+  "schema": "STAGE_X_X1R_G3R_PROTOCOL_RUNTIME_CONFORMANCE_AUDIT_V1",
+  "scope": "CPU/static only; no model load, inference, reset, env.step, PGD, intervention, V_phys, Eval160, or protected read",
+  "seed_ledger_sha256": "acd10753d52d40f26a5bbc8a0828dcecba35fd80407432f105c361f92cd90f3e",
+  "source": {
+    "commit": "003cd024bf2cb63292c11dec4c0d29a33d8fe975",
+    "status_porcelain": "",
+    "tree": "fe198df8fdca5291169e407d395f303e7fa5264d"
+  },
+  "status": "STAGE_X_X1R_G3R_PROTOCOL_RUNTIME_CONFORMANCE_PASS"
+}

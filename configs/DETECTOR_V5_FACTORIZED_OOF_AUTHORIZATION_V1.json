@@ -1,0 +1,44 @@
+{
+  "schema": "DETECTOR_V5_FACTORIZED_OOF_AUTHORIZATION_V1",
+  "status": "FORMAL_OOF_TRAINING_AUTHORIZED",
+  "formal_oof_training_authorized": true,
+  "full_fit_authorized": false,
+  "cal_authorized": false,
+  "check_authorized": false,
+  "attack_authorized": false,
+
+  "source_commit": "PLACEHOLDER_FILLED_AT_BUILD_TIME",
+  "teacher_root": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_DETECTOR_V5_FACTORIZED_TEACHER_V1_de07e1a_20260721",
+  "teacher_root_seal": "PLACEHOLDER",
+  "s1_root": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_S1_FIT_V1_d31187f",
+  "s1_root_seal": "PLACEHOLDER",
+  "f3_root": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_F3_GEOMETRY_GATE_de07e1a_20260721",
+  "f3_root_seal": "PLACEHOLDER",
+
+  "student_protocol_schema": "DETECTOR_V5_FACTORIZED_STUDENT_PROTOCOL_V1",
+  "model_type_primary": "FACTORIZED_ROUTED_25D9D",
+  "model_type_ablation": "FACTORIZED_ROUTED_25D",
+  "encoder": "causal_GRU_hidden128_1layer",
+  "heads_per_route": {"single_object_pick_place": 3, "multi_object_transfer": 3},
+  "loss": "masked_BCE_per_head_event_balanced_consistency_0_1",
+  "sampling": "route_balanced_alternating_deterministic_upsampling",
+  "class_weights": "fold_only_per_head_per_route",
+
+  "training": {
+    "folds": 4,
+    "seeds": [42, 123, 456],
+    "epochs": 30,
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 1e-5,
+    "gradient_clip": 5.0,
+    "batch_size": 8,
+    "dtype": "float32",
+    "early_stopping": "disabled",
+    "checkpoint_epoch": 30,
+    "normalization": "train_fold_only"
+  },
+
+  "gpus": [1, 3],
+  "workers_per_gpu": 6
+}

@@ -1,0 +1,243 @@
+{
+  "audited_files": {
+    "clean_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2_20260810T104027Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2.json",
+      "sha256": "a8be0582c5cbe3ae2224cf6786ac18a0558f2105962aef73ea69fffd462e81e6"
+    },
+    "exposure_manifest": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4_20260810T104027Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4.json",
+      "sha256": "b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612"
+    },
+    "fresh_contract": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STATIC_AUDITOR_SOURCES_91830078/STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1.json",
+      "sha256": "1277a5e7c4501e3854075df2880147c3c1aec9295b29c83355fe1feb0c5af345"
+    },
+    "label_contract": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STATIC_AUDITOR_SOURCES_91830078/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1.json",
+      "sha256": "6fb9318b1e636c36b6edf56d4bdb0e7a1deb723fa63b809e67c983708290d8d2"
+    },
+    "protocol": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STATIC_AUDITOR_SOURCES_91830078/STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1.json",
+      "sha256": "c438781eb46e451281e55eda9aeeeac14468c007d11576dbd85a7c44d5c5a92a"
+    }
+  },
+  "auditor_role": "independent_static_auditor; does_not_import_producer_helpers",
+  "auditor_source_commit": "b8b98457aedab8ed9965923eff0443e89315d0fb",
+  "auditor_source_tree": "83523465aefa680df6f26444385f52ae874d35b0",
+  "checks": [
+    {
+      "check": "label_schema",
+      "detail": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1_1",
+      "status": "PASS"
+    },
+    {
+      "check": "fresh_schema",
+      "detail": "STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1_1",
+      "status": "PASS"
+    },
+    {
+      "check": "label_runtime_hold",
+      "detail": "FROZEN_PROSPECTIVE_DIAGNOSTIC_NO_RUNTIME_AUTHORIZATION",
+      "status": "PASS"
+    },
+    {
+      "check": "fresh_runtime_hold",
+      "detail": "FROZEN_PROSPECTIVE_NO_RUNTIME_AUTHORIZATION",
+      "status": "PASS"
+    },
+    {
+      "check": "exposure_manifest_sha_bound",
+      "detail": "bound=b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612 actual=b234c896b4eeee862914a717e56a79cefa3ee8ba43fdd4b8c7aafb027ec0a612",
+      "status": "PASS"
+    },
+    {
+      "check": "clean_manifest_sha_bound",
+      "detail": "bound=a8be0582c5cbe3ae2224cf6786ac18a0558f2105962aef73ea69fffd462e81e6 actual=a8be0582c5cbe3ae2224cf6786ac18a0558f2105962aef73ea69fffd462e81e6",
+      "status": "PASS"
+    },
+    {
+      "check": "fresh_exposure_binding_matches_label",
+      "detail": "fresh/label exposure SHA",
+      "status": "PASS"
+    },
+    {
+      "check": "fresh_clean_binding_matches_label",
+      "detail": "fresh/label clean SHA",
+      "status": "PASS"
+    },
+    {
+      "check": "exposure_schema",
+      "detail": "STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V4",
+      "status": "PASS"
+    },
+    {
+      "check": "exposure_status",
+      "detail": "PASS",
+      "status": "PASS"
+    },
+    {
+      "check": "exposure_unique_keys",
+      "detail": "count=53",
+      "status": "PASS"
+    },
+    {
+      "check": "exposure_count",
+      "detail": "manifest=53 bound=53",
+      "status": "PASS"
+    },
+    {
+      "check": "exposure_union_hash",
+      "detail": "62012ba0246d123fb6caa59a8dbc80bc3bd4fb27ea32a6a6c4f87bb3c111dc4a",
+      "status": "PASS"
+    },
+    {
+      "check": "exposure_protected_counters",
+      "detail": "{'attack_rollouts': 0, 'eval160_reads': 0, 'protected_reads': 0, 'vis_pgd_attack_rollouts': 0}",
+      "status": "PASS"
+    },
+    {
+      "check": "exposure_source_immutable",
+      "detail": "source_artifacts_modified=false; old_artifacts_reused=false",
+      "status": "PASS"
+    },
+    {
+      "check": "clean_schema",
+      "detail": "STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V2",
+      "status": "PASS"
+    },
+    {
+      "check": "clean_status",
+      "detail": "PASS",
+      "status": "PASS"
+    },
+    {
+      "check": "clean_unique_keys",
+      "detail": "count=357",
+      "status": "PASS"
+    },
+    {
+      "check": "clean_count",
+      "detail": "manifest=357 bound=357",
+      "status": "PASS"
+    },
+    {
+      "check": "clean_union_hash",
+      "detail": "bbe427d645efcaa683d7cfb305014333317ed9cd1e369a1825406b08c2e6302a",
+      "status": "PASS"
+    },
+    {
+      "check": "clean_protected_counters",
+      "detail": "{'attack_rollouts': 0, 'eval160_reads': 0, 'protected_reads': 0, 'vis_pgd_attack_rollouts': 0}",
+      "status": "PASS"
+    },
+    {
+      "check": "clean_source_immutable",
+      "detail": "source_artifacts_modified=false; old_artifacts_reused=false",
+      "status": "PASS"
+    },
+    {
+      "check": "exposure_branch_results_unread",
+      "detail": "False",
+      "status": "PASS"
+    },
+    {
+      "check": "accounting_per_parent",
+      "detail": "{'probe_locations': 24, 'shared_control_executions': 24, 'treatment_executions': 72, 'physical_branch_executions': 96, 'treatment_label_rows': 72}",
+      "status": "PASS"
+    },
+    {
+      "check": "accounting_formal_totals",
+      "detail": "{'parents': 40, 'treatment_label_rows': 2880, 'physical_branch_executions': 3840}",
+      "status": "PASS"
+    },
+    {
+      "check": "accounting_dose_balance",
+      "detail": "{'T3': 24, 'T5': 24, 'T10': 24}",
+      "status": "PASS"
+    },
+    {
+      "check": "probe_count",
+      "detail": "{'algorithm_id': 'STAGE_V_PROBE_SELECTION_CLEAN_PHASE_STRATIFIED_HASH_V1_1', 'inputs_only': ['canonical_parent_key', 'clean_trajectory_records', 'clean_only_phase_label', 'clean_only_validity', 'clean_only_remaining_horizon'], 'forbidden_inputs': ['OPEN_or_treatment_result', 'control_or_treatment_outcome', 'V_phys_or_V_task', 'future_label_balance', 'M3.5_repeatability_result'], 'phase_strata': ['PRE_CONTACT', 'CONTACT_MANIPULATION', 'ENGAGED_LIFT', 'CARRY'], 'probes_per_stratum': 6, 'probe_count_per_parent': 24, 'selection_salt': 'STAGE_V_M3_5_PROBE_SELECTION_V1_1', 'eligibility_predicate': {'clean_record_valid': True, 'clean_record_not_terminal': True, 'phase_label_in_registered_strata': True, 'remaining_steps_at_probe_gte': 'T10 + physical_outcome_horizon_steps'}, 'ranking_key': \"sha256(selection_salt + '::' + canonical_parent_key + '::' + clean_only_phase_label + '::' + decimal_step_id)\", 'selection_procedure': ['partition eligible clean-only step IDs by phase stratum', 'sort each stratum by ranking_key, then decimal_step_id', 'take the first six from every stratum', 'emit the exact 24 step IDs, phase labels, eligibility receipts, and ranking hashes', 'if any stratum has fewer than six eligible steps, emit PROBE_SELECTION_INSUFFICIENT_PHASE_COVERAGE and do not backfill'], 'probe_locations_are_not_dose_values': True, 'outcome_blind_before_runtime': True}",
+      "status": "PASS"
+    },
+    {
+      "check": "probe_outcome_blind",
+      "detail": "clean-only and forbidden outcomes",
+      "status": "PASS"
+    },
+    {
+      "check": "probe_no_backfill",
+      "detail": "insufficient strata do not backfill",
+      "status": "PASS"
+    },
+    {
+      "check": "surgical_arm_isolation",
+      "detail": "arm delta zero; no control replay",
+      "status": "PASS"
+    },
+    {
+      "check": "dose_horizon",
+      "detail": "dose-specific T and H_phys",
+      "status": "PASS"
+    },
+    {
+      "check": "compliance_receipt",
+      "detail": "actual delivery receipt required",
+      "status": "PASS"
+    },
+    {
+      "check": "physical_predicates",
+      "detail": "{'GRIPPER_CONTACT_LOSS': 'control_contact_eligible == true AND contact_absence_consecutive_frames >= 2 AND normal_release_window == false', 'PREMATURE_OBJECT_RELEASE': 'object_engaged_before_treatment == true AND supporting_contact_lost == true AND normal_release_window == false AND object_displacement_l2 >= object_release_l2_threshold', 'OBJECT_DROP': 'object_engaged_before_treatment == true AND supporting_contact_lost == true AND object_drop_height >= object_drop_height_threshold AND normal_release_window == false'}",
+      "status": "PASS"
+    },
+    {
+      "check": "unknown_not_negative",
+      "detail": "mediator separated from physical failure",
+      "status": "PASS"
+    },
+    {
+      "check": "repeatability_3_of_3",
+      "detail": "{'control_repetitions': 3, 'treatment_repetitions_each': 3, 'registered_outcome_unit': 'parent_key + probe_step + dose + label_class', 'pass_rule': 'all three valid repetitions emit the same registered outcome class and all three treatments are compliant', 'discordant_rule': 'any valid class disagreement emits HOLD_STOCHASTIC_INTERVENTION_OUTCOME', 'stable_abstain_rule': '3/3 identical abstain is stable diagnostic evidence but cannot produce a positive V_phys or V_task label', 'hard_gate_name': 'INTERVENTION_REPEATABILITY_3_OF_3'}",
+      "status": "PASS"
+    },
+    {
+      "check": "truth_table",
+      "detail": "explicit physical truth table",
+      "status": "PASS"
+    },
+    {
+      "check": "all_four_suites",
+      "detail": "all four suites required",
+      "status": "PASS"
+    },
+    {
+      "check": "protocol_schema",
+      "detail": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1",
+      "status": "PASS"
+    },
+    {
+      "check": "protocol_frozen",
+      "detail": "FROZEN_FOR_VALIDATION",
+      "status": "PASS"
+    },
+    {
+      "check": "protocol_runtime_boundary",
+      "detail": "False",
+      "status": "PASS"
+    },
+    {
+      "check": "protocol_contract_sha",
+      "detail": "protocol binds both contract SHAs",
+      "status": "PASS"
+    }
+  ],
+  "failure_count": 0,
+  "protected_counters": {
+    "attack_rollouts": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "schema": "STAGE_V_M3_5_STATIC_INDEPENDENT_AUDIT_V1",
+  "status": "PASS"
+}

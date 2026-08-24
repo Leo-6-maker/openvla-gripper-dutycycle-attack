@@ -1,0 +1,6 @@
+{
+  "status": "NOT_EXECUTED_INPUT_ROOTS_NOT_MOUNTED",
+  "expected_split_count": 12,
+  "production_artifacts_read": false,
+  "required_next_step": "Run audit_exact_w32_runtime_action_fields.py"
+}

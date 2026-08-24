@@ -1,0 +1,108 @@
+{
+  "schema": "FEC_DETECTOR_DEFECT_ANALYSIS_V1",
+  "timestamp": "2026-07-25T17:30:00Z",
+  "detector_status": "PASS_V4 \u2014 eligible for formal matrix with documented limitations",
+  "defects": {
+    "RESOLVED": {
+      "G9D_SCHEMA_VIOLATION": {
+        "severity": "CRITICAL",
+        "status": "FIXED_IN_V4",
+        "description": "V3 g9d=p9d used POLICY_INTENT_ORDER. Training used TRAIN_G9D_ORDER. Caused raw_logit explosion to +/-1.2M.",
+        "fix": "V4 provider constructs g9d in TRAIN_G9D_ORDER from named semantic dict. 31-parent replay parity: g9d_diff=0, raw_diff=0.",
+        "provider_sha": "6a7ab61d8dba8cb331a748c62317d2513b1e397def2adee8119204be44cecb61"
+      }
+    },
+    "OBSERVED_LIMITATIONS": {
+      "LOW_EMIT_RATE_GOAL_SUITE": {
+        "severity": "MODERATE",
+        "description": "libero_goal identities had cc_true=0 (31-parent replay). Detector cannot emit when no candidate_close steps exist. This is a data characteristic, not a model defect.",
+        "impact": "0% emit rate on libero_goal sample. Formal matrix will determine if this is systematic."
+      },
+      "SHORT_HORIZON_TERMINAL_CENSOR": {
+        "severity": "MODERATE",
+        "description": "libero_spatial (220 steps) and libero_object (280 steps) identities prone to task SUCCESS terminating attack window early. p08: 3/10, p14: 5/10, s04: 0/10 RANDOM_TIME frames.",
+        "impact": "Reduces statistical power for K10-complete attacks. CLASS_C handling via spares mitigates for smoke, but formal ITT must report as-is.",
+        "affected_identities": [
+          "p08 (object s0)",
+          "p14 (spatial s2)",
+          "s04 (object s4)"
+        ]
+      },
+      "ORACLE_TRIGGER_CONTRACT_UNDEFINED": {
+        "severity": "HIGH",
+        "description": "p12 ORACLE emit=59 \u2260 TRUE/RAND emit=68. ORACLE arm modifies gripper command, shifting trajectory and causing different emit step. Current validator flags this as FAIL. Contract needs explicit definition: matched-timing vs continuous oracle.",
+        "affected": "p12 (spatial s0)",
+        "recommendation": "Adopt matched-timing contract: ORACLE uses same emit step as TRUE, applies env=-1 OPEN at that step only."
+      },
+      "LIMITED_PGD_EFFECTIVENESS": {
+        "severity": "MODERATE",
+        "description": "Only 1/5 triggered-emit identities (p01) showed TRUE-specific task failure vs CLEAN success. ORACLE causes failure 4/4, proving tasks ARE physically breakable. Current PGD \u03b5=0.03, steps=5 may be insufficient for robust attack.",
+        "metrics": {
+          "TRUE_failure_rate": "1/5 (20%)",
+          "RAND_failure_rate": "0/4 (0%)",
+          "ORACLE_failure_rate": "4/4 (100%)",
+          "TRUE_vs_RAND_effect": "p01 only case with directional specificity"
+        }
+      },
+      "NO_EMIT_RATE": {
+        "severity": "LOW",
+        "description": "3/8 identities (37.5%) produced no detector emission. All are legitimate abstentions (scores below tau). This is expected detector behavior \u2014 not all states are attackable.",
+        "impact": "Reduces attackable sample size. Formal matrix will quantify population emit rate."
+      }
+    },
+    "ENGINEERING": {
+      "C2_THREADING_FAILURE": {
+        "severity": "LOW",
+        "status": "WORKAROUND_FOUND",
+        "description": "Threading-based dual-worker C2 caused deadlock (33min, 0% GPU). Multi-process approach via smoke runner subprocess works at 2 workers/GPU. Verified 10/10 PGD on both workers, 32.5GB peak, no OOM."
+      },
+      "PERSISTENT_LAUNCHER_STATE_BUG": {
+        "severity": "LOW",
+        "status": "FIXED",
+        "description": "Persistent worker used random run_id instead of fixed id, preventing queue claims. Fixed by passing run_id=smoke_v3/formal_v1."
+      }
+    }
+  },
+  "key_metrics": {
+    "smoke_completed": 8,
+    "emit_rate": "5/8 (62.5%)",
+    "triggered_TRUE_full_K10": "4/5",
+    "attack_errors": 2,
+    "attack_errors_cause": "CLASS_C terminal censor (legitimate)",
+    "fallback": 0,
+    "OOM": 0,
+    "v4_parity_g9d_diff": 0.0,
+    "v4_parity_raw_diff": 0.0,
+    "c2_dual_worker": "PASS (10/10 PGD both, 32.5GB)",
+    "max_concurrency_per_gpu": 2,
+    "queue_selftest": "29/29 PASS"
+  },
+  "evidence_artifacts": {
+    "provider_sha": "6a7ab61d8dba8cb331a748c62317d2513b1e397def2adee8119204be44cecb61",
+    "smoke_identities_done": 7,
+    "training_label_audit": {
+      "p_label_given_cc": 0.4388285767580675,
+      "p_label_given_not_cc": 0.0,
+      "ratio_notcc_vs_cc": 0.0,
+      "p_cc_given_label": 1.0,
+      "p_notcc_given_label": 0.0,
+      "max_consecutive_joint": 406,
+      "max_consecutive_joint_feasible": 406,
+      "emit_feasible_episodes": 1049,
+      "emit_feasible_feasible_episodes": 1049,
+      "total_episodes": 1400,
+      "total_steps": 312440,
+      "total_label_files": 1400
+    },
+    "c2_results": [
+      {
+        "status": "PASS",
+        "random_atk": 10
+      },
+      {
+        "status": "PASS",
+        "random_atk": 10
+      }
+    ]
+  }
+}

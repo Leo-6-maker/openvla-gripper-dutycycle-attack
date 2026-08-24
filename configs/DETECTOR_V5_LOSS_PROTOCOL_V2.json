@@ -1,0 +1,15 @@
+{
+  "schema": "DETECTOR_V5_LOSS_PROTOCOL_V2",
+  "ordinal_weight": 1.0,
+  "pairwise_weight": 0.5,
+  "listwise_weight": 0.5,
+  "abstention_weight": 1.0,
+  "release_weight": 0.3,
+  "regrasp_weight": 0.3,
+  "pairwise_margin": 0.2,
+  "window_balanced": true,
+  "pure_negative_aggregation": "max_candidate_window",
+  "unknown_is_not_negative": true,
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

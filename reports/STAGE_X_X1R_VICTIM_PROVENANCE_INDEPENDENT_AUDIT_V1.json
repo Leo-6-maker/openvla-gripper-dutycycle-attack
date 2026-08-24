@@ -1,0 +1,16 @@
+{
+  "schema": "STAGE_X_X1R_VICTIM_PROVENANCE_INDEPENDENT_AUDIT_V1",
+  "status": "HOLD_PROVENANCE_PARITY",
+  "audit_runtime_source_commit": "fa42bf5244984f6a47eb91922d38fbbb91cd16c4",
+  "worker_statuses": {"libero_10": "FAIL_CLEAN_NOOP_PARITY", "libero_goal": "FAIL_CLEAN_NOOP_PARITY", "libero_object": "PASS_CLEAN_NOOP_PARITY", "libero_spatial": "FAIL_CLEAN_NOOP_PARITY"},
+  "failed_rows": [
+    "libero_10/stage_vi_b2/31744!=31745",
+    "libero_goal/stage_v/31744!=31745",
+    "libero_spatial/stage_vi_b2/31744!=31745"
+  ],
+  "processor_parity": "8/8 exact",
+  "clean_token_parity": "5/8 exact",
+  "protected_boundary": {"eval160": "UNREAD", "protected_evaluation": "UNREAD", "pgd_calls": 0, "env_step_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "protected_reads": 0, "eval160_reads": 0},
+  "x1r_authorized": false,
+  "terminal_state": "STAGE_X_X1R_HOLD_CLEAN_FORWARD_TOKEN_PARITY"
+}

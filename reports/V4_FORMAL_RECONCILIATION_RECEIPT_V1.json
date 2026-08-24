@@ -1,0 +1,37 @@
+Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known hosts.
+{
+  "reconciliation": "V4_FORMAL_RECONCILIATION_V1",
+  "timestamp": "2026-07-25T16:27:15.890498+00:00",
+  "dry_run": false,
+  "results": {
+    "libero_spatial_task_00_state_100": {
+      "status": "INCOMPLETE",
+      "present": [
+        "CLEAN",
+        "TRUE_T10"
+      ],
+      "missing": [
+        "RAND_T10",
+        "COMMAND_OPEN_ORACLE",
+        "RANDOM_TIME_T10"
+      ]
+    },
+    "libero_spatial_task_00_state_102": {
+      "status": "RECONCILED",
+      "detail": "committed",
+      "permanent_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/formal/recovered_attempts/libero_spatial_task_00_state_102"
+    }
+  },
+  "requeue_needed": [
+    "libero_spatial_task_00_state_100"
+  ],
+  "frozen_seal": {
+    "provider_sha": "6a7ab61d8dba8cb3...",
+    "checkpoint_sha": "685ddadf90ad2ac4...",
+    "seal_sha": "22a97d5746efed9e..."
+  },
+  "queue_progress": {
+    "total": 20,
+    "done": 19
+  }
+}

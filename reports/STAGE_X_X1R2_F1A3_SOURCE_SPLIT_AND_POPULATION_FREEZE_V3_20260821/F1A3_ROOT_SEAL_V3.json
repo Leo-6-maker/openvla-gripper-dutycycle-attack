@@ -1,0 +1,97 @@
+{
+  "artifact_hashes": {
+    "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_BRIDGE_V3_LEDGER_V3.json": "9ace16d5b1ee07321f3f5b506b198c0a1fd67a1f725a269dc7c09136edbd2d2e",
+    "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_C_CANARY_V3_LEDGER_V3.json": "98205d765f5171c1807444512dc407ff327d5b1a22d25599d954dbe506f5e9cd",
+    "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_DEV_V3_LEDGER_V3.json": "f114505a7ea6aee9959f9db3aa1aedea1cebf89f09b820a4b7746236de46ef9a",
+    "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_EXPOSURE_CLASSIFICATION_V3.json": "500c9079def749f47191c18c68abbb00ea8b454b3771288495cdd3d7e075f24c",
+    "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_SOURCE_LEAKAGE_CONTRACT_V3.json": "8e0e25282107d7dec531ffecac967356e5eed4ea5336ae835ff0473de8e4429f",
+    "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_SPLIT_LEDGER_V3.json": "71e3cd7aedbbca3cf741520e312e83c80d419568df4080cbb05f7aa9fb9a4609",
+    "scripts/stage_x/audit_stage_x1r2_f1a3_source_split_v3.py": "a6aae891965469b615506484c1e8c47761049afd66834c493c64286a1ab3e390"
+  },
+  "class_counts": {
+    "V3_DETECTOR_TRAIN_ONLY_ALLOWED_WITH_FLAG": 1,
+    "V3_HARD_EXECUTION_EXPOSURE_EXCLUDE": 19,
+    "V3_PRISTINE_NO_RELEVANT_IDENTITY_EXPOSURE": 780,
+    "V3_STATIC_MENTION_ONLY_NOT_EXECUTION": 0,
+    "V3_UNRESOLVED_EXPOSURE_EXCLUDE": 0
+  },
+  "eligible_by_suite": {
+    "libero_10": 194,
+    "libero_goal": 194,
+    "libero_object": 196,
+    "libero_spatial": 197
+  },
+  "gate": "STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3",
+  "paper_v1_binding": {
+    "paper_v1_tree_listing_sha256": "92520c0d78db0e87a97bbfa29f5671bbaa5aacb240ce40d22ef21c6726fd72ae",
+    "tracked_file_count": 16,
+    "tracked_files": [
+      "paper/PAPER_V1_CLAIM_AUDIT_V1.md",
+      "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+      "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json",
+      "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.md",
+      "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+      "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.sha256",
+      "paper/PAPER_V1_FIGURE_TABLE_PACKAGE_V1.md",
+      "paper/PAPER_V1_FIGURE_TABLE_ROOT_SEAL_V1.json",
+      "paper/PAPER_V1_FIGURE_TABLE_ROOT_SEAL_V1.sha256",
+      "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json",
+      "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.sha256",
+      "paper/PAPER_V1_FINAL_ROOT_SEAL_V1.json",
+      "paper/PAPER_V1_FINAL_ROOT_SEAL_V1.sha256",
+      "paper/PAPER_V1_MANUSCRIPT_DRAFT.md",
+      "paper/PAPER_V1_SUPPLEMENT_BINDINGS_V1.json",
+      "paper/PAPER_V1_SUPPLEMENT_REPRODUCIBILITY.md"
+    ],
+    "working_tree_unchanged": true
+  },
+  "pi_attachment_sha256": "240d5ba79354b89f5f98d2e1d81e58dc3ffe4689898675006cf0e980f04c06eb",
+  "pi_comment_id": 5368872540,
+  "protected_boundary": {
+    "bridge_outcome_read": 0,
+    "bridge_runtime": 0,
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "gpu": 0,
+    "model_inference": 0,
+    "pgd": 0,
+    "physical_outcome": 0,
+    "protected": "UNREAD",
+    "simulator": 0,
+    "vphys": 0
+  },
+  "role_counts": {
+    "libero_10": {
+      "BRIDGE_V3": 5,
+      "C_CANARY_V3": 2,
+      "DEV_V3": 6
+    },
+    "libero_goal": {
+      "BRIDGE_V3": 5,
+      "C_CANARY_V3": 2,
+      "DEV_V3": 6
+    },
+    "libero_object": {
+      "BRIDGE_V3": 5,
+      "C_CANARY_V3": 2,
+      "DEV_V3": 6
+    },
+    "libero_spatial": {
+      "BRIDGE_V3": 5,
+      "C_CANARY_V3": 2,
+      "DEV_V3": 6
+    }
+  },
+  "role_intersections": {
+    "BRIDGE_V3_x_C_CANARY_V3": 0,
+    "BRIDGE_V3_x_DEV_V3": 0,
+    "DEV_V3_x_C_CANARY_V3": 0
+  },
+  "schema": "STAGE_X_X1R2_F1A3_ROOT_SEAL_V3",
+  "seal_scope_excludes_sidecar": true,
+  "selected_hard_or_unresolved_count": 0,
+  "source_commit": "86c5c26f193a243051b30385d24d6c45abba9a96",
+  "source_tree": "1a57a40609fb97fcbe5024a8ed442d3f73ce0b9b",
+  "split_salt": "STAGE_X_X1R2_F1A3_SOURCE_V3_SPLIT_20260821",
+  "status": "PASS_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3"
+}

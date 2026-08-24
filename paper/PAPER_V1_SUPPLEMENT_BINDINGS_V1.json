@@ -1,0 +1,49 @@
+{
+  "schema": "PAPER_V1_SUPPLEMENT_BINDINGS_V1",
+  "status": "PAPER_V1_SUPPLEMENT_REPRODUCIBILITY_PASS",
+  "source_policy": "sealed_artifact_static_only",
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "tokenizer_authority": {
+    "native_endpoint": true,
+    "non_bijective_boundary": "31744<->31745",
+    "cached_autoregressive_behavior_is_authority": true,
+    "optimization_surrogate_is_not_native_authority": true,
+    "selected_candidate_reencoded": false
+  },
+  "primary_units": {
+    "x0": "source-declared parent/probe",
+    "vi_b2": "fresh parent with abstains/censoring retained",
+    "vii": "parent-grouped candidate evaluation",
+    "viii": "parent-grouped selector evaluation",
+    "ix": "no-environment row with parent-macro utility",
+    "e2": "three bounded Goal successor identities",
+    "e3_e4": "engineering parent; candidate slots diagnostic only"
+  },
+  "root_seals": {
+    "x0_summary": "ff2e18c905a108cb51dbecf82473d1cd4e301e02a86c5e87bf39aab723fd35af",
+    "vi_b2_aggregate": "04ebc2f8179b7954ac188d791b4a06640cd88c62d88e7709ce6bbf8200887c11",
+    "viii_r1_root_seal": "cbcc55b350e59cc222e76f944a19f1f430b69e6f64363531823637530593f7a1",
+    "ix_runner": "d335a9d41bf4e28572e6f2146f73fc0cb5ed4c1aa526cab9379ce41d9f630862",
+    "e2": "1ea143dbaf866839d0dd3d0f8f304c91b4b701100042e0dd701c712fd5b3c003",
+    "e3": "20f5be64be1884aded25385e08c69ba3f5982422d546a532a737fd89e1bec16b",
+    "e4": "70825f121a87fd048b2d117a08e629bd11397dbd0225dc0fbc329e80c1501e09"
+  },
+  "protected_boundary": {
+    "new_openvla_inference": 0,
+    "new_simulator_or_env_step": 0,
+    "new_pgd_or_backward": 0,
+    "new_physical_intervention": 0,
+    "new_vphys_read": 0,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "historical_policy": {
+    "x1": "immutable_nonconsumable_provenance_mismatch_and_structural_defects",
+    "x1r_v1": "closed_runtime_blocked_scientific_evaluable_n_zero",
+    "rerun": false,
+    "replacement": false,
+    "top_up": false,
+    "outcome_based_reselection": false
+  },
+  "terminal_gate": "PAPER_V1_SUPPLEMENT_REPRODUCIBILITY_PASS"
+}

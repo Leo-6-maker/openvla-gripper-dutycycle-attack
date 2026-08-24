@@ -1,0 +1,63 @@
+{
+  "schema": "DETECTOR_V3_25D_CAUSAL_FEATURE_SCHEMA_V2",
+  "status": "FROZEN",
+  "frozen_date": "2026-07-31",
+  "supersedes": "DETECTOR_V3_25D_CAUSAL_FEATURE_SCHEMA_V1",
+  "change_log": [
+    "V2: Fixed feature 0/12 duplication — gripper_command=raw_action_7d[6] (OpenVLA native), action_gripper=action_env_7d[6] (LIBERO postprocessed).",
+    "H1-R2: Fixed feature 1/2 contract — gripper_qpos=SIGNED sum qpos[0]+qpos[1], gripper_opening_proxy=ABSOLUTE sum |qpos[0]|+|qpos[1]|.",
+    "H1-R3: recent_gripper_flip_count uses deque(maxlen=32), max value=31."
+  ],
+  "source": "D8StreamingFeatureAdapterV3 (src/gripper_attack/d8_streaming_features_v3.py)",
+  "dimensions": 25,
+  "causal_only": true,
+  "future_fields": 0,
+  "step_progress_fields": 0,
+  "teacher_label_fields": 0,
+  "privileged_entity_fields": 0,
+  "attack_outcome_fields": 0,
+  "features": [
+    {"index": 0,  "name": "gripper_command",           "source": "raw_action_7d[6]",        "unit": "[0,1]",        "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "OpenVLA native raw gripper command"},
+    {"index": 1,  "name": "gripper_qpos",              "source": "robot0_gripper_qpos[0]+[1] (signed)", "unit": "rad", "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "Gripper joint position signed sum"},
+    {"index": 2,  "name": "gripper_opening_proxy",     "source": "|qpos[0]|+|qpos[1]| (absolute)", "unit": "rad", "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "Proxy for gripper opening width (absolute sum)"},
+    {"index": 3,  "name": "eef_x",                     "source": "robot0_eef_pos[0]",       "unit": "m",            "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "End-effector X position"},
+    {"index": 4,  "name": "eef_y",                     "source": "robot0_eef_pos[1]",       "unit": "m",            "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "End-effector Y position"},
+    {"index": 5,  "name": "eef_z",                     "source": "robot0_eef_pos[2]",       "unit": "m",            "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "End-effector Z position"},
+    {"index": 6,  "name": "eef_vx",                    "source": "eef_pos[t]-eef_pos[t-1][0]", "unit": "m/step",   "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "End-effector X velocity"},
+    {"index": 7,  "name": "eef_vy",                    "source": "eef_pos[t]-eef_pos[t-1][1]", "unit": "m/step",   "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "End-effector Y velocity"},
+    {"index": 8,  "name": "eef_vz",                    "source": "eef_pos[t]-eef_pos[t-1][2]", "unit": "m/step",   "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "End-effector Z velocity"},
+    {"index": 9,  "name": "action_dx",                 "source": "raw_action_7d[0]",        "unit": "normalized",   "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "Action delta X"},
+    {"index": 10, "name": "action_dy",                 "source": "raw_action_7d[1]",        "unit": "normalized",   "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "Action delta Y"},
+    {"index": 11, "name": "action_dz",                 "source": "raw_action_7d[2]",        "unit": "normalized",   "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "Action delta Z"},
+    {"index": 12, "name": "action_gripper",            "source": "action_env_7d[6]",        "unit": "[-1,1]",       "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "LIBERO env gripper command"},
+    {"index": 13, "name": "recent_close_streak",       "source": "derived: consecutive close", "unit": "steps",     "dtype": "float32", "temporal": "past_window", "normalization": "zscore", "description": "Consecutive close steps"},
+    {"index": 14, "name": "recent_open_streak",        "source": "derived: consecutive open",  "unit": "steps",     "dtype": "float32", "temporal": "past_window", "normalization": "zscore", "description": "Consecutive open steps"},
+    {"index": 15, "name": "recent_gripper_flip_count", "source": "derived: deque(maxlen=32) flip transitions", "unit": "count", "dtype": "float32", "temporal": "past_window", "normalization": "zscore", "description": "Gripper state flips in 32-state window, max=31"},
+    {"index": 16, "name": "close_onset",               "source": "derived: close transition",   "unit": "binary",    "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "Gripper transitioned to close (every occurrence)"},
+    {"index": 17, "name": "time_since_close",          "source": "derived: steps since last close onset", "unit": "steps", "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "Steps since most recent close onset"},
+    {"index": 18, "name": "eef_speed",                 "source": "derived: ||eef_velocity||",   "unit": "m/step",    "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "End-effector speed"},
+    {"index": 19, "name": "eef_z_delta_since_close",   "source": "derived: eef_z[t]-eef_z[last_close]", "unit": "m",   "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "EEF Z displacement since most recent close onset"},
+    {"index": 20, "name": "qpos_delta_1",              "source": "derived: signed_qpos[t]-signed_qpos[t-1]", "unit": "rad", "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "Signed qpos 1-step delta"},
+    {"index": 21, "name": "qpos_delta_3",              "source": "derived: signed_qpos[t]-signed_qpos[t-3]", "unit": "rad", "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "Signed qpos 3-step delta"},
+    {"index": 22, "name": "opening_proxy_delta_3",     "source": "derived: abs_proxy[t]-abs_proxy[t-3]", "unit": "rad", "dtype": "float32", "temporal": "current", "normalization": "zscore", "description": "Absolute opening proxy 3-step delta"},
+    {"index": 23, "name": "opening_proxy_variance_5",  "source": "derived: rolling_var_5(abs_proxy)", "unit": "rad^2", "dtype": "float32", "temporal": "past_window", "normalization": "zscore", "description": "Absolute opening proxy rolling 5-step variance"},
+    {"index": 24, "name": "eef_speed_variance_5",      "source": "derived: rolling_var_5(speed)", "unit": "(m/s)^2", "dtype": "float32", "temporal": "past_window", "normalization": "zscore", "description": "EEF speed rolling 5-step variance"}
+  ],
+  "forbidden_fields": [
+    "relation_id", "logical_object", "logical_target", "entity_id", "entity_type",
+    "object_pose", "target_pose", "contact_force", "contact_geometry",
+    "consolidated_event_id", "candidate_close", "teacher_reason", "teacher_confidence",
+    "success", "failure", "reward", "step_index", "episode_progress",
+    "future_action", "future_state", "attack_outcome", "post_attack_state"
+  ],
+  "normalization": {
+    "method": "zscore",
+    "fit_on": "training_fold_only",
+    "epsilon": 1e-8
+  },
+  "missing_policy": {
+    "nonfinite": "mark_invalid",
+    "missing_field": "mark_invalid",
+    "step_gap": "mark_invalid"
+  }
+}

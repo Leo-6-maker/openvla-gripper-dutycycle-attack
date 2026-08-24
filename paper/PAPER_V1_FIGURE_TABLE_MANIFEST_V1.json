@@ -1,0 +1,87 @@
+{
+  "files": [
+    {
+      "bytes": 90,
+      "path": "paper/data/PAPER_V1_FIGURE2_X0_DOSE_RESPONSE.csv",
+      "sha256": "cd642e0ed15fc0df2cc95bdb3e4c9c869cd4a20223afea90fd8c2a1619689354"
+    },
+    {
+      "bytes": 330,
+      "path": "paper/data/PAPER_V1_FIGURE3_TIMING_NEGATIVE_CASCADE.csv",
+      "sha256": "05de99f4c8e91b34b926f0244f4849bf6008f594b702b3359fe86d43cd855816"
+    },
+    {
+      "bytes": 116,
+      "path": "paper/data/PAPER_V1_FIGURE4_FACTORIZATION_GAP.csv",
+      "sha256": "5c1a46be48093aa9098855bc37f088dcc04fde99e0801b006a48b7ba53829afc"
+    },
+    {
+      "bytes": 412,
+      "path": "paper/data/PAPER_V1_FIGURE5_E3_E4_PARENT_REALIZABILITY.csv",
+      "sha256": "8d34b4c6537ceb6e47de6a7c138c10b50d68785025a9c005d18adc22185b0128"
+    },
+    {
+      "bytes": 2498,
+      "path": "paper/figures/figure1_factorization_conceptual.svg",
+      "sha256": "b4d233e901e9644d7d86a384b63aa7180d9f62381fbe115bd6683574462a0c62"
+    },
+    {
+      "bytes": 3818,
+      "path": "paper/figures/figure2_x0_dose_response_mechanism.svg",
+      "sha256": "3a45fff8ba1007e8a067213bfd376926a8d69b76c28a19f3f784ac77fcbf30ed"
+    },
+    {
+      "bytes": 2728,
+      "path": "paper/figures/figure3_timing_negative_cascade.svg",
+      "sha256": "254b034f0d1303368ac278136d77c4f382823736ee9c120f6aa01ed18185fc1e"
+    },
+    {
+      "bytes": 3237,
+      "path": "paper/figures/figure4_stage_ix_factorization_gap.svg",
+      "sha256": "eaeba70c6b4e5b222a17720107e23b3c4c5993aeae1e767a86990ccf2635d91a"
+    },
+    {
+      "bytes": 4746,
+      "path": "paper/figures/figure5_e3_e4_realizability_decomposition.svg",
+      "sha256": "e991599ed63f499a9fc9dad202722936eb5829a16f648cabd33a046725ba5238"
+    },
+    {
+      "bytes": 1733,
+      "path": "paper/PAPER_V1_FIGURE_TABLE_PACKAGE_V1.md",
+      "sha256": "f52c533a22cde8b9fab91c8c5b324eaf36893d00fa709ba99f9999261a2a1389"
+    },
+    {
+      "bytes": 823,
+      "path": "paper/tables/PAPER_V1_CLAIM_BOUNDARY.csv",
+      "sha256": "7072182d0b0632af355b7bff9540e7dbaea209e609af8a234e28cf925ea422d2"
+    },
+    {
+      "bytes": 319,
+      "path": "paper/tables/PAPER_V1_E3_E4_PARENT_REALIZABILITY.csv",
+      "sha256": "88276a56800a2391285156aaac25765cd38d06913671f7b840f9c09e35bfd027"
+    },
+    {
+      "bytes": 707,
+      "path": "paper/tables/PAPER_V1_EVIDENCE_HIERARCHY.csv",
+      "sha256": "5437c265dbae204167919c7997b848dea935109010983e6f97d837105c701239"
+    }
+  ],
+  "protected_boundary": {
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "gpu": 0,
+    "openvla_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected": "UNREAD"
+  },
+  "schema": "PAPER_V1_FIGURE_TABLE_PACKAGE_MANIFEST_V1",
+  "source_files": {
+    "docs/handoffs/STAGE_IX_F0_RESULT_20260817.md": "2c445ea1ae5434661d327a348995c412083b191b382cbd78d485a13064268103",
+    "docs/handoffs/STAGE_VII_DEVELOPMENT_NEGATIVE_HANDOFF_20260816.md": "9ee6782530f730e7bf5eaee90ced94134ec6a569d5c9713b7b19f85662a1c33f",
+    "docs/handoffs/STAGE_VI_B2_FRESH_M4_AND_NEGATIVE_CAUSAL_HANDOFF_20260816.md": "2c550b1ec8f906212bc1f92223b801bcb0efe07381caf94d1b116e4f5e66d006",
+    "docs/handoffs/STAGE_X_X0_RESULT_20260817.md": "7626e020ec524ce124be9b93685a3861b85176ad4bfd749bfc495f89482d3c55"
+  },
+  "source_policy": "sealed_artifact_static_only",
+  "status": "PAPER_V1_FIGURE_TABLE_PACKAGE_PASS"
+}

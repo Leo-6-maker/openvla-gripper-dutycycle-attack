@@ -1,0 +1,848 @@
+{
+  "artifact_rows": [
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/002_libero_10_task_01_state_36/attempt_0/episode_manifest.json",
+      "sha256": "63ff89831aa63052ebb533365df6a35df0fa34818892cf865e6555f754e55f68"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/003_libero_10_task_02_state_39/attempt_0/episode_manifest.json",
+      "sha256": "7835f8a8821cdadca7c005cae747335c431b8f6e77b242a36d5c4475df64b765"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/004_libero_10_task_03_state_21/attempt_0/episode_manifest.json",
+      "sha256": "f85a64b6b7d18fe532900e2375929f130c4d95c69489f6b0b1955c09522945fb"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/005_libero_10_task_04_state_30/attempt_0/episode_manifest.json",
+      "sha256": "b799dcf7ced3e3959cc943c403b13ff543fd792d02eb4e0f741fa82e707c1775"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/006_libero_10_task_05_state_22/attempt_0/episode_manifest.json",
+      "sha256": "bb2dc20e51b00ca49c6511a8a4da611bcc41429bf900e3ddc0c329d73300d4d3"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/007_libero_10_task_06_state_34/attempt_0/episode_manifest.json",
+      "sha256": "f4dad5b91bcb17766d73186775e520d1431847c934fd04cf023ae9794c6642b5"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/008_libero_10_task_07_state_27/attempt_0/episode_manifest.json",
+      "sha256": "8943ab010d4bfd9faace3d18d5b3813fb945063f62a77b5b4d7dd75f82caf653"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/009_libero_10_task_08_state_20/attempt_0/episode_manifest.json",
+      "sha256": "b600d7b8bba2d6606e2e213adf2479811a4c4f2e64639e94e3658e727359f3b6"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/010_libero_10_task_09_state_43/attempt_0/episode_manifest.json",
+      "sha256": "ad7615932e678181a367746590c109c96271c6761c51319e0ce8681d8d5d5b60"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/012_libero_goal_task_02_state_34/attempt_0/episode_manifest.json",
+      "sha256": "8221f5454742109613320191c0f0ae45b8beffff660237ee5887b1a8631675a0"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/013_libero_goal_task_03_state_45/attempt_0/episode_manifest.json",
+      "sha256": "53962a53a22d4b03ce03f76f431a984e7cb8f387a52729ece82d7e48a1c381d3"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/014_libero_goal_task_04_state_38/attempt_0/episode_manifest.json",
+      "sha256": "841a9c0570db9b6243d760ab82b1eb9682fc7699810527e7ddb372882bffd78f"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/015_libero_goal_task_05_state_26/attempt_0/episode_manifest.json",
+      "sha256": "c8d3e3e13b661c0132f67ebbc9ce54d3fb6ca3eec92ad7c5ec18fe554284ecae"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/016_libero_goal_task_06_state_28/attempt_0/episode_manifest.json",
+      "sha256": "3bbb2723e360d3a5fe19cece5f6b373fcb183ed752b4aefc6d065470f7fa49a2"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/017_libero_goal_task_07_state_30/attempt_0/episode_manifest.json",
+      "sha256": "e09a08cdb25feea46ae5a42ad884f5799c29c1a1b41093cc03f4c933f30233a7"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/018_libero_goal_task_08_state_20/attempt_0/episode_manifest.json",
+      "sha256": "f47fc21037af7030ea0a1e50568ace0f311784516ea4b1ebb1664cc4c22a6680"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/019_libero_goal_task_09_state_46/attempt_0/episode_manifest.json",
+      "sha256": "35f706e36cbd7519ef3ae6a4ff72d2830569ad9211833f8ddb3cf624ccf4d365"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/021_libero_object_task_01_state_40/attempt_0/episode_manifest.json",
+      "sha256": "ab3d32c9ffeaad3e11ed9b64bb814ebdce3c33f6366f32c9cfe115c9443cef4e"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/022_libero_object_task_02_state_42/attempt_0/episode_manifest.json",
+      "sha256": "909c88a2784fa106644136908fb795d2aead3f7896d0b9c37914128f5742089f"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/023_libero_object_task_03_state_25/attempt_0/episode_manifest.json",
+      "sha256": "2a8bc01bc0cf6b1dbe15b0c4e502c83c4237e887e060f816e42242c7e333e3ee"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/024_libero_object_task_04_state_35/attempt_0/episode_manifest.json",
+      "sha256": "ff09c30088d84b30005db91a9d28c0392d21818ce45e3f68a35ee14d727d2eb7"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/025_libero_object_task_05_state_31/attempt_0/episode_manifest.json",
+      "sha256": "e049eff988bb830ff3e880dda16771f8d39110ad7ff54863c09e4d96a55625cd"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/026_libero_object_task_06_state_44/attempt_0/episode_manifest.json",
+      "sha256": "1ec70223b1b7dec11cd46f0267aa2254608052de5c171119c8cc2e3b403d325c"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/027_libero_object_task_07_state_43/attempt_0/episode_manifest.json",
+      "sha256": "bda0f5f10c7bacd31f0e06cf9ca7e5a74135ff4588a658c4b7f7878e31ba361a"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/028_libero_object_task_08_state_43/attempt_0/episode_manifest.json",
+      "sha256": "57d4b6227530890f3b3c8e6fdc8ebf338a05e61553dc326dd899a6c10493538c"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/029_libero_object_task_09_state_23/attempt_0/episode_manifest.json",
+      "sha256": "e1293a3c1477d55516771a949c5c7b1d4e2dced227206f3ec63def0add4e36db"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/031_libero_spatial_task_01_state_38/attempt_0/episode_manifest.json",
+      "sha256": "b6a06364ec8fc687f43eda550990e995d503498f0c49a60c2f64ce6d53c37de1"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/032_libero_spatial_task_02_state_31/attempt_0/episode_manifest.json",
+      "sha256": "2f8f2703668bc9343d3385d27cfa9b5c319a676b3ea44e3d88958604fb2fa41c"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/033_libero_spatial_task_03_state_29/attempt_0/episode_manifest.json",
+      "sha256": "7c7c893f1f56b13460d82ba4d781f5b3ca8c5b77968bcfcf54ea6846aa5772e0"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/034_libero_spatial_task_04_state_33/attempt_0/episode_manifest.json",
+      "sha256": "0102a7d127a665ab5eb6218034cbe7ce76117bfedb1c86e30e1a3d3bbc22309c"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/035_libero_spatial_task_05_state_27/attempt_0/episode_manifest.json",
+      "sha256": "d41eff66da0ac4b1f29713806d8f0d43a80e602b169b64864e94c167a1a1f7d8"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/036_libero_spatial_task_06_state_45/attempt_0/episode_manifest.json",
+      "sha256": "6314bfa169fd31579f358a677875c778a30015847524d60666b5e3bc4b06848f"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/037_libero_spatial_task_07_state_28/attempt_0/episode_manifest.json",
+      "sha256": "ef4d4040d4341e808fc3dcb4493d69e7c11f3bc68e713eb04d2d59e9cdca577b"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/038_libero_spatial_task_08_state_28/attempt_0/episode_manifest.json",
+      "sha256": "b8081a0e7dbf49f012d5258cdc09d868c78fc60dcb2421e4d587986e948606d4"
+    },
+    {
+      "kind": "manifest",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/039_libero_spatial_task_09_state_21/attempt_0/episode_manifest.json",
+      "sha256": "fc8dc0f49834d7af82da90fad64582aa64eba0901c419cdf756f8f53000fbab2"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/002_libero_10_task_01_state_36/attempt_0/parent_receipt.json",
+      "sha256": "17f3c3abfcd03f97d70a9e11dd81f6dca911ad211081154ccb2ce25cf2dd22f7"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/003_libero_10_task_02_state_39/attempt_0/parent_receipt.json",
+      "sha256": "f2e4d90594b7a43856673f9b0eab09f4b6754e37c35124a9c8e5f6993b4a9ed8"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/004_libero_10_task_03_state_21/attempt_0/parent_receipt.json",
+      "sha256": "533eed447e11da71ecfdb006c1aa1205dc39e953c5f391380c6454fcf4699401"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/005_libero_10_task_04_state_30/attempt_0/parent_receipt.json",
+      "sha256": "cd1ed787c815bad53d4558bcf59472a669225eb952db0165c0102402b95e2534"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/006_libero_10_task_05_state_22/attempt_0/parent_receipt.json",
+      "sha256": "fd97f4ba7014fc34cd693b8633d85a0c0458c1c5afb9e08720a37515538cb4a0"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/007_libero_10_task_06_state_34/attempt_0/parent_receipt.json",
+      "sha256": "a854ca8d17a91d19471f08657e5ec9eba3834f9eac52fdff9c3edd3077fce7d7"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/008_libero_10_task_07_state_27/attempt_0/parent_receipt.json",
+      "sha256": "48187c6e456cb0884bd0f7dcddd2ee0eef9b1b679efcbc92f4900da768ddb96a"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/009_libero_10_task_08_state_20/attempt_0/parent_receipt.json",
+      "sha256": "766a1c18d2cc632f1193212560f905ed3dfeaa7857fcdac8dbb8f2d2574ff2d9"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/010_libero_10_task_09_state_43/attempt_0/parent_receipt.json",
+      "sha256": "cbe1bd28968bb5b30bdd7622209675edcc4ad0425e9cf749189f3c537f968b25"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/012_libero_goal_task_02_state_34/attempt_0/parent_receipt.json",
+      "sha256": "11fcfc5ef7d756eee3938cb0d2107d24ec24a3d725004d4e2184bdd0a4b16cf1"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/013_libero_goal_task_03_state_45/attempt_0/parent_receipt.json",
+      "sha256": "58cc7224d4b2f462d95b47516a6d61872cf9390b799d95b2c9599562b5c0af2d"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/014_libero_goal_task_04_state_38/attempt_0/parent_receipt.json",
+      "sha256": "d614c94683b4ac64647a2a21b56a3810b5758e34148d9592c1f770e762b3d892"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/015_libero_goal_task_05_state_26/attempt_0/parent_receipt.json",
+      "sha256": "0acf2c355c14bef26496161819d8e344c92fd5aeab81fbda8f19857c11feca64"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/016_libero_goal_task_06_state_28/attempt_0/parent_receipt.json",
+      "sha256": "98b82ddf95d28090d41234ba893b2b8045c86980e160e67e136002ff80a4d88c"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/017_libero_goal_task_07_state_30/attempt_0/parent_receipt.json",
+      "sha256": "c6767d86d52169f9bda4ce84bccccb758b0928fc14b62d562f5e4c5550504598"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/018_libero_goal_task_08_state_20/attempt_0/parent_receipt.json",
+      "sha256": "8b4fe81ff42e7bd19b24d26d3d99b2d8e9bee96a60abbded58c5cc4f53d2059d"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/019_libero_goal_task_09_state_46/attempt_0/parent_receipt.json",
+      "sha256": "4d4344e4e36ff6c0458c2fc99a243bec64c486733823e947b5072fb463ecc2a7"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/021_libero_object_task_01_state_40/attempt_0/parent_receipt.json",
+      "sha256": "3cf4e0079612cf97cd23bfca03a63b28e42c981b5eb4af5a5eb20ffc770790ab"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/022_libero_object_task_02_state_42/attempt_0/parent_receipt.json",
+      "sha256": "83299965cfab9c876a361b7e711bff451a7d6f5317a40a9402d53c446880c4c0"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/023_libero_object_task_03_state_25/attempt_0/parent_receipt.json",
+      "sha256": "e2a816eb9570577683dc58e593e58264556c284db5d9e8998c5f5b8a1f3c69f5"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/024_libero_object_task_04_state_35/attempt_0/parent_receipt.json",
+      "sha256": "b3e1120135e3fe1530c28d57f4c3602fbe2fd47bbcecfe3a7fec62f1865466f4"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/025_libero_object_task_05_state_31/attempt_0/parent_receipt.json",
+      "sha256": "84ebcbf4923d976061cef474230f1c9d924e61a789b30647dd6fe350e8871ce7"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/026_libero_object_task_06_state_44/attempt_0/parent_receipt.json",
+      "sha256": "056ff7d33c8d175e0db6e59ee8423ce8e8153aaa04452fa38e8f6c27b31b2787"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/027_libero_object_task_07_state_43/attempt_0/parent_receipt.json",
+      "sha256": "f43a4234fe1cf54ecec69c61c52d1647065f099c0c0c5fbe8d1298e422f1c2ce"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/028_libero_object_task_08_state_43/attempt_0/parent_receipt.json",
+      "sha256": "74c337b4343fb26de1610018ce94ba5d06c2208e0560cf9565b9aef4d7ff616b"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/029_libero_object_task_09_state_23/attempt_0/parent_receipt.json",
+      "sha256": "ad72236483450e4ad473bad09234530bab98d9507d49bca356abe4c1414417a2"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/031_libero_spatial_task_01_state_38/attempt_0/parent_receipt.json",
+      "sha256": "22ab681582231d2b581ec45d5d00445ee265cf90717d8de80aa9c5c45479d0e7"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/032_libero_spatial_task_02_state_31/attempt_0/parent_receipt.json",
+      "sha256": "9f04e06315d54267e51214ea2053aec091c9c507655e1876051eab3f1b9a84f4"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/033_libero_spatial_task_03_state_29/attempt_0/parent_receipt.json",
+      "sha256": "b6768166b1957bd03a8b0994012fbfe27c53482a64eb19693e0987325107e35a"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/034_libero_spatial_task_04_state_33/attempt_0/parent_receipt.json",
+      "sha256": "fca92aa60935be2423d46b7d1aed92438300c8991cf66c1aebb19fe715d851cb"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/035_libero_spatial_task_05_state_27/attempt_0/parent_receipt.json",
+      "sha256": "49c8637e9cef694cff4fe08ee4cd0df6705750961dd248846f6d818200949846"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/036_libero_spatial_task_06_state_45/attempt_0/parent_receipt.json",
+      "sha256": "00eb9fb00a2e857b573097bcf8a41cc7538f2b59ffc4b1b4f9f12d60d3ccd418"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/037_libero_spatial_task_07_state_28/attempt_0/parent_receipt.json",
+      "sha256": "f996fd3bc6407dc0f6b788d01d78a4f86409dacdb26cbce0f82b71c7db1c668a"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/038_libero_spatial_task_08_state_28/attempt_0/parent_receipt.json",
+      "sha256": "d08cc6bb88b05701904b74dc60eaba4ecc7c0b57e1096131f091fc8440da9029"
+    },
+    {
+      "kind": "receipt",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/039_libero_spatial_task_09_state_21/attempt_0/parent_receipt.json",
+      "sha256": "bcfb6e79a774afd57b10b611ddbcc43d10554923092de7f0112aa295388aa8d5"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/002_libero_10_task_01_state_36/attempt_0/step_telemetry.jsonl",
+      "sha256": "4b53451d507ef02a93441dca84530ee5c738946599a513625d4aebd52f347577"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/003_libero_10_task_02_state_39/attempt_0/step_telemetry.jsonl",
+      "sha256": "5ee8085c58354d76c2d5b1b154bdbac52b94eea686c8c7b479f3904f4bf1be31"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/004_libero_10_task_03_state_21/attempt_0/step_telemetry.jsonl",
+      "sha256": "321572800c57f5ca829623053f9af4ccbabebaec792a190f7ac275d248107a9e"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/005_libero_10_task_04_state_30/attempt_0/step_telemetry.jsonl",
+      "sha256": "7d9b0ffb0e3626206532d45f3e6df1171e2a7d6f66ea4c97bba89232b8c1b003"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/006_libero_10_task_05_state_22/attempt_0/step_telemetry.jsonl",
+      "sha256": "43f52ad3f4655b7ba31160725873f2528fa0ed5f5e5c21b5fdb03bb4bd6f0da3"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/007_libero_10_task_06_state_34/attempt_0/step_telemetry.jsonl",
+      "sha256": "661f1ecdaf1f27ea463755dcdaef1623024e283dbcf662df5d761b21521d9dcc"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/008_libero_10_task_07_state_27/attempt_0/step_telemetry.jsonl",
+      "sha256": "4bfe3dc2df1d03bf2b4b334ad23ec06bf325a32d03a70d455d1d067d1c7df1e7"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/009_libero_10_task_08_state_20/attempt_0/step_telemetry.jsonl",
+      "sha256": "9802b6476384eaaf8b4bcde72a23e8b49557e5e89fb3976ab590e8ce654c5b0a"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/010_libero_10_task_09_state_43/attempt_0/step_telemetry.jsonl",
+      "sha256": "e9e536100ba6102a7266ef8af2cbcb5988e647214a1bd5e27a9800bc258a8724"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/012_libero_goal_task_02_state_34/attempt_0/step_telemetry.jsonl",
+      "sha256": "c6a6d6e34070e7335ff4e04706d94a1cc9e10298aeeef6ad99e954a7fe682610"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/013_libero_goal_task_03_state_45/attempt_0/step_telemetry.jsonl",
+      "sha256": "88e74657c7a4516db577d1696337dc55fdd702b9b3672edade01030dbcb28629"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/014_libero_goal_task_04_state_38/attempt_0/step_telemetry.jsonl",
+      "sha256": "46f69376591ef7f8b9847edf4a087cbffa0f0ed1715a1b6149eb5c67acdd1e8f"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/015_libero_goal_task_05_state_26/attempt_0/step_telemetry.jsonl",
+      "sha256": "c87e88f7ea24ebd6765375fed00d3bfdaaa491dddc85ed3b8c28effed492e9bb"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/016_libero_goal_task_06_state_28/attempt_0/step_telemetry.jsonl",
+      "sha256": "eb955c27a52f6412799934acf19dd2494bde1dae5eb7ac5e4fb4d0d405e9438f"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/017_libero_goal_task_07_state_30/attempt_0/step_telemetry.jsonl",
+      "sha256": "6205fe1a204c6cc0d28253931919c90983dcf1425d09f768ae70186f7c8fee8c"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/018_libero_goal_task_08_state_20/attempt_0/step_telemetry.jsonl",
+      "sha256": "63b7a64cb7b30cca3b23a7c47c3229dd4d3232164aeef76340ec18d0387458f2"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/019_libero_goal_task_09_state_46/attempt_0/step_telemetry.jsonl",
+      "sha256": "7781d7052046f576401d4569e8f95f0afbe32db27bf112a4f7cd97f1b1554c3f"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/021_libero_object_task_01_state_40/attempt_0/step_telemetry.jsonl",
+      "sha256": "1742754338fccef800dcd615bfcd45959132fbeaf80a2999f0efe110de933c58"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/022_libero_object_task_02_state_42/attempt_0/step_telemetry.jsonl",
+      "sha256": "5114d4892ac33b792c3e0f08ca899ad59982c82ef1bae88f56c472d23ec9a322"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/023_libero_object_task_03_state_25/attempt_0/step_telemetry.jsonl",
+      "sha256": "0dbbe206f99ed8d62819efda06503e17f6828cc5ba103c307abda3b63390fccd"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/024_libero_object_task_04_state_35/attempt_0/step_telemetry.jsonl",
+      "sha256": "2af06994f6ad9c726f94425ba76f76d3268c574bd194374a131667727e21a958"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/025_libero_object_task_05_state_31/attempt_0/step_telemetry.jsonl",
+      "sha256": "3e63cb6b93da69ba8dcea52ae023971974f7081d257daaa9dade774ba98a25bb"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/026_libero_object_task_06_state_44/attempt_0/step_telemetry.jsonl",
+      "sha256": "70507eca45b265b60135790b8c740fcbf30fc2e574d9c65695f787d6473fe5f7"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/027_libero_object_task_07_state_43/attempt_0/step_telemetry.jsonl",
+      "sha256": "1f199ac711ce06cbc968a93094f47cb6bc62735f34a43e5e74c98ea51d4637c7"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/028_libero_object_task_08_state_43/attempt_0/step_telemetry.jsonl",
+      "sha256": "f81eb6d2a816e9f98af938651580eeb11eb18b4b6447a36defa4a56117b463e4"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/029_libero_object_task_09_state_23/attempt_0/step_telemetry.jsonl",
+      "sha256": "8fbb1237048a011544258cf00c19861b6b66040d632c2edfaa1a15751ff675b7"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/031_libero_spatial_task_01_state_38/attempt_0/step_telemetry.jsonl",
+      "sha256": "a8a41b5c5967c663d212a6584d419b54ad9c477627d231697e2f05ca2107fe8c"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/032_libero_spatial_task_02_state_31/attempt_0/step_telemetry.jsonl",
+      "sha256": "be47edb128b35e0117d8f42219da6ff2d13f624f3f42f9ba183ec68e4cf1c909"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/033_libero_spatial_task_03_state_29/attempt_0/step_telemetry.jsonl",
+      "sha256": "ee9877a5e67c859d4a7415a9a2c5f7d0cd1753c30eb84c65a7b5239176ba45aa"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/034_libero_spatial_task_04_state_33/attempt_0/step_telemetry.jsonl",
+      "sha256": "41f777c8a16a4f4c800c2360c7c2d1929113f471b058173da4da8d9e169d57fc"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/035_libero_spatial_task_05_state_27/attempt_0/step_telemetry.jsonl",
+      "sha256": "2b61e534b4312392fd201e17e3e62215537bdc074a707b735b0f24c72c1a285d"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/036_libero_spatial_task_06_state_45/attempt_0/step_telemetry.jsonl",
+      "sha256": "d688cdfb3a00126f345d71e0958f4708bd82757474f80d8cf3f88e64fa389ccf"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/037_libero_spatial_task_07_state_28/attempt_0/step_telemetry.jsonl",
+      "sha256": "26fc270855dd4f51b578154bc932c02d667618efa1c36129d501b6d3325f4776"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/038_libero_spatial_task_08_state_28/attempt_0/step_telemetry.jsonl",
+      "sha256": "f29d8039f4294db1c6672c3438e9b9835bc4b7ee47cec70baaed40850edb3756"
+    },
+    {
+      "kind": "telemetry",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/039_libero_spatial_task_09_state_21/attempt_0/step_telemetry.jsonl",
+      "sha256": "a8228c6addf12b54ce7599f38180710429c55fdb8373e927e505bb57020fc3e8"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/002_libero_10_task_01_state_36/attempt_0/clean_rollout.mp4",
+      "sha256": "5683563178897ba3c0a1669b0b06787c79a2521b516eb5c16d27ff39e295525e"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/003_libero_10_task_02_state_39/attempt_0/clean_rollout.mp4",
+      "sha256": "45432b0904ca658604cfe1ede88098144bcb36f4a4b17ab49cff179b89dd5a79"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/004_libero_10_task_03_state_21/attempt_0/clean_rollout.mp4",
+      "sha256": "826540410a11e3dead617080993edd87aa20716599375704f7fc5d9dfac37041"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/005_libero_10_task_04_state_30/attempt_0/clean_rollout.mp4",
+      "sha256": "ec2bc02e6586f249ce626aa55e7e10e8213b5bcfec5c97b8017cdee2ea20bbbe"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/006_libero_10_task_05_state_22/attempt_0/clean_rollout.mp4",
+      "sha256": "6a0a9455b83aee353894ece8f957dd3433a56f7c34e66dab4cfe71edc731fc78"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/007_libero_10_task_06_state_34/attempt_0/clean_rollout.mp4",
+      "sha256": "f8d3bcf8e08d568ba090f71f45e027e2eefa560491db788fc40453e744d64aed"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/008_libero_10_task_07_state_27/attempt_0/clean_rollout.mp4",
+      "sha256": "0513b8886515e8b5cfdc5b615675a9b670466813b88fcdbfe0c5f0af5bbed600"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/009_libero_10_task_08_state_20/attempt_0/clean_rollout.mp4",
+      "sha256": "48d8b2e8a0ca7557a2b0b307239260dd075d13008355df50854b4ff23551f9b3"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/010_libero_10_task_09_state_43/attempt_0/clean_rollout.mp4",
+      "sha256": "c6a70dfc1a45227115a0001a75df5ad8d2bf8a13b0ccb0fc2f3369bfbe47206a"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/012_libero_goal_task_02_state_34/attempt_0/clean_rollout.mp4",
+      "sha256": "c3375a26a7f536758218789b99975bb5c65c2bfea49f95cf9369230954bfbbc1"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/013_libero_goal_task_03_state_45/attempt_0/clean_rollout.mp4",
+      "sha256": "03e89c39ac84ea1d7b5ada5ec5f8d433cf1096977e0967d5782d112374cc3b3f"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/014_libero_goal_task_04_state_38/attempt_0/clean_rollout.mp4",
+      "sha256": "e2285e8dba948c9661b2217752d3b3381983411d020b4a841cf11e8edf11030b"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/015_libero_goal_task_05_state_26/attempt_0/clean_rollout.mp4",
+      "sha256": "99e755e458dba7fb0ee502cb347d672edae1a820adcfdba56a58203e6d409d0c"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/016_libero_goal_task_06_state_28/attempt_0/clean_rollout.mp4",
+      "sha256": "108857aa204e4ba429a8079297ebdb26f96e85742364bc5e3d5700088e5fae34"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/017_libero_goal_task_07_state_30/attempt_0/clean_rollout.mp4",
+      "sha256": "db00099ccca1e115b226d7d3404c90bd27439924438ee3f32a522503bdd59fd8"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/018_libero_goal_task_08_state_20/attempt_0/clean_rollout.mp4",
+      "sha256": "ba74f3d06c90f524d9bfdac0908e9cc0463cb9d832569e95230060b677e20b9b"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/019_libero_goal_task_09_state_46/attempt_0/clean_rollout.mp4",
+      "sha256": "eb9790e42e4f6d7043c6e1606cf9cde1d7d4922ac311a328d46202f6673e2b1a"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/021_libero_object_task_01_state_40/attempt_0/clean_rollout.mp4",
+      "sha256": "9ab01c3e551d17c9229a104f17be5d5e446a753dbbddeda12bb68f3b6d473cdd"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/022_libero_object_task_02_state_42/attempt_0/clean_rollout.mp4",
+      "sha256": "d05a203b4a1ce97551e469999bd0a5849f3553440f0621c8c8be1d0b89d42fbc"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/023_libero_object_task_03_state_25/attempt_0/clean_rollout.mp4",
+      "sha256": "f97e160a35c6cccd9b4b63fe1c12d483aa5cf46e64b1808e08d116993affbaf9"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/024_libero_object_task_04_state_35/attempt_0/clean_rollout.mp4",
+      "sha256": "f0f2efedfbc0cdb67d952cf1a4be7284bc036e3b5ec9ee03730737c7cb71f086"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/025_libero_object_task_05_state_31/attempt_0/clean_rollout.mp4",
+      "sha256": "c073fcd49cfe5fbcdc15436cbb485ec2da31151bf8893adfa9875721c7268079"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/026_libero_object_task_06_state_44/attempt_0/clean_rollout.mp4",
+      "sha256": "7faf13d91d3c8cdc61ad188d582c74be6d40b9d88abedbde12b6a69275cbeac7"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/027_libero_object_task_07_state_43/attempt_0/clean_rollout.mp4",
+      "sha256": "1ef8b5d6a59dc6af17d90eb2447acbda54066ab938926d0cda09810493dc3079"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/028_libero_object_task_08_state_43/attempt_0/clean_rollout.mp4",
+      "sha256": "0f51dfaf6b96cece75a2ac85af8952c56b3da12499e28fed6489792f32f9c75a"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/029_libero_object_task_09_state_23/attempt_0/clean_rollout.mp4",
+      "sha256": "445868b81bb823300622401dc9fe0727d87d9bc2ef7710e8b273d22334433bc3"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/031_libero_spatial_task_01_state_38/attempt_0/clean_rollout.mp4",
+      "sha256": "d85e97f69c83b922a02d3f3caf5b5775daad21d5e72089a339af0a28acc3e00e"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/032_libero_spatial_task_02_state_31/attempt_0/clean_rollout.mp4",
+      "sha256": "2ae6ac68417dbc858eb71d6d71652c4ae317360a37a0d9e823557bcc8a45867b"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/033_libero_spatial_task_03_state_29/attempt_0/clean_rollout.mp4",
+      "sha256": "b75277fbd4f4fd30b9cb299c49b38d6aa3fd0016e5277e430e50104aae4bf644"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/034_libero_spatial_task_04_state_33/attempt_0/clean_rollout.mp4",
+      "sha256": "a743f5a8b4545ffd086445787b69ccf5962959c48463fe0a680d9caf8283745c"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/035_libero_spatial_task_05_state_27/attempt_0/clean_rollout.mp4",
+      "sha256": "43cb43a71a3f9ba51ce06e7810799bf61e11e1ab186ba01f4d3961dbbfd82897"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/036_libero_spatial_task_06_state_45/attempt_0/clean_rollout.mp4",
+      "sha256": "1f7003634938fde5f1d53656f2cb33cb2b54dcf70548f078569b53f124dd9f03"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/037_libero_spatial_task_07_state_28/attempt_0/clean_rollout.mp4",
+      "sha256": "a55313851259437acfd6749f8d0930d080cb9acb6390c1613ca3cc2b1be475cd"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/038_libero_spatial_task_08_state_28/attempt_0/clean_rollout.mp4",
+      "sha256": "39cfd59e79aafc4b6da6a77bebaa0455123d44da9c2674ee594ee9071bf4b6f4"
+    },
+    {
+      "kind": "video",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/039_libero_spatial_task_09_state_21/attempt_0/clean_rollout.mp4",
+      "sha256": "2b862099ebab6a47c6d55ce6836b709f60ce7cd3f9ae416fc871e692e8c557bc"
+    },
+    {
+      "kind": "worker",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/workers/worker_continuation_libero_10_3014479.json",
+      "sha256": "3ba294c755ff21f8b149386571d8dadd7910921151c9cc88c83c91c9516110c5"
+    },
+    {
+      "kind": "worker",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/workers/worker_continuation_libero_goal_3014478.json",
+      "sha256": "7080916ff5be7ceea2dce96a36dbc8c36134a83be58a5400b0462b8d17ee8817"
+    },
+    {
+      "kind": "worker",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/workers/worker_continuation_libero_object_3014480.json",
+      "sha256": "a4155e9cd35953d09aee60ab815139a711dc2d519ca4d864d59dad0c8b42b05b"
+    },
+    {
+      "kind": "worker",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/workers/worker_continuation_libero_spatial_3015123.json",
+      "sha256": "fb9ac4113672654217ac6190cc86930c95d76b7d81c94b5b5d59ce1b3dc1d32b"
+    },
+    {
+      "kind": "worker",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/workers/worker_repair_canary_libero_10_2988070.json",
+      "sha256": "f108b56c153e9604b64fe610619288c2ea1dfc41d02499a46e5881924fc2f85b"
+    }
+  ],
+  "counts": {
+    "attack_eligible_pre_manual_review": 14,
+    "clean_failure": 12,
+    "clean_success": 23,
+    "continuation_planned": 35,
+    "first_emit": 25,
+    "first_emit_illegal": 0,
+    "first_emit_legal": 25,
+    "no_emit": 10,
+    "runtime_invalid": 0,
+    "runtime_valid": 35
+  },
+  "durable_root": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION",
+  "historical": {
+    "d1_runtime_source": {
+      "commit": "f079dcfa2bdafe65291cfdd1fbd2913b2a42668f",
+      "tree": "6efe25a144efc43473897e5ff8e08e2124940b70"
+    },
+    "d1r_evidence_runtime_source": {
+      "branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
+      "commit": "d74b8b7aff311c4ebbd51bf83ff026efe48d0236",
+      "status_porcelain": "",
+      "tree": "2ee7425fc9177d70abb61f12b644833ec20d0a06"
+    },
+    "d1r_repaired_source_pre_evidence": {
+      "branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
+      "commit": "109cb9a4698fa462de55e5453e3c24175a81e946",
+      "status_porcelain": "",
+      "tree": "a1675c0a604a4f2d43e652f17339acddb78bce01"
+    },
+    "pr129_live_head": {
+      "commit": "4b0ceb65f8f7babdd29163e032c56fed3ba57526",
+      "tree": "d7b688e82bf0b9c5e91c08b3ad15c3a6d94b89ad"
+    }
+  },
+  "manual_review": {
+    "clean_contact_validity": "NOT_REVIEWED",
+    "next_gate": "OWNER_REVIEW_D1R_CENSUS_AND_MANUAL_CONTACT_VALIDITY",
+    "video_review_required": true
+  },
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "population": {
+    "continuation_count": 35,
+    "continuation_ordinals": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39
+    ],
+    "frozen_executable_design": 39,
+    "immutable_runtime_invalid_consumed_ordinals": [
+      1,
+      11,
+      20,
+      30
+    ],
+    "missing_cell": "libero_goal/task_01",
+    "nominal_design_cells": 40,
+    "replacement": false,
+    "rerank": false
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "forbidden_counters_zero": true,
+    "protected_evaluation": "UNREAD"
+  },
+  "schema": "STAGE_X_X1R_T1D1R_CENSUS_AUDIT_V1",
+  "scope": "SCREENING_CLEAN_ONLY",
+  "source_before_evidence_outputs": {
+    "branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
+    "commit": "2b52fbfe7672b5e221e325d7246b456b28511643",
+    "status_porcelain": "",
+    "tree": "dc83fbe6c6630a33bee5b5e457bf4e5f4a9a4865"
+  },
+  "status": "PASS_D1R_CONTINUATION_CENSUS_PRE_MANUAL_REVIEW",
+  "student": {
+    "checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+    "features_unchanged": true,
+    "head_contract_audit": "PASS",
+    "source_raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+    "thresholds_unchanged": true
+  },
+  "suite_counts": {
+    "libero_10": 9,
+    "libero_goal": 8,
+    "libero_object": 9,
+    "libero_spatial": 9
+  }
+}

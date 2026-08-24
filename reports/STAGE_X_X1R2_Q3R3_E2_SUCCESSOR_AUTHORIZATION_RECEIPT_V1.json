@@ -1,0 +1,87 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_AUTHORIZATION_RECEIPT_V1",
+  "status": "PASS_E2_SUCCESSOR_ENGINEERING_POOL_AUTHORIZED_PRE_GPU",
+  "date": "2026-08-21",
+  "authority": {
+    "explicit_user_authorization": "授权你自主推进，遇到工程问题自己解决",
+    "scope": "Engineering continuation only; resolve the frozen-pool evidence blocker.",
+    "method_change": false,
+    "estimand_change": false,
+    "scientific_authority": false,
+    "protected_authority": false
+  },
+  "predecessor_hold": {
+    "status": "HOLD_Q3R3_E2_FEASIBILITY_EVIDENCE_INSUFFICIENT_FROZEN_POOL_EXHAUSTED",
+    "root_seal_sha256": "84b925eff65c1d9774295b08a0c57e6fccd1ef08511728e67bd3931af2067a61",
+    "object_suite_remaining": 0,
+    "gpu_worker_mounted": false
+  },
+  "source_binding": {
+    "commit": "5bf29dd4492c578d22a551ba99705c90930472ad",
+    "tree": "237d941d4f646668f0c3d2dab9c99a9e3064d784",
+    "pool_git_blob_sha256": "a7c48cab8c4bfef0ead1019fa9987ce6e44c1ae5",
+    "protocol_git_blob_sha256": "21d4b4f8c4fe5a66d5960b8bb1b7ccf211b843df",
+    "pool_raw_sha256": "b7774b7f6bcfcb6e46056b739c86f764c5bc7dfb4304ed0eb2b31898c690acda",
+    "protocol_raw_sha256": "edb10f8010ca7579ca55bdab56117120989d16789e1bbfa88594eb669266341c"
+  },
+  "successor_pool": {
+    "path": "reports/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_ENGINEERING_POOL_V1.json",
+    "selected_count": 12,
+    "per_suite_count": 3,
+    "permanent_exclusion": true,
+    "scientific_use": false,
+    "outcome_read": false,
+    "replacement": false,
+    "selection_outcome_blind": true,
+    "suite_fixture_ids": {
+      "libero_10": ["Q3R2-LIBERO_10-08", "Q3R2-LIBERO_10-09", "Q3R2-LIBERO_10-10"],
+      "libero_goal": ["Q3R2-LIBERO_GOAL-09", "Q3R2-LIBERO_GOAL-10", "Q3R2-LIBERO_GOAL-11"],
+      "libero_object": ["E2S-LIBERO_OBJECT-01", "E2S-LIBERO_OBJECT-02", "E2S-LIBERO_OBJECT-03"],
+      "libero_spatial": ["Q3R2-LIBERO_SPATIAL-07", "Q3R2-LIBERO_SPATIAL-08", "Q3R2-LIBERO_SPATIAL-09"]
+    }
+  },
+  "frozen_method": {
+    "epsilon": 0.03,
+    "step_size": 0.006,
+    "pgd_steps": 5,
+    "random_start": false,
+    "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "candidate_order": ["delta0", "pgd_iteration_1", "pgd_iteration_2", "pgd_iteration_3", "pgd_iteration_4", "pgd_iteration_5"],
+    "exact_arm_dimensions": [0, 1, 2, 3, 4, 5],
+    "target_execution_class": "NATIVE_OPEN",
+    "secondary_target_token_id": 31745,
+    "no_fallback": true,
+    "no_actuator_overwrite": true,
+    "no_decode_reencode": true,
+    "stop_before_attacked_env_step": true
+  },
+  "resource_boundary": {
+    "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "free_memory_mib_strictly_greater_than": 20480,
+    "one_project_worker_per_physical_gpu": true,
+    "max_project_workers": 8,
+    "foreign_processes_untouched": true,
+    "durable_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_e2_20260821"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "gpu_worker_mounted": false,
+    "model_inference_calls": 0,
+    "simulator_steps": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "protected_reads": 0,
+    "attack_outcome_reads": 0
+  },
+  "next_gate": "STAGE_X_X1R2_Q3R3_E2_PREATTACK_BRANCH_QUALIFICATION",
+  "mandatory_stops": [
+    "Do not use any successor identity as scientific efficacy evidence.",
+    "Do not tune epsilon, steps, arm-preservation weight, or acceptance gates.",
+    "Do not enter R0/R1/R2 or read Eval160/protected evaluation.",
+    "Stop before attacked env.step even if a valid strict candidate is found."
+  ]
+}

@@ -1,11 +1,12 @@
 from __future__ import annotations
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Mapping, Optional
 import numpy as np
 from PIL import Image
 import torch
 import torch.nn.functional as F
 from .types import AttackResult
 from .execution_target import (
+    native_open_logratio_loss_and_stats,
     target_token_cw_loss_and_stats,
     target_token_logratio_loss_and_stats,
     validate_execution_target,
@@ -169,6 +170,7 @@ class TokenPrefixPGDAttacker:
         self.surrogate_score_path = str(cfg.get("surrogate_score_path", "uncached_full_context_v1") or "uncached_full_context_v1").strip().lower()
         self.gradient_transform = str(cfg.get("gradient_transform", "none") or "none").strip().lower()
         self.gradient_transform_seed = int(cfg.get("gradient_transform_seed", seed))
+        self.arm_isolation_candidate_policy = str(cfg.get("arm_isolation_candidate_policy", "FINAL_ONLY") or "FINAL_ONLY").strip()
         self.best_restart_metric = str(cfg.get("best_restart_metric", "target_ce_final"))
         self.seed = int(seed)
         self.preprocess_kwargs = dict(preprocess_kwargs or {})
@@ -176,6 +178,7 @@ class TokenPrefixPGDAttacker:
         self.device = device or "cuda:0"
         self.config = cfg
         self._frozen = False
+        self.last_attack_diagnostics: dict[str, Any] = {}
 
     def reset_temporal_state(self):
         self._prev_delta = None
@@ -682,6 +685,115 @@ class TokenPrefixPGDAttacker:
         return gen.sequences[0, prompt_input_ids.shape[1]:].detach().to(
             device=prompt_input_ids.device, dtype=torch.long)
 
+    def _select_strict_arm_candidate(
+        self,
+        prompt_input_ids: torch.LongTensor,
+        trajectory_candidate_inputs: list[dict[str, Any]],
+        clean_generated_action_token_ids: torch.LongTensor,
+        open_token_ids: torch.LongTensor,
+        optimization_diagnostics: Mapping[str, Any] | None = None,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        """Select only a predeclared candidate with exact direct-token isolation."""
+        if open_token_ids is None or int(open_token_ids.numel()) == 0:
+            raise RouteContractError("STRICT_CANDIDATE_AUDIT_OPEN_TOKEN_SET_MISSING")
+        clean_tokens = [int(x) for x in clean_generated_action_token_ids.detach().cpu().tolist()]
+        if len(clean_tokens) != 7:
+            raise RouteContractError(f"ACTION_TOKEN_COUNT_FOR_ARM_AUDIT:{len(clean_tokens)}")
+        clean_arm = clean_tokens[:-1]
+        clean_gripper_token_id = int(clean_tokens[-1])
+        open_ids = {int(x) for x in open_token_ids.detach().cpu().tolist()}
+        clean_gripper_is_native_open = clean_gripper_token_id in open_ids
+        audit: list[dict[str, Any]] = []
+        selected_candidate = None
+        for candidate in trajectory_candidate_inputs:
+            candidate_tokens = [
+                int(x)
+                for x in self._generate_action_prefix_tokens(
+                    prompt_input_ids,
+                    candidate["pixel_values"],
+                    prefix_len=len(clean_tokens),
+                ).detach().cpu().tolist()
+            ]
+            arm_mismatch = [
+                int(dim)
+                for dim, (clean_id, candidate_id) in enumerate(zip(clean_arm, candidate_tokens[:-1]))
+                if int(clean_id) != int(candidate_id)
+            ]
+            gripper_token_id = int(candidate_tokens[-1])
+            item = {
+                "candidate_index": int(candidate["candidate_index"]),
+                "candidate_source": str(candidate["candidate_source"]),
+                "direct_generated_token_ids": candidate_tokens,
+                "clean_arm_token_ids": clean_arm,
+                "direct_generated_arm_token_ids": candidate_tokens[:-1],
+                "arm_token_ids_equal": not arm_mismatch,
+                "arm_mismatch_dimensions": arm_mismatch,
+                "direct_generated_gripper_token_id": gripper_token_id,
+                "direct_generated_gripper_is_native_open": gripper_token_id in open_ids,
+                "clean_gripper_token_id": clean_gripper_token_id,
+                "clean_gripper_is_native_open": clean_gripper_is_native_open,
+                "gripper_token_changed": gripper_token_id != clean_gripper_token_id,
+                "processor_input_sha256": str(candidate.get("processor_input_sha256", "")),
+                "delta_sha256": str(candidate.get("delta_sha256", "")),
+                "pixel_budget_adv_inputs_linf": float(candidate.get("pixel_budget_adv_inputs_linf", 0.0)),
+            }
+            objective = str(getattr(self, "objective", ""))
+            try:
+                with torch.no_grad():
+                    prefix = torch.tensor(candidate_tokens[:-1], dtype=torch.long, device=prompt_input_ids.device)
+                    if objective in {"autoregressive_prefix_gripper_native_open_logratio_v4", "autoregressive_prefix_gripper_native_open_logratio_arm_v5"}:
+                        _, surrogate = self._generated_prefix_native_open_logratio_loss_and_stats_cached(
+                            prompt_input_ids,
+                            prefix,
+                            candidate["pixel_values"],
+                            open_token_ids=open_token_ids,
+                        )
+                    elif objective in {
+                        "autoregressive_prefix_gripper_target_token_logratio_v2",
+                        "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+                    }:
+                        _, surrogate = self._generated_prefix_target_token_loss_and_stats_cached(
+                            prompt_input_ids,
+                            prefix,
+                            candidate["pixel_values"],
+                            target_token_id=int(self.target_token_id),
+                            margin=float(getattr(self, "gripper_margin", 5.0)),
+                        )
+                    else:
+                        surrogate = None
+            except Exception as exc:
+                surrogate = {"diagnostic_error": f"{type(exc).__name__}:{exc}"}
+            item["surrogate_diagnostics"] = surrogate
+            audit.append(item)
+            if not arm_mismatch and not clean_gripper_is_native_open and gripper_token_id in open_ids and gripper_token_id != clean_gripper_token_id:
+                # Keep auditing the frozen trajectory so successful routes also
+                # leave a complete six-row receipt; selection remains first-valid.
+                if selected_candidate is None:
+                    selected_candidate = candidate
+        if selected_candidate is not None:
+            diagnostics = {
+                "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+                "candidate_audit": audit,
+                "selected_candidate_index": int(selected_candidate["candidate_index"]),
+                "selected_candidate_source": str(selected_candidate["candidate_source"]),
+            }
+            if optimization_diagnostics is not None:
+                diagnostics["optimization_diagnostics"] = dict(optimization_diagnostics)
+            self.last_attack_diagnostics = diagnostics
+            return selected_candidate, audit
+        diagnostics = {
+            "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+            "candidate_audit": audit,
+            "selected_candidate_index": None,
+            "selected_candidate_source": None,
+        }
+        if optimization_diagnostics is not None:
+            diagnostics["optimization_diagnostics"] = dict(optimization_diagnostics)
+        self.last_attack_diagnostics = diagnostics
+        error = RouteContractError("STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE")
+        error.diagnostics = diagnostics
+        raise error
+
     def _gripper_row_stats(self, row: torch.Tensor, open_token_ids: torch.LongTensor, close_token_ids: torch.LongTensor) -> dict:
         probs = torch.softmax(row, dim=-1)
         top_val, top_idx = torch.max(row, dim=-1)
@@ -847,6 +959,49 @@ class TokenPrefixPGDAttacker:
         })
         return loss, stats
 
+    def _generated_prefix_native_open_logratio_loss_and_stats_cached(
+        self,
+        prompt_input_ids: torch.LongTensor,
+        generated_arm_prefix_token_ids: torch.LongTensor,
+        pixel_values: torch.Tensor,
+        *,
+        open_token_ids: torch.LongTensor,
+    ):
+        """Native-OPEN-set surrogate on the cached autoregressive score path."""
+        out = self.model(
+            input_ids=prompt_input_ids,
+            pixel_values=pixel_values,
+            use_cache=True,
+            return_dict=True,
+        )
+        past = getattr(out, "past_key_values", None)
+        if past is None:
+            raise RouteContractError("cached_autoregressive_generate_v1 requires model past_key_values")
+        final_out = out
+        for token in generated_arm_prefix_token_ids.detach().to(device=prompt_input_ids.device, dtype=torch.long).view(-1):
+            step_ids = token.view(1, 1)
+            final_out = self.model(
+                input_ids=step_ids,
+                past_key_values=past,
+                use_cache=True,
+                return_dict=True,
+            )
+            past = getattr(final_out, "past_key_values", None)
+            if past is None:
+                raise RouteContractError("cached autoregressive step did not return past_key_values")
+        gripper_row = final_out.logits.float().contiguous()[0, -1, :]
+        loss, stats = native_open_logratio_loss_and_stats(
+            gripper_row,
+            open_token_ids=open_token_ids.detach().cpu().tolist(),
+        )
+        stats.update({
+            "gripper_row_index": -1,
+            "conditioning": "generated_arm_prefix_stop_gradient",
+            "surrogate_score_path": "cached_autoregressive_generate_v1",
+            "generated_arm_prefix_token_ids": [int(x) for x in generated_arm_prefix_token_ids.detach().cpu().tolist()],
+        })
+        return loss, stats
+
     def _arm_preservation_loss_and_stats(self, full_input_ids, labels, pixel_values, action_dim: int, *, arm_preserve_weight: float):
         out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
         logits = out.logits.float().contiguous()
@@ -910,6 +1065,7 @@ class TokenPrefixPGDAttacker:
         }
 
     def attack(self, observation: Any, instruction=None, clean_action=None, target_action=None, clean_model_output=None, *, unnorm_key: str = "libero_goal") -> AttackResult:
+        self.last_attack_diagnostics = {}
         objective = str(getattr(self, "objective", "targeted_directional_ce"))
         is_untargeted = objective in {"untargeted_clean_token_ce", "untargeted_clean_ce", "maximize_clean_ce", "untargeted_arm_clean_token_ce", "ctrl_random_direction_arm_only"}
         is_arm_only_untargeted = objective in {"untargeted_arm_clean_token_ce", "ctrl_random_direction_arm_only"}
@@ -926,7 +1082,19 @@ class TokenPrefixPGDAttacker:
         is_target_token_cw_v1 = objective in {"autoregressive_prefix_gripper_target_token_cw_v1"}
         is_target_token_logratio_v2 = objective in {"autoregressive_prefix_gripper_target_token_logratio_v2"}
         is_target_token_logratio_arm_v3 = objective in {"autoregressive_prefix_gripper_target_token_logratio_arm_v3"}
-        is_target_token_objective = is_target_token_cw_v1 or is_target_token_logratio_v2 or is_target_token_logratio_arm_v3
+        is_native_open_logratio_v4 = objective in {"autoregressive_prefix_gripper_native_open_logratio_v4"}
+        is_native_open_logratio_arm_v5 = objective in {"autoregressive_prefix_gripper_native_open_logratio_arm_v5"}
+        is_target_token_objective = (
+            is_target_token_cw_v1
+            or is_target_token_logratio_v2
+            or is_target_token_logratio_arm_v3
+            or is_native_open_logratio_v4
+            or is_native_open_logratio_arm_v5
+        )
+        if self.arm_isolation_candidate_policy not in {"FINAL_ONLY", "STRICT_CANDIDATE_AUDIT_V1"}:
+            raise RouteContractError(f"UNKNOWN_ARM_ISOLATION_CANDIDATE_POLICY:{self.arm_isolation_candidate_policy}")
+        if self.arm_isolation_candidate_policy == "STRICT_CANDIDATE_AUDIT_V1" and not is_target_token_objective:
+            raise RouteContractError("STRICT_CANDIDATE_AUDIT_REQUIRES_TARGET_TOKEN_OBJECTIVE")
         is_gripper_expected_action = objective in {"gripper_open_expected_action"}
         is_prefix_locked = is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_prefix_locked_top1
         is_corrected_hybrid = is_force_open_region_z_down  # uses corrected OPEN region + Z CE
@@ -956,7 +1124,7 @@ class TokenPrefixPGDAttacker:
             for x in retokenized_target_ids[: max(int(retokenized_target_ids.numel()) - 1, 0)].detach().cpu().tolist()
         ]
         if is_target_token_objective:
-            if (is_target_token_logratio_v2 or is_target_token_logratio_arm_v3) and self.surrogate_score_path not in {"cached_autoregressive_generate_v1", "cached_generate_v1"}:
+            if (is_target_token_logratio_v2 or is_target_token_logratio_arm_v3 or is_native_open_logratio_v4 or is_native_open_logratio_arm_v5) and self.surrogate_score_path not in {"cached_autoregressive_generate_v1", "cached_generate_v1"}:
                 raise RouteContractError(f"{objective} requires cached_autoregressive_generate_v1")
             clean_generated_action_token_ids = self._exact_tokens_from_generation(
                 clean_model_output,
@@ -1060,7 +1228,17 @@ class TokenPrefixPGDAttacker:
         loss_kwargs = {"objective": objective, "num_action_tokens": int(target_ids.numel())}
         region_token_ids = None
         corrected_region_info = None
-        _needs_region = is_gripper_region or is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_corrected_hybrid or is_prefix_locked_top1 or is_generated_prefix_v3
+        _needs_region = (
+            is_gripper_region
+            or is_prefix_locked_open_region
+            or is_prefix_locked_open_margin
+            or is_gripper_expected_action
+            or is_corrected_hybrid
+            or is_prefix_locked_top1
+            or is_generated_prefix_v3
+            or is_native_open_logratio_v4
+            or is_native_open_logratio_arm_v5
+        )
         if _needs_region:
             # P0 BUG FIX: use decoded-action semantics instead of sign-string heuristic.
             corrected_region_info = self.get_gripper_region_by_decoded_action(
@@ -1090,10 +1268,20 @@ class TokenPrefixPGDAttacker:
                     action_stats=stats,
                 )
                 unnorm_key = resolved_unnorm
+        arm_audit_open_token_ids = region_token_ids
+        if self.arm_isolation_candidate_policy == "STRICT_CANDIDATE_AUDIT_V1" and arm_audit_open_token_ids is None:
+            # Target-token loss uses one secondary token, but arm isolation is
+            # defined over the checkpoint-local native OPEN execution class.
+            arm_audit_open_token_ids = self.get_gripper_region_by_decoded_action(
+                unnorm_key, postprocess_gripper=bool(self.postprocess_gripper)
+            )["open_token_ids"]
         if is_force_open_z_down and self.loss_weights is not None:
             loss_kwargs["loss_weights"] = self.loss_weights
         initial_loss = None; final_loss = None; _prefix_debug_final = None
         generated_prefix_debug = {}
+        selected_candidate_index = None
+        arm_isolation_candidate_audit = None
+        selected_candidate_adv_model = None
         if is_generated_prefix_v3 or is_target_token_objective:
             prefix_refresh_interval = int(self.prefix_refresh_interval)
             prefix_refresh_count = 0
@@ -1135,7 +1323,14 @@ class TokenPrefixPGDAttacker:
                 # keeps arm preservation as an acceptance gate rather than a
                 # competing loss term.
                 adv_g = self._cast_projected_pixel_values(adv, x_orig_model)
-                if is_target_token_objective:
+                if is_native_open_logratio_v4 or is_native_open_logratio_arm_v5:
+                    gripper_loss, gripper_stats = self._generated_prefix_native_open_logratio_loss_and_stats_cached(
+                        clean_ids,
+                        generated_arm_prefix_token_ids,
+                        adv_g,
+                        open_token_ids=region_token_ids,
+                    )
+                elif is_target_token_objective:
                     gripper_loss, gripper_stats = self._generated_prefix_target_token_loss_and_stats(
                         clean_ids,
                         generated_arm_prefix_token_ids,
@@ -1237,7 +1432,7 @@ class TokenPrefixPGDAttacker:
                     trajectory_candidate_inputs.append(
                         {
                             "candidate_index": int(i + 1),
-                            "candidate_source": "pgd_iteration",
+                            "candidate_source": f"pgd_iteration_{int(i + 1)}",
                             "input_ids": clean_ids.detach(),
                             "pixel_values": cand_model.detach(),
                             "delta_sha256": tensor_sha256(cand_diff),
@@ -1252,7 +1447,38 @@ class TokenPrefixPGDAttacker:
                 del grad
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
-            adv_model_for_final = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+            selected_candidate_index = None
+            arm_isolation_candidate_audit = None
+            if self.arm_isolation_candidate_policy == "STRICT_CANDIDATE_AUDIT_V1":
+                candidate_optimization_diagnostics = {
+                    "objective": objective,
+                    "surrogate_score_path": self.surrogate_score_path,
+                    "initial_generated_stats": initial_generated_stats,
+                    "target_objective_loss_trajectory": target_token_objective_loss_trajectory,
+                    "target_objective_margin_trajectory": target_token_objective_margin_trajectory,
+                    "target_logratio_margin_trajectory": target_token_logratio_margin_trajectory,
+                    "arm_preservation_loss_trajectory": target_token_arm_loss_trajectory,
+                    "gradient_norm_trajectory": gradient_norm_trajectory,
+                    "generated_arm_prefix_trajectory": generated_arm_prefix_trajectory,
+                    "arm_preserve_weight": float(self.arm_preserve_weight),
+                    "native_open_set_objective": bool(is_native_open_logratio_v4 or is_native_open_logratio_arm_v5),
+                    "native_open_arm_preservation": bool(is_native_open_logratio_arm_v5),
+                }
+                selected_candidate, arm_isolation_candidate_audit = self._select_strict_arm_candidate(
+                    clean_ids,
+                    trajectory_candidate_inputs,
+                    clean_generated_action_token_ids,
+                    arm_audit_open_token_ids,
+                    candidate_optimization_diagnostics,
+                )
+                selected_candidate_index = int(selected_candidate["candidate_index"])
+                selected_candidate_adv_model = selected_candidate["pixel_values"].detach()
+                adv = selected_candidate_adv_model.float()
+            adv_model_for_final = (
+                selected_candidate_adv_model
+                if selected_candidate_adv_model is not None
+                else self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+            )
             final_prefix = self._generate_action_prefix_tokens(
                 clean_ids,
                 adv_model_for_final,
@@ -1260,7 +1486,14 @@ class TokenPrefixPGDAttacker:
             )
             num_generation_forwards += 1
             with torch.no_grad():
-                if is_target_token_objective:
+                if is_native_open_logratio_v4 or is_native_open_logratio_arm_v5:
+                    final_gripper_loss, final_generated_stats = self._generated_prefix_native_open_logratio_loss_and_stats_cached(
+                        clean_ids,
+                        final_prefix,
+                        adv_model_for_final,
+                        open_token_ids=region_token_ids,
+                    )
+                elif is_target_token_objective:
                     final_gripper_loss, final_generated_stats = self._generated_prefix_target_token_loss_and_stats(
                         clean_ids,
                         final_prefix,
@@ -1277,7 +1510,7 @@ class TokenPrefixPGDAttacker:
                         corrected_region_info.get("close_token_ids"),
                         margin=float(self.gripper_margin),
                     )
-                if is_target_token_logratio_arm_v3:
+                if is_target_token_logratio_arm_v3 or is_native_open_logratio_arm_v5:
                     final_arm_loss, final_arm_stats = self._clean_generated_arm_preservation_loss_and_stats(
                         clean_ids,
                         clean_generated_action_token_ids,
@@ -1295,7 +1528,7 @@ class TokenPrefixPGDAttacker:
                     )
                 final_loss = float(
                     (final_gripper_loss + final_arm_loss).detach().cpu()
-                    if is_target_token_logratio_arm_v3
+                    if is_target_token_logratio_arm_v3 or is_native_open_logratio_arm_v5
                     else final_gripper_loss.detach().cpu()
                     if is_target_token_objective
                     else (final_gripper_loss + final_arm_loss).detach().cpu()
@@ -1373,7 +1606,7 @@ class TokenPrefixPGDAttacker:
                     "target_token_objective_margin_name": (final_generated_stats or {}).get("target_objective_margin_name"),
                     "target_token_objective_margin_initial": (initial_generated_stats or {}).get("target_objective_margin"),
                     "target_token_objective_margin_final": (final_generated_stats or {}).get("target_objective_margin"),
-                    "arm_preservation_role": "combined_gradient_penalty" if is_target_token_logratio_arm_v3 else "acceptance_gate_not_primary_loss",
+                    "arm_preservation_role": "combined_gradient_penalty" if (is_target_token_logratio_arm_v3 or is_native_open_logratio_arm_v5) else "acceptance_gate_not_primary_loss",
                     "arm_preserve_weight": float(self.arm_preserve_weight),
                     "arm_gate_reference": "clean_actual_generation",
                     "arm_prefix_match_count": int(sum(int(clean_arm_prefix_token_ids[j] == generated_arm_prefix_final[j]) for j in range(n_arm))) if n_arm else 0,
@@ -1392,6 +1625,20 @@ class TokenPrefixPGDAttacker:
                     "gradient_transform": self.gradient_transform,
                     "gradient_transform_seed": int(self.gradient_transform_seed),
                 })
+                if is_native_open_logratio_v4 or is_native_open_logratio_arm_v5:
+                    generated_prefix_debug.update({
+                        "native_open_set_objective": True,
+                        "native_open_set_token_count": (final_generated_stats or {}).get("native_open_token_count"),
+                        "native_open_set_score_initial": (initial_generated_stats or {}).get("native_open_logsumexp_score"),
+                        "native_open_set_score_final": (final_generated_stats or {}).get("native_open_logsumexp_score"),
+                        "non_open_competitor_score_initial": (initial_generated_stats or {}).get("non_open_logsumexp_score"),
+                        "non_open_competitor_score_final": (final_generated_stats or {}).get("non_open_logsumexp_score"),
+                        "native_open_minus_non_open_margin_initial": (initial_generated_stats or {}).get("native_open_minus_non_open_logsumexp_margin"),
+                        "native_open_minus_non_open_margin_final": (final_generated_stats or {}).get("native_open_minus_non_open_logsumexp_margin"),
+                        "secondary_target_token_31745_score_initial": (initial_generated_stats or {}).get("secondary_target_token_score"),
+                        "secondary_target_token_31745_score_final": (final_generated_stats or {}).get("secondary_target_token_score"),
+                        "native_open_arm_preservation": bool(is_native_open_logratio_arm_v5),
+                    })
                 if is_target_token_cw_v1:
                     generated_prefix_debug.update({
                         "target_token_cw_margin_initial": (initial_generated_stats or {}).get("target_minus_best_competitor_margin"),
@@ -1445,7 +1692,11 @@ class TokenPrefixPGDAttacker:
                 del grad, loss
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
-        adv_model = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+        adv_model = (
+            selected_candidate_adv_model
+            if selected_candidate_adv_model is not None
+            else self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+        )
         if not (is_generated_prefix_v3 or is_target_token_objective):
             with torch.no_grad():
                 final_loss = float(self._loss(full_ids, labels, adv_model, **loss_kwargs).detach().cpu())
@@ -1488,6 +1739,9 @@ class TokenPrefixPGDAttacker:
             "delta_final_sha256": tensor_sha256(diff),
             "delta0_processor_input_sha256": tensor_sha256(delta0_adv_model.detach()),
             "processor_input_sha256": tensor_sha256(adv_model.detach()),
+            "arm_isolation_candidate_policy": self.arm_isolation_candidate_policy,
+            "arm_isolation_candidate_audit": arm_isolation_candidate_audit,
+            "selected_candidate_index": selected_candidate_index,
         }
         if is_generated_prefix_v3 or is_target_token_objective:
             debug.update(generated_prefix_debug)
@@ -1517,9 +1771,12 @@ class TokenPrefixPGDAttacker:
             if is_target_token_cw_v1:
                 debug["target_token_cw_loss_initial"] = initial_loss
                 debug["target_token_cw_loss_final"] = final_loss
-            if is_target_token_logratio_v2 or is_target_token_logratio_arm_v3:
+            if is_target_token_logratio_v2 or is_target_token_logratio_arm_v3 or is_native_open_logratio_v4 or is_native_open_logratio_arm_v5:
                 debug["target_token_logratio_loss_initial"] = initial_loss
                 debug["target_token_logratio_loss_final"] = final_loss
+            if is_native_open_logratio_v4 or is_native_open_logratio_arm_v5:
+                debug["native_open_set_logratio_loss_initial"] = initial_loss
+                debug["native_open_set_logratio_loss_final"] = final_loss
             # Gripper-specific restart-selection metrics (now using corrected region)
             if corrected_region_info is not None:
                 debug["corrected_open_token_count"] = corrected_region_info["open_count"]
@@ -1562,6 +1819,8 @@ class TokenPrefixPGDAttacker:
                     "autoregressive_prefix_target_token_cw_loss": bool(is_target_token_cw_v1),
                     "autoregressive_prefix_target_token_logratio_loss": bool(is_target_token_logratio_v2 or is_target_token_logratio_arm_v3),
                     "autoregressive_prefix_target_token_logratio_arm_loss": bool(is_target_token_logratio_arm_v3),
+                    "autoregressive_prefix_native_open_logratio_loss": bool(is_native_open_logratio_v4 or is_native_open_logratio_arm_v5),
+                    "autoregressive_prefix_native_open_logratio_arm_loss": bool(is_native_open_logratio_arm_v5),
                     "gripper_expected_action_loss": bool(is_gripper_expected_action),
                     "prefix_locked_arm_preserve": bool(is_prefix_locked or is_generated_prefix_v3),
                     "arm_preservation_as_acceptance_gate": bool(is_target_token_objective),
@@ -1593,7 +1852,11 @@ class TokenPrefixPGDAttacker:
                     if is_generated_prefix_v3
                     else (
                         (
-                            "token_prefix_pgd_pixel_values_target_token_logratio_arm_v3"
+                            "token_prefix_pgd_pixel_values_native_open_logratio_arm_v5"
+                            if is_native_open_logratio_arm_v5
+                            else "token_prefix_pgd_pixel_values_native_open_logratio_v4"
+                            if is_native_open_logratio_v4
+                            else "token_prefix_pgd_pixel_values_target_token_logratio_arm_v3"
                             if is_target_token_logratio_arm_v3
                             else "token_prefix_pgd_pixel_values_target_token_logratio_v2"
                             if is_target_token_logratio_v2
@@ -1638,22 +1901,51 @@ class OpenVLAVisualAttacker:
         if callable(reset):
             reset()
 
-    def attack(self, observation, instruction, clean_action, target_action, clean_model_output=None, *, unnorm_key: str = "libero_goal") -> AttackResult:
+    def attack(
+        self,
+        observation,
+        instruction,
+        clean_action,
+        target_action,
+        clean_model_output=None,
+        *,
+        unnorm_key: str = "libero_goal",
+        execution_trace: Optional[Dict[str, Any]] = None,
+    ) -> AttackResult:
         validate_attack_request(self.route, target_action_present=target_action is not None)
-        if self.route.strict_route:
-            result = self.adapter.attack(
-                observation,
-                instruction,
-                clean_action,
-                target_action,
-                clean_model_output,
-                unnorm_key=unnorm_key,
-            )
-        else:
-            try:
-                result = self.adapter.attack(observation, instruction, clean_action, target_action, clean_model_output, unnorm_key=unnorm_key)
-            except TypeError:
-                result = self.adapter.attack(observation, instruction, clean_action, target_action, clean_model_output)
+        if execution_trace is not None:
+            execution_trace["attack_invocation_started"] = True
+        try:
+            if self.route.strict_route:
+                result = self.adapter.attack(
+                    observation,
+                    instruction,
+                    clean_action,
+                    target_action,
+                    clean_model_output,
+                    unnorm_key=unnorm_key,
+                )
+            else:
+                try:
+                    result = self.adapter.attack(observation, instruction, clean_action, target_action, clean_model_output, unnorm_key=unnorm_key)
+                except TypeError:
+                    result = self.adapter.attack(observation, instruction, clean_action, target_action, clean_model_output)
+        except Exception as exc:
+            if execution_trace is not None:
+                execution_trace["attack_error"] = f"{type(exc).__name__}:{exc}"
+                diagnostics = getattr(self.adapter, "last_attack_diagnostics", None)
+                if diagnostics:
+                    execution_trace["attack_contract_diagnostics"] = diagnostics
+            raise
+        if execution_trace is not None:
+            execution_trace["attack_result_returned"] = True
+            debug_returned = getattr(result, "debug", {}) or {}
+            for source, target in (
+                ("num_backwards", "backward_invocation_count"),
+                ("num_loss_forwards", "loss_forward_count"),
+            ):
+                if source in debug_returned:
+                    execution_trace[target] = int(debug_returned[source])
         fallback_reason = (result.debug or {}).get("fallback_reason")
         fallback_used = bool(self.resolved_adapter_class != "TokenPrefixPGDAttacker" or fallback_reason)
         result.debug = attach_route_debug(
@@ -1667,5 +1959,12 @@ class OpenVLAVisualAttacker:
         result.debug["x_adv_is_none"] = result.x_adv is None
         result.debug["action_adv_is_none"] = result.action_adv is None
         if self.route.strict_route:
-            validate_true_pgd_attack_result(result, self.route)
+            try:
+                validate_true_pgd_attack_result(result, self.route)
+            except Exception:
+                if execution_trace is not None:
+                    execution_trace["attack_result_accepted"] = False
+                raise
+        if execution_trace is not None:
+            execution_trace["attack_result_accepted"] = True
         return result

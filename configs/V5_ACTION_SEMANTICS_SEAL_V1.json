@@ -1,0 +1,58 @@
+{
+  "seal": "V5_ACTION_SEMANTICS_SEAL_V1",
+  "frozen_at": "2026-07-27",
+  "canonical_constants": {
+    "CANONICAL_RAW_OPEN": 1.0,
+    "CANONICAL_RAW_CLOSE": 0.0,
+    "CANONICAL_ENV_OPEN": -1.0,
+    "CANONICAL_ENV_CLOSE": 1.0,
+    "RAW_OPEN_THRESHOLD": 0.5,
+    "RAW_CLOSE_THRESHOLD": 0.5
+  },
+  "mapping_chain": {
+    "token_to_raw": "OpenVLA decoder: norm_bin → unnormalize → raw ∈ [0,1]",
+    "raw_to_env": "normalize_and_invert_gripper: raw→2*raw-1→sign(0→1)→*(-1)",
+    "env_to_physical": "robosuite: env+1=actuate_CLOSE, env-1=actuate_OPEN",
+    "physical_to_qpos": "qpos[0]+qpos[1] ≈ 0.08 when OPEN, ≈ 0.00 when CLOSE"
+  },
+  "verified_examples": {
+    "raw_0.0_fully_closed": {
+      "steps": "2*0-1=-1 → sign=-1 → invert: -1*-1=+1",
+      "env_action": 1.0,
+      "physical_meaning": "CLOSE"
+    },
+    "raw_1.0_fully_open": {
+      "steps": "2*1-1=+1 → sign=+1 → invert: +1*-1=-1",
+      "env_action": -1.0,
+      "physical_meaning": "OPEN"
+    },
+    "raw_0.5_boundary": {
+      "steps": "2*0.5-1=0 → sign=0 → fixup→1 → invert: 1*-1=-1",
+      "env_action": -1.0,
+      "physical_meaning": "OPEN (boundary bias)"
+    }
+  },
+  "token_regions": {
+    "OPEN_tokens": "raw_decoded > 0.5 → env -1 → physical OPEN",
+    "CLOSE_tokens": "raw_decoded < 0.5 → env +1 → physical CLOSE",
+    "BOUNDARY_tokens": "raw_decoded ≈ 0.5 → excluded from both sets"
+  },
+  "v4_attack_bug": {
+    "root_cause": "target_action = clean_raw_action (CLOSE at emission)",
+    "actual_behavior": "PGD optimizes to MAINTAIN CLOSE → release-blocking",
+    "intended_behavior": "PGD should target CANONICAL_RAW_OPEN (1.0) to induce premature OPEN"
+  },
+  "v5_vis_open_target": {
+    "target_raw_gripper": "CANONICAL_RAW_OPEN = 1.0",
+    "target_env_gripper": "CANONICAL_ENV_OPEN = -1.0",
+    "arm_dims_0_5": "preserved from clean_action",
+    "objective": "log-mass OPEN - λ*log-mass CLOSE + β*arm_KL",
+    "validation": "target_action IS NOT clean_action; target_action[6]==CANONICAL_RAW_OPEN"
+  },
+  "verification_sources": [
+    "run_gpu_smoke.py:normalize_and_invert_gripper (line 214)",
+    "attack_adapter.py:get_gripper_region_by_decoded_action (line 304)",
+    "attack_adapter.py:action_bins_for_env_sign (line 272)",
+    "gripper_semantics.py:CANONICAL_OPEN_SEMANTICS_VERSION"
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E1_ROOT_SEAL_V1",
+  "status": "SEALED_E1_PASS_STOP_AFTER_GATE",
+  "date": "2026-08-20",
+  "gate": "STAGE_X_X1R2_Q3R3_E1_FAILURE_PATH_CANDIDATE_EVIDENCE_PRESERVATION",
+  "decision": "STAGE_X_X1R2_Q3R3_E1_FAILURE_PATH_CANDIDATE_EVIDENCE_PRESERVATION_PASS",
+  "source_commit_for_cpu_tests": "94971bd595243a6615d9bb418d841a2962e74cf3",
+  "source_tree_for_cpu_tests": "4d483781c3f5b58fb931965a024b592d99f1ba5e",
+  "pr_head_at_seal_creation": "94971bd595243a6615d9bb418d841a2962e74cf3",
+  "pr_tree_at_seal_creation": "4d483781c3f5b58fb931965a024b592d99f1ba5e",
+  "publication_note": "E1 report/root-seal append is committed after the source/test commit; final live PR HEAD/tree is verified separately.",
+  "artifacts": [
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_TAKEOVER_READBACK_V1.json",
+      "sha256": "d947f3905a862e5d1223411184fafe114ec5897a490a9598b84dad8a834d19d0"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E0_EXACT_ARM_ISOLATION_FEASIBILITY_AUDIT_V1.json",
+      "sha256": "4aabadbaf8a262ae39b349fb40905f10e9560cb5f1e5de23411d90723f0e349e"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E0_CANDIDATE_MATRIX_V1.csv",
+      "sha256": "b911043ab64746f3f3af367f2fae00bba22918a05dc42b014bf64d0f5d7511fc"
+    },
+    {
+      "path": "docs/handoffs/STAGE_X_X1R2_Q3R3_E0_EXACT_ARM_ISOLATION_FEASIBILITY_20260820.md",
+      "sha256": "3456b4019c8a87dcac877ea5cf639f70695d734af40e55cb97e1a1b3dc2dddc7"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E0_ROOT_SEAL_V1.json",
+      "sha256": "50bcab9abfb262c5c942593a8eefc01993cfebe201a6447e4d81a91b7ac24db1"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E0_ROOT_SEAL_V1.sha256",
+      "sha256": "d5b5de5c2b90ce7f2b373adfbaf07d88624a6c8492da421793919bf3b49b9ee3"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_TAKEOVER_READBACK_E1_V1.json",
+      "sha256": "bb9e0c1f5afd1219e58f087c2c9eb3b8e0c7bc989a5cc33bc58b98c29980de46"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E1_AUTHORIZATION_RECEIPT_V1.json",
+      "sha256": "ae18f278e77e0c501049e20944cbacb9145c019faf55d60b5035ad3bc4c49ab0"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E1_STATIC_AUDIT_V1.json",
+      "sha256": "b68c1b46dd080767213a1dcb58f96b336febc002a09c48892b80f09c733c4caa"
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E1_REGRESSION_RESULT_V1.json",
+      "sha256": "155075c7b66e3b8166b819e70ecbd2d0b773d2c09d2a107bad1f5e802064761c"
+    },
+    {
+      "path": "docs/handoffs/STAGE_X_X1R2_Q3R3_E1_FAILURE_PATH_CANDIDATE_EVIDENCE_PRESERVATION_20260820.md",
+      "sha256": "20354f038a5366439f7251415eefdfa5c01a3d74e8c21d773bee76b1a83461d5"
+    }
+  ],
+  "source_files": [
+    {
+      "path": "scripts/stage_x/run_stage_x1r2_q3r3_engineering_matrix.py",
+      "blob_sha1": "8ab78f501e4b74e4ebc61030b28e80aa4cec94dd",
+      "raw_sha256": "251cae508e6969e64ab607c5c9c60f38e069f0679546d16ac523acff941daf48"
+    },
+    {
+      "path": "src/gripper_attack/failure_evidence.py",
+      "blob_sha1": "e8d96ee52ab0d35b35d73a29a8e1bd6308b277fe",
+      "raw_sha256": "ee5728118e0cf280596363c6677ccf21d017eb9cc958d3ec5cd147123842ceb4"
+    },
+    {
+      "path": "tests/stage_x/test_stage_x1r2_q3r3_e1_failure_persistence.py",
+      "blob_sha1": "cff3620b919b562898346e874215ff2c06b95bb6",
+      "raw_sha256": "65ede07bff1287ea6eb4c0e9e64c2df2fa2500daa9623522b7f49110595326b4"
+    }
+  ],
+  "github_ci": {
+    "source-registry": "SUCCESS",
+    "detector-v5-cpu": "SUCCESS",
+    "stageb-cpu": "SUCCESS"
+  },
+  "protected_boundary": {
+    "gpu_worker_mounted": false,
+    "model_inference": 0,
+    "simulator_steps": 0,
+    "pgd_or_backward": 0,
+    "new_fixture": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "attack_outcome_reads": 0
+  },
+  "mandatory_stop": "E1_COMPLETE_NO_E2_AUTHORIZATION"
+}

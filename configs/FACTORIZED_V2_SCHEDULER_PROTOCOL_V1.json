@@ -1,0 +1,13 @@
+{
+  "schema": "FACTORIZED_V2_SCHEDULER_STRUCTURE_V1",
+  "candidate_dwell": 10,
+  "candidate_dwell_counts_before_grasp": true,
+  "persistence_window": 5,
+  "persistence_required": 3,
+  "warmup_steps": 0,
+  "invalid_step_policy": "reset",
+  "attack_enabled": false,
+  "formal_selection_eligible": false,
+  "training_authorized": false,
+  "attack_authorized": false
+}

@@ -1,0 +1,6 @@
+stage,primary_metric,value,gate_or_status
+VI-B2,overall_AUROC,0.6246432939,held-out causal/actionable gate not established
+VI-B2,ECE10,0.4606357016,above frozen 0.25 limit
+VII,promoted_candidates,0,S7-A/S7-B/S7-C all failed at least one gate
+VIII,R1-A_parent_macro_AUC,0.577615,FAIL
+VIII,R1-B_parent_macro_AUC,0.658572,FAIL

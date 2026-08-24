@@ -1,0 +1,84 @@
+{
+  "schema": "STAGE_V_M3_5_DIAGNOSTIC_PROTOCOL_V1_4_GATE_B",
+  "version": "V1.4.2-GATE-B",
+  "protocol_revision": "CLOSED_CLEAN_GRIPPER_PRIMARY_WINDOW_AFTER_V1_4_1_GATE_B_HOLD",
+  "status": "FROZEN_RUNTIME_AUTHORIZED",
+  "runtime_authorized": true,
+  "requires_explicit_owner_authorization": true,
+  "purpose": "MATCHED_ACTION_PRIMARY_PHYSICAL_COUNTERFACTUAL_DIAGNOSTIC_WITH_CLOSED_CLEAN_GRIPPER_GATE_A",
+  "source_binding": {
+    "runtime_commit": "2ec852c2fdde73ab60cf8e2d7e7825ba9c319a08",
+    "runtime_tree": "edf395cf41c86363d29e84cefb93be5415ff73cf",
+    "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "canonical_action_semantics": "raw > 0.5 -> OPEN; normalized=1.0; env=-1.0",
+    "runtime_state_schema": "STAGE_V_CONTROLLER_WRAPPER_RUNTIME_STATE_V2"
+  },
+  "predecessor": {
+    "runtime_commit": "6145d5ca7f0dbbcf1ab6c4144e82564ab55767cc",
+    "runtime_tree": "9beecb5cbe6ab6bc00cce98097af210e3b95796a",
+    "sealed_root_reuse_prohibited": true,
+    "failure_class": "GATE_B_HOLD_SEALED_GOAL_TASK02_CONTROL_OPEN_REFERENCE"
+  },
+  "requires": {
+    "gate_a_status": "PASS",
+    "gate_a_binding_mode": "PER_PARENT_EXACT_SHA256",
+    "gate_a_protocol_sha256": "8554724aab5b42cfbdc0641d94a6dea83693b446ebfff0f06991c35de352edf7",
+    "gate_a_static_audit_sha256": "d2483da88ff44834fec7f82f03782edea62eaee8d9978983b05b249fd8fafdc4",
+    "gate_a_runtime_authorization_sha256": "9f5174a7325627f204466d34cf9d20047be349c0ecd62034ae7806476476230d",
+    "gate_a_exact_regression_sha256": "3c041a2f9045437ae9901b63c848d3108bf477f090bab9f722cac10eb00448ee",
+    "gate_a_source_commit": "6a3d3d37215a5101c5d204d26d1ce052e548b858",
+    "gate_a_source_tree": "f3e09517707298ce98fd872dc1e5bc5e19998acf",
+    "gate_a_probe_plan_selection_version": "STAGE_V_M3_5_CORRIDOR_CLOSED_PREFIX_V2",
+    "gate_a_bindings": {
+      "libero_10/task_00/state_47": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_2_GATE_A_CLOSED_PREFIX_GRIPPER_STATE_20260811T151000Z/libero_10/task_00/state_47", "gate_a_receipt_sha256": "cc12cc9811ff438d608a0ba812ffedd0a59e5bce1a539ffe82e67542967d93aa", "gate_a_independent_audit_sha256": "0d5a5cc4eada6ee9649a8dce0aedd2f857507b8cca83adf67b0005d717abc77b"},
+      "libero_10/task_01/state_48": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_2_GATE_A_CLOSED_PREFIX_GRIPPER_STATE_20260811T151000Z/libero_10/task_01/state_48", "gate_a_receipt_sha256": "44ae61459965aa9155b87dc5c8b775ad07644ec40a04f45500b17b7f917a2600", "gate_a_independent_audit_sha256": "0728e7ca782dd11f31e8da1e35be9ffb3780996eeeb7dc170ffccd3c29511f75"},
+      "libero_goal/task_02/state_49": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_2_GATE_A_CLOSED_PREFIX_GRIPPER_STATE_20260811T151000Z/libero_goal/task_02/state_49", "gate_a_receipt_sha256": "a583ef2b7363c67048ebb4b6808158c3427fa346024767c369522f86f692c0c4", "gate_a_independent_audit_sha256": "6eef7e63d6d4e0177eeb5c7c8bf54daa389c14ca8026f5c315876739d21d3d05"},
+      "libero_goal/task_04/state_47": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_2_GATE_A_CLOSED_PREFIX_GRIPPER_STATE_20260811T151000Z/libero_goal/task_04/state_47", "gate_a_receipt_sha256": "6d6400753bb8bfcbf3edff49dd16109ab5589ac0dab920d2f8a0e19b57695a59", "gate_a_independent_audit_sha256": "388457b237aa75db743ab2226b3b595100c1dfb46cc0bb4d34baf7f800871952"},
+      "libero_object/task_02/state_49": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_2_GATE_A_CLOSED_PREFIX_GRIPPER_STATE_20260811T151000Z/libero_object/task_02/state_49", "gate_a_receipt_sha256": "e3129555313096670163ec45bc89bb1cb99e7c9f01440a7be91965c4f23b54f3", "gate_a_independent_audit_sha256": "8b5fa087c16ddef51eaee6afe1e7f1c1a287aaa52f8d226b60e29befd9f2b0bd"},
+      "libero_object/task_04/state_47": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_2_GATE_A_CLOSED_PREFIX_GRIPPER_STATE_20260811T151000Z/libero_object/task_04/state_47", "gate_a_receipt_sha256": "e5fa156314f418063afe9e325461bef6d89a964e2628c8b1c560b09cb1742a81", "gate_a_independent_audit_sha256": "35f6451fd452ae7fe1417cf27f190cf7e51d956cc758bfdd00a17b6473f0a3a4"},
+      "libero_spatial/task_02/state_47": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_2_GATE_A_CLOSED_PREFIX_GRIPPER_STATE_20260811T151000Z/libero_spatial/task_02/state_47", "gate_a_receipt_sha256": "764cbfcbf884c6987990be967e19e61c98c249187b15850ddb7136ee363187ec", "gate_a_independent_audit_sha256": "12040bf4e1907c5c06755e45532dfb3fe7844ea7f93cc650cf6579013f1c210a"},
+      "libero_spatial/task_02/state_49": {"gate_a_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_5_V1_4_2_GATE_A_CLOSED_PREFIX_GRIPPER_STATE_20260811T151000Z/libero_spatial/task_02/state_49", "gate_a_receipt_sha256": "83524957165d6599b450983b1b96d657ad73a7d85294e6fe5ebb0b8a3716829a", "gate_a_independent_audit_sha256": "691398611d46479d0ece18be5577716c562643dfb920e3aacf0d636ea3951146"}
+    },
+    "new_source_commit": true,
+    "new_source_tree": true,
+    "new_runtime_root": true,
+    "gripper_runtime_state_required": true
+  },
+  "operation": {
+    "primary_window": "T_plus_H_phys",
+    "probe_plan_selection_version": "STAGE_V_M3_5_CORRIDOR_CLOSED_PREFIX_V2",
+    "native_closed_loop_policy_in_primary_window": false,
+    "primary_estimand": "V_phys under registered gripper OPEN with clean non-gripper action reference fixed",
+    "secondary_native_closed_loop_after_primary_freeze": true,
+    "fresh_render_equality_gate_used": false,
+    "fresh_render_primary_consumption": "HARD_STOP"
+  },
+  "matrix": {
+    "scope": "historically exposed diagnostics only",
+    "minimum_parents_per_suite": 2,
+    "required_suite_coverage": ["libero_10", "libero_goal", "libero_object", "libero_spatial"],
+    "repetitions": 3,
+    "conditions": ["CONTROL", "T3", "T5", "T10"],
+    "fresh_process_per_repetition": true,
+    "shared_mutable_runtime_state_across_repetitions": false
+  },
+  "control": {"action_source": "canonical_clean_reference_env_action", "arm_delta_linf": 0.0, "gripper": "canonical_clean_reference_gripper"},
+  "treatment": {
+    "action_source": "canonical_clean_reference_arm_plus_registered_open_gripper",
+    "arm_delta_linf": 0.0,
+    "after_dose": "return_to_canonical_clean_reference_action_replay_until_primary_window_end",
+    "native_policy_resume": "secondary_only_after_V_phys_freezes",
+    "compliance_gate": "COMMAND_DELIVERY_ONLY; APERTURE_MEDIATOR_DESCRIPTIVE",
+    "canonical_raw_open": 1.0,
+    "canonical_env_open": -1.0
+  },
+  "required_exact_checks": ["CAUSAL_SNAPSHOT_HARD_GATES", "GRIPPER_WRAPPER_STATE_EXACT", "REFERENCE_ACTION_EXACT", "FROZEN_OBSERVATION_BINDING_EXACT", "TREATMENT_COMPLIANCE", "ARM_ISOLATION", "CONTROL_VALIDITY", "PHYSICAL_TAXONOMY", "REPEATABILITY_3_OF_3", "FOUR_SUITE_DIAGNOSTIC_COVERAGE", "INDEPENDENT_AUDIT"],
+  "abstain_classes": ["CONTROL_CONTAMINATION", "TREATMENT_NONCOMPLIANCE", "STATE_RESTORE_INVALID", "CAUSAL_INPUT_INVALID", "HORIZON_CENSORED", "PHYSICAL_AMBIGUITY", "NON_GRIPPER_FAILURE", "ENGINEERING_INVALID"],
+  "repeatability": {"required": "3_of_3_same_registered_physical_outcome_class", "majority_vote_allowed": false, "failure_status": "HOLD_STOCHASTIC_INTERVENTION_OUTCOME"},
+  "pass_unlocks": "M3_5_LABEL_VALIDATION_PASS",
+  "failure_action": "seal_classify_handoff_stop",
+  "required_outputs": ["M3_5_V1_4_GATE_B_RECEIPT.json", "M3_5_V1_4_GATE_B_INDEPENDENT_AUDIT.json", "TREATMENT_COMPLIANCE_AUDIT.json", "ARM_ISOLATION_AUDIT.json", "REPEATABILITY_AUDIT.json", "PHYSICAL_TAXONOMY_AUDIT.json", "M3_5_V1_4_FINAL_RECEIPT.json"],
+  "protected_eval160": {"reads_allowed": false, "rollouts_allowed": false, "hard_stop": true},
+  "resource_contract": {"admitted_gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7], "excluded_gpu_indices": [], "minimum_free_memory_mib": 20480, "foreign_process_interference": false, "mujoco_egl_device_id": "admitted physical GPU index", "env_render_gpu_device_id": "admitted physical GPU index"},
+  "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
+}

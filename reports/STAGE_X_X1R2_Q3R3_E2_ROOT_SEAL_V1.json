@@ -1,0 +1,55 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E2_ROOT_SEAL_V1",
+  "status": "SEALED_E2_PREATTACK_HOLD",
+  "date": "2026-08-20",
+  "gate": "STAGE_X_X1R2_Q3R3_E2_PROSPECTIVE_STRICT_FEASIBILITY",
+  "decision": "HOLD_Q3R3_E2_FEASIBILITY_EVIDENCE_INSUFFICIENT_FROZEN_POOL_EXHAUSTED",
+  "source_commit_for_static_audit": "782a00db94cf0644ebec96caf4134dc3b2187ff7",
+  "source_tree_for_static_audit": "15303ec92b0c39e69d7c9a62d04880cf1798c5a4",
+  "pr_head_at_seal_creation": "782a00db94cf0644ebec96caf4134dc3b2187ff7",
+  "pr_tree_at_seal_creation": "15303ec92b0c39e69d7c9a62d04880cf1798c5a4",
+  "publication_note": "This seal is append-only documentation. The final live PR HEAD/tree after publication must be verified separately and must not be conflated with the source binding used for the static audit.",
+  "artifacts": [
+    {
+      "path": "reports/STAGE_X_X1R2_Q3R3_E2_PREFLIGHT_POOL_AUDIT_V1.json",
+      "sha256": "e5fe8b2c21c8697560e07155e6a3e2e6ab7d79bea4688c252f65aa88e9d20513"
+    },
+    {
+      "path": "docs/handoffs/STAGE_X_X1R2_Q3R3_E2_PREATTACK_POOL_HOLD_20260820.md",
+      "sha256": "f0f0afda048b06e7329b9f3c17e3d1c6500b33e3d19081d24f9d7830bb5b1b9c"
+    }
+  ],
+  "sealed_remote_evidence": {
+    "q3r3_c_audit_sha256": "ddd25e2eb4c7c377d4765174b9d276fa29dbe5149c3e9ef6dbf2b98503cfd31d",
+    "q3r3_c_root_seal_sha256": "9159b6601c856b45fee13e9e1dfb689cd7194949fd0094f6951d54e3fe19b698",
+    "q3r3_c2_audit_sha256": "ca8f5075073b04ee8db4ff9c83faa7382ed90aecffb3f7b21e6fbf5b2721f571",
+    "q3r3_c2_root_seal_sha256": "fe23991c94852bc65269d740a6c67f782350dc61e600f766fdfbf85461abbdcc",
+    "q3r3_d2_audit_sha256": "daa74f4279ac4672adc7b233b2c7c72ea444aa9e13f24c0d4c03b8c2fb6617ca"
+  },
+  "pool_result": {
+    "selected_count": 48,
+    "consumed_count": 33,
+    "remaining_count": 15,
+    "remaining_by_suite": {
+      "libero_10": 5,
+      "libero_goal": 4,
+      "libero_object": 0,
+      "libero_spatial": 6
+    },
+    "object_suite_exhausted": true
+  },
+  "protected_boundary": {
+    "gpu_worker_mounted": false,
+    "model_inference": 0,
+    "simulator_steps": 0,
+    "pgd_or_backward": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "attack_outcome_reads": 0
+  },
+  "mandatory_stop": "STOP_BEFORE_E2_GPU_OR_MODEL_EXECUTION",
+  "next_legal_action": "OWNER_OR_PI_REVIEW_REQUIRED_FOR_A_NEW_FROZEN_ENGINEERING_POOL_OR_EXPLICIT_AUTHORITY_CHANGE"
+}

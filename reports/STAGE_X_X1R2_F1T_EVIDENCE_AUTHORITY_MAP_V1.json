@@ -1,0 +1,233 @@
+{
+  "bridge_v3": {
+    "authority_path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_BRIDGE_V3_LEDGER_V3.json",
+    "authority_sha256_from_f1a3_root": "9ace16d5b1ee07321f3f5b506b198c0a1fd67a1f725a269dc7c09136edbd2d2e",
+    "bridge_outcome_read": 0,
+    "bridge_runtime": 0,
+    "content_read": false,
+    "disposition": "sealed_and_unopened; separate PI authorization required",
+    "role_count_by_suite": {
+      "libero_10": 5,
+      "libero_goal": 5,
+      "libero_object": 5,
+      "libero_spatial": 5
+    }
+  },
+  "entries": [
+    {
+      "immutable": true,
+      "path": "paper/PAPER_V1_FINAL_ROOT_SEAL_V1.json",
+      "schema": "PAPER_V1_FINAL_ROOT_SEAL_V1",
+      "scope": "immutable Paper V1 final root seal",
+      "sha256": "830c55dee96477e87c36437a33760a9dced0d1217ea01b3e72905f26fd142336",
+      "source_commit": null,
+      "source_tree": null,
+      "status": "PAPER_V1_MECHANISM_FACTORIZATION_DRAFT_BUNDLE_READY_FOR_PI"
+    },
+    {
+      "immutable": true,
+      "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+      "schema": "PAPER_V1_CLAIM_LEDGER_V1",
+      "scope": "immutable Paper V1 claim ledger",
+      "sha256": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1",
+      "source_commit": null,
+      "source_tree": null,
+      "status": "PAPER_V1_CLAIM_AUDIT_PASS"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json",
+      "schema": "STAGE_X_X1R2_F1A3_ROOT_SEAL_V3",
+      "scope": "F1-A3 source split, role authority, and Paper V1 binding",
+      "sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+      "source_commit": "86c5c26f193a243051b30385d24d6c45abba9a96",
+      "source_tree": "1a57a40609fb97fcbe5024a8ed442d3f73ce0b9b",
+      "status": "PASS_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X_X1R2_F1B_DEV_METHOD_FREEZE_V3_20260821/F1B_ROOT_SEAL_V3.json",
+      "schema": "STAGE_X1R2_F1B_ROOT_SEAL_V3",
+      "scope": "F1-B selected-method static freeze",
+      "sha256": "105d74e26a569712f1d7f9062601a6b67c0a67a8d3a594e2e235fbc83c6b2642",
+      "source_commit": "ad4e4adbf0d020e114f861322159c55a9dc61407",
+      "source_tree": "2cc1bbad3746d2937c7d9dd8b9d1c5664318ca83",
+      "status": "PASS_F1B_PRE_GPU_STATIC_CONTRACT"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_METHOD_COMPARISON_V3.json",
+      "schema": "STAGE_X1R2_F1B_DEV_METHOD_COMPARISON_V3",
+      "scope": "F1-B preregistered DEV method comparison",
+      "sha256": "e856cd7a45b4999a173be75b611336a2a480087ac1ab3cb0272b289003fb40a4",
+      "source_commit": null,
+      "source_tree": null,
+      "status": "PASS_F1B_DEV_RESULT_AGGREGATION"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json",
+      "schema": "STAGE_X1R2_F1B_DEV_ROOT_SEAL_V3",
+      "scope": "F1-B DEV parent-level result root",
+      "sha256": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
+      "source_commit": "4820be70b6e3fcca2277c4e71405eedace55a2a9",
+      "source_tree": "825fe6883e42735f30db45818d6d783a7736922e",
+      "status": "PASS_F1B_DEV_RESULT_AGGREGATION"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_DECISION_V3.json",
+      "schema": "STAGE_X1R2_F1B_DEV_DECISION_V3",
+      "scope": "F1-B method selection decision",
+      "sha256": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
+      "source_commit": null,
+      "source_tree": null,
+      "status": "F1B_NEW_METHOD_SELECTED_FOR_F1C"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_ROOT_SEAL_V3.json",
+      "schema": "STAGE_X1R2_F1C_ROOT_SEAL_V3",
+      "scope": "historical F1-C V3 method freeze",
+      "sha256": "ab29622432554d98f21531ea030fa0762b0e579efbbf1f2639fcc6f459108023",
+      "source_commit": "b27f5cd286645821f67140770bc6abe3d216ebaf",
+      "source_tree": "65d0b1f61806dc0dce6fab60bc06052ffffdf79a",
+      "status": "PASS_F1C_PRE_GPU_STATIC_CONTRACT"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X_X1R2_F1C_T5_CANARY_RESULT_AGGREGATION_V3_20260821/F1C_T5_CANARY_ROOT_SEAL_V3.json",
+      "schema": "STAGE_X1R2_F1C_T5_CANARY_ROOT_SEAL_V3",
+      "scope": "historical F1-C V3 executable-evidence HOLD",
+      "sha256": "f4f164637889447000dd25ac7cc4260fe134356d3977932cd47d4547ecf46b16",
+      "source_commit": "03bc200170fb5e70432d13d74d5fbf950583349a",
+      "source_tree": "15f4b0cdadb893c6bc27a686bccef81c5e074703",
+      "status": "HOLD_F1C_EXECUTABLE_EVIDENCE_INSUFFICIENT"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X_X1R2_F1C_T5_CANARY_RESULT_AGGREGATION_V3_20260821/F1C_T5_CANARY_DECISION_V3.json",
+      "schema": "STAGE_X1R2_F1C_T5_CANARY_DECISION_V3",
+      "scope": "historical F1-C V3 decision",
+      "sha256": "527b512eae6beaaeb9df0f1aa1e7c4ef791460d4185a0853242881352105e7a1",
+      "source_commit": null,
+      "source_tree": null,
+      "status": "HOLD_F1C_EXECUTABLE_EVIDENCE_INSUFFICIENT"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X_X1R2_F1C_REPAIR_STATIC_AUDIT_V1_20260822/F1C_REPAIR_STATIC_AUDIT_V1.json",
+      "schema": "STAGE_X1R2_F1C_REPAIR_STATIC_AUDIT_V1",
+      "scope": "post-HOLD contract-preserving repair audit",
+      "sha256": "a495ef36cb3a430ac1f01ded336e1df477016a4d251e0d20674ca00068c38796",
+      "source_commit": null,
+      "source_tree": null,
+      "status": "PASS_F1C_CONTRACT_PRESERVING_REPAIR_STATIC_AUDIT"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_ROOT_SEAL_V1.json",
+      "schema": "STAGE_X1R2_F1C4_ROOT_SEAL_V1",
+      "scope": "fresh F1-C4 static namespace/root seal",
+      "sha256": "9769272bb3b66a6714c2858d025dd43b3e39748663893e11e975ccc0b53f87e4",
+      "source_commit": "5bb45c004c3aa23a2a0b4dfebeb25959b90c5f71",
+      "source_tree": "9e5d63c92b6fb88a78d17a1fc18e721db6540b98",
+      "status": "PASS_F1C4_PRE_GPU_STATIC_CONTRACT"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RUNTIME_AUDIT_V1.json",
+      "schema": "STAGE_X1R2_F1C4_RUNTIME_AUDIT_V1",
+      "scope": "fresh F1-C4 runtime audit",
+      "sha256": "e0d4b782a3a34d16464cb28ebf900bd9ba745d53381f94e78327a9afabac275f",
+      "source_commit": null,
+      "source_tree": null,
+      "status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_TERMINAL_DECISION_V1.json",
+      "schema": "STAGE_X1R2_F1C4_TERMINAL_DECISION_V1",
+      "scope": "fresh F1-C4 terminal decision",
+      "sha256": "915f197f04d0bc3b138f01fb745908a76dadc422e516861a229e766787e234c2",
+      "source_commit": null,
+      "source_tree": null,
+      "status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL"
+    },
+    {
+      "immutable": true,
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RESULT_ROOT_SEAL_V1.json",
+      "schema": "STAGE_X1R2_F1C4_RESULT_ROOT_SEAL_V1",
+      "scope": "fresh F1-C4 runtime/result root seal",
+      "sha256": "8d5fce1e4fa89c84d187b861eab929258e6c21edb1ca0974898ccf6118223ac6",
+      "source_commit": "efd7ba5e2b98fd239be9b75884bb343dee8d9fdf",
+      "source_tree": "26ef327c853294a2f61c5a407dff1bc23c52486a",
+      "status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL"
+    }
+  ],
+  "f1c4_runtime_manifest": {
+    "attested_by": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RUNTIME_AUDIT_V1.json",
+    "disposition": "runtime manifest attestation sealed in F1-C4 audit; no new runtime read",
+    "file_count": 118,
+    "local_audit_root": "D:\\vla_attack\\_work_stagex_goal\\f1c4_remote_run_bc7faf8_20260822\\stage_x1r2_f1c4_fresh_canary_v1_20260822",
+    "manifest_sha256": "b678de75a2f22227a1eb028bc761039b844e34c0f1cdb755ff7a9f06e501c97a",
+    "remote_root": "\\mnt\\sdc\\dty_user\\openvla_attack_outputs\\n5\\stage_x1r2_f1c4_fresh_canary_v1_20260822"
+  },
+  "gate": "STAGE_X_X1R2_F1T_TERMINAL_SYNTHESIS_AND_PAPER_V2_DELTA_V1",
+  "live_source": {
+    "commit": "1a015e4f37e22f12d6b318913479f4f39bd30d2b",
+    "tree": "634ce4d613d56bf886c87593cef63aa64880a10c"
+  },
+  "paper_v1": {
+    "claim_count": 48,
+    "claim_ledger_path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+    "claim_ledger_sha256": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1",
+    "final_root_path": "paper/PAPER_V1_FINAL_ROOT_SEAL_V1.json",
+    "final_root_sha256": "830c55dee96477e87c36437a33760a9dced0d1217ea01b3e72905f26fd142336",
+    "final_root_status": "PAPER_V1_MECHANISM_FACTORIZATION_DRAFT_BUNDLE_READY_FOR_PI",
+    "immutable": true,
+    "tracked_file_count": 16,
+    "tree_listing_sha256_current": "92520c0d78db0e87a97bbfa29f5671bbaa5aacb240ce40d22ef21c6726fd72ae",
+    "tree_listing_sha256_f1a3_binding": "92520c0d78db0e87a97bbfa29f5671bbaa5aacb240ce40d22ef21c6726fd72ae",
+    "working_tree_unchanged": true
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "new_adversarial_image_generation": 0,
+    "new_openvla_inference": 0,
+    "new_pgd_or_backward": 0,
+    "new_physical_intervention": 0,
+    "new_simulator_or_env_step": 0,
+    "new_vphys_read": 0,
+    "protected_evaluation": "UNREAD"
+  },
+  "schema": "STAGE_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1",
+  "source_bindings": {
+    "f1a3": {
+      "commit": "86c5c26f193a243051b30385d24d6c45abba9a96",
+      "tree": "1a57a40609fb97fcbe5024a8ed442d3f73ce0b9b"
+    },
+    "f1b_dev": {
+      "commit": "4820be70b6e3fcca2277c4e71405eedace55a2a9",
+      "tree": "825fe6883e42735f30db45818d6d783a7736922e"
+    },
+    "f1c4_result_seal": {
+      "commit": "efd7ba5e2b98fd239be9b75884bb343dee8d9fdf",
+      "tree": "26ef327c853294a2f61c5a407dff1bc23c52486a"
+    },
+    "f1c4_runtime_workers": {
+      "all_workers_same_source": true,
+      "commit": "bc7faf87c2b9e06226e6058826c0dbc43b1a9e91",
+      "tree": "01d08a356d4b5d01e92380a659f9041eb898c878"
+    },
+    "f1c4_static": {
+      "commit": "5bb45c004c3aa23a2a0b4dfebeb25959b90c5f71",
+      "tree": "9e5d63c92b6fb88a78d17a1fc18e721db6540b98"
+    },
+    "f1c_historical_runtime": {
+      "commit": "03bc200170fb5e70432d13d74d5fbf950583349a",
+      "tree": "15f4b0cdadb893c6bc27a686bccef81c5e074703"
+    }
+  },
+  "status": "F1T_TERMINAL_SYNTHESIS_SEALED_FOR_PI"
+}

@@ -1,0 +1,2242 @@
+{
+  "schema": "IMMUTABLE_AUTHORITY_PATHS_V1",
+  "status": "CODE_R1_AUTHORITY_FIREWALL_PASS",
+  "generated_at": "2026-08-24",
+  "source_repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+  "source_head": "a8f5a068e58f2aeef735d9e39966da8cffed6ce6",
+  "source_tree": "950eeb6ce5491ad1fcfc442cb1bdd4cdf16521b5",
+  "digest_contract": {
+    "current_sha256": "SHA-256 of canonical Git blob bytes",
+    "git_blob": "Git blob object ID at source_head",
+    "git_blob_basis": "canonical tracked bytes; working-tree CRLF conversion is normalized by git hash-object --path",
+    "declared_digest_bases": {
+      "git_blob": "declared SHA-256 matches canonical Git blob bytes",
+      "crlf_materialization": "historical declared SHA-256 matches a CRLF checkout of canonical text bytes"
+    }
+  },
+  "authority_inputs": [
+    "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json",
+    "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json",
+    "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+    "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+    "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json",
+    "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json",
+    "reports/STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V1.json",
+    "docs/handoffs/GPT_SCIENTIFIC_REVIEW_HANDOFF_STAGE_Z_20260822.md"
+  ],
+  "scope_note": "This is an immutable firewall, not a cleanup allowlist. An unlisted path still requires an authority/reference audit before move, deletion, or rewrite.",
+  "compatibility_mappings": [],
+  "known_historical_digest_basis": {
+    "path": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json",
+    "disposition": "preserve immutable bytes; its local artifact digests mix canonical Git and CRLF materialization bases, so V1 records the basis per declaration instead of rewriting Paper V1"
+  },
+  "excluded_nonauthority": [
+    {
+      "path": "reports/STAGE_Z_MULTI_MODEL_RUNNER_PREPARATION_STATIC_AUDIT_V1.json",
+      "reason": "Generated engineering snapshot outside the b16f1df-bound Z0R2 root; no current seal, manifest, claim ledger, handoff, or digest references it; its untracked __init__.py entry is stale.",
+      "action": "preserve and label; do not use as scientific authority"
+    }
+  ],
+  "protected_boundary": {
+    "model_or_gpu_execution": 0,
+    "simulator_or_env_step": 0,
+    "attack_or_pgd": 0,
+    "v_phys_read": 0,
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD"
+  },
+  "entry_count": 88,
+  "local_entry_count": 86,
+  "git_object_entry_count": 2,
+  "reference_observation_count": 120,
+  "sidecar_pairs": [
+    {
+      "artifact": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+      "sidecar": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "paper/PAPER_V1_FIGURE_TABLE_ROOT_SEAL_V1.json",
+      "sidecar": "paper/PAPER_V1_FIGURE_TABLE_ROOT_SEAL_V1.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json",
+      "sidecar": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "paper/PAPER_V1_FINAL_ROOT_SEAL_V1.json",
+      "sidecar": "paper/PAPER_V1_FINAL_ROOT_SEAL_V1.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_ROOT_SEAL_V1.json",
+      "sidecar": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_ROOT_SEAL_V1.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RESULT_ROOT_SEAL_V1.json",
+      "sidecar": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RESULT_ROOT_SEAL_V1.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json",
+      "sidecar": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "reports/STAGE_X_X1R2_F1B_DEV_METHOD_FREEZE_V3_20260821/F1B_ROOT_SEAL_V3.json",
+      "sidecar": "reports/STAGE_X_X1R2_F1B_DEV_METHOD_FREEZE_V3_20260821/F1B_ROOT_SEAL_V3.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json",
+      "sidecar": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_ROOT_SEAL_V3.json",
+      "sidecar": "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_ROOT_SEAL_V3.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "reports/STAGE_X_X1R2_F1C_REPAIR_STATIC_AUDIT_V1_20260822/F1C_REPAIR_STATIC_AUDIT_V1.json",
+      "sidecar": "reports/STAGE_X_X1R2_F1C_REPAIR_STATIC_AUDIT_V1_20260822/F1C_REPAIR_STATIC_AUDIT_V1.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "reports/STAGE_X_X1R2_F1C_T5_CANARY_RESULT_AGGREGATION_V3_20260821/F1C_T5_CANARY_ROOT_SEAL_V3.json",
+      "sidecar": "reports/STAGE_X_X1R2_F1C_T5_CANARY_RESULT_AGGREGATION_V3_20260821/F1C_T5_CANARY_ROOT_SEAL_V3.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json",
+      "sidecar": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "git_blob"
+    },
+    {
+      "artifact": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json",
+      "sidecar": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.sha256",
+      "digest_token": "first_whitespace_token",
+      "digest_basis": "crlf_materialization"
+    }
+  ],
+  "entries": [
+    {
+      "path": "configs/STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V3.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "6c0d3e495219f766d76409291a83f8934fae3b89917b0f2d153c32bc53451583",
+      "git_blob": "c1b90f1f8c5477f52d32ede6e2736f205f8df41d",
+      "declared_digests": [
+        {
+          "sha256": "b7f61231100a53effa11b468c07ac978645e615fd6ee96461a4eeb3d16336b17",
+          "basis": "crlf_materialization",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "configs/paper_black_bowl_attack.yaml",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_BLACK_BOWL"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "a91ea2ca5fbddb59aae72958ba7c13e4fcdcb70cada4e269594a59749570a1be",
+      "git_blob": "2d0da545078c60316ec55201c1ae461b172d1777",
+      "declared_digests": [
+        {
+          "sha256": "8e1c05da22d00818949a0e36c5708ee374708cba7bd12c061c6f9cde6c187f3a",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "docs/handoffs/DETECTOR_V3_D8_HANDOFF_20260731.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_BLACK_BOWL"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "0f68cbb4a1f6d4ddca9d65758f9358465e5db2d13687b0aa73a7eeefd1565be2",
+      "git_blob": "5eb29065ac2f2c139818c5731a4eef035216f1ae",
+      "declared_digests": [
+        {
+          "sha256": "74201a30f86d6d5e5a5750429dc0e7b781e32ba6f67b0d54158c76dc259ffa0b",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "docs/handoffs/GPT_SCIENTIFIC_REVIEW_HANDOFF_STAGE_Z_20260822.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "GOVERNANCE_HANDOFF"
+      ],
+      "referencing_artifacts": [
+        "docs/repository/REPOSITORY_HYGIENE_AND_PAPER_SUPPORT_PLAN_20260824.md"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "12940f3759393bb138805b02da722b014a3a2305624d774ad220957bd09dbc14",
+      "git_blob": "6623dcccdcb3895e207867a2ee77fe6033e1ff28",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "docs/handoffs/STAGE_IX_F0_RESULT_20260817.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_IX"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "f428f0e89fc1988b1918e98f82bb206c538716f75c2db9a42afaeca37f983344",
+      "git_blob": "544f709d34c6f565cdab3d5e4e313962bc358888",
+      "declared_digests": [
+        {
+          "sha256": "2c445ea1ae5434661d327a348995c412083b191b382cbd78d485a13064268103",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "docs/handoffs/STAGE_VII_DEVELOPMENT_NEGATIVE_HANDOFF_20260816.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_VII"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "d411726d19fc941bf5d3e375b6eb3aa239158e2031cd20adedd377ad765a614c",
+      "git_blob": "93b1fc6fa220f1f8c4abbda0cb2f32c144375f9d",
+      "declared_digests": [
+        {
+          "sha256": "9ee6782530f730e7bf5eaee90ced94134ec6a569d5c9713b7b19f85662a1c33f",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "docs/handoffs/STAGE_VI_B2_FRESH_M4_AND_NEGATIVE_CAUSAL_HANDOFF_20260816.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_VI_B2"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "767be20e64d7ebd19e8b108020b9a9e32203b965fcd46dc6628c9ee32654412f",
+      "git_blob": "2e95709d9554f444574efca4d0b4d4ac240a26a8",
+      "declared_digests": [
+        {
+          "sha256": "2c550b1ec8f906212bc1f92223b801bcb0efe07381caf94d1b116e4f5e66d006",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "docs/handoffs/STAGE_X_X0_RESULT_20260817.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_X0"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "8cacf43add56ee66e34ecbc2bca26cfd81be402df917e4b711300310dd0bd507",
+      "git_blob": "e088d65d5980ad1091c43615a299e87d595696c6",
+      "declared_digests": [
+        {
+          "sha256": "7626e020ec524ce124be9b93685a3861b85176ad4bfd749bfc495f89482d3c55",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "docs/handoffs/STAGE_X_X1R2_F1T_TERMINAL_SYNTHESIS_20260822.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "9ecbf3823c120c15c76e6797e1547883fb1946db2eae2e5aa20c3e2c9a6fa13d",
+      "git_blob": "6dd13d59d11e3e2d916300aabe3b721a406f8431",
+      "declared_digests": [
+        {
+          "sha256": "9ecbf3823c120c15c76e6797e1547883fb1946db2eae2e5aa20c3e2c9a6fa13d",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "docs/handoffs/STAGE_X_X1R2_Q3R3_E2_SUCCESSOR_BRANCH_QUALIFICATION_HOLD_20260821.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_E2"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "ca3dc00eee3e9873dfcbbf1084330fc5492b5d8669e8e817cc9b222696a8b6c7",
+      "git_blob": "b572027f78c8dd5cbe0c3e4dad8a2e412d50e3e3",
+      "declared_digests": [
+        {
+          "sha256": "ca3dc00eee3e9873dfcbbf1084330fc5492b5d8669e8e817cc9b222696a8b6c7",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "docs/handoffs/STAGE_X_X1R_PREEXPERIMENT_AUDIT_20260817.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_HISTORICAL_X1_X1R"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "08d45bb4d3f4458eb325046f911bf0480af44e8b5dbbd869f10bc831d0b1c1d5",
+      "git_blob": "1468dbd3586c32badcd1f38a7862df7bd2e32cd5",
+      "declared_digests": [
+        {
+          "sha256": "d28c282aaca1bc5fc44d03989d6465451e97af15f6e45b2908d990be63cba1e6",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "docs/handoffs/STAGE_X_X1R_V1_BLOCKED_CLOSURE_20260819.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_HISTORICAL_X1_X1R"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "6a10bc7c372ccf2e5e42abc3e299e78711b0e6dec128ff0dee9bb5d7027a5c70",
+      "git_blob": "5e974bde6fa908f0763175acc0fe3ab4bd5f6aae",
+      "declared_digests": [
+        {
+          "sha256": "6a10bc7c372ccf2e5e42abc3e299e78711b0e6dec128ff0dee9bb5d7027a5c70",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "git-history:docs/handoffs/PR117_STAGE_VIII_DOCUMENTATION_CLOSURE_20260817.md@b918104e2e6279364891590fd37a17720dbb6628",
+      "storage": "git_object",
+      "git_spec": "b918104e2e6279364891590fd37a17720dbb6628:docs/handoffs/PR117_STAGE_VIII_DOCUMENTATION_CLOSURE_20260817.md",
+      "authority_types": [
+        "PAPER_V1_SOURCE_VIII"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "fe3bc8e0b4771fbc772180d2d7b142f11c2e0b788d3613255658eea3523f50bb",
+      "git_blob": "75341759abd9cb7859466927661dba67efadee39",
+      "declared_digests": [],
+      "notes": [
+        "Immutable historical Git object; no current working-tree path required."
+      ]
+    },
+    {
+      "path": "git-history:docs/handoffs/STAGE_VIII_R1_RELATIVE_SELECTOR_NEGATIVE_HANDOFF_20260817.md@34b8d435264737734f7d4e4ecc9a3343e57d7c1e",
+      "storage": "git_object",
+      "git_spec": "34b8d435264737734f7d4e4ecc9a3343e57d7c1e:docs/handoffs/STAGE_VIII_R1_RELATIVE_SELECTOR_NEGATIVE_HANDOFF_20260817.md",
+      "authority_types": [
+        "PAPER_V1_SOURCE_VIII"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "da69ff3b3a7a285018f8e31a8b0f6035a4524bee51ed15f6d03cec0489d2cfd6",
+      "git_blob": "0e01f0115eada6dcdf183524438f458c0db03fa3",
+      "declared_digests": [],
+      "notes": [
+        "Immutable historical Git object; no current working-tree path required."
+      ]
+    },
+    {
+      "path": "paper/PAPER_V1_CLAIM_AUDIT_V1.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "cde82d0032c22401615e40023a76e778237e06b4a60756b54a924ca5e920d984",
+      "git_blob": "a10135b80642a7a0dbaf96f3549bd8866b958e6f",
+      "declared_digests": [
+        {
+          "sha256": "cde82d0032c22401615e40023a76e778237e06b4a60756b54a924ca5e920d984",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json",
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1",
+      "git_blob": "4054b782cbbb6051654c5797e2a0fd455a961cf2",
+      "declared_digests": [
+        {
+          "sha256": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "AUTHORITY_INDEX",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "docs/repository/REPOSITORY_HYGIENE_AND_PAPER_SUPPORT_PLAN_20260824.md",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "4b9cc1368cd88a7a7a299881bd67fda9cb4d2ba43c90b7c27dd0741a8864d1bb",
+      "git_blob": "d0b685d5eb6610734760381d25e7f90e10f429ad",
+      "declared_digests": [
+        {
+          "sha256": "4b9cc1368cd88a7a7a299881bd67fda9cb4d2ba43c90b7c27dd0741a8864d1bb",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "c4c089619513f22a96d9cf2b38f32ed6c5e09795091334dd43ab1a32d788d83b",
+      "git_blob": "4e2f662e0cfc56bda54a8d4ad14777e1637ca689",
+      "declared_digests": [
+        {
+          "sha256": "c4c089619513f22a96d9cf2b38f32ed6c5e09795091334dd43ab1a32d788d83b",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FINAL_BUNDLE",
+        "ROOT_MANIFEST"
+      ],
+      "referencing_artifacts": [
+        "docs/repository/REPOSITORY_HYGIENE_AND_PAPER_SUPPORT_PLAN_20260824.md",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "61118293f0d0faa714c6269c85d2f76d456b319eefbc17b58c2117d6976bd69e",
+      "git_blob": "02a8784bd59dd4cd59ed9a7354d7304ea4ad78a8",
+      "declared_digests": [
+        {
+          "sha256": "61118293f0d0faa714c6269c85d2f76d456b319eefbc17b58c2117d6976bd69e",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "425e16162e96b5f51f6fabd6beb76bf13377db18c9e2db02f636aa74441f1e0a",
+      "git_blob": "f2cb195e40c321cc57c141865c42fba3fced51dc",
+      "declared_digests": [
+        {
+          "sha256": "425e16162e96b5f51f6fabd6beb76bf13377db18c9e2db02f636aa74441f1e0a",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_FIGURE_TABLE_PACKAGE_V1.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "f52c533a22cde8b9fab91c8c5b324eaf36893d00fa709ba99f9999261a2a1389",
+      "git_blob": "775a20e14389aa0d077ca4814b3f242d907136ed",
+      "declared_digests": [
+        {
+          "sha256": "f52c533a22cde8b9fab91c8c5b324eaf36893d00fa709ba99f9999261a2a1389",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "f52c533a22cde8b9fab91c8c5b324eaf36893d00fa709ba99f9999261a2a1389",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_FIGURE_TABLE_ROOT_SEAL_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FINAL_BUNDLE",
+        "ROOT_SEAL"
+      ],
+      "referencing_artifacts": [
+        "docs/repository/REPOSITORY_HYGIENE_AND_PAPER_SUPPORT_PLAN_20260824.md",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "6a30ef7e87d5ab7762db12349e6bd6c95fa63a09e5a229f22b902bcaec803b6a",
+      "git_blob": "a6adbe2b0094b5af190590fe24a696d103cebd60",
+      "declared_digests": [
+        {
+          "sha256": "6a30ef7e87d5ab7762db12349e6bd6c95fa63a09e5a229f22b902bcaec803b6a",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_FIGURE_TABLE_ROOT_SEAL_V1.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_ROOT_SEAL_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "631643157c1fa9fcc132048af7a582ad761b9dc86a2b030e8e985378fc54372d",
+      "git_blob": "5b60a02ce069a38fb975b879469c70715dfc67c8",
+      "declared_digests": [
+        {
+          "sha256": "631643157c1fa9fcc132048af7a582ad761b9dc86a2b030e8e985378fc54372d",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "ROOT_MANIFEST"
+      ],
+      "referencing_artifacts": [
+        "docs/repository/REPOSITORY_HYGIENE_AND_PAPER_SUPPORT_PLAN_20260824.md"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "e393ea105986d6d5c0fedb24990989ff881538d14132711400abc06298972671",
+      "git_blob": "c74979848d60f5a3d62750b6cad7fec4a99abe0b",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "464e2f0b06154e023e38f890045b59d2346787b17867a47e024c6976637d3330",
+      "git_blob": "687f38a03dfe8242123c42f44492f6dbe72066a8",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_FINAL_ROOT_SEAL_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "F1T_ROOT_SEAL_MEMBER",
+        "ROOT_SEAL"
+      ],
+      "referencing_artifacts": [
+        "docs/repository/REPOSITORY_HYGIENE_AND_PAPER_SUPPORT_PLAN_20260824.md",
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "830c55dee96477e87c36437a33760a9dced0d1217ea01b3e72905f26fd142336",
+      "git_blob": "248ea08a6fbf521e3da4ceb0aeb8496caefe94d4",
+      "declared_digests": [
+        {
+          "sha256": "830c55dee96477e87c36437a33760a9dced0d1217ea01b3e72905f26fd142336",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        },
+        {
+          "sha256": "830c55dee96477e87c36437a33760a9dced0d1217ea01b3e72905f26fd142336",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_FINAL_ROOT_SEAL_V1.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FINAL_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "cb309c86ff64abe2914f461a2eeb517bcbc4041eeeff7d42d1ff663430a5f0ad",
+      "git_blob": "3282eefb003fada8bb958700d592a089f8551680",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "0dfefef01078901e00b9c143c25990620870adc00b564f490f499003f294d420",
+      "git_blob": "8beed9db1f059739ca861275e88c2755c1418530",
+      "declared_digests": [
+        {
+          "sha256": "0dfefef01078901e00b9c143c25990620870adc00b564f490f499003f294d420",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_SUPPLEMENT_BINDINGS_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "002dec74c06ce67ecfc681b08f2c572ce42cf52852dcfbed91e78b5e4ec8d4ab",
+      "git_blob": "4dacbedb524bf11508ac437237c99455cb4c9a9a",
+      "declared_digests": [
+        {
+          "sha256": "002dec74c06ce67ecfc681b08f2c572ce42cf52852dcfbed91e78b5e4ec8d4ab",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V1_SUPPLEMENT_REPRODUCIBILITY.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "87cd3e0d1ed542c7ae9889081c15f04e3561872859ce012b14fdc566579b91c5",
+      "git_blob": "c0cb27b32614a7bc63573e37397acd68c6cc072e",
+      "declared_digests": [
+        {
+          "sha256": "87cd3e0d1ed542c7ae9889081c15f04e3561872859ce012b14fdc566579b91c5",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/PAPER_V2_F1_DELTA_FROM_V1.md",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "e6343b5b1b0d38f375efbe86d2642ff2109efdecc8990ffe473320dd45878061",
+      "git_blob": "af3419c248e8d65d77d8a30032233d20f9f07e87",
+      "declared_digests": [
+        {
+          "sha256": "e6343b5b1b0d38f375efbe86d2642ff2109efdecc8990ffe473320dd45878061",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/data/PAPER_V1_FIGURE2_X0_DOSE_RESPONSE.csv",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "6629585c6387d78b1ab740d31f76db74df28d2495a0ee10281e3fa9ec34e83e6",
+      "git_blob": "ef32af9e411dfc9f4ae765e03f8cbafd4acaf7e9",
+      "declared_digests": [
+        {
+          "sha256": "cd642e0ed15fc0df2cc95bdb3e4c9c869cd4a20223afea90fd8c2a1619689354",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "cd642e0ed15fc0df2cc95bdb3e4c9c869cd4a20223afea90fd8c2a1619689354",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/data/PAPER_V1_FIGURE3_TIMING_NEGATIVE_CASCADE.csv",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "8a8a28664d752b8620927a7e45f4fe5658e3a1aa9cad6a29ec3a7ce2b1cb8dd8",
+      "git_blob": "c02bbd9e834bdb0cbf72dcc20ad087f5a22de076",
+      "declared_digests": [
+        {
+          "sha256": "05de99f4c8e91b34b926f0244f4849bf6008f594b702b3359fe86d43cd855816",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "05de99f4c8e91b34b926f0244f4849bf6008f594b702b3359fe86d43cd855816",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/data/PAPER_V1_FIGURE4_FACTORIZATION_GAP.csv",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "dc8ed93a46b24126fd78a1507c4ee62c61dce913632bf6b16f4542114b4e8420",
+      "git_blob": "94ffe6bdffb0a95f799f8fa033752c965ceac54d",
+      "declared_digests": [
+        {
+          "sha256": "5c1a46be48093aa9098855bc37f088dcc04fde99e0801b006a48b7ba53829afc",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "5c1a46be48093aa9098855bc37f088dcc04fde99e0801b006a48b7ba53829afc",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/data/PAPER_V1_FIGURE5_E3_E4_PARENT_REALIZABILITY.csv",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "1c052227f0d90cbcab14fc553215cfbca6268cbf2e6a86df961dcd440c0ca51e",
+      "git_blob": "99b38a5c54519c93e369da2849e35b85678266eb",
+      "declared_digests": [
+        {
+          "sha256": "8d34b4c6537ceb6e47de6a7c138c10b50d68785025a9c005d18adc22185b0128",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "8d34b4c6537ceb6e47de6a7c138c10b50d68785025a9c005d18adc22185b0128",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/figures/figure1_factorization_conceptual.svg",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "b4d233e901e9644d7d86a384b63aa7180d9f62381fbe115bd6683574462a0c62",
+      "git_blob": "1917d33fe80788491c785a863192a8f7c50d2254",
+      "declared_digests": [
+        {
+          "sha256": "b4d233e901e9644d7d86a384b63aa7180d9f62381fbe115bd6683574462a0c62",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "b4d233e901e9644d7d86a384b63aa7180d9f62381fbe115bd6683574462a0c62",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/figures/figure2_x0_dose_response_mechanism.svg",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "3a45fff8ba1007e8a067213bfd376926a8d69b76c28a19f3f784ac77fcbf30ed",
+      "git_blob": "c783e93dd3ef83ef71cb2ef697e0a60eaa500d81",
+      "declared_digests": [
+        {
+          "sha256": "3a45fff8ba1007e8a067213bfd376926a8d69b76c28a19f3f784ac77fcbf30ed",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "3a45fff8ba1007e8a067213bfd376926a8d69b76c28a19f3f784ac77fcbf30ed",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/figures/figure3_timing_negative_cascade.svg",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "254b034f0d1303368ac278136d77c4f382823736ee9c120f6aa01ed18185fc1e",
+      "git_blob": "b7fd2119c9483303ff1b35a0cfa7302e30cb1a1e",
+      "declared_digests": [
+        {
+          "sha256": "254b034f0d1303368ac278136d77c4f382823736ee9c120f6aa01ed18185fc1e",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "254b034f0d1303368ac278136d77c4f382823736ee9c120f6aa01ed18185fc1e",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/figures/figure4_stage_ix_factorization_gap.svg",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "eaeba70c6b4e5b222a17720107e23b3c4c5993aeae1e767a86990ccf2635d91a",
+      "git_blob": "922feb2e8668e68b5b23951ef89ebba7c8365dd4",
+      "declared_digests": [
+        {
+          "sha256": "eaeba70c6b4e5b222a17720107e23b3c4c5993aeae1e767a86990ccf2635d91a",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "eaeba70c6b4e5b222a17720107e23b3c4c5993aeae1e767a86990ccf2635d91a",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/figures/figure5_e3_e4_realizability_decomposition.svg",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "e991599ed63f499a9fc9dad202722936eb5829a16f648cabd33a046725ba5238",
+      "git_blob": "3a3e57501f12937479bce50b4b780eebc272f71b",
+      "declared_digests": [
+        {
+          "sha256": "e991599ed63f499a9fc9dad202722936eb5829a16f648cabd33a046725ba5238",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "e991599ed63f499a9fc9dad202722936eb5829a16f648cabd33a046725ba5238",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/tables/PAPER_V1_CLAIM_BOUNDARY.csv",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "6415b80ab1baf101cc12ce82355457e9b380189ed690510a132c7d98aaf760e9",
+      "git_blob": "1508250c85de35b7eabf00919f422767f5ab5a4a",
+      "declared_digests": [
+        {
+          "sha256": "7072182d0b0632af355b7bff9540e7dbaea209e609af8a234e28cf925ea422d2",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "7072182d0b0632af355b7bff9540e7dbaea209e609af8a234e28cf925ea422d2",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/tables/PAPER_V1_E3_E4_PARENT_REALIZABILITY.csv",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "369fb840666480cec1c66640d7270399e209b7ec5e3f239ca4ffa8bf5e833fce",
+      "git_blob": "60a76e801b883e0f646e72058f6427b890a92cac",
+      "declared_digests": [
+        {
+          "sha256": "88276a56800a2391285156aaac25765cd38d06913671f7b840f9c09e35bfd027",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "88276a56800a2391285156aaac25765cd38d06913671f7b840f9c09e35bfd027",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "paper/tables/PAPER_V1_EVIDENCE_HIERARCHY.csv",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_FIGURE_TABLE_BUNDLE",
+        "PAPER_V1_FINAL_BUNDLE"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+        "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "33e18a8204da36b82e991adbd018c515de4a64d89cf1918c3ad632fcd7882614",
+      "git_blob": "e8c8aa5d9416ad81a24f0dca8738ca6d162ae6dd",
+      "declared_digests": [
+        {
+          "sha256": "5437c265dbae204167919c7997b848dea935109010983e6f97d837105c701239",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json"
+        },
+        {
+          "sha256": "5437c265dbae204167919c7997b848dea935109010983e6f97d837105c701239",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_FINAL_BUNDLE_MANIFEST_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_20260821/E3_DECISION_TABLE_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_E3_E4"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24",
+      "git_blob": "797166a9da21e8e63e3371d9db6a891dd1e9ef7e",
+      "declared_digests": [
+        {
+          "sha256": "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_20260821/STAGE_X1R2_E4_E3_CANDIDATE_FAILURE_DECOMPOSITION_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_E3_E4"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "c4ac212f6998cd0c12b4c427aa2314a0f5a75cfb4cafca118bb78edfd43cd412",
+      "git_blob": "310f626e38fc32661e7044c287c131dcfa5dcdd4",
+      "declared_digests": [
+        {
+          "sha256": "c4ac212f6998cd0c12b4c427aa2314a0f5a75cfb4cafca118bb78edfd43cd412",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_20260821/STAGE_X1R2_E4_FACTORIZATION_SYNTHESIS_TABLE_V1.csv",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_E3_E4"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "8b24fc1b714a56c4f0a10b22b7977219109cf87ff90361edb2e2484b40d9f701",
+      "git_blob": "1f565293c2d996579c7743bb7a160e900f9eade4",
+      "declared_digests": [
+        {
+          "sha256": "cda5397fb64d1efcdde91e0e5ca9d2c60165d62ab52a110aa561b17a5603b28d",
+          "basis": "crlf_materialization",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_20260821/STAGE_X1R2_E4_FINAL_CLAIM_LEDGER_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_E3_E4"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "c67f0035c392a355fe9f51b0769dea069609925cfe0cefa5ac9d368ea1191c25",
+      "git_blob": "97dbaa87d5fb9f150d891c86f52690f4caf78bf2",
+      "declared_digests": [
+        {
+          "sha256": "c67f0035c392a355fe9f51b0769dea069609925cfe0cefa5ac9d368ea1191c25",
+          "basis": "git_blob",
+          "reference": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_ROOT_SEAL_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "9769272bb3b66a6714c2858d025dd43b3e39748663893e11e975ccc0b53f87e4",
+      "git_blob": "d827846b737a76219f0f9897b33712cee816f1ac",
+      "declared_digests": [
+        {
+          "sha256": "9769272bb3b66a6714c2858d025dd43b3e39748663893e11e975ccc0b53f87e4",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        },
+        {
+          "sha256": "9769272bb3b66a6714c2858d025dd43b3e39748663893e11e975ccc0b53f87e4",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_ROOT_SEAL_V1.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "edafaabe4cd86b2585ff1ea39e2bf1e8d8343588c45a3e6292f4691406ddedcb",
+      "git_blob": "39d531e0388aca036c53363570338ad79fd3f81a",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RESULT_ROOT_SEAL_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "8d5fce1e4fa89c84d187b861eab929258e6c21edb1ca0974898ccf6118223ac6",
+      "git_blob": "51c4139f692134d11f00f27e2cb5e96559a1b60c",
+      "declared_digests": [
+        {
+          "sha256": "8d5fce1e4fa89c84d187b861eab929258e6c21edb1ca0974898ccf6118223ac6",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        },
+        {
+          "sha256": "8d5fce1e4fa89c84d187b861eab929258e6c21edb1ca0974898ccf6118223ac6",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RESULT_ROOT_SEAL_V1.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RESULT_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "46a8ad50ba41008b62de3431a19de6b7e6d96340b1b0ed3516dfc394ad7bb3ee",
+      "git_blob": "04e1f71be0925fd4eab73dc7e32c3fc5ccc91385",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RUNTIME_AUDIT_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "e0d4b782a3a34d16464cb28ebf900bd9ba745d53381f94e78327a9afabac275f",
+      "git_blob": "ac9c4449b09921fe265c02d6f87c0772cebef8eb",
+      "declared_digests": [
+        {
+          "sha256": "e0d4b782a3a34d16464cb28ebf900bd9ba745d53381f94e78327a9afabac275f",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        },
+        {
+          "sha256": "e0d4b782a3a34d16464cb28ebf900bd9ba745d53381f94e78327a9afabac275f",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_TERMINAL_DECISION_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "915f197f04d0bc3b138f01fb745908a76dadc422e516861a229e766787e234c2",
+      "git_blob": "e1ed76c2e5519518dc74050a8b262e87bbac8df0",
+      "declared_digests": [
+        {
+          "sha256": "915f197f04d0bc3b138f01fb745908a76dadc422e516861a229e766787e234c2",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        },
+        {
+          "sha256": "915f197f04d0bc3b138f01fb745908a76dadc422e516861a229e766787e234c2",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+      "git_blob": "df59d80c5628a3706e12a8338e1c6b1657894410",
+      "declared_digests": [
+        {
+          "sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        },
+        {
+          "sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "bf49115261aa69809502ea5f2e070f9bfd45381e0b667cc79a6f7728214b5b05",
+      "git_blob": "fb9bdc855c0cfec0a2174a0de607f117ec3c0d52",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1B_DEV_METHOD_FREEZE_V3_20260821/F1B_ROOT_SEAL_V3.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "105d74e26a569712f1d7f9062601a6b67c0a67a8d3a594e2e235fbc83c6b2642",
+      "git_blob": "78632cf77e25911741c0d177e5f68d732dfa340d",
+      "declared_digests": [
+        {
+          "sha256": "105d74e26a569712f1d7f9062601a6b67c0a67a8d3a594e2e235fbc83c6b2642",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1B_DEV_METHOD_FREEZE_V3_20260821/F1B_ROOT_SEAL_V3.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1B_DEV_METHOD_FREEZE_V3_20260821/F1B_ROOT_SEAL_V3.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "c34148978b49eea6984c7d8e04f9da17f980a24b44c52630bf8bff245f9bdd9d",
+      "git_blob": "36acf308f56588d0f6a37c12b9d356157babb431",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_DECISION_V3.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
+      "git_blob": "2cf29601d6eaeb4417b2107a5862a8333ce92942",
+      "declared_digests": [
+        {
+          "sha256": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        },
+        {
+          "sha256": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_METHOD_COMPARISON_V3.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "e856cd7a45b4999a173be75b611336a2a480087ac1ab3cb0272b289003fb40a4",
+      "git_blob": "9dcb585a79446f9a00b7a12322d8250a20a44ece",
+      "declared_digests": [
+        {
+          "sha256": "e856cd7a45b4999a173be75b611336a2a480087ac1ab3cb0272b289003fb40a4",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
+      "git_blob": "ce0290f53707365daa6f018f962be3ffccdbd4e5",
+      "declared_digests": [
+        {
+          "sha256": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        },
+        {
+          "sha256": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "9011423d2b904517bf28015f0ef96ff49004a71a88391af0a6362365ebfa77ab",
+      "git_blob": "2fda020761e2a4479e33652d170422aab30ecdbc",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_ROOT_SEAL_V3.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "ab29622432554d98f21531ea030fa0762b0e579efbbf1f2639fcc6f459108023",
+      "git_blob": "0d00f4e07a29aaf7c29477d1cf3d1922447d86e2",
+      "declared_digests": [
+        {
+          "sha256": "ab29622432554d98f21531ea030fa0762b0e579efbbf1f2639fcc6f459108023",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_ROOT_SEAL_V3.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_ROOT_SEAL_V3.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "f07829713c48d31582c2ab997247692b885e3574f76478b2171146aef34e8c13",
+      "git_blob": "57b37f2a2409b90767dd278cd4359c0714e63a2b",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1C_REPAIR_STATIC_AUDIT_V1_20260822/F1C_REPAIR_STATIC_AUDIT_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "a495ef36cb3a430ac1f01ded336e1df477016a4d251e0d20674ca00068c38796",
+      "git_blob": "3fc866ec5672fc65d235d8afea209497afd2468d",
+      "declared_digests": [
+        {
+          "sha256": "a495ef36cb3a430ac1f01ded336e1df477016a4d251e0d20674ca00068c38796",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        },
+        {
+          "sha256": "a495ef36cb3a430ac1f01ded336e1df477016a4d251e0d20674ca00068c38796",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1C_REPAIR_STATIC_AUDIT_V1_20260822/F1C_REPAIR_STATIC_AUDIT_V1.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1C_REPAIR_STATIC_AUDIT_V1_20260822/F1C_REPAIR_STATIC_AUDIT_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "291552e9b0b69a0181165aac533c8bc2607dfe5ba4b29b76d673adeee3ad0d15",
+      "git_blob": "2e2714a0ad23d84b9261ea81d8233baf54f0a924",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1C_T5_CANARY_RESULT_AGGREGATION_V3_20260821/F1C_T5_CANARY_DECISION_V3.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "527b512eae6beaaeb9df0f1aa1e7c4ef791460d4185a0853242881352105e7a1",
+      "git_blob": "52ce936e7b9b9da0f3da113337cf53bc0c4f870e",
+      "declared_digests": [
+        {
+          "sha256": "527b512eae6beaaeb9df0f1aa1e7c4ef791460d4185a0853242881352105e7a1",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1C_T5_CANARY_RESULT_AGGREGATION_V3_20260821/F1C_T5_CANARY_ROOT_SEAL_V3.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_EVIDENCE_AUTHORITY",
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "f4f164637889447000dd25ac7cc4260fe134356d3977932cd47d4547ecf46b16",
+      "git_blob": "b65a0666217afd2e4bb4b45eaf836bbb8ef7ee35",
+      "declared_digests": [
+        {
+          "sha256": "f4f164637889447000dd25ac7cc4260fe134356d3977932cd47d4547ecf46b16",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json"
+        },
+        {
+          "sha256": "f4f164637889447000dd25ac7cc4260fe134356d3977932cd47d4547ecf46b16",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1C_T5_CANARY_RESULT_AGGREGATION_V3_20260821/F1C_T5_CANARY_ROOT_SEAL_V3.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1C_T5_CANARY_RESULT_AGGREGATION_V3_20260821/F1C_T5_CANARY_ROOT_SEAL_V3.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "3c5d716e13db4d147b592f68db7cde128a76e80c8d71d3010bec10fea0e0fb76",
+      "git_blob": "82f929f8dc73cad3bca808f22dc9373c6484f809",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1T_CLAIM_LEDGER_DELTA_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "b136a74b5c34fbd8417f2a7edf66f408e41303e3be43d300b4bdd5cb7345e8b0",
+      "git_blob": "a3bb5eee43e533fa725e2a6f253735286b260ab4",
+      "declared_digests": [
+        {
+          "sha256": "b136a74b5c34fbd8417f2a7edf66f408e41303e3be43d300b4bdd5cb7345e8b0",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1T_DEV_C4_SUMMARY_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "41b19d12cb3278f50a3e2b6e6285ba1d1fc8acaa61aa89bc7c31b287c09c4efa",
+      "git_blob": "f0930566b13ddc700f27205702a4eab26652a32f",
+      "declared_digests": [
+        {
+          "sha256": "41b19d12cb3278f50a3e2b6e6285ba1d1fc8acaa61aa89bc7c31b287c09c4efa",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1T_EVIDENCE_AUTHORITY_MAP_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "AUTHORITY_INDEX",
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "docs/repository/REPOSITORY_HYGIENE_AND_PAPER_SUPPORT_PLAN_20260824.md",
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "ed3e1436d6f22ceac9db4b1a9cc5ef111f379b2952b6290433352cf7b2423bf3",
+      "git_blob": "575305f6e60a3e3c13bd741d87ff63cc91822ce2",
+      "declared_digests": [
+        {
+          "sha256": "ed3e1436d6f22ceac9db4b1a9cc5ef111f379b2952b6290433352cf7b2423bf3",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "ROOT_SEAL"
+      ],
+      "referencing_artifacts": [
+        "docs/repository/REPOSITORY_HYGIENE_AND_PAPER_SUPPORT_PLAN_20260824.md"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "697fe0584b55c676c964836471581d5f7cea05cdae6b5346a3e8b9a85ef10c10",
+      "git_blob": "c98717c4d2d132b3e8b9d3bbdd2eb0151db9b89b",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "c3920a4482c30ec450d1823e70e340b70b5473331fdc6f418d57746da95f9a2a",
+      "git_blob": "d024b48d9dd6286c88a62ece758702b1dde14227",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R2_F1T_TERMINAL_SYNTHESIS_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "41ca5c378566fd68ae9ea3da2f4026cd828b2a5dca493d5931475964627a0b62",
+      "git_blob": "cd13eecbdd7f090a636ebea43865995b66b54b16",
+      "declared_digests": [
+        {
+          "sha256": "41ca5c378566fd68ae9ea3da2f4026cd828b2a5dca493d5931475964627a0b62",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_X_X1R_V1_FINAL_BLOCKED_CLOSURE_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "PAPER_V1_SOURCE_HISTORICAL_X1_X1R"
+      ],
+      "referencing_artifacts": [
+        "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "6bd0913bc452adf0f9d02152e11321a9709123e365dfd9dad8ac3be3eeb3d4e7",
+      "git_blob": "b7608478dab1db8150637a74941b285823aed343",
+      "declared_digests": [],
+      "notes": [
+        "Authority map names this path without a local digest; V1 records the current Git bytes fail-closed."
+      ]
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "ROOT_MANIFEST",
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "docs/repository/REPOSITORY_HYGIENE_AND_PAPER_SUPPORT_PLAN_20260824.md",
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "22ae5e9defa700ec23b15fce953ffd7d33fc1ccc64fe5025ae17b8b979bf64c0",
+      "git_blob": "2dc0ad49cd3109801a641b13beccc3161bb17b17",
+      "declared_digests": [
+        {
+          "sha256": "57a55e1904b803c8abda41c01524e570019f471f5b8f4bcb3f185000a80ebd1a",
+          "basis": "crlf_materialization",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_COMMON_LIBERO_AUTHORITY_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "413ea761392807d95d6030b825529d0fb141980a2e77494489182d4405c47527",
+      "git_blob": "950d17d217603078f34bd5105e9fb94cb3f5691c",
+      "declared_digests": [
+        {
+          "sha256": "413ea761392807d95d6030b825529d0fb141980a2e77494489182d4405c47527",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_ENVIRONMENT_ACTION_BRANCH_PARITY_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "a5963c145f163911c1d033876fdb8c2d81aae2fb5810acd2c29b8cff45e828e2",
+      "git_blob": "4c7e6a0107be364083d7888ff3bcd772c38e9923",
+      "declared_digests": [
+        {
+          "sha256": "a516f1ba6e908d563384d78219b79a41beee0e380c9dc72e0e65038c5d7222f4",
+          "basis": "crlf_materialization",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_M0_FILE_LEVEL_AUTHORITY_DIFF_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "cfaddef56637b56184cad476db8d010e9a47cffd1a5e3f5614eac64658a3eee8",
+      "git_blob": "0bf271976bff4575b1803aa61ee63c00fa5d0b9a",
+      "declared_digests": [
+        {
+          "sha256": "88cd5549c19fe47cfac1738ee780aec6d6fe4603c3bc678f6944fa1b1ebe60c7",
+          "basis": "crlf_materialization",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_M0_SEMANTIC_CHECKPOINT_MANIFEST_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "290f5cd1519dc931897d2606edd04fd612e34fc5360438d28a95ba8402ec1ff6",
+      "git_blob": "3437e8ce5ec743956760cffb8be8d4ddef1cd8a4",
+      "declared_digests": [
+        {
+          "sha256": "c4bffdda45687e6ef76552e507477d055d44fbba07243787a3654e008aa8fd01",
+          "basis": "crlf_materialization",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_M1_MATERIALIZATION_LEDGER_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "a15a4a4ffdebc8eb1e4afc56b5e7edf0e7e5cead24eac4625bfcec245cebf17e",
+      "git_blob": "22621d614e9eb7712b51895db49c35df33a2c166",
+      "declared_digests": [
+        {
+          "sha256": "073b9372b3d5439a178dc99ff9ab462575b2ecb8d28f412dcbabbb448c4f5e5a",
+          "basis": "crlf_materialization",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "4f73364de2f4a454fb29aa8100d9af1e3ce62237d9be9c4eeddb8a96cc880d9f",
+      "git_blob": "ee5603c3fc27259abf5bc51c8d89d196fc89a729",
+      "declared_digests": [
+        {
+          "sha256": "caf7e9d171e12aa0489d285efe1836cb11586ab01723ee85bf176e7c7eb2f1db",
+          "basis": "crlf_materialization",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_M2_OPENPI_REVERIFICATION_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "b67422d911940d26a3feff62366d5c6e4cfbd5982e618e84d0b58bd5f80dd6d1",
+      "git_blob": "72e9c09fd87c4b7f99ed55270022b8f7d4a29e60",
+      "declared_digests": [
+        {
+          "sha256": "4c2c8a99deae45e9fcda109fbdfb795bcf62f847fdbe349bc31f4af2b17213fe",
+          "basis": "crlf_materialization",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_MODEL_AUTHORITY_MAP_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "1e5d47f3fcadde2e7f0bebac8956ff96c0d1a83c1372334a0e4218f8f356b871",
+      "git_blob": "9a645509ee3f1b2ac79e3a5e058029c0ec8155e6",
+      "declared_digests": [
+        {
+          "sha256": "911bffb1e5a8080c9f0425866d0ff6f5726f05ed24415e38b2f6bff465e4aafc",
+          "basis": "crlf_materialization",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "ROOT_SEAL"
+      ],
+      "referencing_artifacts": [
+        "docs/repository/REPOSITORY_HYGIENE_AND_PAPER_SUPPORT_PLAN_20260824.md"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "a5403173c57f27c5e3e931b468358a4cdf2e4b908b5e1eb9ce2670d36c530c7a",
+      "git_blob": "9b9c937e86018df5ddc062afe0cf177bc93aabd7",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.sha256",
+      "storage": "working_tree",
+      "authority_types": [
+        "DIGEST_SIDECAR"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "9b23978aa78f90eda68022545255a0399bfe54dca6f0799c12a596ca37228b6f",
+      "git_blob": "7a0cf00e00cf55a0cadac179fbaaa76aca8b46e8",
+      "declared_digests": [],
+      "notes": []
+    },
+    {
+      "path": "reports/STAGE_Z_Z0R2_STORAGE_PREFLIGHT_V1.json",
+      "storage": "working_tree",
+      "authority_types": [
+        "STAGE_Z_Z0R2_ROOT_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "9813a5443853aa642db43701555a90b4d4c6cd5f3839a44ba95358b9b4775e7c",
+      "git_blob": "76fab5fb507d3107b0f675a3679e9c75f675c4a1",
+      "declared_digests": [
+        {
+          "sha256": "96c6f06ac84ffd813bdadc5fefd670f9985664ef33af1c679a615ac092f03747",
+          "basis": "crlf_materialization",
+          "reference": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "path": "scripts/stage_x/build_stage_x1r2_f1t_synthesis.py",
+      "storage": "working_tree",
+      "authority_types": [
+        "F1T_ROOT_SEAL_MEMBER"
+      ],
+      "referencing_artifacts": [
+        "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+      ],
+      "path_sensitive": true,
+      "byte_sensitive": true,
+      "immutable_by_governance": true,
+      "current_sha256": "dfa7bc481242321f4e62b63c66ab6ac42f135e9cd0e0a368b9192d6056bf09b4",
+      "git_blob": "370a937b67a2bed058912549565235afe7897ec3",
+      "declared_digests": [
+        {
+          "sha256": "dfa7bc481242321f4e62b63c66ab6ac42f135e9cd0e0a368b9192d6056bf09b4",
+          "basis": "git_blob",
+          "reference": "reports/STAGE_X_X1R2_F1T_ROOT_SEAL_V1.json"
+        }
+      ],
+      "notes": []
+    }
+  ]
+}

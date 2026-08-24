@@ -1,0 +1,36 @@
+{
+  "schema": "STAGE_X_X1R_PRIMARY_MATRIX_RUNTIME_REPAIR_AUDIT_V1",
+  "status": "PASS_POST_HOLD_STATIC_RUNTIME_REPAIR",
+  "repair_source_commit": "9f9ce4f279bb300ebedfa3335667ec627bec6c79",
+  "repair_source_tree": "b581b27974bbb1d7692a993e8658dc38b0eb588d",
+  "repaired_runner_sha256": "c6c3fa8f5b0e9d4352427983cb9564188b7f9a4011919272a47d7c6e4897fe52",
+  "repaired_auditor_sha256": "b0ab7ddcccedc5f856e7d799742c0133fbf1ab00f18ef4aa0f371525c37fa62a",
+  "original_canary_source_commit": "c96f4079fa8c466160e6d07521e9f82cb34eb829",
+  "original_canary_source_tree": "18cfe3263af6c79860aca3a2b1cd9141bf6bd16d",
+  "repair": {
+    "root_cause": "update_feature returns (telemetry_dict, eef); runner treated the tuple as telemetry_dict",
+    "change": "unpack telemetry and previous_eef at the call site",
+    "canary_artifacts_mutated": false,
+    "canary_rerun": false,
+    "parent_replacement": false,
+    "new_outcome_read": false
+  },
+  "verification": {
+    "targeted_unittest": "PASS",
+    "g2_static_attack_implementation_audit": "PASS_STATIC_ATTACK_IMPLEMENTATION",
+    "py_compile": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "next_gate": "OWNER_REVIEW_REQUIRED_BEFORE_ANY_PROSPECTIVE_REEXECUTION",
+  "eval160": "UNREAD",
+  "protected_evaluation": "UNREAD",
+  "protected_counters": {
+    "model_inference": 0,
+    "env_step": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0
+  }
+}

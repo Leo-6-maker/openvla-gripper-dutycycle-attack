@@ -1,0 +1,373 @@
+{
+  "freeze_status": "NOT_FROZEN_A2_HOLD",
+  "outcome_read": false,
+  "permanent_exclusion_applied": false,
+  "protected": "UNREAD",
+  "row_count": 24,
+  "rows": [
+    {
+      "canonical_parent_key": "libero_10/task_01/state_01",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "054af8b3444b9dd8946295ba2e0c3a9650c88f21f464f928ba02b7dee2673573",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 1,
+      "suite": "libero_10",
+      "task": "task_01"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_01/state_06",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "04ff632180444c29bad7d7fa23fa88ad6601fedbc460997f423f9ec12aaa1bc8",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 6,
+      "suite": "libero_10",
+      "task": "task_01"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_04/state_19",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "0837d3a4cd7a64e05f8098e42c70054f08586c98d70f951494f64955c1a3bca1",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 19,
+      "suite": "libero_10",
+      "task": "task_04"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_07/state_01",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "04caf4944853a3433c1fb9bae25bfa11d6ba44fa15787df60548389f540ae0e0",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 1,
+      "suite": "libero_10",
+      "task": "task_07"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_07/state_06",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "077ff54dc54a513e0a8328dff3de9d87b08369307fcb343aa00b190d94ed5b28",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 6,
+      "suite": "libero_10",
+      "task": "task_07"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_09/state_08",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "06e7290db2f5bc766cf743aaf6e842c387642d222b5e3f7ff54e678134cb8bf7",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 8,
+      "suite": "libero_10",
+      "task": "task_09"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_00/state_05",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "0b69e42479e199d5ed13cc0f2ebfcea434c1bcde608ce97f18db9abb32b4c385",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 5,
+      "suite": "libero_goal",
+      "task": "task_00"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_06",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "081111da24461ae536ce59bfa7deef798cb999f18c6ab35aa688fe020b02e9ec",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 6,
+      "suite": "libero_goal",
+      "task": "task_02"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_13",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "04df7ef7d679f121753a97d14ff2c95ec7f2ad9e292a1f481b7158f4928e6aff",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 13,
+      "suite": "libero_goal",
+      "task": "task_02"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_04/state_16",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "097166bb9f404554fa6163c48c3a7680cfbcedca661660681a44f0f414f79074",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 16,
+      "suite": "libero_goal",
+      "task": "task_04"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_05/state_04",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "05d4900af866a96a7f9bf5783593555fcde8f56803956faed7807df6ccf065d5",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 4,
+      "suite": "libero_goal",
+      "task": "task_05"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_07/state_07",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "074c6d1ef40cb938fa98d8e34fa7ea3ef3258089d83b890d65d73e2dfca15b48",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 7,
+      "suite": "libero_goal",
+      "task": "task_07"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_01/state_06",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "007f62d93bf3f42b6ef7f29421c8f129e20ab9209bfded184cae75257d15f173",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 6,
+      "suite": "libero_object",
+      "task": "task_01"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_01/state_08",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "051a3da13c1e3349eea88fa06a5316f4a3be98d05a1e7631fa1adda8e5757c74",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 8,
+      "suite": "libero_object",
+      "task": "task_01"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_08/state_03",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "07146f00d3b1f5c1098c970aa5f85deb4a30c00c7d91184fa37a6ef75677cd1b",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 3,
+      "suite": "libero_object",
+      "task": "task_08"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_08/state_19",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "08492af43eb9ffd1a027e831bee562032ebafcf072518a8cbd72e384e7a09a01",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 19,
+      "suite": "libero_object",
+      "task": "task_08"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_09/state_07",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "072f1fec58e4ace381e0ddd0491bc3ad7b277f90d7d83df436e716254f1c47f7",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 7,
+      "suite": "libero_object",
+      "task": "task_09"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_09/state_19",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "023ae29f61405ea5ccd2cc415ff0b69fc326d0367bd76b34c05b50529ae35008",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 19,
+      "suite": "libero_object",
+      "task": "task_09"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_02",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "04ca68416b4d4343dfc9b890326cbc64bfaf166d2e154d51054ae0f0b93e02da",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 2,
+      "suite": "libero_spatial",
+      "task": "task_02"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_05",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "0064ef766d92bf4cf7043705685326a06ab0e41824c5f1c45fcd001d896aaa65",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 5,
+      "suite": "libero_spatial",
+      "task": "task_02"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_12",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "01463e7c694f8773503a5b104d28be2825b223c75f6327b0a3328221a5527de2",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 12,
+      "suite": "libero_spatial",
+      "task": "task_02"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_06/state_05",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "015cf672b2679b37cb90839085328881d6732fabe459571fc5be1cbb93be7e9f",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 5,
+      "suite": "libero_spatial",
+      "task": "task_06"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_06/state_07",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "06786cc52a52f7676f3821af92be621e61c08a8685f4cda00966f139f7b1b20f",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 7,
+      "suite": "libero_spatial",
+      "task": "task_06"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_07/state_10",
+      "detector_train_only_overlap": false,
+      "deterministic_rank_hash": "005c9222af68ca73475d00309875e50b34234630975e9ff2ec3ce3d5a16f845e",
+      "dev_eligible": true,
+      "exposure_classification": [
+        "NO_HARD_EXPOSURE_FOUND_IN_SCANNED_AUTHORITY"
+      ],
+      "historical_exposure_source_hits": [],
+      "no_hard_exclusion_exposure_confirmed": true,
+      "source_domain": "DEV_SOURCE_V2",
+      "state": 10,
+      "suite": "libero_spatial",
+      "task": "task_07"
+    }
+  ],
+  "salt": "STAGE_X_X1R2_F1A2_DEV_SOURCE_V2_SALT_20260821",
+  "schema": "STAGE_X_X1R2_F1A2_DEV_LEDGER_V2",
+  "source_domain": "DEV_SOURCE_V2",
+  "status": "NOT_FROZEN_A2_HOLD"
+}

@@ -1,0 +1,52 @@
+{
+  "checks": {
+    "blind_order_recomputed": true,
+    "label_grammar_valid": true,
+    "mapping_to_premanual_exact": true,
+    "no_outcome_based_selection": true,
+    "no_replacement": true,
+    "one_to_one_parent_identity": true,
+    "raw_owner_sha_match": true,
+    "safe_projection_fields_exact": true
+  },
+  "counts": {
+    "abstain": 1,
+    "fail": 6,
+    "final_attack_eligible": 7,
+    "mapping_rows": 14,
+    "pass": 7,
+    "premanual_rows": 14,
+    "submitted_rows": 14
+  },
+  "errors": [],
+  "next_gate": "STAGE_X_X1R_G2_ATTACK_IMPLEMENTATION_AUDIT_REQUIRED",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_action_steps": 0,
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "eval160_reads": 0,
+    "model_inference": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "student_inference": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_X_X1R_T1D1M1_OWNER_LABEL_INTEGRITY_AUDIT_V1",
+  "scope": "owner label integrity, blind mapping, and final cohort freeze; no model or environment execution",
+  "source_bindings": {
+    "candidate_ledger_sha256": "5f1f036b47b1c9a8c1bafe7a400b6be9269cd3e67587691018005c824dc8d89e",
+    "d1m0_root_seal_sha256": "fabd7e0ac35f6598fd2de9db86993e52ba5b50070e4c88adc2b89e4b0a32e3e0",
+    "expected_owner_submission_sha256": "76c835c292c76190b2a764da7be746a568697deea1cb4009d63e306fdc610c2c",
+    "mapping_expected_sealed_sha256": "3d7f59a736cc2c7bcb5ecdc49e9e57a7e8b547c9e7554251e88158017366f0fe",
+    "mapping_worktree_sha256": "32ee4643625bb3f08ad98b3a23690d70c2f406f745dc11a82091c8e666bea73c",
+    "owner_submission_sha256": "76c835c292c76190b2a764da7be746a568697deea1cb4009d63e306fdc610c2c",
+    "premanual_ledger_sha256": "d65c11f6ece5d52ab3599f356fd4e4e84ebd8374460458cb92191f8345851742",
+    "review_order_digest": "30a73b0e4ab13e149d8c991906fc9067844797e39113201e9e76a10a8be40d67",
+    "safe_sheet_expected_sealed_sha256": "9c42b3d6486f2082c414ff799d9efe2f2633e797d2b92e1f45fb23426470a7b2",
+    "safe_sheet_worktree_sha256": "8085151b8f2ed394bd8624dab1a27181c748cebe5d29f06e126caad849d23691"
+  },
+  "status": "PASS"
+}

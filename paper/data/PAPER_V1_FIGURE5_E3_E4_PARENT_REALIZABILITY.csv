@@ -1,0 +1,12 @@
+category,parent_count,parent_denominator
+TARGETABILITY_LIMITED,9,12
+JOINT_LIMITED,1,12
+STRICT_REALIZABLE,2,12
+libero_10_strict_valid,1,3
+libero_goal_strict_valid,0,3
+libero_object_strict_valid,0,3
+libero_spatial_strict_valid,1,3
+candidate_ARM_EXACT_AND_NATIVE_OPEN,4,72
+candidate_ARM_EXACT_BUT_NOT_NATIVE_OPEN,29,72
+candidate_NATIVE_OPEN_BUT_ARM_DRIFT,1,72
+candidate_NEITHER_OPEN_NOR_ARM_EXACT,38,72

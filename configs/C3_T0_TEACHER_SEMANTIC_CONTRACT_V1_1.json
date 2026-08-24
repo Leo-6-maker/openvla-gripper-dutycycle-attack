@@ -1,0 +1,75 @@
+{
+  "schema": "C3_T0_TEACHER_SEMANTIC_CONTRACT_V1_1",
+  "status": "FROZEN_FIT_DEV_ONLY",
+  "truth_values": ["TRUE", "FALSE", "UNKNOWN"],
+  "mask_semantics": {
+    "mask": "true only for TRUE or FALSE; UNKNOWN always has mask=false",
+    "unknown_is_not_false": true,
+    "conjunction": "FALSE dominates UNKNOWN; UNKNOWN dominates TRUE",
+    "disjunction": "TRUE dominates UNKNOWN; UNKNOWN dominates FALSE"
+  },
+  "persistence": {
+    "positive_min_steps": 2,
+    "requires_contiguous_known_steps": true,
+    "unconfirmed_positive": "UNKNOWN",
+    "per_head_min_steps": {
+      "physical_criticality": 2,
+      "safe_release": 2,
+      "instability": 1,
+      "k10_feasible": 1,
+      "gripper_closing_state": 1
+    }
+  },
+  "right_censor": {
+    "k10": 10,
+    "semantic_source": "protocol_steps_remaining",
+    "audit_source": "observed_future_steps_available",
+    "insufficient_observed_horizon": "AUDIT_ONLY_CENSOR_REASON",
+    "protocol_horizons": {
+      "libero_10": 520,
+      "libero_goal": 300,
+      "libero_object": 280,
+      "libero_spatial": 220
+    },
+    "future_outcome_forbidden": true
+  },
+  "quality_thresholds": {
+    "comotion": {
+      "object_min_displacement_m": 0.0005,
+      "eef_min_displacement_m": 0.0005,
+      "cosine_threshold": 0.7
+    },
+    "placement_stability": {
+      "relative_translation_tolerance_m": 0.005,
+      "relative_rotation_tolerance_rad": 0.05,
+      "min_consecutive_steps": 2
+    },
+    "slip": {
+      "relative_motion_tolerance_m": 0.02,
+      "contact_required": true
+    }
+  },
+  "input_allowlists": {
+    "physical_criticality": ["physical_known", "stable_grasp", "transport_or_manipulation"],
+    "safe_release": ["placement", "released_state", "placement_stability"],
+    "k10_feasible": ["protocol_steps_remaining", "safe_release_computed"],
+    "instability": ["slip", "regrasp", "contact_loss"],
+    "gripper_closing_state": ["gripper_qpos", "qpos_close_threshold"]
+  },
+  "cross_head_invariants": [
+    "safe_release TRUE implies k10_feasible FALSE",
+    "k10_feasible TRUE implies safe_release_computed FALSE and protocol_steps_remaining >= 10",
+    "UNKNOWN is never converted to FALSE",
+    "released_state TRUE requires open qpos and released object-gripper contact",
+    "slip requires maintained object-gripper contact and relative motion above threshold",
+    "contact_loss is a contact TRUE to FALSE transition"
+  ],
+  "provenance": {
+    "real_episode_consumption": true,
+    "scope": "frozen 40-episode FIT development pilot only",
+    "protected_data_consumption": false,
+    "model_or_rollout": false,
+    "student_training": false,
+    "attack": false
+  }
+}

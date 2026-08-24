@@ -1,0 +1,994 @@
+{
+  "artifact_digests": {
+    "historical_receipt": {
+      "path": "..\\_rca1_inputs\\historical_parent_receipt.json",
+      "remote_path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/010_libero_10_task_09_state_43/attempt_0/parent_receipt.json",
+      "sha256": "cbe1bd28968bb5b30bdd7622209675edcc4ad0425e9cf749189f3c537f968b25"
+    },
+    "historical_telemetry": {
+      "path": "..\\_rca1_inputs\\historical_step_telemetry.jsonl",
+      "remote_path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/010_libero_10_task_09_state_43/attempt_0/step_telemetry.jsonl",
+      "sha256": "e9e536100ba6102a7266ef8af2cbcb5988e647214a1bd5e27a9800bc258a8724"
+    },
+    "q3_ar_receipt": {
+      "path": "..\\_rca1_inputs\\q3_parent_receipt.json",
+      "remote_path": "/llm_jzm/dty_user/openvla_attack_x1r2_q3_arm_repair_20260820/fixtures/Q3-AR-F01/CLEAN_ENGINEERING/parents/010_libero_10_task_09_state_43/attempt_0/parent_receipt.json",
+      "sha256": "ed7143d6bd1c50655fb5b61295ca2ed9ced965069251b366a3ad154600912e38"
+    },
+    "q3_ar_telemetry": {
+      "path": "..\\_rca1_inputs\\q3_step_telemetry.jsonl",
+      "remote_path": "/llm_jzm/dty_user/openvla_attack_x1r2_q3_arm_repair_20260820/fixtures/Q3-AR-F01/CLEAN_ENGINEERING/parents/010_libero_10_task_09_state_43/attempt_0/step_telemetry.jsonl",
+      "sha256": "7742ac082e772be424aa8c173480f6edf6e64a58a234a2748c1568dc1eb45a3e"
+    }
+  },
+  "audit_input_live_pr": {
+    "final_seal": "NOT_SELF_REFERENTIAL_LIVE_GITHUB_HANDOFF",
+    "head": "404b3793fd103bdcff269502561470c3e6cca13f",
+    "number": 135,
+    "tree": "9b94be132fbe4a987a2dc8073d29fca1fac1e9b5"
+  },
+  "authority_matrix": [
+    {
+      "causal_explanation": "No supported Student source drift; the historical external copy sha256 ceb761685ec2bcca033abaca4a71370f6cdbc48908a89d9c2736c9c0807c603b differs from the frozen Git source 30cf..., but the runner imports the Git source. The external-copy provenance remains separately unresolved.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "runner Git blob b17761a158aca448610c251d17843c658392479b; D1R protocol sha256 2b66a3998d6df73af3db5788efae20cc2b51ccbd19c60a1fd31293f5d9b05d4d",
+      "historical": "D1R frozen contract / Git source b17761a158aca448610c251d17843c658392479b",
+      "q3_ar": "Q3 repair checkout b7237611c466077a9a7e6f0b1102e9176cfa2c88",
+      "row": "Student source"
+    },
+    {
+      "causal_explanation": "Not sufficient to explain the change.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "D1R contract plus current server hash",
+      "historical": "sha256 e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+      "q3_ar": "same sha256",
+      "row": "Student checkpoint"
+    },
+    {
+      "causal_explanation": "Applied to different realized trajectories after step 111.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "D1R protocol and current checkout hashes",
+      "historical": "feature source c3c960...; adapter 2b71f3...; dim 25",
+      "q3_ar": "same digests; dim 25",
+      "row": "25D feature schema/order"
+    },
+    {
+      "causal_explanation": "Not sufficient to explain the change.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "D1R sealed path and current server hash",
+      "historical": "sha256 66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c",
+      "q3_ar": "same sha256",
+      "row": "normalization/statistics"
+    },
+    {
+      "causal_explanation": "At step 133 only the Q3 closing margin is below zero.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "D1R protocol, threshold artifact",
+      "historical": "physical=0.55; closing=0.80; sha256 5236884e...",
+      "q3_ar": "same values and sha256",
+      "row": "threshold values"
+    },
+    {
+      "causal_explanation": "K10 is not an emit-gate input; no causal path to 133 -> None.",
+      "equality": "SEMANTIC_EQUAL",
+      "evidence": "head contract 7c81b12ac4daaa1513d01cf5c44b7d8f6e7d43fae1466c3a697c62f8554b8ce0",
+      "historical": "runtime k10_feasible; semantic alias k10_feasibility",
+      "q3_ar": "same runtime names and alias contract",
+      "row": "output-head names / alias handling"
+    },
+    {
+      "causal_explanation": "Realized candidate series first differs at step 132 and contributes to the no-emit result.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "runner blob b17761a...; telemetry candidate field",
+      "historical": "raw_action[6] < 0.5",
+      "q3_ar": "same runner implementation",
+      "row": "candidate-close rule"
+    },
+    {
+      "causal_explanation": "Legal at step 133 in both traces; not causal.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "runner blob and both scheduler traces",
+      "historical": "step + 5 + 10 <= 520",
+      "q3_ar": "same",
+      "row": "legal-horizon rule"
+    },
+    {
+      "causal_explanation": "Same rule sees different sealed probabilities at step 133.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "runner blob and scheduler traces",
+      "historical": "one-shot candidate AND legal AND physical>=0.55 AND closing>=0.80",
+      "q3_ar": "same",
+      "row": "emit scheduler rule"
+    },
+    {
+      "causal_explanation": "No reset drift is supported by the prefix evidence.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "adapter sha256 2b71f3...; identical prefix features through step 111",
+      "historical": "same D8 adapter and fresh parent construction",
+      "q3_ar": "same source bytes and fresh parent construction",
+      "row": "rolling-history/window reset semantics"
+    },
+    {
+      "causal_explanation": "Same declared seed does not guarantee identical environment observation bytes.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "both receipts and same runner seed path",
+      "historical": "1436562779",
+      "q3_ar": "1436562779",
+      "row": "clean seed derivation"
+    },
+    {
+      "causal_explanation": "No evidence of a reset-index shift; prefix starts equal.",
+      "equality": "SEMANTIC_EQUAL",
+      "evidence": "runner source and counters",
+      "historical": "one reset; 10 dummy waits",
+      "q3_ar": "one reset; 10 dummy waits",
+      "row": "reset/dummy-wait semantics"
+    },
+    {
+      "causal_explanation": "Shared indices align through the first divergence; terminal length differs.",
+      "equality": "SEMANTIC_EQUAL",
+      "evidence": "both telemetry policy_step/step fields",
+      "historical": "0..249",
+      "q3_ar": "0..255",
+      "row": "policy-step indexing"
+    },
+    {
+      "causal_explanation": "Configured horizon is equal; realized clean trajectory termination differs.",
+      "equality": "SEMANTIC_EQUAL",
+      "evidence": "D1R protocol and receipts",
+      "historical": "configured L10=520; done at 249",
+      "q3_ar": "configured L10=520; done at 255",
+      "row": "episode horizon"
+    },
+    {
+      "causal_explanation": "Identity mismatch is not supported.",
+      "equality": "BYTE_EQUAL",
+      "evidence": "both receipts and telemetry canonical_parent_key/prompt",
+      "historical": "libero_10/task_09/state_43; same instruction",
+      "q3_ar": "same identity and instruction",
+      "row": "task/state/prompt identity"
+    },
+    {
+      "causal_explanation": "Could explain the trajectory drift, but cannot be assigned as the cause without historical launch-time bytes.",
+      "equality": "NOT_IDENTIFIABLE",
+      "evidence": "D0R2 runtime audit errors: historical launch-time source/victim path not unique",
+      "historical": "launch-time full identity not uniquely sealed",
+      "q3_ar": "current suite contract/static binding only",
+      "row": "clean OpenVLA/victim source/checkpoint binding"
+    }
+  ],
+  "authorization": {
+    "arm_isolation_repair": "UNQUALIFIED",
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "q3_f02_f04": "SEALED_NOT_STARTED",
+    "scientific_x1r2_population": "NOT_SELECTED"
+  },
+  "exposure_accounting": {
+    "historical_q3_f01": "immutable runtime-invalid; not rerun",
+    "q3_ar_f01": {
+      "attack_invocations": 0,
+      "attacked_env_steps": 0,
+      "clean_env_step_calls": 266,
+      "clean_model_inference_calls": 256,
+      "pgd_calls": 0,
+      "physical_interventions": 0,
+      "protected_reads": 0,
+      "status": "permanently excluded engineering fixture",
+      "vphys_reads": 0
+    }
+  },
+  "historical_133_provenance_chain": [
+    {
+      "emit_field": "first_emit_step=133",
+      "identity_field": "canonical_parent_key=libero_10/task_09/state_43",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/010_libero_10_task_09_state_43/attempt_0/parent_receipt.json",
+      "sha256": "cbe1bd28968bb5b30bdd7622209675edcc4ad0425e9cf749189f3c537f968b25",
+      "stage": "D1R clean receipt"
+    },
+    {
+      "emit_field": "student_scheduler_trace.emitted_this_step=true",
+      "identity_field": "canonical_parent_key and step=133",
+      "path": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION/parents/010_libero_10_task_09_state_43/attempt_0/step_telemetry.jsonl",
+      "sha256": "e9e536100ba6102a7266ef8af2cbcb5988e647214a1bd5e27a9800bc258a8724",
+      "stage": "D1R telemetry"
+    },
+    {
+      "emit_field": "first_emit_step=133",
+      "identity_field": "ordinal=10 and canonical_parent_key",
+      "path": "reports/STAGE_X_X1R_T1D1R_CENSUS_AUDIT_V1.json",
+      "sha256": "65e9f61f4855efd253e6a36577409f398422e12c19f293ce73a605ef89929baf",
+      "stage": "D1R census row"
+    },
+    {
+      "emit_field": "first_emit_step=133",
+      "identity_field": "fixture_id=Q3-AR-F01 / review_id=M012",
+      "path": "reports/STAGE_X_X1R2_Q3_ARM_REPAIR_FIXTURE_V1.json",
+      "sha256": "adc42d49dcd8b35d4a662ced2efff81ecef51184601d63fca52b699928210205",
+      "stage": "Q3-AR fixture expectation"
+    }
+  ],
+  "identity": {
+    "canonical_parent_key": "libero_10/task_09/state_43",
+    "historical_first_emit": 133,
+    "ordinal": 10,
+    "q3_ar_first_emit": null,
+    "review_id": "M012",
+    "seed": 1436562779
+  },
+  "next_gate": "OWNER_REVIEW_RCA1_ONLY",
+  "offline_replay": {
+    "cpu_student_replay": {
+      "historical_features": {
+        "first_emit_step": 133,
+        "head_names": [
+          "physical_criticality",
+          "k10_feasible",
+          "safe_release",
+          "instability",
+          "gripper_closing_state"
+        ],
+        "max_abs_diff_vs_sealed_student_probabilities": 0.0,
+        "model_execution": "Student CPU only; no OpenVLA/simulator",
+        "repeat_max_abs_diff": 0.0,
+        "rows": 250,
+        "status": "PASS_CPU_OFFLINE_REPLAY",
+        "trace_sha256": "7251f5234afc83478d4cba39dab65218ee4e4313b1c3f696e50e9fdca86eb42c"
+      },
+      "q3_ar_features": {
+        "first_emit_step": null,
+        "head_names": [
+          "physical_criticality",
+          "k10_feasible",
+          "safe_release",
+          "instability",
+          "gripper_closing_state"
+        ],
+        "max_abs_diff_vs_sealed_student_probabilities": 0.0,
+        "model_execution": "Student CPU only; no OpenVLA/simulator",
+        "repeat_max_abs_diff": 0.0,
+        "rows": 256,
+        "status": "PASS_CPU_OFFLINE_REPLAY",
+        "trace_sha256": "170d57b279d13ce6300e12dedca8c6ca57395ffc50867cf2bb033ba7d177a493"
+      }
+    },
+    "sealed_trace_comparison": {
+      "field_comparison": {
+        "action_env_7d": {
+          "divergent_rows": 129,
+          "first_divergence_step": 111,
+          "max_numeric_diff": 2.0
+        },
+        "candidate_close": {
+          "divergent_rows": 6,
+          "first_divergence_step": 132,
+          "max_numeric_diff": 1.0
+        },
+        "direct_generated_token_ids": {
+          "divergent_rows": 129,
+          "first_divergence_step": 111,
+          "max_numeric_diff": 187.0
+        },
+        "done_after_env_step": {
+          "divergent_rows": 1,
+          "first_divergence_step": 249,
+          "max_numeric_diff": 1.0
+        },
+        "features_25d": {
+          "divergent_rows": 138,
+          "first_divergence_step": 112,
+          "max_numeric_diff": 56.0
+        },
+        "generation_input_ids_sha256": {
+          "divergent_rows": 0,
+          "first_divergence_step": null,
+          "max_numeric_diff": 0.0
+        },
+        "processor_input_ids_sha256": {
+          "divergent_rows": 0,
+          "first_divergence_step": null,
+          "max_numeric_diff": 0.0
+        },
+        "processor_pixel_values_sha256": {
+          "divergent_rows": 143,
+          "first_divergence_step": 49,
+          "max_numeric_diff": 0.0
+        },
+        "raw_action_7d": {
+          "divergent_rows": 129,
+          "first_divergence_step": 111,
+          "max_numeric_diff": 1.1502626240253448
+        },
+        "raw_agentview_sha256": {
+          "divergent_rows": 143,
+          "first_divergence_step": 49,
+          "max_numeric_diff": 0.0
+        },
+        "robot0_eef_pos": {
+          "divergent_rows": 138,
+          "first_divergence_step": 112,
+          "max_numeric_diff": 0.06055489676808268
+        },
+        "robot0_eef_velocity": {
+          "divergent_rows": 138,
+          "first_divergence_step": 112,
+          "max_numeric_diff": 0.00909183751164977
+        },
+        "robot0_gripper_qpos": {
+          "divergent_rows": 138,
+          "first_divergence_step": 112,
+          "max_numeric_diff": 0.02102042332897958
+        },
+        "student_probabilities": {
+          "divergent_rows": 138,
+          "first_divergence_step": 112,
+          "max_numeric_diff": 0.46596646308898926
+        },
+        "student_scheduler_trace": {
+          "divergent_rows": 138,
+          "first_divergence_step": 112,
+          "max_numeric_diff": 1.0
+        }
+      },
+      "historical_first_emit_step": 133,
+      "historical_rows": 250,
+      "neighbourhood_118_148": [
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.3056134164333344,
+            "emitted": false,
+            "gripper_closing_state": 0.49438658356666565,
+            "physical_criticality": 0.864192008972168,
+            "physical_margin": 0.3141920089721679
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.3092423856258393,
+            "emitted": false,
+            "gripper_closing_state": 0.49075761437416077,
+            "physical_criticality": 0.8661354184150696,
+            "physical_margin": 0.31613541841506954
+          },
+          "step": 118
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.3222021043300629,
+            "emitted": false,
+            "gripper_closing_state": 0.47779789566993713,
+            "physical_criticality": 0.8636537790298462,
+            "physical_margin": 0.31365377902984615
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.31139858365058903,
+            "emitted": false,
+            "gripper_closing_state": 0.488601416349411,
+            "physical_criticality": 0.8622984290122986,
+            "physical_margin": 0.31229842901229854
+          },
+          "step": 119
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.2873815774917603,
+            "emitted": false,
+            "gripper_closing_state": 0.5126184225082397,
+            "physical_criticality": 0.8610057830810547,
+            "physical_margin": 0.31100578308105464
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.27360152006149296,
+            "emitted": false,
+            "gripper_closing_state": 0.5263984799385071,
+            "physical_criticality": 0.8584058284759521,
+            "physical_margin": 0.3084058284759521
+          },
+          "step": 120
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.28052763938903813,
+            "emitted": false,
+            "gripper_closing_state": 0.5194723606109619,
+            "physical_criticality": 0.8612557649612427,
+            "physical_margin": 0.31125576496124263
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.26343141794204716,
+            "emitted": false,
+            "gripper_closing_state": 0.5365685820579529,
+            "physical_criticality": 0.8590579628944397,
+            "physical_margin": 0.30905796289443965
+          },
+          "step": 121
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.25834177732467656,
+            "emitted": false,
+            "gripper_closing_state": 0.5416582226753235,
+            "physical_criticality": 0.8582897186279297,
+            "physical_margin": 0.30828971862792964
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.24512760639190678,
+            "emitted": false,
+            "gripper_closing_state": 0.5548723936080933,
+            "physical_criticality": 0.856232225894928,
+            "physical_margin": 0.30623222589492793
+          },
+          "step": 122
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.23467473983764653,
+            "emitted": false,
+            "gripper_closing_state": 0.5653252601623535,
+            "physical_criticality": 0.8594846725463867,
+            "physical_margin": 0.3094846725463867
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.23670850992202763,
+            "emitted": false,
+            "gripper_closing_state": 0.5632914900779724,
+            "physical_criticality": 0.8586409687995911,
+            "physical_margin": 0.308640968799591
+          },
+          "step": 123
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.2142621755599976,
+            "emitted": false,
+            "gripper_closing_state": 0.5857378244400024,
+            "physical_criticality": 0.8583770990371704,
+            "physical_margin": 0.30837709903717037
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.20804880857467656,
+            "emitted": false,
+            "gripper_closing_state": 0.5919511914253235,
+            "physical_criticality": 0.8592897057533264,
+            "physical_margin": 0.30928970575332637
+          },
+          "step": 124
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.19210855960845952,
+            "emitted": false,
+            "gripper_closing_state": 0.6078914403915405,
+            "physical_criticality": 0.85768061876297,
+            "physical_margin": 0.3076806187629699
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.18921940326690678,
+            "emitted": false,
+            "gripper_closing_state": 0.6107805967330933,
+            "physical_criticality": 0.8581714630126953,
+            "physical_margin": 0.30817146301269527
+          },
+          "step": 125
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.1991634845733643,
+            "emitted": false,
+            "gripper_closing_state": 0.6008365154266357,
+            "physical_criticality": 0.8597776293754578,
+            "physical_margin": 0.3097776293754577
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.22157131433486943,
+            "emitted": false,
+            "gripper_closing_state": 0.5784286856651306,
+            "physical_criticality": 0.86229008436203,
+            "physical_margin": 0.31229008436203
+          },
+          "step": 126
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.20967160463333134,
+            "emitted": false,
+            "gripper_closing_state": 0.5903283953666687,
+            "physical_criticality": 0.8611024618148804,
+            "physical_margin": 0.3111024618148803
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.2632424712181092,
+            "emitted": false,
+            "gripper_closing_state": 0.5367575287818909,
+            "physical_criticality": 0.8636704087257385,
+            "physical_margin": 0.3136704087257385
+          },
+          "step": 127
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.25793688297271733,
+            "emitted": false,
+            "gripper_closing_state": 0.5420631170272827,
+            "physical_criticality": 0.8661820888519287,
+            "physical_margin": 0.31618208885192867
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.3249800086021424,
+            "emitted": false,
+            "gripper_closing_state": 0.47501999139785767,
+            "physical_criticality": 0.8666958808898926,
+            "physical_margin": 0.31669588088989253
+          },
+          "step": 128
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.3567822456359864,
+            "emitted": false,
+            "gripper_closing_state": 0.44321775436401367,
+            "physical_criticality": 0.870277464389801,
+            "physical_margin": 0.320277464389801
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.3921169221401215,
+            "emitted": false,
+            "gripper_closing_state": 0.40788307785987854,
+            "physical_criticality": 0.8716524243354797,
+            "physical_margin": 0.3216524243354797
+          },
+          "step": 129
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.363410758972168,
+            "emitted": false,
+            "gripper_closing_state": 0.43658924102783203,
+            "physical_criticality": 0.8644795417785645,
+            "physical_margin": 0.3144795417785644
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.46169330477714543,
+            "emitted": false,
+            "gripper_closing_state": 0.3383066952228546,
+            "physical_criticality": 0.8698283433914185,
+            "physical_margin": 0.3198283433914184
+          },
+          "step": 130
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.15722887516021733,
+            "emitted": false,
+            "gripper_closing_state": 0.6427711248397827,
+            "physical_criticality": 0.8094176650047302,
+            "physical_margin": 0.2594176650047302
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.25399397611618046,
+            "emitted": false,
+            "gripper_closing_state": 0.5460060238838196,
+            "physical_criticality": 0.8393711447715759,
+            "physical_margin": 0.2893711447715759
+          },
+          "step": 131
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.02128635644912724,
+            "emitted": false,
+            "gripper_closing_state": 0.7787136435508728,
+            "physical_criticality": 0.7381081581115723,
+            "physical_margin": 0.18810815811157222
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.10170625448226933,
+            "emitted": false,
+            "gripper_closing_state": 0.6982937455177307,
+            "physical_criticality": 0.5925354361534119,
+            "physical_margin": 0.04253543615341182
+          },
+          "step": 132
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": 0.06264717578887935,
+            "emitted": true,
+            "gripper_closing_state": 0.8626471757888794,
+            "physical_criticality": 0.6879076957702637,
+            "physical_margin": 0.13790769577026363
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.125995147228241,
+            "emitted": false,
+            "gripper_closing_state": 0.674004852771759,
+            "physical_criticality": 0.5599045157432556,
+            "physical_margin": 0.00990451574325557
+          },
+          "step": 133
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": 0.051038396358489946,
+            "emitted": false,
+            "gripper_closing_state": 0.85103839635849,
+            "physical_criticality": 0.6824616193771362,
+            "physical_margin": 0.13246161937713619
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.16050295829772954,
+            "emitted": false,
+            "gripper_closing_state": 0.6394970417022705,
+            "physical_criticality": 0.5811302661895752,
+            "physical_margin": 0.03113026618957515
+          },
+          "step": 134
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.13347886800765996,
+            "emitted": false,
+            "gripper_closing_state": 0.6665211319923401,
+            "physical_criticality": 0.7760880589485168,
+            "physical_margin": 0.2260880589485168
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.5443658113479615,
+            "emitted": false,
+            "gripper_closing_state": 0.2556341886520386,
+            "physical_criticality": 0.6918801069259644,
+            "physical_margin": 0.1418801069259643
+          },
+          "step": 135
+        },
+        {
+          "historical": {
+            "candidate_close": false,
+            "closing_margin": -0.39732437133789067,
+            "emitted": false,
+            "gripper_closing_state": 0.4026756286621094,
+            "physical_criticality": 0.739525556564331,
+            "physical_margin": 0.189525556564331
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.7357351362705231,
+            "emitted": false,
+            "gripper_closing_state": 0.06426486372947693,
+            "physical_criticality": 0.548960268497467,
+            "physical_margin": -0.0010397315025330034
+          },
+          "step": 136
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.522603440284729,
+            "emitted": false,
+            "gripper_closing_state": 0.277396559715271,
+            "physical_criticality": 0.7168320417404175,
+            "physical_margin": 0.16683204174041744
+          },
+          "q3_ar": {
+            "candidate_close": true,
+            "closing_margin": -0.7040265306830407,
+            "emitted": false,
+            "gripper_closing_state": 0.09597346931695938,
+            "physical_criticality": 0.6386623382568359,
+            "physical_margin": 0.0886623382568359
+          },
+          "step": 137
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.5823170870542527,
+            "emitted": false,
+            "gripper_closing_state": 0.21768291294574738,
+            "physical_criticality": 0.8126243948936462,
+            "physical_margin": 0.2626243948936462
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.668260145187378,
+            "emitted": false,
+            "gripper_closing_state": 0.13173985481262207,
+            "physical_criticality": 0.5479148626327515,
+            "physical_margin": -0.0020851373672485796
+          },
+          "step": 138
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.4856163144111634,
+            "emitted": false,
+            "gripper_closing_state": 0.31438368558883667,
+            "physical_criticality": 0.8235015869140625,
+            "physical_margin": 0.27350158691406246
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.5796459794044495,
+            "emitted": false,
+            "gripper_closing_state": 0.22035402059555054,
+            "physical_criticality": 0.5857123732566833,
+            "physical_margin": 0.035712373256683305
+          },
+          "step": 139
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.48383637070655827,
+            "emitted": false,
+            "gripper_closing_state": 0.3161636292934418,
+            "physical_criticality": 0.8338149785995483,
+            "physical_margin": 0.2838149785995483
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.6965817615389824,
+            "emitted": false,
+            "gripper_closing_state": 0.10341823846101761,
+            "physical_criticality": 0.4517328143119812,
+            "physical_margin": -0.09826718568801884
+          },
+          "step": 140
+        },
+        {
+          "historical": {
+            "candidate_close": false,
+            "closing_margin": -0.531517106294632,
+            "emitted": false,
+            "gripper_closing_state": 0.26848289370536804,
+            "physical_criticality": 0.7343575954437256,
+            "physical_margin": 0.18435759544372554
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.7832705277949572,
+            "emitted": false,
+            "gripper_closing_state": 0.01672947220504284,
+            "physical_criticality": 0.38896626234054565,
+            "physical_margin": -0.1610337376594544
+          },
+          "step": 141
+        },
+        {
+          "historical": {
+            "candidate_close": true,
+            "closing_margin": -0.5106555998325348,
+            "emitted": false,
+            "gripper_closing_state": 0.2893444001674652,
+            "physical_criticality": 0.7341568470001221,
+            "physical_margin": 0.18415684700012203
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.7525648839771748,
+            "emitted": false,
+            "gripper_closing_state": 0.04743511602282524,
+            "physical_criticality": 0.42119544744491577,
+            "physical_margin": -0.12880455255508427
+          },
+          "step": 142
+        },
+        {
+          "historical": {
+            "candidate_close": false,
+            "closing_margin": -0.6211414217948914,
+            "emitted": false,
+            "gripper_closing_state": 0.17885857820510864,
+            "physical_criticality": 0.7069758772850037,
+            "physical_margin": 0.15697587728500362
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.7583811573684216,
+            "emitted": false,
+            "gripper_closing_state": 0.041618842631578445,
+            "physical_criticality": 0.4133393168449402,
+            "physical_margin": -0.13666068315505986
+          },
+          "step": 143
+        },
+        {
+          "historical": {
+            "candidate_close": false,
+            "closing_margin": -0.5945070415735245,
+            "emitted": false,
+            "gripper_closing_state": 0.20549295842647552,
+            "physical_criticality": 0.6227445602416992,
+            "physical_margin": 0.07274456024169917
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.7864651141688228,
+            "emitted": false,
+            "gripper_closing_state": 0.013534885831177235,
+            "physical_criticality": 0.2427368313074112,
+            "physical_margin": -0.30726316869258885
+          },
+          "step": 144
+        },
+        {
+          "historical": {
+            "candidate_close": false,
+            "closing_margin": -0.6581400811672211,
+            "emitted": false,
+            "gripper_closing_state": 0.14185991883277893,
+            "physical_criticality": 0.6002494692802429,
+            "physical_margin": 0.050249469280242876
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.7882396496832371,
+            "emitted": false,
+            "gripper_closing_state": 0.011760350316762924,
+            "physical_criticality": 0.16492801904678345,
+            "physical_margin": -0.3850719809532166
+          },
+          "step": 145
+        },
+        {
+          "historical": {
+            "candidate_close": false,
+            "closing_margin": -0.7633056148886681,
+            "emitted": false,
+            "gripper_closing_state": 0.03669438511133194,
+            "physical_criticality": 0.5649827718734741,
+            "physical_margin": 0.014982771873474077
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.7896942870691419,
+            "emitted": false,
+            "gripper_closing_state": 0.010305712930858135,
+            "physical_criticality": 0.09901630878448486,
+            "physical_margin": -0.4509836912155152
+          },
+          "step": 146
+        },
+        {
+          "historical": {
+            "candidate_close": false,
+            "closing_margin": -0.7634138196706772,
+            "emitted": false,
+            "gripper_closing_state": 0.036586180329322815,
+            "physical_criticality": 0.5028984546661377,
+            "physical_margin": -0.04710154533386235
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.7902287777513266,
+            "emitted": false,
+            "gripper_closing_state": 0.009771222248673439,
+            "physical_criticality": 0.0885193943977356,
+            "physical_margin": -0.46148060560226445
+          },
+          "step": 147
+        },
+        {
+          "historical": {
+            "candidate_close": false,
+            "closing_margin": -0.7802417755126954,
+            "emitted": false,
+            "gripper_closing_state": 0.019758224487304688,
+            "physical_criticality": 0.43932193517684937,
+            "physical_margin": -0.11067806482315068
+          },
+          "q3_ar": {
+            "candidate_close": false,
+            "closing_margin": -0.7960492243990303,
+            "emitted": false,
+            "gripper_closing_state": 0.003950775600969791,
+            "physical_criticality": 0.08306916803121567,
+            "physical_margin": -0.4669308319687844
+          },
+          "step": 148
+        }
+      ],
+      "q3_ar_first_emit_step": null,
+      "q3_ar_rows": 256,
+      "shared_rows": 250,
+      "trajectory_equivalence": "DISPROVEN",
+      "trajectory_evidence": {
+        "action_token_first_divergence": 111,
+        "both_clean_success": true,
+        "feature_first_divergence": 112,
+        "historical_terminal_step": 249,
+        "q3_ar_terminal_step": 255,
+        "qpos_first_divergence": 112,
+        "raw_agentview_first_divergence": 49,
+        "success_is_not_trajectory_equivalence": true
+      }
+    }
+  },
+  "rca1_counters": {
+    "new_attack_backward_calls": 0,
+    "new_attacked_env_steps": 0,
+    "new_eval160_reads": 0,
+    "new_openvla_model_inference_calls": 0,
+    "new_pgd_calls": 0,
+    "new_physical_interventions": 0,
+    "new_protected_reads": 0,
+    "new_simulator_env_step_calls": 0,
+    "new_vphys_reads": 0,
+    "offline_student_cpu_forward_passes": 4
+  },
+  "recommendation": "Do not rerun M012 or reinterpret None as arm qualification. If owner authorizes a new engineering gate, first freeze a provenance-complete clean replay contract that binds the actual OpenVLA/victim launch bytes and observation lifecycle; keep this fixture permanently excluded.",
+  "root_cause": {
+    "explanation": "The 133 expectation is correctly bound to M012. The already-consumed Q3 clean replay is not trajectory-equivalent: image hashes diverge at step 49, action tokens at 111, 25D/Student values at 112, and terminal length is 250 versus 256. At step 133 the same scheduler is legal and candidate-close in both traces, but Q3 gripper_closing_state=0.6740048528 is below 0.8 while historical=0.8626471758, so None follows without invoking stochasticity.",
+    "historical_stepwise_evidence": "M012 has sealed per-step features, Student probabilities, scheduler trace, tokens, action and proprioception; the older generic D0R2 parity limitation is not upgraded into this M012 trace.",
+    "not_supported": [
+      "EXPECTATION_PROVENANCE_ERROR",
+      "STUDENT_ARTIFACT_OR_RUNTIME_DRIFT",
+      "STEP_INDEX_OR_RESET_CONTRACT_DRIFT"
+    ],
+    "primary": [
+      "CLEAN_TRAJECTORY_DRIFT"
+    ],
+    "secondary": [
+      "UNRESOLVED_MULTI_FACTOR"
+    ],
+    "student_stochasticity": "NOT_CLAIMED; no new stochasticity evidence",
+    "unresolved": [
+      "historical launch-time external Student copy is not uniquely bound to the runner import path",
+      "historical and Q3 clean OpenVLA/victim full checkpoint/processor launch-time identity is not sealed in the episode receipts",
+      "origin of the first observation/renderer divergence cannot be isolated without a new rollout"
+    ]
+  },
+  "runtime_source": {
+    "historical_receipt": {
+      "branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
+      "commit": "d74b8b7aff311c4ebbd51bf83ff026efe48d0236",
+      "status_porcelain": "",
+      "tree": "2ee7425fc9177d70abb61f12b644833ec20d0a06"
+    },
+    "q3_ar_receipt": {
+      "branch": "",
+      "commit": "b7237611c466077a9a7e6f0b1102e9176cfa2c88",
+      "status_porcelain": "",
+      "tree": "fd5eeef98480b4c608ebd4eafb8e325afa8cd17a"
+    },
+    "shared_runner_git_blob": "b17761a158aca448610c251d17843c658392479b"
+  },
+  "schema": "STAGE_X_X1R2_Q3_AR_CLEAN_EMIT_RCA1_V1",
+  "scope": "static and sealed-artifact offline RCA only; no new rollout, OpenVLA inference, simulator, env.step, PGD, attack arm, V_phys, Eval160, or protected read",
+  "status": "PASS_RCA1_STOP_OWNER_REVIEW"
+}

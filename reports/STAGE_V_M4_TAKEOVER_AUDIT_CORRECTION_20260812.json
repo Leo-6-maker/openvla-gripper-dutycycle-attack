@@ -1,0 +1,162 @@
+{
+  "schema": "STAGE_V_M4_TAKEOVER_AUDIT_CORRECTION_V1",
+  "status": "HOLD_RESERVE_ROOT_PROVENANCE_MISMATCH",
+  "gate": "PHASE_0_READ_ONLY_TAKEOVER_AUDIT",
+  "created_utc": "2026-08-12T14:08:27Z",
+  "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+  "pull_request": 111,
+  "branch": "codex/stage-v-resource-contract-20260810",
+  "github_head_at_audit": "d6e08276819102cd29361b4db808b86d46c3f192",
+  "github_tree_at_audit": "a7ee1dc65f5eab91e6b65a60186a2908788b8eb3",
+  "server": {
+    "ssh_alias": "dty-server",
+    "worktree": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-v7-terminal-gate-fix-20260812",
+    "worktree_exists": true,
+    "head": "92ff4c2d43fb327b661552d483db6e1298c19833",
+    "tree": "72707afd011bb67fc5f759de3ab3cad2c517faa1",
+    "worktree_status": "DETACHED_CLEAN",
+    "official_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "official_python_realpath": "/home/sz/miniconda3/envs/hallo/bin/python3.10",
+    "gpu_snapshot_utc": "2026-08-12T14:08:27Z",
+    "gpu_free_mib": {
+      "0": 81213,
+      "1": 81213,
+      "2": 81213,
+      "3": 81213,
+      "4": 81213,
+      "5": 81213,
+      "6": 81213,
+      "7": 81213
+    },
+    "compute_apps": 0,
+    "foreign_process_interference": false,
+    "project_m4_runtime_processes": 0,
+    "inspection_processes_present": true
+  },
+  "historical_bindings": {
+    "m4_matched_action_protocol": {
+      "path": "configs/STAGE_V_M4_MATCHED_ACTION_PROTOCOL_V1.json",
+      "sha256": "b70a8614938a33a7e8c3ba19de6aa8b37fede67f109a66405071d675cf92c795"
+    },
+    "m4_runtime_authorization": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_RUNTIME_AUTHORIZATION_V1_20260812T104500Z/STAGE_V_M4_RUNTIME_AUTHORIZATION.json",
+      "sha256": "91a62f446fde33d0fd1aae32f6150e83da8ef371231f49eef2416cc571f52dbd"
+    },
+    "formal_corridor_reconciliation": {
+      "path": "reports/STAGE_V_M4_CORRIDOR_AB_RECONCILIATION_V1.json",
+      "sha256": "1de1d0d4ca1be7cb8e1acc82d5033f0c8521885525493381bc8ff065d831162"
+    },
+    "formal_corridor_runtime_authorization": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_RUNTIME_AUTHORIZATION_V1_3_20260812T122500Z/STAGE_V_M4_CORRIDOR_RUNTIME_AUTHORIZATION.json",
+      "sha256": "c3d4183fbdd49f9ca520f533e0ca947ae0aa891eee906ccc1986837016def6f2"
+    }
+  },
+  "formal_corridor": {
+    "reconciliation_status": "HOLD_FORMAL_M4_CORRIDOR_INSUFFICIENT",
+    "stable_parent_count": 29,
+    "required_parent_count": 40,
+    "stable_by_suite": {
+      "libero_10": 9,
+      "libero_goal": 4,
+      "libero_object": 10,
+      "libero_spatial": 6
+    },
+    "formal_a_parent_receipts": 40,
+    "formal_b_parent_receipts": 40,
+    "formal_a_status_counts": {
+      "PASS": 29,
+      "INELIGIBLE": 6,
+      "CLEAN_FAILURE": 5
+    },
+    "formal_b_status_counts": {
+      "PASS": 33,
+      "INELIGIBLE": 4,
+      "CLEAN_FAILURE": 3
+    },
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0
+    }
+  },
+  "reserve_corridor": {
+    "a3_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_RESERVE_PREFLIGHT_A3_20260812T123000Z",
+    "b3_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CORRIDOR_RESERVE_PREFLIGHT_B3_20260812T123500Z",
+    "a3_parent_receipts": 7,
+    "b3_parent_receipts": 7,
+    "a3_b3_key_set_equal": true,
+    "a3_b3_canonical_receipt_fields_equal": true,
+    "stable_pass_intersection": 3,
+    "stable_pass_keys": [
+      "libero_object/task_03/state_28",
+      "libero_object/task_06/state_27",
+      "libero_object/task_09/state_22"
+    ],
+    "dispatcher_complete_sha256": {
+      "A3": "3ea58205af4cb7d84971907a71223feded9732efd1ec42d3f8d8b646ded4c064",
+      "B3": "ddbb3943f3409fd9dd94ce199845458b165c0901e2d09bead9df67d90523c5b2"
+    },
+    "parent_receipt_provenance": "RECONCILED_BUT_ROOT_METADATA_INVALID",
+    "root_sha256sums_present": {
+      "A3": false,
+      "B3": false
+    },
+    "preflight_input": {
+      "A3": {
+        "path": ".../STAGE_V_M4_CORRIDOR_RESERVE_PREFLIGHT_A3_20260812T123000Z/PREFLIGHT_INPUT.json",
+        "sha256": "7ec418622f81b7ef52b5d10aeba04b60b486e69e9bbf2e8e6dd10a66768149f5",
+        "json_valid": false,
+        "error": "JSONDecodeError: Invalid \\escape at line 1 column 10"
+      },
+      "B3": {
+        "path": ".../STAGE_V_M4_CORRIDOR_RESERVE_PREFLIGHT_B3_20260812T123500Z/PREFLIGHT_INPUT.json",
+        "sha256": "7ec418622f81b7ef52b5d10aeba04b60b486e69e9bbf2e8e6dd10a66768149f5",
+        "json_valid": false,
+        "error": "JSONDecodeError: Invalid \\escape at line 1 column 10"
+      }
+    },
+    "consumability": "NOT_CONSUMABLE_UNTIL_PROVENANCE_RECONCILED"
+  },
+  "freshness_inventory": {
+    "counterfactual_exposure_union": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V5_POST_M35_20260811T162000Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V5.json",
+      "sha256": "2ef448f172dc2c8fa2304a6772a7024d76391ed2f6cbca1fc8e79b8a6425dd5a",
+      "status": "PASS",
+      "excluded_parent_count": 53,
+      "overlap_count": 8,
+      "note": "The union's overlap_count is internal source-manifest duplicate accounting; formal/reserve run manifests report zero candidate overlap."
+    },
+    "cumulative_clean_attempt_exclusion": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V7_POST_V7_FAIL4_20260812T212000Z.json",
+      "sha256": "b6576ca6f3ea6ebee9b6a2159018ead81eda5eef3bec2f016d5786ad3c05f918",
+      "status": "PASS",
+      "excluded_parent_count": 887,
+      "overlap_count": 0
+    },
+    "fresh_g10_candidate_pool": {
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_G10_FRESH_CANDIDATE_POOL_V7_POST_V7_FAIL4_20260812T083500Z.json",
+      "sha256": "287a3179ee9008327fe6556c60735ed7f08502f0d2a024674b3ef6ef25b23854",
+      "candidate_count": 160,
+      "candidates_per_suite": 40
+    }
+  },
+  "prohibited_until_correction": [
+    "formal M4 intervention",
+    "V_phys/V_t label generation",
+    "Teacher",
+    "Student",
+    "Scheduler",
+    "Timing",
+    "VIS/PGD",
+    "Eval160/protected reads",
+    "rerun or mutation of A3/B3 roots"
+  ],
+  "claim_boundary": [
+    "formal M4 corridor remains HOLD at 29/40",
+    "A3/B3 parent receipt intersection is descriptively 3 Object identities",
+    "A3/B3 reserve roots are not consumable evidence until the malformed root metadata is reconciled",
+    "no formal M4 vulnerability map exists"
+  ],
+  "next_legal_action": "Publish this corrected audit, then add append-only stale-M4 supersession/HOLD governance and fail-closed corridor-PASS checks before any fresh rollout."
+}

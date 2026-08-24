@@ -1,0 +1,55 @@
+{
+  "comparison": {
+    "clean_success_equal": true,
+    "first_emit_equal": true,
+    "full_exact": false,
+    "full_sha256_repeat0": "2eed98c01bb49c56347b2546b99d099bce3eec193b8bcdc780e657d897f6fafc",
+    "full_sha256_repeat1": "b634f262c42637e364f19f5d6c99a7ebc8fea859de8fb6229d67d62cd2f12bc5",
+    "prefix_exact": false,
+    "prefix_sha256_repeat0": "d3679b7ca0f0a5d66f47d0916726dcfc8990ac85bfa3ad17e4711658c6566895",
+    "prefix_sha256_repeat1": "24226abc37e7b3cdc16b96b5f96e7240168cacb0ac2a3ec1765be92549f34eb5",
+    "prefix_steps": 64
+  },
+  "mount_gpu": {
+    "compute_apps": [],
+    "cuda_visible_devices": "2",
+    "free_memory_mib": 81210,
+    "gpu_uuid": "GPU-7b06162a-27e4-2552-e891-d201e3fae6b9",
+    "physical_gpu": 2,
+    "used_memory_mib": 13,
+    "utilization_gpu_percent": 0
+  },
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "runtime_authority": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-gripper-dutycycle-attack-x1r2-q3r2-authority-20260820/configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
+    "runtime_code_commit": "85fa8e678ca599f21f5a69d180c7179f9ef99478",
+    "runtime_code_tree": "f6555a5d49dda45f29ef64ca8ae4b65b7b08d3f9",
+    "status": "STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_PASS"
+  },
+  "scan": [
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_37",
+      "clean_success": true,
+      "error": "",
+      "first_emit_legal": true,
+      "first_emit_step": 63,
+      "fixture_id": "Q3R2-LIBERO_GOAL-01",
+      "status": "PASS_CLEAN_REPEAT",
+      "trace_sha256": "2eed98c01bb49c56347b2546b99d099bce3eec193b8bcdc780e657d897f6fafc"
+    }
+  ],
+  "schema": "STAGE_X_X1R2_Q3R2_CLEAN_DETERMINISM_SUITE_REPORT_V1",
+  "selected_fixture": "Q3R2-LIBERO_GOAL-01",
+  "selected_parent_key": "libero_goal/task_02/state_37",
+  "status": "OWNER_REVIEW_Q3R2_CLEAN_PREFIX_DETERMINISM_NOT_ESTABLISHED",
+  "suite": "libero_goal"
+}

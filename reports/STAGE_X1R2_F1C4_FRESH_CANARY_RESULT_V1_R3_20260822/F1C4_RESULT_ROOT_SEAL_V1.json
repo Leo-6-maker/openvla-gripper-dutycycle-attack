@@ -1,0 +1,47 @@
+{
+  "artifact_hashes": {
+    "configs/STAGE_X_X1R2_F1C4_FRESH_CANARY_PROTOCOL_V1.json": "0b1b86bf6bd3882c5874658d1487e4db4cad121a56a18973c28ccc7bd5b17216",
+    "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_EXPOSURE_REAUDIT_V1.json": "93b897996afe73bd7f98a92abb41deb2364a7ec35b2d3b97ecf4bb42aac6cfa1",
+    "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_FRESH_CANARY_LEDGER_V1.json": "d6cd9c3ab753fcef5dd79376e03dba5dd3e8e9b7ac1c1755a93d4f5a30bd9c34",
+    "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_METHOD_EQUIVALENCE_AUDIT_V1.json": "f8166557c47c393a91b80fcd3f1d55d8d282f91cab66cc3cec19f9ea48549f44",
+    "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_METHOD_SPEC_V1.json": "5b0b7f8b15f016f77702b630678acd091a8d39a9d85e4a2e4fdfa2f7d008235b",
+    "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_PRE_GPU_AUDIT_V1.json": "62de60cd82d80bd4f615fad0053954b38221cb36d6f19ecb317a5e9fe1632b0f",
+    "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_ROOT_SEAL_V1.json": "9769272bb3b66a6714c2858d025dd43b3e39748663893e11e975ccc0b53f87e4",
+    "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RUNTIME_AUDIT_V1.json": "e0d4b782a3a34d16464cb28ebf900bd9ba745d53381f94e78327a9afabac275f",
+    "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_TERMINAL_DECISION_V1.json": "915f197f04d0bc3b138f01fb745908a76dadc422e516861a229e766787e234c2",
+    "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+    "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_DECISION_V3.json": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
+    "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
+    "scripts/stage_x/audit_stage_x1r2_f1c4_results.py": "a0e5ddc941100d76e40b6ec60570727d1c736ea5882d51989133774ae1788e6a",
+    "scripts/stage_x/run_stage_x1r2_f1c_t5_canary.py": "11799345397e31b3361599e0fd051b561ee0ecbcec500aa7d43447f8fc6a9b8a"
+  },
+  "decision_sha256": "915f197f04d0bc3b138f01fb745908a76dadc422e516861a229e766787e234c2",
+  "gate": "STAGE_X_X1R2_F1C4_FRESH_CANARY_REQUALIFICATION_V1",
+  "namespace": "STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 1,
+    "eval160": "UNREAD",
+    "new_vphys_reads": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD"
+  },
+  "protocol_sha256": "0b1b86bf6bd3882c5874658d1487e4db4cad121a56a18973c28ccc7bd5b17216",
+  "runtime_file_count": 118,
+  "runtime_manifest_sha256": "b678de75a2f22227a1eb028bc761039b844e34c0f1cdb755ff7a9f06e501c97a",
+  "runtime_root_remote": "\\mnt\\sdc\\dty_user\\openvla_attack_outputs\\n5\\stage_x1r2_f1c4_fresh_canary_v1_20260822",
+  "schema": "STAGE_X1R2_F1C4_RESULT_ROOT_SEAL_V1",
+  "seal_scope_excludes_sidecar": true,
+  "source_commit": "efd7ba5e2b98fd239be9b75884bb343dee8d9fdf",
+  "source_tree": "26ef327c853294a2f61c5a407dff1bc23c52486a",
+  "static_root_seal_sha256": "9769272bb3b66a6714c2858d025dd43b3e39748663893e11e975ccc0b53f87e4",
+  "status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL",
+  "stop_conditions": {
+    "create_f1c5": false,
+    "enter_eval160_or_protected": false,
+    "open_bridge_v3": false,
+    "recycle_or_top_up_identities": false,
+    "run_f1d": false,
+    "tune_method": false
+  }
+}

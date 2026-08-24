@@ -1,0 +1,26 @@
+{
+  "schema": "DETECTOR_V5_DEVELOPMENT_PROTOCOL_V2",
+  "status": "DEVELOPMENT_ONLY",
+  "scope": "FIT_TRAIN_ONLY",
+  "variants": ["V5_A_PROPRIO", "V5_B_PROPRIO_POLICY_INTENT", "V5_C_PROPRIO_CAUSAL_VISUAL", "V5_D_PROPRIO_POLICY_INTENT_CAUSAL_VISUAL"],
+  "true_mixed_episode": "known candidate window tier >= 2 AND known candidate window tier <= 1",
+  "candidate_window": "student_valid AND candidate_close AND teacher_known AND phase != UNKNOWN AND not none:* AND one contiguous segment",
+  "minimum_candidate_dwell": 10,
+  "retrospective_metrics": "secondary_only_full_window_aggregation",
+  "causal_metrics": "primary_anchor_at_start_plus_9_or_short_window_end",
+  "active_heads": ["utility", "release", "regrasp"],
+  "disabled_heads": ["support", "uncertainty"],
+  "loss": {
+    "ordinal_weight": 1.0,
+    "pairwise_weight": 0.5,
+    "listwise_weight": 0.5,
+    "abstention_weight": 1.0,
+    "release_weight": 0.3,
+    "regrasp_weight": 0.3,
+    "pairwise_margin": 0.2,
+    "pure_negative_rule": "softplus_of_highest_candidate_window"
+  },
+  "scheduler": {"persistence_window": 5, "persistence_required": 3, "max_emits_per_episode": 1, "uncertainty_veto_enabled": false},
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

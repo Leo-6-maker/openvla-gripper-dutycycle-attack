@@ -1,0 +1,55 @@
+{
+  "comparison": {
+    "clean_success_equal": true,
+    "first_emit_equal": true,
+    "full_exact": true,
+    "full_sha256_repeat0": "9c62b54a99adb51666b08c3b4f20892676a67dca2a51940b04d428ae6d6f22ef",
+    "full_sha256_repeat1": "9c62b54a99adb51666b08c3b4f20892676a67dca2a51940b04d428ae6d6f22ef",
+    "prefix_exact": true,
+    "prefix_sha256_repeat0": "8a56714212bc2e1e7219be4b940ada2e206691f4e3201965769a37fa43fab421",
+    "prefix_sha256_repeat1": "8a56714212bc2e1e7219be4b940ada2e206691f4e3201965769a37fa43fab421",
+    "prefix_steps": 87
+  },
+  "mount_gpu": {
+    "compute_apps": [],
+    "cuda_visible_devices": "3",
+    "free_memory_mib": 81210,
+    "gpu_uuid": "GPU-41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
+    "physical_gpu": 3,
+    "used_memory_mib": 13,
+    "utilization_gpu_percent": 0
+  },
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "runtime_authority": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-gripper-dutycycle-attack-x1r2-q3r2-authority-20260820/configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
+    "runtime_code_commit": "85fa8e678ca599f21f5a69d180c7179f9ef99478",
+    "runtime_code_tree": "f6555a5d49dda45f29ef64ca8ae4b65b7b08d3f9",
+    "status": "STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_PASS"
+  },
+  "scan": [
+    {
+      "canonical_parent_key": "libero_object/task_01/state_34",
+      "clean_success": true,
+      "error": "",
+      "first_emit_legal": true,
+      "first_emit_step": 86,
+      "fixture_id": "Q3R2-LIBERO_OBJECT-01",
+      "status": "PASS_CLEAN_REPEAT",
+      "trace_sha256": "9c62b54a99adb51666b08c3b4f20892676a67dca2a51940b04d428ae6d6f22ef"
+    }
+  ],
+  "schema": "STAGE_X_X1R2_Q3R2_CLEAN_DETERMINISM_SUITE_REPORT_V1",
+  "selected_fixture": "Q3R2-LIBERO_OBJECT-01",
+  "selected_parent_key": "libero_object/task_01/state_34",
+  "status": "PASS_SUITE_CLEAN_PREFIX_DETERMINISM",
+  "suite": "libero_object"
+}

@@ -1,0 +1,138 @@
+{
+  "claim_ledger_status": "PAPER_V1_CLAIM_AUDIT_PASS",
+  "files": [
+    {
+      "bytes": 90,
+      "path": "paper/data/PAPER_V1_FIGURE2_X0_DOSE_RESPONSE.csv",
+      "sha256": "cd642e0ed15fc0df2cc95bdb3e4c9c869cd4a20223afea90fd8c2a1619689354"
+    },
+    {
+      "bytes": 330,
+      "path": "paper/data/PAPER_V1_FIGURE3_TIMING_NEGATIVE_CASCADE.csv",
+      "sha256": "05de99f4c8e91b34b926f0244f4849bf6008f594b702b3359fe86d43cd855816"
+    },
+    {
+      "bytes": 116,
+      "path": "paper/data/PAPER_V1_FIGURE4_FACTORIZATION_GAP.csv",
+      "sha256": "5c1a46be48093aa9098855bc37f088dcc04fde99e0801b006a48b7ba53829afc"
+    },
+    {
+      "bytes": 412,
+      "path": "paper/data/PAPER_V1_FIGURE5_E3_E4_PARENT_REALIZABILITY.csv",
+      "sha256": "8d34b4c6537ceb6e47de6a7c138c10b50d68785025a9c005d18adc22185b0128"
+    },
+    {
+      "bytes": 2498,
+      "path": "paper/figures/figure1_factorization_conceptual.svg",
+      "sha256": "b4d233e901e9644d7d86a384b63aa7180d9f62381fbe115bd6683574462a0c62"
+    },
+    {
+      "bytes": 3818,
+      "path": "paper/figures/figure2_x0_dose_response_mechanism.svg",
+      "sha256": "3a45fff8ba1007e8a067213bfd376926a8d69b76c28a19f3f784ac77fcbf30ed"
+    },
+    {
+      "bytes": 2728,
+      "path": "paper/figures/figure3_timing_negative_cascade.svg",
+      "sha256": "254b034f0d1303368ac278136d77c4f382823736ee9c120f6aa01ed18185fc1e"
+    },
+    {
+      "bytes": 3237,
+      "path": "paper/figures/figure4_stage_ix_factorization_gap.svg",
+      "sha256": "eaeba70c6b4e5b222a17720107e23b3c4c5993aeae1e767a86990ccf2635d91a"
+    },
+    {
+      "bytes": 4746,
+      "path": "paper/figures/figure5_e3_e4_realizability_decomposition.svg",
+      "sha256": "e991599ed63f499a9fc9dad202722936eb5829a16f648cabd33a046725ba5238"
+    },
+    {
+      "bytes": 829,
+      "path": "paper/PAPER_V1_CLAIM_AUDIT_V1.md",
+      "sha256": "cde82d0032c22401615e40023a76e778237e06b4a60756b54a924ca5e920d984"
+    },
+    {
+      "bytes": 45161,
+      "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+      "sha256": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1"
+    },
+    {
+      "bytes": 15342,
+      "path": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.json",
+      "sha256": "4b9cc1368cd88a7a7a299881bd67fda9cb4d2ba43c90b7c27dd0741a8864d1bb"
+    },
+    {
+      "bytes": 978,
+      "path": "paper/PAPER_V1_EVIDENCE_AUTHORITY_MAP_V1.md",
+      "sha256": "c4c089619513f22a96d9cf2b38f32ed6c5e09795091334dd43ab1a32d788d83b"
+    },
+    {
+      "bytes": 3315,
+      "path": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.json",
+      "sha256": "61118293f0d0faa714c6269c85d2f76d456b319eefbc17b58c2117d6976bd69e"
+    },
+    {
+      "bytes": 65,
+      "path": "paper/PAPER_V1_FIGURE_TABLE_MANIFEST_V1.sha256",
+      "sha256": "425e16162e96b5f51f6fabd6beb76bf13377db18c9e2db02f636aa74441f1e0a"
+    },
+    {
+      "bytes": 1733,
+      "path": "paper/PAPER_V1_FIGURE_TABLE_PACKAGE_V1.md",
+      "sha256": "f52c533a22cde8b9fab91c8c5b324eaf36893d00fa709ba99f9999261a2a1389"
+    },
+    {
+      "bytes": 470,
+      "path": "paper/PAPER_V1_FIGURE_TABLE_ROOT_SEAL_V1.json",
+      "sha256": "6a30ef7e87d5ab7762db12349e6bd6c95fa63a09e5a229f22b902bcaec803b6a"
+    },
+    {
+      "bytes": 65,
+      "path": "paper/PAPER_V1_FIGURE_TABLE_ROOT_SEAL_V1.sha256",
+      "sha256": "631643157c1fa9fcc132048af7a582ad761b9dc86a2b030e8e985378fc54372d"
+    },
+    {
+      "bytes": 20167,
+      "path": "paper/PAPER_V1_MANUSCRIPT_DRAFT.md",
+      "sha256": "0dfefef01078901e00b9c143c25990620870adc00b564f490f499003f294d420"
+    },
+    {
+      "bytes": 2130,
+      "path": "paper/PAPER_V1_SUPPLEMENT_BINDINGS_V1.json",
+      "sha256": "002dec74c06ce67ecfc681b08f2c572ce42cf52852dcfbed91e78b5e4ec8d4ab"
+    },
+    {
+      "bytes": 13822,
+      "path": "paper/PAPER_V1_SUPPLEMENT_REPRODUCIBILITY.md",
+      "sha256": "87cd3e0d1ed542c7ae9889081c15f04e3561872859ce012b14fdc566579b91c5"
+    },
+    {
+      "bytes": 823,
+      "path": "paper/tables/PAPER_V1_CLAIM_BOUNDARY.csv",
+      "sha256": "7072182d0b0632af355b7bff9540e7dbaea209e609af8a234e28cf925ea422d2"
+    },
+    {
+      "bytes": 319,
+      "path": "paper/tables/PAPER_V1_E3_E4_PARENT_REALIZABILITY.csv",
+      "sha256": "88276a56800a2391285156aaac25765cd38d06913671f7b840f9c09e35bfd027"
+    },
+    {
+      "bytes": 707,
+      "path": "paper/tables/PAPER_V1_EVIDENCE_HIERARCHY.csv",
+      "sha256": "5437c265dbae204167919c7997b848dea935109010983e6f97d837105c701239"
+    }
+  ],
+  "paper_status": "PAPER_V1_MECHANISM_FACTORIZATION_DRAFT_BUNDLE_READY_FOR_PI",
+  "protected_boundary": {
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "gpu": 0,
+    "openvla_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected": "UNREAD",
+    "vphys": 0
+  },
+  "schema": "PAPER_V1_FINAL_BUNDLE_MANIFEST_V1",
+  "status": "PAPER_V1_CLAIM_AUDIT_PASS"
+}

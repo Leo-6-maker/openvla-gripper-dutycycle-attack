@@ -1,0 +1,82 @@
+{
+  "schema": "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V1",
+  "scope": "FIT states 0-19 only",
+  "teacher_type": "clean_only_physics_criticality_proxy",
+  "counterfactual_attack_label": false,
+  "student_future_leakage": false,
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false,
+  "object_state_layout": {
+    "per_object_width": 14,
+    "components": [
+      "pos_3d",
+      "quat_4d",
+      "to_eef_pos_3d",
+      "to_eef_quat_4d"
+    ],
+    "order_source": "OFFICIAL_V3_PHYSICS_TASK_DECODER_V1"
+  },
+  "task_role_policy": {
+    "manipulated_object_source": "goal_predicate_first_argument_in_bddl_objects",
+    "target_source": "goal_predicate_second_argument_or_region",
+    "support_source": "init_relation_and_observed_non_gripper_contacts",
+    "no_manipulated_object": "NO_MANIPULATION_TARGET",
+    "ambiguous_role": "ABSTAIN_DECODER_HOLD",
+    "multiple_manipulated_objects": "aggregate_all_decoded_objects",
+    "allowed_goal_predicates": ["In", "On", "Inside", "Contains", "Stack"]
+  },
+  "candidate_close": {
+    "source": "official_clean_action_raw_7d[6]",
+    "close_threshold": 0.5,
+    "student_valid_required": true,
+    "contiguous_segment_required": true
+  },
+  "history": {
+    "score_window_steps": 5,
+    "minimum_stable_grasp_dwell": 10,
+    "future_allowed_for_teacher_only": true,
+    "future_not_allowed_for_student": true
+  },
+  "component_formulas": {
+    "gripper_contact_score": "1 if a decoded manipulated object has a contact pair with a gripper geom, else 0",
+    "relative_pose_stability": "exp(-median(relative_position_delta_norm / 0.03) - median(relative_quaternion_delta_norm / 0.20)) clipped to [0,1]",
+    "object_eef_comotion": "mean cosine similarity of object and EEF displacement over valid history, mapped from [-1,1] to [0,1]",
+    "lift_score": "clamp((object_z - episode_initial_object_z) / 0.03, 0, 1)",
+    "support_removed": "1 after decoded object has no support contact for the current window and had a support contact before candidate close; otherwise 0",
+    "target_progress": "clamp((initial_object_target_distance - current_object_target_distance) / 0.20, 0, 1) when target object pose is decoded, otherwise unknown",
+    "stable_grasp_score": "0.35*relative_pose_stability + 0.25*object_eef_comotion + 0.20*gripper_contact_score + 0.20*lift_score",
+    "release_risk": "0.5*future_opening_or_open_command + 0.5*future_gripper_contact_loss",
+    "regrasp_or_instability_risk": "0.5*(1-relative_pose_stability) + 0.5*contact_toggle_rate",
+    "utility_score": "clamp(0.30*stable_grasp_score + 0.20*lift_score + 0.20*object_eef_comotion + 0.15*support_removed + 0.15*target_progress - 0.20*release_risk - 0.20*regrasp_or_instability_risk, 0, 1)"
+  },
+  "fixed_constants": {
+    "relative_position_scale_m": 0.03,
+    "relative_quaternion_scale": 0.20,
+    "lift_scale_m": 0.03,
+    "target_progress_scale_m": 0.20,
+    "tier3_min_utility": 0.75,
+    "tier3_min_stable_grasp": 0.70,
+    "tier3_min_lift": 0.50,
+    "tier3_max_release_risk": 0.35,
+    "tier3_max_regrasp_risk": 0.35,
+    "tier2_min_utility": 0.50,
+    "tier2_min_stable_grasp": 0.50,
+    "tier2_max_release_risk": 0.60,
+    "tier2_max_regrasp_risk": 0.60,
+    "tier1_min_utility": 0.25
+  },
+  "tier_rules": {
+    "tier3": "utility_score >= 0.75 AND stable_grasp_score >= 0.70 AND lift_score >= 0.50 AND stable_grasp_dwell >= 10 AND release_risk <= 0.35 AND regrasp_or_instability_risk <= 0.35",
+    "tier2": "utility_score >= 0.50 AND stable_grasp_score >= 0.50 AND stable_grasp_dwell >= 10 AND release_risk <= 0.60 AND regrasp_or_instability_risk <= 0.60",
+    "tier1": "candidate_close AND utility_score >= 0.25",
+    "tier0": "known decoded candidate not satisfying tier1-tier3"
+  },
+  "window_policy": {
+    "window_id": "candidate_close contiguous segment index",
+    "window_tier": "maximum step utility tier only after segment validity audit",
+    "unknown_not_rankable": true,
+    "non_candidate_not_rankable": true,
+    "window_length_does_not_define_tier3": true,
+    "t10_is_minimum_stability_condition_only": true
+  }
+}

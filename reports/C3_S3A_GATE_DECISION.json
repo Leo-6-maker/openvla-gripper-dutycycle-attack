@@ -1,0 +1,39 @@
+{
+  "schema": "C3_S3A_GATE_DECISION_V1",
+  "gate_split": "C3_S3A_FRESH_GEOMETRY_NUMERICAL_VALIDITY",
+  "main_execution": {
+    "synthetic_fixture": "PASS",
+    "static_smoke": "PASS",
+    "dynamic_smoke": "PASS",
+    "articulated_smoke": "PASS",
+    "run_A": "PASS",
+    "run_B": "PASS",
+    "coverage": "44/44",
+    "articulated_unknown": 0,
+    "canonical_identical": true,
+    "protected_reads": 0,
+    "seal_validation": "PASS"
+  },
+  "independent_review": {
+    "status": "HOLD",
+    "agent": "019f9f0d-7e3b-7240-b936-d520dad5f68c",
+    "findings": [
+      "articulated relations are encoded with DYNAMIC reconstruction kind and do not provide an explicit articulated reconstruction proof",
+      "source and reference rows share _step_poses generation, so independent computation-chain proof is incomplete",
+      "seal checks final existence before os.replace and is not strict no-clobber under a race",
+      "comparison path does not revalidate allowlist and denied-root closure",
+      "contract tests do not yet cover the full synthetic smoke/A-B/seal boundary"
+    ]
+  },
+  "decision": "HOLD_INDEPENDENT_REVIEW",
+  "c3_g_dev": "NOT_STARTED",
+  "d0_official_v3_clean2000": "HOLD",
+  "clean2000_payload_read": false,
+  "protected_input_roots_mounted": false,
+  "model_inference": false,
+  "teacher_labeling": false,
+  "student_training": false,
+  "rollout": false,
+  "attack": false,
+  "source_artifact_mutation": 0
+}

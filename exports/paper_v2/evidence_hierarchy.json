@@ -1,0 +1,373 @@
+{
+  "rows": [
+    {
+      "authority_binding": {
+        "claim_ledger": {
+          "git_blob": "4054b782cbbb6051654c5797e2a0fd455a961cf2",
+          "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+          "sha256_git_blob_bytes": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1"
+        },
+        "source": {
+          "local_artifact_sha256": [
+            "7626e020ec524ce124be9b93685a3861b85176ad4bfd749bfc495f89482d3c55"
+          ],
+          "sealed_artifact_sha256": [
+            "ff2e18c905a108cb51dbecf82473d1cd4e301e02a86c5e87bf39aab723fd35af",
+            "fb8da5b1f9ce30bef7884563ec9579c1c9c7d3c2e3fb749efc89c56be3d6fbd1"
+          ],
+          "source_commit": "7c36489a262ee5da4826936da4520608eb30fe46",
+          "source_tree": "f2c9d01d72bcded05fbf887cdf2b4cfe96f18dbb"
+        }
+      },
+      "authority_paths": [
+        "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+        "docs/handoffs/STAGE_X_X0_RESULT_20260817.md"
+      ],
+      "denominator_censoring": "40 Stage V + 16 Stage VI-B2 parents; 1,344 probe groups; 1,126 complete three-dose rows; consumable rows T3/T5/T10 = 1,245/1,191/1,126",
+      "environment_exposure": "SEALED_PHYSICAL_COMMAND_OPEN_COUNTERFACTUAL",
+      "evidence_class": "primary_bounded",
+      "primary_unit": "source-declared parent/probe",
+      "promotable_wording_key": [
+        "C201",
+        "C202"
+      ],
+      "question": "Does command-OPEN exposure show a dose/phase physical mechanism?",
+      "stage": "X0",
+      "status": "STAGE_X_PHYSICAL_DUTY_CYCLE_MECHANISM_SUPPORTED"
+    },
+    {
+      "authority_binding": {
+        "claim_ledger": {
+          "git_blob": "4054b782cbbb6051654c5797e2a0fd455a961cf2",
+          "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+          "sha256_git_blob_bytes": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1"
+        },
+        "source": {
+          "local_artifact_sha256": [
+            "2c550b1ec8f906212bc1f92223b801bcb0efe07381caf94d1b116e4f5e66d006"
+          ],
+          "sealed_artifact_sha256": [
+            "04ebc2f8179b7954ac188d791b4a06640cd88c62d88e7709ce6bbf8200887c11"
+          ],
+          "source_commit": "800b19341e39e71ce75991dc9a13f796bdf5ffdf",
+          "source_tree": "71e5c28a99752960b092ab2a21d732069ed438ab"
+        }
+      },
+      "authority_paths": [
+        "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+        "docs/handoffs/STAGE_VI_B2_FRESH_M4_AND_NEGATIVE_CAUSAL_HANDOFF_20260816.md"
+      ],
+      "denominator_censoring": "16 fresh parents; 384 probes; T5 333 consumable and 51 abstain/censored; overall AUROC 0.6246432939; ECE-10 0.4606357016",
+      "environment_exposure": "SEALED_HELDOUT_TIMING_EVALUATION",
+      "evidence_class": "negative_scientific",
+      "primary_unit": "fresh parent with abstains/censoring retained",
+      "promotable_wording_key": [
+        "C203"
+      ],
+      "question": "Does frozen Student timing generalize on fresh held-out parents?",
+      "stage": "VI-B2",
+      "status": "STUDENT_HELDOUT_GENERALIZATION_NOT_ESTABLISHED"
+    },
+    {
+      "authority_binding": {
+        "claim_ledger": {
+          "git_blob": "4054b782cbbb6051654c5797e2a0fd455a961cf2",
+          "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+          "sha256_git_blob_bytes": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1"
+        },
+        "source": {
+          "local_artifact_sha256": [
+            "9ee6782530f730e7bf5eaee90ced94134ec6a569d5c9713b7b19f85662a1c33f"
+          ],
+          "sealed_artifact_sha256": [],
+          "source_commit": "8ad9859a61a0083948c4e7b73eed72d7bf1d2aad",
+          "source_tree": "d4f6da984041924db3f35eb2be812cd9e8c444fb"
+        }
+      },
+      "authority_paths": [
+        "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+        "docs/handoffs/STAGE_VII_DEVELOPMENT_NEGATIVE_HANDOFF_20260816.md"
+      ],
+      "denominator_censoring": "Three frozen detector candidates S7-A/S7-B/S7-C; parent-grouped cross-suite promotion gates",
+      "environment_exposure": "SEALED_DEVELOPMENT_TIMING_EVALUATION",
+      "evidence_class": "negative_scientific",
+      "primary_unit": "parent-grouped candidate evaluation",
+      "promotable_wording_key": [
+        "C204"
+      ],
+      "question": "Does a frozen context detector pass cross-suite promotion gates?",
+      "stage": "VII",
+      "status": "STAGE_VII_DEVELOPMENT_NO_GENERALIZABLE_DETECTOR"
+    },
+    {
+      "authority_binding": {
+        "claim_ledger": {
+          "git_blob": "4054b782cbbb6051654c5797e2a0fd455a961cf2",
+          "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+          "sha256_git_blob_bytes": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1"
+        },
+        "source": {
+          "immutable_git_blob_sha256": [
+            "0e01f0115eada6dcdf183524438f458c0db03fa3",
+            "75341759abd9cb7859466927661dba67efadee39"
+          ],
+          "local_artifact_sha256": [],
+          "sealed_artifact_sha256": [
+            "3ace17e589529c420e59deceeada7d8dbf84efb775d1402999b53702e5f51b06",
+            "552a7180b37ce337560e541ea2a264c246888bb6aa2e219694296ce99fab0ea6",
+            "cbcc55b350e59cc222e76f944a19f1f430b69e6f64363531823637530593f7a"
+          ],
+          "source_commit": "c03cb32b14d38978239e53adc953cc8620b775a1",
+          "source_tree": "6f5cff89855fbab3bbc06b92c170586db9e0091d"
+        }
+      },
+      "authority_paths": [
+        "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+        "git-history:docs/handoffs/STAGE_VIII_R1_RELATIVE_SELECTOR_NEGATIVE_HANDOFF_20260817.md@34b8d435264737734f7d4e4ecc9a3343e57d7c1e",
+        "git-history:docs/handoffs/PR117_STAGE_VIII_DOCUMENTATION_CLOSURE_20260817.md@b918104e2e6279364891590fd37a17720dbb6628"
+      ],
+      "denominator_censoring": "1,344 T5 rows; 1,191 consumable; 56 parents; R1-A/R1-B parent-macro AUC 0.577615/0.658572; both frozen gates FAIL",
+      "environment_exposure": "SEALED_RELATIVE_SELECTOR_EVALUATION",
+      "evidence_class": "negative_scientific_direct_immutable_git",
+      "primary_unit": "parent-grouped selector evaluation",
+      "promotable_wording_key": [
+        "C205"
+      ],
+      "question": "Does a relative selector generalize under parent/LOSO gates?",
+      "stage": "VIII",
+      "status": "STAGE_VIII_R1_NO_GENERALIZABLE_RELATIVE_SELECTOR"
+    },
+    {
+      "authority_binding": {
+        "claim_ledger": {
+          "git_blob": "4054b782cbbb6051654c5797e2a0fd455a961cf2",
+          "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+          "sha256_git_blob_bytes": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1"
+        },
+        "source": {
+          "local_artifact_sha256": [
+            "2c445ea1ae5434661d327a348995c412083b191b382cbd78d485a13064268103"
+          ],
+          "sealed_artifact_sha256": [
+            "d335a9d41bf4e28572e6f2146f73fc0cb5ed4c1aa526cab9379ce41d9f630862"
+          ],
+          "source_commit": "98838b91a34c134c24e430c6b660dfcb33ba6137",
+          "source_tree": "daea7d0eabb89027218869c6b5c1b4035b187f31"
+        }
+      },
+      "authority_paths": [
+        "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+        "docs/handoffs/STAGE_IX_F0_RESULT_20260817.md"
+      ],
+      "denominator_censoring": "1,344 sealed no-environment rows; model AUROC E0/E1/E3 = 0.870743/0.900510/0.897157; factorized parent-macro AUC = 0.483698/0.521112/0.523390",
+      "environment_exposure": "NO_ENVIRONMENT_MODEL_SIDE",
+      "evidence_class": "primary_negative_scientific",
+      "primary_unit": "no-environment row with parent-macro utility",
+      "promotable_wording_key": [
+        "C206"
+      ],
+      "question": "Do model-side targetability scores retain factorized timing utility?",
+      "stage": "IX",
+      "status": "STAGE_IX_NO_MODEL_SIDE_TIMING_SIGNAL"
+    },
+    {
+      "authority_binding": {
+        "claim_ledger": {
+          "git_blob": "4054b782cbbb6051654c5797e2a0fd455a961cf2",
+          "path": "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+          "sha256_git_blob_bytes": "0589156974b8fe029899f8a768f1438bc7a2407ca87092ee1e3c675e0b35a9c1"
+        },
+        "source": {
+          "local_artifact_sha256": [
+            "85a3fcadcda31d3ca31b7a17da049bdbed3823d670947f88ab7182090c617b24",
+            "c4ac212f6998cd0c12b4c427aa2314a0f5a75cfb4cafca118bb78edfd43cd412",
+            "cda5397fb64d1efcdde91e0e5ca9d2c60165d62ab52a110aa561b17a5603b28d",
+            "c67f0035c392a355fe9f51b0769dea069609925cfe0cefa5ac9d368ea1191c25"
+          ],
+          "sealed_artifact_sha256": [
+            "20f5be64be1884aded25385e08c69ba3f5982422d546a532a737fd89e1bec16b",
+            "70825f121a87fd048b2d117a08e629bd11397dbd0225dc0fbc329e80c1501e09"
+          ],
+          "source_commit": "d642ab5a57d23f44933e1907991c845e2f30e294",
+          "source_tree": "1533bcec345c1b9ee06c46281291700c47527489"
+        }
+      },
+      "authority_paths": [
+        "paper/PAPER_V1_CLAIM_LEDGER_V1.json",
+        "reports/STAGE_X1R2_E3_FACTORIZED_SELECTIVE_REALIZABILITY_20260821/E3_DECISION_TABLE_V1.json",
+        "reports/STAGE_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_20260821/STAGE_X1R2_E4_E3_CANDIDATE_FAILURE_DECOMPOSITION_V1.json",
+        "reports/STAGE_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_20260821/STAGE_X1R2_E4_FACTORIZATION_SYNTHESIS_TABLE_V1.csv",
+        "reports/STAGE_X1R2_E4_FACTORIZATION_FAILURE_DECOMPOSITION_20260821/STAGE_X1R2_E4_FINAL_CLAIM_LEDGER_V1.json"
+      ],
+      "denominator_censoring": "12 engineering-only parents; 72 ordered candidate slots; parent-level primary: strict-valid 2/12; targetability-limited 9/12; joint-limited 1/12; strict-valid by suite L10 1/3, Goal 0/3, Object 0/3, Spatial 1/3",
+      "environment_exposure": "NO_ENVIRONMENT_MODEL_SIDE_STRUCTURAL",
+      "evidence_class": "primary_bounded_model_side_only",
+      "primary_unit": "engineering parent; candidate slots diagnostic only",
+      "promotable_wording_key": [
+        "C207",
+        "C208"
+      ],
+      "question": "Can the frozen timing-decoupled method realize strict selective OPEN?",
+      "stage": "E3/E4",
+      "status": "E3_STRICT_SELECTIVE_REALIZABILITY_PARTIAL_SUITE_DEPENDENT / STAGE_X_X1R2_E4_PAPER_LOCK_READY"
+    },
+    {
+      "authority_binding": [
+        {
+          "declared_digest_basis": "canonical_git_blob_bytes",
+          "declared_sha256": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
+          "git_blob": "2cf29601d6eaeb4417b2107a5862a8333ce92942",
+          "path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_DECISION_V3.json",
+          "sha256_git_blob_bytes": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
+          "source_commit": null,
+          "source_tree": null,
+          "status": "F1B_NEW_METHOD_SELECTED_FOR_F1C"
+        },
+        {
+          "declared_digest_basis": "canonical_git_blob_bytes",
+          "declared_sha256": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
+          "git_blob": "ce0290f53707365daa6f018f962be3ffccdbd4e5",
+          "path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json",
+          "sha256_git_blob_bytes": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
+          "source_commit": "4820be70b6e3fcca2277c4e71405eedace55a2a9",
+          "source_tree": "825fe6883e42735f30db45818d6d783a7736922e",
+          "status": "PASS_F1B_DEV_RESULT_AGGREGATION"
+        }
+      ],
+      "authority_paths": [
+        "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_DECISION_V3.json",
+        "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json"
+      ],
+      "denominator_censoring": {
+        "dev_parents": 24,
+        "methods_kept_separate": true,
+        "parents_per_suite": 6
+      },
+      "environment_exposure": "NO_ENVIRONMENT_MODEL_SIDE_DEV",
+      "evidence_class": "engineering_model_side_method_development",
+      "primary_unit": "parent",
+      "promotable_wording_key": [
+        "F1T-P01"
+      ],
+      "question": "Does a frozen DEV method improve preregistered parent-level targetability criteria?",
+      "selected_method": "M1",
+      "stage": "F1-B",
+      "status": "F1B_NEW_METHOD_SELECTED_FOR_F1C"
+    },
+    {
+      "authority_binding": [
+        {
+          "declared_digest_basis": "canonical_git_blob_bytes",
+          "declared_sha256": "e0d4b782a3a34d16464cb28ebf900bd9ba745d53381f94e78327a9afabac275f",
+          "git_blob": "ac9c4449b09921fe265c02d6f87c0772cebef8eb",
+          "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RUNTIME_AUDIT_V1.json",
+          "sha256_git_blob_bytes": "e0d4b782a3a34d16464cb28ebf900bd9ba745d53381f94e78327a9afabac275f",
+          "source_commit": null,
+          "source_tree": null,
+          "status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL"
+        },
+        {
+          "declared_digest_basis": "canonical_git_blob_bytes",
+          "declared_sha256": "8d5fce1e4fa89c84d187b861eab929258e6c21edb1ca0974898ccf6118223ac6",
+          "git_blob": "51c4139f692134d11f00f27e2cb5e96559a1b60c",
+          "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RESULT_ROOT_SEAL_V1.json",
+          "sha256_git_blob_bytes": "8d5fce1e4fa89c84d187b861eab929258e6c21edb1ca0974898ccf6118223ac6",
+          "source_commit": "efd7ba5e2b98fd239be9b75884bb343dee8d9fdf",
+          "source_tree": "26ef327c853294a2f61c5a407dff1bc23c52486a",
+          "status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL"
+        },
+        {
+          "declared_digest_basis": "canonical_git_blob_bytes",
+          "declared_sha256": "915f197f04d0bc3b138f01fb745908a76dadc422e516861a229e766787e234c2",
+          "git_blob": "e1ed76c2e5519518dc74050a8b262e87bbac8df0",
+          "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_TERMINAL_DECISION_V1.json",
+          "sha256_git_blob_bytes": "915f197f04d0bc3b138f01fb745908a76dadc422e516861a229e766787e234c2",
+          "source_commit": null,
+          "source_tree": null,
+          "status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL"
+        },
+        {
+          "declared_digest_basis": "canonical_git_blob_bytes",
+          "declared_sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+          "git_blob": "df59d80c5628a3706e12a8338e1c6b1657894410",
+          "path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json",
+          "sha256_git_blob_bytes": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+          "source_commit": "86c5c26f193a243051b30385d24d6c45abba9a96",
+          "source_tree": "1a57a40609fb97fcbe5024a8ed442d3f73ce0b9b",
+          "status": "PASS_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3"
+        }
+      ],
+      "authority_paths": [
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RUNTIME_AUDIT_V1.json",
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_RESULT_ROOT_SEAL_V1.json",
+        "reports/STAGE_X1R2_F1C4_FRESH_CANARY_RESULT_V1_R3_20260822/F1C4_TERMINAL_DECISION_V1.json",
+        "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json"
+      ],
+      "denominator_censoring": {
+        "completed_temporal_arms": 14,
+        "parents": 8,
+        "replay_hold_parents": 1,
+        "temporal_arms": 16
+      },
+      "environment_exposure": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 1,
+        "physical_interventions": 0
+      },
+      "evidence_class": "terminal_bounded_execution_qualification",
+      "primary_unit": "parent primary; candidate and step rows are repeated-within-parent engineering diagnostics, not iid observations",
+      "promotable_wording_key": [
+        "F1T-P02",
+        "F1T-P03",
+        "F1T-P04",
+        "F1T-P05"
+      ],
+      "question": "Does the frozen method sustain interpretable T5 selective delivery in fresh canaries?",
+      "stage": "F1-C4/F1T",
+      "status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL"
+    },
+    {
+      "authority_binding": {
+        "git_blob": "9b9c937e86018df5ddc062afe0cf177bc93aabd7",
+        "path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json",
+        "sha256_git_blob_bytes": "a5403173c57f27c5e3e931b468358a4cdf2e4b908b5e1eb9ce2670d36c530c7a",
+        "source_commit": "b16f1df274a401c39e993d53dce1ea3cff985721",
+        "source_tree": "a0dd71008354f98f490200126dd8d9e692262303"
+      },
+      "authority_paths": [
+        "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json"
+      ],
+      "denominator_censoring": {
+        "nominal_task_cells": 40,
+        "shared_fresh_identities": 36,
+        "structural_missing_cells": [
+          "libero_goal/task_01",
+          "libero_goal/task_04",
+          "libero_goal/task_06",
+          "libero_goal/task_09"
+        ]
+      },
+      "environment_exposure": {
+        "counters": {
+          "env_step": 0,
+          "eval160": 0,
+          "gpu_workers": 0,
+          "model_inference": 0,
+          "physical_intervention": 0,
+          "protected_reads": 0,
+          "simulator": 0,
+          "v_phys": 0
+        },
+        "scientific_rollout_started": false
+      },
+      "evidence_class": "engineering_authority_hold_pending",
+      "primary_unit": "prospective model-parent pair; no scientific observation",
+      "promotable_wording_key": null,
+      "question": "Can the frozen physical mechanism replicate across the prospective model panel?",
+      "stage": "Stage Z pending",
+      "status": "HOLD_STAGE_Z_Z0R2_OFT_CHECKPOINT_AUTHORITY_NOT_ESTABLISHED"
+    }
+  ],
+  "schema": "PAPER_V2_EVIDENCE_HIERARCHY_V1",
+  "status": "PAPER_V2_EVIDENCE_HIERARCHY_EXPORT_PASS"
+}

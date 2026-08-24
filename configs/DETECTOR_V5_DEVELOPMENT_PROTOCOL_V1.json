@@ -1,0 +1,99 @@
+{
+  "schema": "DETECTOR_V5_DEVELOPMENT_PROTOCOL_V1",
+  "status": "DEVELOPMENT_ONLY",
+  "scope": "FIT_TRAIN_ONLY",
+  "objective": "causal_multimodal_vulnerability_ranker",
+  "variants": [
+    "V5_A_PROPRIO",
+    "V5_B_PROPRIO_POLICY_INTENT",
+    "V5_C_PROPRIO_CAUSAL_VISUAL",
+    "V5_D_PROPRIO_POLICY_INTENT_CAUSAL_VISUAL"
+  ],
+  "proprio": {
+    "source_schema": "OFFICIAL_25D_V1",
+    "feature_source": "SC5_FEATURES",
+    "causal_history_only": true
+  },
+  "policy_intent": {
+    "source_schema": "B3_OFFICIAL_V3_POLICY_INTENT_9D_V1",
+    "required_for": [
+      "V5_B_PROPRIO_POLICY_INTENT",
+      "V5_D_PROPRIO_POLICY_INTENT_CAUSAL_VISUAL"
+    ],
+    "forbidden_for": [
+      "V5_A_PROPRIO",
+      "V5_C_PROPRIO_CAUSAL_VISUAL"
+    ],
+    "causal_history_only": true
+  },
+  "causal_visual": {
+    "source": "frozen_visual_encoder_on_current_and_past_rgb",
+    "lookback_frames": 7,
+    "future_frames": 0,
+    "privileged_masks_forbidden": true,
+    "required_for": [
+      "V5_C_PROPRIO_CAUSAL_VISUAL",
+      "V5_D_PROPRIO_POLICY_INTENT_CAUSAL_VISUAL"
+    ],
+    "forbidden_for": [
+      "V5_A_PROPRIO",
+      "V5_B_PROPRIO_POLICY_INTENT"
+    ]
+  },
+  "teacher": {
+    "schema": "DETECTOR_V5_TEACHER_UTILITY_V1",
+    "utility_tiers": [0, 1, 2, 3],
+    "phases": [
+      "PRE_SUPPORT",
+      "VALID_RETENTION",
+      "RELEASE_IMMINENT_TAIL",
+      "POST_RELEASE",
+      "UNSTABLE_TRANSITION",
+      "UNKNOWN"
+    ],
+    "may_use_clean_privileged_or_future_evidence": true,
+    "student_future_leakage": false,
+    "unknown_is_not_negative": true,
+    "supervised_label": "quality_valid_xor_veto_invalid"
+  },
+  "ranker": {
+    "unit": "candidate_window",
+    "outputs": [
+      "vulnerability_utility",
+      "release_risk",
+      "regrasp_risk",
+      "support_confidence",
+      "uncertainty"
+    ],
+    "ranking": "within_episode_pairwise_and_listwise",
+    "pure_negative_abstention": true,
+    "hard_negative_mining": "FIT_ONLY_BY_TRAIN_FOLD"
+  },
+  "scheduler": {
+    "name": "V5_ONE_SHOT_BUDGETED_SCHEDULER_V1",
+    "max_emits_per_episode": 1,
+    "persistence_window": 5,
+    "persistence_required": 3,
+    "release_veto": true,
+    "regrasp_veto": true,
+    "uncertainty_veto": true,
+    "abstention_allowed": true,
+    "future_observation": false
+  },
+  "splits": {
+    "development": "FIT_TRAIN",
+    "states": [0, 19],
+    "forbidden": ["FIT_DEV", "CAL", "CHECK", "FINAL_PARENT_POOL"]
+  },
+  "recommended_gate": {
+    "matched_valid_event_recall_min": 0.95,
+    "later_event_hit_min": 0.85,
+    "invalid_window_improvement_vs_v4_c0_min": 0.10,
+    "mixed_episode_top1_min": 0.80,
+    "pure_negative_abstention_min": 0.80,
+    "release_tail_overlap_max": 0.02,
+    "required_directional_folds": 3
+  },
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

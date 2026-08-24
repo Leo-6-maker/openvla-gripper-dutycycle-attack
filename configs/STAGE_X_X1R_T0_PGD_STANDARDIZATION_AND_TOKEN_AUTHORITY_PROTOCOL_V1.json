@@ -1,0 +1,85 @@
+{
+  "schema": "STAGE_X_X1R_T0_PGD_STANDARDIZATION_AND_TOKEN_AUTHORITY_PROTOCOL_V1",
+  "stage": "STAGE_X_X1R_T0_PGD_STANDARDIZATION_AND_TOKEN_AUTHORITY_AUDIT",
+  "status": "FROZEN_BEFORE_T0_EXECUTION",
+  "purpose": "read-only/static/clean-only alignment audit; no actual PGD optimization",
+  "base_pr": 121,
+  "scope": {
+    "existing_pgd_is_immutable": true,
+    "historical_stage_ix_x1_results_are_immutable": true,
+    "historical_generated_token_ids_may_not_be_inferred": true,
+    "no_helper_repair_before_audit_seal": true,
+    "no_post_hoc_token_equivalence": true
+  },
+  "canonical_authorities": {
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "action_tokenizer_source": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-upstream-clean-c8f03f4/prismatic/vla/action_tokenizer.py",
+    "action_tokenizer_sha256": "fdc98fcbf5b0926ef2181db71946d23ffbfa052cf8443dc933d52c42a191352c",
+    "model_decoder_relative_path": "modeling_prismatic.py",
+    "model_decoder_sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+    "action_encoding": "clip normalized action to [-1,1]; np.digitize against 256 endpoint bins; token_id=tokenizer.vocab_size-discretized_index",
+    "action_decoding": "token_id -> vocab_size-token_id-1 -> clip to 255-bin-center range -> bin center -> checkpoint norm-stat unnormalize"
+  },
+  "required_audits": {
+    "alignment_matrix": "reports/STAGE_X_X1R_T0_EXISTING_PGD_ALIGNMENT_MATRIX_V1.json",
+    "tokenizer_differential": "reports/STAGE_X_X1R_T0_TOKENIZER_DIFFERENTIAL_V1.json",
+    "token_roundtrip": "reports/STAGE_X_X1R_T0_TOKEN_ROUNDTRIP_FORENSIC_V1.json",
+    "clean_forward_determinism": "reports/STAGE_X_X1R_T0_CLEAN_FORWARD_DETERMINISM_V1.json",
+    "causal_row_index": "all action dimensions 0..6; teacher-forced toy and clean-forward evidence",
+    "numerical_primitives": "CW objective, update sign, fp32 master, Linf projection, fp16/bf16 cast, quantized correction",
+    "route_contract": "strict TokenPrefixPGDAttacker; fallback forbidden; no direct actuator edit"
+  },
+  "clean_forward_contract": {
+    "input_population": "existing eight Q00 canary rows only",
+    "fresh_processes_per_suite": 3,
+    "minimum_physical_gpus": 2,
+    "do_sample": false,
+    "no_pgd": true,
+    "no_env_step": true,
+    "required_token_fields": ["generated_token_ids", "top1_token", "top2_token", "top1_logit", "top2_logit", "gripper_margin"],
+    "failure_state": "STAGE_X_X1R_T0_HOLD_CLEAN_FORWARD_NONDETERMINISM"
+  },
+  "resource_contract": {
+    "free_memory_mib_strictly_greater_than": 20480,
+    "maximum_project_workers_per_physical_gpu": 1,
+    "foreign_workloads_must_be_untouched": true,
+    "partial_fleet_allowed": true
+  },
+  "forbidden": [
+    "actual PGD optimization",
+    "adversarial images",
+    "attacked actions",
+    "env.step",
+    "physical intervention",
+    "V_phys read",
+    "attack outcome read",
+    "new M4",
+    "X2",
+    "timing matrix",
+    "Eval160",
+    "protected evaluation",
+    "historical artifact mutation",
+    "gate relaxation"
+  ],
+  "decision_states": {
+    "A": "STAGE_X_X1R_T0_PGD_CORE_ALIGNED_TOKEN_HELPER_DEFECT_FOUND",
+    "B": "STAGE_X_X1R_T0_PGD_CORE_ALIGNED_HISTORICAL_TOKEN_NOT_IDENTIFIABLE",
+    "C": "STAGE_X_X1R_T0_HOLD_PGD_CORE_ALIGNMENT_DEFECT",
+    "D": "STAGE_X_X1R_T0_HOLD_CLEAN_FORWARD_NONDETERMINISM",
+    "E": "STAGE_X_X1R_T0_PROSPECTIVE_PGD_AND_TOKEN_AUTHORITY_READY"
+  },
+  "stop_state": "STAGE_X_X1R_T0_REVIEW_REQUIRED",
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters": {
+      "pgd_calls": 0,
+      "env_step_calls": 0,
+      "physical_interventions": 0,
+      "vphys_reads": 0,
+      "attack_outcome_reads": 0,
+      "protected_reads": 0,
+      "eval160_reads": 0
+    }
+  }
+}

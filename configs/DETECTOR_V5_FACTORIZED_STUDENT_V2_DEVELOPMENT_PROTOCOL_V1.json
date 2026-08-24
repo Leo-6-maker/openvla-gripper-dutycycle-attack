@@ -1,0 +1,254 @@
+{
+  "schema": "DETECTOR_V5_FACTORIZED_STUDENT_V2_DEVELOPMENT_PROTOCOL_V1",
+  "frozen_at": "2026-07-21",
+  "status": "FROZEN_DEVELOPMENT_PROTOCOL",
+  "scope": "V2 Student architecture selection, hyperparameter tuning, and inner-CV evaluation only. Final V2 protocol frozen separately after selection.",
+  "supersedes_note": "Does NOT supersede V1 Student protocol. V1 remains the frozen baseline. V2 is a new development track.",
+  "design_constraint": "All V1 Teacher/label/fold/route constraints remain binding. V2 changes only Student architecture and training objectives.",
+
+  "v1_failure_diagnosis": {
+    "status": "CATASTROPHIC_OOF_FAILURE_ACCEPTED",
+    "v1_oof_evaluation_seal": "OFFICIAL_V3_FACTORIZED_STUDENT_OOF_EVALUATION_V1_20260721",
+    "v1_failure_acceptance_seal": "DETECTOR_V5_FACTORIZED_OOF_FAILURE_ACCEPTANCE_V1_20260721",
+    "v1_forensics_seal": "OFFICIAL_V3_FACTORIZED_STUDENT_OOF_FAILURE_FORENSICS_V1_20260721",
+
+    "confirmed_failures": [
+      {
+        "component": "persistent_full_episode_GRU",
+        "mechanism": "STATE_POLLUTION",
+        "evidence": "R1d event-boundary reset yields +0.10 to +0.30 later-event recall; even first events gain +0.17 to +0.23; random reset hurts",
+        "causal": true
+      },
+      {
+        "component": "cross_identity_generalization",
+        "mechanism": "OVERFIT_TO_TRAINING_IDENTITIES",
+        "evidence": "R1c train AUROC 0.93 vs val AUROC 0.72; short-event gap 0.44; long-event gap 0.01",
+        "causal": true
+      },
+      {
+        "component": "short_event_modeling",
+        "mechanism": "STEP_BCE_ON_TRANSIENT_EVENTS",
+        "evidence": "R1b missed events mean 23 steps vs detected 55 steps; R1c short-dur train recall only 0.63-0.77",
+        "causal": true
+      },
+      {
+        "component": "9d_policy_intent_fusion",
+        "mechanism": "NO_MEASURABLE_GAIN",
+        "evidence": "25D9D vs 25D: grasp -0.001, manipulation -0.002, release +0.046; all other metrics near-identical",
+        "causal": false
+      }
+    ],
+
+    "confirmed_non_failures": [
+      {"component": "Teacher_label_definition", "evidence": "R1e logistic probe AUROC 0.837 (identity-CV), closure_score single-feature 0.831"},
+      {"component": "25D_runtime_features", "evidence": "Simple LR on 25D features achieves higher OOF AUROC than V1 GRU"},
+      {"component": "Manipulation_head", "evidence": "macro recall 0.92, train and OOF both strong"},
+      {"component": "Safety_emit_profile", "evidence": "release_overlap 0.002, unsupported_emit 0, background_emit 0.05"},
+      {"component": "Long_event_generalization", "evidence": "50-100 step events: train 0.84, val 0.82"},
+      {"component": "Training_engineering_chain", "evidence": "24/24 sealed, 0 NaN/Inf/OOM, GPUs stable"}
+    ],
+
+    "key_gap": "Simple logistic regression (AUROC 0.837) outperforms V1 GRU Student (AUROC 0.717) on held-out identities. The problem is not missing information — it is the Student architecture that fails to generalize the available information."
+  },
+
+  "core_design_principles": [
+    "Bounded temporal context — no persistent state across the full episode",
+    "Fixed-length causal window — eliminates implicit step-index and episode-length shortcuts",
+    "Event-balanced training — short events get comparable weight to long events",
+    "Identity-balanced training — each identity contributes comparable gradient",
+    "25D as primary model — 9D policy intent as pre-registered incremental ablation only",
+    "Simple linear baseline — V2 Student must demonstrably beat identity-CV logistic regression"
+  ],
+
+  "allowed_candidate_architectures": {
+    "count": 4,
+    "no_expansion_without_new_protocol": true,
+
+    "candidate_a": {
+      "id": "V2A_CAUSAL_TCN_STEP_BCE",
+      "encoder": "causal TCN (temporal convolution network with causal padding)",
+      "description": "Fixed receptive field TCN. No hidden state carried across steps. Each step prediction uses only the past W steps of 25D features.",
+      "trainable_parameters": "~50K (comparable to V1 GRU)",
+      "loss": "masked step BCE per head (same as V1)",
+      "route_heads": "unchanged from V1 (single + multi factorized heads)",
+      "consistency": "ReLU(p_manipulation - p_grasp) unchanged from V1"
+    },
+
+    "candidate_b": {
+      "id": "V2B_CAUSAL_TCN_EVENT_LOSS",
+      "encoder": "causal TCN (same as V2A)",
+      "description": "Same TCN encoder as V2A but with event-balanced release loss + event-level MIL auxiliary objective.",
+      "trainable_parameters": "~50K",
+      "loss": {
+        "grasp": "masked step BCE (unchanged)",
+        "manipulation": "masked step BCE (unchanged)",
+        "release": "event-balanced mean + top-k event-level auxiliary",
+        "release_event_balance": "each release event contributes equal weight regardless of duration; background negative steps batched separately",
+        "release_top_k_aux": "top-k mean (k=3 pre-frozen) of release probabilities within each Teacher release event known-mask region, trained with BCE against event-positive label"
+      },
+      "route_heads": "unchanged from V1",
+      "consistency": "unchanged from V1"
+    },
+
+    "candidate_c": {
+      "id": "V2C_WINDOWED_GRU_EVENT_LOSS",
+      "encoder": "windowed GRU — GRU cell re-initialized from zero every W steps",
+      "description": "GRU with periodic hidden state reset. Within each window, state evolves normally. At window boundaries, hidden state is zeroed. No state crosses window boundaries.",
+      "trainable_parameters": "~50K",
+      "window_reset": "hard zero every W steps; no learned reset gate; no overlap between windows",
+      "loss": "same event-balanced + top-k auxiliary as V2B",
+      "route_heads": "unchanged from V1",
+      "consistency": "unchanged from V1"
+    },
+
+    "candidate_d": {
+      "id": "V2D_BEST_25D_PLUS_9D_ABLATION",
+      "encoder": "best 25D architecture from {V2A, V2B, V2C} + 9D fusion",
+      "description": "Take the winning 25D-only architecture. Add 9D policy-intent features via a secondary bounded-context encoder. Fuse late (after temporal encoding).",
+      "trainable_parameters": "~60K",
+      "fusion": "late fusion: 25D temporal features + 9D temporal features concatenated before route heads",
+      "9d_encoder": "same architecture type as 25D encoder (TCN or windowed GRU), separately parameterized",
+      "ablation_requirement": "must compare against: (a) real 9D, (b) shuffled 9D (permuted across episodes), (c) zero 9D. Real 9D must beat both."
+    }
+  },
+
+  "allowed_hyperparameter_grid": {
+    "receptive_field_w": [16, 32, 64],
+    "hidden_dim": [64, 128],
+    "dropout": [0.0, 0.1],
+    "learning_rate": [0.001],
+    "weight_decay": [1e-5, 1e-4],
+    "event_top_k": [3],
+    "batch_size": [8],
+    "epochs": [30],
+    "no_grid_expansion": true,
+    "no_post_hoc_addition": true
+  },
+
+  "selection_rules": {
+    "method": "lexicographic_ordered",
+    "description": "Candidates are compared in strict priority order. A candidate that fails a higher-priority criterion is eliminated regardless of lower-priority performance.",
+    "data_split": "V2 inner development uses identity-level cross-validation within the V1 training folds. V1 OOF validation identities are HELD OUT from all V2 development.",
+
+    "criteria": [
+      {
+        "priority": 1,
+        "name": "safety_upper_bounds",
+        "description": "Eliminate any candidate whose best hyperparameter configuration exceeds ANY of: unsupported_route_emit > 0, background_false_emit_rate > 0.10, release_overlap_emit_rate > 0.05.",
+        "measurement": "inner-CV pooled across folds; worst-case across seeds",
+        "elimination": "hard"
+      },
+      {
+        "priority": 2,
+        "name": "release_auprc_identity_cv",
+        "description": "Maximize release event AUPRC (area under precision-recall curve) in identity-level cross-validation. AUPRC is preferred over AUROC due to positive class imbalance.",
+        "measurement": "mean AUPRC across inner-CV folds; per-route breakdown required",
+        "elimination": "comparative"
+      },
+      {
+        "priority": 3,
+        "name": "short_event_auprc",
+        "description": "Maximize release AUPRC on events with duration < 30 steps. This is the primary V1 failure region.",
+        "measurement": "mean AUPRC on events ≤ 30 steps across inner-CV folds",
+        "elimination": "comparative"
+      },
+      {
+        "priority": 4,
+        "name": "first_later_event_gap",
+        "description": "Minimize |later_event_recall - first_event_recall| at CAL-determined threshold. Large gap indicates residual state pollution.",
+        "measurement": "absolute difference between first and later event recall",
+        "elimination": "comparative"
+      },
+      {
+        "priority": 5,
+        "name": "parameter_efficiency",
+        "description": "If candidates are statistically indistinguishable on criteria 1-4, select the one with fewer parameters.",
+        "measurement": "total trainable parameter count",
+        "elimination": "tiebreaker"
+      }
+    ],
+
+    "baseline_requirement": "Selected V2 candidate must achieve release AUPRC (identity-CV) > simple logistic regression baseline (AUROC 0.837 equivalent). If no candidate exceeds this, the development protocol enters HOLD and a lightweight model path is considered.",
+
+    "no_manual_override": true,
+    "no_threshold_tuning_on_development_data": true,
+    "cal_threshold_selection_deferred_to_cal_phase": true
+  },
+
+  "evaluation_framework": {
+    "layer_1_inner_cv": {
+      "purpose": "architecture selection and hyperparameter tuning",
+      "data": "V1 training folds only, identity-level CV",
+      "held_out": "V1 OOF validation identities are never seen",
+      "metrics_reported": "AUROC, AUPRC, per-route, per-duration-bucket, first/later gap",
+      "gate": "selection only — no deployment gate"
+    },
+    "layer_2_engineering_oof": {
+      "purpose": "locked engineering OOF on V1 validation identities",
+      "data": "V1 validation identities (same folds as V1 OOF)",
+      "caveat": "These identities indirectly informed V2 design through V1 failure analysis. Results are engineering evidence, not fully independent confirmation.",
+      "metrics_reported": "all head/route/temporal/safety metrics + duration buckets + per-seed variance",
+      "gate": "engineering OOF gate (preliminary, not final)"
+    },
+    "layer_3_cal_check": {
+      "purpose": "fully independent confirmation",
+      "data": "CAL split (threshold selection) + untouched CHECK split (one-shot evaluation)",
+      "caveat": "CHECK identities must not have been examined at any stage of V1 or V2 development",
+      "metrics_reported": "frozen threshold recall, precision, safety emit rates, per-route, duration buckets",
+      "gate": "FINAL_DEPLOYMENT_GATE"
+    }
+  },
+
+  "v2_success_criteria": {
+    "engineering_oof_minimum": {
+      "release_auroc": {">": 0.80, "note": "must exceed V1 0.72 by meaningful margin"},
+      "release_auprc": {"note": "must exceed simple LR baseline"},
+      "short_event_recall_gap": {"<": 0.25, "note": "V1 gap was 0.44; must narrow substantially"},
+      "first_later_gap": {"<": 0.10, "note": "V1 gap was 0.16"},
+      "safety_not_degraded": true,
+      "simple_lr_baseline_exceeded": true
+    },
+    "cal_check_minimum": {
+      "note": "Defined in final V2 protocol after architecture selected. Based on CAL threshold + untouched CHECK."
+    },
+    "no_v1_comparison_gaming": "V2 must be evaluated under identical protocols. Cannot re-define metrics to make V1 look worse or V2 look better."
+  },
+
+  "training_constraints": {
+    "teacher_labels": "V1 Factorized Teacher V1 labels UNCHANGED. No re-labeling, no window expansion.",
+    "folds": "same V1 4-fold split",
+    "route_balancing": "same alternating single/multi as V1",
+    "identity_balancing": "NEW: within each route, each identity contributes approximately equal weight to the loss. Implemented via per-identity loss normalization before route aggregation.",
+    "duration_balancing": "NEW: within release loss, events are bucketed by duration [<15, 15-30, 30-50, 50-100, 100+]. Each bucket contributes equal weight to the total release loss.",
+    "class_weights": "fold-only per-route per-head (unchanged from V1)",
+    "normalization": "train-fold-only (unchanged from V1)",
+    "seeds": [42, 123, 456],
+    "gpus": "same A800 pool",
+    "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800"
+  },
+
+  "data_augmentation": {
+    "allowed": ["temporal_jitter_within_causal_window", "identity_resampling"],
+    "temporal_jitter": "During training only: randomly offset the causal window by ±4 steps. The prediction target remains at the original step. This prevents the model from learning fixed step offsets within events.",
+    "identity_resampling": "During training only: with probability 0.5, replace an episode with another episode of the same route from the same fold. This reduces identity-specific memorization.",
+    "forbidden": [
+      "future_window_center_alignment",
+      "event_boundary_aligned_sampling",
+      "test_time_augmentation",
+      "any augmentation that uses future information"
+    ]
+  },
+
+  "still_unauthorized": [
+    "final_v2_protocol_freeze",
+    "full_fit_training",
+    "cal_threshold_calibration",
+    "check_validation",
+    "vis_integration",
+    "passive_canary",
+    "attack_canary",
+    "full_attack_matrix"
+  ],
+
+  "next_step": "Inner-CV execution on V2 candidates. After selection, freeze final V2 protocol with locked architecture and hyperparameters."
+}

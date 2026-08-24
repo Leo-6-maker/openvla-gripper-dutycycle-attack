@@ -1,0 +1,31 @@
+{
+  "artifact_hashes": {
+    "reports/STAGE_X_X1R2_F1A2_SOURCE_LEAKAGE_AND_POPULATION_FREEZE_V2_20260821/F1A2_BRIDGE_LEDGER_V2.json": "5b625ea66aa5c58495869b5c1dfc9cf291fbd43638d7a15e938ed5bfd662a88f",
+    "reports/STAGE_X_X1R2_F1A2_SOURCE_LEAKAGE_AND_POPULATION_FREEZE_V2_20260821/F1A2_DEV_EXPOSURE_CLASSIFICATION_V2.json": "5cfa2f9db168fae0a50f0f388f019eed2142d6b1abbbbd63b2b660c63e9312ff",
+    "reports/STAGE_X_X1R2_F1A2_SOURCE_LEAKAGE_AND_POPULATION_FREEZE_V2_20260821/F1A2_DEV_LEDGER_V2.json": "d9ea5d4d2b0206a2b4bc9a44e384247efd7526c48a0c690b323fbb33002ba179",
+    "reports/STAGE_X_X1R2_F1A2_SOURCE_LEAKAGE_AND_POPULATION_FREEZE_V2_20260821/F1A2_POPULATION_AUDIT_V2.json": "30d33a4657ca4738a1d5f8dfd971f6c1018e1030569c59dbaba4da090f2a1e96",
+    "reports/STAGE_X_X1R2_F1A2_SOURCE_LEAKAGE_AND_POPULATION_FREEZE_V2_20260821/F1A2_SOURCE_LEAKAGE_CONTRACT_V2.json": "8b0d53566f983e8d857ff8bef2502afd90e41145789001c73a2ac60b8ef4a5ac",
+    "scripts/stage_x/audit_stage_x1r2_f1a2_source_leakage_v2.py": "1b37c8cf65776b06f051ca039d95658e89909d193d484519c02d5451d31c5dc8"
+  },
+  "bridge_outcome_read_counter": 0,
+  "complete_current_exclusion_union_digest": "858e2ff578bf6bc7a1bc9fe7bef18bf138172fdb8f4e886ff71f6db690338436",
+  "gate": "STAGE_X_X1R2_F1A2_SOURCE_LEAKAGE_AND_POPULATION_FREEZE_V2",
+  "input_commit": "c27f27cb3d8d89077129d06c3e9f49419c9c6170",
+  "input_tree": "0c2625b2e0c230ab225653028d30535ab8c3fdea",
+  "pi_attachment_sha256": "64a8b4a966b2579d61eecc672525187bfeef815c727b73ff76e7546428ec7831",
+  "pi_comment_id": 5368241704,
+  "protected_boundary": {
+    "env_step": 0,
+    "eval160": "UNREAD",
+    "gpu": 0,
+    "openvla_inference": 0,
+    "pgd": 0,
+    "physical_intervention": 0,
+    "protected": "UNREAD",
+    "simulator": 0,
+    "vphys": 0
+  },
+  "schema": "STAGE_X_X1R2_F1A2_ROOT_SEAL_V2",
+  "seal_scope_excludes_sidecar": true,
+  "status": "HOLD_F1A2_SOURCE_CONTRACT_NOT_ESTABLISHED"
+}

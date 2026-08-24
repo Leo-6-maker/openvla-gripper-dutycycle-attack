@@ -1,0 +1,42 @@
+{
+  "schema": "C3_S3A_D0_GATE_SPLIT_V1",
+  "status": "FROZEN_FOR_DEVELOPMENT",
+  "gate_split": {
+    "C3-S3A": {
+      "purpose": "fresh synthetic geometry numerical validity",
+      "input_class": "C3_S3_GEOMFIT_SYNTHETIC_V1",
+      "protected_input_read": false,
+      "clean2000_payload_read": false,
+      "model_inference": false,
+      "teacher_labeling": false,
+      "student_training": false,
+      "rollout": false,
+      "attack": false
+    },
+    "D0": {
+      "purpose": "Official V3 Clean2000 consumability",
+      "status": "HOLD",
+      "source_root": "OFFICIAL_V3_CLEAN2000",
+      "payload_read": false,
+      "fit_only_proof_required": true,
+      "protected_overlap_zero_receipt_required": true
+    }
+  },
+  "synthetic_geometry_contract": {
+    "schema": "C3_S3_GEOMFIT_SYNTHETIC_V1",
+    "supported_relations": 44,
+    "static_relations": 11,
+    "dynamic_relations": 31,
+    "articulated_relations": 2,
+    "static_min_configurations_per_relation": 10,
+    "dynamic_min_samples_per_relation": 100,
+    "articulated_min_samples_per_relation": 100,
+    "source_chain": "OBSERVABLE_LOCAL_POSE_RECONSTRUCTION",
+    "reference_chain": "DIRECT_MUJOCO_WORLD_POSE_SYNTHETIC",
+    "unknown_articulated_allowed": false,
+    "source_mutation": 0,
+    "formal_training_authorized": false,
+    "formal_attack_authorized": false
+  },
+  "numerical_threshold_contract": "configs/C3_S3_NUMERICAL_THRESHOLDS_V1.json"
+}

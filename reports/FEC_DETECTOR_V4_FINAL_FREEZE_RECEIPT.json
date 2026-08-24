@@ -1,0 +1,149 @@
+{
+  "receipt": "FEC_DETECTOR_V4_FINAL_FREEZE_RECEIPT",
+  "frozen_at": "2026-07-25T19:45:00Z",
+  "version": "N4 Detector V4",
+  "status": "FROZEN — DO NOT MODIFY",
+  "scope": "Current 20-parent formal matrix (formal_v2) and all V4 evidence",
+
+  "seal": {
+    "version": "FEC_FORMAL_SEAL_V2",
+    "self_sha256": "22a97d5746efed9e61024c6567bd964de729dfe990d4765d59cd6fc032099896",
+    "description": "17-file frozen seal covering provider, checkpoint, norm, attacker, runner, config, queue, worker, cohort, 4×model_config, 4×model_shard1"
+  },
+
+  "model_architecture": {
+    "name": "N4 Dual-Branch CausalTCN with Concat Fusion",
+    "short_tcn_rf": 32,
+    "long_tcn_rf": 128,
+    "hidden_dim": 64,
+    "dropout": 0.1,
+    "input_dim": 51,
+    "input_breakdown": {
+      "features_25d": "SC5 streaming features (gripper command/qpos, EEF pos/vel, action deltas, streaks, onsets, variances)",
+      "policy_intent_9d": "POLICY_INTENT_ORDER: open_mass, close_mass, open_minus_close_log_mass, entropy, top1_prob, top1_is_open, top1_is_close, best_open_rank, best_close_rank",
+      "gripper_token_9d": "TRAIN_G9D_ORDER: close_mass, open_mass, top1_is_close, top1_is_open, top1_prob, best_close_rank, best_open_rank, entropy, open_minus_close_log_mass",
+      "response_proxies_8d": "cmd-qpos delta, cmd<0 indicator, qpos diff, close duration, EEF speed, qpos variance, g9d close_mass, g9d open_minus_close_log_mass"
+    }
+  },
+
+  "calibration": {
+    "method": "Platt scaling: σ(a × raw_logit + b)",
+    "platt_a": 0.5190011735319306,
+    "platt_b": 0.812702331013635,
+    "tau": 0.855,
+    "d_persist": 6,
+    "latch": "one_shot (once emitted, persists for episode)",
+    "candidate_close_definition": "raw_gripper <= 0.5",
+    "note": "Token 31744 maps to raw≈+1.0 (OPEN) via np.clip mechanism. Action sign contract: env+1=CLOSING, env-1=OPENING."
+  },
+
+  "attack_parameters": {
+    "pgd_epsilon": 0.03,
+    "pgd_steps": 5,
+    "k_attack_length": 10,
+    "arms": ["CLEAN", "TRUE_T10", "RAND_T10", "RANDOM_TIME_T10", "COMMAND_OPEN_ORACLE"],
+    "target_action": "OPEN (token 31744 / raw≈+1.0)"
+  },
+
+  "g9d_schema": {
+    "g9d_schema_version": "n4_g9d_train_v23_v1",
+    "g9d_schema_sha256": "4f6ec7ff6c61037062d6a776d82da8ce0f5c2122b0343cab0536872c6251e6d5",
+    "g9d_fields": [
+      "clean_close_probability_mass",
+      "clean_open_probability_mass",
+      "clean_top1_is_close",
+      "clean_top1_is_open",
+      "clean_top1_probability",
+      "clean_best_close_rank_normalized",
+      "clean_best_open_rank_normalized",
+      "clean_action_token_entropy_normalized",
+      "clean_open_minus_close_log_mass"
+    ],
+    "p9d_fields": [
+      "clean_open_probability_mass",
+      "clean_close_probability_mass",
+      "clean_open_minus_close_log_mass",
+      "clean_action_token_entropy_normalized",
+      "clean_top1_probability",
+      "clean_top1_is_open",
+      "clean_top1_is_close",
+      "clean_best_open_rank_normalized",
+      "clean_best_close_rank_normalized"
+    ],
+    "critical_rule": "g9d != p9d (anti-regression). V3 bug was g9d=p9d causing raw_logit explosion to ±1.2M.",
+    "provider_version": "n4_provider_v4"
+  },
+
+  "frozen_sha256": {
+    "provider": "6a7ab61d8dba8cb331a748c62317d2513b1e397def2adee8119204be44cecb61",
+    "checkpoint": "685ddadf90ad2ac4ec83bcadbe970d6ad74f07baa4e498a4936c78c0b0695f88",
+    "norm": "491e65a60a900d384bed4c3aa95baa6ca465b51bd303b2f1a3dcd1baa69f0389",
+    "attacker": "26cfb9f5d8a5a29e7ac2729f5c9cdd58dadfd75e45eebe935ee66214cc9402be",
+    "runner": "a3b4cb509329264c211cea700241e1daac496dc31a82292a6fe78dbb54b45215",
+    "config": "9492f45492c54433c42712c833143f4872e6513dbc9d5a7c20589406a61a7bad",
+    "queue": "c1c1399d05cf1f13ec53f201d8b3a1db4b34380e1729814a610799c5aca1c923",
+    "worker": "467a5c8b39425cbff70a34ce586a2626d419548a114a895ec504949f0493466f",
+    "cohort": "8e2ef5065d5df89353fc7a22f48bec73066185436c6658902debffe815375760",
+    "model_libero_10_config": "a23e83751870296c2500048becfc4241e5245e123ee69b01b4e584b1c4d3b2cd",
+    "model_libero_10_shard1": "72f7196d8768c104073d7e9104ad8023cb27727191de1a490612886428b18c51",
+    "model_libero_goal_config": "06135f79f1010f85837ec4b8373bdda3a9387ab4937bc959e91a0ef4208ed237",
+    "model_libero_goal_shard1": "aded5b398d491b5d69f2801e0f7bab358eb035f96efcf4e44c1ac2a25db65daf",
+    "model_libero_object_config": "72566b15b9ce4a5f5452aa50b5cc949811ab0a12b72a79a713b6355875813cff",
+    "model_libero_object_shard1": "1748e2921c82a8b80febb9a0d7f1659c556b0769ff54225c5f1905fcd47d5107",
+    "model_libero_spatial_config": "0f8e15765a60995234ab8b0128da37864577a7ef7c4e8f40a3a35ab1a145634f",
+    "model_libero_spatial_shard1": "094ba8d798d0e13152230897e893d4d12ca3fe11ddb218f27545b1e6e7536134"
+  },
+
+  "training": {
+    "checkpoint_path": "/mnt/sdc/dty_user/openvla_attack_evidence/formal_v23_student_training_v1/o0_i0/checkpoint.pt",
+    "norm_path": "normalization parameters loaded from same training directory",
+    "training_labels": {
+      "total_episodes_audited": 1400,
+      "p_label_given_cc_true": 0.439,
+      "p_label_given_cc_false": 0.0,
+      "label_dependency": "label=1 implies candidate_close=True (this is the V4 coupling we must break in N5)"
+    }
+  },
+
+  "known_limitations": {
+    "goal_suite_zero_coverage": "0/2593 goal steps have raw_close=0.5 or env_close>0. Clean OpenVLA policy genuinely does not output close on goal tasks. This means V4 detector will NEVER emit on goal suite — not an OOD or model inversion issue.",
+    "cc_gate_bottleneck": "candidate_close hard gate is the system recall upper bound. P(emit) <= P(raw_gripper <= 0.5).",
+    "pgd_true_failure": "TRUE PGD only achieves 1/4 of ORACLE attack effect. Most attack budget is lost in the PGD executor, not the detector.",
+    "critical_response_conflated": "criticality, close intent, and attack exploitability are conflated into a single score. Goal tasks may have critical windows that don't involve close intent."
+  },
+
+  "prohibited_actions": [
+    "DO NOT modify provider SHA",
+    "DO NOT modify checkpoint or normalization",
+    "DO NOT change tau=0.855 or D_PERSIST=6",
+    "DO NOT change candidate_close definition (raw_gripper <= 0.5)",
+    "DO NOT modify PGD epsilon=0.03, steps=5, K=10",
+    "DO NOT modify parent manifest or cohort",
+    "DO NOT use any of the 20 formal parents for N5 tuning or threshold selection",
+    "DO NOT modify g9d field order without version bump",
+    "DO NOT set g9d = p9d (V3 bug anti-regression)"
+  ],
+
+  "permitted_readonly_actions": [
+    "Analyze per-step scores, features, and emit decisions on formal parents AFTER completion",
+    "Compute joint distributions for diagnostic purposes",
+    "Run counterfactual scheduler replay (score-only, env-gate, soft-gate)",
+    "Generate parent-level statistical ledger",
+    "Use formal results ONLY for V4 estimate and N5 design guidance",
+    "These 20 parents become CONTAMINATED for N5 final evaluation"
+  ],
+
+  "suite_horizons": {
+    "libero_10": 520,
+    "libero_goal": 300,
+    "libero_object": 280,
+    "libero_spatial": 220
+  },
+
+  "v4_audit_artifacts": {
+    "FEC_DETECTOR_DEFECT_ANALYSIS_V1": "reports/fec_audit_v1/",
+    "FEC_GPU_SMOKE_RECEIPT_V3": "reports/fec_audit_v1/",
+    "FEC_V4_REPLAY_PARITY_V1": "reports/fec_audit_v1/",
+    "FEC_TRAINING_LABEL_AUDIT_V1": "reports/fec_audit_v1/"
+  }
+}

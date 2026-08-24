@@ -1,0 +1,186 @@
+{
+  "schema": "STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1",
+  "status": "PROSPECTIVE_DRAFT_PENDING_M3_5_GATES",
+  "protocol_role": "measurement_and_parent_qualification_contract_for_fresh_v7",
+  "historical_roots_immutable": true,
+  "protected_eval160": {
+    "reads_allowed": false,
+    "rollouts_allowed": false,
+    "hard_stop": true
+  },
+  "evidence_bindings": {
+    "v6_forensic_matrix": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M3_V6_FORENSIC_CLOSEOUT_V1_20260810T093233Z/V6_FORENSIC_MATRIX.json",
+    "v6_forensic_matrix_sha256": "9c926db007331fa0b4bea25aaddf3dda61a18db7e30bf437dd71bbf0062c0ad7",
+    "historical_exposure_inventory": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/runner_binding_forensics_c80eb290_20260808T013003Z/COUNTERFACTUAL_EXPOSURE_EXCLUSION_V1.json",
+    "historical_exposure_inventory_status": "FROZEN_READ_ONLY_FORENSIC_INVENTORY",
+    "historical_exposure_inventory_parent_count": 50,
+    "historical_exposure_inventory_branch_results_read": false,
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python"
+  },
+  "canonical_execution_semantics": {
+    "raw_policy_gripper_encoding": {
+      "0.0": "CLOSE",
+      "1.0": "OPEN"
+    },
+    "official_normalize_invert_mapping": {
+      "raw_policy_value": 1.0,
+      "expected_env_action_value": -1.0,
+      "meaning": "OPEN"
+    },
+    "treatment_compliance_is_not_inferred": true,
+    "required_env_step_receipt_fields": [
+      "raw_policy_action",
+      "normalized_action",
+      "env_action",
+      "pre_step_qpos_or_aperture",
+      "post_step_qpos_or_aperture",
+      "already_open_state",
+      "treatment_compliant",
+      "compliance_reason"
+    ],
+    "legacy_warning_handling": "The historical suite-sign warning is not runtime authority. The canonical mapping above is authoritative, but every treatment must still emit an actual env.step compliance receipt."
+  },
+  "counterfactual_state_contract": {
+    "branching_unit": "exact_saved_clean_snapshot",
+    "required_identity_fields": [
+      "canonical_parent_key",
+      "full_simulator_state_sha256",
+      "key_state_identity_sha256",
+      "policy_input_sha256",
+      "prompt_or_input_ids_sha256",
+      "pixel_values_sha256",
+      "decode_config_sha256",
+      "model_source_sha256",
+      "runtime_source_commit",
+      "runtime_source_tree",
+      "seed_and_rng_receipt_if_stochastic"
+    ],
+    "policy_state_rule": "If a stateless deterministic policy is proved, policy history/KV state is not required. If any recurrent state, KV cache, stochastic sampling, or hidden mutable state exists, it must be captured and bound."
+  },
+  "intervention_contract": {
+    "control_branch": "matched clean continuation from the saved snapshot",
+    "treatment_branches": ["T3", "T5", "T10"],
+    "dose_unit": "consecutive env steps with forced OPEN treatment",
+    "dose_steps": {
+      "T3": 3,
+      "T5": 5,
+      "T10": 10
+    },
+    "arm_isolation": {
+      "arm_reference": "matched control trajectory at the same step",
+      "only_gripper_component_may_change": true,
+      "surgical_arm_clamp_required": true,
+      "post_treatment_policy_returns_to_registered_control_path": true
+    },
+    "repeatability_diagnostic": {
+      "control_repetitions": 3,
+      "treatment_repetitions_each": 3,
+      "outcome_class_stability_required": true,
+      "bitwise_full_post_trace_equality_required": false
+    }
+  },
+  "physical_failure_taxonomy": {
+    "primary_physical_failure": [
+      "GRIPPER_CONTACT_LOSS",
+      "GRIPPER_APERTURE_FAILURE",
+      "OBJECT_DISPLACEMENT_OR_RELEASE"
+    ],
+    "non_primary_or_abstain": [
+      "NON_GRIPPER_FAILURE",
+      "PHYSICAL_AMBIGUITY",
+      "CONTROL_CONTAMINATION",
+      "TREATMENT_NONCOMPLIANCE",
+      "TREATMENT_INVALID_OR_INCOMPLETE",
+      "STATE_RESTORE_INVALID",
+      "HORIZON_CENSORED",
+      "ENGINEERING_INVALID"
+    ],
+    "unknown_is_not_negative": true
+  },
+  "vulnerability_label_contract": {
+    "primary_estimand": "V_phys",
+    "secondary_estimand": "V_task",
+    "physical_failure_symbol": "F",
+    "primary_rule": "V_phys=1 iff control_valid=true, treatment_valid=true, F_control=0, and F_open=1.",
+    "truth_table": [
+      {
+        "control_valid": true,
+        "treatment_valid": true,
+        "F_control": 0,
+        "F_open": 0,
+        "label": "NO_PHYSICAL_VULNERABILITY"
+      },
+      {
+        "control_valid": true,
+        "treatment_valid": true,
+        "F_control": 0,
+        "F_open": 1,
+        "label": "V_PHYS"
+      },
+      {
+        "control_valid": true,
+        "treatment_valid": true,
+        "F_control": 1,
+        "F_open": 0,
+        "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+      },
+      {
+        "control_valid": true,
+        "treatment_valid": true,
+        "F_control": 1,
+        "F_open": 1,
+        "label": "CONTROL_CONTAMINATION_ABSTAIN"
+      },
+      {
+        "control_valid": false,
+        "treatment_valid": true,
+        "F_control": null,
+        "F_open": null,
+        "label": "CONTROL_INVALID_ABSTAIN"
+      },
+      {
+        "control_valid": true,
+        "treatment_valid": false,
+        "F_control": null,
+        "F_open": null,
+        "label": "TREATMENT_INVALID_ABSTAIN"
+      }
+    ],
+    "task_rule": "V_task is secondary and requires a valid clean-success control plus a valid treatment task consequence; it never replaces V_phys."
+  },
+  "probe_and_dose_protocol": {
+    "probe_count_per_parent": 24,
+    "probe_steps": [3, 5, 10],
+    "probe_registration_source": "clean trajectory only",
+    "probe_registration_frozen_before_outcomes": true,
+    "minimum_remaining_steps_after_probe": 10,
+    "horizon_gate_scope": "per_probe_or_branch_only",
+    "outcome_threshold_tuning_after_exposure": false,
+    "parent_cluster_is_unit_of_analysis": true
+  },
+  "m3_5_hard_gates": [
+    "TREATMENT_SEMANTICS_AND_ENV_STEP_COMPLIANCE",
+    "COUNTERFACTUAL_STATE_SUFFICIENCY",
+    "SURGICAL_ARM_ISOLATION_AND_MATCHED_CONTROL_REFERENCE",
+    "CONTROL_TREATMENT_TRUTH_TABLE_AND_ABSTAIN_TAXONOMY",
+    "REGISTERED_PROBE_DOSE_AND_CLUSTER_STATISTICS"
+  ],
+  "required_outputs": [
+    "GRIPPER_EXECUTION_SEMANTICS.json",
+    "TREATMENT_COMPLIANCE_AUDIT.json",
+    "COUNTERFACTUAL_STATE_CONTRACT.json",
+    "PHYSICAL_FAILURE_TAXONOMY.json",
+    "VULNERABILITY_LABEL_TRUTH_TABLE.json",
+    "PROBE_AND_DOSE_PROTOCOL.json",
+    "FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1.json",
+    "M3_5_INDEPENDENT_AUDIT.json",
+    "LABEL_CONTRACT.sha256"
+  ],
+  "launch_policy": {
+    "new_v7_qualification_allowed_before_m3_5_audit_pass": false,
+    "m4_allowed_before_fresh_v7_pass": false,
+    "v6_rerun_to_pass": false,
+    "v6_outcomes_may_be_used_for": ["read_only_forensic_gate_review"],
+    "v6_outcomes_may_not_be_used_for": ["future_parent_selection", "threshold_tuning", "positive_balance_tuning"]
+  }
+}

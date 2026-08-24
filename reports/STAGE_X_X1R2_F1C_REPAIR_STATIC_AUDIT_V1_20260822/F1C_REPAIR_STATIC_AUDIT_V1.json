@@ -1,0 +1,67 @@
+{
+  "schema": "STAGE_X1R2_F1C_REPAIR_STATIC_AUDIT_V1",
+  "status": "PASS_F1C_CONTRACT_PRESERVING_REPAIR_STATIC_AUDIT",
+  "scientific_authority": false,
+  "qualification_status_unchanged": "HOLD_F1C_EXECUTABLE_EVIDENCE_INSUFFICIENT",
+  "purpose": "CPU-only append-only audit of repairs applied after the historical F1-C runtime hold; this is not a requalification result.",
+  "historical_runtime": {
+    "source_commit": "03bc200170fb5e70432d13d74d5fbf950583349a",
+    "source_tree": "15f4b0cdadb893c6bc27a686bccef81c5e074703",
+    "root_seal_sha256": "f4f164637889447000dd25ac7cc4260fe134356d3977932cd47d4547ecf46b16",
+    "method_freeze_root_sha256": "ab29622432554d98f21531ea030fa0762b0e579efbbf1f2639fcc6f459108023",
+    "protected_boundary": {
+      "eval160": "UNREAD",
+      "protected_evaluation": "UNREAD",
+      "protected_reads": 0,
+      "vphys_reads": 0,
+      "physical_interventions": 0,
+      "attack_outcome_reads": 0,
+      "attacked_env_steps": 0
+    }
+  },
+  "repair_source": {
+    "commit": "b01ebc455c46f184871fe022dfdb8135e623fd9e",
+    "tree": "480731fc305f2e321e9197b5c067e6bdbf104a74",
+    "protocol_sha256": "b8467589eb15ad26602379f1a835cb478cfcb7b281bb44f4447a621c1f330c75",
+    "files": {
+      "scripts/stage_x/run_stage_x1r2_f1b_dev.py": "32b4bd5105f3d01b7b101e86c606339f0a545770705b857023f45592d906cd8a",
+      "scripts/stage_x/run_stage_x1r2_f1c_t5_canary.py": "b19612d03a90e40f99543ea35fba0745e01fade9a4e4accf69ce210313cd6065",
+      "tests/stage_x/test_stage_x1r2_gripper_selective_contract.py": "4ebd7ec0910db592e589b8b5d0ee0b6192655556808a93b72bdce984aed43462"
+    }
+  },
+  "repairs": [
+    {
+      "id": "F1C_BUILDER_PROTOCOL_SHAPE_ADAPTER",
+      "scope": "shared F1B/F1C attack-builder configuration parsing",
+      "contract_effect": "preserves M1 objective, epsilon, step size, strict route, target class, and temporal initialization"
+    },
+    {
+      "id": "F1C_SEALED_CLEAN_PREFIX_REPLAY",
+      "scope": "fresh arm reconstruction before the probe observation",
+      "contract_effect": "replays the sealed clean env-action prefix and fails closed on missing or invalid prefix data; no model-generated prefix fallback"
+    }
+  ],
+  "verification": {
+    "targeted_pytest": {
+      "status": "PASS",
+      "passed": 13,
+      "paths": [
+        "tests/stage_x/test_stage_x1r2_gripper_selective_contract.py",
+        "tests/stage_x/test_stage_x1r2_q3r3_e1_failure_persistence.py"
+      ]
+    },
+    "py_compile": "PASS",
+    "gpu_workers_started": 0,
+    "model_inference_calls": 0,
+    "simulator_calls": 0,
+    "pgd_calls": 0,
+    "vphys_reads": 0,
+    "protected_reads": 0
+  },
+  "cohort_policy": {
+    "consumed_c_canary_v3_rerun": false,
+    "replacement_or_top_up": false,
+    "bridge_opened": false,
+    "next_scientific_gate": "PI_AUTHORIZATION_REQUIRED_FOR_ANY_FRESH_F1C_NAMESPACE"
+  }
+}

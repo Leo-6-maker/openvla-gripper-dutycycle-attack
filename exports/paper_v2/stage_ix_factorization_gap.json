@@ -1,0 +1,55 @@
+{
+  "authority_binding": {
+    "figure_data": {
+      "git_blob": "94ffe6bdffb0a95f799f8fa033752c965ceac54d",
+      "path": "paper/data/PAPER_V1_FIGURE4_FACTORIZATION_GAP.csv",
+      "sha256_git_blob_bytes": "dc8ed93a46b24126fd78a1507c4ee62c61dce913632bf6b16f4542114b4e8420"
+    },
+    "source": {
+      "local_artifact_sha256": [
+        "2c445ea1ae5434661d327a348995c412083b191b382cbd78d485a13064268103"
+      ],
+      "sealed_artifact_sha256": [
+        "d335a9d41bf4e28572e6f2146f73fc0cb5ed4c1aa526cab9379ce41d9f630862"
+      ],
+      "source_commit": "98838b91a34c134c24e430c6b660dfcb33ba6137",
+      "source_tree": "daea7d0eabb89027218869c6b5c1b4035b187f31"
+    }
+  },
+  "authority_paths": [
+    "paper/data/PAPER_V1_FIGURE4_FACTORIZATION_GAP.csv",
+    "docs/handoffs/STAGE_IX_F0_RESULT_20260817.md"
+  ],
+  "claim_id": "C206",
+  "denominator_censoring": "1,344 sealed no-environment rows; model AUROC E0/E1/E3 = 0.870743/0.900510/0.897157; factorized parent-macro AUC = 0.483698/0.521112/0.523390",
+  "environment_exposure": "NO_ENVIRONMENT",
+  "primary_unit": "no-environment row with parent-macro utility",
+  "rows": [
+    {
+      "factorized_parent_macro_auc": "0.483698",
+      "model_side_auroc": "0.870743",
+      "score": "E0",
+      "top_k_loso_gate_status": "UNSATISFIED",
+      "top_k_loso_note": "numeric values not present in sealed Paper V1 figure data",
+      "top_k_loso_numeric_values": null
+    },
+    {
+      "factorized_parent_macro_auc": "0.521112",
+      "model_side_auroc": "0.900510",
+      "score": "E1",
+      "top_k_loso_gate_status": "UNSATISFIED",
+      "top_k_loso_note": "numeric values not present in sealed Paper V1 figure data",
+      "top_k_loso_numeric_values": null
+    },
+    {
+      "factorized_parent_macro_auc": "0.523390",
+      "model_side_auroc": "0.897157",
+      "score": "E3",
+      "top_k_loso_gate_status": "UNSATISFIED",
+      "top_k_loso_note": "numeric values not present in sealed Paper V1 figure data",
+      "top_k_loso_numeric_values": null
+    }
+  ],
+  "schema": "PAPER_V2_STAGE_IX_FACTORIZATION_GAP_V1",
+  "status": "STAGE_IX_NO_MODEL_SIDE_TIMING_SIGNAL"
+}

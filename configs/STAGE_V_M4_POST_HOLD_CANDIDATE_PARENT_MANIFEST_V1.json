@@ -1,0 +1,53 @@
+{
+  "schema": "STAGE_V_M4_POST_HOLD_CANDIDATE_PARENT_MANIFEST_V1",
+  "status": "FROZEN",
+  "selection_status": "FROZEN_OUTCOME_BLIND_PRE_ROLLOUT",
+  "source_binding": {
+    "science_commit": "3b2ffdb5809710e3c7f2e0a529600c8d7a79b9b2",
+    "science_tree": "2492a075e782a112d1e857248956b2647e751039",
+    "corridor_runner_sha256": "26ceed23646177ce675e32eba6617ade7b02804a3c372a756b1ebe098ef72279"
+  },
+  "selection_rule": {
+    "candidate_pool_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_REPLENISHMENT_V7_CANDIDATE_MANIFEST_V1.json",
+    "candidate_pool_sha256": "70e8c491f1e1a4e77ca8752520dcad54102ec013f4150edf6bff5a5912a5c6fa",
+    "current_corridor_report_path": "reports/server_evidence/STAGE_V_M4_CORRIDOR_CURRENT_SOURCE_AB_RECONCILIATION_HOLD_V1.json",
+    "current_corridor_reconciliation_sha256": "866ce90f73cd542584c4db3fca4b590ebc014e7e7e9dbd2a91adcdee210c7fd9",
+    "source_qualification_rows_are_frozen": true,
+    "current_corridor_attempts_excluded": true,
+    "taxonomy_function": "taxonomy_eligibility_from_bddl",
+    "taxonomy_rule": "at least one declared source object in an In/On goal predicate",
+    "task_specific_blacklist": false,
+    "order_is_fixed_before_first_receipt": true
+  },
+  "parents": [
+    {"canonical_parent_key":"libero_10/task_06/state_38","suite":"libero_10","task_index":6,"state_index":38,"selection_rank":1,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_10/task_09/state_42","suite":"libero_10","task_index":9,"state_index":42,"selection_rank":2,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_10/task_00/state_27","suite":"libero_10","task_index":0,"state_index":27,"selection_rank":3,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_10/task_07/state_37","suite":"libero_10","task_index":7,"state_index":37,"selection_rank":4,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_10/task_01/state_37","suite":"libero_10","task_index":1,"state_index":37,"selection_rank":5,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_10/task_08/state_22","suite":"libero_10","task_index":8,"state_index":22,"selection_rank":6,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_10/task_06/state_31","suite":"libero_10","task_index":6,"state_index":31,"selection_rank":7,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_10/task_07/state_40","suite":"libero_10","task_index":7,"state_index":40,"selection_rank":8,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_10/task_04/state_22","suite":"libero_10","task_index":4,"state_index":22,"selection_rank":9,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_goal/task_04/state_39","suite":"libero_goal","task_index":4,"state_index":39,"selection_rank":1,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_goal/task_04/state_43","suite":"libero_goal","task_index":4,"state_index":43,"selection_rank":2,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_goal/task_03/state_36","suite":"libero_goal","task_index":3,"state_index":36,"selection_rank":3,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_goal/task_03/state_41","suite":"libero_goal","task_index":3,"state_index":41,"selection_rank":4,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_goal/task_02/state_45","suite":"libero_goal","task_index":2,"state_index":45,"selection_rank":5,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_goal/task_02/state_40","suite":"libero_goal","task_index":2,"state_index":40,"selection_rank":6,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_goal/task_05/state_33","suite":"libero_goal","task_index":5,"state_index":33,"selection_rank":7,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_goal/task_04/state_23","suite":"libero_goal","task_index":4,"state_index":23,"selection_rank":8,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_spatial/task_08/state_44","suite":"libero_spatial","task_index":8,"state_index":44,"selection_rank":1,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_spatial/task_09/state_34","suite":"libero_spatial","task_index":9,"state_index":34,"selection_rank":2,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_spatial/task_06/state_24","suite":"libero_spatial","task_index":6,"state_index":24,"selection_rank":3,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_spatial/task_06/state_34","suite":"libero_spatial","task_index":6,"state_index":34,"selection_rank":4,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_spatial/task_00/state_45","suite":"libero_spatial","task_index":0,"state_index":45,"selection_rank":5,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_spatial/task_04/state_44","suite":"libero_spatial","task_index":4,"state_index":44,"selection_rank":6,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_spatial/task_08/state_41","suite":"libero_spatial","task_index":8,"state_index":41,"selection_rank":7,"taxonomy_status":"PASS"},
+    {"canonical_parent_key":"libero_spatial/task_05/state_37","suite":"libero_spatial","task_index":5,"state_index":37,"selection_rank":8,"taxonomy_status":"PASS"}
+  ],
+  "candidate_count": 25,
+  "target_stable_by_suite": {"libero_10": 1, "libero_goal": 3, "libero_object": 0, "libero_spatial": 4},
+  "outcomes_read": false,
+  "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0}
+}

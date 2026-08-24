@@ -1,0 +1,307 @@
+{
+  "schema": "STAGE_X_X1R_T1D1R_CONTINUATION_LEDGER_V1",
+  "status": "FROZEN_SET_SUBTRACTION",
+  "source_report": "reports/STAGE_X_X1R_T1D0R2_PARENT_SEED_INVARIANCE_V1.json",
+  "source_report_sha256": "a0b3fc93c39b41d0e83d7571fa5a8016c3185be5e5d783a8a0970c4d6fd0b0c4",
+  "nominal_design_cells": 40,
+  "missing_cell": "libero_goal/task_01",
+  "frozen_executable_design": 39,
+  "excluded_consumed_ordinals": [
+    1,
+    11,
+    20,
+    30
+  ],
+  "continuation_count": 35,
+  "suite_counts": {
+    "libero_10": 9,
+    "libero_goal": 8,
+    "libero_object": 9,
+    "libero_spatial": 9
+  },
+  "repair_canary_ordinal": 2,
+  "replacement": false,
+  "rerank": false,
+  "rows": [
+    {
+      "ordinal": 2,
+      "canonical_parent_key": "libero_10/task_01/state_36",
+      "expected_clean_seed": 2259534777,
+      "ledger_clean_seed": 2259534777,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 3,
+      "canonical_parent_key": "libero_10/task_02/state_39",
+      "expected_clean_seed": 133316791,
+      "ledger_clean_seed": 133316791,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 4,
+      "canonical_parent_key": "libero_10/task_03/state_21",
+      "expected_clean_seed": 2204456730,
+      "ledger_clean_seed": 2204456730,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 5,
+      "canonical_parent_key": "libero_10/task_04/state_30",
+      "expected_clean_seed": 1839308868,
+      "ledger_clean_seed": 1839308868,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 6,
+      "canonical_parent_key": "libero_10/task_05/state_22",
+      "expected_clean_seed": 1888554542,
+      "ledger_clean_seed": 1888554542,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 7,
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "expected_clean_seed": 655819680,
+      "ledger_clean_seed": 655819680,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 8,
+      "canonical_parent_key": "libero_10/task_07/state_27",
+      "expected_clean_seed": 1500404847,
+      "ledger_clean_seed": 1500404847,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 9,
+      "canonical_parent_key": "libero_10/task_08/state_20",
+      "expected_clean_seed": 1620998485,
+      "ledger_clean_seed": 1620998485,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 10,
+      "canonical_parent_key": "libero_10/task_09/state_43",
+      "expected_clean_seed": 1436562779,
+      "ledger_clean_seed": 1436562779,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 12,
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "expected_clean_seed": 2806598006,
+      "ledger_clean_seed": 2806598006,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 13,
+      "canonical_parent_key": "libero_goal/task_03/state_45",
+      "expected_clean_seed": 1233989519,
+      "ledger_clean_seed": 1233989519,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 14,
+      "canonical_parent_key": "libero_goal/task_04/state_38",
+      "expected_clean_seed": 1345483395,
+      "ledger_clean_seed": 1345483395,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 15,
+      "canonical_parent_key": "libero_goal/task_05/state_26",
+      "expected_clean_seed": 3565049498,
+      "ledger_clean_seed": 3565049498,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 16,
+      "canonical_parent_key": "libero_goal/task_06/state_28",
+      "expected_clean_seed": 1185417823,
+      "ledger_clean_seed": 1185417823,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 17,
+      "canonical_parent_key": "libero_goal/task_07/state_30",
+      "expected_clean_seed": 3266787940,
+      "ledger_clean_seed": 3266787940,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 18,
+      "canonical_parent_key": "libero_goal/task_08/state_20",
+      "expected_clean_seed": 368458282,
+      "ledger_clean_seed": 368458282,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 19,
+      "canonical_parent_key": "libero_goal/task_09/state_46",
+      "expected_clean_seed": 633404446,
+      "ledger_clean_seed": 633404446,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 21,
+      "canonical_parent_key": "libero_object/task_01/state_40",
+      "expected_clean_seed": 2612251802,
+      "ledger_clean_seed": 2612251802,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 22,
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "expected_clean_seed": 4281294931,
+      "ledger_clean_seed": 4281294931,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 23,
+      "canonical_parent_key": "libero_object/task_03/state_25",
+      "expected_clean_seed": 4182474635,
+      "ledger_clean_seed": 4182474635,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 24,
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "expected_clean_seed": 742553466,
+      "ledger_clean_seed": 742553466,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 25,
+      "canonical_parent_key": "libero_object/task_05/state_31",
+      "expected_clean_seed": 1132892338,
+      "ledger_clean_seed": 1132892338,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 26,
+      "canonical_parent_key": "libero_object/task_06/state_44",
+      "expected_clean_seed": 4031548098,
+      "ledger_clean_seed": 4031548098,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 27,
+      "canonical_parent_key": "libero_object/task_07/state_43",
+      "expected_clean_seed": 198268221,
+      "ledger_clean_seed": 198268221,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 28,
+      "canonical_parent_key": "libero_object/task_08/state_43",
+      "expected_clean_seed": 2529254085,
+      "ledger_clean_seed": 2529254085,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 29,
+      "canonical_parent_key": "libero_object/task_09/state_23",
+      "expected_clean_seed": 820948684,
+      "ledger_clean_seed": 820948684,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 31,
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "expected_clean_seed": 3956798880,
+      "ledger_clean_seed": 3956798880,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 32,
+      "canonical_parent_key": "libero_spatial/task_02/state_31",
+      "expected_clean_seed": 3008181671,
+      "ledger_clean_seed": 3008181671,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 33,
+      "canonical_parent_key": "libero_spatial/task_03/state_29",
+      "expected_clean_seed": 3066589976,
+      "ledger_clean_seed": 3066589976,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 34,
+      "canonical_parent_key": "libero_spatial/task_04/state_33",
+      "expected_clean_seed": 4264710247,
+      "ledger_clean_seed": 4264710247,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 35,
+      "canonical_parent_key": "libero_spatial/task_05/state_27",
+      "expected_clean_seed": 3716716013,
+      "ledger_clean_seed": 3716716013,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 36,
+      "canonical_parent_key": "libero_spatial/task_06/state_45",
+      "expected_clean_seed": 3054136008,
+      "ledger_clean_seed": 3054136008,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 37,
+      "canonical_parent_key": "libero_spatial/task_07/state_28",
+      "expected_clean_seed": 995635146,
+      "ledger_clean_seed": 995635146,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 38,
+      "canonical_parent_key": "libero_spatial/task_08/state_28",
+      "expected_clean_seed": 3476887984,
+      "ledger_clean_seed": 3476887984,
+      "seed_match": true,
+      "ledger_key_match": true
+    },
+    {
+      "ordinal": 39,
+      "canonical_parent_key": "libero_spatial/task_09/state_21",
+      "expected_clean_seed": 1610086257,
+      "ledger_clean_seed": 1610086257,
+      "seed_match": true,
+      "ledger_key_match": true
+    }
+  ]
+}

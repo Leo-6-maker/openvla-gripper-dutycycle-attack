@@ -1,0 +1,71 @@
+{
+  "git_binding": {
+    "head_commit": "d54b431a7ac186dcaf8a645a4fa9bfab9b9dde18",
+    "head_tree": "c5e44859e095eaa5f153cabfefd8a671864abc89"
+  },
+  "m0_reaudit": {
+    "exact_tree_and_weight_reaudit_complete": false,
+    "immutable_authority": {
+      "bytes": 11418,
+      "path": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
+      "sha256": "eeb9fa0be922c34937d90caf849bc750db9b0ff707dc5187c35e1f6522f6fed8"
+    },
+    "server_model_dirs": {
+      "libero_10": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+        "recursive_bytes": 15085097823
+      },
+      "libero_goal": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+        "recursive_bytes": 15085099486
+      },
+      "libero_object": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+        "recursive_bytes": 15085099978
+      },
+      "libero_spatial": {
+        "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620",
+        "recursive_bytes": 15085134953
+      }
+    }
+  },
+  "runtime_environment": {
+    "env": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "numpy": "1.26.4",
+    "python": "3.10.16",
+    "server": "pm-364c0001",
+    "snapshot_utc": "2026-08-22T15:27:41Z",
+    "torch": "2.2.2+cu118",
+    "transformers": "4.40.1",
+    "user": "dty_user"
+  },
+  "schema": "STAGE_Z_Z0_MODEL_AUTHORITY_MAP_V1",
+  "source_authorities": {
+    "openpi": {
+      "checkout_present": false,
+      "checkpoint_bytes_sealed": false,
+      "checkpoint_local_bytes": 12439122345,
+      "checkpoint_local_path": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+      "checkpoint_object_count": 16,
+      "checkpoint_uri": "gs://openpi-assets/checkpoints/pi05_libero",
+      "commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "modified_fork_excluded": "/llm_jzm/mt/openpi",
+      "remote": "https://github.com/Physical-Intelligence/openpi.git",
+      "tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be"
+    },
+    "openvla_oft": {
+      "checkout_present": false,
+      "checkpoint_bytes_sealed": false,
+      "checkpoint_revisions": {
+        "libero_10": "95220f9a3421a7ff12d4218e73d09ade830fa9a3",
+        "libero_goal": "c2d0f9fbbd82674683b397ff923168a12f6a307b",
+        "libero_object": "4c89574e1c538b6c102f43f0526d60a9d3650148",
+        "libero_spatial": "6d0231af0e48c5985f1ff86908f4674b84bc049b"
+      },
+      "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "remote": "https://github.com/moojink/openvla-oft.git",
+      "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32"
+    }
+  },
+  "status": "HOLD_STAGE_Z_Z0_CROSS_MODEL_AUTHORITY_NOT_ESTABLISHED"
+}

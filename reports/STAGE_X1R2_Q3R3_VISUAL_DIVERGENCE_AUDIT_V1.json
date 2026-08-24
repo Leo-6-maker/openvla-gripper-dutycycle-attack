@@ -1,0 +1,201 @@
+{
+  "audit_source": {
+    "commit": "6601beebfa2d20b34f5637a2546f1dc2bc15243e",
+    "tree": "c5b7e93808054d06b885030682537be41b851d85"
+  },
+  "branch_estimand": {
+    "config": "STAGE_X_X1R2_Q3R3_BRANCH_ESTIMAND_V1.json",
+    "prebranch_model_forbidden": true,
+    "reference_clean_once": true,
+    "status": "FROZEN_PROSPECTIVE_BRANCH_ESTIMAND_ENGINEERING_ONLY"
+  },
+  "next_gate": "STAGE_X1R2_Q3R3_BRANCH_RUNNER_STATIC_PASS",
+  "protected_boundary": {
+    "env_step_calls": 0,
+    "eval160": "UNREAD",
+    "model_inference_calls": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "q3r2_hold_preserved": true,
+  "raw_frame_inventory": {
+    "count": 0,
+    "matching_files": [],
+    "numeric_metrics_available": false,
+    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820"
+  },
+  "runtime_surface": {
+    "provenance_gaps": [
+      "EGL/OpenGL vendor and version were not queryable without creating a display context",
+      "MUJOCO_GL was unset in the static shell; future runtime must bind the selected backend explicitly or fail closed"
+    ],
+    "status": "STATIC_RUNTIME_SURFACE_SEALED_WITH_EXPLICIT_UNAVAILABLE_FIELDS"
+  },
+  "schema": "STAGE_X_X1R2_Q3R3_VISUAL_DIVERGENCE_AUDIT_V1",
+  "scope": "static/CPU/offline only; no model inference, simulator construction, env.step, PGD, physical intervention, V_phys, Eval160, or protected read",
+  "status": "STAGE_X1R2_Q3R3_BRANCH_ESTIMAND_FREEZE_PASS",
+  "suite_results": {
+    "libero_goal": {
+      "comparison": {
+        "clean_success_equal": true,
+        "first_emit_equal": true,
+        "full_exact": false,
+        "full_sha256_repeat0": "2eed98c01bb49c56347b2546b99d099bce3eec193b8bcdc780e657d897f6fafc",
+        "full_sha256_repeat1": "b634f262c42637e364f19f5d6c99a7ebc8fea859de8fb6229d67d62cd2f12bc5",
+        "prefix_exact": false,
+        "prefix_sha256_repeat0": "d3679b7ca0f0a5d66f47d0916726dcfc8990ac85bfa3ad17e4711658c6566895",
+        "prefix_sha256_repeat1": "24226abc37e7b3cdc16b96b5f96e7240168cacb0ac2a3ec1765be92549f34eb5",
+        "prefix_steps": 64
+      },
+      "first_any_divergence": {
+        "changed_fields": [
+          "processor_pixel_values_sha256",
+          "raw_agentview_sha256"
+        ],
+        "control_fields_equal": {
+          "action_env_7d": true,
+          "direct_generated_token_ids": true,
+          "robot0_eef_pos": true,
+          "robot0_gripper_qpos": true
+        },
+        "nonvisual_fields_changed": [],
+        "step": 13,
+        "visual_fields_changed": [
+          "raw_agentview_sha256",
+          "processor_pixel_values_sha256"
+        ]
+      },
+      "report_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820/libero_goal/SUITE_CLEAN_DETERMINISM_REPORT_V1.json",
+      "report_sha256": "d441656f26889995b741781a7f8f1d0556b0b1a5ad878435362143b36cc24563",
+      "sealed_status": "OWNER_REVIEW_Q3R2_CLEAN_PREFIX_DETERMINISM_NOT_ESTABLISHED",
+      "selected_parent": "libero_goal/task_02/state_37",
+      "telemetry": {
+        "repeat_0_sha256": "b2e659975ec0e156034593e8d57ec564a2c13c4dfe9705a92e0d269548156845",
+        "repeat_1_sha256": "eba7e2a7eb7b5df7db89430ea8acb7237c1213428a38bdbc779017a9e215365c",
+        "rows": [
+          111,
+          106
+        ]
+      },
+      "visual_characterization": {
+        "first_visual_hash_divergence": {
+          "changed_fields": [
+            "raw_agentview_sha256",
+            "processor_pixel_values_sha256"
+          ],
+          "control_fields_equal": {
+            "action_env_7d": true,
+            "direct_generated_token_ids": true,
+            "robot0_eef_pos": true,
+            "robot0_gripper_qpos": true
+          },
+          "step": 13
+        },
+        "preprocess_localization": "NOT_IDENTIFIABLE_FROM_HASH_ONLY_TELEMETRY",
+        "raw_frame_numeric_metrics": {
+          "changed_pixel_count": null,
+          "changed_pixel_fraction": null,
+          "per_channel_max_abs_diff": null,
+          "per_channel_mean_abs_diff": null,
+          "processor_space_linf": null,
+          "rmse": null,
+          "status": "NOT_AVAILABLE_HASH_ONLY_TELEMETRY"
+        },
+        "raw_payload_keys_present": []
+      }
+    },
+    "libero_object": {
+      "comparison": {
+        "clean_success_equal": true,
+        "first_emit_equal": true,
+        "full_exact": true,
+        "full_sha256_repeat0": "9c62b54a99adb51666b08c3b4f20892676a67dca2a51940b04d428ae6d6f22ef",
+        "full_sha256_repeat1": "9c62b54a99adb51666b08c3b4f20892676a67dca2a51940b04d428ae6d6f22ef",
+        "prefix_exact": true,
+        "prefix_sha256_repeat0": "8a56714212bc2e1e7219be4b940ada2e206691f4e3201965769a37fa43fab421",
+        "prefix_sha256_repeat1": "8a56714212bc2e1e7219be4b940ada2e206691f4e3201965769a37fa43fab421",
+        "prefix_steps": 87
+      },
+      "report_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820/libero_object/SUITE_CLEAN_DETERMINISM_REPORT_V1.json",
+      "report_sha256": "1eec732c3d998d4bf55d0817a41a54cb0bc3dacb3dbdc5c11221f8ccfc5b30c9",
+      "sealed_status": "PASS_SUITE_CLEAN_PREFIX_DETERMINISM",
+      "selected_parent": "libero_object/task_01/state_34",
+      "visual_characterization": {
+        "numeric_metrics": "NOT_AVAILABLE",
+        "status": "SEALED_REPORT_ONLY"
+      }
+    },
+    "libero_spatial": {
+      "comparison": {
+        "clean_success_equal": true,
+        "first_emit_equal": false,
+        "full_exact": false,
+        "full_sha256_repeat0": "bc346ca32ddccb283788d9e33541a13eb2e31147a8f736f9bed28e555ee436dd",
+        "full_sha256_repeat1": "95582047ba0221863e41681be307bece8ddecb225109b03ff0073ea0d1a3e592",
+        "prefix_exact": false,
+        "prefix_sha256_repeat0": "bf24d6828d46a589c2d73ae92041bff4aef1671088ff4bdaa93de05da29a9fb7",
+        "prefix_sha256_repeat1": "01d1ddb96d830ba3522f3d9b75cf7fd0240786c13d1e0eef860483991cc37574",
+        "prefix_steps": 69
+      },
+      "first_any_divergence": {
+        "changed_fields": [
+          "processor_pixel_values_sha256",
+          "raw_agentview_sha256"
+        ],
+        "control_fields_equal": {
+          "action_env_7d": true,
+          "direct_generated_token_ids": true,
+          "robot0_eef_pos": true,
+          "robot0_gripper_qpos": true
+        },
+        "nonvisual_fields_changed": [],
+        "step": 14,
+        "visual_fields_changed": [
+          "raw_agentview_sha256",
+          "processor_pixel_values_sha256"
+        ]
+      },
+      "report_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r2_clean_determinism_20260820/libero_spatial/SUITE_CLEAN_DETERMINISM_REPORT_V1.json",
+      "report_sha256": "8cfd4b89a9a578ccfcbdc74ce987b9c2f620d9576847f421373dd1275a620bf9",
+      "sealed_status": "OWNER_REVIEW_Q3R2_CLEAN_PREFIX_DETERMINISM_NOT_ESTABLISHED",
+      "selected_parent": "libero_spatial/task_09/state_29",
+      "telemetry": {
+        "repeat_0_sha256": "bae89f21d4fa548f6ec9f6c744ef8ad591af94b2d46c5dc3323a6bc91614054c",
+        "repeat_1_sha256": "4a7850a38ced2abcd26860b7a781a2f3dbefbed49dd26dcace3193647cfec2d4",
+        "rows": [
+          202,
+          124
+        ]
+      },
+      "visual_characterization": {
+        "first_visual_hash_divergence": {
+          "changed_fields": [
+            "raw_agentview_sha256",
+            "processor_pixel_values_sha256"
+          ],
+          "control_fields_equal": {
+            "action_env_7d": true,
+            "direct_generated_token_ids": true,
+            "robot0_eef_pos": true,
+            "robot0_gripper_qpos": true
+          },
+          "step": 14
+        },
+        "preprocess_localization": "NOT_IDENTIFIABLE_FROM_HASH_ONLY_TELEMETRY",
+        "raw_frame_numeric_metrics": {
+          "changed_pixel_count": null,
+          "changed_pixel_fraction": null,
+          "per_channel_max_abs_diff": null,
+          "per_channel_mean_abs_diff": null,
+          "processor_space_linf": null,
+          "rmse": null,
+          "status": "NOT_AVAILABLE_HASH_ONLY_TELEMETRY"
+        },
+        "raw_payload_keys_present": []
+      }
+    }
+  }
+}

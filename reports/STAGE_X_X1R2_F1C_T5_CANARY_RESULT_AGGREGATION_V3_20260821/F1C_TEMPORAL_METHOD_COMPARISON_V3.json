@@ -1,0 +1,154 @@
+{
+  "arms": {
+    "none": {
+      "parent_rows": [
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_10/task_09/state_00",
+          "strict_valid_steps": 0,
+          "suite": "libero_10"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_10/task_09/state_16",
+          "strict_valid_steps": 0,
+          "suite": "libero_10"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_goal/task_05/state_10",
+          "strict_valid_steps": 0,
+          "suite": "libero_goal"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_goal/task_07/state_19",
+          "strict_valid_steps": 0,
+          "suite": "libero_goal"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_object/task_04/state_06",
+          "strict_valid_steps": 0,
+          "suite": "libero_object"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_object/task_09/state_18",
+          "strict_valid_steps": 0,
+          "suite": "libero_object"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_spatial/task_01/state_11",
+          "strict_valid_steps": 0,
+          "suite": "libero_spatial"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_spatial/task_02/state_05",
+          "strict_valid_steps": 0,
+          "suite": "libero_spatial"
+        }
+      ],
+      "parents_with_strict_step": 0,
+      "per_suite_parent_success": {
+        "libero_10": 0,
+        "libero_goal": 0,
+        "libero_object": 0,
+        "libero_spatial": 0
+      },
+      "runtime_error_count": 8,
+      "strict_valid_steps": 0
+    },
+    "prev_delta": {
+      "parent_rows": [
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_10/task_09/state_00",
+          "strict_valid_steps": 0,
+          "suite": "libero_10"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_10/task_09/state_16",
+          "strict_valid_steps": 0,
+          "suite": "libero_10"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_goal/task_05/state_10",
+          "strict_valid_steps": 0,
+          "suite": "libero_goal"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_goal/task_07/state_19",
+          "strict_valid_steps": 0,
+          "suite": "libero_goal"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_object/task_04/state_06",
+          "strict_valid_steps": 0,
+          "suite": "libero_object"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_object/task_09/state_18",
+          "strict_valid_steps": 0,
+          "suite": "libero_object"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_spatial/task_01/state_11",
+          "strict_valid_steps": 0,
+          "suite": "libero_spatial"
+        },
+        {
+          "attempted_steps": 0,
+          "canonical_parent_key": "libero_spatial/task_02/state_05",
+          "strict_valid_steps": 0,
+          "suite": "libero_spatial"
+        }
+      ],
+      "parents_with_strict_step": 0,
+      "per_suite_parent_success": {
+        "libero_10": 0,
+        "libero_goal": 0,
+        "libero_object": 0,
+        "libero_spatial": 0
+      },
+      "runtime_error_count": 8,
+      "strict_valid_steps": 0
+    }
+  },
+  "ranking": {
+    "none": {
+      "minimum_per_suite_parent_success": 0,
+      "tie_simplicity": 1,
+      "total_parent_success": 0,
+      "total_strict_valid_steps": 0
+    },
+    "prev_delta": {
+      "minimum_per_suite_parent_success": 0,
+      "tie_simplicity": 0,
+      "total_parent_success": 0,
+      "total_strict_valid_steps": 0
+    }
+  },
+  "schema": "STAGE_X1R2_F1C_TEMPORAL_METHOD_COMPARISON_V3",
+  "selected_temporal_init": "none",
+  "selection_rule": {
+    "lexicographic": [
+      "maximize minimum per-suite canary parent count with strict-valid T5 step",
+      "maximize total canary parents with strict-valid T5 step",
+      "maximize total delivered strict-valid steps",
+      "tie prefer none temporal initialization"
+    ],
+    "outcome_blind": true,
+    "physical_signal_forbidden": true,
+    "unit": "parent"
+  },
+  "status": "HOLD_F1C_EXECUTABLE_EVIDENCE_INSUFFICIENT"
+}

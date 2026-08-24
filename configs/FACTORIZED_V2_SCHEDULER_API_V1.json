@@ -1,0 +1,18 @@
+{
+  "schema": "FACTORIZED_V2_SCHEDULER_API_V1",
+  "module": "gripper_attack.factorized_scheduler",
+  "source_path": "src/gripper_attack/factorized_scheduler.py",
+  "scheduler_class": "FactorizedV2OneShotScheduler",
+  "config_class": "FactorizedSchedulerConfig",
+  "config_factory": "from_mapping",
+  "constructor": "FactorizedV2OneShotScheduler(config)",
+  "step_method": "step",
+  "step_call": "scheduler.step(runtime_record_mapping)",
+  "trace_fields": ["emit", "step", "state_before", "state_after", "reason", "dwell", "persistence_history", "release_veto", "attack_enabled"],
+  "emit_field": "emit",
+  "emit_step": "trace.step on first trace where emit=true",
+  "no_emit_sentinel": null,
+  "episode_reset": "new scheduler instance or explicit reset",
+  "api_version": "FACTORIZED_V2_SCHEDULER_API_V1",
+  "attack_enabled": false
+}

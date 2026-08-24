@@ -1,0 +1,1473 @@
+{
+  "arm_totals": {
+    "none": {
+      "attack_invocation_count": 35,
+      "attacked_env_steps": 1,
+      "attempted_step_count": 35,
+      "candidate_evidence_complete_steps": 35,
+      "candidate_evidence_rows": 385,
+      "clean_fallback_steps": 34,
+      "completed_parent_count": 7,
+      "no_strict_candidate_steps": 34,
+      "parent_count": 8,
+      "pgd_calls": 1,
+      "physical_interventions": 0,
+      "runtime_error_count": 1,
+      "strict_valid_steps": 1,
+      "vphys_reads": 0
+    },
+    "prev_delta": {
+      "attack_invocation_count": 35,
+      "attacked_env_steps": 0,
+      "attempted_step_count": 35,
+      "candidate_evidence_complete_steps": 35,
+      "candidate_evidence_rows": 385,
+      "clean_fallback_steps": 35,
+      "completed_parent_count": 7,
+      "no_strict_candidate_steps": 35,
+      "parent_count": 8,
+      "pgd_calls": 0,
+      "physical_interventions": 0,
+      "runtime_error_count": 1,
+      "strict_valid_steps": 0,
+      "vphys_reads": 0
+    }
+  },
+  "errors": [
+    "ARM_RUNTIME_ERROR:libero_spatial/task_02/state_13:none:RuntimeError:F1C_REPLAY_OBSERVATION_HASH_MISMATCH",
+    "ARM_RUNTIME_ERROR:libero_spatial/task_02/state_13:prev_delta:RuntimeError:F1C_REPLAY_OBSERVATION_HASH_MISMATCH"
+  ],
+  "frozen_method": {
+    "allow_fallback": false,
+    "candidate_order": [
+      "delta0",
+      "pgd_iteration_1",
+      "pgd_iteration_2",
+      "pgd_iteration_3",
+      "pgd_iteration_4",
+      "pgd_iteration_5",
+      "pgd_iteration_6",
+      "pgd_iteration_7",
+      "pgd_iteration_8",
+      "pgd_iteration_9",
+      "pgd_iteration_10"
+    ],
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "direct_action_token_count": 7,
+    "epsilon_processor_pixel_values": 0.03,
+    "exact_arm_dimensions": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "iterations": 10,
+    "method": "M1",
+    "no_actuator_overwrite": true,
+    "no_decode_reencode": true,
+    "objective": "autoregressive_prefix_gripper_native_open_logratio_v4",
+    "random_start": false,
+    "step_size": 0.003,
+    "strict_route": true,
+    "target_execution_class": "NATIVE_OPEN",
+    "target_token_id_secondary": 31745
+  },
+  "gate": "STAGE_X_X1R2_F1C4_FRESH_CANARY_REQUALIFICATION_V1",
+  "namespace": "STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822",
+  "overall": {
+    "arm_status_counts": {
+      "none": {
+        "HOLD_F1C_RUNTIME": 1,
+        "PASS_F1C_ARM_COMPLETED": 7
+      },
+      "prev_delta": {
+        "HOLD_F1C_RUNTIME": 1,
+        "PASS_F1C_ARM_COMPLETED": 7
+      }
+    },
+    "completed_parent_count": 7,
+    "error_counts": {
+      "RuntimeError:F1C_REPLAY_OBSERVATION_HASH_MISMATCH": 2
+    },
+    "parent_count": 8,
+    "parent_status_counts": {
+      "HOLD_F1C_PARENT": 1,
+      "PASS_F1C_PARENT_COMPLETED": 7
+    },
+    "protected_boundary_valid": true,
+    "runtime_error_parent_count": 1
+  },
+  "parents": [
+    {
+      "arms": {
+        "none": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 8,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 10,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 72,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 8,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 11,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 72,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_10/task_04/state_03",
+      "clean_probe": {
+        "eligible_rows": 247,
+        "hash_valid": true,
+        "observed_rows": 247,
+        "selected_probe_count": 1,
+        "selected_probe_sha256": "d122abc8c2bbedc674e4a3f2afc8734cd8ba8c4d9a8939fbdf55fdbe2b8a1be5",
+        "selected_step": 67,
+        "status": "PASS_F1C_CLEAN_PROBE"
+      },
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "status": "PASS_F1C_PARENT_COMPLETED",
+      "suite": "libero_10"
+    },
+    {
+      "arms": {
+        "none": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 7,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 33,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 131,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 6,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 32,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 131,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_10/task_05/state_08",
+      "clean_probe": {
+        "eligible_rows": 169,
+        "hash_valid": true,
+        "observed_rows": 169,
+        "selected_probe_count": 1,
+        "selected_probe_sha256": "057a2e0a9851038591af6a99fc1bd4a1559208fc1ce094bd8b5e528b4a59abe5",
+        "selected_step": 126,
+        "status": "PASS_F1C_CLEAN_PROBE"
+      },
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "status": "PASS_F1C_PARENT_COMPLETED",
+      "suite": "libero_10"
+    },
+    {
+      "arms": {
+        "none": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 4
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 4,
+            "PASS_F1C_STRICT_CANDIDATE": 1
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 10,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 16,
+          "clean_fallback_steps": 4,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 1,
+            "env_reset_calls": 1,
+            "env_step_calls": 33,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 1,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 1
+        },
+        "prev_delta": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 11,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 22,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 33,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_goal/task_06/state_03",
+      "clean_probe": {
+        "eligible_rows": 90,
+        "hash_valid": true,
+        "observed_rows": 90,
+        "selected_probe_count": 1,
+        "selected_probe_sha256": null,
+        "selected_step": null,
+        "status": "PASS_F1C_CLEAN_PROBE"
+      },
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "status": "PASS_F1C_PARENT_COMPLETED",
+      "suite": "libero_goal"
+    },
+    {
+      "arms": {
+        "none": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 10,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 2,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 40,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 11,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 6,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 40,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_goal/task_08/state_05",
+      "clean_probe": {
+        "eligible_rows": 79,
+        "hash_valid": true,
+        "observed_rows": 79,
+        "selected_probe_count": 1,
+        "selected_probe_sha256": "49547d18e88eeaa7c0497fc54b07ec476284e9607cf9b996cfd03b0f042b599a",
+        "selected_step": 35,
+        "status": "PASS_F1C_CLEAN_PROBE"
+      },
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "status": "PASS_F1C_PARENT_COMPLETED",
+      "suite": "libero_goal"
+    },
+    {
+      "arms": {
+        "none": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 10,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 0,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 29,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 9,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 0,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 29,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_object/task_03/state_13",
+      "clean_probe": {
+        "eligible_rows": 121,
+        "hash_valid": true,
+        "observed_rows": 121,
+        "selected_probe_count": 1,
+        "selected_probe_sha256": "c0f8b9f2e2f0e6c44d93c10bf6c60b586d2eb6d1ff517ae46f07c348955e052a",
+        "selected_step": 24,
+        "status": "PASS_F1C_CLEAN_PROBE"
+      },
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "status": "PASS_F1C_PARENT_COMPLETED",
+      "suite": "libero_object"
+    },
+    {
+      "arms": {
+        "none": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 25,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 0,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 59,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 26,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 0,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 59,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_object/task_05/state_14",
+      "clean_probe": {
+        "eligible_rows": 266,
+        "hash_valid": true,
+        "observed_rows": 280,
+        "selected_probe_count": 1,
+        "selected_probe_sha256": "1d3aa03145b983c572eb5466b92d59bf04ceee71b25e722c62ec45eea65a2987",
+        "selected_step": 54,
+        "status": "PASS_F1C_CLEAN_PROBE"
+      },
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "status": "PASS_F1C_PARENT_COMPLETED",
+      "suite": "libero_object"
+    },
+    {
+      "arms": {
+        "none": {
+          "attack_error_counts": {},
+          "attack_status_counts": {},
+          "attempted_step_count": 0,
+          "candidate_arm_exact_rows": 0,
+          "candidate_evidence_complete_steps": 0,
+          "candidate_evidence_rows": 0,
+          "candidate_native_open_rows": 0,
+          "clean_fallback_steps": 0,
+          "counters": {
+            "attack_invocation_count": 0,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "model_inference_calls": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": "RuntimeError:F1C_REPLAY_OBSERVATION_HASH_MISMATCH",
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attack_error_counts": {},
+          "attack_status_counts": {},
+          "attempted_step_count": 0,
+          "candidate_arm_exact_rows": 0,
+          "candidate_evidence_complete_steps": 0,
+          "candidate_evidence_rows": 0,
+          "candidate_native_open_rows": 0,
+          "clean_fallback_steps": 0,
+          "counters": {
+            "attack_invocation_count": 0,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "model_inference_calls": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": "RuntimeError:F1C_REPLAY_OBSERVATION_HASH_MISMATCH",
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "HOLD_F1C_RUNTIME",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_spatial/task_02/state_13",
+      "clean_probe": {
+        "eligible_rows": 107,
+        "hash_valid": true,
+        "observed_rows": 107,
+        "selected_probe_count": 1,
+        "selected_probe_sha256": "9b9d191eecb9a10b6e3e538041131909ad326d021ea8623f80f6e19b5ea015e4",
+        "selected_step": 104,
+        "status": "PASS_F1C_CLEAN_PROBE"
+      },
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "status": "HOLD_F1C_PARENT",
+      "suite": "libero_spatial"
+    },
+    {
+      "arms": {
+        "none": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 8,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 2,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 207,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        },
+        "prev_delta": {
+          "attack_error_counts": {
+            "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE": 5
+          },
+          "attack_status_counts": {
+            "F1C_NO_STRICT_CANDIDATE": 5
+          },
+          "attempted_step_count": 5,
+          "candidate_arm_exact_rows": 6,
+          "candidate_evidence_complete_steps": 5,
+          "candidate_evidence_rows": 55,
+          "candidate_native_open_rows": 6,
+          "clean_fallback_steps": 5,
+          "counters": {
+            "attack_invocation_count": 5,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_reset_calls": 1,
+            "env_step_calls": 207,
+            "eval160_reads": 0,
+            "model_inference_calls": 6,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "error": null,
+          "protected_boundary": {
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "eval160": "UNREAD",
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "valid": true,
+            "vphys_reads": 0
+          },
+          "status": "PASS_F1C_ARM_COMPLETED",
+          "strict_valid_steps": 0
+        }
+      },
+      "canonical_parent_key": "libero_spatial/task_08/state_01",
+      "clean_probe": {
+        "eligible_rows": 206,
+        "hash_valid": true,
+        "observed_rows": 220,
+        "selected_probe_count": 1,
+        "selected_probe_sha256": "1f32931e69e96ed5668053869cbcc7ada7cde0496685aaf3539adb1851bffd37",
+        "selected_step": 202,
+        "status": "PASS_F1C_CLEAN_PROBE"
+      },
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "status": "PASS_F1C_PARENT_COMPLETED",
+      "suite": "libero_spatial"
+    }
+  ],
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "boundary_errors": [],
+    "eval160": "UNREAD",
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "runtime": {
+    "file_count": 118,
+    "file_hashes": {
+      "libero_10/libero_10_task_04_state_03/clean_probe_receipt.json": "09792b87c30eb822d6815dd8228e10fcb35d205b2c1e5b7988f3d1204f407bdc",
+      "libero_10/libero_10_task_04_state_03/parent_receipt.json": "2feb7f744d6eef57777a0170d386886e892ce559b11d8c673aa6883cfb6898d8",
+      "libero_10/libero_10_task_04_state_03/selected_probe.bin": "d122abc8c2bbedc674e4a3f2afc8734cd8ba8c4d9a8939fbdf55fdbe2b8a1be5",
+      "libero_10/libero_10_task_04_state_03/temporal_none/arm_receipt.json": "da557387509d1341fd9b2c0fdffed01ffc1a611aa5343e9bdeb2ea946ce88845",
+      "libero_10/libero_10_task_04_state_03/temporal_none/attempt_00/attack_receipt.json": "b621ddfbdaee8e77a1564e91108789fa1ff51e40fa878b7d4584daf3b1666ea3",
+      "libero_10/libero_10_task_04_state_03/temporal_none/attempt_01/attack_receipt.json": "b52f445822e28860b0ac37c7b989dfdf4427d38a91a96bd00977f2f6a69f9746",
+      "libero_10/libero_10_task_04_state_03/temporal_none/attempt_02/attack_receipt.json": "66f1a4db70fc365a151bc306701ee79a7c2009c80b146f8bed8c13746b429c3a",
+      "libero_10/libero_10_task_04_state_03/temporal_none/attempt_03/attack_receipt.json": "e63172f1872afa451b62314b2f0ba7aca485ce6b54ba971c6de2fc535466ad3f",
+      "libero_10/libero_10_task_04_state_03/temporal_none/attempt_04/attack_receipt.json": "123f39db591c85152ed3cc3dfbb17f9d4c348f4b8a6e34da8327a7ad63967649",
+      "libero_10/libero_10_task_04_state_03/temporal_prev_delta/arm_receipt.json": "f0d01f60c2b0f95c2c9aff8a9fd29b7ae9e8f18c53bd79248b541989f814c7e0",
+      "libero_10/libero_10_task_04_state_03/temporal_prev_delta/attempt_00/attack_receipt.json": "201a0f8a7b72a35e667c5d786672894000b1ec479ff1393fa069c7d2889ba0b6",
+      "libero_10/libero_10_task_04_state_03/temporal_prev_delta/attempt_01/attack_receipt.json": "f74a285f6e2f0ce63d7f0d2fd8b83c1746257d126c212cf2d25382d61e087a2d",
+      "libero_10/libero_10_task_04_state_03/temporal_prev_delta/attempt_02/attack_receipt.json": "26fdcae1e48e9d6d29f4d303f20092b34285cb41c5af43a19f37a239c281a16b",
+      "libero_10/libero_10_task_04_state_03/temporal_prev_delta/attempt_03/attack_receipt.json": "7cbf5c0f9cce21528adafce567f9c185b0c85ca09a7ad53d81c81183e04f4a8c",
+      "libero_10/libero_10_task_04_state_03/temporal_prev_delta/attempt_04/attack_receipt.json": "a060d6548734583f6d7843271f814260c121f050d8cc87d30f87507363d36946",
+      "libero_10/libero_10_task_05_state_08/clean_probe_receipt.json": "3e1f8ef8e040ae2d2ee060b5d873bd7ebea8f7d7ede10576b8c265c5548a87e0",
+      "libero_10/libero_10_task_05_state_08/parent_receipt.json": "0e1c5e057a90394e1ccbfea993665ea600459daec23a446ed1acc2de936efdbc",
+      "libero_10/libero_10_task_05_state_08/selected_probe.bin": "057a2e0a9851038591af6a99fc1bd4a1559208fc1ce094bd8b5e528b4a59abe5",
+      "libero_10/libero_10_task_05_state_08/temporal_none/arm_receipt.json": "0ecc4046c49fb40191aca06d5bb3549fda3796ef9ffe54e326e217798d576955",
+      "libero_10/libero_10_task_05_state_08/temporal_none/attempt_00/attack_receipt.json": "99817c06ded72565a90a6f245363885c4e2cd6fac0fed48ff712074f49be3f84",
+      "libero_10/libero_10_task_05_state_08/temporal_none/attempt_01/attack_receipt.json": "277626bb47c8791c1356fc3debb8a6c8822fcb75f313066d7ada9e148e7848e2",
+      "libero_10/libero_10_task_05_state_08/temporal_none/attempt_02/attack_receipt.json": "c7b141930a2833c875e2f090bd8cd60293cc6ecce2aca5a4717dd9f77f4d60bc",
+      "libero_10/libero_10_task_05_state_08/temporal_none/attempt_03/attack_receipt.json": "57fa24cbe4c141ef57385b5d2887c1cb08420d07c2d76dce567c62bb409af40b",
+      "libero_10/libero_10_task_05_state_08/temporal_none/attempt_04/attack_receipt.json": "21211c540cd9804144c0f662e09b128f301b5ad2301cad64e0c1f7148966b9e6",
+      "libero_10/libero_10_task_05_state_08/temporal_prev_delta/arm_receipt.json": "974d122faeb541791ef19214e6f5e71572f9984e96c61ee8074ee3003f59d02b",
+      "libero_10/libero_10_task_05_state_08/temporal_prev_delta/attempt_00/attack_receipt.json": "630f39188903a930173a30f0a66ebbf832e9c075fc63061113409950f78c2028",
+      "libero_10/libero_10_task_05_state_08/temporal_prev_delta/attempt_01/attack_receipt.json": "9e89e06206e05873bb9a6ff0a6fbaeb32a7bab52504afd70a2be4808a03c0f86",
+      "libero_10/libero_10_task_05_state_08/temporal_prev_delta/attempt_02/attack_receipt.json": "2c9392e5bf61efacf48ae3e924d7d265d413fa54f16c5c8131c2a41079916cc4",
+      "libero_10/libero_10_task_05_state_08/temporal_prev_delta/attempt_03/attack_receipt.json": "2f6c7b5745b93b08de6a4c31a009f12778cdea2e3c239b8b2f8229363a64eb96",
+      "libero_10/libero_10_task_05_state_08/temporal_prev_delta/attempt_04/attack_receipt.json": "d71e1e4bdeeda544809c8f34a50d6d14afbf5067690f94e31a30e0e0e26a84fa",
+      "libero_goal/libero_goal_task_06_state_03/clean_probe_receipt.json": "e532a24e5dcc6c994700bcf3d9790886f31fac236e38f3a34e40b1f39d27236c",
+      "libero_goal/libero_goal_task_06_state_03/parent_receipt.json": "659b8a72ae3831eeaf5015d0eb9fa344857102ba812b2029e554a615e50d1789",
+      "libero_goal/libero_goal_task_06_state_03/selected_probe.bin": "1089092aa307339ae272f07653e7df01d956cc1c83995ad731d658892bcda044",
+      "libero_goal/libero_goal_task_06_state_03/temporal_none/arm_receipt.json": "11641b1a82a135ef3a2ea9a2abe605260a067fc3f8a89ff3ef41008ed06c7fa7",
+      "libero_goal/libero_goal_task_06_state_03/temporal_none/attempt_00/attack_receipt.json": "3694054af6cd043717bdcecdaca580576478550fdb182e341358f56c4ef15d7e",
+      "libero_goal/libero_goal_task_06_state_03/temporal_none/attempt_01/attack_receipt.json": "064becb0c506cc23cda65a0b7423d4f8e43df11b83c09252672e56a87a307d8e",
+      "libero_goal/libero_goal_task_06_state_03/temporal_none/attempt_02/attack_receipt.json": "e7ca62459e85a7df9f56e52a405ac39da719177b0325d1d826a612babed74789",
+      "libero_goal/libero_goal_task_06_state_03/temporal_none/attempt_03/attack_receipt.json": "56f9b397b1d44691a4def3d30311b91455946ab6185f51d4cf231652e6163908",
+      "libero_goal/libero_goal_task_06_state_03/temporal_none/attempt_04/attack_receipt.json": "e9cce3eef3712bae1867b549ba71e0aaa81a2b3de394955e0d157bb8edb04423",
+      "libero_goal/libero_goal_task_06_state_03/temporal_prev_delta/arm_receipt.json": "8a89c6dd94e4da3099aef47fb16f4c44b3de11e20904f3d04757d8120ca78fb9",
+      "libero_goal/libero_goal_task_06_state_03/temporal_prev_delta/attempt_00/attack_receipt.json": "3677583833e6f4afe82a90ff2146401d3dbbc86a4e181513930016145ae9502c",
+      "libero_goal/libero_goal_task_06_state_03/temporal_prev_delta/attempt_01/attack_receipt.json": "1b62984a872a5ba4a6c6371e904ad3df95d2750b1f9ffa1c050c509021c939cb",
+      "libero_goal/libero_goal_task_06_state_03/temporal_prev_delta/attempt_02/attack_receipt.json": "d951484705b3ba0dc0a88bf2fb9268d591a6eb2c0ff0e52084ca3fdd55ac1423",
+      "libero_goal/libero_goal_task_06_state_03/temporal_prev_delta/attempt_03/attack_receipt.json": "a58ce187f7d6c99631cea0d9e2576b9c7312d0b4e505a37bcecc3774e0f8466d",
+      "libero_goal/libero_goal_task_06_state_03/temporal_prev_delta/attempt_04/attack_receipt.json": "8a27ea2b3053639e04a5de4bb475391f797601b941ed75090f7cc75ef91f6647",
+      "libero_goal/libero_goal_task_08_state_05/clean_probe_receipt.json": "41ab96cd1317c400373ef2a3336d83467ba92ea39f2c309c78017e396f4645cb",
+      "libero_goal/libero_goal_task_08_state_05/parent_receipt.json": "07effec778147a00a0a777021bb703c1fff70a9c923622d39efa8ca45a448f89",
+      "libero_goal/libero_goal_task_08_state_05/selected_probe.bin": "49547d18e88eeaa7c0497fc54b07ec476284e9607cf9b996cfd03b0f042b599a",
+      "libero_goal/libero_goal_task_08_state_05/temporal_none/arm_receipt.json": "ca10b729f09d2a5acac9f5b24e468e031241a86566bf5c746bce43b44be87b6e",
+      "libero_goal/libero_goal_task_08_state_05/temporal_none/attempt_00/attack_receipt.json": "a73ee00bbfff8fa27e40e75134f4397f3242abbbf3fca6b06a0408770741ef07",
+      "libero_goal/libero_goal_task_08_state_05/temporal_none/attempt_01/attack_receipt.json": "7f802c839c57111023a5b6723967298a7f82b281516892eda9151277ad36f6d2",
+      "libero_goal/libero_goal_task_08_state_05/temporal_none/attempt_02/attack_receipt.json": "07a6e1c5ddcdae66f6297b98ad7f11c7cc2eeebc0e697982f7b9a9ef1e55fc7a",
+      "libero_goal/libero_goal_task_08_state_05/temporal_none/attempt_03/attack_receipt.json": "08267ae577c7e0127c4f75057efc702868e84f6f333d3af55e64e67025d3558c",
+      "libero_goal/libero_goal_task_08_state_05/temporal_none/attempt_04/attack_receipt.json": "a818f62efe8f1059920a76db4c280f3c4efb09b82593a224fcb8b720bcbd8822",
+      "libero_goal/libero_goal_task_08_state_05/temporal_prev_delta/arm_receipt.json": "98b43ac635e8651b4b9614a9b18ad5e315083c1a041bfec35b4b90b9ebb9831b",
+      "libero_goal/libero_goal_task_08_state_05/temporal_prev_delta/attempt_00/attack_receipt.json": "de5c10d16ba4efd98101db38440582784c4216662fedd0c19bece18e364087ba",
+      "libero_goal/libero_goal_task_08_state_05/temporal_prev_delta/attempt_01/attack_receipt.json": "3d82126d2b78f2683fbb781f849aec91e9c680ccaa1a969035befd0f2f8219a6",
+      "libero_goal/libero_goal_task_08_state_05/temporal_prev_delta/attempt_02/attack_receipt.json": "773555bd39d66918d54fd7814ebfc2e4e5918b4c3f4bdb6c234fa11fe6f18d42",
+      "libero_goal/libero_goal_task_08_state_05/temporal_prev_delta/attempt_03/attack_receipt.json": "ba33ac115b82a8272d7fbd480bde1eb73be3ed93cf4d7f885a2485e4627ec568",
+      "libero_goal/libero_goal_task_08_state_05/temporal_prev_delta/attempt_04/attack_receipt.json": "e42b9bfcdff636742984aca13ddbf87f670e5bee7f3fad96c204e6f45812e336",
+      "libero_object/libero_object_task_03_state_13/clean_probe_receipt.json": "5ddf9d3220296830999a71eccff45017b3dc928491017f1f64ddd42451aecfd3",
+      "libero_object/libero_object_task_03_state_13/parent_receipt.json": "d0b83a7985081098056ed6e080ca6723c1488fc7731b1fecdac11332e88f5ab9",
+      "libero_object/libero_object_task_03_state_13/selected_probe.bin": "c0f8b9f2e2f0e6c44d93c10bf6c60b586d2eb6d1ff517ae46f07c348955e052a",
+      "libero_object/libero_object_task_03_state_13/temporal_none/arm_receipt.json": "6078ef8a54fbd17afcab14f8ccdeb19cc3f280dac2441164351b15e6e95d742b",
+      "libero_object/libero_object_task_03_state_13/temporal_none/attempt_00/attack_receipt.json": "bf822d9437c4d5f3b6debea94b266a32487f2bf8f0fffebbdf8adae99f14c2c4",
+      "libero_object/libero_object_task_03_state_13/temporal_none/attempt_01/attack_receipt.json": "35f293940ecc2582eeb0293fd4c0c274be8761ce99b9a23b801fb7c56cb37694",
+      "libero_object/libero_object_task_03_state_13/temporal_none/attempt_02/attack_receipt.json": "6bb6934f190ac7d44581054a337e4bf017f5fe277e07c7ee066fa3e51469ebc2",
+      "libero_object/libero_object_task_03_state_13/temporal_none/attempt_03/attack_receipt.json": "02c4de53eaf7cb57397bc523e60afccf7339093e9a2f95b2722837ef567511ed",
+      "libero_object/libero_object_task_03_state_13/temporal_none/attempt_04/attack_receipt.json": "14d9ac87f9fca616e2cd2a5333194b35a8f07d1449245ae2d8f815308abb21a4",
+      "libero_object/libero_object_task_03_state_13/temporal_prev_delta/arm_receipt.json": "6d58d05bfb1b19d75e398cd3f211bb3f028f8338a1058787cd694498e2e5d91b",
+      "libero_object/libero_object_task_03_state_13/temporal_prev_delta/attempt_00/attack_receipt.json": "3fa3210ca165e50525a0d0e248c74628f0fd8e0546cf94847c9c47651a52c90a",
+      "libero_object/libero_object_task_03_state_13/temporal_prev_delta/attempt_01/attack_receipt.json": "4b501c70814673506a91fe5d9d5f935731c8403059ef6f2825701ccf2e346cda",
+      "libero_object/libero_object_task_03_state_13/temporal_prev_delta/attempt_02/attack_receipt.json": "86e46e7cfdb0b8cb3970ae533ba40c6b9037759fad317958f796755ff370aa6f",
+      "libero_object/libero_object_task_03_state_13/temporal_prev_delta/attempt_03/attack_receipt.json": "bc776acc4f480bab284f5a1a6692f892b6feae08848f482f28a48112672ed484",
+      "libero_object/libero_object_task_03_state_13/temporal_prev_delta/attempt_04/attack_receipt.json": "c69b339996ef101e5fc156215a3abf4bb52fac8c2f96330a0faa71b4ab11673e",
+      "libero_object/libero_object_task_05_state_14/clean_probe_receipt.json": "62fff365eeacfcb2a8d266aa2b4da1a33707e65aa3a16cc362b99b2c4328c9ac",
+      "libero_object/libero_object_task_05_state_14/parent_receipt.json": "287e738af4e6226e986091a739bf783b711d69bb107061169d3ccad96777b593",
+      "libero_object/libero_object_task_05_state_14/selected_probe.bin": "1d3aa03145b983c572eb5466b92d59bf04ceee71b25e722c62ec45eea65a2987",
+      "libero_object/libero_object_task_05_state_14/temporal_none/arm_receipt.json": "37b2be5a515422524dc939215b7c777fbfa60afaad00f47cd0616d24f95145f0",
+      "libero_object/libero_object_task_05_state_14/temporal_none/attempt_00/attack_receipt.json": "d94b1ec3340c74c21a6cd76bbe13163e6c1b7f5c257e98d98f8a14bfaad1afd3",
+      "libero_object/libero_object_task_05_state_14/temporal_none/attempt_01/attack_receipt.json": "930a4f8dafcd2fd2f6f5b9fd0e23416b2fdd4b2259498319aabaa2a61a0fa3af",
+      "libero_object/libero_object_task_05_state_14/temporal_none/attempt_02/attack_receipt.json": "ac8c77a98989405b5d9598ddde9b863e25dadfa05b139a4d4d6bdaa0fc8cd3ea",
+      "libero_object/libero_object_task_05_state_14/temporal_none/attempt_03/attack_receipt.json": "0bd7553492badafed6b35f895e9ab01144c8a15584979b5cd6a1ce39123f7904",
+      "libero_object/libero_object_task_05_state_14/temporal_none/attempt_04/attack_receipt.json": "f3f1fd9fe5c43237d60c7aedca7db96cb756a18fbf385621ebe08a036962bfb3",
+      "libero_object/libero_object_task_05_state_14/temporal_prev_delta/arm_receipt.json": "4b942c72a7356c559410a70ef8507ca45c1625d809d82c215656c8c664491726",
+      "libero_object/libero_object_task_05_state_14/temporal_prev_delta/attempt_00/attack_receipt.json": "a36f3b8cc98f0eab411a00ee096e802f01e8f9e30fd00a38edd6063e0981fe4d",
+      "libero_object/libero_object_task_05_state_14/temporal_prev_delta/attempt_01/attack_receipt.json": "bb0d947840023e9df10d62a33b880400d22838818e28379ac29f28b7e9c5cc93",
+      "libero_object/libero_object_task_05_state_14/temporal_prev_delta/attempt_02/attack_receipt.json": "f4021d6afbbffa4ed6634aa7a2c2e12a108df19f062e8eed0cfba4701baaac2e",
+      "libero_object/libero_object_task_05_state_14/temporal_prev_delta/attempt_03/attack_receipt.json": "ea653d0f7d9c47d2443f8d114939676b69744aa82f839bb5925a991a99ec5ef9",
+      "libero_object/libero_object_task_05_state_14/temporal_prev_delta/attempt_04/attack_receipt.json": "b7ecc57aa82cf04dcccfb2c49eadc7dc76f62fc47dbff9560a9cdcbc99eaf387",
+      "libero_spatial/libero_spatial_task_02_state_13/clean_probe_receipt.json": "536e79d6055b0b3b801a14ab6f289a267d9532ac451c93a116ac00f253eb987f",
+      "libero_spatial/libero_spatial_task_02_state_13/parent_receipt.json": "f9f64de3dfc8341546e84e96b2891f5444f1d68b29679a6b5ba4e01ce88e9bce",
+      "libero_spatial/libero_spatial_task_02_state_13/selected_probe.bin": "9b9d191eecb9a10b6e3e538041131909ad326d021ea8623f80f6e19b5ea015e4",
+      "libero_spatial/libero_spatial_task_02_state_13/temporal_none/arm_receipt.json": "5bda4ce0100cb22b44e925554d7bd86ebabf2877daba19adb5588debaa38b149",
+      "libero_spatial/libero_spatial_task_02_state_13/temporal_prev_delta/arm_receipt.json": "50733cca86fd3bc308a8b57f62c58f926b9529caa6ff576aed9c01404d49e6f6",
+      "libero_spatial/libero_spatial_task_08_state_01/clean_probe_receipt.json": "4b613be216071330e30080b6f936ab43faead3d30525f9a917d46e790df27831",
+      "libero_spatial/libero_spatial_task_08_state_01/parent_receipt.json": "1bbdd40625d7243307d2d4d099b9564304676eeadc7a15b17b57b0a0062fe1ef",
+      "libero_spatial/libero_spatial_task_08_state_01/selected_probe.bin": "1f32931e69e96ed5668053869cbcc7ada7cde0496685aaf3539adb1851bffd37",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_none/arm_receipt.json": "ebadf8ff35cf570a9f40530a27a86d807817b127890d71dbaec24f508914df5d",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_none/attempt_00/attack_receipt.json": "6651237003c7a2410294ef0436eca6790d6034b1b8c2a7e4f58dcfb4f4819423",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_none/attempt_01/attack_receipt.json": "d6f019dbb3ae96d6659050a55112e1e48b7f0726dd43f496006ddf2651b21d48",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_none/attempt_02/attack_receipt.json": "3ccfd355b0a1ec4882229c62eb1f6b61a88da2faba1d003bcd78c836df787635",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_none/attempt_03/attack_receipt.json": "50e332b43080272bd97d75a2439bf4e33fb518ab833a5e4c36fbeb3071baafd8",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_none/attempt_04/attack_receipt.json": "44834a9e65d2de10d0a233d2f4e54e2683f5abec8929ef48cf25ce3182396f35",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_prev_delta/arm_receipt.json": "1b81ce0dc6d7039c6a99d61dd2e5a9aed0cb6b102d9a00ecb3656c29b55b63ff",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_prev_delta/attempt_00/attack_receipt.json": "2daac16e9c2b6e14c30857e1a7449506d5299ec166bad70fedb9b0a15049a3ec",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_prev_delta/attempt_01/attack_receipt.json": "6b0c64b2bfd9427531154ad00aaac1ce7539491919dd0ba16f51b974dae3c77a",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_prev_delta/attempt_02/attack_receipt.json": "c0be1e8bcbdad9e4e0b26592612c1918a793d65aef50aa24947469b7faa16b52",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_prev_delta/attempt_03/attack_receipt.json": "13c7de2505d1bd5dec84b0bc0b7a3d1c2b34f74658d04ba624a164354d04497b",
+      "libero_spatial/libero_spatial_task_08_state_01/temporal_prev_delta/attempt_04/attack_receipt.json": "3833d4351a6cbc026ac6e5f17dd372a1077374af295dc76adb3e774ba549f3f7",
+      "workers/worker_00_receipt.json": "ffe94709cb21672cd7aee5a2b522c21e5ffb7c615b412b129a08be349cc2cc29",
+      "workers/worker_01_receipt.json": "12345ed8c4b8d61d29e6634973ed604d983362e41a39f9ce7b946cbadf61a076",
+      "workers/worker_02_receipt.json": "d0c1692bd4c92a4331e4cb91de71e18c4f40260da5bcd9e693a60ad3cf96de7a",
+      "workers/worker_03_receipt.json": "13202e87801bc0632a5ce5b3a69f0530cd2f5c3fb7950a9607c45836964c1614",
+      "workers/worker_04_receipt.json": "b9149700c71a292657db77f8d2bb1bec0ac35468d257faba316b5273fb2dd639",
+      "workers/worker_05_receipt.json": "32fab00fab9b5e4a3a4a6d346c319686ed98fae5be93c86708e52011add6bbb8",
+      "workers/worker_06_receipt.json": "06604674829d7631575ac1193e37bb0ddf15dd041418993a8d674fa1cbb9aaed",
+      "workers/worker_07_receipt.json": "62085e39265f32fbcc88ae931ca5d3a731b0caedc1d671b7b8b7646dd53defc0"
+    },
+    "local_audit_root": "D:\\vla_attack\\_work_stagex_goal\\f1c4_remote_run_bc7faf8_20260822\\stage_x1r2_f1c4_fresh_canary_v1_20260822",
+    "manifest_sha256": "b678de75a2f22227a1eb028bc761039b844e34c0f1cdb755ff7a9f06e501c97a",
+    "remote_root": "\\mnt\\sdc\\dty_user\\openvla_attack_outputs\\n5\\stage_x1r2_f1c4_fresh_canary_v1_20260822"
+  },
+  "schema": "STAGE_X1R2_F1C4_RUNTIME_AUDIT_V1",
+  "source": {
+    "all_workers_same_source": true,
+    "commit": "bc7faf87c2b9e06226e6058826c0dbc43b1a9e91",
+    "offline_freeze_validation": "PASS_F1C4_OFFLINE_FREEZE_VALIDATION",
+    "tree": "01d08a356d4b5d01e92380a659f9041eb898c878"
+  },
+  "status": "HOLD_F1C4_EXECUTABLE_EVIDENCE_INSUFFICIENT_TERMINAL",
+  "workers": [
+    {
+      "assigned_keys": [
+        "libero_10/task_05/state_08"
+      ],
+      "gpu_after": {
+        "compute_apps": [
+          "2447478, /llm_jzm/zcs/miniconda3/envs/bertforfiner/bin/python, 16510 MiB",
+          "2503263, /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python, 568 MiB"
+        ],
+        "cuda_visible_devices": "0",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 64124,
+        "gpu_uuid": "GPU-bf4309d3-8cba-437e-8d87-cee9f1e6d232",
+        "physical_gpu": 0,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 17099,
+        "utilization_gpu_percent": 70
+      },
+      "gpu_before_model_load": {
+        "compute_apps": [
+          "2447478, /llm_jzm/zcs/miniconda3/envs/bertforfiner/bin/python, 16510 MiB"
+        ],
+        "cuda_visible_devices": "0",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 64696,
+        "gpu_uuid": "GPU-bf4309d3-8cba-437e-8d87-cee9f1e6d232",
+        "physical_gpu": 0,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 16527,
+        "utilization_gpu_percent": 44
+      },
+      "physical_gpu": 0,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "source": {
+        "branch": "",
+        "commit": "bc7faf87c2b9e06226e6058826c0dbc43b1a9e91",
+        "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+        "status_porcelain": "",
+        "tree": "01d08a356d4b5d01e92380a659f9041eb898c878"
+      },
+      "status": "PASS_F1C_WORKER_COMPLETED",
+      "worker_index": 0
+    },
+    {
+      "assigned_keys": [
+        "libero_10/task_04/state_03"
+      ],
+      "gpu_after": {
+        "compute_apps": [
+          "2447479, /llm_jzm/zcs/miniconda3/envs/bertforfiner/bin/python, 16506 MiB",
+          "2503264, /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python, 568 MiB"
+        ],
+        "cuda_visible_devices": "1",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 64128,
+        "gpu_uuid": "GPU-f6910e5c-f41e-109e-43d0-f01f0d77dbf2",
+        "physical_gpu": 1,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 17095,
+        "utilization_gpu_percent": 49
+      },
+      "gpu_before_model_load": {
+        "compute_apps": [
+          "2447479, /llm_jzm/zcs/miniconda3/envs/bertforfiner/bin/python, 16476 MiB"
+        ],
+        "cuda_visible_devices": "1",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 64730,
+        "gpu_uuid": "GPU-f6910e5c-f41e-109e-43d0-f01f0d77dbf2",
+        "physical_gpu": 1,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 16493,
+        "utilization_gpu_percent": 50
+      },
+      "physical_gpu": 1,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "source": {
+        "branch": "",
+        "commit": "bc7faf87c2b9e06226e6058826c0dbc43b1a9e91",
+        "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+        "status_porcelain": "",
+        "tree": "01d08a356d4b5d01e92380a659f9041eb898c878"
+      },
+      "status": "PASS_F1C_WORKER_COMPLETED",
+      "worker_index": 1
+    },
+    {
+      "assigned_keys": [
+        "libero_goal/task_06/state_03"
+      ],
+      "gpu_after": {
+        "compute_apps": [
+          "2199293, /mnt/sdc/dty_user/umm-sft/envs/umm-sft-server/bin/python, 38510 MiB",
+          "2447480, /llm_jzm/zcs/miniconda3/envs/bertforfiner/bin/python, 16510 MiB",
+          "2503265, /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python, 576 MiB"
+        ],
+        "cuda_visible_devices": "2",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 25597,
+        "gpu_uuid": "GPU-7b06162a-27e4-2552-e891-d201e3fae6b9",
+        "physical_gpu": 2,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 55626,
+        "utilization_gpu_percent": 96
+      },
+      "gpu_before_model_load": {
+        "compute_apps": [
+          "2199293, /mnt/sdc/dty_user/umm-sft/envs/umm-sft-server/bin/python, 38510 MiB",
+          "2447480, /llm_jzm/zcs/miniconda3/envs/bertforfiner/bin/python, 16510 MiB"
+        ],
+        "cuda_visible_devices": "2",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 26179,
+        "gpu_uuid": "GPU-7b06162a-27e4-2552-e891-d201e3fae6b9",
+        "physical_gpu": 2,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 55044,
+        "utilization_gpu_percent": 100
+      },
+      "physical_gpu": 2,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "source": {
+        "branch": "",
+        "commit": "bc7faf87c2b9e06226e6058826c0dbc43b1a9e91",
+        "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+        "status_porcelain": "",
+        "tree": "01d08a356d4b5d01e92380a659f9041eb898c878"
+      },
+      "status": "PASS_F1C_WORKER_COMPLETED",
+      "worker_index": 2
+    },
+    {
+      "assigned_keys": [
+        "libero_goal/task_08/state_05"
+      ],
+      "gpu_after": {
+        "compute_apps": [
+          "2503266, /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python, 576 MiB"
+        ],
+        "cuda_visible_devices": "3",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 80628,
+        "gpu_uuid": "GPU-41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
+        "physical_gpu": 3,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 595,
+        "utilization_gpu_percent": 19
+      },
+      "gpu_before_model_load": {
+        "compute_apps": [
+          "2199294, /mnt/sdc/dty_user/umm-sft/envs/umm-sft-server/bin/python, 38510 MiB"
+        ],
+        "cuda_visible_devices": "3",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 42692,
+        "gpu_uuid": "GPU-41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
+        "physical_gpu": 3,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 38531,
+        "utilization_gpu_percent": 97
+      },
+      "physical_gpu": 3,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "source": {
+        "branch": "",
+        "commit": "bc7faf87c2b9e06226e6058826c0dbc43b1a9e91",
+        "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+        "status_porcelain": "",
+        "tree": "01d08a356d4b5d01e92380a659f9041eb898c878"
+      },
+      "status": "PASS_F1C_WORKER_COMPLETED",
+      "worker_index": 3
+    },
+    {
+      "assigned_keys": [
+        "libero_object/task_03/state_13"
+      ],
+      "gpu_after": {
+        "compute_apps": [
+          "2503267, /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python, 576 MiB"
+        ],
+        "cuda_visible_devices": "4",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 80628,
+        "gpu_uuid": "GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
+        "physical_gpu": 4,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 595,
+        "utilization_gpu_percent": 36
+      },
+      "gpu_before_model_load": {
+        "compute_apps": [
+          "2199295, /mnt/sdc/dty_user/umm-sft/envs/umm-sft-server/bin/python, 38510 MiB"
+        ],
+        "cuda_visible_devices": "4",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 42692,
+        "gpu_uuid": "GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
+        "physical_gpu": 4,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 38530,
+        "utilization_gpu_percent": 95
+      },
+      "physical_gpu": 4,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "source": {
+        "branch": "",
+        "commit": "bc7faf87c2b9e06226e6058826c0dbc43b1a9e91",
+        "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+        "status_porcelain": "",
+        "tree": "01d08a356d4b5d01e92380a659f9041eb898c878"
+      },
+      "status": "PASS_F1C_WORKER_COMPLETED",
+      "worker_index": 4
+    },
+    {
+      "assigned_keys": [
+        "libero_object/task_05/state_14"
+      ],
+      "gpu_after": {
+        "compute_apps": [
+          "3747395, /home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3, 51628 MiB",
+          "2503268, /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python, 576 MiB"
+        ],
+        "cuda_visible_devices": "5",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 28998,
+        "gpu_uuid": "GPU-185b30c0-074c-6f07-aa8b-a67d00e8e4a9",
+        "physical_gpu": 5,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 52225,
+        "utilization_gpu_percent": 95
+      },
+      "gpu_before_model_load": {
+        "compute_apps": [
+          "3747395, /home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3, 51628 MiB"
+        ],
+        "cuda_visible_devices": "5",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 29578,
+        "gpu_uuid": "GPU-185b30c0-074c-6f07-aa8b-a67d00e8e4a9",
+        "physical_gpu": 5,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 51644,
+        "utilization_gpu_percent": 94
+      },
+      "physical_gpu": 5,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "source": {
+        "branch": "",
+        "commit": "bc7faf87c2b9e06226e6058826c0dbc43b1a9e91",
+        "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+        "status_porcelain": "",
+        "tree": "01d08a356d4b5d01e92380a659f9041eb898c878"
+      },
+      "status": "PASS_F1C_WORKER_COMPLETED",
+      "worker_index": 5
+    },
+    {
+      "assigned_keys": [
+        "libero_spatial/task_08/state_01"
+      ],
+      "gpu_after": {
+        "compute_apps": [
+          "3747396, /home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3, 51628 MiB",
+          "2503269, /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python, 568 MiB"
+        ],
+        "cuda_visible_devices": "6",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 29006,
+        "gpu_uuid": "GPU-92963392-f77a-85ce-4ba7-7a8288429ca5",
+        "physical_gpu": 6,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 52217,
+        "utilization_gpu_percent": 96
+      },
+      "gpu_before_model_load": {
+        "compute_apps": [
+          "3747396, /home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3, 51628 MiB"
+        ],
+        "cuda_visible_devices": "6",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 29578,
+        "gpu_uuid": "GPU-92963392-f77a-85ce-4ba7-7a8288429ca5",
+        "physical_gpu": 6,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 51644,
+        "utilization_gpu_percent": 95
+      },
+      "physical_gpu": 6,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "source": {
+        "branch": "",
+        "commit": "bc7faf87c2b9e06226e6058826c0dbc43b1a9e91",
+        "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+        "status_porcelain": "",
+        "tree": "01d08a356d4b5d01e92380a659f9041eb898c878"
+      },
+      "status": "PASS_F1C_WORKER_COMPLETED",
+      "worker_index": 6
+    },
+    {
+      "assigned_keys": [
+        "libero_spatial/task_02/state_13"
+      ],
+      "gpu_after": {
+        "compute_apps": [
+          "2503270, /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python, 538 MiB"
+        ],
+        "cuda_visible_devices": "7",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 80666,
+        "gpu_uuid": "GPU-bd2cfcc1-64ab-c2d0-9ae3-245fc8d21a76",
+        "physical_gpu": 7,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 557,
+        "utilization_gpu_percent": 66
+      },
+      "gpu_before_model_load": {
+        "compute_apps": [
+          "2199296, /mnt/sdc/dty_user/umm-sft/envs/umm-sft-server/bin/python, 38510 MiB"
+        ],
+        "cuda_visible_devices": "7",
+        "foreign_processes_untouched": true,
+        "free_memory_mib": 42692,
+        "gpu_uuid": "GPU-bd2cfcc1-64ab-c2d0-9ae3-245fc8d21a76",
+        "physical_gpu": 7,
+        "strict_gate": "free_memory_mib > 20480",
+        "used_memory_mib": 38530,
+        "utilization_gpu_percent": 96
+      },
+      "physical_gpu": 7,
+      "protected_boundary": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160": "UNREAD",
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "valid": true,
+        "vphys_reads": 0
+      },
+      "source": {
+        "branch": "",
+        "commit": "bc7faf87c2b9e06226e6058826c0dbc43b1a9e91",
+        "runtime_python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+        "status_porcelain": "",
+        "tree": "01d08a356d4b5d01e92380a659f9041eb898c878"
+      },
+      "status": "PASS_F1C_WORKER_COMPLETED",
+      "worker_index": 7
+    }
+  ]
+}

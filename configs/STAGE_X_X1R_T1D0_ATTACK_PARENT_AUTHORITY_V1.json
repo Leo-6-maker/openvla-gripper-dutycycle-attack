@@ -1,0 +1,189 @@
+{
+  "schema": "STAGE_X_X1R_T1D0_ATTACK_PARENT_AUTHORITY_V1",
+  "status": "STAGE_X_X1R_T1D0_HOLD_TIMING_ANCHOR_AUTHORITY",
+  "scientific_authority": "X1R_NOT_AUTHORIZED",
+  "source_binding": {
+    "stack_base_pr": 124,
+    "base_branch": "codex/stage-x-x1r-t1-detector-pgd-matrix-20260818",
+    "base_commit": "c6a4c5a9e7d63121a75814b3071c9047e1d9e0d0",
+    "base_tree": "aa22ae95ed760a32cde01729c47b40b3331f668a",
+    "authority_branch": "codex/stage-x-x1r-t1d0-attack-parent-authority-20260818",
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800"
+  },
+  "scope": {
+    "static_only": true,
+    "clean_rollouts_started": false,
+    "models_loaded": false,
+    "env_step_authorized": false,
+    "forbidden": [
+      "pgd_optimization",
+      "adversarial_images",
+      "attacked_actions",
+      "env.step",
+      "v_phys",
+      "new_m4",
+      "timing_matrix",
+      "eval160",
+      "protected_evaluation"
+    ]
+  },
+  "attack_load": {
+    "status": "FROZEN_NUMERICAL_STAGE_IX_INHERITANCE_ONLY",
+    "selection_basis": "pre-frozen Stage IX canonical numeric load; no historical outcome selection",
+    "source": {
+      "path": "configs/STAGE_IX_CANONICAL_PGD_CONTRACT_V1.json",
+      "sha256": "bf27a237ba9fd9be255d5371d160705cc3c55e000e119062934deb4c2a6dee38",
+      "status": "FROZEN_BEFORE_F0_EXECUTION"
+    },
+    "epsilon": 0.1,
+    "step_size": 0.02,
+    "num_steps": 20,
+    "cw_margin": 5.0,
+    "random_start": false,
+    "temporal_init": "prev_delta",
+    "temporal_smoothing_lambda": 0.0,
+    "master_dtype": "fp32",
+    "iterate_selection": "FINAL_ONLY",
+    "projection": "processor_pixel_values_x_orig_minus_epsilon_to_x_orig_plus_epsilon",
+    "quantized_budget_correction": true,
+    "not_inherited": [
+      "Stage IX victim identity",
+      "Stage IX tokenizer authority",
+      "fixed global target token id",
+      "historical cross-suite outcome"
+    ]
+  },
+  "control_arms": {
+    "frozen_names": ["CLEAN", "TRUE_PGD", "RAND_UNIFORM", "SHUFFLED_GRAD_20"],
+    "true_and_shuffled_shared_budget": {
+      "epsilon": 0.1,
+      "step_size": 0.02,
+      "num_steps": 20,
+      "projection": "same_as_true_pgd",
+      "master_dtype": "fp32",
+      "iterate_selection": "FINAL_ONLY"
+    },
+    "random_control": "RAND_UNIFORM_under_the_same_processor_space_and_epsilon_contract",
+    "selection_outcome_blind": true
+  },
+  "target_contract": {
+    "native_token_authority": "STAGE_X_X1R_T1_NATIVE_ACTION_TOKEN_AUTHORITY_V2",
+    "implementation": "src/gripper_attack/stage_x_t1_native_token_authority.py",
+    "implementation_sha256": "b319a9c64300e4297c81a415279c7f2d65eac1bbac62eb22293ce14c7d9734d6",
+    "token_id_scope": "suite_and_checkpoint_local",
+    "global_open_token_id_assumption": false,
+    "primary_behavioral_criterion": "direct_generated_gripper_token_in_native_OPEN_class",
+    "exact_canonical_target_hit": "secondary_diagnostic_only",
+    "arm_preservation": {
+      "required": true,
+      "criterion": "adv_arm_token_ids[0:6] == clean_arm_token_ids[0:6]"
+    },
+    "action_semantics": {
+      "raw_open_rule": "raw_gripper > 0.5",
+      "normalized_open_value": 1.0,
+      "environment_open_value": -1.0
+    }
+  },
+  "timing_anchor": {
+    "status": "STAGE_X_X1R_T1D0_HOLD_TIMING_ANCHOR_AUTHORITY",
+    "scheduler_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_F696F582_20260816T040000Z/SCHEDULER_FREEZE.json",
+    "scheduler_sha256": "d0cf083b77809c3f615e0e8deaa9e16ebae7bc8385254f3746564c0bbc907fc4",
+    "scheduler_status": "FROZEN",
+    "observed_fields": {
+      "attack_enabled": false,
+      "t5_steps": 5,
+      "h_phys": 10,
+      "one_shot": true,
+      "emit_rule_present": true,
+      "explicit_attack_start_field_present": false
+    },
+    "required_before_attack_authority": [
+      "explicit attack execution anchor relative to emit",
+      "anchor identity bound to a frozen scheduler/protocol artifact",
+      "no inference from T5 or H_phys alone"
+    ],
+    "forbidden_inference": "emit+5 is not authorized merely because T5=5"
+  },
+  "parent_authority": {
+    "status": "HOLD_PARENT_UNIVERSE_NOT_IDENTIFIABLE",
+    "target": {
+      "parent_count": 40,
+      "parents_per_suite": 10,
+      "tasks_per_suite": "task_00 through task_09 exactly once",
+      "initial_state_rule": "metadata identity selected by frozen SHA256 rank; no clean or attack outcome input"
+    },
+    "source_universe": {
+      "name": "G10 held-out non-protected LIBERO identity universe",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json",
+      "sha256": "06bd43fe5666b6bacb763e0ae7dbba12ef317911ba923b469dab8628cc8bb7ef",
+      "identity_count": 1200,
+      "states_per_task": 30,
+      "protected_registry_read": false
+    },
+    "exclusion_rule": "exclude the union of every bound prior clean/exposure/formal/matrix/B2 identity before ranking",
+    "exclusion_inputs": [
+      {"name": "prior_clean_attempt", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_CUMULATIVE_CLEAN_ATTEMPT_EXCLUSION_V10.json", "sha256": "369749925e09e58a3a6b0b96d59e4583cdbc34355a760f53a4e03659c5dda325", "count": 958},
+      {"name": "prior_exposure", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FRESHNESS_REBUILD_V3_20260812T145110Z/STAGE_V_COUNTERFACTUAL_EXPOSURE_UNION_V7.json", "sha256": "efab2f0ebd8981628f7bb489fd6a6d58cf4254bbb30e8feabbbb83cb70d047c5", "count": 53},
+      {"name": "prior_physical_intervention_named_roots", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student", "listing_sha256": "f059cf14ee69c5dc05cb6ec42558c80cf36b6de4f9289f360ef9b0f3d9a2cfad", "count": 39},
+      {"name": "rejected_v2_candidate", "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-vi-b2-formal-source-be753c6/configs/STAGE_VI_B2_FORMAL_PARENT_MANIFEST_V2_REPLACEMENT.json", "sha256": "62e96e779aac57fb681fad030b35c6c76c76a9d82d33250e524c4a126e1942b1", "count": 16},
+      {"name": "stage_v_formal_population", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json", "sha256": "890382bcd9a88d3646dfc66b080265c90c2fda666bf08b14fc3994d05ab492cd", "count": 40},
+      {"name": "stage_v_physical_matrix", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_STUDENT_TIME_PHYSICAL_MATRIX_PROTOCOL_F696F582_20260816T040000Z/PARENT_MANIFEST.json", "sha256": "9938cfe5ba157b2da21fcdae561137f9a2791c995a1bb79e611a5eb5629b2890", "count": 8},
+      {"name": "stage_vi_b2_development", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/STAGE_V_M4_FINAL_PARENT_SPLIT_V2.json", "sha256": "890382bcd9a88d3646dfc66b080265c90c2fda666bf08b14fc3994d05ab492cd", "count": 40},
+      {"name": "stage_vi_b2_population", "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_ZERO_TREATMENT_PLAN_33061E0/B2_SELECTION_MANIFEST.json", "sha256": "6e20894d660c473a78ffb91db55385f35fc1e83887417226f35e458882c2ec81", "count": 16}
+    ],
+    "exclusion_union_count": 990,
+    "exclusion_union_sha256": "b247da2c15b748d2756ed8dacdd20df23da7951013a79841082c9655dd15d5b8",
+    "fresh_candidate_count": 210,
+    "fresh_candidate_order_sha256": "ba77a91c3cc7d352271a03dae554684526161bc5f12029f2b3d22cd9dbc94dac",
+    "selection_salt": "STAGE_X_X1R_T1D0_PARENT_AUTHORITY_V1_20260818",
+    "selection_order": "SHA256(selection_salt::canonical_parent_key), then canonical_parent_key",
+    "candidate_counts_by_task": {
+      "libero_10": [6, 2, 5, 3, 7, 7, 6, 5, 3, 5],
+      "libero_goal": [2, 0, 2, 2, 3, 2, 1, 5, 2, 2],
+      "libero_object": [9, 4, 10, 5, 5, 8, 8, 5, 6, 10],
+      "libero_spatial": [3, 4, 12, 6, 8, 8, 5, 8, 7, 9]
+    },
+    "selected_parent_keys": [
+      "libero_10/task_00/state_36", "libero_10/task_01/state_36", "libero_10/task_02/state_39", "libero_10/task_03/state_21", "libero_10/task_04/state_30", "libero_10/task_05/state_22", "libero_10/task_06/state_34", "libero_10/task_07/state_27", "libero_10/task_08/state_20", "libero_10/task_09/state_43",
+      "libero_goal/task_00/state_21", "libero_goal/task_02/state_34", "libero_goal/task_03/state_45", "libero_goal/task_04/state_38", "libero_goal/task_05/state_26", "libero_goal/task_06/state_28", "libero_goal/task_07/state_30", "libero_goal/task_08/state_20", "libero_goal/task_09/state_46",
+      "libero_object/task_00/state_45", "libero_object/task_01/state_40", "libero_object/task_02/state_42", "libero_object/task_03/state_25", "libero_object/task_04/state_35", "libero_object/task_05/state_31", "libero_object/task_06/state_44", "libero_object/task_07/state_43", "libero_object/task_08/state_43", "libero_object/task_09/state_23",
+      "libero_spatial/task_00/state_37", "libero_spatial/task_01/state_38", "libero_spatial/task_02/state_31", "libero_spatial/task_03/state_29", "libero_spatial/task_04/state_33", "libero_spatial/task_05/state_27", "libero_spatial/task_06/state_45", "libero_spatial/task_07/state_28", "libero_spatial/task_08/state_28", "libero_spatial/task_09/state_21"
+    ],
+    "missing_task_slots": ["libero_goal/task_01"],
+    "selection_outcomes_read": false,
+    "clean_success_read": false,
+    "emit_read": false,
+    "vphys_read": false,
+    "attack_outcome_read": false,
+    "parent_manifest_ready": false
+  },
+  "future_funnel": [
+    "IDENTITY_FROZEN",
+    "CLEAN_ROLLOUT_MATERIALIZED",
+    "CLEAN_SUCCESS_OR_CLEAN_FAILURE",
+    "EMIT_OR_NO_EMIT",
+    "LEGAL_OR_ILLEGAL_HORIZON",
+    "ATTACK_ELIGIBLE"
+  ],
+  "authorization": {
+    "pgd_authorized": false,
+    "env_step_authorized": false,
+    "physical_intervention_authorized": false,
+    "attack_outcome_authorized": false,
+    "next_gate": "CLEAN_PARENT_MATERIALIZATION_REVIEW_REQUIRED"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters": {
+      "pgd_calls": 0,
+      "adversarial_images": 0,
+      "env_step_calls": 0,
+      "physical_interventions": 0,
+      "vphys_reads": 0,
+      "attack_outcome_reads": 0,
+      "eval160_reads": 0,
+      "protected_reads": 0
+    }
+  }
+}

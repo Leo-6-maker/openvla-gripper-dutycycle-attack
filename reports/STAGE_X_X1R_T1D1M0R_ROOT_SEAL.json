@@ -1,0 +1,48 @@
+{
+  "ancestry": {
+    "pr130_head": "f4da1c6683860757cc9775b573a158dd89505b15",
+    "pr131_head": "6dbf1ee287660a5f70ee90a0680e7c859fa155a8",
+    "pr131_tree": "e79c1aa77f3eab3a45e1c7e513e1239095c4c69c"
+  },
+  "audit": {
+    "path": "reports/STAGE_X_X1R_T1D1M0R_HUMAN_SHEET_AUDIT_V1.json",
+    "sha256": "b1d39852d0687f9aa90215acf933290e70f69e9488a21827e2aa04f5f41f0080"
+  },
+  "candidate_set_unchanged": true,
+  "human_sheet": {
+    "csv": "reports/STAGE_X_X1R_T1D1M0R_HUMAN_REVIEW_SHEET_V1.csv",
+    "csv_sha256": "9c42b3d6486f2082c414ff799d9efe2f2633e797d2b92e1f45fb23426470a7b2",
+    "json": "reports/STAGE_X_X1R_T1D1M0R_HUMAN_REVIEW_SHEET_V1.json",
+    "json_sha256": "9742206be7e948a9e5df7903edb1c5a071819654e983fe950817dc8bed163eff",
+    "task_instruction_projected": true
+  },
+  "next_gate": "OWNER_MANUAL_CONTACT_LABELS_REQUIRED",
+  "owner_labels_present": false,
+  "private_mapping_not_copied_to_human_sheet": true,
+  "protected_boundary": {
+    "attack_authorized": false,
+    "env_steps": 0,
+    "eval160": "UNREAD",
+    "model_inference": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "student_inference": 0,
+    "vphys_reads": 0
+  },
+  "raw_review_videos_unchanged": true,
+  "review_order_unchanged": true,
+  "rubric_unchanged": true,
+  "schema": "STAGE_X_X1R_T1D1M0R_ROOT_SEAL_V1",
+  "sha256sums": {
+    "path": "reports/STAGE_X_X1R_T1D1M0R_SHA256SUMS.txt",
+    "sha256": "a0d3f1fc98803bf61a2b6bccea7c3e5ee128361e7280b7081281418017ab27fc"
+  },
+  "source_before_evidence_outputs": {
+    "branch": "codex/stage-x-x1r-t1d1m0r-human-sheet-repair-20260818",
+    "commit": "8e02baf5261d27cf0e361102aea35d46456a6489",
+    "status_porcelain": "",
+    "tree": "f46e4fa701abc7776ca4db095f42143457d2d0ba"
+  },
+  "status": "STAGE_X_X1R_T1D1M0R_HUMAN_SHEET_PASS"
+}

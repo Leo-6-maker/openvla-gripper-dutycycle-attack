@@ -1,0 +1,36 @@
+{
+  "schema": "STAGE_X_X1R_G3R_M002_DURABLE_PREFLIGHT_V1",
+  "status": "PASS_M002_DURABLE_PREFLIGHT",
+  "runtime_source_commit": "353d5594da430b30b16f6dd288155fa52a016c84",
+  "runtime_source_tree": "a7975415c5bff6e23170538007d4cd2060d5478f",
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "output_root": "/llm_jzm/dty_user/openvla_attack_x1r_primary_20260819",
+  "durable_write_probe_sha256": "4c8f40834ff2f6cbec46e49f6947773a44bb149befb5b75efe393183868b9c0a",
+  "durable_video_probe_bytes": 1528,
+  "free_bytes_at_preflight": 117926592512,
+  "minimum_free_bytes": 4294967296,
+  "gpu_contract": {
+    "minimum_free_memory_mib": 20480,
+    "strictly_greater": true,
+    "max_project_workers_per_gpu": 1,
+    "foreign_processes_untouched": true
+  },
+  "gpu_snapshot": [
+    {"physical_gpu": 0, "free_memory_mib": 5366, "eligible": false},
+    {"physical_gpu": 1, "free_memory_mib": 32080, "eligible": true},
+    {"physical_gpu": 2, "free_memory_mib": 32638, "eligible": true},
+    {"physical_gpu": 3, "free_memory_mib": 3593, "eligible": false},
+    {"physical_gpu": 4, "free_memory_mib": 3089, "eligible": false},
+    {"physical_gpu": 5, "free_memory_mib": 227, "eligible": false},
+    {"physical_gpu": 6, "free_memory_mib": 37, "eligible": false},
+    {"physical_gpu": 7, "free_memory_mib": 15948, "eligible": false}
+  ],
+  "model_inference": 0,
+  "env_reset": 0,
+  "env_step": 0,
+  "pgd_calls": 0,
+  "physical_interventions": 0,
+  "vphys_reads": 0,
+  "eval160": "UNREAD",
+  "protected_evaluation": "UNREAD"
+}

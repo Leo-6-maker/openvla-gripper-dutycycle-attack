@@ -1,0 +1,57 @@
+{
+  "schema": "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21",
+  "supersedes": "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V1",
+  "scope": "FIT states 0-19 only",
+  "teacher_type": "clean_only_physics_criticality_proxy",
+  "counterfactual_attack_label": false,
+  "student_future_leakage": false,
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false,
+  "component_formulas": {
+    "relative_pose_stability": "exp(-median(relative_position_delta_norm / 0.03) - median(relative_quaternion_delta_norm / 0.20)) clipped to [0,1]",
+    "object_eef_comotion": "mean nonzero-displacement cosine similarity mapped to [0,1]; inactive zero-motion pairs contribute 0 and are not positive evidence",
+    "support_removed": "1 only when the current contiguous candidate segment has no support contact and support existed before that segment start",
+    "target_progress": "known decoded target progress only; unknown target contribution is removed and remaining positive weights are renormalized",
+    "window_id": "one complete contiguous candidate-close segment; tier transitions do not split the window"
+  },
+  "candidate_close": {
+    "source": "official_clean_action_raw_7d[6]",
+    "close_threshold": 0.5,
+    "student_valid_required": true,
+    "contiguous_segment_required": true
+  },
+  "history": {
+    "score_window_steps": 5,
+    "minimum_stable_grasp_dwell": 10,
+    "future_allowed_for_teacher_only": true,
+    "future_not_allowed_for_student": true
+  },
+  "fixed_constants": {
+    "relative_position_scale_m": 0.03,
+    "relative_quaternion_scale": 0.20,
+    "lift_scale_m": 0.03,
+    "target_progress_scale_m": 0.20,
+    "tier3_min_utility": 0.75,
+    "tier3_min_stable_grasp": 0.70,
+    "tier3_min_lift": 0.50,
+    "tier3_max_release_risk": 0.35,
+    "tier3_max_regrasp_risk": 0.35,
+    "tier2_min_utility": 0.50,
+    "tier2_min_stable_grasp": 0.50,
+    "tier2_max_release_risk": 0.60,
+    "tier2_max_regrasp_risk": 0.60,
+    "tier1_min_utility": 0.25
+  },
+  "window_policy": {
+    "window_id": "candidate_close contiguous segment index",
+    "window_tier": "maximum step utility tier after segment validity audit",
+    "loader_preserve_candidate_segment": true,
+    "unknown_not_rankable": true,
+    "non_candidate_not_rankable": true,
+    "window_length_does_not_define_tier3": true,
+    "t10_is_minimum_stability_condition_only": true,
+    "component_valid_mask": true,
+    "tier_onset_step": true,
+    "causal_trigger_eligible": true
+  }
+}

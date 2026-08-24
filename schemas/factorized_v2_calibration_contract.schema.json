@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openvla.example/schemas/factorized_v2_calibration_contract.schema.json",
+  "title": "Factorized V2 external calibration contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "status", "checkpoint_sha256", "fit_manifest_sha256",
+    "grasp", "manipulation", "release", "formal_selection_eligible",
+    "training_authorized", "attack_authorized"
+  ],
+  "properties": {
+    "schema": {"const": "FACTORIZED_V2_CALIBRATION_CONTRACT_V1"},
+    "status": {"enum": ["TEST_ONLY_NOT_SELECTION_ELIGIBLE", "SEALED_EXTERNAL_CALIBRATION"]},
+    "checkpoint_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "fit_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "grasp": {"$ref": "#/$defs/calibratedHead"},
+    "manipulation": {"$ref": "#/$defs/calibratedHead"},
+    "release": {"$ref": "#/$defs/calibratedHead"},
+    "formal_selection_eligible": {"const": false},
+    "training_authorized": {"const": false},
+    "attack_authorized": {"const": false}
+  },
+  "$defs": {
+    "calibratedHead": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["temperature", "threshold"],
+      "properties": {
+        "temperature": {"type": "number", "exclusiveMinimum": 0},
+        "threshold": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    }
+  }
+}

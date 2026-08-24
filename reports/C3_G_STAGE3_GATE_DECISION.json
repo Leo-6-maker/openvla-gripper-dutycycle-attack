@@ -1,0 +1,23 @@
+{
+  "schema": "C3_G_STAGE3_GATE_DECISION_V1",
+  "status": "HOLD",
+  "main_stage3": "PASS",
+  "independent_review": "HOLD",
+  "code_snapshot_commit": "6ea950af3316d077e42a683a0304c78317394b1d",
+  "canonical_digest": "3880fbc5dd23be5d465943140e6aeb41ed9f3672a4de1a942bd3f20b5c06a3dc",
+  "record_count": 264,
+  "relation_count": 44,
+  "case_count_per_relation": 6,
+  "independent_mutation_rejection": "0/1",
+  "blockers": [
+    "sealed records omit case-level source/target geometry and roles",
+    "independent tri-state recomputation is not possible",
+    "independent mutation rejection was not demonstrated",
+    "comparison closure is not independently consumable"
+  ],
+  "protected_reads": 0,
+  "model_inference": false,
+  "training": false,
+  "rollout": false,
+  "attack": false
+}

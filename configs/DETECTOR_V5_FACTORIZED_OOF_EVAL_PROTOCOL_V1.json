@@ -1,0 +1,164 @@
+{
+  "schema": "DETECTOR_V5_FACTORIZED_OOF_EVAL_PROTOCOL_V1",
+  "frozen_at": "2026-07-21",
+  "status": "FROZEN_BEFORE_ANY_PREDICTION",
+
+  "input_binding": {
+    "oof_training_root": "OFFICIAL_V3_FACTORIZED_STUDENT_OOF_335048c_20260721",
+    "provenance_reconciliation_root": "OFFICIAL_V3_FACTORIZED_STUDENT_OOF_PROVENANCE_RECONCILIATION_V1_20260721",
+    "provenance_reconciliation_seal": "fd0e9b21414e491e479d1c99725b2d6b0bc0d7e77696e6b87a8b33f1be58a0c1",
+    "authorization_root": "OFFICIAL_V3_FACTORIZED_STUDENT_OOF_AUTH_335048c_20260721",
+    "teacher_root": "OFFICIAL_V3_DETECTOR_V5_FACTORIZED_TEACHER_V1_de07e1a_20260721",
+    "s1_root": "OFFICIAL_V3_S1_FIT_V1_d31187f",
+    "fold_root": "OFFICIAL_V3_FIT_FOLDS_V1_d31187f",
+    "policy_intent_root": "OFFICIAL_V3_V5_POLICY_INTENT_BINDING_V1_20260718_01",
+    "f3_root": "OFFICIAL_V3_F3_GEOMETRY_GATE_de07e1a_20260721",
+    "registry": "OFFICIAL_V3_FORMAL_REGISTRY_V1.csv"
+  },
+
+  "checkpoint_inventory": {
+    "count": 24,
+    "model_types": ["25D9D", "25D"],
+    "per_type": 12,
+    "folds": [0, 1, 2, 3],
+    "seeds": [42, 123, 456],
+    "all_combinations": [
+      "25D9D/fold0_seed42", "25D9D/fold0_seed123", "25D9D/fold0_seed456",
+      "25D9D/fold1_seed42", "25D9D/fold1_seed123", "25D9D/fold1_seed456",
+      "25D9D/fold2_seed42", "25D9D/fold2_seed123", "25D9D/fold2_seed456",
+      "25D9D/fold3_seed42", "25D9D/fold3_seed123", "25D9D/fold3_seed456",
+      "25D/fold0_seed42", "25D/fold0_seed123", "25D/fold0_seed456",
+      "25D/fold1_seed42", "25D/fold1_seed123", "25D/fold1_seed456",
+      "25D/fold2_seed42", "25D/fold2_seed123", "25D/fold2_seed456",
+      "25D/fold3_seed42", "25D/fold3_seed123", "25D/fold3_seed456"
+    ],
+    "prediction_rule": "each checkpoint predicts ONLY its own fold validation identities",
+    "no_cross_fold_prediction": true
+  },
+
+  "prediction_format": {
+    "step_output": "heldout_step_predictions.jsonl",
+    "event_output": "heldout_event_predictions.jsonl",
+    "step_fields": [
+      "model_type", "fold_id", "seed",
+      "canonical_parent_key", "suite", "task_idx", "state_id",
+      "mechanism_route", "route_supported",
+      "step_index", "event_id", "event_ordinal",
+      "is_later_event", "event_role",
+      "active_object_name",
+      "grasp_logit", "grasp_prob",
+      "manipulation_logit", "manipulation_prob",
+      "release_logit", "release_prob",
+      "grasp_target", "grasp_known_mask",
+      "manipulation_target", "manipulation_known_mask",
+      "release_target", "release_known_mask",
+      "k10_feasible", "k10_known_mask"
+    ]
+  },
+
+  "event_aggregation": {
+    "method": "max_probability_per_event",
+    "description": "For each event_id in an episode, event_score[head] = max(prob[head][known_mask & event_id==eid])",
+    "rationale": "Any step within an event window that crosses threshold signals detection. Max is the most sensitive choice for recall-oriented gating.",
+    "no_top_k_mean": "not used",
+    "no_continuous_window_emit": "not used",
+    "binary_threshold": 0.5,
+    "threshold_source": "frozen_in_student_protocol_V1_symmetry_point",
+    "threshold_note": "Sigmoid midpoint = 0.5; symmetric and not data-driven. Any data-driven threshold calibration is deferred to CAL phase.",
+    "unknown_mask": "excluded from aggregation",
+    "unsupported_route": "all heads abstain (prob = 0, no emit)",
+    "background_steps": "steps where event_id == -1 (IDLE or RELEASED); not counted in event recall"
+  },
+
+  "emit_rule": {
+    "binary_decision": "event_score[head] >= binary_threshold",
+    "per_head_independent": true,
+    "release_overlap_emit": "release prob >= 0.5 AND grasp prob >= 0.5 on same step AND both known",
+    "unsupported_route_emit": "prob > 0 on unsupported route (should be impossible, verified by audit)",
+    "background_false_emit": "event_score >= 0.5 on step where event_id == -1 AND known_mask true"
+  },
+
+  "seed_handling": {
+    "primary": "independent_per_seed",
+    "description": "Each of 3 seeds is evaluated independently per fold. Report mean ± std across seeds for each fold. Do NOT select best seed post-hoc.",
+    "secondary_analysis": "seed_ensemble_mean — average 3 seed probabilities before thresholding; pre-registered as secondary only",
+    "no_post_hoc_seed_selection": true
+  },
+
+  "route_macro": {
+    "method": "arithmetic_mean_over_supported_routes",
+    "supported_routes": ["single_object_pick_place", "multi_object_transfer"],
+    "unsupported_routes": ["articulated_or_planar", "unknown_or_ambiguous"],
+    "unsupported_action": "abstain_all_heads"
+  },
+
+  "metrics": {
+    "head_level": {
+      "grasp_event_recall": "fraction of Teacher grasp-positive events where event_score >= 0.5",
+      "manipulation_event_recall": "fraction of Teacher manipulation-positive events where event_score >= 0.5",
+      "release_event_recall": "fraction of Teacher release-positive events where event_score >= 0.5",
+      "release_discrimination": "1 - (false release emits / total known release steps for non-release events)"
+    },
+    "route_level": {
+      "per_route_all_heads": "each route reports all three head recalls",
+      "macro_over_routes": "arithmetic mean of single + multi for each head"
+    },
+    "temporal_level": {
+      "first_event_recall": "recall on event_ordinal == 0 (first event per episode)",
+      "later_event_recall": "recall on event_ordinal >= 1",
+      "event_onset_latency": "steps from event start to first step where prob >= 0.5",
+      "event_coverage": "fraction of known steps within event where prob >= 0.5"
+    },
+    "safety": {
+      "release_overlap_emit_rate": "fraction of known steps where release AND grasp both >= 0.5",
+      "unsupported_route_emit_rate": "should be exactly 0",
+      "background_false_emit_rate": "fraction of background known steps where any head >= 0.5"
+    },
+    "model_comparison": {
+      "25D9D_vs_25D": "per-head per-route difference with seed variance",
+      "later_event_difference": "25D9D vs 25D on later-event recall"
+    }
+  },
+
+  "oof_gate_thresholds": {
+    "macro_grasp_event_recall": {"min": 0.90, "catastrophic": 0.60},
+    "macro_manipulation_event_recall": {"min": 0.85, "catastrophic": 0.60},
+    "per_route_recall_min": {"min": 0.75, "catastrophic": 0.50},
+    "later_event_recall": {"min": 0.75, "catastrophic": 0.50},
+    "release_overlap_emit_rate": {"max": 0.05, "catastrophic": 0.25},
+    "unsupported_route_emit_rate": {"max": 0, "catastrophic": "any_nonzero"},
+    "background_false_emit_rate": {"max": 0.10, "catastrophic": 0.30}
+  },
+
+  "gate_outcome": {
+    "PASS_OOF_STUDENT": "all gate thresholds satisfied",
+    "HOLD_OOF_STUDENT": "some thresholds missed but no catastrophic condition",
+    "CATASTROPHIC_OOF_FAILURE": "any catastrophic condition triggered"
+  },
+
+  "hard_constraints": {
+    "no_threshold_tuning_on_oof": true,
+    "no_seed_selection_on_oof": true,
+    "no_checkpoint_selection_on_oof": true,
+    "no_metric_redefinition_after_prediction": true,
+    "val_loss_not_a_selection_criterion": true,
+    "all_24_checkpoints_must_be_evaluated": true,
+    "25D9D_and_25D_evaluated_separately": true,
+    "no_mixing_of_model_types_in_metrics": true
+  },
+
+  "next_phase_gate": {
+    "PASS_OOF_STUDENT": "authorizes Full-FIT training → CAL → CHECK",
+    "HOLD_OOF_STUDENT": "requires investigation; no further phases authorized",
+    "CATASTROPHIC_OOF_FAILURE": "hard stop; architecture or Teacher revision required"
+  },
+
+  "still_unauthorized": [
+    "full_fit_training",
+    "cal_threshold_calibration",
+    "check_validation",
+    "passive_canary",
+    "attack_canary",
+    "full_attack_matrix"
+  ]
+}

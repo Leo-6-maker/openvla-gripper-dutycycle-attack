@@ -1,0 +1,4 @@
+score,model_side_AUROC,factorized_parent_macro_AUC
+E0,0.870743,0.483698
+E1,0.90051,0.521112
+E3,0.897157,0.52339

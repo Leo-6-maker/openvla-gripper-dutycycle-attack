@@ -1,0 +1,137 @@
+{
+  "execution": {
+    "attack_invoked_only_for_clean_non_native_open": true,
+    "attempted_steps": 5,
+    "done_is_only_termination_signal": true,
+    "execute_attacked_action_only_after_strict_validation": true,
+    "invalid_or_missing_candidate_action": "EXECUTE_CLEAN_ACTION",
+    "student_emit_used": false,
+    "student_used": false
+  },
+  "freeze": {
+    "method_spec_path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_METHOD_SPEC_V1.json",
+    "pre_gpu_audit_path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_PRE_GPU_AUDIT_V1.json",
+    "root_seal_path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_ROOT_SEAL_V1.json",
+    "root_sidecar_path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_ROOT_SEAL_V1.sha256"
+  },
+  "gate": "STAGE_X_X1R2_F1C4_FRESH_CANARY_REQUALIFICATION_V1",
+  "method": {
+    "allow_fallback": false,
+    "candidate_order": [
+      "delta0",
+      "pgd_iteration_1",
+      "pgd_iteration_2",
+      "pgd_iteration_3",
+      "pgd_iteration_4",
+      "pgd_iteration_5",
+      "pgd_iteration_6",
+      "pgd_iteration_7",
+      "pgd_iteration_8",
+      "pgd_iteration_9",
+      "pgd_iteration_10"
+    ],
+    "candidate_policy": "STRICT_CANDIDATE_AUDIT_V1",
+    "direct_action_token_count": 7,
+    "epsilon_processor_pixel_values": 0.03,
+    "exact_arm_dimensions": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "iterations": 10,
+    "method": "M1",
+    "no_actuator_overwrite": true,
+    "no_decode_reencode": true,
+    "objective": "autoregressive_prefix_gripper_native_open_logratio_v4",
+    "random_start": false,
+    "step_size": 0.003,
+    "strict_route": true,
+    "target_execution_class": "NATIVE_OPEN",
+    "target_token_id_secondary": 31745
+  },
+  "population": {
+    "canary_ledger_sha256": "d6cd9c3ab753fcef5dd79376e03dba5dd3e8e9b7ac1c1755a93d4f5a30bd9c34",
+    "f1a3_root_seal_path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_ROOT_SEAL_V3.json",
+    "f1a3_root_seal_sha256": "8b619a2cda29bcda8ff2d18f5ecf862d9c985f8cc55499933c4d2e4856243b71",
+    "path": "reports/STAGE_X1R2_F1C4_FRESH_CANARY_NAMESPACE_V1_20260822/F1C4_FRESH_CANARY_LEDGER_V1.json",
+    "per_suite_count": 2,
+    "role": "F1C4_FRESH_CANARY_V1",
+    "row_count": 8,
+    "source_split_salt": "STAGE_X_X1R2_F1A3_SOURCE_V3_SPLIT_20260821"
+  },
+  "probe": {
+    "clean_only_selection": true,
+    "eligibility": [
+      "clean runtime valid through step",
+      "exactly seven direct generated tokens",
+      "clean gripper is not NATIVE_OPEN",
+      "step+14 < official horizon"
+    ],
+    "max_per_parent": 1,
+    "no_replacement": true,
+    "selection_salt": "STAGE_X1R2_F1C4_PROBE_V1_20260822"
+  },
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "bridge_outcome_read": 0,
+    "bridge_runtime": 0,
+    "eval160": "UNREAD",
+    "physical_interventions": 0,
+    "physical_outcome": 0,
+    "protected": "UNREAD",
+    "vphys": 0
+  },
+  "resource": {
+    "foreign_processes_untouched": true,
+    "free_memory_mib_strictly_greater_than": 20480,
+    "max_project_workers": 8,
+    "one_project_worker_per_physical_gpu": true
+  },
+  "runtime": {
+    "attack_seed_salt": "STAGE_X1R2_F1C4_ATTACK_V1_20260822",
+    "durable_output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_f1c4_fresh_canary_v1_20260822",
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "source_receipt": "bind_current_exact_commit_tree_and_runtime_file_blobs_before_first_model_load"
+  },
+  "schema": "STAGE_X1R2_F1C4_FRESH_CANARY_PROTOCOL_V1",
+  "scientific_authority": false,
+  "status": "FROZEN_F1C4_T5_CANARY_V1",
+  "temporal_arms": [
+    "none",
+    "prev_delta"
+  ],
+  "temporal_selection": {
+    "lexicographic": [
+      "maximize minimum per-suite canary parent count with strict-valid T5 step",
+      "maximize total canary parents with strict-valid T5 step",
+      "maximize total delivered strict-valid steps",
+      "tie prefer none temporal initialization"
+    ],
+    "outcome_blind": true,
+    "physical_signal_forbidden": true,
+    "unit": "parent"
+  },
+  "upstream": {
+    "f1b_decision_path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_DECISION_V3.json",
+    "f1b_decision_sha256": "71b5c30cd9d2ee614273502617e80ce2c3d43dc070449faf174d48a0554fbc47",
+    "f1b_result_root_path": "reports/STAGE_X_X1R2_F1B_DEV_RESULT_AGGREGATION_V3_20260821/F1B_DEV_ROOT_SEAL_V3.json",
+    "f1b_result_root_sha256": "20d822ab450eddb1b2730bc35c1b48123460bb3c6574629c83c1515d51403ac5",
+    "f1b_selected_iterations": 10,
+    "f1b_selected_method": "M1",
+    "historical_f1c_method_spec_path": "reports/STAGE_X_X1R2_F1C_METHOD_FREEZE_T5_CANARY_V3_20260821/F1C_METHOD_SPEC_V3.json",
+    "historical_f1c_method_spec_sha256": "1d26c843cfeb1432cd1656ed6be4a32a5067b3715f5738da015c5174a9ee1ca3"
+  },
+  "validation": {
+    "ledger_status": "PASS_F1C4_FRESH_NAMESPACE_FREEZE",
+    "method_spec_status": "PASS_F1C4_METHOD_SPEC_SEALED",
+    "pre_gpu_status": "PASS_F1C4_PRE_GPU_STATIC_CONTRACT",
+    "protocol_statuses": [
+      "FROZEN_F1C4_T5_CANARY_V1"
+    ],
+    "root_seal_status": "PASS_F1C4_PRE_GPU_STATIC_CONTRACT"
+  }
+}

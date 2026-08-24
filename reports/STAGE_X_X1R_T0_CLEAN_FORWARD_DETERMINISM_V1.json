@@ -1,0 +1,542 @@
+{
+  "eval160": "UNREAD",
+  "failures": [
+    "teacher_forced_row_mismatch:libero_goal:stage_v",
+    "teacher_forced_row_mismatch:libero_goal:stage_v",
+    "teacher_forced_row_mismatch:libero_goal:stage_v"
+  ],
+  "protected_counters": {
+    "attack_outcome_reads": 0,
+    "env_step_calls": 0,
+    "eval160_reads": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "protected_evaluation": "UNREAD",
+  "schema": "STAGE_X_X1R_T0_CLEAN_FORWARD_DETERMINISM_V1",
+  "status": "STAGE_X_X1R_T0_HOLD_TEACHER_FORCED_ROW_PARITY",
+  "suites": {
+    "libero_10": {
+      "deterministic": true,
+      "processor_parity_failures": [],
+      "replicate_count": 3,
+      "stage_token_sequences": {
+        "stage_v": [
+          [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ],
+          [
+            31884,
+            31878,
+            31885,
+            31895,
+            31877,
+            31883,
+            31872
+          ]
+        ],
+        "stage_vi_b2": [
+          [
+            31884,
+            31871,
+            31922,
+            31916,
+            31877,
+            31883,
+            31744
+          ],
+          [
+            31884,
+            31871,
+            31922,
+            31916,
+            31877,
+            31883,
+            31744
+          ],
+          [
+            31884,
+            31871,
+            31922,
+            31916,
+            31877,
+            31883,
+            31744
+          ]
+        ]
+      },
+      "teacher_forced_row_mismatches": [],
+      "teacher_forced_row_parity": true,
+      "teacher_forced_rows_checked": 42,
+      "worker_bindings": [
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "1",
+          "physical_gpu": 1,
+          "replicate": 0
+        },
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "1",
+          "physical_gpu": 1,
+          "replicate": 1
+        },
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "1",
+          "physical_gpu": 1,
+          "replicate": 2
+        }
+      ]
+    },
+    "libero_goal": {
+      "deterministic": true,
+      "processor_parity_failures": [],
+      "replicate_count": 3,
+      "stage_token_sequences": {
+        "stage_v": [
+          [
+            31893,
+            31884,
+            31939,
+            31918,
+            31902,
+            31931,
+            31744
+          ],
+          [
+            31893,
+            31884,
+            31939,
+            31918,
+            31902,
+            31931,
+            31744
+          ],
+          [
+            31893,
+            31884,
+            31939,
+            31918,
+            31902,
+            31931,
+            31744
+          ]
+        ],
+        "stage_vi_b2": [
+          [
+            31878,
+            31884,
+            31890,
+            31891,
+            31903,
+            31931,
+            31872
+          ],
+          [
+            31878,
+            31884,
+            31890,
+            31891,
+            31903,
+            31931,
+            31872
+          ],
+          [
+            31878,
+            31884,
+            31890,
+            31891,
+            31903,
+            31931,
+            31872
+          ]
+        ]
+      },
+      "teacher_forced_row_mismatches": [
+        {
+          "autoregressive_expected_logit": 26.375,
+          "autoregressive_top1_logit": 26.375,
+          "autoregressive_top1_token": 31918,
+          "autoregressive_top2_logit": 26.25,
+          "autoregressive_top2_token": 31932,
+          "dim": 3,
+          "exact": false,
+          "expected_autoregressive_token": 31918,
+          "row_index": -5,
+          "stage": "stage_v",
+          "teacher_forced_argmax_token": 31932,
+          "teacher_forced_expected_logit": 26.0,
+          "teacher_forced_top1_logit": 26.25,
+          "teacher_forced_top2_logit": 26.0,
+          "teacher_forced_top2_token": 31918
+        },
+        {
+          "autoregressive_expected_logit": 26.375,
+          "autoregressive_top1_logit": 26.375,
+          "autoregressive_top1_token": 31918,
+          "autoregressive_top2_logit": 26.25,
+          "autoregressive_top2_token": 31932,
+          "dim": 3,
+          "exact": false,
+          "expected_autoregressive_token": 31918,
+          "row_index": -5,
+          "stage": "stage_v",
+          "teacher_forced_argmax_token": 31932,
+          "teacher_forced_expected_logit": 26.0,
+          "teacher_forced_top1_logit": 26.25,
+          "teacher_forced_top2_logit": 26.0,
+          "teacher_forced_top2_token": 31918
+        },
+        {
+          "autoregressive_expected_logit": 26.375,
+          "autoregressive_top1_logit": 26.375,
+          "autoregressive_top1_token": 31918,
+          "autoregressive_top2_logit": 26.25,
+          "autoregressive_top2_token": 31932,
+          "dim": 3,
+          "exact": false,
+          "expected_autoregressive_token": 31918,
+          "row_index": -5,
+          "stage": "stage_v",
+          "teacher_forced_argmax_token": 31932,
+          "teacher_forced_expected_logit": 26.0,
+          "teacher_forced_top1_logit": 26.25,
+          "teacher_forced_top2_logit": 26.0,
+          "teacher_forced_top2_token": 31918
+        }
+      ],
+      "teacher_forced_row_parity": false,
+      "teacher_forced_rows_checked": 42,
+      "worker_bindings": [
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "2",
+          "physical_gpu": 2,
+          "replicate": 0
+        },
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "2",
+          "physical_gpu": 2,
+          "replicate": 1
+        },
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "2",
+          "physical_gpu": 2,
+          "replicate": 2
+        }
+      ]
+    },
+    "libero_object": {
+      "deterministic": true,
+      "processor_parity_failures": [],
+      "replicate_count": 3,
+      "stage_token_sequences": {
+        "stage_v": [
+          [
+            31900,
+            31870,
+            31872,
+            31882,
+            31836,
+            31834,
+            31872
+          ],
+          [
+            31900,
+            31870,
+            31872,
+            31882,
+            31836,
+            31834,
+            31872
+          ],
+          [
+            31900,
+            31870,
+            31872,
+            31882,
+            31836,
+            31834,
+            31872
+          ]
+        ],
+        "stage_vi_b2": [
+          [
+            31900,
+            31870,
+            31899,
+            31882,
+            31887,
+            31834,
+            31872
+          ],
+          [
+            31900,
+            31870,
+            31899,
+            31882,
+            31887,
+            31834,
+            31872
+          ],
+          [
+            31900,
+            31870,
+            31899,
+            31882,
+            31887,
+            31834,
+            31872
+          ]
+        ]
+      },
+      "teacher_forced_row_mismatches": [],
+      "teacher_forced_row_parity": true,
+      "teacher_forced_rows_checked": 42,
+      "worker_bindings": [
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "1",
+          "physical_gpu": 1,
+          "replicate": 0
+        },
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "1",
+          "physical_gpu": 1,
+          "replicate": 1
+        },
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "1",
+          "physical_gpu": 1,
+          "replicate": 2
+        }
+      ]
+    },
+    "libero_spatial": {
+      "deterministic": true,
+      "processor_parity_failures": [],
+      "replicate_count": 3,
+      "stage_token_sequences": {
+        "stage_v": [
+          [
+            31887,
+            31875,
+            31892,
+            31957,
+            31833,
+            31907,
+            31872
+          ],
+          [
+            31887,
+            31875,
+            31892,
+            31957,
+            31833,
+            31907,
+            31872
+          ],
+          [
+            31887,
+            31875,
+            31892,
+            31957,
+            31833,
+            31907,
+            31872
+          ]
+        ],
+        "stage_vi_b2": [
+          [
+            31950,
+            31882,
+            31960,
+            31870,
+            31912,
+            31885,
+            31744
+          ],
+          [
+            31950,
+            31882,
+            31960,
+            31870,
+            31912,
+            31885,
+            31744
+          ],
+          [
+            31950,
+            31882,
+            31960,
+            31870,
+            31912,
+            31885,
+            31744
+          ]
+        ]
+      },
+      "teacher_forced_row_mismatches": [],
+      "teacher_forced_row_parity": true,
+      "teacher_forced_rows_checked": 42,
+      "worker_bindings": [
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "2",
+          "physical_gpu": 2,
+          "replicate": 0
+        },
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "2",
+          "physical_gpu": 2,
+          "replicate": 1
+        },
+        {
+          "counters": {
+            "attack_outcome_reads": 0,
+            "env_step_calls": 0,
+            "eval160_reads": 0,
+            "pgd_calls": 0,
+            "physical_interventions": 0,
+            "protected_reads": 0,
+            "vphys_reads": 0
+          },
+          "cuda_visible_devices": "2",
+          "physical_gpu": 2,
+          "replicate": 2
+        }
+      ]
+    }
+  },
+  "teacher_forced_parity_failures": [
+    "teacher_forced_row_mismatch:libero_goal:stage_v",
+    "teacher_forced_row_mismatch:libero_goal:stage_v",
+    "teacher_forced_row_mismatch:libero_goal:stage_v"
+  ],
+  "token_determinism_failures": [],
+  "worker_files": [
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_10_r0.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_10_r1.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_10_r2.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_goal_r0.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_goal_r1.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_goal_r2.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_object_r0.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_object_r1.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_object_r2.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_spatial_r0.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_spatial_r1.json",
+    "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_X1R_T0_CLEAN_FORWARD_20260818T002500Z/workers/libero_spatial_r2.json"
+  ]
+}

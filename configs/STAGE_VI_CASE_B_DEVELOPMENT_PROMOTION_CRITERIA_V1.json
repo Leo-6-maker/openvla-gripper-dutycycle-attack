@@ -1,0 +1,71 @@
+{
+  "schema": "STAGE_VI_CASE_B_DEVELOPMENT_PROMOTION_CRITERIA_V1",
+  "status": "FROZEN_BEFORE_CASE_B_DEVELOPMENT_SELECTION",
+  "stage": "STAGE_VI",
+  "diagnostic_case": "B",
+  "interpretation": "TEACHER_TARGET_MISMATCH",
+  "candidate_budget": 3,
+  "candidate_variants": [
+    "S6-C_TV1_PRIVILEGED_LOGISTIC_PLUS_CAUSAL_STUDENT"
+  ],
+  "teacher": {
+    "name": "T_v",
+    "primary_target": "V_phys@T5",
+    "secondary_targets": ["V_phys@T3", "V_phys@T10"],
+    "model": "standardized_logistic_regression",
+    "regularization_C": 1.0,
+    "max_iter": 2000,
+    "random_state": 0,
+    "class_weight": null,
+    "inputs": "current clean privileged pre-intervention state only",
+    "forbidden": ["future state", "post-intervention outcome", "Eval160", "protected labels"],
+    "abstain_policy": "never map abstain to zero"
+  },
+  "student": {
+    "name": "S6-C",
+    "inputs": "16-step causal window of the frozen 25D deployment feature order",
+    "future_features": false,
+    "privileged_features_at_inference": false,
+    "model": "standardized_logistic_regression",
+    "regularization_C": 1.0,
+    "max_iter": 2000,
+    "random_state": 0,
+    "class_weight": null,
+    "teacher_pseudo_target": "T_v@T5 probability >= 0.5",
+    "emission_threshold": 0.5
+  },
+  "split_contract": {
+    "fit_parent_split": "TRAIN",
+    "calibration_parent_split": "VAL",
+    "development_check_parent_split": "TEST",
+    "group_key": "canonical_parent_key",
+    "individual_step_leakage": false,
+    "fresh_stage_vi_holdout_used": false,
+    "outcome_informed_model_selection": false
+  },
+  "promotion_gate": {
+    "baseline": "frozen Stage V Student physical_criticality against V_phys@T5 on the same development-check parents",
+    "primary_metric": "AUROC",
+    "minimum_auroc_absolute_gain": 0.1,
+    "secondary_metric": "AUPRC",
+    "minimum_auprc_absolute_gain": 0.1,
+    "minimum_per_suite_auroc": 0.6,
+    "minimum_suite_count": 4,
+    "minimum_emission_coverage": 0.05,
+    "maximum_emission_coverage": 0.95,
+    "coverage_threshold": 0.5,
+    "require_finite_metrics": true,
+    "all_conditions_required": true,
+    "failure_conclusion": "STAGE_VI_DEVELOPMENT_NO_IMPROVEMENT"
+  },
+  "freeze_rule": "select at most one candidate using only TRAIN/VAL/DEVELOPMENT_CHECK evidence; bind weights, feature order, context, normalization, threshold, and source before fresh Stage VI M4",
+  "protected_boundary": {
+    "eval160_status": "UNREAD",
+    "protected_counters": {
+      "protected_reads": 0,
+      "eval160_reads": 0,
+      "attack_rollouts": 0,
+      "vis_pgd_attack_rollouts": 0
+    }
+  }
+}

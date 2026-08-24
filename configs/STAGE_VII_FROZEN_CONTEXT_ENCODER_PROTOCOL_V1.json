@@ -1,0 +1,25 @@
+{
+  "schema": "STAGE_VII_FROZEN_CONTEXT_ENCODER_PROTOCOL_V1",
+  "stage": "STAGE_VII_CONTEXT_CONDITIONED_VULNERABILITY_DETECTOR",
+  "status": "FROZEN_BEFORE_EMBEDDING_MATERIALIZATION",
+  "encoder": {
+    "selection_rule": "single_explicit_clean_openvla_checkpoint_for_all_snapshots",
+    "model_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+    "vision_output": "mean_pool(model.vision_backbone(pixel_values), patch_axis)",
+    "language_output": "attention_mask_mean_pool(model.get_input_embeddings()(input_ids), token_axis)",
+    "dtype_on_disk": "float32",
+    "finetuning": false,
+    "suite_or_task_id_input": false
+  },
+  "input_authority": {
+    "source": "SEALED_PROSPECTIVE_CAUSAL_PROBE_SNAPSHOT_V2",
+    "fields": ["pixel_values", "input_ids", "attention_mask"],
+    "raw_bytes_are_not_used_as_embeddings": true,
+    "labels_and_outcomes_read": false
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_counters_must_remain_zero": true
+  }
+}

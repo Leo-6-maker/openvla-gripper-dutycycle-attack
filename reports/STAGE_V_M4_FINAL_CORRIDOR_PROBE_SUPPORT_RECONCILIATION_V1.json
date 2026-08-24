@@ -1,0 +1,76 @@
+{
+  "schema": "STAGE_V_M4_FINAL_CORRIDOR_PROBE_SUPPORT_RECONCILIATION_V1",
+  "status": "HOLD_EXACT_PROBE_SUPPORT_37_OF_40",
+  "purpose": "Compact repository pointer to the server-side exact-probe support reconciliation; this is not formal M4 authorization or an outcome receipt.",
+  "final_candidate": {
+    "parent_count": 40,
+    "manifest_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_CANDIDATE_V2_20260812T164812Z/STAGE_V_M4_FORMAL_PARENT_MANIFEST_V4.json",
+    "manifest_sha256": "237c23eb639e96798decb6cad05206f1bfcb5bd3d43f3dd0c25a051c4ce9a021",
+    "split_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_CANDIDATE_V2_20260812T164812Z/STAGE_V_TRAIN_VAL_TEST_PARENT_SPLIT_V2.json",
+    "split_sha256": "a2c3efc753a6a6762570d49c40d1fe65d97cdec80c8b497661426bfea4d849a9",
+    "split_counts": {
+      "TRAIN": 24,
+      "VAL": 8,
+      "TEST": 8
+    }
+  },
+  "clean_only_preflight": {
+    "protocol_path": "configs/STAGE_V_M4_CORRIDOR_QUALIFICATION_PROTOCOL_V1_4.json",
+    "protocol_sha256": "d2647a210747eebeae602b7aa2a96f3ed2122c1b95e6542270bb461ba172bcc6",
+    "static_audit_path": "reports/STAGE_V_M4_CORRIDOR_STATIC_AUDIT_V1_4.json",
+    "static_audit_sha256": "f37e1f27c8addaf9bae7db277deaeeff3f711b070aaa27355d9e5848b3f56e36",
+    "runtime_authorization_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_PREFLIGHT_AUTHORIZATION_V1_4_20260813T000000Z/STAGE_V_M4_CORRIDOR_RUNTIME_AUTHORIZATION.json",
+    "runtime_authorization_sha256": "7eecc4a92be593cbe41c95fb81151d77ef4b024958526fd25d64cc4f91a999a9",
+    "launch_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_PREFLIGHT_NEW11_AB_20260813T000000Z",
+    "launch_manifest_sha256": "400a0ba00d8bf5d9c3795b3dfc5fbb50138932c9782c43013b7fd0dad9b193a3",
+    "branch_count": 22,
+    "branch_status_counts": {
+      "PASS": 16,
+      "CLEAN_FAILURE": 4,
+      "INELIGIBLE": 2
+    },
+    "outcomes_read": false,
+    "labels_generated": false,
+    "intervention_executed": false
+  },
+  "support": {
+    "supported_parent_count": 37,
+    "supported_probe_count": 888,
+    "missing_parent_count": 3,
+    "missing_parent_identities": [
+      "libero_10/task_08/state_28",
+      "libero_goal/task_07/state_41",
+      "libero_spatial/task_03/state_40"
+    ],
+    "new_candidate_count": 11,
+    "new_both_replicates_pass_with_plan": 8,
+    "new_exact_a_b_step_matches": 4,
+    "historical_stable_parent_count": 29,
+    "historical_exact_a_b_step_mismatches": 12,
+    "historical_source": {
+      "commit": "7d5cc9762f2c0e66df6a701ceb76bda902318543",
+      "tree": "d152141b91d8d02e268a390d99c3c109775c6611"
+    },
+    "current_source": {
+      "commit": "73bc7287a03457b105c035025a91dcb03883876f",
+      "tree": "763291b23174affe63296941efc4dc65ee7ec829"
+    },
+    "source_binding_status": "HOLD_MIXED_HISTORICAL_7d5_AND_CURRENT_73bc_PROVENANCE",
+    "replicate_selection": "No A/B averaging and no outcome-informed replicate selection."
+  },
+  "server_reconciliation": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_PROBE_SUPPORT_RECONCILIATION_V1_20260813T000000Z/STAGE_V_M4_FINAL_CORRIDOR_PROBE_SUPPORT_RECONCILIATION_V1.json",
+    "sha256": "0506102700bec008834d34598ce49993cc08ffe6405ee0c44ae278b29a167376"
+  },
+  "candidate_probe_manifest": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_FINAL_CORRIDOR_PROBE_SUPPORT_RECONCILIATION_V1_20260813T000000Z/STAGE_V_M4_EXACT_PROBE_MANIFEST_CANDIDATE_V1.json",
+    "sha256": "c572df4d5e15755975d2052d369ec21dc4e47e6d0622b9a2bb6e2975f071d32e"
+  },
+  "protected_counters": {
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0
+  },
+  "next_action": "Do not launch matched M4 or downstream Teacher/Student runtime until exact support is closed under one current source binding; otherwise seal HOLD and stop."
+}

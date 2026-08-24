@@ -1,0 +1,37 @@
+{
+  "cw": {
+    "gradient": [
+      -1.0,
+      1.0
+    ],
+    "initial_loss": 1.0,
+    "loss_after_sign_descent": 0.7999999523162842,
+    "pass": true
+  },
+  "dtype_casts": [
+    {
+      "actual_linf": 0.0,
+      "correction_count": 2,
+      "dtype": "torch.float16",
+      "epsilon": 0.1,
+      "pass": true
+    },
+    {
+      "actual_linf": 0.099609375,
+      "correction_count": 1,
+      "dtype": "torch.bfloat16",
+      "epsilon": 0.1,
+      "pass": true
+    }
+  ],
+  "master_dtype": "torch.float32",
+  "pass": true,
+  "projection": {
+    "formula": "x_orig-epsilon <= adv <= x_orig+epsilon",
+    "pass": true
+  },
+  "update": {
+    "formula": "adv -= step_size * sign(gradient)",
+    "pass": true
+  }
+}

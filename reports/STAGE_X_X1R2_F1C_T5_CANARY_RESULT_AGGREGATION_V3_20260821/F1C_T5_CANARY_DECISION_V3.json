@@ -1,0 +1,78 @@
+{
+  "errors": [
+    "PARENT_NOT_PASS:libero_10/task_09/state_00",
+    "ARM_NOT_PASS:libero_10/task_09/state_00:none",
+    "ARM_STEP_COUNT_INVALID:libero_10/task_09/state_00:none",
+    "ARM_NOT_PASS:libero_10/task_09/state_00:prev_delta",
+    "ARM_STEP_COUNT_INVALID:libero_10/task_09/state_00:prev_delta",
+    "PARENT_NOT_PASS:libero_10/task_09/state_16",
+    "ARM_NOT_PASS:libero_10/task_09/state_16:none",
+    "ARM_STEP_COUNT_INVALID:libero_10/task_09/state_16:none",
+    "ARM_NOT_PASS:libero_10/task_09/state_16:prev_delta",
+    "ARM_STEP_COUNT_INVALID:libero_10/task_09/state_16:prev_delta",
+    "PARENT_NOT_PASS:libero_goal/task_05/state_10",
+    "ARM_NOT_PASS:libero_goal/task_05/state_10:none",
+    "ARM_STEP_COUNT_INVALID:libero_goal/task_05/state_10:none",
+    "ARM_NOT_PASS:libero_goal/task_05/state_10:prev_delta",
+    "ARM_STEP_COUNT_INVALID:libero_goal/task_05/state_10:prev_delta",
+    "PARENT_NOT_PASS:libero_goal/task_07/state_19",
+    "ARM_NOT_PASS:libero_goal/task_07/state_19:none",
+    "ARM_STEP_COUNT_INVALID:libero_goal/task_07/state_19:none",
+    "ARM_NOT_PASS:libero_goal/task_07/state_19:prev_delta",
+    "ARM_STEP_COUNT_INVALID:libero_goal/task_07/state_19:prev_delta",
+    "PARENT_NOT_PASS:libero_object/task_04/state_06",
+    "ARM_NOT_PASS:libero_object/task_04/state_06:none",
+    "ARM_STEP_COUNT_INVALID:libero_object/task_04/state_06:none",
+    "ARM_NOT_PASS:libero_object/task_04/state_06:prev_delta",
+    "ARM_STEP_COUNT_INVALID:libero_object/task_04/state_06:prev_delta",
+    "PARENT_NOT_PASS:libero_object/task_09/state_18",
+    "ARM_NOT_PASS:libero_object/task_09/state_18:none",
+    "ARM_STEP_COUNT_INVALID:libero_object/task_09/state_18:none",
+    "ARM_NOT_PASS:libero_object/task_09/state_18:prev_delta",
+    "ARM_STEP_COUNT_INVALID:libero_object/task_09/state_18:prev_delta",
+    "PARENT_NOT_PASS:libero_spatial/task_01/state_11",
+    "ARM_NOT_PASS:libero_spatial/task_01/state_11:none",
+    "ARM_STEP_COUNT_INVALID:libero_spatial/task_01/state_11:none",
+    "ARM_NOT_PASS:libero_spatial/task_01/state_11:prev_delta",
+    "ARM_STEP_COUNT_INVALID:libero_spatial/task_01/state_11:prev_delta",
+    "PARENT_NOT_PASS:libero_spatial/task_02/state_05",
+    "ARM_NOT_PASS:libero_spatial/task_02/state_05:none",
+    "ARM_STEP_COUNT_INVALID:libero_spatial/task_02/state_05:none",
+    "ARM_NOT_PASS:libero_spatial/task_02/state_05:prev_delta",
+    "ARM_STEP_COUNT_INVALID:libero_spatial/task_02/state_05:prev_delta"
+  ],
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "physical_interventions": 0,
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "ranking": {
+    "none": {
+      "minimum_per_suite_parent_success": 0,
+      "tie_simplicity": 1,
+      "total_parent_success": 0,
+      "total_strict_valid_steps": 0
+    },
+    "prev_delta": {
+      "minimum_per_suite_parent_success": 0,
+      "tie_simplicity": 0,
+      "total_parent_success": 0,
+      "total_strict_valid_steps": 0
+    }
+  },
+  "schema": "STAGE_X1R2_F1C_T5_CANARY_DECISION_V3",
+  "selected_method": {
+    "epsilon": 0.03,
+    "iterations": 10,
+    "method": "M1",
+    "objective": "autoregressive_prefix_gripper_native_open_logratio_v4",
+    "step_size": 0.003,
+    "temporal_init": "none"
+  },
+  "selected_temporal_init": "none",
+  "status": "HOLD_F1C_EXECUTABLE_EVIDENCE_INSUFFICIENT"
+}

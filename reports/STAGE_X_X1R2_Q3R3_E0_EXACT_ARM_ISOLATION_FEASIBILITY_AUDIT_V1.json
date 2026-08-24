@@ -1,0 +1,160 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_E0_EXACT_ARM_ISOLATION_FEASIBILITY_AUDIT_V1",
+  "status": "HOLD_Q3R3_E0_FEASIBILITY_EVIDENCE_INSUFFICIENT",
+  "case": "C",
+  "audit_mode": "read-only static offline CPU",
+  "date": "2026-08-20",
+  "scope": "D2 TRUE_PGD_T5_ENGINEERING receipts only; no model, simulator, GPU, PGD, or new fixture work",
+  "source_binding": {
+    "worktree": "D:\\vla_attack\\_work_stagex_goal",
+    "head_commit": "9ae3ba4fe1af4f8064cc76d29a54ae1e6b26451a",
+    "head_tree": "a0682095f2df27cbe628d4f3ff987b5741fca2a",
+    "attack_adapter_blob": "c1a3fcb689e745c53caa79e624542171afdb4667",
+    "d2_runner_blob": "be2e28ae55e995158e2ffaa69128905d933eec04",
+    "d2_protocol_blob": "441943300dc11f59e978deb3f85f34a48c318bef",
+    "d2_protocol_sha256": "e2d53e32d4091cf5b8abc233fdc38a78b877fed52452869b5d3f4799cde8db94",
+    "selective_contract_blob": "986d6735177b2d21a45c2137302b1efa43fd5e32",
+    "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800"
+  },
+  "durable_evidence": {
+    "d2_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_d2_20260820",
+    "d2_logs_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_d2_logs_20260820",
+    "d2_aggregate_sha256": "daa74f4279ac4672adc7b233b2c7c72ea444aa9e13f24c0d4c03b8c2fb6617ca",
+    "c2_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/stage_x1r2_q3r3_c2_20260820",
+    "c2_root_seal_sha256": "fe23991c94852bc65269d740a6c67f782350dc61e600f766fdfbf85461abbdcc",
+    "true_receipts": [
+      {
+        "suite": "libero_10",
+        "fixture_id": "Q3R2-LIBERO_10-07",
+        "t_emit": 266,
+        "receipt_sha256": "a159bc833f1346d50e804ab9b7027139b0067b3db185f58d5322ff45cb19b6e5"
+      },
+      {
+        "suite": "libero_goal",
+        "fixture_id": "Q3R2-LIBERO_GOAL-08",
+        "t_emit": 52,
+        "receipt_sha256": "f8c9fb1b373717bd69ee03b060f1a4779f749d7ed3a1bc3c2ac98dde9a40af1a"
+      },
+      {
+        "suite": "libero_object",
+        "fixture_id": "Q3R2-LIBERO_OBJECT-12",
+        "t_emit": 155,
+        "receipt_sha256": "db8495f709dfc7d01e5cc516cbe9bf5a3a6b4c576f30187f23dfee5c8696379e"
+      },
+      {
+        "suite": "libero_spatial",
+        "fixture_id": "Q3R2-LIBERO_SPATIAL-06",
+        "t_emit": 65,
+        "receipt_sha256": "2eaa09dfa282452bba9caf4c1b4a96218840e2fe34a43035d28b535c63999b5b"
+      }
+    ]
+  },
+  "static_contract_recovery": {
+    "candidate_sequence_expected_by_frozen_source": [
+      "delta0",
+      "pgd_iteration_1",
+      "pgd_iteration_2",
+      "pgd_iteration_3",
+      "pgd_iteration_4",
+      "pgd_iteration_5"
+    ],
+    "selection_gates": [
+      "exact equality of direct generated arm token ids [0:6]",
+      "clean gripper is not native open",
+      "candidate gripper token is in frozen native-open set",
+      "candidate gripper token differs from clean gripper token"
+    ],
+    "selector_source": "src/gripper_attack/attack_adapter.py:_select_strict_arm_candidate:687-753",
+    "candidate_construction_source": "src/gripper_attack/attack_adapter.py:1121-1133 and 1322-1335",
+    "failure_trace_source": "src/gripper_attack/attack_adapter.py:1340-1348",
+    "diagnostics_created_in_memory": true,
+    "diagnostics_persisted_on_failure": false,
+    "runner_failure_source": "scripts/stage_x/run_stage_x1r2_q3r3_engineering_matrix.py:489-508",
+    "runner_materialization_gap": "failure receipt omits execution_trace, attack_contract_diagnostics, and candidate audit"
+  },
+  "suite_candidate_matrix": [
+    {
+      "suite": "libero_10",
+      "fixture_id": "Q3R2-LIBERO_10-07",
+      "t_emit": 266,
+      "failure": "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE",
+      "rows_materialized": 0,
+      "attacked_env_steps": 0,
+      "candidate_audit_sealed": false,
+      "candidate_fields_sealed": [],
+      "classification": "NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE"
+    },
+    {
+      "suite": "libero_goal",
+      "fixture_id": "Q3R2-LIBERO_GOAL-08",
+      "t_emit": 52,
+      "failure": "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE",
+      "rows_materialized": 0,
+      "attacked_env_steps": 0,
+      "candidate_audit_sealed": false,
+      "candidate_fields_sealed": [],
+      "classification": "NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE"
+    },
+    {
+      "suite": "libero_object",
+      "fixture_id": "Q3R2-LIBERO_OBJECT-12",
+      "t_emit": 155,
+      "failure": "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE",
+      "rows_materialized": 0,
+      "attacked_env_steps": 0,
+      "candidate_audit_sealed": false,
+      "candidate_fields_sealed": [],
+      "classification": "NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE"
+    },
+    {
+      "suite": "libero_spatial",
+      "fixture_id": "Q3R2-LIBERO_SPATIAL-06",
+      "t_emit": 65,
+      "failure": "STRUCTURAL_INVALID_NO_SELECTIVE_CANDIDATE",
+      "rows_materialized": 0,
+      "attacked_env_steps": 0,
+      "candidate_audit_sealed": false,
+      "candidate_fields_sealed": [],
+      "classification": "NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE"
+    }
+  ],
+  "candidate_field_audit": {
+    "per_candidate_fields_required": [
+      "candidate_index",
+      "candidate_source",
+      "direct_generated_token_ids",
+      "clean_arm_token_ids",
+      "direct_generated_arm_token_ids",
+      "arm_token_ids_equal",
+      "arm_mismatch_dimensions",
+      "direct_generated_gripper_token_id",
+      "direct_generated_gripper_is_native_open",
+      "clean_gripper_token_id",
+      "clean_gripper_is_native_open",
+      "gripper_token_changed",
+      "delta_sha256",
+      "processor_input_sha256",
+      "pixel_budget_adv_inputs_linf"
+    ],
+    "sealed_rows_found": 0,
+    "sealed_candidate_audit_found": false,
+    "classification_for_all_24_candidate_slots": "NOT_IDENTIFIABLE_FROM_SEALED_EVIDENCE",
+    "reason": "each TRUE_PGD_T5_ENGINEERING directory contains only arm_receipt.json; logs contain the selector traceback but no candidate values"
+  },
+  "decision": {
+    "case": "C",
+    "status": "HOLD_Q3R3_E0_FEASIBILITY_EVIDENCE_INSUFFICIENT",
+    "scientific_statement": "D2 proves a repeated frozen-selector structural failure, but does not establish whether exact arm preservation and native-open gripper materialization are jointly feasible under the frozen method",
+    "not_case_a": "no candidate-level rejection record is sealed, so a selector misclassification cannot be demonstrated",
+    "not_case_b": "absence of candidate rows is an evidence-materialization failure, not proof that all six candidate slots failed their gates",
+    "repair_status": "no source or validator patch applied",
+    "next_legal_action": "owner review of the E0 evidence gap; no new GPU, fixture, tuning, or R0/R1/R2"
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0,
+    "physical_interventions": 0,
+    "attack_outcome_reads": 0
+  }
+}

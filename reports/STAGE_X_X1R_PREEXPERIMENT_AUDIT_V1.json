@@ -1,0 +1,190 @@
+{
+  "schema": "STAGE_X_X1R_PREEXPERIMENT_AUDIT_V1",
+  "audit_date": "2026-08-17",
+  "audit_status": "HOLD",
+  "stop_code": "STAGE_X_X1R_HOLD_VICTIM_PROVENANCE_MISMATCH",
+  "scope": "read_only_preexperiment_forensic_audit",
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "repository": {
+    "name": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "historical_pr": 119,
+    "historical_pr_state": "OPEN_DRAFT_MERGEABLE",
+    "historical_pr_head": "05f09962942a0d4e88addd7c3efa6c6b4b658768",
+    "historical_pr_tree": "d3d637a4956f0e90f6efb5d6c9b263c8f566d9e4",
+    "historical_pr_ci": {
+      "source-registry": "SUCCESS",
+      "detector-v5-cpu": "SUCCESS",
+      "stageb-cpu": "SUCCESS"
+    },
+    "audit_branch": "codex/stage-x-x1r-protocol-repair-20260817",
+    "audit_commit_scope": [
+      "docs/handoffs/STAGE_X_X1R_PREEXPERIMENT_AUDIT_20260817.md",
+      "reports/STAGE_X_X1R_PREEXPERIMENT_AUDIT_V1.json"
+    ]
+  },
+  "immutable_historical_bindings": {
+    "x1_runtime_commit": "d5919552990bc98eb85ee2fbc45715e314d4ef81",
+    "x1_runtime_tree": "0bcb4f87e1fbb9699039b3708df95988d790c53d",
+    "x1_result_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_DUTY_CYCLE_MECHANISM/STAGE_X1_SEQUENTIAL_PGD_20260817T101200Z_RESEALED_V1",
+    "x1_result_status": "STAGE_X_SEQUENTIAL_PGD_SIGNAL_WEAK",
+    "x1_result_summary_sha256": "0677a2488d409beb5e5d7f590f1765413e8a8536bed7b97cd668eb453fa91808",
+    "x1_root_sha256sums_verified": true,
+    "x1_result_nonconsumable": true,
+    "x1_result_mutated": false
+  },
+  "finding_1a_decision_mapping": {
+    "protocol_A": "STAGE_X_SEQUENTIAL_PGD_REALIZABILITY_SIGNAL_ESTABLISHED",
+    "protocol_B": "STAGE_X_SEQUENTIAL_PGD_SIGNAL_WEAK",
+    "protocol_C": "STAGE_X_NO_SEQUENTIAL_PGD_REALIZABILITY_SIGNAL",
+    "sealed_status": "STAGE_X_SEQUENTIAL_PGD_SIGNAL_WEAK",
+    "historical_interpretation": "B",
+    "handoff_literal_letter": "C",
+    "inconsistency": true,
+    "retroactive_promotion": false
+  },
+  "finding_1b_sequence_enumeration": {
+    "exact_current_frames": 1344,
+    "distinct_parents": 56,
+    "all_exact_nonempty_starts": 1344,
+    "available_length_buckets": {
+      "L1": {"starts": 1123, "parents": 56},
+      "L2": {"starts": 100, "parents": 15},
+      "L3_L4": {"starts": 69, "parents": 10},
+      "L5_L9": {"starts": 43, "parents": 6},
+      "L10_or_more": {"starts": 9, "parents": 2}
+    },
+    "historical_audit_eligible_starts": {"3": 121, "5": 52, "10": 9},
+    "historical_runner_start_source": "sequence.eligible_starts[3]",
+    "historical_evaluated_starts": 121,
+    "historical_omitted_exact_nonempty_starts": 1223,
+    "q2_L1_L2_omitted": true
+  },
+  "finding_1c_loso": {
+    "protocol_declares_loso": true,
+    "historical_implementation": "mean_of_identifiable_per_suite_auc_without_fitted_leave_one_suite_out",
+    "historical_field_name": "mean_loso_auc",
+    "correct_x1r_names": [
+      "identifiable_suite_auc",
+      "mean_identifiable_suite_auc",
+      "worst_identifiable_suite_auc"
+    ],
+    "historical_loso_implemented": false
+  },
+  "finding_1d_gate_funnel": {
+    "gate_primitive": "scripts/stage_ix/run_stage_ix_f0.py::gate_for_row",
+    "historical_sequence_rows": 121,
+    "gate_eligible": 118,
+    "gate_ineligible": 3,
+    "historical_pgd_frame_results": 577,
+    "explicit_funnel_ledger": false,
+    "outcome_or_protected_input_used_for_gate": false
+  },
+  "finding_1e_victim_provenance": {
+    "canonical_pgd_victim": {
+      "model_id": "openvla-7b-finetuned-libero-10",
+      "model_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+      "contract_sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+      "loaded_globally_by_historical_x1": true
+    },
+    "stage_v": {
+      "manifest": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_CENSOR_AWARE_REPLACEMENT_PLAN_V1_20260815T100000Z/EXACT_40X24_CLEAN_PLAN/EXACT_PROBE_AND_SNAPSHOT_MANIFEST.json",
+      "parent_counts": {"libero_10": 10, "libero_goal": 10, "libero_object": 10, "libero_spatial": 10},
+      "snapshot_producer_source": {"commit": "06b41a58f467127b94da212972deaac59addcc64", "tree": "138ba51c202ad16c8eedf4c078b14b12e73fc9f9"},
+      "manifest_declared_policy_by_suite": {
+        "libero_10": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+        "libero_goal": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+        "libero_object": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+        "libero_spatial": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"
+      }
+    },
+    "stage_vi_b2": {
+      "manifest": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_VI_B2_FRESH_ZERO_TREATMENT_PLAN_V3_DUAL_SOURCE_20260816T052000Z/B2_EXACT_PROBE_AND_SNAPSHOT_MANIFEST.json",
+      "parent_counts": {"libero_10": 7, "libero_goal": 3, "libero_object": 2, "libero_spatial": 4},
+      "snapshot_producer_source": {"commit": "14606ba8e35cda8991c428a0e0daf5812f041a4d", "tree": "5e520c2737a4196166ae3ec5791e4c4f87be1b46"},
+      "manifest_declared_policy_by_suite": {
+        "libero_10": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+        "libero_goal": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+        "libero_object": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+        "libero_spatial": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"
+      }
+    },
+    "match_by_stage_suite": {
+      "STAGE_V/libero_10": true,
+      "STAGE_V/libero_goal": false,
+      "STAGE_V/libero_object": false,
+      "STAGE_V/libero_spatial": false,
+      "STAGE_VI_B2/libero_10": true,
+      "STAGE_VI_B2/libero_goal": false,
+      "STAGE_VI_B2/libero_object": false,
+      "STAGE_VI_B2/libero_spatial": false
+    },
+    "snapshot_policy_model_direct_per_snapshot_field": false,
+    "checkpoint_weight_sha256_directly_identifiable_per_snapshot": false,
+    "classification": "STAGE_X_X1R_HOLD_VICTIM_PROVENANCE_MISMATCH"
+  },
+  "historical_x1_sequence_population": {
+    "total_starts": 121,
+    "by_stage_suite": {
+      "STAGE_V/libero_goal": {"starts": 46, "gate_true": 44, "gate_false": 2, "frame_results": 241},
+      "STAGE_V/libero_spatial": {"starts": 36, "gate_true": 36, "gate_false": 0, "frame_results": 148},
+      "STAGE_VI_B2/libero_spatial": {"starts": 39, "gate_true": 38, "gate_false": 1, "frame_results": 188}
+    },
+    "starts_path_match_to_canonical_pgd_victim": 0,
+    "starts_path_mismatch_to_canonical_pgd_victim": 121
+  },
+  "finding_1f_chronology": {
+    "commits": [
+      {"commit": "304e509f6263e7988272ff3eb0ed0419f7e3f683", "time": "2026-08-17T18:00:59+08:00", "change": "freeze X1 protocol"},
+      {"commit": "893117a580e6078fec17d152c8d08ece22e99653", "time": "2026-08-17T18:02:28+08:00", "change": "audit clean sequence inputs"},
+      {"commit": "8d7e9f6b3aa0b2689cdf644218cad52187e3d51e", "time": "2026-08-17T18:06:23+08:00", "change": "accept sealed prospective snapshots"},
+      {"commit": "d5919552990bc98eb85ee2fbc45715e314d4ef81", "time": "2026-08-17T18:16:09+08:00", "change": "add metric short-sequence rule, Stage IX baseline map/split binding, and X1 runner before PGD"}
+    ],
+    "classification": "OUTCOME_BLIND_PRE_PGD_PROTOCOL_AMENDMENT",
+    "outcome_driven": false
+  },
+  "finding_1g_tests": {
+    "direct_x1_test_file_present": false,
+    "existing_stage_x_tests": ["tests/test_stage_x0_mediator_availability.py"],
+    "required_x1r_cpu_tests_passed": false,
+    "x1r_code_added": false
+  },
+  "historical_reference_roots": {
+    "stage_ix_f0": {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_IX_FACTORIZED_PGD_TIMING_UTILITY/STAGE_IX_F0_VIS_EXPLOITABILITY_20260816T172453Z",
+      "status": "STAGE_IX_NO_MODEL_SIDE_TIMING_SIGNAL",
+      "rows": 1344,
+      "gate_eligible_rows": 1186,
+      "full_pgd_success_count": 1137,
+      "canonical_contract_sha256": "08b21774141022bb199c48ef7b9b85e3b4338c2ab1d9123e1fd57f5882e42d83",
+      "source_commit": "98838b91a34c134c24e430c6b660dfcb33ba6137",
+      "source_tree": "daea7d0eabb89027218869c6b5c1b4035b187f31"
+    },
+    "stage_x0": {
+      "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_X_DUTY_CYCLE_MECHANISM/STAGE_X0_RESULT_20260817T095900Z",
+      "status": "STAGE_X_PHYSICAL_DUTY_CYCLE_MECHANISM_SUPPORTED",
+      "physical_intervention": false,
+      "source_commit": "7c36489a262ee5da4826936da4520608eb30fe46",
+      "source_tree": "f2c9d01d72bcded05fbf887cdf2b4cfe96f18dbb"
+    }
+  },
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "attack_rollouts": 0,
+    "vis_pgd_attack_rollouts": 0,
+    "env_steps_with_perturbed_action": 0,
+    "new_gpu_workers_started": 0,
+    "foreign_workloads_touched": false
+  },
+  "required_disposition": {
+    "historical_x1_immutable": true,
+    "x1r_gpu_authorized": false,
+    "x1r_population_authorized": false,
+    "x2_physical_pgd_authorized": false,
+    "terminal_next_state": "STAGE_X_X1R_HOLD_VICTIM_PROVENANCE_MISMATCH",
+    "next_legal_action": "resolve_and_freeze provenance-consistent clean-policy and PGD-victim identity before any new PGD authority",
+    "stop_reason_is_outcome_driven": false
+  }
+}

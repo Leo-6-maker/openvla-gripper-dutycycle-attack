@@ -1,0 +1,166 @@
+{
+  "schema": "STAGE_X_X1R_T1D1R_SCREENING_CLEAN_PROTOCOL_V1",
+  "status": "FROZEN_FOR_D1R_SCREENING_CLEAN_EXECUTION",
+  "reviewed_pr": 129,
+  "reviewed_live_head": {
+    "commit": "4b0ceb65f8f7babdd29163e032c56fed3ba57526",
+    "tree": "d7b688e82bf0b9c5e91c08b3ad15c3a6d94b89ad",
+    "base_branch": "codex/stage-x-x1r-t1d1-screening-clean-census-20260818"
+  },
+  "implementation": {
+    "branch": "codex/stage-x-x1r-t1d1r-student-head-contract-repair-20260818",
+    "runtime_source_binding": "record repaired source commit/tree before first D1R model load",
+    "final_seal_binding": "separate from repaired runtime source pre-evidence"
+  },
+  "official_environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+  "suite_contract": {
+    "path": "configs/STAGE_X_X1R_SUITE_MATCHED_VICTIM_CONTRACT_V1.json",
+    "sha256": "37f5d4ea205835fedc8f4d02c3e722c80581aa5c04d9349c7eed0dd4f6364265",
+    "status_required": "FROZEN_FOR_CLEAN_PARITY_ONLY",
+    "scientific_authority_required": "X1R_NOT_AUTHORIZED"
+  },
+  "historical_d1": {
+    "hold_report": "reports/STAGE_X_X1R_T1D1_CANARY_RUNTIME_HOLD_V1.json",
+    "hold_report_sha256": "2a3d0ff517e92a1f6d31cb72d2a810846d23094e7497c914c4aca352d3cdbb6f",
+    "source_pre_evidence_commit": "f079dcfa2bdafe65291cfdd1fbd2913b2a42668f",
+    "source_pre_evidence_tree": "6efe25a144efc43473897e5ff8e08e2124940b70",
+    "immutable_runtime_invalid_ordinals": [1, 11, 20, 30],
+    "rerun": false,
+    "replacement": false
+  },
+  "parent_population": {
+    "seed_report": "reports/STAGE_X_X1R_T1D0R2_PARENT_SEED_INVARIANCE_V1.json",
+    "seed_report_sha256": "a0b3fc93c39b41d0e83d7571fa5a8016c3185be5e5d783a8a0970c4d6fd0b0c4",
+    "nominal_cells": 40,
+    "missing_cell": "libero_goal/task_01",
+    "count": 39,
+    "suite_counts": {
+      "libero_10": 10,
+      "libero_goal": 9,
+      "libero_object": 10,
+      "libero_spatial": 10
+    },
+    "excluded_consumed_ordinals": [1, 11, 20, 30],
+    "continuation_ledger": "reports/STAGE_X_X1R_T1D1R_CONTINUATION_LEDGER_V1.json",
+    "continuation_count": 35,
+    "continuation_suite_counts": {
+      "libero_10": 9,
+      "libero_goal": 8,
+      "libero_object": 9,
+      "libero_spatial": 9
+    },
+    "repair_canary_ordinal": 2,
+    "selection": "exact frozen D0R2 rows minus immutable consumed ordinals; no rerank or replacement"
+  },
+  "student": {
+    "checkpoint": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_PRIMARY_CLEAN_STUDENT_VALIDATION_FIREWALL_20260813T170000Z/checkpoint.pt",
+    "checkpoint_sha256": "e24d00ca30c8fe0d5ef066e90872f010556bfabec13f78d4275962c6b35ca227",
+    "source": "n5/phase3_student/n5_student_model.py",
+    "source_raw_sha256": "30cfb021f671617d11a04f6a3bb8ad7d80d6ae29e4318ecce9dfc505ae68d00c",
+    "feature_source": "src/gripper_attack/v5_r3_features.py",
+    "feature_source_sha256": "c3c96090498d9d2da2047215387fee7d94a8a4b2782f2b00f9a551e3344311b9",
+    "adapter_source": "src/gripper_attack/d8_streaming_features_v3.py",
+    "adapter_source_sha256": "2b71f3f29ac3352bf945fdfe1e171013d5b6b598d8bcbd451836acb0b8ddcae3",
+    "normalization_sha256": "66e24b18a8fa5e46eca41bcdfa8b8aff7c9d05feeb6fcce8d6a62193a469fd6c",
+    "thresholds_sha256": "5236884ea746adc6a5388ab6e8058adb717b86ee2814b71a748c7792d051de3e",
+    "head_contract": "configs/STAGE_X_X1R_T1D1R_STUDENT_HEAD_CONTRACT_V1.json",
+    "head_contract_sha256": "7c81b12ac4daaa1513d01cf5c44b7d8f6e7d43fae1466c3a697c62f8554b8ce0",
+    "input_dim": 25,
+    "hidden": 64,
+    "short_rf": 32,
+    "long_rf": 128,
+    "dropout_eval": 0.0,
+    "physical_threshold": 0.55,
+    "closing_threshold": 0.8,
+    "one_shot": true
+  },
+  "clean_runtime": {
+    "condition": "SCREENING_CLEAN",
+    "screening_is_not_clean_eval": true,
+    "num_steps_wait": 10,
+    "horizons": {
+      "libero_10": 520,
+      "libero_goal": 300,
+      "libero_object": 280,
+      "libero_spatial": 220
+    },
+    "success": "done returned by env.step after the clean action",
+    "legal_horizon": "t_emit + 5 + 10 <= configured_episode_length"
+  },
+  "durable_storage": {
+    "root": "/llm_jzm/dty_user/openvla_attack_d1_screening_clean_20260818/D1R_CONTINUATION",
+    "authoritative": true,
+    "temporary_storage_not_authoritative": true,
+    "episode_count": 35,
+    "per_episode_video_budget_bytes": 134217728,
+    "telemetry_and_seal_overhead_bytes": 536870912,
+    "required_bytes": 5234491392,
+    "free_bytes_required_strictly_greater": true,
+    "video": {
+      "format": "mp4",
+      "codec": "libx264",
+      "fps": 20,
+      "overlay": false,
+      "manual_contact_review": "REQUIRED"
+    }
+  },
+  "historical_replay": {
+    "report": "reports/STAGE_X_X1R_T1D0R2_STUDENT_REPLAY_PARITY_V1.json",
+    "required_inputs": 4,
+    "scope": "CPU-only summary first-emit/NO_EMIT regression; not historical parity promotion"
+  },
+  "retry": {
+    "max_infra_retries": 1,
+    "retry_allowed_only_before_first_OpenVLA_policy_decision": true,
+    "retry_allowed_only_before_first_Student_forward": true,
+    "outcome_based_retry": false,
+    "identity_replacement": false
+  },
+  "forbidden": [
+    "pgd",
+    "rand_uniform",
+    "shuffled_gradient",
+    "attacked_action",
+    "physical_intervention",
+    "v_phys",
+    "x1r_attack_outcome",
+    "eval160",
+    "protected_evaluation",
+    "student_retraining",
+    "threshold_tuning",
+    "normalization_tuning",
+    "feature_changes",
+    "checkpoint_changes",
+    "parent_replacement",
+    "seed_reroll",
+    "retry_after_first_policy_decision"
+  ],
+  "protected_boundary": {
+    "eval160": "UNREAD",
+    "protected_evaluation": "UNREAD",
+    "counters_required_zero": [
+      "pgd_calls",
+      "attack_backward_calls",
+      "adversarial_images",
+      "physical_interventions",
+      "vphys_reads",
+      "attack_outcome_reads",
+      "eval160_reads",
+      "protected_reads",
+      "attacked_env_steps"
+    ]
+  },
+  "authorization": {
+    "d1r_static_head_contract_repair_authorized": true,
+    "d1r_screening_clean_authorized_after_static_pass": true,
+    "pgd_authorized": false,
+    "rand_authorized": false,
+    "shuffled_authorized": false,
+    "physical_intervention_authorized": false,
+    "vphys_authorized": false,
+    "x1r_authorized": false,
+    "eval160_authorized": false,
+    "protected_authorized": false,
+    "next_gate": "OWNER_REVIEW_D1R_CENSUS_AND_MANUAL_CONTACT_VALIDITY"
+  }
+}

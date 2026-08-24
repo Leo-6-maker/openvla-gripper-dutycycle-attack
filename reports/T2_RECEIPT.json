@@ -1,0 +1,70 @@
+{
+  "gate": "T2_TEACHER_PATCH_CANARY",
+  "status": "PARTIAL_PASS",
+  "exit_code": 5,
+  "timestamp": "2026-07-26T09:00:00Z",
+  "head_commit": "8e30077",
+  "branch": "deepseek/integration-final-detector-20260724",
+  "upstream": {
+    "r0_receipt_sha": "6b8581b28c5b1f2a",
+    "t1_receipt_sha": "a87666a7c940767c"
+  },
+  "teacher_changes": {
+    "file": "n5/phase2_labels/v22_production_v2.py",
+    "summary": "V22 V2 T2: Three independent placement pathways replacing single grasp-transition heuristic",
+    "changes": [
+      "1. compute_grasp_state: added contact_established (sustained contact WITHOUT tight qpos>0.7 requirement)",
+      "2. compute_placement_state: (a) tight-grasp release, (b) contact-only release with gripper opening, (c) terminal proximity fallback",
+      "3. Target name fallback: _contain_region suffix resolved to base object name",
+      "4. compute_safe_release: uses contact_established for release event detection",
+      "5. T2_PLACEMENT_TOLERANCE = 0.25, terminal fallback uses max(0.25, 0.35)"
+    ]
+  },
+  "canary_results": {
+    "n_episodes": 64,
+    "per_suite": 16,
+    "seed": 20103,
+    "placement_recall": {
+      "successful_episodes_checked": 40,
+      "successful_with_placement": 26,
+      "recall": "65.0%",
+      "target": ">= 90%",
+      "status": "BELOW_TARGET"
+    },
+    "libero_object_safe_release": {
+      "positives": 12,
+      "episodes": 12,
+      "requirement": "> 0",
+      "status": "PASS"
+    },
+    "supported_suites_with_sr": {
+      "libero_10": 17,
+      "libero_goal": 3,
+      "libero_object": 12,
+      "libero_spatial": 7,
+      "requirement": ">= 3 suites",
+      "status": "PASS \u2014 all 4 suites have safe_release"
+    },
+    "pregrasp_false_positive": {
+      "count": 0,
+      "requirement": "<= 5%",
+      "status": "PASS"
+    },
+    "safe_release_total": {
+      "steps": 39,
+      "episodes": 26
+    }
+  },
+  "gap_analysis": {
+    "remaining_14_unsuccessful_placements": "Object distance to target region center > 0.35 at all points in last 30% of episode. Region targets (basket_contain_region, plate) have positions in qpos that don't represent actual placement locations. Distance-based heuristic inherently limited for region targets.",
+    "fundamental_limitation": "BDDL target positions are region centers, not object resting positions. Objects placed in baskets/plates end up 0.3-0.6 units from region center. No purely distance-based check can achieve 90% recall without excessive false positives.",
+    "possible_next_steps": [
+      "A: Use Z-height stabilization near support surface instead of XY distance to target",
+      "B: Use object-motion-stability (velocity < threshold) in terminal window",
+      "C: Accept 65% recall, supplement with object-Z criterion",
+      "D: Redefine placement success criterion for T2: object-near-target OR object-on-support-surface"
+    ]
+  },
+  "next_gate": "T3_SCIENTIFIC_CONTRACT_V2 (can proceed with 65% recall, document limitation)",
+  "self_sha256": "d4afac1f208ca516bd27d25ba491c0da68cafbe2200118a57f733e2c36331bef"
+}

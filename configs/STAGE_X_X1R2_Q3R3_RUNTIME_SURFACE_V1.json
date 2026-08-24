@@ -1,0 +1,65 @@
+{
+  "schema": "STAGE_X_X1R2_Q3R3_RUNTIME_SURFACE_V1",
+  "status": "STATIC_RUNTIME_SURFACE_SEALED_WITH_EXPLICIT_UNAVAILABLE_FIELDS",
+  "source": {
+    "authority_report": "reports/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_AUDIT_V1.json",
+    "authority_report_status": "STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_PASS",
+    "observed_without_simulator_execution": true
+  },
+  "environment": {
+    "official_path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "python_invocation": "bin/python -s",
+    "python_version": "3.10.16",
+    "python_realpath": "/home/sz/miniconda3/envs/hallo/bin/python3.10",
+    "prefix": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "base_prefix": "/home/sz/miniconda3/envs/hallo",
+    "include_system_site_packages": true,
+    "pip_freeze_sha256": "8572a1662921ab187d43b7d6353b7bb0b918ddb57c5d358885cf5c1626df3deb",
+    "mixed_root_imports": true,
+    "mixed_root_policy": "must remain explicit and hash-bound; name official env alone is insufficient"
+  },
+  "renderer_surface": {
+    "mujoco_version": "3.9.0",
+    "mujoco_init_sha256": "f8e5b528617004b6215e16cb0c945faf1f8c7b5d798e5b92e3aabce19c838497",
+    "robosuite_version": "1.4.1",
+    "robosuite_init_sha256": "2284b710dbfa04b1e0087d8e5f590277ba4300962df5b9c011161567b02cd981",
+    "robosuite_private_macros": "ABSENT; import warning retained",
+    "mujoco_gl_environment": "UNSET_IN_STATIC_SHELL",
+    "eglinfo": "NOT_INSTALLED_OR_NOT_ON_PATH",
+    "glxinfo": "PRESENT; vendor/version not queried without a display context",
+    "gl_library_presence": [
+      "/lib/x86_64-linux-gnu/libEGL_nvidia.so.0",
+      "/lib/x86_64-linux-gnu/libEGL_mesa.so.0",
+      "/lib/x86_64-linux-gnu/libGLX_nvidia.so.0",
+      "/lib/x86_64-linux-gnu/libGLX_mesa.so.0"
+    ],
+    "gpu": {
+      "name": "NVIDIA A800-SXM4-80GB",
+      "driver_version": "550.90.12"
+    }
+  },
+  "camera_and_preprocess": {
+    "camera": "agentview",
+    "height": 256,
+    "width": 256,
+    "control_freq_hz": 20,
+    "orientation": "rotate_180",
+    "resize": 224,
+    "backend": "official_pil_lanczos",
+    "center_crop": true,
+    "jpeg_round_trip": false
+  },
+  "package_files": [
+    {"name": "torch", "version": "2.2.2+cu118", "path": "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/torch/__init__.py", "sha256": "fe825c99bf91627cc438ab1967e413f4efef8599de835fb71af926c15b07a223"},
+    {"name": "PIL", "version": "10.3.0", "path": "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/PIL/__init__.py", "sha256": "7c95303c6848f3f99c07c8cd583fa1530ecc88c2725a0a955ff9c5b73223d59b"},
+    {"name": "cv2", "version": "4.9.0", "path": "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/cv2/__init__.py", "sha256": "d6d44be0f0f981cc057abc0c152377b496edb478d1fa6355ce035f711dc94b25"},
+    {"name": "transformers", "version": "4.40.1", "path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/transformers/__init__.py", "sha256": "23d4e514cab68b0fa4b1e385e5eda88efd9e4fef515ffd4fa72a61f99df7a557"},
+    {"name": "mujoco", "version": "3.9.0", "path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/mujoco/__init__.py", "sha256": "f8e5b528617004b6215e16cb0c945faf1f8c7b5d798e5b92e3aabce19c838497"},
+    {"name": "robosuite", "version": "1.4.1", "path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/robosuite/__init__.py", "sha256": "2284b710dbfa04b1e0087d8e5f590277ba4300962df5b9c011161567b02cd981"}
+  ],
+  "provenance_gaps": [
+    "EGL/OpenGL vendor and version were not queryable without creating a display context",
+    "MUJOCO_GL was unset in the static shell; future runtime must bind the selected backend explicitly or fail closed"
+  ],
+  "protected_boundary": {"model_inference_calls": 0, "env_step_calls": 0, "pgd_calls": 0, "physical_interventions": 0, "vphys_reads": 0, "protected_reads": 0, "eval160": "UNREAD", "protected_evaluation": "UNREAD"}
+}

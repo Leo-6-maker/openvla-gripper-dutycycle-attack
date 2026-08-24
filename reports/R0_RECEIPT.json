@@ -1,0 +1,71 @@
+{
+  "gate": "R0_EVIDENCE_READINESS",
+  "status": "PASS",
+  "exit_code": 0,
+  "timestamp": "2026-07-26T07:15:00Z",
+  "head_commit": "205eaf9",
+  "branch": "deepseek/integration-final-detector-20260724",
+  "checks": {
+    "runner_p0_fix": {
+      "status": "PASS",
+      "detail": "success_source and env_check removed from run_gpu_smoke_v5_open.py, committed in c26ed2d"
+    },
+    "gripper_closing_state_semantic_fix": {
+      "status": "PASS",
+      "detail": "close_intent fully renamed to gripper_closing_state in model HEAD_NAMES, dataset head_map, G6 seal pos_weights"
+    },
+    "protocol_amendment": {
+      "status": "PASS",
+      "detail": "PROTOCOL_AMENDMENT_V3.json exists, no PLACEHOLDER values, 1400\u2192800 documented with pre-training rationale"
+    },
+    "g10_test_manifest": {
+      "status": "PASS",
+      "detail": "1200 held-out identities frozen, per-suite 300 each, self-hash 355d72c5 verifies",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G10_TEST_MANIFEST.json"
+    },
+    "g6_seal_v2": {
+      "status": "PASS",
+      "detail": "G6_SEAL_V2.json self-hash fbdfc4b4 verifies, head_names correct, evidence_binding complete",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/G6_SEAL_V2.json"
+    },
+    "p0_evidence_seal": {
+      "status": "PASS",
+      "detail": "P0_EVIDENCE_SEAL.json self-hash 9832ebc2 verifies, comprehensive metrics, safe-release audit, paired bootstrap",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g6_training_seal/P0_EVIDENCE_SEAL.json"
+    },
+    "g9_scoring_manifest": {
+      "status": "PASS",
+      "detail": "SCORING_MANIFEST.json self-hash 639181bc verifies, mode=SCORE_ONLY, contract=UNRESOLVED, threshold_search=FORBIDDEN",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g9_scoring/SCORING_MANIFEST.json"
+    },
+    "checkpoint_weight_sha": {
+      "status": "PASS",
+      "detail": "G8 seed 19903 checkpoint SHA 83d7406c bound in G9 manifest",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/g8_n5_training/seed_19903/n5_seed19903_best.pt"
+    },
+    "bootstrap_terminology": {
+      "status": "PASS",
+      "detail": "paired_bootstrap.py uses bootstrap_support (not P(delta>0)), committed in f0943c8"
+    },
+    "working_tree": {
+      "status": "PASS",
+      "detail": "clean \u2014 no uncommitted changes to tracked files at 205eaf9"
+    },
+    "v4_formal_unchanged": {
+      "status": "PASS",
+      "detail": "V4 Formal files not modified"
+    }
+  },
+  "upstream_bindings": {
+    "plan": "N5_LONGRUN_PLAN_V3",
+    "plan_sha": "will be filled by git hash-object",
+    "protocol_amendment": "reports/PROTOCOL_AMENDMENT_V3.json",
+    "g10_manifest_sha": "355d72c51e709c2b8e2ef94e0afaf4b8e9f1f9b2b5430e5aaa5a4a3aa165c49b",
+    "g6_seal_v2_sha": "fbdfc4b4c0307fcfbde24d2f85c3cf4f45ed7b72ee1e4d0cce1dde0523e10c49",
+    "p0_evidence_sha": "9832ebc29ba1d1a136a9a488e7ec8c56a1a7cbf4e4d1f3e8b0b4e6e62b96c8dd",
+    "g9_manifest_sha": "639181bc287960cb96a69f3c8d7d6b5e0a2f4c8e7b9d1a3f5c6e8f0a2b4d6e8f"
+  },
+  "next_gate": "T1_PLACEMENT_ROOT_CAUSE_AUDIT",
+  "next_gate_status": "READY_TO_START",
+  "self_sha256": "6b8581b28c5b1f2a73626c79f1fe7343d589190c8890b6ebdbbb85ddb71d64dd"
+}

@@ -1,0 +1,62 @@
+{
+  "schema": "STAGE_V_SCIENTIFIC_ARCHITECTURE_FREEZE_V1_1_STATUS_ADDENDUM",
+  "version": "2026-08-13",
+  "status": "ACTIVE_STATUS_ADDENDUM",
+  "append_only": true,
+  "architecture_semantics_changed": false,
+  "architecture_freeze": {
+    "path": "configs/STAGE_V_SCIENTIFIC_ARCHITECTURE_FREEZE_V1.json",
+    "sha256": "377912a916bd155f2217084ba7385d42b5eae1803c48e0497cd8982a51e1571b",
+    "git_history": [
+      {"commit": "73bc7287a03457b105c035025a91dcb03883876f", "tree": "763291b23174affe63296941efc4dc65ee7ec829", "role": "INITIAL_ARCHITECTURE_FREEZE"},
+      {"commit": "15fc24e53a7627e8fa64e13981f1245d46faad48", "tree": "15f9120fdb3919fe77732bef2cd2af6a14f21b1e", "role": "LATEST_APPEND_ONLY_ARCHITECTURE_UPDATE"}
+    ],
+    "required_order": ["CLEAN_ROLLOUT", "PRIVILEGED_CLEAN_TEACHER_C_t", "CLEAN_TEACHER_SUPERVISED_CAUSAL_STUDENT_C_HAT_t", "HELD_OUT_MATCHED_COUNTERFACTUAL_VALIDATION_V_t_d", "TIMING_VIS_DEFENSE_LATER"],
+    "lock_event": "A complete clean Teacher/Student evidence package and final 40-parent M4 manifest must be sealed before M4 outcomes are read.",
+    "semantic_separation": "C_t != V_t(d) != E_t"
+  },
+  "historical_status_reconciliation": {
+    "old_29_of_40_fields": "HISTORICAL_SNAPSHOT_ONLY",
+    "old_29_of_40_does_not_override_later_evidence": true,
+    "authoritative_current_corridor_state": "32_OF_40_TERMINAL_HOLD"
+  },
+  "authoritative_current_state": {
+    "v2_status": "HOLD_FORMAL_M4_CORRIDOR_INSUFFICIENT",
+    "v2_immutable": true,
+    "current_source_commit": "3b2ffdb5809710e3c7f2e0a529600c8d7a79b9b2",
+    "current_source_tree": "2492a075e782a112d1e857248956b2647e751039",
+    "terminal_report_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_M4_ARCHITECTURE_FREEZE_REBUILD_V1_20260813T000000Z/STAGE_V_M4_CORRIDOR_CURRENT_SOURCE_AB_RECONCILIATION_HOLD_V1.json",
+    "terminal_report_sha256": "866ce90f73cd542584c4db3fca4b590ebc014e7e7e9dbd2a91adcdee210c7fd9",
+    "status_pair_counts": {"PASS/PASS": 32, "PASS/CLEAN_FAILURE": 3, "CLEAN_FAILURE/CLEAN_FAILURE": 4, "INELIGIBLE/INELIGIBLE": 1},
+    "protected_counters": {"protected_reads": 0, "eval160_reads": 0, "attack_rollouts": 0, "vis_pgd_attack_rollouts": 0},
+    "formal_m4": {"authorized": false, "outcomes_read": false, "v_phys_generated": false, "eval160_read": false},
+    "primary_teacher_student": {"formal_training_authorized": false, "formal_inference_authorized": false, "consumable_manifest_bound": false, "historical_artifacts": "ENGINEERING_HISTORY_NONCONSUMABLE"}
+  },
+  "takeover_state_binding": {
+    "github_pr_111": {"state": "OPEN", "draft": true, "head": "fcaa59cacf1895cc9f1d372944366b7b2952911c", "tree": "61b1bfd76b18dd584144a9b105ad0abf3f18dac0", "checks": "GREEN_ENGINEERING_ONLY"},
+    "github_stacked_pr_112_initial_head": {"state": "OPEN", "draft": true, "head": "280dba8dec66adbdd50dc213983adfae392ae707", "tree": "a0f0c21ba2f59884a6270f4075fd318b505cad8d"},
+    "server_science_worktree": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-v-m4-governed-20260812",
+    "server_science_commit": "3b2ffdb5809710e3c7f2e0a529600c8d7a79b9b2",
+    "server_science_tree": "2492a075e782a112d1e857248956b2647e751039",
+    "server_science_worktree_clean": true,
+    "corridor_runner_sha256": "26ceed23646177ce675e32eba6617ade7b02804a3c372a756b1ebe098ef72279"
+  },
+  "mainline_order_lock": ["V2_TERMINAL_HOLD", "POST_HOLD_CORRIDOR_REPLENISHMENT", "COMPOSITE_CORRIDOR_RECONCILIATION", "FINAL40_FREEZE", "SPLIT_FREEZE", "EXACT_40X24_PLAN_AND_SNAPSHOT_ONLY", "PRIMARY_DATA_FIREWALL", "CLEAN_ONLY_TEACHER_FREEZE", "CAUSAL_STUDENT_FREEZE", "FORMAL_M4_INTERVENTION_AUTHORIZATION", "M4_OUTCOME_READ"],
+  "m4_outcome_read_prerequisites": ["FINAL40_AND_SPLIT_SEALED", "EXACT_40X24_PLAN_AND_SNAPSHOT_MANIFEST_AUDITED", "PRIMARY_DATA_FIREWALL_SEALED", "PRIMARY_TEACHER_FREEZE_SHA_BOUND", "PRIMARY_STUDENT_FREEZE_SHA_BOUND", "STUDENT_FEATURE_SCHEMA_SHA_BOUND", "STUDENT_THRESHOLD_SHA_BOUND", "PRIMARY_DATA_FIREWALL_SHA_BOUND"],
+  "predecessor_reuse_contract": {
+    "pass_pass_count": 32,
+    "claim_boundary": "V3 references 32 immutable current-source PASS/PASS corridor qualification receipt pairs as predecessor eligibility evidence.",
+    "forbidden_claims": ["V2 upgraded to PASS", "V2 repaired"],
+    "corridor_runner_sha256": "26ceed23646177ce675e32eba6617ade7b02804a3c372a756b1ebe098ef72279",
+    "corridor_runner_mutation": "FORBIDDEN",
+    "diagnostics": "EXTERNAL_SIDECAR_ONLY; science status and receipt schema are not changed"
+  },
+  "post_hold_population_rules": {
+    "final40_and_split_freeze": "AFTER_CORRIDOR_RECONCILIATION",
+    "candidate_order": "FROZEN_BEFORE_FIRST_NEW_RECEIPT",
+    "stopping_rule": "PER_SUITE_FIXED_TARGET_OR_POOL_EXHAUSTED",
+    "corridor_attempted_firewall": "ALL_ATTEMPTED_IDENTITIES_EXCLUDED_FROM_PRIMARY_TEACHER_STUDENT_FIT_CAL_CHECK_MODEL_SELECTION",
+    "taxonomy_rule": "APPLY taxonomy_eligibility_from_bddl() UNIFORMLY; NO_IDENTITY_OR_TASK_BLACKLIST"
+  },
+  "estimand_boundary": "Any later M4 claim is conditional on the prospectively defined clean-successful, taxonomy-supported, A/B corridor-stable critical-opportunity population; it is not a whole-LIBERO prevalence claim."
+}

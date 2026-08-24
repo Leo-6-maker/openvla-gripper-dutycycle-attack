@@ -1,0 +1,86 @@
+{
+  "schema": "STAGE_V_FRESH_SCIENCE_PARENT_QUALIFICATION_CONTRACT_V1",
+  "status": "PROSPECTIVE_DRAFT_PENDING_M3_5_GATES",
+  "label_contract": "configs/STAGE_V_M3_5_LABEL_AND_QUALIFICATION_CONTRACT_V1.json",
+  "qualification_layering": {
+    "engineering_valid_statuses": ["DONE", "PASS", "QUALIFIED", "TASK_FAILURE"],
+    "engineering_valid_requires": [
+      "exit_code==0",
+      "artifact_validation_pass",
+      "runtime_valid",
+      "snapshot_restore_valid",
+      "task_identity_valid",
+      "metrics_finite",
+      "source_commit_and_tree_exact",
+      "provenance_copy_equals_source",
+      "canonical_parent_key_exact",
+      "assigned_gpu_exact",
+      "protected_and_attack_counters_zero",
+      "old_artifacts_reused==false"
+    ],
+    "clean_science_gate": [
+      "A engineering_valid",
+      "B engineering_valid",
+      "A clean_success==true",
+      "B clean_success==true",
+      "A/B key_state_identity_sha256 equal",
+      "source/model/runtime binding exact",
+      "parent GPU affinity exact",
+      "no protected or exposure violation"
+    ],
+    "not_parent_hard_gates": [
+      "terminal_state_sha256 equality",
+      "terminal sidecar record equality",
+      "global remaining_horizon_complete equality"
+    ],
+    "descriptive_parent_metrics": [
+      "terminal_state_sha256 equality",
+      "terminal_outcome equality",
+      "completion_step difference",
+      "global remaining horizon"
+    ],
+    "probe_level_hard_gates": [
+      "exact saved branch snapshot",
+      "treatment compliance",
+      "matched control validity",
+      "sufficient remaining branch horizon",
+      "physical ambiguity and non-gripper failure abstain"
+    ]
+  },
+  "freshness_contract": {
+    "new_source_commit_required": true,
+    "new_source_tree_required": true,
+    "new_runtime_root_required": true,
+    "new_qualification_salt_required": true,
+    "new_candidate_pool_required": true,
+    "exclude_historical_exposure_inventory": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/runner_binding_forensics_c80eb290_20260808T013003Z/COUNTERFACTUAL_EXPOSURE_EXCLUSION_V1.json",
+    "exclude_v6_clean_attempts": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/STAGE_V_DYNAMIC_CLEAN_QUALIFICATION_CANDIDATE_V6_20260810T013514Z.json",
+    "v6_candidate_identity_count_to_exclude": 240,
+    "selection_must_not_read_v6_outcomes": true,
+    "selection_rule": "frozen candidate-universe and hash-rank selection before any new clean result is read"
+  },
+  "resource_contract": {
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "minimum_free_memory_mib": 20480,
+    "maximum_project_workers_per_gpu": 1,
+    "partial_fleet_allowed": true,
+    "foreign_workloads_allowed_in_throughput_mode": true,
+    "parent_bundle_atomicity": "one parent owns all registered branches on one GPU",
+    "gpu3_foreign_process_must_not_be_modified": true
+  },
+  "pass_target": {
+    "suite_names": ["libero_10", "libero_goal", "libero_object", "libero_spatial"],
+    "qualified_parents_per_suite": 10,
+    "formal_parent_count": 40,
+    "m4_rows_per_parent": 72,
+    "m4_total_rows": 2880
+  },
+  "hard_stops": [
+    "protected Eval160 read or rollout",
+    "parent or split leakage",
+    "source/tree mismatch",
+    "scientific artifact corruption",
+    "producer/auditor irreconcilable disagreement",
+    "rerun-to-pass or post-outcome protocol modification"
+  ]
+}

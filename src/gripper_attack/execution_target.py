@@ -206,3 +206,57 @@ def target_token_logratio_loss_and_stats(
         "cw_margin_param": None,
         "allowed_token_count": int(allowed.numel()),
     }
+
+
+def native_open_logratio_loss_and_stats(
+    row: torch.Tensor,
+    *,
+    open_token_ids: Iterable[int],
+) -> tuple[torch.Tensor, dict[str, Any]]:
+    """Optimize the checkpoint-local native OPEN class as one target set.
+
+    The loss is ``logsumexp(non_open) - logsumexp(native_open)`` over the
+    official action-position score row. Direct deterministic generation and
+    the strict candidate audit remain the behavior authority; this helper is
+    only the F1-B optimization surrogate.
+    """
+    row = row.float()
+    open_ids = torch.tensor(sorted({int(x) for x in open_token_ids}), device=row.device, dtype=torch.long)
+    open_ids = open_ids[(open_ids >= 0) & (open_ids < row.numel())]
+    if open_ids.numel() == 0:
+        raise ValueError("native OPEN token set must not be empty")
+    all_ids = torch.arange(row.numel(), device=row.device, dtype=torch.long)
+    open_mask = torch.zeros(row.numel(), device=row.device, dtype=torch.bool)
+    open_mask[open_ids] = True
+    non_open_ids = all_ids[~open_mask]
+    if non_open_ids.numel() == 0:
+        raise ValueError("native OPEN objective needs non-OPEN competitors")
+    open_scores = row[open_ids]
+    non_open_scores = row[non_open_ids]
+    open_logsumexp = torch.logsumexp(open_scores, dim=0)
+    non_open_logsumexp = torch.logsumexp(non_open_scores, dim=0)
+    best_open_score, best_open_rel = torch.max(open_scores, dim=0)
+    best_non_open_score, best_non_open_rel = torch.max(non_open_scores, dim=0)
+    best_open_token = int(open_ids[int(best_open_rel.detach().cpu())].detach().cpu())
+    best_non_open_token = int(non_open_ids[int(best_non_open_rel.detach().cpu())].detach().cpu())
+    loss = non_open_logsumexp - open_logsumexp
+    return loss, {
+        "native_open_token_count": int(open_ids.numel()),
+        "non_open_competitor_count": int(non_open_ids.numel()),
+        "native_open_logsumexp_score": float(open_logsumexp.detach().cpu()),
+        "non_open_logsumexp_score": float(non_open_logsumexp.detach().cpu()),
+        "best_native_open_token": best_open_token,
+        "best_native_open_score": float(best_open_score.detach().cpu()),
+        "best_non_open_token": best_non_open_token,
+        "best_non_open_score": float(best_non_open_score.detach().cpu()),
+        "native_open_minus_non_open_logsumexp_margin": float((open_logsumexp - non_open_logsumexp).detach().cpu()),
+        # Keep the generic diagnostic names consumed by the existing receipts.
+        "target_minus_competitor_logsumexp_margin": float((open_logsumexp - non_open_logsumexp).detach().cpu()),
+        "target_objective_margin": float((open_logsumexp - non_open_logsumexp).detach().cpu()),
+        "target_objective_margin_name": "native_open_minus_non_open_logsumexp_margin",
+        "target_token_id": None,
+        "target_token_score": None,
+        "secondary_target_token_score": float(row[31745].detach().cpu()) if row.numel() > 31745 else None,
+        "cw_margin_param": None,
+        "allowed_token_count": int(row.numel()),
+    }

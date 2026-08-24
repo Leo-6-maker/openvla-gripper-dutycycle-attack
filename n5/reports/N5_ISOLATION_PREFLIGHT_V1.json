@@ -1,0 +1,57 @@
+{
+  "report": "N5_ISOLATION_PREFLIGHT_V1",
+  "timestamp": "2026-07-25T21:15:00Z",
+  "status": "PASS",
+
+  "formal_integrity": {
+    "seal_self_hash": "22a97d5746efed9e — MATCH",
+    "provider": "6a7ab61d8dba8cb3 — MATCH",
+    "checkpoint": "685ddadf90ad2ac4 — MATCH",
+    "norm": "491e65a60a900d38 — MATCH",
+    "formal_paths_touched": 0,
+    "formal_queue_modified": false,
+    "formal_processes_signaled": 0
+  },
+
+  "isolation": {
+    "n5_root": "n5/",
+    "formal_write_access": 0,
+    "formal_process_control": 0,
+    "formal_queue_access": 0,
+    "formal_deploy_path_access": 0,
+    "tmp_n4_adapter_accessed": false,
+    "independent_tmpdir": "n5/tmp/",
+    "independent_cache": "n5/cache/"
+  },
+
+  "track_a_label_v2": {
+    "code_status": "REFERENCE_IMPLEMENTATION_READY",
+    "schema_sha": "PENDING_FREEZE",
+    "anti_regression_tests": "5/5 PASS (cc-invariance, H2, K10-independence, goal-zero, reason-codes)",
+    "data_dependency": "CS200 REQUIRED for physical factor population",
+    "blocking_issue": "Physics Teacher V21C marks goal tasks as NO_MANIPULATION_TARGET. All physical factors have known_mask=False. Cannot generate physical_criticality labels without CS200 trajectory data or re-run of physics teacher with goal-aware rules.",
+    "production_status": "HOLD — awaiting CS200 access resolution or physics teacher update",
+    "can_proceed_without_cs200": "Can run dry-run on non-goal suites only. Goal suite labels would all be NOT_CRITICAL_NO_ENGAGEMENT (same as current, no improvement)."
+  },
+
+  "track_b_student": {
+    "status": "GO — no data dependency",
+    "artifacts_to_build": [
+      "Shared causal TCN encoder (short RF32 + long RF128)",
+      "Multi-head architecture (criticality, k10_feasible, safe_release, instability, close_intent)",
+      "Independent mask loss per head",
+      "Suite-balanced sampler",
+      "3-seed training infrastructure",
+      "Baseline models (prior, last-frame, MLP, short-only, long-only)",
+      "Anti-cc-gate tests",
+      "Causality tests",
+      "Checkpoint parity tests"
+    ]
+  },
+
+  "formal_matrix": {
+    "done": 15,
+    "leased": 5,
+    "status": "RUNNING — no intervention"
+  }
+}
