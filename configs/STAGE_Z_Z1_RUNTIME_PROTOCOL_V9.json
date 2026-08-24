@@ -69,6 +69,7 @@
     "toolz": "1.1.0",
     "tqdm_loggable": "0.4.1",
     "tyro": "1.0.13",
+    "docstring_parser": "0.18.0",
     "datetime_utc_alias": "datetime.timezone.utc only when datetime.UTC is absent"
   },
   "environment": {

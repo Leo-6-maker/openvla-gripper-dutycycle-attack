@@ -21,7 +21,7 @@
     "code_commit": "e4a39251c21ba7be9da9c54ea60dcbf3181baf8d",
     "code_tree": "ed9a949bc21ef60b0707ebc558df2d47eafaff1e",
     "protocol_path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V9.json",
-    "protocol_sha256": "b275fcd2325de1f351c07df76535f190a039bf22e95159b1214be5f8fe125ece",
+    "protocol_sha256": "60a73e89f4328d03c29afb64b5c6d03e509250d38b7b17d070e6406b6777e03e",
     "files": [
       {
         "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
@@ -67,7 +67,8 @@
       "chex": "0.1.90",
       "toolz": "1.1.0",
       "tqdm_loggable": "0.4.1",
-      "tyro": "1.0.13"
+      "tyro": "1.0.13",
+      "docstring_parser": "0.18.0"
     },
     "datetime_utc_alias": "datetime.timezone.utc only when datetime.UTC is absent",
     "lerobot_git_revision": "0cf864870cf29f4738d3ade893e6fd13fbd7cdb5"
