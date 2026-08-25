@@ -1,0 +1,55 @@
+{
+  "analysis_script": {
+    "path": "scripts/stage_z/build_stage_z_z3c_terminal.py",
+    "sha256": "11594fccb9c2d2633c2615ccc777d9804d66cd407405e620b41c74517544e655"
+  },
+  "branch_index": {
+    "path": "reports/STAGE_Z_Z3C_TERMINAL_V1/STAGE_Z_Z3C_BRANCH_RECEIPT_INDEX_V1.json",
+    "sha256": "e1ee03b782eb72a22f794681335a074bab79407c9b067f87556860c2667f3520"
+  },
+  "claim_boundary": "Sealed command-OPEN physical counterfactual only; official policy inference, visual PGD, task success, protected/Eval160, F1, and BRIDGE are not measured here.",
+  "execution": {
+    "branch_counters": {
+      "attack_outcome_reads": 0,
+      "env_step_calls": 7636,
+      "eval160_reads": 0,
+      "pgd_calls": 0,
+      "physical_telemetry_reads": 7636,
+      "protected_reads": 0,
+      "v_phys_reads": 276
+    },
+    "expected_branches": 460,
+    "failure_count": 0,
+    "forbidden_reads_zero": true,
+    "model_inference_zero": true,
+    "model_parent_by_model": {
+      "M0_OPENVLA": 32,
+      "M1_OPENVLA_OFT": 26,
+      "M2_PI05_LIBERO": 34
+    },
+    "model_parent_count": 92,
+    "pass_receipts": 460,
+    "receipt_count": 460
+  },
+  "next_legal_action": "STOP_FOR_PI_NO_Z4_OR_BRIDGE",
+  "resource_snapshot": {
+    "filesystem": "/mnt/sdc",
+    "free_bytes_at_seal": 15254294528,
+    "min_free_margin_bytes": 5368709120
+  },
+  "schema": "STAGE_Z_Z3C_ROOT_SEAL_V1",
+  "source_bindings": {
+    "launch_plan_sha256": "7bff1fa45f2b752f1990b280085c97e45dccbc87386935d41afcca0c7b5b9b99",
+    "manifest_sha256": "b7d7c755e5f17744e168dc9e8911d60ba1c8e334fe6f4176dbbade0af7bcc037",
+    "ordered_receipt_digest_sha256": "e17d5c7782bfd4517594872670a2b0753e8a20460096a17263ccc41476941766",
+    "protocol_sha256": "92747fe2263fb47ad9b53dee916660f7b8e2db1d5d895e6c80922db29caf7f1b",
+    "reconciliation_sha256": "85c77d7be3387269c7296ee33a7250d8db671a4c9cf479504c7802a07129ad4b",
+    "z3r1_terminal_sha256": "bf898c71c2b020f3cafde5a5977ed1eb415e451d9eda51dfbdeb3a70672c41a1"
+  },
+  "status": "PASS_Z3C_FIXED_MATRIX_COMPLETE",
+  "terminal_synthesis": {
+    "path": "reports/STAGE_Z_Z3C_TERMINAL_V1/STAGE_Z_Z3C_TERMINAL_SYNTHESIS_V1.json",
+    "sha256": "f76c58ca9b7e33d1ff340867304fd98bf9aa90501c411421ef7134c78383126c"
+  },
+  "validation_failures": []
+}
