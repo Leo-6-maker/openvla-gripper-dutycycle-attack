@@ -180,9 +180,14 @@ def main() -> None:
     parser.add_argument("--z3r1-terminal", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
-    root, output = args.root, args.output_dir
-    manifest, protocol = load(args.manifest), load(args.protocol)
-    launch, reconciliation, z3r1 = load(args.launch_plan), load(args.reconciliation), load(args.z3r1_terminal)
+    root = args.root.resolve()
+    def rooted(path: Path) -> Path:
+        return path.resolve() if path.is_absolute() else (root / path).resolve()
+    manifest_path, protocol_path = rooted(args.manifest), rooted(args.protocol)
+    launch_path, reconciliation_path, z3r1_path = rooted(args.launch_plan), rooted(args.reconciliation), rooted(args.z3r1_terminal)
+    output = rooted(args.output_dir)
+    manifest, protocol = load(manifest_path), load(protocol_path)
+    launch, reconciliation, z3r1 = load(launch_path), load(reconciliation_path), load(z3r1_path)
     failures: list[str] = []
     require(manifest.get("status") == "STAGE_Z_Z3_EXECUTION_MANIFEST_FROZEN_NOT_EXECUTED", "MANIFEST_STATUS", failures)
     require(protocol.get("status") == "STAGE_Z_Z3_SOURCE_AUTHORITY_FROZEN", "PROTOCOL_STATUS", failures)
@@ -261,7 +266,7 @@ def main() -> None:
         by_model[row["model_family"]].append(row)
         by_suite[(row["model_family"], row["suite"])].append(row)
 
-    seed = int(sha(args.protocol)[:8], 16)
+    seed = int(sha(protocol_path)[:8], 16)
     def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         result: dict[str, Any] = {"parents": len(rows), "dose": {}, "noncritical_t5_control": {}}
         for dose in DOSES:
@@ -287,7 +292,7 @@ def main() -> None:
     synthesis = {
         "schema": "STAGE_Z_Z3C_TERMINAL_SYNTHESIS_V1",
         "status": "PASS_Z3C_FIXED_MATRIX_COMPLETE" if not failures else "HOLD_Z3C_TERMINAL_VALIDATION_FAILURE",
-        "authority": {"protocol_sha256": sha(args.protocol), "manifest_sha256": sha(args.manifest), "launch_plan_sha256": sha(args.launch_plan), "reconciliation_sha256": sha(args.reconciliation), "z3r1_terminal_sha256": sha(args.z3r1_terminal), "ordered_receipt_digest_sha256": ordered_receipt_digest},
+        "authority": {"protocol_sha256": sha(protocol_path), "manifest_sha256": sha(manifest_path), "launch_plan_sha256": sha(launch_path), "reconciliation_sha256": sha(reconciliation_path), "z3r1_terminal_sha256": sha(z3r1_path), "ordered_receipt_digest_sha256": ordered_receipt_digest},
         "execution": {"expected_branches": 460, "receipt_count": len(branches), "pass_receipts": sum(branch.get("status") == "PASS" for branch in branches.values()), "failure_count": len(failures), "model_parent_count": len(parent_rows), "model_parent_by_model": {model: len(rows) for model, rows in sorted(by_model.items())}, "branch_counters": dict(counters), "forbidden_reads_zero": all(counters[key] == 0 for key in FORBIDDEN_COUNTERS), "model_inference_zero": all(branch.get("model_inference") is False for branch in branches.values())},
         "physical_results": {"primary_unit": "MODEL_PARENT", "model_summary": model_summary, "model_suite_summary": suite_summary, "parent_rows": parent_rows, "dose_order": list(DOSES), "physical_contract": {"h_phys": H_PHYS, "native_open": NATIVE_OPEN, "arm_tolerance": ARM_TOLERANCE, "v_phys_label": "V_PHYS", "invalid_is_abstain": True}},
         "manual_audit": {"outcome_blind": True, "human_labels_pending": True, "video_file_count": len(video_files), "video_bytes": sum(path.stat().st_size for path in video_files), "max_videos": 120, "all_branch_video": False},
