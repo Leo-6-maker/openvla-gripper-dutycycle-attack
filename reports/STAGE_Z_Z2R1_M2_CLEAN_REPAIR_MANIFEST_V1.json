@@ -1,0 +1,93 @@
+{
+  "schema": "STAGE_Z_Z2R1_M2_CLEAN_REPAIR_MANIFEST_V1",
+  "status": "STAGE_Z_Z2R1_M2_CLEAN_REPAIR_34_CELL_SCOPE_FROZEN",
+  "gate": "STAGE_Z_Z2R1_M2_PHASE_ACTION_SEMANTICS_RECONCILIATION_AND_CLEAN_ANCHOR_REPAIR_V1",
+  "authorization_comment_id": 5405256740,
+  "purpose": "Repair only the M2 clean phase/anchor measurement using the same frozen identities and official pi05 action boundary.",
+  "source_bindings": {
+    "panel": {
+      "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+      "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+    },
+    "historical_z2_root": {
+      "path": "reports/STAGE_Z_Z2_TERMINAL_ROOT_SEAL_V2.json",
+      "sha256": "e37659a552bea7665fbfcc7a52e8fa8131e29aef6613a197a7087ab8d7cf4c6f"
+    },
+    "repaired_runner_source_commit": "d36f6e9373284c4e557050f28fee2d9810571172",
+    "repaired_runner_sha256": "f903b841524ec9eb687f6df6132da6ed8084686fe15b7cc12257815cdce8172c",
+    "m2_adapter_sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222",
+    "m2_checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+    "m2_source_commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+    "common_libero_commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+    "canary_receipt": {
+      "path": "reports/server_evidence/STAGE_Z_Z2R1_M2_ENGINEERING_CANARY_libero_10_PRIMARY.json",
+      "sha256": "8de630035bc13de625c3aa92a01818560ca100a82109b51ebf0a99d1c8d19f2d"
+    }
+  },
+  "scope_contract": {
+    "model_family": "M2_PI05_LIBERO",
+    "identity_count": 34,
+    "same_frozen_panel_rows_only": true,
+    "structural_abstentions_not_loaded": [
+      "libero_goal/task_00/state_21",
+      "libero_goal/task_07/state_30"
+    ],
+    "replacement": false,
+    "top_up": false,
+    "new_identity": false,
+    "M0_rerun": false,
+    "M1_rerun": false,
+    "outcome_reads": false,
+    "attack": false,
+    "physical_intervention": false,
+    "protected_or_eval160": false,
+    "V_phys": false,
+    "student_or_detector": false,
+    "fixed_parameters": {
+      "h_phys": 10,
+      "critical_phases": ["CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY"],
+      "noncritical_phases": ["PRE_CONTACT"],
+      "critical_salt": "STAGE_Z_Z2_CRITICAL_ANCHOR_V1_20260823",
+      "noncritical_salt": "STAGE_Z_Z2_NONCRITICAL_CONTROL_V1_20260823",
+      "pi05_replan_steps": 5,
+      "pi05_action_horizon": 10
+    }
+  },
+  "cells": [
+    {"suite": "libero_10", "canonical_parent_key": "libero_10/task_00/state_33", "task_idx": 0, "state_id": 33},
+    {"suite": "libero_10", "canonical_parent_key": "libero_10/task_01/state_35", "task_idx": 1, "state_id": 35},
+    {"suite": "libero_10", "canonical_parent_key": "libero_10/task_02/state_30", "task_idx": 2, "state_id": 30},
+    {"suite": "libero_10", "canonical_parent_key": "libero_10/task_03/state_45", "task_idx": 3, "state_id": 45},
+    {"suite": "libero_10", "canonical_parent_key": "libero_10/task_04/state_34", "task_idx": 4, "state_id": 34},
+    {"suite": "libero_10", "canonical_parent_key": "libero_10/task_05/state_21", "task_idx": 5, "state_id": 21},
+    {"suite": "libero_10", "canonical_parent_key": "libero_10/task_06/state_34", "task_idx": 6, "state_id": 34},
+    {"suite": "libero_10", "canonical_parent_key": "libero_10/task_07/state_20", "task_idx": 7, "state_id": 20},
+    {"suite": "libero_10", "canonical_parent_key": "libero_10/task_08/state_20", "task_idx": 8, "state_id": 20},
+    {"suite": "libero_10", "canonical_parent_key": "libero_10/task_09/state_24", "task_idx": 9, "state_id": 24},
+    {"suite": "libero_goal", "canonical_parent_key": "libero_goal/task_02/state_34", "task_idx": 2, "state_id": 34},
+    {"suite": "libero_goal", "canonical_parent_key": "libero_goal/task_03/state_45", "task_idx": 3, "state_id": 45},
+    {"suite": "libero_goal", "canonical_parent_key": "libero_goal/task_05/state_26", "task_idx": 5, "state_id": 26},
+    {"suite": "libero_goal", "canonical_parent_key": "libero_goal/task_08/state_20", "task_idx": 8, "state_id": 20},
+    {"suite": "libero_object", "canonical_parent_key": "libero_object/task_00/state_22", "task_idx": 0, "state_id": 22},
+    {"suite": "libero_object", "canonical_parent_key": "libero_object/task_01/state_40", "task_idx": 1, "state_id": 40},
+    {"suite": "libero_object", "canonical_parent_key": "libero_object/task_02/state_26", "task_idx": 2, "state_id": 26},
+    {"suite": "libero_object", "canonical_parent_key": "libero_object/task_03/state_29", "task_idx": 3, "state_id": 29},
+    {"suite": "libero_object", "canonical_parent_key": "libero_object/task_04/state_35", "task_idx": 4, "state_id": 35},
+    {"suite": "libero_object", "canonical_parent_key": "libero_object/task_05/state_27", "task_idx": 5, "state_id": 27},
+    {"suite": "libero_object", "canonical_parent_key": "libero_object/task_06/state_31", "task_idx": 6, "state_id": 31},
+    {"suite": "libero_object", "canonical_parent_key": "libero_object/task_07/state_45", "task_idx": 7, "state_id": 45},
+    {"suite": "libero_object", "canonical_parent_key": "libero_object/task_08/state_35", "task_idx": 8, "state_id": 35},
+    {"suite": "libero_object", "canonical_parent_key": "libero_object/task_09/state_23", "task_idx": 9, "state_id": 23},
+    {"suite": "libero_spatial", "canonical_parent_key": "libero_spatial/task_00/state_37", "task_idx": 0, "state_id": 37},
+    {"suite": "libero_spatial", "canonical_parent_key": "libero_spatial/task_01/state_38", "task_idx": 1, "state_id": 38},
+    {"suite": "libero_spatial", "canonical_parent_key": "libero_spatial/task_02/state_40", "task_idx": 2, "state_id": 40},
+    {"suite": "libero_spatial", "canonical_parent_key": "libero_spatial/task_03/state_33", "task_idx": 3, "state_id": 33},
+    {"suite": "libero_spatial", "canonical_parent_key": "libero_spatial/task_04/state_31", "task_idx": 4, "state_id": 31},
+    {"suite": "libero_spatial", "canonical_parent_key": "libero_spatial/task_05/state_23", "task_idx": 5, "state_id": 23},
+    {"suite": "libero_spatial", "canonical_parent_key": "libero_spatial/task_06/state_27", "task_idx": 6, "state_id": 27},
+    {"suite": "libero_spatial", "canonical_parent_key": "libero_spatial/task_07/state_28", "task_idx": 7, "state_id": 28},
+    {"suite": "libero_spatial", "canonical_parent_key": "libero_spatial/task_08/state_32", "task_idx": 8, "state_id": 32},
+    {"suite": "libero_spatial", "canonical_parent_key": "libero_spatial/task_09/state_21", "task_idx": 9, "state_id": 21}
+  ],
+  "next_legal_action": "RUN_EXACTLY_THESE_34_M2_CLEAN_CELLS_THEN_REBUILD_Z2R1_APPEND_ONLY_SYNTHESIS"
+}
