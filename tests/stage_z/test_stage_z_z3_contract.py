@@ -51,6 +51,13 @@ def test_command_open_rejects_unfrozen_dose() -> None:
         command_open_action(MODEL_M0, ACTION, ACTION, duration=4)
 
 
+def test_raw_policy_range_is_not_confused_with_final_libero_range() -> None:
+    raw = (*ACTION[:6], 1.015625)
+    opened_raw, opened_final = command_open_action(MODEL_M1, raw, ACTION, duration=3)
+    assert opened_raw[6] == 1.0
+    assert opened_final[6] == -1.0
+
+
 def _rows(*, lost: bool = False) -> list[dict[str, object]]:
     return [
         {

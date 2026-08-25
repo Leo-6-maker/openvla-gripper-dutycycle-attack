@@ -55,7 +55,7 @@ def prepare_env(config: dict[str, Any], counters: dict[str, int]):
     return env, task, obs
 
 
-def capture_clean(model_family: str, infer: Any, env: Any, task: Any, obs: dict[str, Any], counters: dict[str, int]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def capture_clean(model_family: str, infer: Any, env: Any, task: Any, obs: dict[str, Any], counters: dict[str, int], progress: Any = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     language = str(task.language)
     if model_family == MODEL_M0:
@@ -68,6 +68,8 @@ def capture_clean(model_family: str, infer: Any, env: Any, task: Any, obs: dict[
             obs = env.step(final.tolist())[0]
             counters["env_step_calls"] += 1
             rows.append({"index": index, "raw_action": raw.tolist(), "final_action": final.tolist(), "boundary": boundary})
+            if progress is not None:
+                progress(rows)
         return rows, {"boundary": "FRESH_PER_STEP", "chunk_length": 1, "inference_calls": DOSE}
     chunk, meta = infer(obs, language)
     counters["model_inference_calls"] += 1
@@ -85,6 +87,8 @@ def capture_clean(model_family: str, infer: Any, env: Any, task: Any, obs: dict[
         obs = env.step(final.tolist())[0]
         counters["env_step_calls"] += 1
         rows.append({"index": index, "raw_action": raw.tolist(), "final_action": final.tolist(), "boundary": expected_boundary})
+        if progress is not None:
+            progress(rows)
     return rows, {"boundary": expected_boundary, "chunk_length": int(raw_chunk.shape[0]), "consume_steps": DOSE, "source_contract_length": expected}
 
 
@@ -111,7 +115,7 @@ def run_sentinel(config: dict[str, Any], protocol: dict[str, Any], ledger: dict[
         clean_env, task, obs = prepare_env(config, counters)
         try:
             clean_pre = z1.snapshot_state(clean_env)
-            clean_rows, boundary = capture_clean(args.model_family, infer, clean_env, task, obs, counters)
+            clean_rows, boundary = capture_clean(args.model_family, infer, clean_env, task, obs, counters, lambda rows: atomic_write(args.output, {**receipt, "progress": {"branch": "clean", "rows": rows, "runtime_counters": counters}}))
             clean_post = z1.snapshot_state(clean_env)
             z1.restore_state(clean_env, clean_pre)
             restore_exact = np.array_equal(clean_pre, z1.snapshot_state(clean_env))
@@ -136,6 +140,7 @@ def run_sentinel(config: dict[str, Any], protocol: dict[str, Any], ledger: dict[
                 counters["env_step_calls"] += 1
                 counters["engineering_command_open_steps"] += 1
                 open_rows.append({"index": base["index"], "raw_action": list(raw), "final_action": list(final), "raw_native_open": raw[-1], "final_native_open": final[-1], "arm_delta_linf": arm_delta_linf(base["final_action"], final), "action_semantics": check})
+                atomic_write(args.output, {**receipt, "progress": {"branch": "open", "rows": open_rows, "runtime_counters": counters}})
         finally:
             open_env.close()
         receipt.update({

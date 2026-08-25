@@ -23,6 +23,7 @@ from stage_z_preparation.z3_contract import H_PHYS, MODEL_M0, MODEL_M1, MODEL_M2
 
 
 MODELS = (MODEL_M0, MODEL_M1, MODEL_M2)
+ROOT = Path(__file__).resolve().parents[2]
 ARMS = ("CLEAN_BRANCH_CRITICAL", "COMMAND_OPEN_T3_CRITICAL", "COMMAND_OPEN_T5_CRITICAL", "COMMAND_OPEN_T10_CRITICAL", "COMMAND_OPEN_T5_NONCRITICAL_CONTROL")
 DOSE = {"CLEAN_BRANCH_CRITICAL": 0, "COMMAND_OPEN_T3_CRITICAL": 3, "COMMAND_OPEN_T5_CRITICAL": 5, "COMMAND_OPEN_T10_CRITICAL": 10, "COMMAND_OPEN_T5_NONCRITICAL_CONTROL": 5}
 MIN_FREE_BYTES = 5 * 1024**3
@@ -231,7 +232,7 @@ def main() -> int:
     counters = {"env_step_calls": 0, "physical_telemetry_reads": 0, "model_inference_calls": 0, "open_intervention_steps": 0, "v_phys_reads": 0, "protected_reads": 0, "eval160_reads": 0, "pgd_calls": 0, "attack_outcome_reads": 0, "scientific_parent_exposure": len({job["canonical_parent_key"] for job in jobs})}
     control_by_parent: dict[str, dict[str, Any]] = {}
     for job in jobs:
-        anchor, source_rows = source_anchor(job, Path.cwd())
+        anchor, source_rows = source_anchor(job, ROOT)
         output = args.output_dir / f"{job['branch_id']}.json"
         control = control_by_parent.get(str(job["canonical_parent_key"])) if job["anchor_class"] == "CRITICAL" and job["arm"] != "CLEAN_BRANCH_CRITICAL" else None
         manual_video = args.output_dir / "manual_videos" / f"{job['blinded_video_id']}.mp4" if job.get("blinded_video_id") else None
