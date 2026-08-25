@@ -107,8 +107,10 @@ def receipt_path(root: Path, job: dict[str, Any]) -> Path:
 
 def validate_branch(job: dict[str, Any], branch: dict[str, Any], failures: list[str]) -> None:
     bid = job["branch_id"]
-    for key in ("branch_id", "model_family", "suite", "canonical_parent_key", "arm", "duration", "anchor_class", "anchor_step", "anchor_state_sha256", "source_receipt_path", "source_receipt_sha256"):
+    for key in ("branch_id", "model_family", "suite", "canonical_parent_key", "arm", "duration", "anchor_class", "anchor_step", "anchor_state_sha256"):
         require(branch.get(key) == job.get(key), f"{bid}:FIELD_MISMATCH:{key}", failures)
+    require(branch.get("source_receipt_path") == job.get("receipt_path"), f"{bid}:FIELD_MISMATCH:source_receipt_path", failures)
+    require(branch.get("source_receipt_sha256") == job.get("receipt_sha256"), f"{bid}:FIELD_MISMATCH:source_receipt_sha256", failures)
     require(branch.get("status") == "PASS", f"{bid}:STATUS", failures)
     require(branch.get("model_inference") is False, f"{bid}:MODEL_INFERENCE", failures)
     require(branch.get("state_restore_exact") is True, f"{bid}:STATE_RESTORE", failures)
