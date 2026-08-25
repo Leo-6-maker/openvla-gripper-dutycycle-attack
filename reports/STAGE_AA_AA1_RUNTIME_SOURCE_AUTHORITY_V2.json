@@ -9,8 +9,24 @@
   "claim_boundary": "Source/runtime binding for the same permanently excluded AA1 canaries only; no scientific result.",
   "git_binding": {
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2"
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "commit": "0651f5c6c339489d47b3a2efcca4234bc9e80d80",
+    "tree": "0bf884115f48f97591075cd8668c10293cff8297"
   },
+  "runtime_files": [
+    {
+      "path": "configs/STAGE_AA_AA1_ENGINEERING_RUNTIME_PROTOCOL_V1.json",
+      "bytes": 3978,
+      "sha256": "26e01b57917052d3cf29cc1abb68c6c6e21d1175b9ea9c1b6fcea24b88f6d0b2",
+      "git_blob_sha": "2ab150c50d5d0d5cd63ed8921e8f12071d0c429e"
+    },
+    {
+      "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
+      "bytes": 30537,
+      "sha256": "f0ca3d24b86792ea20a3f6e012179345780be42c2ef542f34e78d5f1c77e0629",
+      "git_blob_sha": "5f3fa6aa5aa9cf0a8fe689d2332c49716e67b212"
+    }
+  ],
   "runtime_change": {
     "file": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
     "change": "Set XLA_PYTHON_CLIENT_PREALLOCATE=false only for M2 process before OpenPI/JAX policy construction.",
