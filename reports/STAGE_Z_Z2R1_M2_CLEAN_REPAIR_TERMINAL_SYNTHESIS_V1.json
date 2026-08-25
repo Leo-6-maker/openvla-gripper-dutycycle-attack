@@ -1,0 +1,123 @@
+{
+  "artifact_outputs": {
+    "receipt_ledger": "reports/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_RECEIPT_LEDGER_V1.json"
+  },
+  "authority": {
+    "action_semantics_adapter": {
+      "bytes": 7777,
+      "path": "src/stage_z_preparation/action_semantics.py",
+      "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c"
+    },
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "discrepancy": {
+      "bytes": 4769,
+      "path": "reports/STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_DISCREPANCY_V1.json",
+      "sha256": "74a999fc59d6231a5ffb825c5dd88b3d67547f5f6226daadd86b7341ff7f26bc"
+    },
+    "historical_phase_classifier_sha256": "e3c48886777a45cfe7d2b9942bbeeb6ebc992f29568846180d31d064b839fbe6",
+    "historical_z2_root_sha256": "e37659a552bea7665fbfcc7a52e8fa8131e29aef6613a197a7087ab8d7cf4c6f",
+    "manifest": {
+      "bytes": 6564,
+      "path": "reports/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_MANIFEST_V1.json",
+      "sha256": "50a33ffda80cffc37c8b2f4325c17000be701e5609cfd091545eaf71a27e7771"
+    },
+    "panel": {
+      "bytes": 19254,
+      "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+      "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+    },
+    "r1_protocol": {
+      "bytes": 5029,
+      "path": "configs/STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_PROTOCOL_V1.json",
+      "sha256": "bd1089d95f3613b52ce1b0e925ee3b3bb80aedb849da185a1c8f9e3917e0b362"
+    },
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "runner": {
+      "bytes": 24550,
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "sha256": "f903b841524ec9eb687f6df6132da6ed8084686fe15b7cc12257815cdce8172c"
+    },
+    "source_head_before_terminal_seal": "4396435a53cb7a16f9dde90b74eb4f59c6758481",
+    "source_tree_before_terminal_seal": "41896fa2daeb643abeb15043ac61d8aa8c4fbbef",
+    "static_parity": {
+      "bytes": 2929,
+      "path": "reports/STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_STATIC_PARITY_V1.json",
+      "sha256": "aaac8c2ab29ac4625b23c2a7d503e6fa98a73a4086d854149b5077d9cfe2307d"
+    },
+    "storage_preflight": {
+      "bytes": 2238,
+      "path": "reports/STAGE_Z_Z2R1_STORAGE_PREFLIGHT_V1.json",
+      "sha256": "b0b498bbdbfb706b4a30666ce2609ff23271a2b9071a51f9581727f2e32811ec"
+    },
+    "working_tree_status_at_generation": []
+  },
+  "authorization_comment_id": 5405256740,
+  "claim_boundary": "M2 clean action-semantics repair and anchor feasibility only; no physical OPEN susceptibility or attack efficacy claim.",
+  "execution_counters": {
+    "anchor_telemetry_reads": 11400,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 11740,
+    "eval160_reads": 0,
+    "model_inference_calls": 2280,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 34,
+    "vphys_reads": 0
+  },
+  "forbidden_execution_totals": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "gate": "STAGE_Z_Z2R1_M2_PHASE_ACTION_SEMANTICS_RECONCILIATION_AND_CLEAN_ANCHOR_REPAIR_V1",
+  "historical_conclusion": "The prior M2 0/36 anchor result is not promoted as scientific negative evidence because the historical classifier used OpenVLA gripper semantics.",
+  "matrix": {
+    "both_anchors": 34,
+    "clean_exposed_identities": 34,
+    "model_parent_cells": 34,
+    "no_legal_anchor": 0,
+    "noncritical_only": 0,
+    "panel_identities": 36,
+    "suite_summary": {
+      "libero_10": {
+        "both_anchors": 10,
+        "cells": 10,
+        "status_counts": {
+          "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 10
+        }
+      },
+      "libero_goal": {
+        "both_anchors": 4,
+        "cells": 4,
+        "status_counts": {
+          "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 4
+        }
+      },
+      "libero_object": {
+        "both_anchors": 10,
+        "cells": 10,
+        "status_counts": {
+          "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 10
+        }
+      },
+      "libero_spatial": {
+        "both_anchors": 10,
+        "cells": 10,
+        "status_counts": {
+          "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 10
+        }
+      }
+    }
+  },
+  "next_legal_action": "STOP_FOR_PI",
+  "repaired_conclusion": "Under the Stage-Z-only PI05 clip/raw-to-LIBERO adapter, all 34 clean-exposed M2 cells have both critical and noncritical anchors.",
+  "schema": "STAGE_Z_Z2R1_M2_CLEAN_REPAIR_TERMINAL_SYNTHESIS_V1",
+  "status": "SEALED_STAGE_Z_Z2R1_M2_CLEAN_REPAIR_STOP_FOR_PI",
+  "z3_authorized": false
+}

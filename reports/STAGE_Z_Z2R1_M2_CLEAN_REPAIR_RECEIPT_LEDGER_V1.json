@@ -1,0 +1,1757 @@
+{
+  "authority": {
+    "action_semantics_adapter": {
+      "bytes": 7777,
+      "path": "src/stage_z_preparation/action_semantics.py",
+      "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c"
+    },
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "discrepancy": {
+      "bytes": 4769,
+      "path": "reports/STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_DISCREPANCY_V1.json",
+      "sha256": "74a999fc59d6231a5ffb825c5dd88b3d67547f5f6226daadd86b7341ff7f26bc"
+    },
+    "historical_phase_classifier_sha256": "e3c48886777a45cfe7d2b9942bbeeb6ebc992f29568846180d31d064b839fbe6",
+    "historical_z2_root_sha256": "e37659a552bea7665fbfcc7a52e8fa8131e29aef6613a197a7087ab8d7cf4c6f",
+    "manifest": {
+      "bytes": 6564,
+      "path": "reports/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_MANIFEST_V1.json",
+      "sha256": "50a33ffda80cffc37c8b2f4325c17000be701e5609cfd091545eaf71a27e7771"
+    },
+    "panel": {
+      "bytes": 19254,
+      "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+      "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+    },
+    "r1_protocol": {
+      "bytes": 5029,
+      "path": "configs/STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_PROTOCOL_V1.json",
+      "sha256": "bd1089d95f3613b52ce1b0e925ee3b3bb80aedb849da185a1c8f9e3917e0b362"
+    },
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "runner": {
+      "bytes": 24550,
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "sha256": "f903b841524ec9eb687f6df6132da6ed8084686fe15b7cc12257815cdce8172c"
+    },
+    "source_head_before_terminal_seal": "4396435a53cb7a16f9dde90b74eb4f59c6758481",
+    "source_tree_before_terminal_seal": "41896fa2daeb643abeb15043ac61d8aa8c4fbbef",
+    "static_parity": {
+      "bytes": 2929,
+      "path": "reports/STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_STATIC_PARITY_V1.json",
+      "sha256": "aaac8c2ab29ac4625b23c2a7d503e6fa98a73a4086d854149b5077d9cfe2307d"
+    },
+    "storage_preflight": {
+      "bytes": 2238,
+      "path": "reports/STAGE_Z_Z2R1_STORAGE_PREFLIGHT_V1.json",
+      "sha256": "b0b498bbdbfb706b4a30666ce2609ff23271a2b9071a51f9581727f2e32811ec"
+    },
+    "working_tree_status_at_generation": []
+  },
+  "authorization_comment_id": 5405256740,
+  "cells": [
+    {
+      "action_semantics": {
+        "accepted": 520,
+        "checks": 520,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 30,
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "158d0e0d8b203a50d3c065ff095f0f6f3f9c0ccdb49f0a0a243b442ecefad1c8",
+        "state_sha256": "07be7dd3779b3cb4f902abf6b331431be5573634a2f9f2b03ce2ad79afc8329b",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 75
+      },
+      "decision_boundary_count": 104,
+      "horizon": 520,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "1530c30608ea366a18f0a452fb17392b439ac60c1546b95bd45f24813154309f",
+        "state_sha256": "ba40148b3007d53cee4f2ee01493a4234fa69208cda8a725b3d0ff1214e4b444",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 15
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_10_task_00_state_33.json",
+      "receipt_sha256": "87d826e350e4388c3fc287a5d4d41487cabef61fdf6a8cb9cb16247ab98a449b",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 520,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 33,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_10",
+      "task_idx": 0
+    },
+    {
+      "action_semantics": {
+        "accepted": 520,
+        "checks": 520,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 29,
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "02794c4d99e26390fcb91cf8d7d8b7e9d08d6a8fc4b3f2726345d8b9ab961f6d",
+        "state_sha256": "faa350bd163429f13897789c3173babc8110e92af7235edb87f40c6ff1e9744b",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 90
+      },
+      "decision_boundary_count": 104,
+      "horizon": 520,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "132f4f64b5439e5c5ac0ef12fb5f215e8ff61ccbfc531e5347b4d193c45d050a",
+        "state_sha256": "45c905721e3a0898b15b1baaa9b74d8b72783670e90e89dabbca752c1e057520",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 30
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_10_task_1_state_35.json",
+      "receipt_sha256": "31f55f0a8e77e43dce2ba062fd4a94237e25171ed88a75bdae5ed885578e704e",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 520,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 35,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_10",
+      "task_idx": 1
+    },
+    {
+      "action_semantics": {
+        "accepted": 520,
+        "checks": 520,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 57,
+      "canonical_parent_key": "libero_10/task_02/state_30",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "1651bca5e798bb59f15b52803cf8bfd90a8e1a9dcea3af3329ce29033c4df8cb",
+        "state_sha256": "fa0f5f89a65474d03deb9f2da816a1bf9d553aaf66b11e466b712d1eab27a31a",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 175
+      },
+      "decision_boundary_count": 104,
+      "horizon": 520,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0150a0db433f6e879e6941d41bf6fde5ae79bfce27e622074a2a229408144bfe",
+        "state_sha256": "48c429a0c48f017d70d663d13457a36f30daf66353b248162e0897e4a88a4a4d",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 35
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_10_task_2_state_30.json",
+      "receipt_sha256": "00e3ad60e0bef0cabc1ba1f7760df58d07a8a751ef01b277fd0cfa0564b5f96a",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 520,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 30,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_10",
+      "task_idx": 2
+    },
+    {
+      "action_semantics": {
+        "accepted": 520,
+        "checks": 520,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 33,
+      "canonical_parent_key": "libero_10/task_03/state_45",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "07aa03c38264edac95b1768a068ed205eeb927a83818ad92ae75234b02ab6269",
+        "state_sha256": "83c7beceb99fa649c704acbe1a8afcf61e15783365ba394bbd2999f3e2e17162",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 135
+      },
+      "decision_boundary_count": 104,
+      "horizon": 520,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "2cedfb24bc211dbd49e122321ef214a9b5df001ec7343e0bde66b4f41048960a",
+        "state_sha256": "05ae6f43cc7d3f1ceacbc1a1e2193f5a442366017cf29a675e3c86175b2a47ce",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 60
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_10_task_3_state_45.json",
+      "receipt_sha256": "545d2545e47f94e480d7dbbbd1907653682a95cff435eeb463733dc460e28d9e",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 520,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 45,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_10",
+      "task_idx": 3
+    },
+    {
+      "action_semantics": {
+        "accepted": 520,
+        "checks": 520,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 101,
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "0d9281fbe4f39483b494b17365b24422ae5b9cf1ce61df45e533e5cb76c71232",
+        "state_sha256": "6411a6613fe5f4fe6113f742c941dca8a1986b9dc930af44047f185faab9a950",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 85
+      },
+      "decision_boundary_count": 104,
+      "horizon": 520,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "002f148c69ead595c627d8274afb86edaf1a5c2974bb43495fbdc571efeaa390",
+        "state_sha256": "d148833da1409880e7ee3aea3373a97c62c05212c43072053260f392ed91deae",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 480
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_10_task_4_state_34.json",
+      "receipt_sha256": "67f79670ad49b38bf92adedce394a8492073b1d8381a85d581639ea43b1be834",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 520,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 34,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_10",
+      "task_idx": 4
+    },
+    {
+      "action_semantics": {
+        "accepted": 520,
+        "checks": 520,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 101,
+      "canonical_parent_key": "libero_10/task_05/state_21",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "02ede95a3365c0ebf21b9de4bb61673a77cf61ebfde718c6155b745e4d71efd6",
+        "state_sha256": "d5857932b164fc97af3610c400b0c74f62032610d7006752975c6b662a8fdbbb",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 270
+      },
+      "decision_boundary_count": 104,
+      "horizon": 520,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "1c39d54688200ea9a6c662842d4e0360ddbd82a9068e63151fa6afc5092ad8da",
+        "state_sha256": "667a5c8e5ad8c19191e1a67a8c15471c6565005ce20dc16d3f6380cf4a1fa379",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 20
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_10_task_5_state_21.json",
+      "receipt_sha256": "ce80d463b8f1c2e92abeec72e5e38a085f66d73faeb3349c130bf09ff9204404",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 520,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 21,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_10",
+      "task_idx": 5
+    },
+    {
+      "action_semantics": {
+        "accepted": 520,
+        "checks": 520,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 101,
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "081539048f1afd8165b7c214b1fe5c19441736813ff7c55f482638a18bbb75e3",
+        "state_sha256": "252c5640b96dc52c40beadd57d85f84c93f98f9d28bccaf41ed0ee7a6cc381fc",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 395
+      },
+      "decision_boundary_count": 104,
+      "horizon": 520,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "060b6b1cb001ca4fc067e47f4e80c8c746e0a2e7dd30b94d27b7548bab9490dd",
+        "state_sha256": "67ef3ffe17a06ac802e5404becc81c068e4a5facac22ce3361caa19c8975f60a",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 210
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_10_task_6_state_34.json",
+      "receipt_sha256": "a90f927797b04d139e27e498f386e327c4627c6ff29545566114024716447391",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 520,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 34,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_10",
+      "task_idx": 6
+    },
+    {
+      "action_semantics": {
+        "accepted": 520,
+        "checks": 520,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 23,
+      "canonical_parent_key": "libero_10/task_07/state_20",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "089efe40bbf5a61fcc3fadc847ca843cda0a26374c2f40f64aa7d9f828ad85dd",
+        "state_sha256": "395f6b3218a5111572d10f8577f6da7fb8559d4853febb5db6616e4a8795f70f",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 95
+      },
+      "decision_boundary_count": 104,
+      "horizon": 520,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0fd719a90baa766bb34989fa2a76f6f4155636c91ae92a4c2bd005a4778c5274",
+        "state_sha256": "c55c97dbccad799335d6f08ae3ff3eb3337732d211c70198b3b4612d7b02f0aa",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_10_task_7_state_20.json",
+      "receipt_sha256": "8f198994cbbaf4ad4c36666475cb67696bfd3f69d9bcec36a79fbb78c65eeac9",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 520,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 20,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_10",
+      "task_idx": 7
+    },
+    {
+      "action_semantics": {
+        "accepted": 520,
+        "checks": 520,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 81,
+      "canonical_parent_key": "libero_10/task_08/state_20",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "01724f841803ad900a0f987252ee0f1e31227101c8fc5afbf5e94885636cd819",
+        "state_sha256": "09175e4cdf7072acc300f8cf08620e9a106f844ef6c90d46135f2f800e7a38ee",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 370
+      },
+      "decision_boundary_count": 104,
+      "horizon": 520,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0a5eaa563374c984283216379d2bb68f0e337370d1f385362dc0edd4824641bf",
+        "state_sha256": "de3984788f792fdef630377b506c7548264f26c5efffae429e8de98b1dcaa24d",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 285
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_10_task_8_state_20.json",
+      "receipt_sha256": "eb9f65db2e84c09800a9afb7f234e645955f9345bcf3506e24a308cc91629f02",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 520,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 20,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_10",
+      "task_idx": 8
+    },
+    {
+      "action_semantics": {
+        "accepted": 520,
+        "checks": 520,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 32,
+      "canonical_parent_key": "libero_10/task_09/state_24",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "234a6ef57b59858a1b548abf80c2b3f043fb8c45d63989513ccf9a1cbaeda994",
+        "state_sha256": "beb179083e3d8d1edff568ce1ca6b53368a1b357b2093e3bb7933ad84b8b3679",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 135
+      },
+      "decision_boundary_count": 104,
+      "horizon": 520,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0d61e530e74f993b2ebc5ab4d4d3c309533f8521ec88c076f3c922dcd6a205ab",
+        "state_sha256": "bcbd8b29644290c29ebf85fb6c942c0714a5d6d3ec307881056b7b62af1bf2e5",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 40
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_10_task_9_state_24.json",
+      "receipt_sha256": "bc53382f52a8dd2420af9c3a02f9ae07643cac09089d94d09b693c1e445498e1",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 520,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 24,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_10",
+      "task_idx": 9
+    },
+    {
+      "action_semantics": {
+        "accepted": 300,
+        "checks": 300,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 21,
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "0b91e5fda50087056a8da7e3e1059a143ec995de070e621cc6c1377f2978c2d4",
+        "state_sha256": "b97001704ba8f0b2823081290e6bbcb008078042b08b5bed905822baf3394cb8",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 60
+      },
+      "decision_boundary_count": 60,
+      "horizon": 300,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "06d13abb1edf9eff1976421389b75612e3a9bbf9d3e58878b79121bd99eeda30",
+        "state_sha256": "b133efa9abb81eba6fb185a32c03529cc80bc98bc21381331fc25b993679b404",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 35
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_goal_task_2_state_34.json",
+      "receipt_sha256": "cd802a46e83d492e9ee425a8991e4978ce86f7465426c7b4c3e24583aaeccd32",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 300,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 310,
+        "eval160_reads": 0,
+        "model_inference_calls": 60,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 34,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_goal",
+      "task_idx": 2
+    },
+    {
+      "action_semantics": {
+        "accepted": 300,
+        "checks": 300,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 37,
+      "canonical_parent_key": "libero_goal/task_03/state_45",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "0703bba68778a12c13ec84746d23c45581c8306d6f28dbffeee4cb06731b5fb2",
+        "state_sha256": "0b309b5be05c501198d8b92c879c49a4c7f54021816247b630372be003c84768",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 155
+      },
+      "decision_boundary_count": 60,
+      "horizon": 300,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0c18b091d0d5de4972686f2c62e53c742974dfe737a94968ec832a40897b4857",
+        "state_sha256": "31979bafa171e18957d4c4174a85cdf42be81296675d2a3e2b8b9bc5ce08baa9",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 35
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_goal_task_3_state_45.json",
+      "receipt_sha256": "a8340a2d04d2f3adcb79cecea91fae4d4f9a7fec9d1c7fb507f67701068b3f5f",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 300,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 310,
+        "eval160_reads": 0,
+        "model_inference_calls": 60,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 45,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_goal",
+      "task_idx": 3
+    },
+    {
+      "action_semantics": {
+        "accepted": 300,
+        "checks": 300,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 57,
+      "canonical_parent_key": "libero_goal/task_05/state_26",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "04edda50c1588afe24ec393a381071979ef7e92dfe64193097402fe2d9c4e315",
+        "state_sha256": "5b698f8d1cc86ffcaa37de79ba01504af282d997bd9251d08a8c440128b7218f",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 280
+      },
+      "decision_boundary_count": 60,
+      "horizon": 300,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0d806343c3d7bfb128d565a456ab078b440eeebdc2d7ad749274cdd93ea9b2b5",
+        "state_sha256": "f82842ee71a59c32df7605a31dac8e53f156a9f0be7154233b36135469c2be16",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 10
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_goal_task_5_state_26.json",
+      "receipt_sha256": "452e13fe21962aca258b58e57eb49ebe35f783240a7dea32a180a11abc2a03b5",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 300,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 310,
+        "eval160_reads": 0,
+        "model_inference_calls": 60,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 26,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_goal",
+      "task_idx": 5
+    },
+    {
+      "action_semantics": {
+        "accepted": 300,
+        "checks": 300,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 57,
+      "canonical_parent_key": "libero_goal/task_08/state_20",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "02da5e16cf0ea07eeff751444abcfdd17628c1c82ca400d910ac9a012c1926bc",
+        "state_sha256": "0288cedc2331c2ae5f7a497bad4164d64db55205d4c2956cac30bf2b1314f039",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 150
+      },
+      "decision_boundary_count": 60,
+      "horizon": 300,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "027d89e3a98d0bd537105648b439d14f7d1e3741e767e3bb35de520045757ec2",
+        "state_sha256": "60a6a7b9ac11111fb59b9f30ef5665cdb62a97655a3c1ec496142c293ff44761",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 155
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_goal_task_8_state_20.json",
+      "receipt_sha256": "2df23cca3fea5fdddf78c9359d717c7fb75aafbf03e152e15b39a7779c0d407e",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 300,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 310,
+        "eval160_reads": 0,
+        "model_inference_calls": 60,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 20,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_goal",
+      "task_idx": 8
+    },
+    {
+      "action_semantics": {
+        "accepted": 280,
+        "checks": 280,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 29,
+      "canonical_parent_key": "libero_object/task_00/state_22",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "2dd855045a287cc22443113ad19e6d656de5ce2f25de0c45a676a87204c29f63",
+        "state_sha256": "7a1555f6e44fcf6852af334181339d63d818d59657c8cfb064cb2e2838007755",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 140
+      },
+      "decision_boundary_count": 56,
+      "horizon": 280,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "2e16def6fbde79db4dc49e53b2691abdeee6c77f5dfbd189370af61a064fab65",
+        "state_sha256": "52fd229b3ae8ed79304486c0b4980755ffe645d19bca94ae5ea0843ddfc0ce97",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 30
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_object_task_0_state_22.json",
+      "receipt_sha256": "16811cde888f8ce36067f7d5d09a751fa42bbfcd7dfaf92297948fdb5d02fede",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 280,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 22,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_object",
+      "task_idx": 0
+    },
+    {
+      "action_semantics": {
+        "accepted": 280,
+        "checks": 280,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 24,
+      "canonical_parent_key": "libero_object/task_01/state_40",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "183498e0eb7040248b07727a5c270070342ed7a309c6b32931b2aa4f151c0a2a",
+        "state_sha256": "c359b7e81aacc5a2880f10168005b9ac68b03723293dbcd6e4c1a844f07893d6",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 55
+      },
+      "decision_boundary_count": 56,
+      "horizon": 280,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "1b4f2d949bc21d763b89c7303da5ed699a47b842c4a1b927e899dd2539565d0f",
+        "state_sha256": "4184a5d72c06f9307954baf8ff1f0db12f2a9e0ded84255665f0e148b9364c96",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_object_task_01_state_40.json",
+      "receipt_sha256": "3432914cd1d2bbe469e7c0e88078b0caae84e2468a62cb065a2e2e7d4c446e45",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 280,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 40,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_object",
+      "task_idx": 1
+    },
+    {
+      "action_semantics": {
+        "accepted": 280,
+        "checks": 280,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 22,
+      "canonical_parent_key": "libero_object/task_02/state_26",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "2ae227ba15ef3c9fcbbf3315d27785c09f18bb46449bca23ac206f519db14798",
+        "state_sha256": "4eddff5f9337a0148beaefc5a24ba296ff871a098803e6ef6c0e696488e9ab77",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 95
+      },
+      "decision_boundary_count": 56,
+      "horizon": 280,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "2b069ab1242522b858bd1328e13e893873a52bc1484055e8ecf9f2989c383e00",
+        "state_sha256": "4ce69a2f8fc2415080e273cdaa750b358f97a4a9002e4b56a0a15cad87ce28ab",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 10
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_object_task_02_state_26.json",
+      "receipt_sha256": "fba2e4e47212d0d9f66310a0d3f0c2918948dc9100f01171f4577620fc7ee42a",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 280,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 26,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_object",
+      "task_idx": 2
+    },
+    {
+      "action_semantics": {
+        "accepted": 280,
+        "checks": 280,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 26,
+      "canonical_parent_key": "libero_object/task_03/state_29",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "101535791f719d4c97659891dfece4313f510681abe838ca0f3309e6efb91b9a",
+        "state_sha256": "6587739496625dd6e54720a59419f67cb82d8bd170b7843fafd4be5a3790ad09",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 65
+      },
+      "decision_boundary_count": 56,
+      "horizon": 280,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "184070713319cfceb383742bcdb7411b1e303bc5ad05a7b2de9448232a3dd920",
+        "state_sha256": "587a0266cb71783c3d81ca59a633aaaaf9e00e68348206eaf06e978cce0610a6",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 40
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_object_task_3_state_29.json",
+      "receipt_sha256": "dfd02509aa326a286f94ae90858c6775fb53ff534dbfca26815f7abf27540d91",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 280,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 29,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_object",
+      "task_idx": 3
+    },
+    {
+      "action_semantics": {
+        "accepted": 280,
+        "checks": 280,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 27,
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "01b7b8206bc03622c71926a7a817a5003f10a096c8033e8031310bb1829acdad",
+        "state_sha256": "834ab9fe71da89ab6fe09704bf2709cf6bb6211703766f508b047c828ac4328d",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 55
+      },
+      "decision_boundary_count": 56,
+      "horizon": 280,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "079dfac0a3d93542100c5f62ac33390b773f7afc97047d6c2aee7f7daf4c3b1e",
+        "state_sha256": "440262f2f10ea93ec013034ab86ffb159bd73e69d6454d479d2c5e61cca7d833",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 15
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_object_task_4_state_35.json",
+      "receipt_sha256": "f7146bacaaebd6c4fa76901942ac56f7200ddc70fe9d32e6bf8fad4798c9f310",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 280,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 35,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_object",
+      "task_idx": 4
+    },
+    {
+      "action_semantics": {
+        "accepted": 280,
+        "checks": 280,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 27,
+      "canonical_parent_key": "libero_object/task_05/state_27",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "082d0d7871e36e0cfa11e4a6b67d40aeb40d680f094ceef92db192fa8fd238f2",
+        "state_sha256": "3179f0db0b727c6c4d49162bc4356344dd2c44bef0457b08f481d45bfc1e2f8e",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 120
+      },
+      "decision_boundary_count": 56,
+      "horizon": 280,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "090653942416d62c27431d2e68a0384a403481394dc65bdbde92f8adc1a767a4",
+        "state_sha256": "ca509b4ca19dc25b4f8aa9acf82bb8b0b7a268027dc1df08a63b7ae856a84e03",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 10
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_object_task_5_state_27.json",
+      "receipt_sha256": "42c20b1caf274cf111af9b787932693b8a1bf34a904d9fa9abad90dc00cfce3e",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 280,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 27,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_object",
+      "task_idx": 5
+    },
+    {
+      "action_semantics": {
+        "accepted": 280,
+        "checks": 280,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 31,
+      "canonical_parent_key": "libero_object/task_06/state_31",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "087481606a85dd9034a4dd3710c48bcccef3d30a434e23fccd016ec702c2a1dd",
+        "state_sha256": "6da7306d5a281a9823b784c7a41ccbb559ae7c02cae13916da5a5005808d0bc0",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 140
+      },
+      "decision_boundary_count": 56,
+      "horizon": 280,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "2579f3540d0b1906f8d3e630f73f791fb142ac412a752ab0177f764cf00b879d",
+        "state_sha256": "0782c6d9d2ae840b7419b4055fd69e431622f9148acd039fc88840d47caa3976",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 35
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_object_task_6_state_31.json",
+      "receipt_sha256": "56be271b8875bcca0afdcc6fee19241aebd3a432735e350bf23bcc42183efbf9",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 280,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 31,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_object",
+      "task_idx": 6
+    },
+    {
+      "action_semantics": {
+        "accepted": 280,
+        "checks": 280,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 28,
+      "canonical_parent_key": "libero_object/task_07/state_45",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "084561f1bad26c809351c9fe1675595164fcd4cf92b7dff38e9ceda91a6ba31b",
+        "state_sha256": "8513f36aa2ed7208687b1238997f53cf8db30ad0a576c1b53837f18a6ff3b85d",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 50
+      },
+      "decision_boundary_count": 56,
+      "horizon": 280,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "16ad0c672527268b1a2a4bc4fefd02d8bb36abd3af9397208c6537b04287a384",
+        "state_sha256": "84bece3d64b4159f9c1acbf447c07d6a5e2c8099b68adb4f4ea127cfc1101cfd",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_object_task_7_state_45.json",
+      "receipt_sha256": "9ea12f4040aa1d7e6c4e0009cf09fe7ab3d4ea90b62dfe4232078ee849481756",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 280,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 45,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_object",
+      "task_idx": 7
+    },
+    {
+      "action_semantics": {
+        "accepted": 280,
+        "checks": 280,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 29,
+      "canonical_parent_key": "libero_object/task_08/state_35",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "03008613253fba61b47b4e491f4052f8159e3f311e98e1c9d6c91c695e8ab1a4",
+        "state_sha256": "a7f032b52da3ca1c729c8b2085c8baee2d61420c42c034e6258eab9c256a510f",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 85
+      },
+      "decision_boundary_count": 56,
+      "horizon": 280,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "01836eea0b9aece4eff378d13f67400aa5a43c0a32476e07ed083a45dd3c12de",
+        "state_sha256": "c32ea1cf0581ddd98623532250fc6af15e0bd831c9c16649b7bacb737d90b9a3",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 25
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_object_task_8_state_35.json",
+      "receipt_sha256": "404168e00e255b060c78d21b88e9b7e3ab5e9dd755a0897f6161f42b3da1bb82",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 280,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 35,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_object",
+      "task_idx": 8
+    },
+    {
+      "action_semantics": {
+        "accepted": 280,
+        "checks": 280,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 45,
+      "canonical_parent_key": "libero_object/task_09/state_23",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "01baecb8803253ea1acfb096bbdae5c8f85d76db2d5c39cd03d4cedd7e36c14c",
+        "state_sha256": "71be0d853aaa36bb955eebb4ba4f33a0d7f46d8bae4eeab00374af9852e21ae6",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 120
+      },
+      "decision_boundary_count": 56,
+      "horizon": 280,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "4563e491288f4cb618f05c1b5fa4f55e69f1dd109052fa56ab4add03042bb505",
+        "state_sha256": "523d516e4f6f4cb58d458cb897ed7700c43a6f41f30e2f6c09e40e3081828a1c",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 25
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_object_task_9_state_23.json",
+      "receipt_sha256": "f2e0d7d13c210ebd1c1266dccc3e9981045c92570508ea7c5f056d0af1ca4d89",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 280,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 23,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_object",
+      "task_idx": 9
+    },
+    {
+      "action_semantics": {
+        "accepted": 220,
+        "checks": 220,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 39,
+      "canonical_parent_key": "libero_spatial/task_00/state_37",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "03c5757474dbee935ad24c3b2d292abbe67b7db2778df6555e5846ab62377591",
+        "state_sha256": "7d1e9f88f815494a6f93e054d445337ea0c59ffbbcca569afacf206f5e64bd13",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 85
+      },
+      "decision_boundary_count": 44,
+      "horizon": 220,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "01085d0001ff4df03df88c724b1052c90ce767594972084d3efe583e3bd739c7",
+        "state_sha256": "6d035b2e9037a61eb3b1a1532260dcf4c65ca9bb6a1dd1c70f9ecfebc25877f9",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 95
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_spatial_task_0_state_37.json",
+      "receipt_sha256": "be6ca9ba153d3e8d740a20a55f7880f78d39edae8e436bf010b4106444602e89",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 220,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 37,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_spatial",
+      "task_idx": 0
+    },
+    {
+      "action_semantics": {
+        "accepted": 220,
+        "checks": 220,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 41,
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "073dff96cecc784c74a07cecefeff1c98fe585ed336546b0b319df429b90195d",
+        "state_sha256": "106105920c31aefc12431551e3386649255264a536dcaa4cbaba4dc8ef9bf99b",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 120
+      },
+      "decision_boundary_count": 44,
+      "horizon": 220,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "065d3f29c9e33759fd38a6d68036413250993aa8c8de847eff1332b64fd6f289",
+        "state_sha256": "3c94c7bade199d17a5c048109855a0f9908ef32b124710c813cf5de88b9ddaf0",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 5
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_spatial_task_1_state_38.json",
+      "receipt_sha256": "a0f60cc8de6dc714f6ea1bdda889b647f212b14d3bb7300c6df4cddcf3391a3d",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 220,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 38,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_spatial",
+      "task_idx": 1
+    },
+    {
+      "action_semantics": {
+        "accepted": 220,
+        "checks": 220,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 41,
+      "canonical_parent_key": "libero_spatial/task_02/state_40",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "0738bed3c5656c8262a916418939eb45f6c2e60b171dd6616e000369be1f7a7e",
+        "state_sha256": "d27bf75896e78c644b9701a85ee4727a2d21b90c9daceeccb0bc87f12bc6c218",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 35
+      },
+      "decision_boundary_count": 44,
+      "horizon": 220,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "02a60f7a2fcde00e2b21c89d91ffb2d7f2b268d9a8e0c8911349f2a71e31bf7c",
+        "state_sha256": "daf14eef73140bb0d38268cc58d1b97f45cfb7f67b00cf1afd9d6e9b6e6a3d32",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 10
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_spatial_task_2_state_40.json",
+      "receipt_sha256": "f89b18b1ccb09674c3fd9e5adc2f4a99ff927d334a6ec532212e169635f13c39",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 220,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 40,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_spatial",
+      "task_idx": 2
+    },
+    {
+      "action_semantics": {
+        "accepted": 220,
+        "checks": 220,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 41,
+      "canonical_parent_key": "libero_spatial/task_03/state_33",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "05a2fff33d60500c45660fa4a2d2ef90d7ba172d11516066ef580fef3a908ddf",
+        "state_sha256": "320fe013217eddc48dbaa8ed6c1f0aa6a5e2d23bf61b11a181b4315ecf333ed6",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 160
+      },
+      "decision_boundary_count": 44,
+      "horizon": 220,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0284c39580753e4c0c2854969aa7301e4e8534448885563ca3ce86d11b607e67",
+        "state_sha256": "0e6c381b848f75b7d3b0d066ab3dfd1512f5620cee03860ce81a51a25e732059",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 15
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_spatial_task_3_state_33.json",
+      "receipt_sha256": "3dff4b5faf73236cb87ad3321423c9710a0b467d10b5550922238544cc16d75e",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 220,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 33,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_spatial",
+      "task_idx": 3
+    },
+    {
+      "action_semantics": {
+        "accepted": 220,
+        "checks": 220,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 41,
+      "canonical_parent_key": "libero_spatial/task_04/state_31",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "02d981a995efa2ae9d94e468bdbc3fdc943b2d50296d52a23c9c8cb80f6c5e3a",
+        "state_sha256": "3d78ecdc00c0ce34b8cc05e756edd216394141a78e64ac88735a796c7e79c069",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 155
+      },
+      "decision_boundary_count": 44,
+      "horizon": 220,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "1a74f35bd4ef0ea90942d371afbe287c866efddd0239053902c7ec7129a2eafd",
+        "state_sha256": "0ce295861b415246c06c40d8adc8ac538843ee596dbc13066b9cc48cb01eeb97",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 195
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_spatial_task_4_state_31.json",
+      "receipt_sha256": "084aac3b8dc9290c2fc5c42b58f76613138a3d8300147e8f940db3869028fea8",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 220,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 31,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_spatial",
+      "task_idx": 4
+    },
+    {
+      "action_semantics": {
+        "accepted": 220,
+        "checks": 220,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 41,
+      "canonical_parent_key": "libero_spatial/task_05/state_23",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "03c4b91679b62ade85c83583c62166732f9240f7a8647bb0dc55eb61bc8ffff3",
+        "state_sha256": "7092b46185cb83d23fe7f53e0da641a4c3a6fcbd76ce6c4294eb058ff4e00645",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 75
+      },
+      "decision_boundary_count": 44,
+      "horizon": 220,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "004f7b2a97cb76c22d5d2497b4c73ec190c67838d5ceede99942c958714128a0",
+        "state_sha256": "82693ac73b7743bbf5ac0b5371889b5cbe9bbdb05d8fbb840d89e303df31bf1d",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 125
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_spatial_task_5_state_23.json",
+      "receipt_sha256": "2ca43b737225092774f785b38db462a5b43278ec1624254f845b10b39ba2cf7a",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 220,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 23,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_spatial",
+      "task_idx": 5
+    },
+    {
+      "action_semantics": {
+        "accepted": 220,
+        "checks": 220,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 41,
+      "canonical_parent_key": "libero_spatial/task_06/state_27",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "00e377fc549b730638d6cf598f8a734da54fc9f0705689c3342347261bf69b45",
+        "state_sha256": "e75e05a9d64ca976d7dc869e2f1b0f00c4523581da9f8ba3e04c79421a3af6be",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 95
+      },
+      "decision_boundary_count": 44,
+      "horizon": 220,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "122843266bc656df8eb9c695a64784645d671c8ab803b9053b6352adad11fd96",
+        "state_sha256": "a2c1dfbad1a8a61571c879b11995b57a7a8d28b79a5cd977eaaa751fab7c7a5a",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 15
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_spatial_task_6_state_27.json",
+      "receipt_sha256": "aefe2625376e05ffe8b2a2beadd198c85337ee292a77766ed9dc9ee03e123c93",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 220,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 27,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_spatial",
+      "task_idx": 6
+    },
+    {
+      "action_semantics": {
+        "accepted": 220,
+        "checks": 220,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 41,
+      "canonical_parent_key": "libero_spatial/task_07/state_28",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "12459e1d68ddc4a7a19a1506980fbf189b3c56580335275de4f1b0c2e3d979d8",
+        "state_sha256": "a047a1af01868f2bbf0987ff19adf9189b19e14b5f803128f716e069e612a3e6",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 175
+      },
+      "decision_boundary_count": 44,
+      "horizon": 220,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "1042adaa48b02529c229433fac9714c12f457953b74f41e14c3697091577e69b",
+        "state_sha256": "edfd63c59ac52a38e3e350ef7606a7b3741fb38482e70dc795ededc45148d121",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 15
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_spatial_task_7_state_28.json",
+      "receipt_sha256": "9021e5e91460092aeba747d0c1408ce3f44697e53870ebd7d878360b238dea6a",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 220,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 28,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_spatial",
+      "task_idx": 7
+    },
+    {
+      "action_semantics": {
+        "accepted": 220,
+        "checks": 220,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 41,
+      "canonical_parent_key": "libero_spatial/task_08/state_32",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "0ea21d6cf44775c0458c534c46ba78b0de6e4ddac9a6564dcd00a4c887d336a3",
+        "state_sha256": "1ba1162ae97c6d626fc21bc5ecaff886f3af9adb95fb77bca9aa0da4fcdebf5b",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 95
+      },
+      "decision_boundary_count": 44,
+      "horizon": 220,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "3dea584f1eda71e9073818345e659577fef332ec094509a184c4b2796d61636a",
+        "state_sha256": "f9028381cee7b3ab635dae19987c0da5bd2ddc5b9b57dae9f9bb69a8064f67ad",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 30
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_spatial_task_8_state_32.json",
+      "receipt_sha256": "053ff432fcc59305fc4af5acd825cf5a15e8525c498977765697d4c957d134c4",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 220,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 32,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_spatial",
+      "task_idx": 8
+    },
+    {
+      "action_semantics": {
+        "accepted": 220,
+        "checks": 220,
+        "invalid": 0,
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1"
+      },
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "candidate_count": 41,
+      "canonical_parent_key": "libero_spatial/task_09/state_21",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "1974ba2b0f5a015801a3ffe9e935a5cfb066ddaade400b91533a12f3dd44f302",
+        "state_sha256": "0e3a52e7a9d239af5fedf9ec9e6776b45a80b3c5f4ad0e51b6daee0316cb2244",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 55
+      },
+      "decision_boundary_count": 44,
+      "horizon": 220,
+      "noncritical_anchor": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "07d55e169f9d97e817ab1568adbd44d6ecf9082b3a2e496b47f3e485f02fb852",
+        "state_sha256": "1e71f6429f324b1823772fe4369923225e11b5a22ee2213e59d5fed9aad42c1b",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 10
+      },
+      "receipt_path": "reports/server_evidence/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_libero_spatial_task_9_state_21.json",
+      "receipt_sha256": "f3b57be1789d55cc6021aa1bed9b9ae3f9d6b003b3b2e011c28cb1d514c24595",
+      "runtime_counters": {
+        "anchor_telemetry_reads": 220,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "stage_z_scientific_parent_exposure": 1,
+        "vphys_reads": 0
+      },
+      "state_id": 21,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+      "suite": "libero_spatial",
+      "task_idx": 9
+    }
+  ],
+  "claim_boundary": "M2 clean action-semantics repair and anchor feasibility only; no physical OPEN susceptibility or attack efficacy claim.",
+  "engineering_canary": {
+    "bytes": 105922,
+    "path": "reports/server_evidence/STAGE_Z_Z2R1_M2_ENGINEERING_CANARY_libero_10_PRIMARY.json",
+    "sha256": "8de630035bc13de625c3aa92a01818560ca100a82109b51ebf0a99d1c8d19f2d"
+  },
+  "gate": "STAGE_Z_Z2R1_M2_PHASE_ACTION_SEMANTICS_RECONCILIATION_AND_CLEAN_ANCHOR_REPAIR_V1",
+  "historical_z2_preserved": true,
+  "next_legal_action": "STOP_FOR_PI",
+  "schema": "STAGE_Z_Z2R1_M2_CLEAN_REPAIR_RECEIPT_LEDGER_V1",
+  "scope": {
+    "cells": 34,
+    "m0_rerun": false,
+    "m1_rerun": false,
+    "model_family": "M2_PI05_LIBERO",
+    "new_identity": false,
+    "structural_abstentions_not_loaded": [
+      "libero_goal/task_00/state_21",
+      "libero_goal/task_07/state_30"
+    ],
+    "top_up": false
+  },
+  "status": "STAGE_Z_Z2R1_M2_CLEAN_REPAIR_RECEIPTS_SEALED",
+  "summary": {
+    "anchor_availability": {
+      "BOTH_ANCHORS_AVAILABLE": 34
+    },
+    "forbidden_counter_totals": {
+      "attack_outcome_reads": 0,
+      "attacked_env_steps": 0,
+      "eval160_reads": 0,
+      "pgd_calls": 0,
+      "physical_interventions": 0,
+      "protected_reads": 0,
+      "vphys_reads": 0
+    },
+    "status_counts": {
+      "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 34
+    },
+    "suite_summary": {
+      "libero_10": {
+        "both_anchors": 10,
+        "cells": 10,
+        "status_counts": {
+          "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 10
+        }
+      },
+      "libero_goal": {
+        "both_anchors": 4,
+        "cells": 4,
+        "status_counts": {
+          "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 4
+        }
+      },
+      "libero_object": {
+        "both_anchors": 10,
+        "cells": 10,
+        "status_counts": {
+          "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 10
+        }
+      },
+      "libero_spatial": {
+        "both_anchors": 10,
+        "cells": 10,
+        "status_counts": {
+          "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 10
+        }
+      }
+    }
+  },
+  "z3_authorized": false
+}
