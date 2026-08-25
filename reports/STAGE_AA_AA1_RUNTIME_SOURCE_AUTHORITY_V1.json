@@ -6,8 +6,8 @@
   "git_binding": {
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
     "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
-    "commit": "4ced96a4601b088baed13addbc26b787a1f254ef",
-    "tree": "9f2a2a1c69c5a50aac4777cd10c098e59e430d39"
+    "commit": "2dfb6a3efebc4343347fc86cdfd1ba118bd42af6",
+    "tree": "f81dcaba9056920d8db2af747c7b3e12e7f1a74d"
   },
   "runtime_files": [
     {
@@ -24,9 +24,9 @@
     },
     {
       "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
-      "bytes": 29221,
-      "sha256": "02d63f4d19fbf016f56017a533a14975ca096c08d6daeec0127045d81d95a027",
-      "git_blob_sha": "27a32d6c52e332e113158f5e21c0a983b0abbf0b"
+      "bytes": 29618,
+      "sha256": "2894dd7043c337178c09d64fe62fb17cee27bc25e142a3273776587b5202bf8d",
+      "git_blob_sha": "64cbd91ef48e5621655d0437f91085fcdcf64b71"
     }
   ],
   "parent_authorities": {
