@@ -1,0 +1,102 @@
+{
+  "authority": {
+    "jobs_structurally_checked": 460,
+    "launch_plan_sha256": "7bff1fa45f2b752f1990b280085c97e45dccbc87386935d41afcca0c7b5b9b99",
+    "manifest_sha256": "b7d7c755e5f17744e168dc9e8911d60ba1c8e334fe6f4176dbbade0af7bcc037",
+    "protocol_sha256": "92747fe2263fb47ad9b53dee916660f7b8e2db1d5d895e6c80922db29caf7f1b",
+    "reconciliation_sha256": "85c77d7be3387269c7296ee33a7250d8db671a4c9cf479504c7802a07129ad4b",
+    "source_binding_status": "PASS_Z3C_STATIC_SOURCE_BINDING",
+    "unique_source_receipts": 92
+  },
+  "execution_firewall": {
+    "env_step_calls": 0,
+    "eval160_reads": 0,
+    "goal_materialization_in_progress_non_scientific": true,
+    "model_inference_calls": 0,
+    "open_intervention_steps": 0,
+    "output_root_absent_before_start": true,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "v_phys_reads": 0
+  },
+  "failures": [],
+  "next_legal_action": "LAUNCH_FIXED_M0_GROUPS_1_TO_4",
+  "observed_utc": "2026-08-25T09:33:26Z",
+  "resource": {
+    "filesystem": "/mnt/sdc",
+    "foreign_compute_processes": [
+      "GPU-bf4309d3-8cba-437e-8d87-cee9f1e6d232, 36909, /mnt/sdc/dty_user/pi05_lerobot_v060/venv/bin/python, 76474",
+      "GPU-f6910e5c-f41e-109e-43d0-f01f0d77dbf2, 36910, /mnt/sdc/dty_user/pi05_lerobot_v060/venv/bin/python, 76474",
+      "GPU-7b06162a-27e4-2552-e891-d201e3fae6b9, 36911, /mnt/sdc/dty_user/pi05_lerobot_v060/venv/bin/python, 76474",
+      "GPU-41cd4b75-e3d4-92b8-ec37-ddca13e3761a, 36912, /mnt/sdc/dty_user/pi05_lerobot_v060/venv/bin/python, 76474",
+      "GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda, 228671, /home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3, 6736"
+    ],
+    "foreign_process_policy": "record_only_never_touch",
+    "free_bytes": 24622047232,
+    "free_margin_pass": true,
+    "gpus": [
+      {
+        "eligible": false,
+        "free_memory_mib": 4732,
+        "index": 0,
+        "used_memory_mib": 76491,
+        "utilization_gpu_percent": 100
+      },
+      {
+        "eligible": false,
+        "free_memory_mib": 4732,
+        "index": 1,
+        "used_memory_mib": 76491,
+        "utilization_gpu_percent": 100
+      },
+      {
+        "eligible": false,
+        "free_memory_mib": 4732,
+        "index": 2,
+        "used_memory_mib": 76490,
+        "utilization_gpu_percent": 100
+      },
+      {
+        "eligible": false,
+        "free_memory_mib": 4732,
+        "index": 3,
+        "used_memory_mib": 76491,
+        "utilization_gpu_percent": 100
+      },
+      {
+        "eligible": true,
+        "free_memory_mib": 74470,
+        "index": 4,
+        "used_memory_mib": 6752,
+        "utilization_gpu_percent": 0
+      },
+      {
+        "eligible": true,
+        "free_memory_mib": 81213,
+        "index": 5,
+        "used_memory_mib": 10,
+        "utilization_gpu_percent": 0
+      },
+      {
+        "eligible": true,
+        "free_memory_mib": 81213,
+        "index": 6,
+        "used_memory_mib": 10,
+        "utilization_gpu_percent": 0
+      },
+      {
+        "eligible": true,
+        "free_memory_mib": 81213,
+        "index": 7,
+        "used_memory_mib": 10,
+        "utilization_gpu_percent": 0
+      }
+    ],
+    "project_worker_limit": "one worker per GPU",
+    "required_free_bytes": 10200547328
+  },
+  "schema": "STAGE_Z_Z3C_M0_PRE_SCIENCE_PREFLIGHT_V1",
+  "scope": "M0_OPENVLA_GROUPS_1_TO_4_ONLY",
+  "status": "PASS_M0_STAGE_READY"
+}
