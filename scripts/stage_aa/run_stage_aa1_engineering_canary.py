@@ -53,7 +53,6 @@ def load_module(path: Path, name: str) -> ModuleType:
 Z1 = load_module(ROOT / "scripts/stage_z/run_stage_z_z1_runtime_canary.py", "aa1_z1_runtime")
 TAXONOMY = load_module(ROOT / "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "aa1_taxonomy")
 SEMANTICS = load_module(ROOT / "src/stage_z_preparation/action_semantics.py", "aa1_action_semantics")
-Z3 = load_module(ROOT / "src/stage_z_preparation/z3_contract.py", "aa1_z3_contract")
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -74,6 +73,22 @@ def sha256_file(path: Path) -> str:
 
 def canonical_hash(value: Any) -> str:
     return sha256_bytes(json.dumps(value, sort_keys=True, separators=(",", ":")).encode())
+
+
+def command_open_action(family: str, raw_action: list[float], final_action: list[float], duration: int) -> tuple[tuple[float, ...], tuple[float, ...]]:
+    """Minimal local copy of the frozen command-level action contract."""
+    if duration not in DOSES or len(raw_action) != ACTION_DIM or len(final_action) != ACTION_DIM:
+        raise RuntimeError("AA1_OPEN_ACTION_INPUT_INVALID")
+    native_raw = {"M0_OPENVLA": 1.0, "M1_OPENVLA_OFT": 1.0, "M2_PI05_LIBERO": -1.0}.get(family)
+    if native_raw is None:
+        raise RuntimeError("AA1_UNKNOWN_MODEL_FAMILY")
+    opened_raw = tuple(float(value) for value in (*raw_action[:6], native_raw))
+    opened_final = tuple(float(value) for value in (*final_action[:6], -1.0))
+    if any(abs(opened_raw[index] - float(raw_action[index])) > ARM_TOLERANCE for index in range(6)):
+        raise RuntimeError("AA1_RAW_ARM_CHANGED")
+    if any(abs(opened_final[index] - float(final_action[index])) > ARM_TOLERANCE for index in range(6)):
+        raise RuntimeError("AA1_FINAL_ARM_CHANGED")
+    return opened_raw, opened_final
 
 
 def atomic_write(path: Path, value: dict[str, Any]) -> None:
@@ -411,7 +426,7 @@ def run_branch(config: dict[str, Any], family: str, canary: dict[str, Any], infe
                 arm_delta = float(np.max(np.abs(reference_final[:6] - final_action[:6])))
                 action_reference_exact = action_reference_exact and arm_delta <= ARM_TOLERANCE
             if arm != "CLEAN_REFERENCE" and offset < dose:
-                opened_raw, opened_final = Z3.command_open_action(family, raw_action.tolist(), final_action.tolist(), duration=dose)
+                opened_raw, opened_final = command_open_action(family, raw_action.tolist(), final_action.tolist(), duration=dose)
                 opened_raw = np.asarray(opened_raw, dtype=np.float32)
                 opened_final = np.asarray(opened_final, dtype=np.float32)
                 if not np.array_equal(opened_final[:6], final_action[:6]) or float(opened_final[-1]) != -1.0:
