@@ -1,0 +1,1661 @@
+{
+  "anchor_rule": {
+    "critical_phases": [
+      "CARRY",
+      "CONTACT_MANIPULATION",
+      "ENGAGED_LIFT"
+    ],
+    "critical_salt": "STAGE_Z_Z2_CRITICAL_ANCHOR_V1_20260823",
+    "noncritical_phases": [
+      "PRE_CONTACT"
+    ],
+    "noncritical_salt": "STAGE_Z_Z2_NONCRITICAL_CONTROL_V1_20260823",
+    "outcome_fields_used": [],
+    "phase_classifier": {
+      "clean_only": true,
+      "history_rule": "only current row and clean rows at or before current step",
+      "minimum_remaining_steps": 20,
+      "outcome_blind": true,
+      "registered_phase_labels": [
+        "PRE_CONTACT",
+        "CONTACT_MANIPULATION",
+        "ENGAGED_LIFT",
+        "CARRY"
+      ],
+      "required_fields": [
+        "step",
+        "clean_record_valid",
+        "clean_terminal",
+        "remaining_horizon",
+        "object_identity",
+        "object_position",
+        "eef_position",
+        "object_eef_distance_m",
+        "object_gripper_contact",
+        "object_support_contact",
+        "contact_telemetry_valid",
+        "raw_gripper",
+        "env_gripper"
+      ],
+      "schema": "STAGE_V_M3_5_PHASE_CLASSIFIER_V1",
+      "state_rule": "object identity and baseline are explicit; missing telemetry yields UNKNOWN",
+      "thresholds": {
+        "action_semantics_tolerance": 1e-06,
+        "carry_relative_distance_m": 0.04,
+        "carry_stability_steps": 3,
+        "env_close_value": 1.0,
+        "env_open_value": -1.0,
+        "lift_delta_m": 0.015,
+        "object_eef_distance_m": 0.12,
+        "raw_open_threshold": 0.5
+      },
+      "unknown_label": "UNKNOWN",
+      "version": "V1"
+    },
+    "student_or_detector_used": false
+  },
+  "canonical_parent_key": "libero_object/task_09/state_23",
+  "checkpoint": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_object",
+  "checkpoint_manifest": {
+    "bytes": 15939159270,
+    "files": 25,
+    "manifest_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+    "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "suite": "libero_object",
+    "verified": true
+  },
+  "clean_reference": {
+    "candidate_count": 16,
+    "candidate_digest": "25f39cd7baa2ea66375c30908f7496921dcdbeb77cae171908ec85f5e3b1126c",
+    "critical_candidates": [
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "becb6f53d84dd07d7b5ee2abe4858c7d1695a20cf68653bda91706ed1464b06e",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "f5aa6862626aa86586a6754b2517e2bb43a9546b7ff657947cfc81298dd040bb",
+        "step": 32
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "09642d735187a5e6d85798a83df29ca78750e79a829c648141c0f8b92890b94e",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "da1241ffa9406510de79929da93fdb8ef689aa929d4728700edf0ce408c68db2",
+        "step": 40
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "caa04f4dca5ffa2c562112585826dddef1e2428d13e5fd725f9de809346e49cd",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "8370a8b42a8c05e04d1d1175ea733e6e2a0803c746c32be02532b059eed1e186",
+        "step": 48
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "b3b8ce078e3c5df7b648da26b45abd532dff06f95d39d971a5a3c6a523867c7d",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CARRY",
+        "state_sha256": "519889ad5e5a839b4ca67f8cbfc70a824f1324e2c648bc17ec5a6c719656abb8",
+        "step": 56
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "8cc3aeaa889225912c7858a1ab6deb06f9b4caf932eb944b7a32f6e3fc377856",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CARRY",
+        "state_sha256": "4694aa11d912c2a1144425087cacf975f2aae870af17d5d86e4c9e97e7cc9e62",
+        "step": 64
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "708a69bc3556b766121d99900a06a304f743eafb305913bf15debbf26acb89c7",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CARRY",
+        "state_sha256": "fbcb89ac718022965b3246fcd0f69aaa1b1000a1dc639f6c9e8f00d5acc9de0f",
+        "step": 72
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "0034e771ee52cdc372be66d2076457c1fe00b6cbdc4247f968d889398e6c3842",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CARRY",
+        "state_sha256": "384d7e6d037b4f1150d97c38c6aef4e7758f999228cb80e3ca135d28c47cf515",
+        "step": 80
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "619581d6dc89301ae77e4033898da2de391c2df429a35230f751f33fd18366f8",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CARRY",
+        "state_sha256": "97c1091ff5a80e1078a48b9434cd453fc1cb2adbce5c03e6d903da94ecf15298",
+        "step": 88
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "ba8a03379660db553d901c6222a065182b0b73bb02d849480ddc6e2ef679b742",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CARRY",
+        "state_sha256": "df899aae25e33755924708eb58f7e3de34d02d2a8de4576348c4f9be962ed9b3",
+        "step": 96
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "87e61ee705553543c495c42bbe8fb63d9a1c0c4accf707718e9e9c0c35867d71",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CARRY",
+        "state_sha256": "9b5c148f6196b9e5b54797bfe30e7675c62dec25ad891414d6fa1f89697466fc",
+        "step": 104
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "18bcafb7983859732985a9bd9a43985d59502c42f77ff5258ede09013746168c",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CARRY",
+        "state_sha256": "e50de8e9b2ab530c42770b6f477210cda64af6d01734bd640222d582bf742744",
+        "step": 112
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "4f08658a49cc2b68048c4fb02fe8dbb33bfa595e2ce9de9f8c63c1405291db4f",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "CARRY",
+        "state_sha256": "5ee6efdcbb79132baac94a9142e9ccc53ad0d4fd845fffc75f77195134de8a5c",
+        "step": 120
+      }
+    ],
+    "decision_boundaries": [
+      {
+        "action_chunk_sha256": "3aacd3ace9601717d0ece9b96612ae5ef210675b9f11e42c254aaf0a3125a7bf",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "654a38fecc0a27a03128f209707ff839c279debc386c2a6a00a8f662a4a0b642",
+        "step": 0
+      },
+      {
+        "action_chunk_sha256": "153b668e5694d99463fc5b405a4e6f7fe8538b301cffb120585d9f9b9148f3f4",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "158a9c2739364002d82bc335a59084d51d5734db05c7da78bf14ede391849bdd",
+        "step": 8
+      },
+      {
+        "action_chunk_sha256": "1a9d58fe39fe8880417eba14a10a565647fcc3c79e237b74531d2f5e50fb4712",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "fe31ad7cd678e47a12bd9b739624cb803b659cecb966a082f8924d853a6eb3ca",
+        "step": 16
+      },
+      {
+        "action_chunk_sha256": "cee1a0ec7ecf39643e517235b1e868b0002188e8eaf109b6c2e5e714cef134f6",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "168cf6f6f9cce189eea352fc6bd68a97dba1e170c6b8b36d046036062b766d13",
+        "step": 24
+      },
+      {
+        "action_chunk_sha256": "bcb52cbdd902cd4eeab6dfd7d658d2ace942c19015d3239c2965a90e46fca574",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "f5aa6862626aa86586a6754b2517e2bb43a9546b7ff657947cfc81298dd040bb",
+        "step": 32
+      },
+      {
+        "action_chunk_sha256": "0bae711155c1b7b1f21150a097209e3766024c5f5ffbcd3157fe660bd707c3b6",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "da1241ffa9406510de79929da93fdb8ef689aa929d4728700edf0ce408c68db2",
+        "step": 40
+      },
+      {
+        "action_chunk_sha256": "058d0ad8609a21ebd51bd591e2387545cd7db3840f61f81708338d5a3575f248",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "8370a8b42a8c05e04d1d1175ea733e6e2a0803c746c32be02532b059eed1e186",
+        "step": 48
+      },
+      {
+        "action_chunk_sha256": "ced4548e3eab74376d9567c3e7e67ce82d845913486f563d52685c84b5846f0d",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "519889ad5e5a839b4ca67f8cbfc70a824f1324e2c648bc17ec5a6c719656abb8",
+        "step": 56
+      },
+      {
+        "action_chunk_sha256": "e4a45d1c0a6cf63a4c6680f142c1c48760a37f237843997d7e3e10883eaaee99",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "4694aa11d912c2a1144425087cacf975f2aae870af17d5d86e4c9e97e7cc9e62",
+        "step": 64
+      },
+      {
+        "action_chunk_sha256": "dd027c60edb0684c7a30b982430ec9508014b36f73177f0bfed1f1ac0292f424",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "fbcb89ac718022965b3246fcd0f69aaa1b1000a1dc639f6c9e8f00d5acc9de0f",
+        "step": 72
+      },
+      {
+        "action_chunk_sha256": "f8bb3859d26c33ebb849e4f9714906eff3556091fb5dc49f2d981d4f9932c5af",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "384d7e6d037b4f1150d97c38c6aef4e7758f999228cb80e3ca135d28c47cf515",
+        "step": 80
+      },
+      {
+        "action_chunk_sha256": "ad66918a54493155bc08010b03402d3e532f8673d3c6923b371da727a6fcd67d",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "97c1091ff5a80e1078a48b9434cd453fc1cb2adbce5c03e6d903da94ecf15298",
+        "step": 88
+      },
+      {
+        "action_chunk_sha256": "80d09c4b0e978a70927367ba8d34757d897abf12dc43deb0eba19ef507e1f63a",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "df899aae25e33755924708eb58f7e3de34d02d2a8de4576348c4f9be962ed9b3",
+        "step": 96
+      },
+      {
+        "action_chunk_sha256": "431044844483bb38da1c7bf4ee564f29a6070f0e7d3d92cd719d8ea995b4f658",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "9b5c148f6196b9e5b54797bfe30e7675c62dec25ad891414d6fa1f89697466fc",
+        "step": 104
+      },
+      {
+        "action_chunk_sha256": "1d95b78d787352e981920c9deee7eceb092a8638466b01fbe3aa1b812c61b062",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "e50de8e9b2ab530c42770b6f477210cda64af6d01734bd640222d582bf742744",
+        "step": 112
+      },
+      {
+        "action_chunk_sha256": "28dd4abaf49c148c1299f02b10d8e43eb038802349da520d354f8b51281680ed",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "5ee6efdcbb79132baac94a9142e9ccc53ad0d4fd845fffc75f77195134de8a5c",
+        "step": 120
+      },
+      {
+        "action_chunk_sha256": "8a908bb865ad1738be94fc7c0e890419fca685e03a6da4e5551e384dea469b83",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "fe52c7d30e7ec9e61625d17abdc5b00397532def258789053659e79c3c7f0918",
+        "step": 128
+      },
+      {
+        "action_chunk_sha256": "d013913adb7a18a16febdb8d435d0d5fca1a47b2e3ede5036a303581bde5d240",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "785d72e5b2339dee21d5ca7e90ea4683ee03188e992d4497261edaf93bb88b8b",
+        "step": 136
+      },
+      {
+        "action_chunk_sha256": "e2d843eac0b3247b078d8ebf68934a8510af5d1b98bf1230a3e67e361301233c",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "39ceaf51ad7d7b954d5847150500e4f8653a09d139ed3f96fcc72e0269c6b467",
+        "step": 144
+      },
+      {
+        "action_chunk_sha256": "0471dde8221636c8f8198cfb7b87456dc23bd9654e9d5697fee98c55748277c0",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "6fa603a6662061f6c5514dbbc54041a3d899ea0310dd7df122fd5722947d6100",
+        "step": 152
+      },
+      {
+        "action_chunk_sha256": "a2c65a127a70978d97fbbd4e56f3efd3c33acc4bd8beac41ec17e5a97a1aecba",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "2ae7aaadf35fc33c96ba2cd607d10375d67124b0e709906ba2a31114c0bfb74a",
+        "step": 160
+      },
+      {
+        "action_chunk_sha256": "59268df6f9c8e87b584aa176e8b777f8fdd95a54808fca3a676e859a4edda9f7",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "2399d169141f02e86b504e63505bedf653a265922d7afd166abd65932f22ea86",
+        "step": 168
+      },
+      {
+        "action_chunk_sha256": "ceef235d1d242932e496f7375e12f7cbb808a639e64e67894f8ca584c58fb46c",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "e9c6a18ecb373bcbacae3ed30963122bae8f321b6253562f16833aa1f060e181",
+        "step": 176
+      },
+      {
+        "action_chunk_sha256": "e8d0ee2e7eaa3846847bc38bf62d388499cdad7d212a9b4041f1d50cbc1d6308",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "de2d2827415679611fcc2ca870fad2fcf110bcaf559d805f1f28ded64451cf11",
+        "step": 184
+      },
+      {
+        "action_chunk_sha256": "3204d22534d10d38475e3f5199dbb0a17c07ae6aa972328215225f3f3a44b1a7",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "b66a71755e872cb35cd74114c5cafd8f43e66f0d84a8b852f6c0f6c4a818e740",
+        "step": 192
+      },
+      {
+        "action_chunk_sha256": "b917374a2370191d636a94cb329b8ae2bd0d1c2c618c4b826948895472ff6ca1",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "8a3ff6537ea5cd8989e8dcc28d6ddde430c2e2cee28d2303b52d56698bb6e866",
+        "step": 200
+      },
+      {
+        "action_chunk_sha256": "1413f1c60082d4baecd7001c97dbefbf1eef4cefe5526254c10b97db8db25930",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "bd3dc3e450e81de31ebbf76ea830ca66d055fd95b443466e11da86347b1d4cbe",
+        "step": 208
+      },
+      {
+        "action_chunk_sha256": "20ed12fd72279afb2fe00489feddc4c1db41317bf54a5eae9ed4e45d80188750",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "5b4ca88269f8a27b54758fc637c9c18c3244bf2140ab363e073a6b9c517a0128",
+        "step": 216
+      },
+      {
+        "action_chunk_sha256": "b41b3e528c69e67a214a4d460c79822a8a5673037f0b2873d12f678b40d9dc51",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "03b8079b4bb558b7e5573424ef4876f64fb836ce287abaa72d51d99cdd8c7dbb",
+        "step": 224
+      },
+      {
+        "action_chunk_sha256": "ab093218230adc86334629e09c38868e927f35d776faafe6665673b9c15c6cf3",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "435b1d4cce32b6a3c44271e1df3a3b926f37699071799d79a588197e298c70f3",
+        "step": 232
+      },
+      {
+        "action_chunk_sha256": "ca2d93ad5b8eb3b7c349a936fd0d34bffdcf8e908a5ffdc76d2c916ae6fc09c2",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "639e37123764f72f1657fb47be6aac59b9b77ee641cda6ee8e91789895ebf0ca",
+        "step": 240
+      },
+      {
+        "action_chunk_sha256": "461184bc6d75a037a88f5c06f13b0907840e67439ed4e1348f7822885b2e2117",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "bbd22461959cae4b9ee8aff779eb151f728cd73802a9a45e83594cac6aefdf4a",
+        "step": 248
+      },
+      {
+        "action_chunk_sha256": "d29378eab4eb37eeefed11b6da2f3b81c946a711d198d2c521631d04420cdef0",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "002a88e1efd65d8f6ba6708afcacfa826969a2410433ca1b0e5fdc6adc2ae365",
+        "step": 256
+      },
+      {
+        "action_chunk_sha256": "040f01b9b0a18cbf6c960a84acc956aa4b2cb1e877f712350bdd9f9d6cbb7385",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "cf80fc3dfe7717b1da9fe4b199d37fa02bee959a7fc3a0768635b15bb26367cb",
+        "step": 264
+      },
+      {
+        "action_chunk_sha256": "5762d215064c3a58cd6f5d9dff034f3cc995c51c0e97b35e5281fb2ee490ad77",
+        "chunk_length": 8,
+        "model_boundary": "FRESH_OFT_ACTION_QUEUE",
+        "state_sha256": "b3bf325f07131cca354c98afa5ebe5c04b563bf2232bcf8254979d80724f95dc",
+        "step": 272
+      }
+    ],
+    "decision_boundary_count": 35,
+    "dummy_wait_steps": 10,
+    "horizon": 280,
+    "noncritical_candidates": [
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "5e092a3a52d0e9b8e0ec897c3990693d1a2016f4c53e9a7a7a8950e9a6c743e3",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "654a38fecc0a27a03128f209707ff839c279debc386c2a6a00a8f662a4a0b642",
+        "step": 0
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "da9a76fe031dccaf4dfae6a467907327d612c4058bfd86f5839b56bf0e43da7a",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "158a9c2739364002d82bc335a59084d51d5734db05c7da78bf14ede391849bdd",
+        "step": 8
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "51327c0513fa46fce7b9f4fcf128277d09e6020c872d25a5df00a85eb27e5d7d",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "fe31ad7cd678e47a12bd9b739624cb803b659cecb966a082f8924d853a6eb3ca",
+        "step": 16
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "47b66b92933652f5275c5fab2d476892c03e4ce025f123956004a6eb01af84f9",
+        "model_id": "M1_OPENVLA_OFT",
+        "parent_key": "libero_object/task_09/state_23",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "168cf6f6f9cce189eea352fc6bd68a97dba1e170c6b8b36d046036062b766d13",
+        "step": 24
+      }
+    ]
+  },
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3",
+        "pid": "3925201",
+        "used_memory_mib": "28540"
+      }
+    ],
+    "free_memory_mib": 52662,
+    "index": 7,
+    "used_memory_mib": 28560,
+    "utilization_gpu_percent": 88
+  },
+  "model_family": "M1_OPENVLA_OFT",
+  "normalization": {
+    "available_norm_stats_keys": [
+      "libero_object_no_noops"
+    ],
+    "checkpoint_mutated": false,
+    "component_state_dict_loader": "official_openvla_utils.load_component_state_dict",
+    "dataset_statistics_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_object/dataset_statistics.json",
+    "dataset_statistics_sha256": "2bff9cb26fea5d50522fc327f71362dda38252dfc9003aae444259ff96371aa7",
+    "requested_task_suite": "libero_object",
+    "resolution_mode": "OFFICIAL_NO_NOOPS_FALLBACK",
+    "resolved_unnorm_key": "libero_object_no_noops",
+    "stats_loader": "official_openvla_utils._load_dataset_stats",
+    "vision_num_images_in_input": 2
+  },
+  "object_binding": {
+    "bddl_path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/bddl_files/libero_object/pick_up_the_orange_juice_and_place_it_in_the_basket.bddl",
+    "eef_site_id": 8,
+    "eef_site_name": "gripper0_grip_site",
+    "reason": "",
+    "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+    "status": "PASS",
+    "target_body_ids": {
+      "orange_juice_1": 19
+    },
+    "target_body_names": {
+      "orange_juice_1": "orange_juice_1_main"
+    },
+    "target_object_ids": [
+      "orange_juice_1"
+    ],
+    "taxonomy_eligibility": {
+      "declared_object_ids": [
+        "orange_juice_1",
+        "basket_1",
+        "butter_1",
+        "chocolate_pudding_1",
+        "bbq_sauce_1",
+        "ketchup_1",
+        "salad_dressing_1"
+      ],
+      "eligible": true,
+      "fixture_binding_inference_allowed": false,
+      "reason": "",
+      "rule": "at least one declared source object in an In/On goal predicate",
+      "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+      "status": "PASS",
+      "target_object_ids": [
+        "orange_juice_1"
+      ]
+    }
+  },
+  "panel_row": {
+    "candidate_count_after_union_exclusion": 8,
+    "canonical_parent_key": "libero_object/task_09/state_23",
+    "selected_rank_sha256": "49d1584cf3e9336149a4ff8f92d4eb067ce38b9ec8aad0691ca4ea32ac8e9e69",
+    "source_v1_row_digest": "008e3cc7260881d1ab5d7ddfab09e82b9b0b4d7676ba493b7e25e0d7772fea1b",
+    "state": "FROZEN_SHARED_FRESH",
+    "suite": "libero_object",
+    "task_idx": 9
+  },
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "role": "PRIMARY",
+  "runtime_counters": {
+    "anchor_telemetry_reads": 280,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 290,
+    "eval160_reads": 0,
+    "model_inference_calls": 35,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 1,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+  "scientific_claim": "Z2_CLEAN_REFERENCE_AND_ANCHOR_ONLY",
+  "selected_anchors": {
+    "critical": {
+      "action_rows": [
+        {
+          "env_action": [
+            0.057323794811964035,
+            0.11239798367023468,
+            0.538330078125,
+            -0.017564518377184868,
+            0.05784877762198448,
+            -0.0003306326980236918,
+            1.0
+          ],
+          "raw_action": [
+            0.057323794811964035,
+            0.11239798367023468,
+            0.538330078125,
+            -0.017564518377184868,
+            0.05784877762198448,
+            -0.0003306326980236918,
+            0.00093841552734375
+          ],
+          "step": 48
+        },
+        {
+          "env_action": [
+            0.053942885249853134,
+            0.07377319037914276,
+            0.6884765625,
+            -0.0059095933102071285,
+            0.08976563066244125,
+            -0.004421732388436794,
+            1.0
+          ],
+          "raw_action": [
+            0.053942885249853134,
+            0.07377319037914276,
+            0.6884765625,
+            -0.0059095933102071285,
+            0.08976563066244125,
+            -0.004421732388436794,
+            -0.0004405975341796875
+          ],
+          "step": 49
+        },
+        {
+          "env_action": [
+            0.035009779036045074,
+            0.06453682482242584,
+            0.72509765625,
+            -0.003069627331569791,
+            0.08924666047096252,
+            -0.0024965088814496994,
+            1.0
+          ],
+          "raw_action": [
+            0.035009779036045074,
+            0.06453682482242584,
+            0.72509765625,
+            -0.003069627331569791,
+            0.08924666047096252,
+            -0.0024965088814496994,
+            -0.0019989013671875
+          ],
+          "step": 50
+        },
+        {
+          "env_action": [
+            0.06543798744678497,
+            0.07713186740875244,
+            0.76904296875,
+            -0.00022966123651713133,
+            0.09184152632951736,
+            -0.0015338972443714738,
+            1.0
+          ],
+          "raw_action": [
+            0.06543798744678497,
+            0.07713186740875244,
+            0.76904296875,
+            -0.00022966123651713133,
+            0.09184152632951736,
+            -0.0015338972443714738,
+            -0.00118255615234375
+          ],
+          "step": 51
+        },
+        {
+          "env_action": [
+            0.07862354069948196,
+            0.07671203464269638,
+            0.787353515625,
+            -0.00015589589020237327,
+            0.09962612390518188,
+            -0.0022558560594916344,
+            1.0
+          ],
+          "raw_action": [
+            0.07862354069948196,
+            0.07671203464269638,
+            0.787353515625,
+            -0.00015589589020237327,
+            0.09962612390518188,
+            -0.0022558560594916344,
+            -0.00057220458984375
+          ],
+          "step": 52
+        },
+        {
+          "env_action": [
+            0.06408561766147614,
+            0.08300955593585968,
+            0.794677734375,
+            -0.00015589589020237327,
+            0.09651228040456772,
+            -0.003940426278859377,
+            1.0
+          ],
+          "raw_action": [
+            0.06408561766147614,
+            0.08300955593585968,
+            0.794677734375,
+            -0.00015589589020237327,
+            0.09651228040456772,
+            -0.003940426278859377,
+            0.000701904296875
+          ],
+          "step": 53
+        },
+        {
+          "env_action": [
+            0.06679034978151321,
+            0.09980294108390808,
+            0.81298828125,
+            -0.0017787335673347116,
+            0.09184152632951736,
+            -0.003218467580154538,
+            1.0
+          ],
+          "raw_action": [
+            0.06679034978151321,
+            0.09980294108390808,
+            0.81298828125,
+            -0.0017787335673347116,
+            0.09184152632951736,
+            -0.003218467580154538,
+            -0.0001888275146484375
+          ],
+          "step": 54
+        },
+        {
+          "env_action": [
+            0.023514680564403534,
+            0.12331368029117584,
+            0.831298828125,
+            -0.0010779628064483404,
+            0.07601284235715866,
+            -0.004903038032352924,
+            1.0
+          ],
+          "raw_action": [
+            0.023514680564403534,
+            0.12331368029117584,
+            0.831298828125,
+            -0.0010779628064483404,
+            0.07601284235715866,
+            -0.004903038032352924,
+            0.0009918212890625
+          ],
+          "step": 55
+        },
+        {
+          "env_action": [
+            0.01269576232880354,
+            0.22407400608062744,
+            0.596923828125,
+            -0.00015589589020237327,
+            0.0396847128868103,
+            -8.997979603009298e-05,
+            1.0
+          ],
+          "raw_action": [
+            0.01269576232880354,
+            0.22407400608062744,
+            0.596923828125,
+            -0.00015589589020237327,
+            0.0396847128868103,
+            -8.997979603009298e-05,
+            0.006317138671875
+          ],
+          "step": 56
+        },
+        {
+          "env_action": [
+            -0.050189193338155746,
+            0.22743268311023712,
+            0.677490234375,
+            -0.001668085576966405,
+            0.04785854369401932,
+            -0.0017745501827448606,
+            1.0
+          ],
+          "raw_action": [
+            -0.050189193338155746,
+            0.22743268311023712,
+            0.677490234375,
+            -0.001668085576966405,
+            0.04785854369401932,
+            -0.0017745501827448606,
+            -0.0023651123046875
+          ],
+          "step": 57
+        },
+        {
+          "env_action": [
+            -0.06371284276247025,
+            0.2677368223667145,
+            0.618896484375,
+            -0.0007829013629816473,
+            0.04072266072034836,
+            -8.997979603009298e-05,
+            1.0
+          ],
+          "raw_action": [
+            -0.06371284276247025,
+            0.2677368223667145,
+            0.618896484375,
+            -0.0007829013629816473,
+            0.04072266072034836,
+            -8.997979603009298e-05,
+            -0.00150299072265625
+          ],
+          "step": 58
+        },
+        {
+          "env_action": [
+            -0.038017913699150085,
+            0.31307896971702576,
+            0.596923828125,
+            2.8517488317447715e-05,
+            0.03306780382990837,
+            0.00015067312051542103,
+            1.0
+          ],
+          "raw_action": [
+            -0.038017913699150085,
+            0.31307896971702576,
+            0.596923828125,
+            2.8517488317447715e-05,
+            0.03306780382990837,
+            0.00015067312051542103,
+            -0.000957489013671875
+          ],
+          "step": 59
+        },
+        {
+          "env_action": [
+            -0.040722642093896866,
+            0.3483450710773468,
+            0.5712890625,
+            6.540016329381615e-05,
+            0.02593192458152771,
+            -8.997979603009298e-05,
+            1.0
+          ],
+          "raw_action": [
+            -0.040722642093896866,
+            0.3483450710773468,
+            0.5712890625,
+            6.540016329381615e-05,
+            0.02593192458152771,
+            -8.997979603009298e-05,
+            0.00022029876708984375
+          ],
+          "step": 60
+        },
+        {
+          "env_action": [
+            -0.052893925458192825,
+            0.3987252414226532,
+            0.52001953125,
+            2.8517488317447715e-05,
+            0.012081826105713844,
+            -0.0003306326980236918,
+            1.0
+          ],
+          "raw_action": [
+            -0.052893925458192825,
+            0.3987252414226532,
+            0.52001953125,
+            2.8517488317447715e-05,
+            0.012081826105713844,
+            -0.0003306326980236918,
+            0.0023345947265625
+          ],
+          "step": 61
+        },
+        {
+          "env_action": [
+            -0.056951019912958145,
+            0.46757814288139343,
+            0.4632568359375,
+            -8.213053661165759e-05,
+            0.0011509524192661047,
+            0.00039132602978497744,
+            1.0
+          ],
+          "raw_action": [
+            -0.056951019912958145,
+            0.46757814288139343,
+            0.4632568359375,
+            -8.213053661165759e-05,
+            0.0011509524192661047,
+            0.00039132602978497744,
+            0.0025177001953125
+          ],
+          "step": 62
+        },
+        {
+          "env_action": [
+            -0.039370276033878326,
+            0.5448276996612549,
+            0.3717041015625,
+            -0.00022966123651713133,
+            -1.6737307305447757e-05,
+            0.00159459060523659,
+            1.0
+          ],
+          "raw_action": [
+            -0.039370276033878326,
+            0.5448276996612549,
+            0.3717041015625,
+            -0.00022966123651713133,
+            -1.6737307305447757e-05,
+            0.00159459060523659,
+            0.005035400390625
+          ],
+          "step": 63
+        },
+        {
+          "env_action": [
+            -0.024494266137480736,
+            0.5112409591674805,
+            0.3680419921875,
+            0.004915472120046616,
+            0.00037249262095429003,
+            -0.004421732388436794,
+            1.0
+          ],
+          "raw_action": [
+            -0.024494266137480736,
+            0.5112409591674805,
+            0.3680419921875,
+            0.004915472120046616,
+            0.00037249262095429003,
+            -0.004421732388436794,
+            0.00457763671875
+          ],
+          "step": 64
+        },
+        {
+          "env_action": [
+            0.013371944427490234,
+            0.608642578125,
+            0.37353515625,
+            0.0003604615631047636,
+            -0.007541848812252283,
+            -0.007790872827172279,
+            1.0
+          ],
+          "raw_action": [
+            0.013371944427490234,
+            0.608642578125,
+            0.37353515625,
+            0.0003604615631047636,
+            -0.007541848812252283,
+            -0.007790872827172279,
+            0.00127410888671875
+          ],
+          "step": 65
+        },
+        {
+          "env_action": [
+            0.023514680564403534,
+            0.6690987944602966,
+            0.3515625,
+            0.0003235788899473846,
+            -0.011044918559491634,
+            -0.00935511663556099,
+            1.0
+          ],
+          "raw_action": [
+            0.023514680564403534,
+            0.6690987944602966,
+            0.3515625,
+            0.0003235788899473846,
+            -0.011044918559491634,
+            -0.00935511663556099,
+            0.000789642333984375
+          ],
+          "step": 66
+        },
+        {
+          "env_action": [
+            0.002553027356043458,
+            0.7127615809440613,
+            0.322265625,
+            0.00017604819731786847,
+            -0.018440287560224533,
+            -0.006707934662699699,
+            1.0
+          ],
+          "raw_action": [
+            0.002553027356043458,
+            0.7127615809440613,
+            0.322265625,
+            0.00017604819731786847,
+            -0.018440287560224533,
+            -0.006707934662699699,
+            0.000179290771484375
+          ],
+          "step": 67
+        }
+      ],
+      "anchor_class": "CRITICAL",
+      "phase": "CONTACT_MANIPULATION",
+      "rank_digest": "15aa40241988563a8e99b034cb070d9007026afc0ad60521838422aaf007b1cf",
+      "state": [
+        2.899999999999902,
+        -0.06918306952680012,
+        0.5734224295396718,
+        -0.09992848393801489,
+        -1.8681178614121046,
+        0.042369953928716855,
+        2.3690801621587383,
+        0.6527348751696815,
+        0.026095904267422573,
+        -0.027192518866387082,
+        0.04663941513026092,
+        -0.10297480479686368,
+        0.08228893952168884,
+        0.48506120983625733,
+        0.49833374812690295,
+        0.5161578751068696,
+        0.4999601445666832,
+        0.010544590787498096,
+        0.24942057511545238,
+        -0.004582345326536154,
+        0.7071047512840226,
+        -0.0016942118247029387,
+        0.001694020664309403,
+        0.7071047522480977,
+        -0.12281142821698568,
+        -0.24116765821191258,
+        0.008695477418608112,
+        3.943316639261262e-18,
+        2.2804520277832505e-17,
+        2.0098608995184502e-17,
+        1.0,
+        -0.15000011255647894,
+        0.05999999999999999,
+        0.013065477418608112,
+        -8.018417030414958e-19,
+        4.751484230793976e-17,
+        1.8622932056379423e-17,
+        1.0,
+        0.09539541404390109,
+        -0.1981513221551936,
+        0.05462547741860809,
+        0.7071067811865475,
+        2.4666047607992274e-17,
+        3.4926635654001815e-17,
+        0.7071067811865476,
+        0.15000293001277915,
+        0.030002414638951112,
+        0.07240547676577395,
+        0.49999998814305696,
+        0.5000000243540795,
+        0.4999997255494928,
+        0.5000002619532264,
+        -0.1999992938350389,
+        -0.079991297413632,
+        0.07270545369900476,
+        0.500006332298873,
+        0.4999936569559897,
+        0.5000059111921843,
+        0.4999940994028625,
+        0.01427704122854704,
+        -0.19869262027451826,
+        -0.00954987629814145,
+        -0.0064247393356282045,
+        -0.09314295613811169,
+        -0.25983062080363617,
+        0.12700440550035427,
+        -1.956248314233861e-05,
+        8.006524353768782e-06,
+        -0.013574439419344877,
+        -0.0007154650330873538,
+        0.10002040931196915,
+        0.07782847877113713,
+        -0.0619467955339288,
+        -0.04076240965828683,
+        6.097742765564426e-19,
+        5.478345313025763e-18,
+        1.346354147780786e-16,
+        -2.0700855642476185e-16,
+        1.608873855363299e-16,
+        -1.4885043021862216e-18,
+        2.855588367267098e-20,
+        -4.2635784771594614e-18,
+        2.9379194742273145e-16,
+        -7.770135642646514e-16,
+        -6.6577131483631006e-18,
+        1.1723867125614123e-17,
+        -7.696803081566233e-19,
+        -3.1557136589915856e-18,
+        2.965121861474902e-16,
+        -1.8747305679553803e-16,
+        2.3422395165303734e-16,
+        -7.916560894613575e-17,
+        -6.539763641108787e-17,
+        -4.3567348531289166e-17,
+        1.1762517923309197e-15,
+        -1.2099698870453726e-15,
+        -7.665627132922097e-16,
+        -8.590280195224878e-29,
+        -2.313579964688272e-15,
+        -2.460066995522305e-15,
+        1.564930081373985e-15,
+        -3.200681365618659e-14,
+        1.380913828696607e-18,
+        3.3963416049622385e-14,
+        1.562152083046492e-17,
+        2.8883942004774885e-15,
+        1.15324484742731e-15,
+        1.7836873214877926e-16,
+        -2.24287603336725e-18,
+        -3.967952878399849e-14
+      ],
+      "state_sha256": "8370a8b42a8c05e04d1d1175ea733e6e2a0803c746c32be02532b059eed1e186",
+      "status": "SELECTED_CRITICAL_ANCHOR",
+      "step": 48
+    },
+    "noncritical": {
+      "action_rows": [
+        {
+          "env_action": [
+            0.40961480140686035,
+            -0.05070779472589493,
+            -0.0384521447122097,
+            -0.005393235944211483,
+            0.009843753650784492,
+            -0.004421732388436794,
+            -1.0
+          ],
+          "raw_action": [
+            0.40961480140686035,
+            -0.05070779472589493,
+            -0.0384521447122097,
+            -0.005393235944211483,
+            0.009843753650784492,
+            -0.004421732388436794,
+            0.73046875
+          ],
+          "step": 0
+        },
+        {
+          "env_action": [
+            0.4948137700557709,
+            -0.02061089687049389,
+            0.020370488986372948,
+            -0.00893397256731987,
+            0.0035512035246938467,
+            0.00039132602978497744,
+            -1.0
+          ],
+          "raw_action": [
+            0.4948137700557709,
+            -0.02061089687049389,
+            0.020370488986372948,
+            -0.00893397256731987,
+            0.0035512035246938467,
+            0.00039132602978497744,
+            0.75
+          ],
+          "step": 1
+        },
+        {
+          "env_action": [
+            0.5191563367843628,
+            -0.11053423583507538,
+            0.0574493445456028,
+            -0.010187983512878418,
+            0.010719520971179008,
+            -0.000811938545666635,
+            -1.0
+          ],
+          "raw_action": [
+            0.5191563367843628,
+            -0.11053423583507538,
+            0.0574493445456028,
+            -0.010187983512878418,
+            0.010719520971179008,
+            -0.000811938545666635,
+            0.7734375
+          ],
+          "step": 2
+        },
+        {
+          "env_action": [
+            0.48399484157562256,
+            -0.13362514972686768,
+            0.027351384982466698,
+            -0.01070434134453535,
+            0.004783764947205782,
+            -0.006948587950319052,
+            -1.0
+          ],
+          "raw_action": [
+            0.48399484157562256,
+            -0.13362514972686768,
+            0.027351384982466698,
+            -0.01070434134453535,
+            0.004783764947205782,
+            -0.006948587950319052,
+            0.9140625
+          ],
+          "step": 3
+        },
+        {
+          "env_action": [
+            0.5056326985359192,
+            -0.20667637884616852,
+            -0.006351465824991465,
+            -0.006573481485247612,
+            0.00981131847947836,
+            -0.0121226254850626,
+            -1.0
+          ],
+          "raw_action": [
+            0.5056326985359192,
+            -0.20667637884616852,
+            -0.006351465824991465,
+            -0.006573481485247612,
+            0.00981131847947836,
+            -0.0121226254850626,
+            0.98046875
+          ],
+          "step": 4
+        },
+        {
+          "env_action": [
+            0.5732508897781372,
+            -0.20835572481155396,
+            -0.0036048840265721083,
+            -0.00672101229429245,
+            0.0071191443130373955,
+            -0.009716096334159374,
+            -1.0
+          ],
+          "raw_action": [
+            0.5732508897781372,
+            -0.20835572481155396,
+            -0.0036048840265721083,
+            -0.00672101229429245,
+            0.0071191443130373955,
+            -0.009716096334159374,
+            0.97265625
+          ],
+          "step": 5
+        },
+        {
+          "env_action": [
+            0.5867745876312256,
+            -0.2100350558757782,
+            0.016365056857466698,
+            -0.003217157907783985,
+            0.01046003494411707,
+            -0.008031525649130344,
+            -1.0
+          ],
+          "raw_action": [
+            0.5867745876312256,
+            -0.2100350558757782,
+            0.016365056857466698,
+            -0.003217157907783985,
+            0.01046003494411707,
+            -0.008031525649130344,
+            0.97265625
+          ],
+          "step": 6
+        },
+        {
+          "env_action": [
+            0.6165266036987305,
+            -0.1806466281414032,
+            0.022201543673872948,
+            -0.0027008005417883396,
+            0.003486332017928362,
+            -0.0024965088814496994,
+            -1.0
+          ],
+          "raw_action": [
+            0.6165266036987305,
+            -0.1806466281414032,
+            0.022201543673872948,
+            -0.0027008005417883396,
+            0.003486332017928362,
+            -0.0024965088814496994,
+            0.93359375
+          ],
+          "step": 7
+        },
+        {
+          "env_action": [
+            0.648983359336853,
+            -0.35529786348342896,
+            -0.0682067796587944,
+            0.00091370171867311,
+            -0.008709538727998734,
+            -0.006948587950319052,
+            -1.0
+          ],
+          "raw_action": [
+            0.648983359336853,
+            -0.35529786348342896,
+            -0.0682067796587944,
+            0.00091370171867311,
+            -0.008709538727998734,
+            -0.006948587950319052,
+            0.90625
+          ],
+          "step": 8
+        },
+        {
+          "env_action": [
+            0.7382394075393677,
+            -0.39224332571029663,
+            -0.0709533616900444,
+            -0.0015943202888593078,
+            -0.00021135226415935904,
+            -0.00935511663556099,
+            -1.0
+          ],
+          "raw_action": [
+            0.7382394075393677,
+            -0.39224332571029663,
+            -0.0709533616900444,
+            -0.0015943202888593078,
+            -0.00021135226415935904,
+            -0.00935511663556099,
+            0.98046875
+          ],
+          "step": 9
+        },
+        {
+          "env_action": [
+            0.7220110297203064,
+            -0.39056396484375,
+            -0.0581359826028347,
+            0.0001022828437271528,
+            0.00017787764954846352,
+            -0.004181079100817442,
+            -1.0
+          ],
+          "raw_action": [
+            0.7220110297203064,
+            -0.39056396484375,
+            -0.0581359826028347,
+            0.0001022828437271528,
+            0.00017787764954846352,
+            -0.004181079100817442,
+            0.98828125
+          ],
+          "step": 10
+        },
+        {
+          "env_action": [
+            0.7247157692909241,
+            -0.3788086175918579,
+            -0.0677490159869194,
+            0.00028669621679000556,
+            0.000631979200989008,
+            -0.005624996963888407,
+            -1.0
+          ],
+          "raw_action": [
+            0.7247157692909241,
+            -0.3788086175918579,
+            -0.0677490159869194,
+            0.00028669621679000556,
+            0.000631979200989008,
+            -0.005624996963888407,
+            0.9921875
+          ],
+          "step": 11
+        },
+        {
+          "env_action": [
+            0.716601550579071,
+            -0.36369454860687256,
+            -0.0856017991900444,
+            0.0002129308704752475,
+            0.0008265941869467497,
+            -0.003218467580154538,
+            -1.0
+          ],
+          "raw_action": [
+            0.716601550579071,
+            -0.36369454860687256,
+            -0.0856017991900444,
+            0.0002129308704752475,
+            0.0008265941869467497,
+            -0.003218467580154538,
+            0.9921875
+          ],
+          "step": 12
+        },
+        {
+          "env_action": [
+            0.7301252484321594,
+            -0.3704119026660919,
+            -0.0965881273150444,
+            0.0004342269094195217,
+            0.0007617225055582821,
+            -0.003699773456901312,
+            -1.0
+          ],
+          "raw_action": [
+            0.7301252484321594,
+            -0.3704119026660919,
+            -0.0965881273150444,
+            0.0004342269094195217,
+            0.0007617225055582821,
+            -0.003699773456901312,
+            0.9921875
+          ],
+          "step": 13
+        },
+        {
+          "env_action": [
+            0.7382394075393677,
+            -0.3620152175426483,
+            -0.0782775804400444,
+            0.0002129308704752475,
+            -0.00021135226415935904,
+            -0.003940426278859377,
+            -1.0
+          ],
+          "raw_action": [
+            0.7382394075393677,
+            -0.3620152175426483,
+            -0.0782775804400444,
+            0.0002129308704752475,
+            -0.00021135226415935904,
+            -0.003940426278859377,
+            0.99609375
+          ],
+          "step": 14
+        },
+        {
+          "env_action": [
+            0.7490583062171936,
+            -0.3536185324192047,
+            -0.0805663987994194,
+            0.00039734423626214266,
+            -0.0005357105401344597,
+            -0.0022558560594916344,
+            -1.0
+          ],
+          "raw_action": [
+            0.7490583062171936,
+            -0.3536185324192047,
+            -0.0805663987994194,
+            0.00039734423626214266,
+            -0.0005357105401344597,
+            -0.0022558560594916344,
+            0.9765625
+          ],
+          "step": 15
+        },
+        {
+          "env_action": [
+            0.6652117371559143,
+            -0.34186315536499023,
+            -0.19866943359375,
+            0.00748803885653615,
+            -0.008579795248806477,
+            -0.006707934662699699,
+            -1.0
+          ],
+          "raw_action": [
+            0.6652117371559143,
+            -0.34186315536499023,
+            -0.19866943359375,
+            0.00748803885653615,
+            -0.008579795248806477,
+            -0.006707934662699699,
+            0.90234375
+          ],
+          "step": 16
+        },
+        {
+          "env_action": [
+            0.6868495345115662,
+            -0.30491769313812256,
+            -0.16387939453125,
+            0.0005079922848381102,
+            0.0004373642732389271,
+            -0.006346955429762602,
+            -1.0
+          ],
+          "raw_action": [
+            0.6868495345115662,
+            -0.30491769313812256,
+            -0.16387939453125,
+            0.0005079922848381102,
+            0.0004373642732389271,
+            -0.006346955429762602,
+            0.94921875
+          ],
+          "step": 17
+        },
+        {
+          "env_action": [
+            0.6300502419471741,
+            -0.3015590310096741,
+            -0.21514892578125,
+            0.00028669621679000556,
+            0.0019294122466817498,
+            -0.012844583950936794,
+            -1.0
+          ],
+          "raw_action": [
+            0.6300502419471741,
+            -0.3015590310096741,
+            -0.21514892578125,
+            0.00028669621679000556,
+            0.0019294122466817498,
+            -0.012844583950936794,
+            0.98046875
+          ],
+          "step": 18
+        },
+        {
+          "env_action": [
+            0.6057076454162598,
+            -0.29987967014312744,
+            -0.24169921875,
+            0.0004342269094195217,
+            0.0024483855813741684,
+            -0.015491765923798084,
+            -1.0
+          ],
+          "raw_action": [
+            0.6057076454162598,
+            -0.29987967014312744,
+            -0.24169921875,
+            0.0004342269094195217,
+            0.0024483855813741684,
+            -0.015491765923798084,
+            0.98828125
+          ],
+          "step": 19
+        }
+      ],
+      "anchor_class": "NONCRITICAL",
+      "phase": "PRE_CONTACT",
+      "rank_digest": "45fd646d2f40b584a2989ddbeba83b3d5e22ea04629f035b6825a3e32726cd6a",
+      "state": [
+        0.5000000000000003,
+        -0.007497216011398469,
+        -0.17612217861865387,
+        -0.005708147574102502,
+        -2.499616519794518,
+        -0.0028861362013740672,
+        2.2643723540689065,
+        0.7753395219195012,
+        0.038728432056530114,
+        -0.03872989143967217,
+        0.05000006520574807,
+        -0.1000016278462005,
+        0.06973547638403711,
+        0.5000000894751638,
+        0.49999991071248295,
+        0.5000000687807566,
+        0.4999999310315695,
+        0.010544590787498096,
+        0.24942057511545246,
+        -0.0045823453265786615,
+        0.7071047512840226,
+        -0.0016942118246910155,
+        0.001694020664297605,
+        0.7071047522480977,
+        -0.12281142821698568,
+        -0.24116765821191258,
+        0.008695477418600533,
+        4.299537261387192e-24,
+        4.4018101863889653e-17,
+        1.0334859551783485e-17,
+        1.0,
+        -0.15000011255647894,
+        0.05999999999999999,
+        0.013065477418602346,
+        -9.447416397779412e-21,
+        4.5443198402226413e-17,
+        -1.0062400078931191e-17,
+        1.0,
+        0.09539541404390109,
+        -0.1981513221551936,
+        0.054625477418273796,
+        0.7071067811865475,
+        2.023467980415517e-17,
+        -1.2340229519983687e-17,
+        0.7071067811865476,
+        0.15000293001333645,
+        0.030002414639666776,
+        0.0724054731798436,
+        0.49999998814359015,
+        0.5000000243535458,
+        0.4999997255538976,
+        0.5000002619488213,
+        -0.19999929383402792,
+        -0.07999129744190557,
+        0.07270544980088967,
+        0.5000063321970701,
+        0.4999936570578,
+        0.5000059110974036,
+        0.4999940994976401,
+        0.004959486130892674,
+        -0.01858348532669326,
+        -0.004776923493666936,
+        -0.03203592703620819,
+        5.446408649131353e-05,
+        0.04238880688276915,
+        -0.006609093925031919,
+        0.003196819193870249,
+        -0.0031795869022957896,
+        -1.2693863629510849e-12,
+        4.985647231775947e-12,
+        6.132523929022964e-08,
+        -1.8339998307609943e-11,
+        -2.5756112894407594e-16,
+        -7.175092042159891e-11,
+        5.230164215554471e-17,
+        -1.0361620881594794e-14,
+        2.841356496889584e-12,
+        -1.1042494817270963e-14,
+        2.2550718411208243e-12,
+        -5.223205601339242e-17,
+        -2.733761286278102e-21,
+        -2.0215114529508245e-19,
+        5.071411317179064e-13,
+        -2.620143848292992e-17,
+        -3.756166815298618e-17,
+        -3.5275179991924126e-30,
+        4.023899713171967e-21,
+        -1.062590853524416e-19,
+        3.85863484136082e-13,
+        1.6985644029062268e-16,
+        3.239067205478741e-17,
+        -1.0381900776030649e-23,
+        3.1000667043217576e-20,
+        -1.332983802730221e-19,
+        2.2347372564628953e-11,
+        1.0482842816448542e-18,
+        -2.1857107348679616e-17,
+        -3.665714273625029e-30,
+        -3.7116945404987225e-11,
+        -4.226586966040923e-11,
+        2.3969383376028203e-07,
+        -5.156435110131646e-10,
+        1.6903946463063253e-14,
+        5.87150393322456e-10,
+        -6.797992359582967e-11,
+        1.903008398944576e-09,
+        2.605617047512869e-07,
+        -9.451793971922062e-10,
+        6.552996711284673e-13,
+        -2.6466222908902045e-08
+      ],
+      "state_sha256": "654a38fecc0a27a03128f209707ff839c279debc386c2a6a00a8f662a4a0b642",
+      "status": "SELECTED_NONCRITICAL_ANCHOR",
+      "step": 0
+    }
+  },
+  "state_id": 23,
+  "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+  "suite": "libero_object",
+  "task_idx": 9,
+  "task_language": "pick up the orange juice and place it in the basket",
+  "timestamp_utc": "2026-08-25T01:24:31Z"
+}
