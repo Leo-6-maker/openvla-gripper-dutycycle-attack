@@ -208,7 +208,7 @@ def main() -> None:
     require(label_seal.get("unblind_permitted_for_ai_secondary_reconciliation") is True, "SEAL_UNBLIND_PERMISSION", failures)
     require(label_seal.get("z4_authorized") is False, "SEAL_Z4_FLAG", failures)
     require(ingestion.get("status") == "STAGE_Z_Z3D_AI_SECONDARY_LABEL_INGESTION_PASS", "INGESTION_STATUS", failures)
-    require(ingestion.get("hidden_mapping_read_before_ingestion_pass") is False, "INGESTION_ORDER", failures)
+    require(ingestion.get("governance", {}).get("hidden_mapping_read_before_ingestion_pass") is False, "INGESTION_ORDER", failures)
 
     json_by_id = {row.get("blinded_video_id"): row for row in json_rows}
     csv_by_id = {row.get("blinded_video_id"): row for row in csv_rows}
