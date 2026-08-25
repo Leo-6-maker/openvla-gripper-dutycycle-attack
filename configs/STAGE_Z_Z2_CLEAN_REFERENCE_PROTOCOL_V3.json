@@ -1,0 +1,76 @@
+{
+  "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V3",
+  "status": "STAGE_Z_Z2_CLEAN_REFERENCE_AUTHORIZED_BY_PI_COMMENT_5404535968",
+  "gate": "STAGE_Z_Z2_CLEAN_REFERENCE_AND_ANCHOR_FREEZE_V1",
+  "authorization": {
+    "source": "PR_139_PI_COMMENT",
+    "comment_id": 5404535968,
+    "scope": "contract-preserving Z2 runner repair and Z2-B clean references/anchor freeze only",
+    "scientific_execution": true,
+    "protected_evaluation": false,
+    "z3_authorized": false
+  },
+  "supersedes": {
+    "path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V2.json",
+    "sha256": "6569d6227731001b18b0b42cdd9a2c1672c525964c64da66824faebec28dd7ef",
+    "reason": "bind the minimal pre-inference fixture-ineligibility abstention repair"
+  },
+  "base_authority": {
+    "path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V2.json",
+    "sha256": "6569d6227731001b18b0b42cdd9a2c1672c525964c64da66824faebec28dd7ef",
+    "all_unmodified_authority_fields": "inherited_byte_exactly_from_base_protocol"
+  },
+  "git_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "head_commit": "237a82b9fa71eaf03725052f882ccab56f50bffa",
+    "head_tree": "dec3638ea9ebd5ae4bfefe347aab11b28d52434c",
+    "runner": {
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "git_blob": "15f5c1f966c8f44ecb7a04647109248ec56047bd",
+      "sha256": "78cabdd0ddd7f836e5936a88396f1623d5f1f86b3eb379e36405fa73122fe918"
+    },
+    "repair_scope": {
+      "classification": "CONTRACT_PRESERVING_FIXTURE_INELIGIBILITY_ABSTENTION",
+      "behavior": "classify existing taxonomy INELIGIBLE as ABSTAIN_Z2_NO_LEGAL_ANCHOR before model load and env.step",
+      "unchanged": [
+        "BDDL taxonomy eligibility rule",
+        "critical/noncritical phases",
+        "H_phys=10",
+        "fresh-boundary semantics",
+        "deterministic salts",
+        "7-D action contract",
+        "all intervention and protected firewalls"
+      ],
+      "forbidden": [
+        "fixture object inference",
+        "taxonomy widening",
+        "fallback target object",
+        "Student/detector use",
+        "model/checkpoint substitution"
+      ]
+    }
+  },
+  "execution": {
+    "population": "inherit base V2 exact 36 shared identities",
+    "previous_exposures": "retain base V2 ledger; never relabel legacy receipts",
+    "new_cells": "only unexposed or engineering-invalid cells; one attempt per model-parent under V3",
+    "workers": "at most one per physical GPU",
+    "gpu_admission": "free_memory_mib > 20480 immediately before launch",
+    "foreign_processes": "allowed and recorded; never touch",
+    "clean_only": true,
+    "command_open_intervention": false,
+    "pgd": false,
+    "attacked_env_steps": false,
+    "v_phys_endpoint": false,
+    "attack_outcome_reads": false,
+    "protected_reads": false,
+    "eval160": false,
+    "checkpoint_mutation": false
+  },
+  "outputs": {
+    "receipt_schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1_WITH_V3_AUTHORITY_ENVELOPE",
+    "required_reconciliation": "reports/STAGE_Z_Z2_LEGACY_RECEIPT_RECONCILIATION_V1.json",
+    "terminal": "STOP_FOR_PI_AFTER_Z2; Z3_NOT_AUTHORIZED"
+  }
+}
