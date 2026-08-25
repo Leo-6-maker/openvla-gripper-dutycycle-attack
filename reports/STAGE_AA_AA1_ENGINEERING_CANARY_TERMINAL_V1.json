@@ -1,0 +1,46 @@
+{
+  "aa2_authorized": false,
+  "authorization_pi_comment_id": 5413730571,
+  "engineering_history": {
+    "foreign_gpu_processes_touched": false,
+    "m2_allocator_repair_retry_retained": true,
+    "m2_initial_allocator_failure_retained": true,
+    "same_nine_canaries_only": true,
+    "v3_noncritical_contract_repair_applied": true
+  },
+  "gate": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_V1",
+  "interpretation": "Runtime clean eligibility pipeline completed for all nine permanently excluded canary cells. One cell produced a noncritical-only anchor, but no cell produced the paired critical+noncritical engineering point required for the five-branch qualification. This is an engineering qualification HOLD, not a scientific negative and not evidence about AA2 vulnerability.",
+  "next_legal_action": "STOP_FOR_PI",
+  "receipt_index": {
+    "bytes": 14637,
+    "path": "reports/STAGE_AA_AA1_ENGINEERING_CANARY_RECEIPT_INDEX_V1.json",
+    "sha256": "efe2c9ba633c31e2e915ad27c34ef7102ef7c389d7b2a4d23d8c8041c1d5615b"
+  },
+  "result": {
+    "branches_executed": 0,
+    "branches_expected_if_legal": 45,
+    "cells_completed_passive_clean": 9,
+    "cells_expected": 9,
+    "cells_with_complete_engineering_point": 0,
+    "cells_with_legal_critical_anchor": 0,
+    "cells_with_legal_noncritical_anchor": 1,
+    "env_step_calls": 3150,
+    "model_inference_calls": 1352,
+    "physical_telemetry_reads": 3060
+  },
+  "schema": "STAGE_AA_AA1_ENGINEERING_CANARY_TERMINAL_V1",
+  "scientific_firewall": {
+    "aa2_scientific_candidates_exposed": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "paper_promotion": false,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "stage_z_identity_exposure": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "source_authority": "reports/STAGE_AA_AA1_RUNTIME_SOURCE_AUTHORITY_V3.json",
+  "status": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_HOLD_STOP_FOR_PI"
+}

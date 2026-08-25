@@ -1,0 +1,84 @@
+{
+  "branch_count": 0,
+  "branches": [],
+  "canary_permanent_exclusion": true,
+  "canonical_parent_key": "libero_spatial/task_05/state_34",
+  "checkpoint": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_spatial",
+  "claim_boundary": "AA1 runtime/endpoint qualification only; canary permanently excluded from AA2-AA5.",
+  "expected_branch_count": 0,
+  "gate": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_V1",
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/opt/anaconda3/envs/unsloth/bin/python",
+        "pid": "2205371",
+        "used_memory_mib": "56988"
+      }
+    ],
+    "free_memory_mib": 24218,
+    "index": 7,
+    "used_memory_mib": 57004,
+    "utilization_gpu_percent": 48
+  },
+  "gpu_id": 7,
+  "model_family": "M1_OPENVLA_OFT",
+  "next_legal_action": "STOP_FOR_PI",
+  "normalization": {
+    "available_norm_stats_keys": [
+      "libero_spatial_no_noops"
+    ],
+    "checkpoint_mutated": false,
+    "component_state_dict_loader": "official_openvla_utils.load_component_state_dict",
+    "dataset_statistics_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_spatial/dataset_statistics.json",
+    "dataset_statistics_sha256": "3f8b7854c8634ea6ccfd6ef6b8f983e3b30b067c2cdaf690b152c0899d5d9282",
+    "requested_task_suite": "libero_spatial",
+    "resolution_mode": "OFFICIAL_NO_NOOPS_FALLBACK",
+    "resolved_unnorm_key": "libero_spatial_no_noops",
+    "stats_loader": "official_openvla_utils._load_dataset_stats",
+    "vision_num_images_in_input": 2
+  },
+  "passive_clean": {
+    "candidate_counts": {
+      "critical": 0,
+      "noncritical": 0
+    },
+    "horizon": 220,
+    "selected": {
+      "critical": null,
+      "noncritical": null
+    },
+    "status": "PASS_AA1_PASSIVE_CLEAN_PIPELINE",
+    "target_object": "akita_black_bowl_1"
+  },
+  "runtime_counters": {
+    "aa2_exposure": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 230,
+    "eval160_reads": 0,
+    "model_inference_calls": 28,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 220,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "runtime_environment": {
+    "CUDA_VISIBLE_DEVICES": "7",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "UNSET"
+  },
+  "schema": "STAGE_AA_AA1_ENGINEERING_CANARY_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_ENGINEERING_ONLY",
+  "scientific_use": false,
+  "selected_anchors": {
+    "critical": null,
+    "noncritical": null
+  },
+  "state_id": 34,
+  "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT",
+  "suite": "libero_spatial",
+  "task_idx": 5,
+  "timestamp_utc": "2026-08-25T17:32:54Z"
+}

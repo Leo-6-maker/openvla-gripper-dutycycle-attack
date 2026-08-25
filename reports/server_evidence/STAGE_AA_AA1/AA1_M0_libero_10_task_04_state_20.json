@@ -1,0 +1,80 @@
+{
+  "branch_count": 0,
+  "branches": [],
+  "canary_permanent_exclusion": true,
+  "canonical_parent_key": "libero_10/task_04/state_20",
+  "checkpoint": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+  "claim_boundary": "AA1 runtime/endpoint qualification only; canary permanently excluded from AA2-AA5.",
+  "expected_branch_count": 0,
+  "gate": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_V1",
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/opt/anaconda3/envs/unsloth/bin/python",
+        "pid": "2205366",
+        "used_memory_mib": "56654"
+      }
+    ],
+    "free_memory_mib": 24552,
+    "index": 5,
+    "used_memory_mib": 56670,
+    "utilization_gpu_percent": 58
+  },
+  "gpu_id": 5,
+  "model_family": "M0_OPENVLA",
+  "next_legal_action": "STOP_FOR_PI",
+  "normalization": {
+    "available_norm_stats_keys": [
+      "libero_10"
+    ],
+    "checkpoint_mutated": false,
+    "component_state_dict_loader": null,
+    "dataset_statistics_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/dataset_statistics.json",
+    "dataset_statistics_sha256": "54ca346948d5e62e9519a9ed93e45f0a069b9ec997ad1f48f1d8867d4d2d86d2",
+    "requested_task_suite": "libero_10",
+    "resolution_mode": "EXACT_SUITE_KEY",
+    "resolved_unnorm_key": "libero_10",
+    "stats_loader": "checkpoint_embedded_or_existing_norm_stats",
+    "vision_num_images_in_input": 1
+  },
+  "passive_clean": {
+    "candidate_counts": {
+      "critical": 0,
+      "noncritical": 0
+    },
+    "horizon": 520,
+    "selected": {
+      "critical": null,
+      "noncritical": null
+    },
+    "status": "PASS_AA1_PASSIVE_CLEAN_PIPELINE",
+    "target_object": "porcelain_mug_1"
+  },
+  "runtime_counters": {
+    "aa2_exposure": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 530,
+    "eval160_reads": 0,
+    "model_inference_calls": 520,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 520,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "schema": "STAGE_AA_AA1_ENGINEERING_CANARY_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_ENGINEERING_ONLY",
+  "scientific_use": false,
+  "selected_anchors": {
+    "critical": null,
+    "noncritical": null
+  },
+  "state_id": 20,
+  "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT",
+  "suite": "libero_10",
+  "task_idx": 4,
+  "timestamp_utc": "2026-08-25T17:13:33Z"
+}
