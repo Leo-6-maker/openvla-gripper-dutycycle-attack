@@ -254,8 +254,6 @@ def select_candidate(rows: list[dict[str, Any]], actions: list[dict[str, Any]], 
             row = rows[step]
             if row.get("object_gripper_contact") is not False or row.get("object_support_contact") is not False:
                 continue
-            if not isinstance(row.get("object_eef_distance_m"), (int, float)) or float(row["object_eef_distance_m"]) <= 0.12:
-                continue
             if any(stable(previous, baseline_z) for previous in rows[:step]):
                 continue
         rank = sha256_bytes(f"{AA1_SALT}|{family}|{key}|{anchor_class}|{step}".encode())
@@ -527,7 +525,7 @@ def run_cell(args: argparse.Namespace) -> dict[str, Any]:
         atomic_write(args.output, receipt)
         selected = clean.get("selected", {})
         branches = []
-        if selected.get("critical") is not None:
+        if selected.get("critical") is not None and selected.get("noncritical") is not None:
             critical = selected["critical"]
             critical_clean = run_branch(z1_config, args.model_family, canary, infer, {**clean, "branch_rows": []}, critical, 0, "CLEAN_REFERENCE", counters)
             # The clean branch is the counterfactual reference for critical doses.
@@ -535,7 +533,6 @@ def run_cell(args: argparse.Namespace) -> dict[str, Any]:
             branches.append(critical_clean)
             for dose in DOSES:
                 branches.append(run_branch(z1_config, args.model_family, canary, infer, clean_with_reference, critical, dose, f"OPEN_T{dose}_CRITICAL", counters))
-        if selected.get("noncritical") is not None:
             noncritical = selected["noncritical"]
             branches.append(run_branch(z1_config, args.model_family, canary, infer, {**clean, "branch_rows": clean["rows"][int(noncritical["step"]):]}, noncritical, 5, "OPEN_T5_NONCRITICAL_CONTROL", counters))
         expected = 5 if selected.get("critical") is not None and selected.get("noncritical") is not None else 0
