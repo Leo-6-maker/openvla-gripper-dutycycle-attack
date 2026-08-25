@@ -1,0 +1,18 @@
+{
+  "human_review_gate_satisfied": false,
+  "label_csv": "STAGE_Z_Z3D_AI_SECONDARY_BLINDED_LABELS_R1_V1.csv",
+  "label_csv_sha256": "ff1411afec9de439a1134fb8f228c77609a2cfb588feccdaae897d4f3923d12c",
+  "label_distribution": {
+    "AMBIGUOUS_OR_OCCLUDED": 1,
+    "NOT_IDENTIFIABLE": 106,
+    "OBJECT_DISPLACEMENT": 4,
+    "STABLE_GRASP": 9
+  },
+  "label_json": "STAGE_Z_Z3D_AI_SECONDARY_BLINDED_LABELS_R1_V1.json",
+  "label_json_sha256": "dfc3484db22c342f598c8e248388615cfdd28d9acb4c9b139501b5f1c3f600cd",
+  "row_count": 120,
+  "schema": "STAGE_Z_Z3D_AI_SECONDARY_LABEL_SEAL_R1_V1",
+  "status": "PASS_Z3D_AI_SECONDARY_LABEL_SEAL_R1",
+  "unblind_permitted_for_ai_secondary_reconciliation": true,
+  "z4_authorized": false
+}
