@@ -145,25 +145,76 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
     gpu = z1.gpu_snapshot(args.gpu_id)
     row = verify_static_authority(config, panel, args.parent_key, args.suite)
     checkpoint = model_checkpoint(config, args.model_family, args.suite)
-    checkpoint_manifest = None
-    if args.model_family == "M1_OPENVLA_OFT":
-        checkpoint_manifest = z1.verify_m1_materialization(
-            Path(args.m1_manifest),
-            Path(checkpoint),
-            args.suite,
-            str(config["model_families"]["M1_OPENVLA_OFT"]["checkpoint_manifests_sha256"]),
-        )
-    if not Path(checkpoint).exists():
-        raise RuntimeError(f"CHECKPOINT_NOT_MATERIALIZED:{checkpoint}")
-
     taxonomy = load_module(ROOT / "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "stage_z_physical_taxonomy")
     phases = load_module(ROOT / "src/gripper_attack/stage_v_m3_5_phase_classifier.py", "stage_z_phase_classifier")
     sys.path.insert(0, str(ROOT / "src"))
     anchors = importlib.import_module("stage_z_preparation.anchors")
     z1.configure_libero(config)
     env, task_suite, task = z1.make_libero_env(config, args.suite, args.task_idx)
-    counters = {"model_inference_calls": 0, "env_step_calls": 0, "anchor_telemetry_reads": 0, "physical_interventions": 0, "pgd_calls": 0, "attacked_env_steps": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "eval160_reads": 0, "protected_reads": 0, "stage_z_scientific_parent_exposure": 1}
+    counters = {"model_inference_calls": 0, "env_step_calls": 0, "anchor_telemetry_reads": 0, "physical_interventions": 0, "pgd_calls": 0, "attacked_env_steps": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "eval160_reads": 0, "protected_reads": 0, "stage_z_scientific_parent_exposure": 0}
+    checkpoint_manifest = None
     try:
+        bddl = Path(z1.make_libero_env.__globals__["get_libero_path"]("bddl_files")) / task.problem_folder / task.bddl_file if "get_libero_path" in z1.make_libero_env.__globals__ else None
+        if bddl is None or not bddl.is_file():
+            from libero.libero import get_libero_path  # type: ignore
+            bddl = Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file
+        binding = taxonomy.bind_object_taxonomy(env, bddl)
+        if binding.get("status") == "INELIGIBLE":
+            return {
+                "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+                "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR",
+                "model_family": args.model_family,
+                "suite": args.suite,
+                "role": "PRIMARY",
+                "canonical_parent_key": args.parent_key,
+                "task_idx": args.task_idx,
+                "state_id": args.state_id,
+                "task_language": str(task.language),
+                "checkpoint": checkpoint,
+                "checkpoint_manifest": None,
+                "normalization": None,
+                "gpu": gpu,
+                "panel_row": row,
+                "object_binding": binding,
+                "anchor_rule": {
+                    "critical_phases": sorted(CRITICAL_PHASES),
+                    "noncritical_phases": ["PRE_CONTACT"],
+                    "phase_classifier": phases.specification(),
+                    "critical_salt": args.critical_salt,
+                    "noncritical_salt": args.noncritical_salt,
+                    "student_or_detector_used": False,
+                    "outcome_fields_used": [],
+                },
+                "clean_reference": {
+                    "horizon": HORIZONS[args.suite],
+                    "dummy_wait_steps": 0,
+                    "decision_boundary_count": 0,
+                    "decision_boundaries": [],
+                    "candidate_count": 0,
+                    "candidate_digest": canonical_hash([]),
+                    "critical_candidates": [],
+                    "noncritical_candidates": [],
+                    "abstention_reason": binding.get("reason"),
+                },
+                "selected_anchors": {"critical": None, "noncritical": None},
+                "runtime_counters": counters,
+                "scientific_claim": "Z2_CLEAN_REFERENCE_AND_ANCHOR_ONLY",
+                "protected_boundary": {"eval160": "UNREAD", "protected": "UNREAD", "pgd_calls": 0, "physical_interventions": 0, "attacked_env_steps": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "protected_reads": 0},
+                "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            }
+        if binding.get("status") != "PASS":
+            raise RuntimeError(f"OBJECT_TAXONOMY_BINDING_INVALID:{binding.get('reason')}")
+        target_object = str(binding["target_object_ids"][0])
+        if args.model_family == "M1_OPENVLA_OFT":
+            checkpoint_manifest = z1.verify_m1_materialization(
+                Path(args.m1_manifest),
+                Path(checkpoint),
+                args.suite,
+                str(config["model_families"]["M1_OPENVLA_OFT"]["checkpoint_manifests_sha256"]),
+            )
+        if not Path(checkpoint).exists():
+            raise RuntimeError(f"CHECKPOINT_NOT_MATERIALIZED:{checkpoint}")
+        counters["stage_z_scientific_parent_exposure"] = 1
         if args.model_family == "M0_OPENVLA":
             infer, _model, normalization = z1.load_openvla(checkpoint, oft=False, suite=args.suite, return_chunk=True)
         elif args.model_family == "M1_OPENVLA_OFT":
@@ -186,15 +237,6 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
         boundary_states: dict[int, np.ndarray] = {}
         boundary_meta: dict[int, dict[str, Any]] = {}
         clean_actions: dict[int, tuple[np.ndarray, np.ndarray]] = {}
-        bddl = Path(z1.make_libero_env.__globals__["get_libero_path"]("bddl_files")) / task.problem_folder / task.bddl_file if "get_libero_path" in z1.make_libero_env.__globals__ else None
-        if bddl is None or not bddl.is_file():
-            from libero.libero import get_libero_path  # type: ignore
-            bddl = Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file
-        binding = taxonomy.bind_object_taxonomy(env, bddl)
-        if binding.get("status") != "PASS":
-            raise RuntimeError(f"OBJECT_TAXONOMY_BINDING_INVALID:{binding.get('reason')}")
-        target_object = str(binding["target_object_ids"][0])
-
         for step in range(horizon):
             fresh = not queue
             if fresh:
