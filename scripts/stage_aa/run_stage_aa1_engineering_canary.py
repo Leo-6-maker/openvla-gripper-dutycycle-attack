@@ -505,6 +505,12 @@ def run_cell(args: argparse.Namespace) -> dict[str, Any]:
     receipt["gpu"] = gpu_snapshot(args.gpu_id)
     Z1.configure_libero(z1_config)
     checkpoint = static["checkpoint"]
+    if args.model_family == "M2_PI05_LIBERO":
+        os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
+    receipt["runtime_environment"] = {
+        "CUDA_VISIBLE_DEVICES": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
+        "XLA_PYTHON_CLIENT_PREALLOCATE": os.environ.get("XLA_PYTHON_CLIENT_PREALLOCATE", "UNSET"),
+    }
     if args.model_family == "M0_OPENVLA":
         infer, model, normalization = Z1.load_openvla(checkpoint, oft=False, suite=canary["suite"], return_chunk=True)
     elif args.model_family == "M1_OPENVLA_OFT":

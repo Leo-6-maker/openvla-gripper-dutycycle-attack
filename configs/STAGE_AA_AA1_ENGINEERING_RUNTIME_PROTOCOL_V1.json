@@ -37,6 +37,11 @@
     "one_worker_per_gpu": true,
     "gpu_admission": "free_memory_mib > 20480 immediately before launch",
     "foreign_processes": "record only; never touch",
+    "m2_memory_isolation": {
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false",
+      "scope": "process-local allocator setting only; no model/action/endpoint semantics change",
+      "reason": "Foreign workers are permitted when launch-time free memory exceeds the frozen threshold."
+    },
     "action_dimension": 7,
     "arm_indices": [0, 1, 2, 3, 4, 5],
     "gripper_index": 6,
