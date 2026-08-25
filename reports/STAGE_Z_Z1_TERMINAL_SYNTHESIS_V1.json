@@ -1,0 +1,93 @@
+{
+  "schema": "STAGE_Z_Z1_TERMINAL_SYNTHESIS_V1",
+  "status": "STAGE_Z_Z1_TERMINAL_ENGINEERING_PASS_12_OF_12_STOP_FOR_PI",
+  "gate": "STAGE_Z_Z1R6R4_M2_ACTION_BOUNDARY_PARITY",
+  "append_only": true,
+  "authorization_source": "user_direct_autonomous_continuation",
+  "claim_boundary": "Engineering-only Z1 runtime qualification; no scientific vulnerability, physical mechanism, visual exploitability, V_phys, Eval160, protected, F1, BRIDGE, or Paper-V2 scientific promotion claim.",
+  "synthesis_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "live_pr": 139,
+    "head_before_terminal_seal": "d70bf633184088183265b2862e400f3e627cc8e0",
+    "tree_before_terminal_seal": "6f66ae596ebda8396a1736d90a69490e2b0e645a",
+    "z1_root_seal_path": "reports/STAGE_Z_Z1_TERMINAL_ROOT_SEAL_V1.json"
+  },
+  "matrix": {
+    "M0_OPENVLA": {"pass": 4, "total": 4, "status": "ENGINEERING_PASS_IMMUTABLE"},
+    "M1_OPENVLA_OFT": {"pass": 4, "total": 4, "status": "ENGINEERING_PASS_NOT_SCIENTIFIC_REPLICATION"},
+    "M2_PI05_LIBERO": {"pass": 4, "total": 4, "status": "ENGINEERING_PASS_NOT_SCIENTIFIC_REPLICATION"},
+    "valid_z1_cells": 12,
+    "total_z1_cells": 12,
+    "scientific_parent_exposure": "0/36"
+  },
+  "authority_bindings": {
+    "z0r2_root_seal": {"path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V2.json", "sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d"},
+    "z1_protocol": {"path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json", "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"},
+    "z1_source_authority": {"path": "reports/STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V12.json", "sha256": "a29078339c795772e0d04d02ecf320c6a0cbba3e4a039ab6e2bd8382ef8b5002"},
+    "pre_m2_static_audit": {"path": "reports/STAGE_Z_Z1R6R4_PRE_M2_STATIC_AUDIT_V1.json", "sha256": "edb97262a8a8ff40b982b40268198e183838f2517f13059fc46db7483dbe1eef", "status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS"},
+    "post_m1_pre_m2_audit": {"path": "reports/STAGE_Z_Z1R6_POST_M1_PRE_M2_AUDIT_V1.json", "sha256": "c918edf1ca81462d76e1488feccb1a42638e132c05d438b9aa889ca263ac9035", "status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS"},
+    "canary_ledger": {"path": "reports/STAGE_Z_Z1_ENGINEERING_CANARY_LEDGER_V1.json", "sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc"}
+  },
+  "cell_receipts": {
+    "M0_OPENVLA": [
+      {"path": "reports/STAGE_Z_Z1_M0_OPENVLA_libero_10_PRIMARY.json", "sha256": "ad50c87afdb4c871b86d666f7640b79ff1a2fe59b566d2c1a45daf95a412d7fb"},
+      {"path": "reports/STAGE_Z_Z1_M0_OPENVLA_libero_goal_PRIMARY.json", "sha256": "48270ef090b82f14988d55fc23a05939d89ddf8f2375101b2a44a2d1fdc8ce50"},
+      {"path": "reports/STAGE_Z_Z1_M0_OPENVLA_libero_object_PRIMARY.json", "sha256": "6230a7595d5178f306189bd4c20d6da6b972d1e16a6ec7d843162b6028073ecc"},
+      {"path": "reports/STAGE_Z_Z1_M0_OPENVLA_libero_spatial_PRIMARY.json", "sha256": "dbaaba95bbc3d9506be29a2867d6f0865b5faecfbf1bbece510d457df2df0076"}
+    ],
+    "M1_OPENVLA_OFT": [
+      {"path": "reports/server_evidence/STAGE_Z_Z1R6_M1_OPENVLA_OFT_libero_10_PRIMARY_SUCCESS.json", "sha256": "5ff4761496d55a1ee358d555adbfc2edbda6e48e48b2569ed3cca888ac7083a7"},
+      {"path": "reports/server_evidence/STAGE_Z_Z1R6_M1_OPENVLA_OFT_libero_goal_PRIMARY_SUCCESS.json", "sha256": "823e37d0d77fba260c97a54c48c90fbc33c968fefd585cc4990c3f28b387cffc"},
+      {"path": "reports/server_evidence/STAGE_Z_Z1R6_M1_OPENVLA_OFT_libero_object_PRIMARY_SUCCESS.json", "sha256": "11719942aaa46477bc4120514c963c4fa0e029e508218c95b4de885caa590067"},
+      {"path": "reports/server_evidence/STAGE_Z_Z1R6_M1_OPENVLA_OFT_libero_spatial_PRIMARY_SUCCESS.json", "sha256": "233f0cb7ef30ea5262d5835fbdb246406c2e5c5f0812f2225af3372bec0be6fb"}
+    ],
+    "M2_PI05_LIBERO": [
+      {"path": "reports/server_evidence/STAGE_Z1_Z1R6R4_M2_PI05_LIBERO_libero_10_PRIMARY_SUCCESS.json", "sha256": "84f66d4fde048ad84b9d14180d1dd0ae6cc1977e7ab19050e14c05183c4cb443"},
+      {"path": "reports/server_evidence/STAGE_Z1_Z1R6R4_M2_PI05_LIBERO_libero_goal_PRIMARY_SUCCESS.json", "sha256": "631de6c025c8409d3ea616424363142bcf5d5855394359f9f426b6d32e222d82"},
+      {"path": "reports/server_evidence/STAGE_Z1_Z1R6R4_M2_PI05_LIBERO_libero_object_PRIMARY_SUCCESS.json", "sha256": "bd81eecac59f3a9bfca1c8bf6e732d1e8f378e7141b28609a6ba170c9288cec2"},
+      {"path": "reports/server_evidence/STAGE_Z1_Z1R6R4_M2_PI05_LIBERO_libero_spatial_PRIMARY_SUCCESS.json", "sha256": "42aa09c72ba561c10f20a16f3e26d9e4e4792e8e2733511692d89c87a1a5b637"}
+    ]
+  },
+  "verification": {
+    "all_receipts_status_pass": true,
+    "all_receipts_scientific_claim": "NONE_ENGINEERING_ONLY",
+    "each_cell_model_inference_calls": 1,
+    "each_cell_clean_env_step_calls": 22,
+    "scientific_parent_exposure": 0,
+    "attack_outcome_reads": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "physical_interventions": 0,
+    "vphys_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "checkpoint_mutation": false,
+    "m1_unnorm_key_resolution": {
+      "libero_10": "libero_10_no_noops / OFFICIAL_NO_NOOPS_FALLBACK",
+      "libero_goal": "libero_goal_no_noops / OFFICIAL_NO_NOOPS_FALLBACK",
+      "libero_object": "libero_object_no_noops / OFFICIAL_NO_NOOPS_FALLBACK",
+      "libero_spatial": "libero_spatial_no_noops / OFFICIAL_NO_NOOPS_FALLBACK"
+    },
+    "m2_action_boundary": "official_controller_input_clip_preserved_raw_and_clipped_diagnostics"
+  },
+  "scientific_firewall": {
+    "command_open_intervention": 0,
+    "attack_or_pgd": 0,
+    "v_phys": 0,
+    "attack_outcome_read": 0,
+    "eval160_or_protected": 0,
+    "F1": "CLOSED",
+    "BRIDGE": "UNOPENED",
+    "scientific_parent_exposure": "0/36"
+  },
+  "terminal_disposition": {
+    "z1_engineering_qualification_complete": true,
+    "engineering_matrix": "M0=4/4, M1=4/4, M2=4/4, total=12/12",
+    "scientific_replication_claim": false,
+    "paper_v2_scientific_promotion": false,
+    "z2_artifacts_separate_from_this_z1_seal": true,
+    "next_legal_action": "STOP_FOR_PI"
+  },
+  "timestamp_utc": "2026-08-25T02:31:43Z"
+}
