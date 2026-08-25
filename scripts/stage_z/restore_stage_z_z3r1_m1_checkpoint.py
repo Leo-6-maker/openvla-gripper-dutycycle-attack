@@ -7,7 +7,6 @@ import argparse
 import hashlib
 import json
 import subprocess
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -40,7 +39,6 @@ def main() -> None:
     parser.add_argument("--target", type=Path, required=True)
     parser.add_argument("--staging", type=Path, required=True)
     parser.add_argument("--receipt", type=Path, required=True)
-    parser.add_argument("--downloader", type=Path, required=True)
     parser.add_argument("--endpoint", default="https://hf-mirror.com")
     args = parser.parse_args()
 
@@ -95,10 +93,22 @@ def main() -> None:
             output = args.staging / row["path"]
             output.parent.mkdir(parents=True, exist_ok=True)
             url = f"{source_base}/{quote(row['path'], safe='/')}"
-            subprocess.run(
-                [sys.executable, str(args.downloader), url, str(output), str(row["size"]), row["sha256"]],
-                check=True,
-            )
+            partial = output.with_name(output.name + ".partial")
+            if output.exists() and (output.stat().st_size != row["size"] or sha256_file(output) != row["sha256"]):
+                output.unlink()
+            if not output.exists():
+                if partial.exists() and partial.stat().st_size > row["size"]:
+                    partial.unlink()
+                subprocess.run(
+                    [
+                        "curl", "--fail", "--location", "--retry", "8", "--retry-all-errors",
+                        "--connect-timeout", "30", "--continue-at", "-", "--output", str(partial), url,
+                    ],
+                    check=True,
+                )
+                if partial.stat().st_size != row["size"] or sha256_file(partial) != row["sha256"]:
+                    raise RuntimeError(f"Z3R1_DOWNLOAD_MANIFEST_MISMATCH:{row['path']}")
+                partial.replace(output)
             receipt["completed_files"] = index
             receipt["completed_bytes"] = sum(item["size"] for item in rows[:index])
             receipt["last_completed_path"] = row["path"]
