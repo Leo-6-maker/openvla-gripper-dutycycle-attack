@@ -1,0 +1,116 @@
+{
+  "schema": "STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_PROTOCOL_V1",
+  "status": "STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_AUTHORITY_FROZEN",
+  "gate": "STAGE_Z_Z2R1_M2_PHASE_ACTION_SEMANTICS_RECONCILIATION_AND_CLEAN_ANCHOR_REPAIR_V1",
+  "authorization": {
+    "source": "PR_139_PI_COMMENT",
+    "comment_id": 5405256740,
+    "z3_authorized": false,
+    "claim_boundary": "M2 clean action-semantics reconciliation and anchor repair only; not a physical OPEN result"
+  },
+  "historical_z2_authority": {
+    "protocol": {
+      "path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V3.json",
+      "sha256": "9cce2445906d5701a322c719b1d13437c9461985027c4faf632b7d1c10a9586b"
+    },
+    "terminal_root": {
+      "path": "reports/STAGE_Z_Z2_TERMINAL_ROOT_SEAL_V2.json",
+      "sha256": "e37659a552bea7665fbfcc7a52e8fa8131e29aef6613a197a7087ab8d7cf4c6f"
+    },
+    "terminal_synthesis": {
+      "path": "reports/STAGE_Z_Z2_TERMINAL_SYNTHESIS_V2.json",
+      "sha256": "237d4d894a34ab8c6234a75e8b194b8d1174b0520aa207fb4bf13baf9b6d2b37"
+    },
+    "anchor_ledger": {
+      "path": "reports/STAGE_Z_Z2_ANCHOR_LEDGER_V2.json",
+      "sha256": "9a0b9cf63ce9a26de3729a560b50dabbe1c2b614d4b27352ca5b5f9911e3d6f5"
+    },
+    "historical_phase_classifier": {
+      "path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py",
+      "git_blob": "a5281ef5fadafe1280ccca4080362832f86a81d7",
+      "sha256": "e3c48886777a45cfe7d2b9942bbeeb6ebc992f29568846180d31d064b839fbe6"
+    }
+  },
+  "new_runtime_source": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "commit": "d36f6e9373284c4e557050f28fee2d9810571172",
+    "tree": "74b4b88c62b5d8ec18a2c9fe0408f253273c71b1",
+    "runner": {
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "git_blob": "c3c14de20361c6d714594b94b85ff507043b5c53",
+      "sha256": "f903b841524ec9eb687f6df6132da6ed8084686fe15b7cc12257815cdce8172c"
+    },
+    "adapter": {
+      "path": "src/stage_z_preparation/action_semantics.py",
+      "git_blob": "d950725159a2bc16da0960b4a99b54039c172e34",
+      "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222"
+    },
+    "static_parity": {
+      "path": "reports/STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_STATIC_PARITY_V1.json",
+      "git_blob": "373480b489a57abb71e95c50d216100c07f99a40",
+      "sha256": "aaac8c2ab29ac4625b23c2a7d503e6fa98a73a4086d854149b5077d9cfe2307d"
+    }
+  },
+  "adapter_contract": {
+    "M0_OPENVLA": "preserve historical threshold/inversion classifier behavior exactly",
+    "M1_OPENVLA_OFT": "preserve historical threshold/inversion classifier behavior exactly",
+    "M2_PI05_LIBERO": "finite 7-D raw action with final action equal to elementwise clip(raw,-1,+1); no binarization or inversion",
+    "invalid_pairs": "fail closed before M2 clean env.step and cannot create a phase-eligible row",
+    "geometry": "reuse historical contact, lift, distance, carry, horizon, and phase labels without threshold changes",
+    "anchors": "H_phys=10, T3/T5/T10, fresh-boundary rules, and deterministic salts unchanged"
+  },
+  "engineering_canary": {
+    "ledger": {
+      "path": "reports/STAGE_Z_Z1_ENGINEERING_CANARY_LEDGER_V1.json",
+      "sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc"
+    },
+    "population": "permanently-excluded engineering namespace only",
+    "selected_cell": {
+      "model_family": "M2_PI05_LIBERO",
+      "suite": "libero_10",
+      "role": "PRIMARY",
+      "canonical_parent_key": "libero_10/task_04/state_03",
+      "task_idx": 4,
+      "state_id": 3
+    },
+    "required": "real repaired clean phase/anchor path; no scientific-parent exposure; no outcome reads"
+  },
+  "storage_preflight": {
+    "required_before_canary": true,
+    "filesystem": "/mnt/sdc",
+    "policy": "no M1 materialization; no deletion of historical evidence, roots, receipts, or unrelated data; only explicit rematerializable temporary cache may be removed and must be recorded",
+    "minimum_free_margin_bytes": 5368709120
+  },
+  "clean_measurement_repair": {
+    "offline_preferred": true,
+    "if_rerun_required": {
+      "model_family": "M2_PI05_LIBERO",
+      "identities": "the same 36 frozen panel rows only",
+      "eligible_model_exposure": "the same 34 already-clean-exposed M2 identities",
+      "structural_abstentions": [
+        "libero_goal/task_00/state_21",
+        "libero_goal/task_07/state_30"
+      ],
+      "replacement_or_top_up": false,
+      "M0_rerun": false,
+      "M1_rerun": false,
+      "attack_or_physical_intervention": false,
+      "new_identity": false
+    }
+  },
+  "forbidden": [
+    "Z3",
+    "Z4",
+    "command_OPEN",
+    "PGD",
+    "attacked_env.step",
+    "V_phys",
+    "protected_or_Eval160_reads",
+    "Student_or_detector",
+    "threshold_widening",
+    "identity_replacement",
+    "M0_or_M1_rerun"
+  ],
+  "stop_rule": "After R1-C, R1-D, R1-E, and if needed R1-F/R1-G, publish append-only terminal artifacts and STOP_FOR_PI. Do not start Z3 automatically."
+}
