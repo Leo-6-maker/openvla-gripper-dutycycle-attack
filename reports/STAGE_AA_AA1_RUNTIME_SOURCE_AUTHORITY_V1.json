@@ -24,7 +24,7 @@
     },
     {
       "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
-      "bytes": 29618,
+      "bytes": 30199,
       "sha256": "2894dd7043c337178c09d64fe62fb17cee27bc25e142a3273776587b5202bf8d",
       "git_blob_sha": "64cbd91ef48e5621655d0437f91085fcdcf64b71"
     }
