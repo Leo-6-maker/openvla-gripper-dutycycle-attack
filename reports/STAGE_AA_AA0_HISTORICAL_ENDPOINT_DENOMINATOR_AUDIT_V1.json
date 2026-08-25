@@ -1,0 +1,714 @@
+{
+  "claim_boundary": "Historical static audit only; no new inference, env.step, OPEN intervention, scientific outcome, or protected read.",
+  "construct_validity_evidence": {
+    "automatic_gripper_contact_loss_rows_in_blinded_audit": 55,
+    "human_review_gate_satisfied": false,
+    "interpretation": "AI-only exploratory diagnostic evidence; it does not relabel the primary endpoint and does not satisfy a human-review gate.",
+    "panel_labels_for_automatic_gripper_contact_loss": {
+      "AMBIGUOUS_OR_OCCLUDED": 14,
+      "NOT_IDENTIFIABLE": 30,
+      "OBJECT_DISPLACEMENT": 3,
+      "PREMATURE_RELEASE_OR_DROP": 1,
+      "STABLE_GRASP": 7
+    },
+    "panel_nid_or_ambiguous_for_automatic_gripper_contact_loss": 44,
+    "panel_stable_grasp_for_automatic_gripper_contact_loss": 7
+  },
+  "full_matrix_clean_class_counts": {
+    "GRIPPER_CONTACT_LOSS": 84,
+    "NO_PHYSICAL_FAILURE": 8
+  },
+  "full_matrix_model_suite_summary": [
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 2,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        },
+        "3": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 2,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        },
+        "5": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 2,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        }
+      },
+      "model_family": "M0_OPENVLA",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 9
+      },
+      "parent_count": 9,
+      "suite": "libero_10"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 3,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 3,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        },
+        "3": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 3,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        },
+        "5": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 3,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        }
+      },
+      "model_family": "M0_OPENVLA",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 4
+      },
+      "parent_count": 4,
+      "suite": "libero_goal"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 9,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 2,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        },
+        "3": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 9,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        },
+        "5": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 8,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        }
+      },
+      "model_family": "M0_OPENVLA",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 10
+      },
+      "parent_count": 10,
+      "suite": "libero_object"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 9
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 4,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5
+        },
+        "3": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 3,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+          "V_PHYS": 1
+        },
+        "5": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 4,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5
+        }
+      },
+      "model_family": "M0_OPENVLA",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 9
+      },
+      "parent_count": 9,
+      "suite": "libero_spatial"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 7,
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+          "NO_PHYSICAL_VULNERABILITY": 2
+        },
+        "3": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+          "NO_PHYSICAL_VULNERABILITY": 2
+        },
+        "5": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+          "NO_PHYSICAL_VULNERABILITY": 2
+        }
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 9
+      },
+      "parent_count": 9,
+      "suite": "libero_10"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+        },
+        "3": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+        },
+        "5": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+        }
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "parent_count": 2,
+      "suite": "libero_goal"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 5
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+        },
+        "3": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+        },
+        "5": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+        }
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 5
+      },
+      "parent_count": 5,
+      "suite": "libero_object"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 10
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 4,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6
+        },
+        "3": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 3,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+        },
+        "5": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 3,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+        }
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 10
+      },
+      "parent_count": 10,
+      "suite": "libero_spatial"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 7,
+        "NO_PHYSICAL_FAILURE": 3
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+          "NO_PHYSICAL_VULNERABILITY": 1,
+          "V_PHYS": 2
+        },
+        "3": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7,
+          "NO_PHYSICAL_VULNERABILITY": 1,
+          "V_PHYS": 2
+        },
+        "5": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+          "NO_PHYSICAL_VULNERABILITY": 2,
+          "V_PHYS": 1
+        }
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 10
+      },
+      "parent_count": 10,
+      "suite": "libero_10"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 4
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+        },
+        "3": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+        },
+        "5": {
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+        }
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 4
+      },
+      "parent_count": 4,
+      "suite": "libero_goal"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 10
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 2,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 8
+        },
+        "3": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 8,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        },
+        "5": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 8,
+          "NO_PHYSICAL_VULNERABILITY": 1
+        }
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 10
+      },
+      "parent_count": 10,
+      "suite": "libero_object"
+    },
+    {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 10
+      },
+      "critical_label_counts_by_dose": {
+        "10": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 4,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6
+        },
+        "3": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 1,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 9
+        },
+        "5": {
+          "CONTROL_CONTAMINATION_ABSTAIN": 4,
+          "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6
+        }
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 10
+      },
+      "parent_count": 10,
+      "suite": "libero_spatial"
+    }
+  ],
+  "full_matrix_model_summary": {
+    "M0_OPENVLA": {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 29,
+        "NO_PHYSICAL_FAILURE": 3
+      },
+      "dose": {
+        "10": {
+          "automatic_label_counts": {
+            "CONTROL_CONTAMINATION_ABSTAIN": 8,
+            "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 21,
+            "NO_PHYSICAL_VULNERABILITY": 3
+          },
+          "automatic_physical_class_counts": {
+            "GRIPPER_CONTACT_LOSS": 3,
+            "NO_PHYSICAL_FAILURE": 24,
+            "OBJECT_DROP": 1,
+            "PREMATURE_OBJECT_RELEASE": 4
+          },
+          "parent_count": 32,
+          "post_hoc_abstention_count": 29,
+          "valid_primary_parent_count": 3
+        },
+        "3": {
+          "automatic_label_counts": {
+            "CONTROL_CONTAMINATION_ABSTAIN": 5,
+            "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 23,
+            "NO_PHYSICAL_VULNERABILITY": 3,
+            "V_PHYS": 1
+          },
+          "automatic_physical_class_counts": {
+            "GRIPPER_CONTACT_LOSS": 3,
+            "NO_PHYSICAL_FAILURE": 26,
+            "OBJECT_DROP": 1,
+            "PREMATURE_OBJECT_RELEASE": 2
+          },
+          "parent_count": 32,
+          "post_hoc_abstention_count": 28,
+          "valid_primary_parent_count": 4
+        },
+        "5": {
+          "automatic_label_counts": {
+            "CONTROL_CONTAMINATION_ABSTAIN": 7,
+            "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 22,
+            "NO_PHYSICAL_VULNERABILITY": 3
+          },
+          "automatic_physical_class_counts": {
+            "GRIPPER_CONTACT_LOSS": 4,
+            "NO_PHYSICAL_FAILURE": 25,
+            "OBJECT_DROP": 1,
+            "PREMATURE_OBJECT_RELEASE": 2
+          },
+          "parent_count": 32,
+          "post_hoc_abstention_count": 29,
+          "valid_primary_parent_count": 3
+        }
+      },
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 32
+      },
+      "parent_count": 32
+    },
+    "M1_OPENVLA_OFT": {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 24,
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "dose": {
+        "10": {
+          "automatic_label_counts": {
+            "CONTROL_CONTAMINATION_ABSTAIN": 6,
+            "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 18,
+            "NO_PHYSICAL_VULNERABILITY": 2
+          },
+          "automatic_physical_class_counts": {
+            "GRIPPER_CONTACT_LOSS": 2,
+            "NO_PHYSICAL_FAILURE": 20,
+            "PREMATURE_OBJECT_RELEASE": 4
+          },
+          "parent_count": 26,
+          "post_hoc_abstention_count": 24,
+          "valid_primary_parent_count": 2
+        },
+        "3": {
+          "automatic_label_counts": {
+            "CONTROL_CONTAMINATION_ABSTAIN": 5,
+            "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 19,
+            "NO_PHYSICAL_VULNERABILITY": 2
+          },
+          "automatic_physical_class_counts": {
+            "GRIPPER_CONTACT_LOSS": 3,
+            "NO_PHYSICAL_FAILURE": 21,
+            "PREMATURE_OBJECT_RELEASE": 2
+          },
+          "parent_count": 26,
+          "post_hoc_abstention_count": 24,
+          "valid_primary_parent_count": 2
+        },
+        "5": {
+          "automatic_label_counts": {
+            "CONTROL_CONTAMINATION_ABSTAIN": 5,
+            "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 19,
+            "NO_PHYSICAL_VULNERABILITY": 2
+          },
+          "automatic_physical_class_counts": {
+            "GRIPPER_CONTACT_LOSS": 2,
+            "NO_PHYSICAL_FAILURE": 21,
+            "PREMATURE_OBJECT_RELEASE": 3
+          },
+          "parent_count": 26,
+          "post_hoc_abstention_count": 24,
+          "valid_primary_parent_count": 2
+        }
+      },
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 26
+      },
+      "parent_count": 26
+    },
+    "M2_PI05_LIBERO": {
+      "clean_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 31,
+        "NO_PHYSICAL_FAILURE": 3
+      },
+      "dose": {
+        "10": {
+          "automatic_label_counts": {
+            "CONTROL_CONTAMINATION_ABSTAIN": 7,
+            "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 24,
+            "NO_PHYSICAL_VULNERABILITY": 1,
+            "V_PHYS": 2
+          },
+          "automatic_physical_class_counts": {
+            "GRIPPER_CONTACT_LOSS": 4,
+            "NO_PHYSICAL_FAILURE": 25,
+            "OBJECT_DROP": 1,
+            "PREMATURE_OBJECT_RELEASE": 4
+          },
+          "parent_count": 34,
+          "post_hoc_abstention_count": 31,
+          "valid_primary_parent_count": 3
+        },
+        "3": {
+          "automatic_label_counts": {
+            "CONTROL_CONTAMINATION_ABSTAIN": 2,
+            "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 28,
+            "NO_PHYSICAL_VULNERABILITY": 2,
+            "V_PHYS": 2
+          },
+          "automatic_physical_class_counts": {
+            "GRIPPER_CONTACT_LOSS": 2,
+            "NO_PHYSICAL_FAILURE": 30,
+            "OBJECT_DROP": 1,
+            "PREMATURE_OBJECT_RELEASE": 1
+          },
+          "parent_count": 34,
+          "post_hoc_abstention_count": 30,
+          "valid_primary_parent_count": 4
+        },
+        "5": {
+          "automatic_label_counts": {
+            "CONTROL_CONTAMINATION_ABSTAIN": 6,
+            "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 24,
+            "NO_PHYSICAL_VULNERABILITY": 3,
+            "V_PHYS": 1
+          },
+          "automatic_physical_class_counts": {
+            "GRIPPER_CONTACT_LOSS": 5,
+            "NO_PHYSICAL_FAILURE": 27,
+            "OBJECT_DROP": 1,
+            "PREMATURE_OBJECT_RELEASE": 1
+          },
+          "parent_count": 34,
+          "post_hoc_abstention_count": 30,
+          "valid_primary_parent_count": 4
+        }
+      },
+      "noncritical_t5_physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 34
+      },
+      "parent_count": 34
+    }
+  },
+  "historical_conclusion": {
+    "denominator_attrition_is_observed": true,
+    "m1_m2_robustness_not_established": true,
+    "old_endpoint_construct_validity_is_ambiguous": true,
+    "stage_z_remains_immutable": true
+  },
+  "historical_z3_execution": {
+    "fixed_branches": 460,
+    "model_parent_count": 92,
+    "new_env_step_in_audit": 0,
+    "new_model_inference_in_audit": 0,
+    "pass_receipts": 460
+  },
+  "old_endpoint_contract": {
+    "clean_contact_loss_rule": "two consecutive rows where post_object_gripper_contact is not True",
+    "contact_false_alone_can_start_streak": true,
+    "invalid_and_control_abstentions_are_post_hoc_labels": true,
+    "new_aa_rule": "A contact=False observation is never sufficient by itself; AA requires a clean-established grasp, clean continuation stability, and a post-OPEN physical consequence.",
+    "requires_clean_reference_stability": false,
+    "requires_prior_established_grasp": false,
+    "source": "src/stage_z_preparation/z3_contract.py"
+  },
+  "same_parent_patterns_preserved_from_z4": {
+    "M0_OPENVLA": {
+      "complete_all_dose_parents": 3,
+      "complete_all_dose_pattern_counts": {
+        "000": 3
+      },
+      "complete_all_dose_rows": [
+        {
+          "canonical_parent_key": "libero_10/task_09/state_24",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "000",
+          "suite": "libero_10"
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_05/state_26",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "000",
+          "suite": "libero_goal"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_45",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "000",
+          "suite": "libero_object"
+        }
+      ],
+      "dose_valid_parent_counts": {
+        "10": 3,
+        "3": 4,
+        "5": 3
+      },
+      "total_parents": 32
+    },
+    "M1_OPENVLA_OFT": {
+      "complete_all_dose_parents": 2,
+      "complete_all_dose_pattern_counts": {
+        "000": 2
+      },
+      "complete_all_dose_rows": [
+        {
+          "canonical_parent_key": "libero_10/task_03/state_45",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "000",
+          "suite": "libero_10"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_34",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "000",
+          "suite": "libero_10"
+        }
+      ],
+      "dose_valid_parent_counts": {
+        "10": 2,
+        "3": 2,
+        "5": 2
+      },
+      "total_parents": 26
+    },
+    "M2_PI05_LIBERO": {
+      "complete_all_dose_parents": 3,
+      "complete_all_dose_pattern_counts": {
+        "001": 1,
+        "100": 1,
+        "111": 1
+      },
+      "complete_all_dose_rows": [
+        {
+          "canonical_parent_key": "libero_10/task_02/state_30",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "V_PHYS"
+          ],
+          "pattern_3_5_10": "001",
+          "suite": "libero_10"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_21",
+          "labels_3_5_10": [
+            "V_PHYS",
+            "V_PHYS",
+            "V_PHYS"
+          ],
+          "pattern_3_5_10": "111",
+          "suite": "libero_10"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_24",
+          "labels_3_5_10": [
+            "V_PHYS",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "100",
+          "suite": "libero_10"
+        }
+      ],
+      "dose_valid_parent_counts": {
+        "10": 3,
+        "3": 4,
+        "5": 4
+      },
+      "total_parents": 34
+    }
+  },
+  "schema": "STAGE_AA_AA0_HISTORICAL_ENDPOINT_DENOMINATOR_AUDIT_V1",
+  "source_bindings": {
+    "z3_contract": {
+      "bytes": 8903,
+      "path": "src/stage_z_preparation/z3_contract.py",
+      "sha256": "357e2ef5c0adf20b8dc6eff471a5d2ad544293a1dcf5927586f72429f760b6ee"
+    },
+    "z3_eligibility": {
+      "bytes": 270362,
+      "path": "reports/STAGE_Z_Z3_ELIGIBILITY_RECONCILIATION_V1.json",
+      "sha256": "8a7ae11c521bd39ae103d7338a90cb9979eb6006b286bde1d84f1d0c5cc6204a"
+    },
+    "z3_protocol": {
+      "bytes": 12576,
+      "path": "configs/STAGE_Z_Z3_CROSS_MODEL_COMMAND_OPEN_PHYSICAL_MATRIX_PROTOCOL_V2.json",
+      "sha256": "92747fe2263fb47ad9b53dee916660f7b8e2db1d5d895e6c80922db29caf7f1b"
+    },
+    "z3_root": {
+      "bytes": 2236,
+      "path": "reports/STAGE_Z_Z3C_ROOT_SEAL_V1.json",
+      "sha256": "9ccceaa1c61e54aff3348491772c463853c7679aab4ec585d2adaf196ae57c77"
+    },
+    "z3_terminal": {
+      "bytes": 163987,
+      "path": "reports/STAGE_Z_Z3C_TERMINAL_SYNTHESIS_V1.json",
+      "sha256": "f76c58ca9b7e33d1ff340867304fd98bf9aa90501c411421ef7134c78383126c"
+    },
+    "z4_cross_audit": {
+      "bytes": 50533,
+      "path": "reports/STAGE_Z_Z3DH_AI_PANEL_CROSS_AUDIT_V1.json",
+      "sha256": "8cf4cd4354dee11cf5362f3eecd34dede2ede038d7384199a6709a4098770bc9"
+    },
+    "z4_root": {
+      "bytes": 4413,
+      "path": "reports/STAGE_Z_Z4_ROOT_SEAL_V1.json",
+      "sha256": "5fb20d4233c2e3ca4133336b00931be07b6ab9e67b8e7f2dc151428f297fb618"
+    },
+    "z4_synthesis": {
+      "bytes": 9408,
+      "path": "reports/STAGE_Z_Z4_STATIC_CROSS_MODEL_SYNTHESIS_V1.json",
+      "sha256": "ce95ee0ca197842e1122cef5194c88f6a8edf5c2f3039ace4a8e9239bd861b9c"
+    }
+  },
+  "status": "STAGE_AA_AA0_HISTORICAL_STATIC_AUDIT_COMPLETE",
+  "validation_failures": []
+}

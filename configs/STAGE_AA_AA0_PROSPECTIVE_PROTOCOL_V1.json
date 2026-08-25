@@ -1,0 +1,260 @@
+{
+  "aa1_engineering_canaries": {
+    "count": 3,
+    "exact_reserved_rows": [
+      {
+        "canonical_parent_key": "libero_10/task_04/state_20",
+        "rank_sha256": "a1a111700a2f96ad5cbd4dc02024b0b6abed74a0a55ef72393b49195c2488101",
+        "selection_rank_sha256": "002141be60b9d26accb99ff262ce9e9859cf537bedfe060e2dea627d5ef656e1",
+        "source_task_idx": 4,
+        "state": "state_20",
+        "suite": "libero_10",
+        "task": "task_04"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_02/state_42",
+        "rank_sha256": "c9a401a24f80e34d4917ed25a5107f16875cf7e1f88e50672cca7e3dab33a6e5",
+        "selection_rank_sha256": "0208e2ddaa0ca76985d7012c9062203cac7a132b5f8ed8a8ecbf4386acd21832",
+        "source_task_idx": 2,
+        "state": "state_42",
+        "suite": "libero_object",
+        "task": "task_02"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_05/state_34",
+        "rank_sha256": "f6d21939bafb49e149daa95770eb623a28219afe7407ef3fb93fe5860151be32",
+        "selection_rank_sha256": "0a7014475facde61b83e131177846088531cb2f4ef9a2bc7942b346d7ae504ef",
+        "source_task_idx": 5,
+        "state": "state_34",
+        "suite": "libero_spatial",
+        "task": "task_05"
+      }
+    ],
+    "model_families": [
+      "M0_OPENVLA",
+      "M1_OPENVLA_OFT",
+      "M2_PI05_LIBERO"
+    ],
+    "permanent_exclusion_from_aa2_aa5": true,
+    "scientific_use": false,
+    "source_inventory": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json"
+  },
+  "aa2_clean_screen_and_anchor_freeze": {
+    "anchor_selection_is_outcome_blind": true,
+    "anchor_semantics": {
+      "critical": "stable carry / established grasp only",
+      "deterministic_selection": "minimum hash rank after eligibility, with fixed AA2 salt",
+      "model_action_adapter": "M0/M1 official [0,1] gripper mapping; M2 official raw continuous clip-to-LIBERO mapping",
+      "noncritical_control": "pre-contact candidate with no established grasp, selected separately and never used to define the critical denominator"
+    },
+    "attack_or_pgd_allowed_at_aa2": false,
+    "clean_only": true,
+    "clean_trajectory_requirements": {
+      "carry_relative_distance_max_m": 0.04,
+      "clean_continuation_must_remain_grasp_stable": true,
+      "clean_continuation_steps_after_anchor": 20,
+      "clean_terminal_release_in_continuation": "ineligible; not a treatment failure",
+      "complete_trajectory": true,
+      "gripper_contact_true_for_window": true,
+      "lift_delta_min_m": 0.015,
+      "minimum_remaining_horizon_steps": 20,
+      "object_eef_distance_max_m": 0.12,
+      "object_identity_and_baseline_valid": true,
+      "object_support_contact_false_for_window": true,
+      "stable_grasp_window_steps": 3,
+      "telemetry_valid_for_eligibility_window": true
+    },
+    "model_inference_allowed_at_aa2": true,
+    "open_intervention_allowed_at_aa2": false
+  },
+  "aa3_fixed_complete_dose_matrix": {
+    "arm_preservation": "command-level OPEN changes only final gripper action coordinate; arm coordinates remain exact within frozen tolerance",
+    "arms": [
+      {
+        "anchor": "critical",
+        "name": "CLEAN_REFERENCE",
+        "open_steps": 0
+      },
+      {
+        "anchor": "critical",
+        "name": "OPEN_T3_CRITICAL",
+        "open_steps": 3
+      },
+      {
+        "anchor": "critical",
+        "name": "OPEN_T5_CRITICAL",
+        "open_steps": 5
+      },
+      {
+        "anchor": "critical",
+        "name": "OPEN_T10_CRITICAL",
+        "open_steps": 10
+      },
+      {
+        "anchor": "noncritical_control",
+        "name": "OPEN_T5_NONCRITICAL_CONTROL",
+        "open_steps": 5
+      }
+    ],
+    "branch_validity": {
+      "invalid_branch_policy": "retain in fixed denominator, report separately, and block promotion if any primary branch is invalid",
+      "required": [
+        "exact_state_replay",
+        "exact_clean_action_reference",
+        "exact_open_delivery",
+        "telemetry_valid",
+        "horizon_complete"
+      ]
+    },
+    "same_anchor_across_critical_doses": true,
+    "same_parent_across_doses": true
+  },
+  "aa4_secondary_blinded_endpoint_audit": {
+    "mapping_hidden_until_labels_sealed": true,
+    "maximum_videos": 120,
+    "outcome_blind": true,
+    "reviewer_type": "must be explicitly recorded; AI cannot silently satisfy a human-review requirement",
+    "role": "construct-validity/interpretation only; never denominator repair or V_phys relabeling",
+    "uniform_presentation_required": true
+  },
+  "aa_endpoint_contract": {
+    "contact_false_is_not_contact_loss": true,
+    "labels": [
+      "AA_V_PHYS",
+      "AA_NO_PREMATURE_LOSS",
+      "AA_ENDPOINT_AMBIGUOUS",
+      "AA_BRANCH_INVALID",
+      "AA_NONCAUSAL_TERMINAL_RELEASE"
+    ],
+    "no_endpoint_relabeling": "AA labels do not rewrite Stage-Z V_phys, CONTROL_*_ABSTAIN, or historical labels",
+    "noncritical_control": "descriptive phase-control arm; contact=False alone is never a positive endpoint",
+    "primary_aa_v_phys": {
+      "clean_counterfactual_guard": "matched clean branch must remain grasp-stable over the same physical horizon; otherwise label AA_NONCAUSAL_TERMINAL_RELEASE or AA_ENDPOINT_AMBIGUOUS, never AA_V_PHYS",
+      "clean_grasp_precondition": "frozen AA2 established grasp plus clean 20-step stable continuation",
+      "loss_transition": "treatment has contact=True immediately before the event, then contact=False for at least two consecutive valid frames",
+      "open_delivery_precondition": "exact native OPEN delivery at the frozen critical anchor for requested T3/T5/T10 steps",
+      "physical_consequence": "during that loss run, support contact remains false and either object z decreases by at least 0.02 m or object displacement versus the matched clean branch is at least 0.01 m",
+      "window": "from first OPEN delivery through T_dose + 10 physical horizon steps"
+    }
+  },
+  "authorization": {
+    "aa0_only": true,
+    "aa1_to_aa5_authorized": false,
+    "pi_comment_id": 5413317545,
+    "pi_long_range_goal": "Prospective phase-aware fixed-denominator command-level OPEN physical-mechanism replication across M0/M1/M2."
+  },
+  "estimand": {
+    "critical_distinction": "The denominator is frozen before any OPEN treatment; treatment endpoint, V_phys, control status, or video label cannot remove a parent.",
+    "definition": "Among a clean-only frozen common parent set with an established grasp and a 20-step clean-stable continuation, compare the paired command-OPEN T3/T5/T10 premature-grasp-loss rate for each model family.",
+    "primary_outcome": "AA_V_PHYS",
+    "primary_unit": "model_family x frozen_common_parent",
+    "secondary_outcomes": [
+      "aperture_excess",
+      "contact_loss_with_physical_consequence",
+      "premature_release",
+      "object_drop",
+      "object_displacement",
+      "official_task_success_secondary"
+    ]
+  },
+  "forbidden_until_new_pi_authorization": [
+    "AA1-AA5 execution",
+    "new model inference",
+    "new env.step",
+    "new OPEN intervention",
+    "PGD",
+    "Stage-Z identity reuse",
+    "replacement or top-up",
+    "protected/Eval160",
+    "BRIDGE/F1",
+    "Paper V2 promotion"
+  ],
+  "gate": "STAGE_AA_AA0_ENDPOINT_REDESIGN_AND_FRESH_CAPACITY_FREEZE",
+  "immutable_stage_z": {
+    "stage_z4_status": "STAGE_Z_CROSS_MODEL_GENERALIZATION_NOT_ESTABLISHED_ENDPOINT_VALIDITY_LIMITED_AI_ONLY",
+    "stage_z_artifacts_immutable": true,
+    "stage_z_identity_reuse_forbidden": true,
+    "stage_z_primary_endpoint_not_rewritten": true
+  },
+  "next_legal_action": "STOP_FOR_PI",
+  "population_and_denominator": {
+    "aa1_canary_reservation_is_excluded": true,
+    "clean_screen_all_remaining_inventory_before_freeze": true,
+    "common_intersection_rule": "Run the same clean-only eligibility rule for all three model families; primary eligible parents are the intersection of the three model-specific eligible sets.",
+    "common_primary_floor_n": 24,
+    "common_primary_target_n": 32,
+    "fixed_denominator_invariant": "Once frozen, N is unchanged across T3/T5/T10. Invalid branches are reported separately and cannot trigger post-hoc parent deletion.",
+    "freeze_rule": {
+      "forbidden_selection_inputs": [
+        "OPEN outcome",
+        "V_phys",
+        "task success",
+        "manual label",
+        "dose response",
+        "model-specific treatment result"
+      ],
+      "if_common_eligible_24_to_31": "freeze all common eligible parents; report exact N",
+      "if_common_eligible_at_least_32": "select exactly 32 by minimum sha256(AA2_SELECTION_SALT|canonical_parent_key)",
+      "if_common_eligible_below_24": "CAPACITY_LIMIT; no AA3 physical matrix and no replacement/top-up",
+      "selection_inputs": [
+        "canonical_parent_key",
+        "clean eligibility only",
+        "AA2 selection salt"
+      ]
+    },
+    "inventory_artifact": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json"
+  },
+  "schema": "STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1",
+  "scientific_firewall": {
+    "eval160_reads": 0,
+    "fresh_science_exposure": 0,
+    "new_env_step": 0,
+    "new_model_inference": 0,
+    "new_open_intervention": 0,
+    "pgd": 0,
+    "protected_reads": 0,
+    "stage_z_mutation": 0
+  },
+  "source_bindings": {
+    "aa0_audit": {
+      "bytes": 22428,
+      "path": "reports/STAGE_AA_AA0_HISTORICAL_ENDPOINT_DENOMINATOR_AUDIT_V1.json",
+      "sha256": "f74f935790581e30f745a0f89db9fe777bcc679edb216320e38b95c7a669c425"
+    },
+    "aa0_capacity": {
+      "bytes": 81848,
+      "path": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+      "sha256": "19679c6878a35c6e13bb46d2c1078d7d96a864a90525f542b6dedb62782fbbf5"
+    },
+    "stage_z0r1_amendment": {
+      "bytes": 1686,
+      "path": "reports/STAGE_Z_Z0R1_STRUCTURAL_MISSINGNESS_AMENDMENT_V1.json",
+      "sha256": "afd9330d9a99e39f78fad948e4f6adb4785a277443f0212c6be4bf648f6eaa48"
+    },
+    "stage_z4_root": {
+      "bytes": 4413,
+      "path": "reports/STAGE_Z_Z4_ROOT_SEAL_V1.json",
+      "sha256": "5fb20d4233c2e3ca4133336b00931be07b6ab9e67b8e7f2dc151428f297fb618"
+    }
+  },
+  "statistical_promotion_criteria": {
+    "alpha": 0.05,
+    "dose_monotonicity": "p_T3 <= p_T5 <= p_T10 at the frozen common denominator",
+    "generalization_not_established": "same validity requirements, but zero model families satisfy the primary criteria",
+    "measurement_or_capacity_limited": "N<24, any primary branch invalid, or endpoint audit/construct validity fails; do not convert this to a scientific negative",
+    "minimum_effect": "absolute paired rate difference p_T10 - p_T3 >= 0.20",
+    "multiple_testing": "Holm correction across the three model-specific primary T10-versus-T3 paired tests",
+    "partial_model_dependent": "same validity requirements, but only one or two model families satisfy the primary criteria",
+    "phase_specific_secondary": "T5 critical rate exceeds T5 noncritical-control rate by at least 0.20 with valid control coverage; otherwise phase-specific promotion is not established",
+    "primary_test": "one-sided exact paired McNemar test for AA_V_PHYS(T10) > AA_V_PHYS(T3)",
+    "replicated_3_of_3": "N>=24, 100% primary branch validity, endpoint audit not failed, and all three model families satisfy the primary dose test and dose monotonicity",
+    "secondary_reporting": [
+      "exact 000/001/011/111 dose patterns",
+      "non-monotone patterns",
+      "Wilson or exact binomial intervals",
+      "aperture/contact/displacement telemetry",
+      "task success as secondary only"
+    ]
+  },
+  "status": "STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_FROZEN_STOP_FOR_PI"
+}
