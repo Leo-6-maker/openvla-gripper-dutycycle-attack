@@ -1,0 +1,111 @@
+{
+  "schema": "STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_DISCREPANCY_V1",
+  "status": "STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_DISCREPANCY_SEALED",
+  "gate": "STAGE_Z_Z2R1_M2_PHASE_ACTION_SEMANTICS_RECONCILIATION_AND_CLEAN_ANCHOR_REPAIR_V1",
+  "authorization": {
+    "source": "PR_139_PI_COMMENT",
+    "comment_id": 5405256740,
+    "scope": "M2 measurement adapter and clean-anchor repair only; Z3 remains unauthorized"
+  },
+  "historical_z2_binding": {
+    "terminal_root": {
+      "path": "reports/STAGE_Z_Z2_TERMINAL_ROOT_SEAL_V2.json",
+      "sha256": "e37659a552bea7665fbfcc7a52e8fa8131e29aef6613a197a7087ab8d7cf4c6f"
+    },
+    "terminal_root_sidecar": {
+      "path": "reports/STAGE_Z_Z2_TERMINAL_ROOT_SEAL_V2.sha256",
+      "expected_line": "e37659a552bea7665fbfcc7a52e8fa8131e29aef6613a197a7087ab8d7cf4c6f  STAGE_Z_Z2_TERMINAL_ROOT_SEAL_V2.json"
+    },
+    "terminal_synthesis": {
+      "path": "reports/STAGE_Z_Z2_TERMINAL_SYNTHESIS_V2.json",
+      "sha256": "237d4d894a34ab8c6234a75e8b194b8d1174b0520aa207fb4bf13baf9b6d2b37"
+    },
+    "historical_runner": {
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "sha256": "78cabdd0ddd7f836e5936a88396f1623d5f1f86b3eb379e36405fa73122fe918",
+      "scope": "Z2 V3 authority binding; not modified in historical receipts"
+    },
+    "historical_phase_classifier": {
+      "path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py",
+      "git_blob": "a5281ef5fadafe1280ccca4080362832f86a81d7",
+      "sha256": "e3c48886777a45cfe7d2b9942bbeeb6ebc992f29568846180d31d064b839fbe6",
+      "status": "PRESERVE_BYTE_EXACT"
+    }
+  },
+  "representative_sealed_action_boundaries": [
+    {
+      "model_family": "M0_OPENVLA",
+      "path": "reports/STAGE_Z_Z1_M0_OPENVLA_libero_10_PRIMARY.json",
+      "sha256": "ad50c87afdb4c871b86d666f7640b79ff1a2fe59b566d2c1a45daf95a412d7fb",
+      "raw_gripper": 0.9960784316062927,
+      "final_env_gripper": -1.0,
+      "historical_rule_result": "VALID"
+    },
+    {
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z1R6_M1_OPENVLA_OFT_libero_10_PRIMARY_SUCCESS.json",
+      "sha256": "5ff4761496d55a1ee358d555adbfc2edbda6e48e48b2569ed3cca888ac7083a7",
+      "raw_gripper": 0.9765625,
+      "final_env_gripper": -1.0,
+      "historical_rule_result": "VALID"
+    },
+    {
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z1_Z1R6R4_M2_PI05_LIBERO_libero_10_PRIMARY_SUCCESS.json",
+      "sha256": "84f66d4fde048ad84b9d14180d1dd0ae6cc1977e7ab19050e14c05183c4cb443",
+      "raw_gripper": -0.9986836910247803,
+      "final_env_gripper": -0.9986836910247803,
+      "official_boundary_evidence": {
+        "raw_action_key": "action_meta.raw_action",
+        "final_action_key": "action_meta.action_after_libero_clip",
+        "action_was_clipped": false,
+        "clip_rule": "elementwise clip(raw_action,-1,+1)"
+      },
+      "historical_openvla_rule_result": "INVALID_EXPECTED_ENV_GRIPPER_PLUS_ONE",
+      "frozen_m2_rule_result": "VALID_CLIP_CONSISTENT"
+    }
+  ],
+  "discrepancy": {
+    "historical_stage_v_rule": {
+      "raw_open_threshold": 0.5,
+      "env_open_value": -1.0,
+      "env_close_value": 1.0,
+      "tolerance": 1e-6,
+      "mapping": "raw > 0.5 -> env -1; otherwise env +1"
+    },
+    "m2_frozen_official_rule": {
+      "input": "finite 7-D raw policy action",
+      "output": "final_action = clip(raw_action,-1,+1)",
+      "gripper_binarization_or_inversion": false
+    },
+    "observed_effect": "The historical classifier rejects valid M2 continuous actions before physical phase geometry is evaluated, so the Z2 M2 0/36 anchor count is engineering-unresolved rather than a physical negative.",
+    "historical_z2_interpretation": "ENGINEERING_UNRESOLVED_M2_PHASE_ACTION_SEMANTICS"
+  },
+  "repair_contract": {
+    "new_scope": "Stage-Z-only model-family-aware action-semantics adapter around frozen phase geometry/contact thresholds",
+    "m0_m1": "historical classifier behavior byte-equivalent",
+    "m2": "accept only finite 7-D pairs whose final action equals official elementwise clip; invalid pairs abstain",
+    "unchanged": [
+      "historical phase-classifier bytes",
+      "contact and geometry thresholds",
+      "H_phys=10",
+      "T3/T5/T10",
+      "fresh-boundary rules",
+      "deterministic anchor salts",
+      "identities and checkpoint/source authorities",
+      "all intervention, attack, V_phys, protected, and Eval160 firewalls"
+    ]
+  },
+  "counters": {
+    "model_inference": 0,
+    "env_step": 0,
+    "physical_intervention": 0,
+    "pgd": 0,
+    "attacked_env_steps": 0,
+    "v_phys": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "scientific_parent_exposure": 0
+  },
+  "next_legal_action": "RUN_R1_STATIC_PARITY_THEN_ONE_M2_ENGINEERING_CANARY"
+}

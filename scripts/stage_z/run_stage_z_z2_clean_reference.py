@@ -34,6 +34,7 @@ T10 = 10
 OFT_QUEUE = 8
 PI05_REPLAN = 5
 CRITICAL_PHASES = frozenset({"CONTACT_MANIPULATION", "ENGAGED_LIFT", "CARRY"})
+R1_RECEIPT_SCHEMA = "STAGE_Z_Z2R1_CLEAN_REFERENCE_CELL_RECEIPT_V1"
 
 
 def load_module(path: Path, name: str) -> ModuleType:
@@ -82,14 +83,42 @@ def panel_row(panel: dict[str, Any], parent_key: str) -> dict[str, Any]:
     return row
 
 
-def verify_static_authority(config: dict[str, Any], panel: dict[str, Any], parent_key: str, suite: str) -> dict[str, Any]:
+def verify_static_authority(
+    config: dict[str, Any],
+    panel: dict[str, Any],
+    parent_key: str,
+    suite: str,
+    *,
+    canary_ledger: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     if config.get("status") != "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN":
         raise RuntimeError("Z1_SOURCE_AUTHORITY_NOT_FROZEN")
     if config["z0r2"]["root_seal_sha256"] != "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d":
         raise RuntimeError("Z0R2_ROOT_BINDING_INVALID")
     if config["z0r2"]["panel_sha256"] != "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1":
         raise RuntimeError("Z0R1_PANEL_BINDING_INVALID")
-    row = panel_row(panel, parent_key)
+    if canary_ledger is None:
+        row = panel_row(panel, parent_key)
+    else:
+        if canary_ledger.get("status") != "STAGE_Z_Z1_ENGINEERING_CANARY_LEDGER_FROZEN":
+            raise RuntimeError("CANARY_LEDGER_NOT_FROZEN")
+        source = canary_ledger.get("source_authority", {})
+        if source.get("scientific_panel", {}).get("overlap_count") != 0:
+            raise RuntimeError("CANARY_SCIENTIFIC_PANEL_OVERLAP")
+        matches = [
+            item
+            for item in canary_ledger.get("selected", [])
+            if item.get("canonical_parent_key") == parent_key
+            and item.get("suite") == suite
+            and item.get("role") == "PRIMARY"
+        ]
+        if len(matches) != 1:
+            raise RuntimeError(f"CANARY_PARENT_NOT_UNIQUE:{parent_key}")
+        row = matches[0]
+        if row.get("permanent_exclusion") is not True or row.get("scientific_use") is not False or row.get("outcome_read") is not False:
+            raise RuntimeError("CANARY_EXCLUSION_CONTRACT_INVALID")
+        if parent_key in {item.get("canonical_parent_key") for item in panel.get("rows", [])}:
+            raise RuntimeError("CANARY_PARENT_IN_SCIENTIFIC_PANEL")
     if row.get("suite") != suite:
         raise RuntimeError("PANEL_SUITE_MISMATCH")
     common = config["environment"]["common_libero_checkout"]
@@ -143,11 +172,14 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
     z1 = load_module(Z1_RUNNER, "stage_z_z1_runtime_canary_for_z2")
     z1.require_single_visible_gpu(args.gpu_id)
     gpu = z1.gpu_snapshot(args.gpu_id)
-    row = verify_static_authority(config, panel, args.parent_key, args.suite)
+    canary_ledger = load_json(args.canary_ledger) if args.population == "engineering_canary" else None
+    row = verify_static_authority(config, panel, args.parent_key, args.suite, canary_ledger=canary_ledger)
+    is_engineering_canary = args.population == "engineering_canary"
     checkpoint = model_checkpoint(config, args.model_family, args.suite)
     taxonomy = load_module(ROOT / "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "stage_z_physical_taxonomy")
     phases = load_module(ROOT / "src/gripper_attack/stage_v_m3_5_phase_classifier.py", "stage_z_phase_classifier")
     sys.path.insert(0, str(ROOT / "src"))
+    action_semantics = importlib.import_module("stage_z_preparation.action_semantics")
     anchors = importlib.import_module("stage_z_preparation.anchors")
     z1.configure_libero(config)
     env, task_suite, task = z1.make_libero_env(config, args.suite, args.task_idx)
@@ -161,10 +193,11 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
         binding = taxonomy.bind_object_taxonomy(env, bddl)
         if binding.get("status") == "INELIGIBLE":
             return {
-                "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+                "schema": R1_RECEIPT_SCHEMA,
                 "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR",
                 "model_family": args.model_family,
                 "suite": args.suite,
+                "population": args.population,
                 "role": "PRIMARY",
                 "canonical_parent_key": args.parent_key,
                 "task_idx": args.task_idx,
@@ -198,7 +231,7 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
                 },
                 "selected_anchors": {"critical": None, "noncritical": None},
                 "runtime_counters": counters,
-                "scientific_claim": "Z2_CLEAN_REFERENCE_AND_ANCHOR_ONLY",
+                "scientific_claim": "NONE_ENGINEERING_ONLY" if is_engineering_canary else "Z2_CLEAN_REFERENCE_AND_ANCHOR_ONLY",
                 "protected_boundary": {"eval160": "UNREAD", "protected": "UNREAD", "pgd_calls": 0, "physical_interventions": 0, "attacked_env_steps": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "protected_reads": 0},
                 "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             }
@@ -214,7 +247,7 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
             )
         if not Path(checkpoint).exists():
             raise RuntimeError(f"CHECKPOINT_NOT_MATERIALIZED:{checkpoint}")
-        counters["stage_z_scientific_parent_exposure"] = 1
+        counters["stage_z_scientific_parent_exposure"] = 0 if is_engineering_canary else 1
         if args.model_family == "M0_OPENVLA":
             infer, _model, normalization = z1.load_openvla(checkpoint, oft=False, suite=args.suite, return_chunk=True)
         elif args.model_family == "M1_OPENVLA_OFT":
@@ -260,6 +293,17 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
                 }
             raw_action, env_action = queue.pop(0)
             clean_actions[step] = (raw_action.copy(), env_action.copy())
+            raw_values = raw_action.tolist()
+            env_values = env_action.tolist()
+            action_semantics_check = action_semantics.validate_action_pair(
+                args.model_family,
+                raw_values,
+                env_values,
+                raw_gripper=float(raw_action[-1]),
+                final_gripper=float(env_action[-1]),
+            )
+            if args.model_family == "M2_PI05_LIBERO" and not action_semantics_check["accepted"]:
+                raise RuntimeError(f"M2_ACTION_SEMANTICS_INVALID:{action_semantics_check['reason']}")
             telemetry = taxonomy.telemetry_from_env(env, binding, target_object_id=target_object)
             counters["anchor_telemetry_reads"] += 1
             rows.append({
@@ -276,12 +320,17 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
                 "contact_telemetry_valid": telemetry.get("contact_telemetry_valid"),
                 "raw_gripper": float(raw_action[-1]),
                 "env_gripper": float(env_action[-1]),
+                "raw_action_7d": raw_values,
+                "env_action_7d": env_values,
+                "action_semantics": action_semantics_check,
                 "model_boundary": fresh,
             })
             obs = env.step(env_action.tolist())[0]
             counters["env_step_calls"] += 1
 
-        phase_rows = phases.classify_trajectory(rows)
+        phase_rows, action_semantics_diagnostics = action_semantics.classify_trajectory_with_action_semantics(
+            rows, args.model_family, phases
+        )
         candidates: list[dict[str, Any]] = []
         anchor_objects: list[Any] = []
         for clean_row, phase in zip(rows, phase_rows):
@@ -340,10 +389,11 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
         noncritical_record = materialize(noncritical)
         status = "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS" if critical_record and noncritical_record else "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
         return {
-            "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+            "schema": R1_RECEIPT_SCHEMA,
             "status": status,
             "model_family": args.model_family,
             "suite": args.suite,
+            "population": args.population,
             "role": "PRIMARY",
             "canonical_parent_key": args.parent_key,
             "task_idx": args.task_idx,
@@ -359,6 +409,10 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
                 "critical_phases": sorted(CRITICAL_PHASES),
                 "noncritical_phases": ["PRE_CONTACT"],
                 "phase_classifier": phases.specification(),
+                "action_semantics_adapter": {
+                    "module": "stage_z_preparation.action_semantics",
+                    "diagnostics": action_semantics_diagnostics,
+                },
                 "critical_salt": args.critical_salt,
                 "noncritical_salt": args.noncritical_salt,
                 "student_or_detector_used": False,
@@ -373,10 +427,11 @@ def run_cell(config: dict[str, Any], panel: dict[str, Any], args: argparse.Names
                 "candidate_digest": canonical_hash(candidates),
                 "critical_candidates": [item for item in candidates if item["anchor_class"] == "CRITICAL"],
                 "noncritical_candidates": [item for item in candidates if item["anchor_class"] == "NONCRITICAL"],
+                "action_semantics": action_semantics_diagnostics,
             },
             "selected_anchors": {"critical": critical_record, "noncritical": noncritical_record},
             "runtime_counters": counters,
-            "scientific_claim": "Z2_CLEAN_REFERENCE_AND_ANCHOR_ONLY",
+            "scientific_claim": "NONE_ENGINEERING_ONLY" if is_engineering_canary else "Z2_CLEAN_REFERENCE_AND_ANCHOR_ONLY",
             "protected_boundary": {"eval160": "UNREAD", "protected": "UNREAD", "pgd_calls": 0, "physical_interventions": 0, "attacked_env_steps": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "protected_reads": 0},
             "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
@@ -398,16 +453,21 @@ def main() -> None:
     parser.add_argument("--gpu-id", type=int, required=True)
     parser.add_argument("--critical-salt", default="STAGE_Z_Z2_CRITICAL_ANCHOR_V1_20260823")
     parser.add_argument("--noncritical-salt", default="STAGE_Z_Z2_NONCRITICAL_CONTROL_V1_20260823")
+    parser.add_argument("--population", choices=("scientific", "engineering_canary"), default="scientific")
+    parser.add_argument("--canary-ledger", type=Path)
     args = parser.parse_args()
+    if args.population == "engineering_canary" and args.canary_ledger is None:
+        parser.error("--canary-ledger is required for engineering_canary")
     try:
         result = run_cell(load_json(args.config), load_json(args.panel), args)
     except Exception as exc:
         result = {
-            "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+            "schema": R1_RECEIPT_SCHEMA,
             "status": "ENGINEERING_INVALID_Z2_CLEAN_REFERENCE",
             "error": {"type": type(exc).__name__, "message": str(exc)},
             "model_family": args.model_family,
             "suite": args.suite,
+            "population": args.population,
             "canonical_parent_key": args.parent_key,
             "runtime_counters": {"model_inference_calls": 0, "env_step_calls": 0, "anchor_telemetry_reads": 0, "physical_interventions": 0, "pgd_calls": 0, "attacked_env_steps": 0, "vphys_reads": 0, "attack_outcome_reads": 0, "eval160_reads": 0, "protected_reads": 0, "stage_z_scientific_parent_exposure": 0},
             "scientific_claim": "NONE_DUE_TO_ENGINEERING_INVALID",
