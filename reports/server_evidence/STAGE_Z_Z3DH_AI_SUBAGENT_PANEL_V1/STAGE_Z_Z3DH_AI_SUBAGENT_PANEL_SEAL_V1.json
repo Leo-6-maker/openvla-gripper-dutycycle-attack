@@ -1,0 +1,28 @@
+{
+  "schema_version": "STAGE_Z_Z3DH_AI_SUBAGENT_PANEL_SEAL_V1",
+  "labels_artifact": "STAGE_Z_Z3DH_AI_SUBAGENT_PANEL_LABELS_V1.json",
+  "labels_artifact_bytes": 66752,
+  "labels_artifact_sha256": "aec7b751380603b0d384c011b175dd083203fa4672249f1a90c849273cc42cb1",
+  "source_packet": "STAGE_Z_Z3DH_FRESH_HUMAN_REVIEW_PACKET_V1/z3d_blind_package_r1_v1.zip",
+  "source_packet_bytes": 3152102,
+  "source_packet_sha256": "c4601c03340bc545e145893d6048886fc11714384c98d4ab9f397771acd54a34",
+  "source_manifest": "STAGE_Z_Z3DH_FRESH_HUMAN_REVIEW_PACKET_V1/STAGE_Z_Z3D_BLINDED_VIDEO_MANIFEST_R1_V1.json",
+  "source_manifest_bytes": 38012,
+  "source_manifest_sha256": "4afc3170e6bd6bf7922d1c73c48bd8cbe34b38c9f96598246d8db3a37580791",
+  "row_count": 120,
+  "unique_video_id_count": 120,
+  "duplicate_video_ids": [],
+  "missing_video_ids": [],
+  "extra_video_ids": [],
+  "allowed_label_vocabulary_verified": true,
+  "exact_schema_verified": true,
+  "hidden_mapping_read": false,
+  "automatic_labels_read": false,
+  "telemetry_read": false,
+  "scientific_outcomes_read": false,
+  "unblind_performed": false,
+  "reviewer_class": "AI_SUBAGENT_REVIEWER",
+  "human_review_gate_satisfied": false,
+  "status": "AI_SUBAGENT_PANEL_LABELS_SEALED_STOP_FOR_PI"
+}
+
