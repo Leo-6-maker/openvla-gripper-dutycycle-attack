@@ -1,0 +1,76 @@
+{
+  "schema": "STAGE_Z_Z3R1_SENTINEL_RECOVERY_TERMINAL_V1",
+  "status": "STAGE_Z_Z3R1_SENTINEL_RECOVERY_PASS_STOP_FOR_PI",
+  "gate": "Z3R1_M1_MATERIALIZATION_RECOVERY",
+  "terminal_utc": "2026-08-25T08:52:19Z",
+  "claim_boundary": "Engineering qualification only; no cross-model physical vulnerability, V_phys, task-success, protected, or scientific-parent claim.",
+  "repository": {
+    "head": "a78b0a70144c31aa6ad1cd3ccd6911cf86c9b9bb",
+    "tree": "67b5d6e132a40dadb383f48b0f2d92f5220fcc64"
+  },
+  "source_authority": {
+    "protocol": "configs/STAGE_Z_Z3_CROSS_MODEL_COMMAND_OPEN_PHYSICAL_MATRIX_PROTOCOL_V2.json",
+    "protocol_sha256": "92747fe2263fb47ad9b53dee916660f7b8e2db1d5d895e6c80922db29caf7f1b",
+    "source_commit": "457ce161ea12e77f8817b59bef7174dc36034521",
+    "source_tree": "ce840ae8629e1e1791ebc1f4fe08143a6b5156c6",
+    "static_audit": "reports/STAGE_Z_Z3_STATIC_SOURCE_AUDIT_V2.json",
+    "static_audit_server_sha256": "6887b38f6a0c9e7558e8aaba1d4be24682ab939c342562f4222c6dc2eca4a2d7",
+    "scientific_contract_changed": false
+  },
+  "materialization_recovery": {
+    "receipt": "reports/server_evidence/STAGE_Z_Z3R1_M1_MATERIALIZATION_RECOVERY_V1.json",
+    "receipt_sha256": "855599041cd9a337713733dd5a34b52e314b2b47eef3e74e679cefd5ec2116dd",
+    "status": "PASS_EXACT_RETAINED",
+    "suite": "libero_10",
+    "repo_id": "moojink/openvla-7b-oft-finetuned-libero-10",
+    "revision": "95220f9a3421a7ff12d4218e73d09ade830fa9a3",
+    "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "suite_manifest_sha256": "8f970517dcf81c8eff754edca6816b8c7c2c7813f909b6d1ef481c3a6f2dbc15",
+    "files": 25,
+    "bytes": 15939159245,
+    "target": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10",
+    "retention": "RETAIN_UNTIL_Z3_SENTINEL_AND_DECISION"
+  },
+  "sentinels": {
+    "M0_OPENVLA": {
+      "initial_invalid_receipt": "reports/server_evidence/STAGE_Z_Z3R1_SENTINEL_M0_OPENVLA.json",
+      "initial_invalid_receipt_sha256": "165dcff8918781300e6a03e4dac6a0da5b264f74a5ef5fc172ab5587ffc02418",
+      "initial_invalid_reason": "KeyError:raw_action_after_one_inference",
+      "retry_receipt": "reports/server_evidence/STAGE_Z_Z3R1_M0_RETRY_SENTINEL_OPENVLA.json",
+      "retry_receipt_sha256": "9805c94207f54076498bf1a1f5da6ed45ab29c20d5df17bfbe9b3218c80d6d48",
+      "retry_status": "PASS_Z3_ENGINEERING_SENTINEL"
+    },
+    "M1_OPENVLA_OFT": {
+      "receipt": "reports/server_evidence/STAGE_Z_Z3R1_SENTINEL_M1_OPENVLA_OFT.json",
+      "receipt_sha256": "607c27902b4b071d84ae58f81819c11009c76fc5c6434f7b87efeb469d47b1df",
+      "status": "PASS_Z3_ENGINEERING_SENTINEL"
+    },
+    "M2_PI05_LIBERO": {
+      "receipt": "reports/server_evidence/STAGE_Z_Z3R1_SENTINEL_M2_PI05_LIBERO.json",
+      "receipt_sha256": "0c57f4b9c0f1f25e5a1ace8cc5f7f1a88abbb2484486315d09feae45be491016",
+      "status": "PASS_Z3_ENGINEERING_SENTINEL"
+    }
+  },
+  "successful_sentinel_counters": {
+    "model_inference_calls": 5,
+    "env_step_calls": 78,
+    "engineering_command_open_steps": 9,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "vphys_reads": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "scientific_parent_exposure": 0
+  },
+  "invalid_attempt_counters": {
+    "M0_initial_model_inference_calls": 1,
+    "M0_initial_env_step_calls": 10,
+    "M1_materialization_urllib_completed_files": 0,
+    "entrypoint_model_inference_calls": 0,
+    "scientific_parent_exposure": 0
+  },
+  "scientific_matrix_started": false,
+  "scientific_branch_receipts": 0,
+  "next_legal_action": "STOP_FOR_PI_BEFORE_Z3_C_SCIENTIFIC_MATRIX",
+  "stop_reason": "All three Z3 engineering sentinels pass after exact M1 recovery and contract-preserving M0 adapter repair; no scientific branches were authorized by this recovery gate."
+}
