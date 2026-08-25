@@ -1,0 +1,18 @@
+{
+  "estimates": {
+    "compact_receipts_telemetry_bytes": 1073741824,
+    "manual_videos_bytes": 3221225472,
+    "overhead_bytes": 536870912
+  },
+  "filesystem": "/mnt/sdc",
+  "free_after_estimate_and_margin_bytes": 21321916416,
+  "free_bytes": 31522463744,
+  "host": "pm-364c0001",
+  "next_legal_action": "Z3_B_ENGINEERING_SENTINELS",
+  "no_historical_or_unrelated_deletion": true,
+  "observed_at_utc": "2026-08-25T15:44:09+08:00",
+  "required_free_bytes": 10200547328,
+  "reserved_free_margin_bytes": 5368709120,
+  "schema": "STAGE_Z_Z3_STORAGE_PREFLIGHT_V1",
+  "status": "PASS_Z3_STORAGE_PREFLIGHT"
+}
