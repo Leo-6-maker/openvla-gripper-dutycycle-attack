@@ -1,0 +1,156 @@
+{
+  "artifact_manifest": {
+    "entries": [
+      {
+        "bytes": 8423,
+        "path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V2.json",
+        "sha256": "6569d6227731001b18b0b42cdd9a2c1672c525964c64da66824faebec28dd7ef"
+      },
+      {
+        "bytes": 3216,
+        "path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V3.json",
+        "sha256": "9cce2445906d5701a322c719b1d13437c9461985027c4faf632b7d1c10a9586b"
+      },
+      {
+        "bytes": 19254,
+        "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+        "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+      },
+      {
+        "bytes": 2677,
+        "path": "reports/STAGE_Z_Z2A_STATIC_AUDIT_V2.json",
+        "sha256": "acc76d18cad93d6eeeebc62c2483fc0558a8fa3669a900418d319f8cc3c79caa"
+      },
+      {
+        "bytes": 1336,
+        "path": "reports/STAGE_Z_Z2A_V3_STATIC_AUDIT.json",
+        "sha256": "927d5695b6d9d2345f06bda98890dc2801e099c9b07090ad8146ec32c83f1903"
+      },
+      {
+        "bytes": 104495,
+        "path": "reports/STAGE_Z_Z2_ANCHOR_AVAILABILITY_V2.json",
+        "sha256": "c5785f49b439b82dca022aa88cfb8d10ff1de74272b57a3942e85fa0aeda30c2"
+      },
+      {
+        "bytes": 210494,
+        "path": "reports/STAGE_Z_Z2_ANCHOR_LEDGER_V2.json",
+        "sha256": "9a0b9cf63ce9a26de3729a560b50dabbe1c2b614d4b27352ca5b5f9911e3d6f5"
+      },
+      {
+        "bytes": 79262,
+        "path": "reports/STAGE_Z_Z2_LEGACY_RECEIPT_RECONCILIATION_V1.json",
+        "sha256": "901d0488b9a6975f0e4f05b4dbd397efc8c82a1e5b7d5da771b7cb7e590e403c"
+      },
+      {
+        "bytes": 234402,
+        "path": "reports/STAGE_Z_Z2_SCIENTIFIC_EXPOSURE_LEDGER_V2.json",
+        "sha256": "9e56f8ba27d282768fb5a8e114fd4ef340c082e5a0f02c16f3b7870449f76866"
+      },
+      {
+        "bytes": 7925,
+        "path": "reports/STAGE_Z_Z2_TERMINAL_SYNTHESIS_V2.json",
+        "sha256": "237d4d894a34ab8c6234a75e8b194b8d1174b0520aa207fb4bf13baf9b6d2b37"
+      },
+      {
+        "bytes": 4704,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_goal_task_00_state_21.json",
+        "sha256": "83fb2a9607ef907664d6717695f92138587382ca476a47c96a5edee85c6e04b8"
+      },
+      {
+        "bytes": 4664,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_goal_task_07_state_30.json",
+        "sha256": "c0154ce2954f9bad1d93584561b2c2e91f7eef09e9aa8020ed503b8578f4d00a"
+      },
+      {
+        "bytes": 219856,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_object_task_06_state_31.json",
+        "sha256": "6c4ecc5d93be2e8dd6c7a3a76e649d6328070e0592d0be0f141bfc19b8c06fbb"
+      },
+      {
+        "bytes": 212951,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_object_task_07_state_45.json",
+        "sha256": "1853a48563ef1e217e5e0f613740cc402d3155c02d9da393d8e183b64f6f12f0"
+      },
+      {
+        "bytes": 4721,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_goal_task_00_state_21.json",
+        "sha256": "c05bd234982b2bf14f81b84112b74c20b9a0870494d53d600f937016d83499dd"
+      },
+      {
+        "bytes": 4681,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_goal_task_07_state_30.json",
+        "sha256": "b34cc247f8e8346ef85b7c7b9af9ea529673d91298da97f9f673d62c8e32a199"
+      },
+      {
+        "bytes": 739,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_object_task_06_state_31.json",
+        "sha256": "fc48710f4bc30b268122df5fe8dd4d6a6820695de102859160183fa847a8a170"
+      },
+      {
+        "bytes": 44483,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_object_task_07_state_45.json",
+        "sha256": "a9ab21acf41267f4f7205b7a7808a38018e0e80258f2cbda5eeea3809f661164"
+      },
+      {
+        "bytes": 4713,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RAW_M2_libero_goal_task_00_state_21.json",
+        "sha256": "5d8e272fb1bd5a3b87843ee13e55feccd4cfacaca43d31e125f54d773817e7b9"
+      },
+      {
+        "bytes": 4674,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RAW_M2_libero_goal_task_07_state_30.json",
+        "sha256": "02bce7578d19b994186904e9ac494cb3f5b72d8f92a8819996aa39c1deb79e7b"
+      },
+      {
+        "bytes": 44409,
+        "path": "reports/server_evidence/STAGE_Z_Z2_V3_RETRY1_RAW_M1_libero_object_task_06_state_31.json",
+        "sha256": "fab27cb5981aa50c0ffad4fd5e50621cfa004b8bf64b7c6a9c92ce166f650ec9"
+      },
+      {
+        "bytes": 21370,
+        "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+        "sha256": "78cabdd0ddd7f836e5936a88396f1623d5f1f86b3eb379e36405fa73122fe918"
+      },
+      {
+        "bytes": 3441,
+        "path": "src/stage_z_preparation/anchors.py",
+        "sha256": "1ae9bb576861ae4598b41e4091f34c67c9e03f4f91c8e3b5604d3ba95289512a"
+      }
+    ],
+    "terminal_synthesis": {
+      "bytes": 7925,
+      "path": "reports/STAGE_Z_Z2_TERMINAL_SYNTHESIS_V2.json",
+      "sha256": "237d4d894a34ab8c6234a75e8b194b8d1174b0520aa207fb4bf13baf9b6d2b37"
+    }
+  },
+  "claim_boundary": "Z2 establishes clean-reference/anchor feasibility bookkeeping only. It does not test cross-model physical OPEN susceptibility.",
+  "counters": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "clean_anchor_telemetry_reads": 34200,
+    "clean_env_step_calls": 35220,
+    "clean_model_inference_calls": 15112,
+    "eval160_reads": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 102,
+    "vphys_reads": 0
+  },
+  "git_binding": {
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "head_before_root_seal": "836bdb81677678bf74e1c010df3efa3250415c95",
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "tree_before_root_seal": "8f73ec92295309278036dd76ad51b7643f515e5d"
+  },
+  "next_legal_action": "STOP_FOR_PI",
+  "population": {
+    "model_parent_cells": 108,
+    "scientific_parent_exposure": "34/36 identities; 102/108 model-parent cells",
+    "shared_fresh_identities": 36
+  },
+  "schema": "STAGE_Z_Z2_TERMINAL_ROOT_SEAL_V2",
+  "scientific_rollout_started": false,
+  "status": "SEALED_STAGE_Z_Z2_CLEAN_REFERENCE_AND_ANCHOR_FREEZE_STOP_FOR_PI",
+  "z3_authorized": false
+}
