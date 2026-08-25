@@ -182,14 +182,14 @@
       "sha256": "f903b841524ec9eb687f6df6132da6ed8084686fe15b7cc12257815cdce8172c"
     },
     "scripts/stage_z/run_stage_z_z3_sentinel.py": {
-      "bytes": 10219,
+      "bytes": 10635,
       "path": "scripts/stage_z/run_stage_z_z3_sentinel.py",
-      "sha256": "2c3b97b7617a2ba9368ddf05733bfb1a459b7e5c2f5cd73594ef74d908e0952a"
+      "sha256": "d06376014146cf436ea0cb2b8b740d8f2e28488a32572075c1943b502058ca4f"
     },
     "scripts/stage_z/run_stage_z_z3_worker.py": {
-      "bytes": 16571,
+      "bytes": 16608,
       "path": "scripts/stage_z/run_stage_z_z3_worker.py",
-      "sha256": "ed2c2dac9679855a853738703ef3cf9ebbb93e6e1887771df83cb620b35f31e6"
+      "sha256": "3adf37e25f12dec4eb35ed3e7cca7322df9954154ac5c3e871194fc5fb8cc3fe"
     },
     "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py": {
       "bytes": 18122,
@@ -219,9 +219,9 @@
   },
   "source_revision": {
     "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
-    "commit": "628b023eeb285a6397e4971ed414d212987e5b1c",
+    "commit": "484b5ea78c1598750424404162afeddb920f19f3",
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "tree": "e49586eb86d8dd24c3dc90fd9d84169b76e66e08"
+    "tree": "658ee264b0892eeb333005160f3e33f03e4f1afa"
   },
   "status": "STAGE_Z_Z3_SOURCE_AUTHORITY_FROZEN",
   "storage": {

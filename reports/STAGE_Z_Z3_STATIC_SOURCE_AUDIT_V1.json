@@ -26,14 +26,14 @@
       "sha256": "f903b841524ec9eb687f6df6132da6ed8084686fe15b7cc12257815cdce8172c"
     },
     {
-      "bytes": 10219,
+      "bytes": 10635,
       "path": "scripts/stage_z/run_stage_z_z3_sentinel.py",
-      "sha256": "2c3b97b7617a2ba9368ddf05733bfb1a459b7e5c2f5cd73594ef74d908e0952a"
+      "sha256": "d06376014146cf436ea0cb2b8b740d8f2e28488a32572075c1943b502058ca4f"
     },
     {
-      "bytes": 16571,
+      "bytes": 16608,
       "path": "scripts/stage_z/run_stage_z_z3_worker.py",
-      "sha256": "ed2c2dac9679855a853738703ef3cf9ebbb93e6e1887771df83cb620b35f31e6"
+      "sha256": "3adf37e25f12dec4eb35ed3e7cca7322df9954154ac5c3e871194fc5fb8cc3fe"
     },
     {
       "bytes": 18122,
@@ -64,7 +64,7 @@
   "claim_boundary": "Static/source/resource contract only; no model inference, simulator, OPEN intervention, physical endpoint, V_phys, or protected read.",
   "forbidden_import_namespaces": "PASS",
   "next_legal_action": "Z3_B_ENGINEERING_SENTINELS",
-  "protocol_sha256": "68d4abdc17dd169d0cf7a0a91fa4747bb8485abcd862947b918c204bcaa781d9",
+  "protocol_sha256": "5b5948f19736ab466d783e1772b4729c201529b31b4ced91e8b445fda98c83be",
   "schema": "STAGE_Z_Z3_STATIC_SOURCE_AUDIT_V1",
   "status": "STAGE_Z_Z3_STATIC_SOURCE_AUDIT_PASS"
 }

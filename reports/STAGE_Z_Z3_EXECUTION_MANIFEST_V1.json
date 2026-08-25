@@ -8201,7 +8201,7 @@
     "eligible_model_parent_pairs": 92,
     "fixed_branches": 460
   },
-  "protocol_sha256": "68d4abdc17dd169d0cf7a0a91fa4747bb8485abcd862947b918c204bcaa781d9",
+  "protocol_sha256": "5b5948f19736ab466d783e1772b4729c201529b31b4ced91e8b445fda98c83be",
   "schema": "STAGE_Z_Z3_EXECUTION_MANIFEST_V1",
   "status": "STAGE_Z_Z3_EXECUTION_MANIFEST_FROZEN_NOT_EXECUTED"
 }
