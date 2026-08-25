@@ -1,0 +1,24 @@
+{
+  "schema": "STAGE_Z_Z3R1_M1_SENTINEL_ATTEMPT_RECEIPT_V1",
+  "status": "ENGINEERING_INVALID_SENTINEL_ENTRYPOINT",
+  "attempt": 1,
+  "started_utc": "NOT_MATERIALIZED",
+  "observed_utc": "2026-08-25T08:36:52Z",
+  "reason": "MISSING_PYTHONPATH_STAGE_Z_PREPARATION",
+  "error": "ModuleNotFoundError: No module named 'stage_z_preparation'",
+  "log_sha256": "fe4fdeff09b55a697bf17ed36ba6b5fa1b35c43259a3407c9642e0613df1bb59",
+  "suite": "libero_10",
+  "model_family": "M1_OPENVLA_OFT",
+  "role": "ENGINEERING_SENTINEL_ONLY",
+  "gpu_id": 6,
+  "output_receipt_created": false,
+  "runtime_counters": {
+    "model_inference_calls": 0,
+    "env_step_calls": 0,
+    "command_open_calls": 0,
+    "scientific_parent_exposure": 0,
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "scientific_claim": "NONE_ENGINEERING_ONLY"
+}

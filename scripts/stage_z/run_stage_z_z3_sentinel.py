@@ -62,8 +62,12 @@ def capture_clean(model_family: str, infer: Any, env: Any, task: Any, obs: dict[
         for index in range(DOSE):
             final, meta = infer(obs, language)
             counters["model_inference_calls"] += 1
-            raw = np.asarray(meta["raw_action"], dtype=np.float32)
+            raw = np.asarray(meta["raw_action"] if "raw_action" in meta else meta["raw_action_chunk"], dtype=np.float32)
+            if raw.ndim == 2:
+                raw = raw[0]
             final = np.asarray(final, dtype=np.float32)
+            if final.ndim == 2:
+                final = final[0]
             boundary = "FRESH_PER_STEP"
             obs = env.step(final.tolist())[0]
             counters["env_step_calls"] += 1
