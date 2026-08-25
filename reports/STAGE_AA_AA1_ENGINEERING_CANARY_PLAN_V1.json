@@ -1,0 +1,50 @@
+{
+  "schema": "STAGE_AA_AA1_ENGINEERING_CANARY_PLAN_V1",
+  "status": "STAGE_AA_AA1_ENGINEERING_CANARY_PLAN_FROZEN",
+  "protocol": "configs/STAGE_AA_AA1_ENGINEERING_RUNTIME_PROTOCOL_V1.json",
+  "selection_salt": "STAGE_AA_AA1_ENGINEERING_POINT_V1_20260826",
+  "selection_rule": "minimum sha256(selection_salt|model_family|canonical_parent_key|anchor_class|step), then step",
+  "canaries": [
+    {
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "suite": "libero_10",
+      "task_idx": 4,
+      "state_id": 20,
+      "source_selection_rank_sha256": "002141be60b9d26accb99ff262ce9e9859cf537bedfe060e2dea627d5ef656e1",
+      "permanent_exclusion": true,
+      "scientific_use": false
+    },
+    {
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "suite": "libero_object",
+      "task_idx": 2,
+      "state_id": 42,
+      "source_selection_rank_sha256": "0208e2ddaa0ca76985d7012c9062203cac7a132b5f8ed8a8ecbf4386acd21832",
+      "permanent_exclusion": true,
+      "scientific_use": false
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "suite": "libero_spatial",
+      "task_idx": 5,
+      "state_id": 34,
+      "source_selection_rank_sha256": "0a7014475facde61b83e131177846088531cb2f4ef9a2bc7942b346d7ae504ef",
+      "permanent_exclusion": true,
+      "scientific_use": false
+    }
+  ],
+  "model_families": ["M0_OPENVLA", "M1_OPENVLA_OFT", "M2_PI05_LIBERO"],
+  "arms": [
+    {"name": "CLEAN_REFERENCE", "anchor_class": "CRITICAL", "open_steps": 0},
+    {"name": "OPEN_T3_CRITICAL", "anchor_class": "CRITICAL", "open_steps": 3},
+    {"name": "OPEN_T5_CRITICAL", "anchor_class": "CRITICAL", "open_steps": 5},
+    {"name": "OPEN_T10_CRITICAL", "anchor_class": "CRITICAL", "open_steps": 10},
+    {"name": "OPEN_T5_NONCRITICAL_CONTROL", "anchor_class": "NONCRITICAL", "open_steps": 5}
+  ],
+  "branch_count_if_both_anchors_legal": 45,
+  "outcome_blind": true,
+  "task_success_read": false,
+  "protected_read": false,
+  "aa2_exposure": 0,
+  "replacement_or_top_up": false
+}
