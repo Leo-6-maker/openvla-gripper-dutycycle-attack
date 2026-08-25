@@ -1,0 +1,55 @@
+{
+  "schema_version": "STAGE_Z_Z3D_R1_REVIEWER_PRESENTATION_REPAIR_RECEIPT_V1",
+  "status": "PASS",
+  "disposition": "HOLD_Z3D_AI_REVIEW_ARM_DOSE_LENGTH_LEAKAGE",
+  "formal_z3d_d_authorized": false,
+  "human_labels_sealed": false,
+  "ai_labels_sealed": false,
+  "source_authority": {
+    "source_manifest_sha256": "efb00096f60009ff754dc192fe81984a975c47aa4a2b0b98316f4cae920f3a",
+    "source_video_count": 120,
+    "source_videos_byte_identical": true,
+    "source_duration_frame_distribution": {
+      "13_frames_1.3s": 24,
+      "15_frames_1.5s": 48,
+      "20_frames_2.0s": 48
+    }
+  },
+  "derivative_presentation": {
+    "package_video_count": 120,
+    "target_frame_count": 20,
+    "target_fps": 10,
+    "target_duration_seconds": 2.0,
+    "audio_removed": true,
+    "metadata_stripped": true,
+    "all_derivatives_uniform": true,
+    "source_content_temporally_resampled_only_for_presentation": true
+  },
+  "blind_firewall": {
+    "new_blind_ids": true,
+    "arm_and_dose_not_in_neutral_manifest": true,
+    "source_mapping_internal_only": true,
+    "automatic_outcomes_not_included": true,
+    "labels_generated": 0
+  },
+  "artifacts": {
+    "package_zip": {
+      "filename": "z3d_blind_package_r1_v1.zip",
+      "sha256": "c4601c03340bc545e145893d6048886fc11714384c98d4ab9f397771acd54a34",
+      "bytes": 3152102
+    },
+    "neutral_manifest": {
+      "filename": "STAGE_Z_Z3D_BLINDED_VIDEO_MANIFEST_R1_V1.json",
+      "sha256": "4afc3170e6bd6bf7922d1c73c48bd8cbe34b38c9f96598246d8db3a37580791d",
+      "bytes": 38012
+    },
+    "internal_mapping": {
+      "filename": "STAGE_Z_Z3D_R1_SOURCE_TO_DERIVATIVE_MAPPING_V1.json",
+      "sha256": "e57af6ccfa5607a0c2335d9ce1e24b17dca473750ab6474e4c9bca7273ec2c65",
+      "bytes": 77603
+    },
+    "derivative_index_sha256": "4c23daf5135f4258b0a1ce66936ddde7afe49086fcf5de7ab07522f649b17b5f",
+    "source_index_sha256": "6dd3c2c622379bb29329beb2324139750db16f916ffcc1ffc5063e56fbb04fdc"
+  },
+  "stop_condition": "STOP_BEFORE_ANY_AI_OR_HUMAN_LABELING"
+}
