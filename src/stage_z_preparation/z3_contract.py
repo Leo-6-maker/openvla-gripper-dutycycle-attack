@@ -65,7 +65,9 @@ def command_open_action(
         raise Z3Hold(f"UNKNOWN_MODEL_FAMILY:{model_family}")
     if int(duration) not in DOSES:
         raise Z3Hold(f"UNFROZEN_OPEN_DURATION:{duration}")
-    raw = _vector(raw_action, label="RAW_ACTION", allow_out_of_range=model_family == MODEL_M2)
+    # Raw policy coordinates are pre-controller values; OFT can legitimately
+    # emit a gripper value slightly above one before the official mapping.
+    raw = _vector(raw_action, label="RAW_ACTION", allow_out_of_range=True)
     final = _vector(final_action, label="FINAL_ACTION", allow_out_of_range=False)
     opened_raw = raw[:GRIPPER_INDEX] + (NATIVE_OPEN_RAW[model_family],)
     opened_final = final[:GRIPPER_INDEX] + (NATIVE_OPEN,)
