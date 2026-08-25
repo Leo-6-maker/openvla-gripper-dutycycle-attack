@@ -121,8 +121,8 @@ def merge_telemetry(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "contact_true", "contact_false", "contact_unknown", "support_observed_rows",
         "support_true", "support_false", "support_unknown", "distance_observed_rows",
     )
-    result = {field: sum(int(record[field]) for record in records) for field in fields}
-    distances = [record["distance_max_m"] for record in records if record["distance_max_m"] is not None]
+    result = {field: sum(int(record["telemetry"][field]) for record in records) for field in fields}
+    distances = [record["telemetry"]["distance_max_m"] for record in records if record["telemetry"]["distance_max_m"] is not None]
     result.update({
         "branch_count": len(records),
         "parent_count": len({record["canonical_parent_key"] for record in records}),
