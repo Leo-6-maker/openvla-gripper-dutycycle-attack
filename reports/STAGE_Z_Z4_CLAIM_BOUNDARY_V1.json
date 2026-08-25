@@ -1,0 +1,51 @@
+{
+  "allowed_claims": [
+    "Z1 established engineering portability of the shared experiment/action-interface framework across M0, M1, and M2; it was not a scientific vulnerability result.",
+    "Z3-C completed the frozen 460-branch command-OPEN physical matrix with sealed execution provenance, but the resulting effective primary endpoint denominators are model- and phase-dependent.",
+    "The seven-agent panel provides AI-only exploratory endpoint-validity evidence; 91/120 rows were NOT_IDENTIFIABLE or AMBIGUOUS_OR_OCCLUDED and 6/120 received direct contact/release labels.",
+    "Complete same-parent T3/T5/T10 patterns remain M0 000 x3, M1 000 x2, and M2 001/100/111; these patterns are preserved from sealed automatic endpoints and are not repaired by the panel.",
+    "The evidence does not establish cross-model generalization of the historical OpenVLA OPEN mechanism, and it does not establish M1 or M2 robustness/immunity."
+  ],
+  "classification": "STAGE_Z_CROSS_MODEL_GENERALIZATION_NOT_ESTABLISHED_ENDPOINT_VALIDITY_LIMITED_AI_ONLY",
+  "primary_endpoint_rule": "Automatic V_phys and CONTROL_*_ABSTAIN labels remain frozen; AI panel labels are diagnostic-only and cannot alter denominators.",
+  "prohibited_claims": [
+    "M1 or M2 robust/immune to command-OPEN physical intervention",
+    "a human manual-audit completion",
+    "a cross-model visual PGD transfer result",
+    "a relabeled V_phys denominator",
+    "a causal impossibility claim about the OPEN mechanism"
+  ],
+  "promotion_status": {
+    "paper_v2_promotion": "NOT_AUTHORIZED",
+    "z4_static_closeout": "COMPLETE"
+  },
+  "reviewer_status": {
+    "formal_label_source": "AI-only exploratory evidence; not human review",
+    "human_review_gate_satisfied": false,
+    "human_review_requirement_waived_for_exploratory_closeout_by_PI": true
+  },
+  "schema": "STAGE_Z_Z4_CLAIM_BOUNDARY_V1",
+  "source": {
+    "panel_cross_audit": {
+      "bytes": 50533,
+      "path": "reports/STAGE_Z_Z3DH_AI_PANEL_CROSS_AUDIT_V1.json",
+      "sha256": "8cf4cd4354dee11cf5362f3eecd34dede2ede038d7384199a6709a4098770bc9"
+    },
+    "panel_reconciliation": {
+      "bytes": 340926,
+      "path": "reports/STAGE_Z_Z3DH_AI_SUBAGENT_PANEL_UNBLIND_RECONCILIATION_V1.json",
+      "sha256": "356975edfd0eef1f594504918acbe69c42e466060caa4a683f7faf5847abaa69"
+    },
+    "prior_ai_root_seal": {
+      "bytes": 4379,
+      "path": "reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_RECONCILIATION_V1R1/STAGE_Z_Z3D_AI_SECONDARY_ROOT_SEAL_V1.json",
+      "sha256": "bd0100dd513047000cf42ae11064123cd932c9ee9e840f0fc9f65b4c19052d9e"
+    },
+    "z3c_root_seal": {
+      "bytes": 2236,
+      "path": "reports/STAGE_Z_Z3C_ROOT_SEAL_V1.json",
+      "sha256": "9ccceaa1c61e54aff3348491772c463853c7679aab4ec585d2adaf196ae57c77"
+    }
+  },
+  "status": "SEALED_FOR_PI_REVIEW"
+}
