@@ -1,0 +1,66 @@
+{
+  "schema": "STAGE_AA_AA1_RUNTIME_SOURCE_AUTHORITY_V1",
+  "status": "STAGE_AA_AA1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+  "gate": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_V1",
+  "claim_boundary": "Source/runtime binding for permanently excluded AA1 canaries only; no scientific result.",
+  "git_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "commit": "4ced96a4601b088baed13addbc26b787a1f254ef",
+    "tree": "9f2a2a1c69c5a50aac4777cd10c098e59e430d39"
+  },
+  "runtime_files": [
+    {
+      "path": "configs/STAGE_AA_AA1_ENGINEERING_RUNTIME_PROTOCOL_V1.json",
+      "bytes": 3689,
+      "sha256": "858ba40de426f88cc4ec8b1cf22bddfd5375e945bd4fc53c07c048010677b64f",
+      "git_blob_sha": "e04b4f729585f3d114eb4bf6fe08ff6e20dd654f"
+    },
+    {
+      "path": "reports/STAGE_AA_AA1_ENGINEERING_CANARY_PLAN_V1.json",
+      "bytes": 2037,
+      "sha256": "0dea7c8788ded669f27088440ac0232511b2f2c39b134c00d6a65e43fc25d093",
+      "git_blob_sha": "ba0fab73d8db02a76314418bca13a78f4c16b8b0"
+    },
+    {
+      "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
+      "bytes": 29221,
+      "sha256": "02d63f4d19fbf016f56017a533a14975ca096c08d6daeec0127045d81d95a027",
+      "git_blob_sha": "27a32d6c52e332e113158f5e21c0a983b0abbf0b"
+    }
+  ],
+  "parent_authorities": {
+    "aa0_protocol": {
+      "path": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+      "status": "STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_FROZEN_STOP_FOR_PI"
+    },
+    "aa0_capacity": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+    "z1_runtime_protocol": {
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24",
+      "status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN"
+    },
+    "m1_checkpoint_manifest": {
+      "path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+      "sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd"
+    }
+  },
+  "server_runtime": {
+    "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "common_libero_authority": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+    "gpu_admission": "free_memory_mib > 20480 immediately before launch",
+    "one_worker_per_gpu": true,
+    "foreign_process_policy": "record and preserve; never terminate or alter"
+  },
+  "scientific_firewall": {
+    "aa2_scientific_candidates": 0,
+    "stage_z_identity_exposure": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "task_success_reads": 0,
+    "paper_promotion": false
+  },
+  "next_legal_action": "EXECUTE_ONLY_THE_9_AA1_CELLS_THEN_STOP_FOR_PI"
+}
