@@ -355,8 +355,8 @@ def capture_engineering_clean(config: dict[str, Any], family: str, canary: dict[
         done = False
         horizon = HORIZONS[suite]
         for step in range(horizon):
-            if done:
-                break
+            # ponytail: this engineering audit is fixed-horizon; terminal is
+            # recorded for diagnosis instead of truncating action validation.
             fresh = not queue
             if fresh:
                 context["current_step"] = step
@@ -368,6 +368,7 @@ def capture_engineering_clean(config: dict[str, Any], family: str, canary: dict[
             row = {
                 "step": step,
                 "remaining_horizon": horizon - step,
+                "terminal_before": done,
                 "model_boundary": fresh,
                 "raw_action_7d": raw_action.tolist(),
                 "env_action_7d": final_action.tolist(),
