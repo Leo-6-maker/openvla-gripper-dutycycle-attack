@@ -98,7 +98,7 @@ def validate_authority(root: Path, manifest: dict[str, Any], protocol: dict[str,
     pool = set(capacity["analysis_pool_after_aa1_reservation"]["keys"])
     require(len(pool) == 108, "AA2_POOL_COUNT")
     require(source.get("original_manifest_sha256") == sha256_file(root / "reports/STAGE_AA_AA2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json"), "SOURCE_MANIFEST_BINDING")
-    require(source.get("original_cell_count") == 324, "SOURCE_CELL_COUNT")
+    require(source.get("phase_b", {}).get("original_cell_count") == 324, "SOURCE_CELL_COUNT")
     for name, binding in source.get("versioned_runtime_files", {}).items():
         path = Path(str(binding["path"]))
         if not path.is_absolute():
