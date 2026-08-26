@@ -338,7 +338,11 @@ def capture_engineering_clean(config: dict[str, Any], family: str, canary: dict[
     task_idx = int(canary["task_idx"])
     state_id = int(canary["state_id"])
     parent_key = str(canary["canonical_parent_key"])
-    env, _task_suite, task, obs, _initial_states = AA1.make_env(config, suite, task_idx, state_id, counters)
+    dummy_counter = {"env_step_calls": 0}
+    env, _task_suite, task, obs, _initial_states = AA1.make_env(config, suite, task_idx, state_id, dummy_counter)
+    counters["dummy_wait_env_step_calls"] += dummy_counter["env_step_calls"]
+    if counters["dummy_wait_env_step_calls"] != int(config["environment"]["dummy_wait_steps"]):
+        raise RuntimeError("AA2R2_DUMMY_WAIT_STEP_COUNT_INVALID")
     try:
         binding = AA1.TAXONOMY.bind_object_taxonomy(env, AA1.bddl_path(env, task))
         if binding.get("status") != "PASS":
@@ -404,6 +408,7 @@ def run_cell(args: argparse.Namespace) -> dict[str, Any]:
     counters = {
         "model_inference_calls": 0,
         "env_step_calls": 0,
+        "dummy_wait_env_step_calls": 0,
         "physical_telemetry_reads": 0,
         "open_intervention_steps": 0,
         "pgd_calls": 0,
