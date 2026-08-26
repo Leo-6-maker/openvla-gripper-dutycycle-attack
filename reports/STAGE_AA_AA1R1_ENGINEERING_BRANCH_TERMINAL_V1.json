@@ -1,0 +1,85 @@
+{
+  "schema": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_TERMINAL_V1",
+  "status": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_QUALIFIED_STOP_FOR_PI",
+  "gate": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_DECOUPLING_AND_QUALIFICATION_V1",
+  "authorization_pi_comment_id": 5419093246,
+  "claim_boundary": "Engineering branch-path qualification only; no scientific result, vulnerability estimate, model comparison, or AA2 authorization.",
+  "runtime_source": {
+    "authority_path": "reports/STAGE_AA_AA1R1_RUNTIME_SOURCE_AUTHORITY_V3.json",
+    "authority_bytes": 4820,
+    "authority_sha256": "0c95c85ac924d91d78510465f87e0a133d3dc180a088c54e83a14d8ef96d8188",
+    "runtime_commit": "14d14ea0bbb77d76cfeb8837f8b82efd0250fa77",
+    "runtime_tree": "525becdaf3347c5b727c1745311250338e673c39"
+  },
+  "immutable_parent_authorities": {
+    "aa0_protocol": {"path": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json", "bytes": 11817, "sha256": "b795a796a81d76173e0cfce148ee768cdd9dc90dbd6d69d541d1e40a04c51d16"},
+    "aa0_root": {"path": "reports/STAGE_AA_AA0_ROOT_SEAL_V1.json", "bytes": 4701, "sha256": "72011d93101eff387e023f8f24bf77dc81bf0c1db558b418455d05ce0c889999"},
+    "aa1_protocol": {"path": "configs/STAGE_AA_AA1_ENGINEERING_RUNTIME_PROTOCOL_V1.json", "bytes": 3978, "sha256": "26e01b57917052d3cf29cc1abb68c6c6e21d1175b9ea9c1b6fcea24b88f6d0b2"},
+    "aa1_root": {"path": "reports/STAGE_AA_AA1_ROOT_SEAL_V1.json", "bytes": 3182, "sha256": "e9b688730df7cad916259d929f733e3a80754be73f5fbb0c59d710dd192acaad"}
+  },
+  "execution": {
+    "cells_expected": 9,
+    "cells_passed": 9,
+    "model_families": {
+      "M0_OPENVLA": {"cells": 3, "branches": 12, "branches_passed": 12, "full_a_route_sets": 3, "b_routes": 3},
+      "M1_OPENVLA_OFT": {"cells": 3, "branches": 12, "branches_passed": 12, "full_a_route_sets": 3, "b_routes": 3},
+      "M2_PI05_LIBERO": {"cells": 3, "branches": 12, "branches_passed": 12, "full_a_route_sets": 3, "b_routes": 3}
+    },
+    "canaries": {
+      "libero_10/task_04/state_20": {"cells": 3, "branches": 12, "branches_passed": 12},
+      "libero_object/task_02/state_42": {"cells": 3, "branches": 12, "branches_passed": 12},
+      "libero_spatial/task_05/state_34": {"cells": 3, "branches": 12, "branches_passed": 12}
+    },
+    "branches": {"total": 36, "pass": 36, "invalid_retained": 0, "clean_replay_point_runs": 18, "clean_replay_point_passes": 18},
+    "doses": {"T3": 9, "T5": 18, "T10": 9},
+    "engineering_points": {"cells_with_A": 9, "cells_with_B": 9, "selection_mode_two_points": 9, "scientific_anchor_evaluation": "NOT_EVALUATED_BY_DESIGN"},
+    "invariants": {
+      "exact_action_dim_7": true,
+      "exact_open_delivery": true,
+      "intervention_arm_preservation_max_linf": 0.0,
+      "snapshot_restore_exact": true,
+      "queue_or_replan_reset_verified": true,
+      "telemetry_one_to_one": true,
+      "endpoint_state_machine_executed_as_engineering_trace": true,
+      "contact_false_alone_not_promoted": true,
+      "policy_vs_clean_arm_drift_used_as_diagnostic_only": true
+    }
+  },
+  "aggregate_runtime_counters": {
+    "model_inference_calls": 1607,
+    "env_step_calls": 13239,
+    "physical_telemetry_reads": 5634,
+    "open_intervention_steps": 207,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "v_phys_reads": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "scientific_parent_exposure": 0,
+    "aa2_exposure": 0,
+    "task_success_reads": 0
+  },
+  "repair_history": {
+    "old_failure_receipts_preserved": true,
+    "old_failure_diagnostic_path": "reports/STAGE_AA_AA1R1_FAILURE_PATH_DIAGNOSTIC_V1.json",
+    "repair_scope": "Validator/receipt semantics only: same-step intervention arm preservation; policy-vs-clean drift diagnostic only.",
+    "aa0_contract_changed": false,
+    "identities_changed": false,
+    "models_changed": false,
+    "doses_changed": false,
+    "endpoint_changed": false
+  },
+  "scientific_firewall": {
+    "aa2_candidates_exposed": 0,
+    "stage_z_identities_exposed": 0,
+    "foreign_gpu_processes_touched": false,
+    "paper_promotion": false,
+    "next_scientific_gate_authorized": false
+  },
+  "artifact_index": {
+    "path": "reports/STAGE_AA_AA1R1_ENGINEERING_BRANCH_RECEIPT_INDEX_V1.json",
+    "bytes": 8550,
+    "sha256": "9b96dec89766bebb30666451676ffd9d934a7baadefce018db035a9ab13a1479"
+  },
+  "next_legal_action": "STOP_FOR_PI"
+}

@@ -1,0 +1,1644 @@
+{
+  "canonical_parent_key": "libero_spatial/task_05/state_34",
+  "clean_trajectory_digest": "9e339905fbc6b4e86485dcc230466f00e58d8cf32eb0551492c654ff0d30a47e",
+  "engineering_points": {
+    "candidate_count": 201,
+    "candidates": [
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "02c4f391ad14450dabe7f5271e0c2211c518ecdd50656045a25489aab59f8805",
+        "clean_boundary_state_sha256": "b7e4349373b7e14ac42d02401a11a2ddd1afe01fa1347ca31819b9d31cab78d9",
+        "remaining_horizon": 202,
+        "selection_rank_sha256": "02f6a7ceb93b0d9a9e5d26271071008e8e8b9802f002a65d05aa0a1898373778",
+        "step": 18
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "2006692978b5b8e124e1cb20ba88331b4f541bb75e67ef66538a6463b511b2a0",
+        "clean_boundary_state_sha256": "8ee166bfcbcaba2884518653e01c77824314f8bca8b92a744f92edb515cbab8b",
+        "remaining_horizon": 175,
+        "selection_rank_sha256": "0345c728db51bb3c6ef6aa24e176a07653ae1bf5873ec7cece666751fb0f500a",
+        "step": 45
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ce72c6e80add05ce8e8f783de2c267c54661cc3db113b2ec88884c28ba5aef74",
+        "clean_boundary_state_sha256": "38bf0c262bd13aa6575be15a50551da9aa50ad2a95886dc3ddef8a3e9ec45f81",
+        "remaining_horizon": 132,
+        "selection_rank_sha256": "052618228e25a0f38a453f6de63c2c1e6abe3bcecc60157de4e662efbf2df2b6",
+        "step": 88
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "34a2c61cf3e78efaf28dfbebf87d728323d62022441ece07612bc01997af7ccb",
+        "clean_boundary_state_sha256": "3f57787cf5978b190c3739bccde29d2446590d7b7ff87251bdea3f46ed205441",
+        "remaining_horizon": 79,
+        "selection_rank_sha256": "0605c677a5523886ebf65b127586a89e106c5abd47c3cc12f90d025aedeefdc9",
+        "step": 141
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ba4265cc43eca9e56b5e751bc0c1e523b180892d9149dcb4952c6b5b04056a26",
+        "clean_boundary_state_sha256": "51f03e06392e4aa14fdc5d221fb36d119a2242f4b116810facb3b83789dacd6c",
+        "remaining_horizon": 63,
+        "selection_rank_sha256": "06c6468a572c9e6182fa9311539807ae08521a048283ba360bf738b37010e5f4",
+        "step": 157
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "d159a71d07cf48b95e78232214974ca04c56a175991e2f2bef634bb3422caeff",
+        "clean_boundary_state_sha256": "51aaccebbc935c2c4300ccede2b2031d3e3ec6e30e478f7c18dc5b931d97cd01",
+        "remaining_horizon": 191,
+        "selection_rank_sha256": "073e9416ed417c66663674239e680292f24773bb7fe01dd869568de06341d754",
+        "step": 29
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "685e7e143e4f670b5da17f9b3d153f1aa1ad41c6242f294d09822ffff58406ee",
+        "clean_boundary_state_sha256": "7d15029ea655f606109b6720bf6b2ad11d24c1be7a2ebd12de46f7679e58fff4",
+        "remaining_horizon": 210,
+        "selection_rank_sha256": "08c883bd13fba87bf3e8ff8ba15aa392f030670442550f6862f53c8ec41f9f06",
+        "step": 10
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "d22b4917048d13d0953efaeb1326d670cd375becc13d8d9ae0c1b3ebce17ad64",
+        "clean_boundary_state_sha256": "b04d5c77994d3eafd1cc043c53b782bee55bcc4f221ddf5e273838a93d618081",
+        "remaining_horizon": 89,
+        "selection_rank_sha256": "09130287daefd868efbdb4bf937636b571171eef0fbadf6fc0de6efc6239761c",
+        "step": 131
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "c8dc30b36502ae0bf49a8d8920ddc0dd975938d8aa7bf8577fa2f62eda965fa6",
+        "clean_boundary_state_sha256": "236e1f1896bafe3346494724f2a249d331f924b4bd19d6362b6838ec1cf98ca3",
+        "remaining_horizon": 152,
+        "selection_rank_sha256": "093d6bfbf40819e31443b10bb83eba935e05c48fa216f6f010fa3f08c08f4011",
+        "step": 68
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "07d008b0f3df2f87bcdd89b03df6993d2ea880f15cf21b451a26a82362a27f7f",
+        "clean_boundary_state_sha256": "2cf3a8c35ae80e951a6b13a0923a22f182ed54cd6807f9c888034feb84a78cf2",
+        "remaining_horizon": 97,
+        "selection_rank_sha256": "0b9591ecf084dfbd3e74b93d91a60f60961cceb520012329b93d482f27c862e3",
+        "step": 123
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "50b3fd97f243749b3eb9410e68a9341bec5198b71bd603e7336a04566be5a328",
+        "clean_boundary_state_sha256": "9b020299b9a8b7f54d1450c02d1f3bc55b160f96c77e6b08c08b9715cd5aec69",
+        "remaining_horizon": 167,
+        "selection_rank_sha256": "0c6db6f00d45246370bed8f8396ab531135d309030794bca9002608890cf9302",
+        "step": 53
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "e6df2f90d8863b6f8348bfb1665aab4fcdef14de2f1fe89dacd6d5b98dc9f18c",
+        "clean_boundary_state_sha256": "81a0a736fb659eea16070effac4403d797e27106924e72d238f8566a37c7a5a7",
+        "remaining_horizon": 95,
+        "selection_rank_sha256": "0fa1b94de7b7ca55ba673808c96ae5c349773c121883986451055c4de2bb4985",
+        "step": 125
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "8277e8a1c4eaee6e25f8c3fc4eba33b7482e7f6d571370482a72337258753da6",
+        "clean_boundary_state_sha256": "f08ca27a93eec7a8419ec32eda4792bf7fc3c334015a58284e07937630c5a804",
+        "remaining_horizon": 140,
+        "selection_rank_sha256": "0fdeb311b2d42f6a70fc90d9ebd2b2aecc87f98f019419c39648ee64ffdad240",
+        "step": 80
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "61236626cc14945389522722bd9ef69f3a12eb0b77b3a9b45183000d756c33a7",
+        "clean_boundary_state_sha256": "61c8a74727aaf8fa28a728fb29f6e23fce8586cd62b5683120a3da21aa02f331",
+        "remaining_horizon": 102,
+        "selection_rank_sha256": "1602e1e66b675941142e2c8940e2fd874108e60f406aaa14dd91dad819aa803d",
+        "step": 118
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "60f66756df794eb443a546c3c299d1091ec7d38f1f349876bba3c674821ff249",
+        "clean_boundary_state_sha256": "b1674182ab1b37762d5789c63bbc1c7695c6bd9d4fdc2450dfde8936ccacfd48",
+        "remaining_horizon": 182,
+        "selection_rank_sha256": "167b12d538326d1c404ac7ee0befd09e295c2b7350959b0730d3cbf45f571222",
+        "step": 38
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "652875f4dd660bc923499f2535b672c391d80e723ba4960422273e6447acbbc6",
+        "clean_boundary_state_sha256": "aecdcd7357e9420e732c662181a3eadc1671a94f9bdba46d22031f5189f64157",
+        "remaining_horizon": 106,
+        "selection_rank_sha256": "1785c1cd666f7831f52b26cc209154aa40987f46869044fbc973e0cca0d79c02",
+        "step": 114
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "b739498d97f0329b52703816f2bc44d15411da6242320df0a1a1b61779b9bcae",
+        "clean_boundary_state_sha256": "d24a983dd02125d0172f1637a768059cec5fb88cb6d904e4e92c81a37da8dd13",
+        "remaining_horizon": 133,
+        "selection_rank_sha256": "17bac8c4aebb386069aa380b4d94cdcdd88fabb6e2636168b3ab34ff3f1e129e",
+        "step": 87
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "df903c52d954292fde21d025b5c045723bd7376737eeaa8f1025ca3134ee501a",
+        "clean_boundary_state_sha256": "ffccd046fc00f3baddc7cfc820b0332d3afb1326d7d2d90242c90ef899d8a67b",
+        "remaining_horizon": 158,
+        "selection_rank_sha256": "189a194064163080de9eb35d9c88fc3676b1277210a08474e3a96bf1d51390ca",
+        "step": 62
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "bd05ccfdaa257fd1a72c6e5fcbc6625329d75bab617519b2881f621b5ea92b26",
+        "clean_boundary_state_sha256": "89f264e983a689dc36fa4253c66b7d91af59a189645292bb69fbcf6aa4e1a015",
+        "remaining_horizon": 194,
+        "selection_rank_sha256": "1ab238f4a52e79d5c54ed59e2d951213f671cbacb035ba5075f08b740233933b",
+        "step": 26
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "5cdabadc8104ad089f8ce048fd9bcf41012a3b829926f099d656d7e3b4a02ce9",
+        "clean_boundary_state_sha256": "61f2726cdcc2ec391a27ac88c4053c2955f21b81dbc2316e88547c4f91acd5a0",
+        "remaining_horizon": 124,
+        "selection_rank_sha256": "1ae5f46e1050a1766b38dbb567a032c34e7046b0eb1ed450e61848166e66336c",
+        "step": 96
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "c713e402d2a6f21c9ecb8bd31c2ec5f7a7ddf17aee4714168245625d87d4b1ad",
+        "clean_boundary_state_sha256": "23c32fa212604a8dc2bd1e16a8085af351b6364db3fa2853c2e013cb11fa8ff3",
+        "remaining_horizon": 26,
+        "selection_rank_sha256": "1c2621e9489c7d2f53d385fa35bde1a43f0326da6856555ed2254f51e1c86a20",
+        "step": 194
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "3194cef0b1c47ddc8480b3a91bed0b3c6fc86afbc75a38dc3f6e3cdd2c74c1f1",
+        "clean_boundary_state_sha256": "a7b4145011526272c77c207b77605c08ec841321b44050ea311af5eea4c3b406",
+        "remaining_horizon": 84,
+        "selection_rank_sha256": "1fbf50293c6145179426a772499d026aabf6211e9c5cd1590ea42808ccc331fa",
+        "step": 136
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "b15b4e4a3fb3b262657489ee616a139ce6b79dc14498200ab9f8ea1890258b10",
+        "clean_boundary_state_sha256": "8faecbd88782a90770c6ea262ca3ce5fba5479ed819f66f43fab2adfcb4281c5",
+        "remaining_horizon": 215,
+        "selection_rank_sha256": "202b365b55e778d74dc6c47b069424c28165bf9e56645d1a6085551349d66498",
+        "step": 5
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "21789783a20e37fdcc008adfe72becb3cc85703636b9ee029a4a5155d98e4a20",
+        "clean_boundary_state_sha256": "7b4e30a93167a55bf47efd715f32e37c56e60cd0a7ad94d0d1fe97f3b6d89889",
+        "remaining_horizon": 185,
+        "selection_rank_sha256": "2256975e71de1089a0631c53e6bb814223cbcf75c3097ce4f03ed4fd0ea11c5d",
+        "step": 35
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "bc7522a4147caa77c1faebfc9a96b289e4a5047b66b13da3f3f5db26e1b8ad76",
+        "clean_boundary_state_sha256": "c5fb175a7b462154c18121bf1eeb592a79a690ff5325675147fbe6baf7715e7f",
+        "remaining_horizon": 107,
+        "selection_rank_sha256": "236973b46c71bf4947ccd8091ac3245a917e2498d68e1d5f5da45c913616cc58",
+        "step": 113
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "339a108de88515fcef4f08f448a572ac3b9bf8261f5b4789e25d6e58720072e3",
+        "clean_boundary_state_sha256": "a078d75ee802e53c97fe9ca41eee70e6740245bf6c51196ad1d8ed650041e6ef",
+        "remaining_horizon": 57,
+        "selection_rank_sha256": "26fa8c37cbcd8aa7b9c80234c4d51aa29fce7e2da3e752132b286e4681782384",
+        "step": 163
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "7937c296876fba72262d1076eba13241399450686bacd80f564cad2a9909d655",
+        "clean_boundary_state_sha256": "65e6f1c6aaaed7e85649f2e49cab8a170a158cb6144731e8045446e74e1f7021",
+        "remaining_horizon": 41,
+        "selection_rank_sha256": "2791c36ddeae1f4bf9af42c4faa7793709c5b43ccac6aa02dd8d5884cf40fc00",
+        "step": 179
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "fd04b9df27be92cbf180dedd789e0418fffbb16212ed1ad694f0a915c316ff56",
+        "clean_boundary_state_sha256": "9a258dc15f3b2b924500af5d1aa7309f0072eee9ae45830ffafe70dd5fd749e7",
+        "remaining_horizon": 149,
+        "selection_rank_sha256": "29e7b4a10efb23042f85cd0cb1a473ceb9f754c01e1f5a08209867b0b90edb70",
+        "step": 71
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "077c7c932b1fe229ea262391bfd4beb3a16c018dd03ce744f06cd34405d3e72c",
+        "clean_boundary_state_sha256": "ba66c8f017d37228279fb5fd464f88a8527682dfa0f264cef873f9b69e1c8c9b",
+        "remaining_horizon": 209,
+        "selection_rank_sha256": "2ce56ddcbd58909762b880780f98cb95f090d6a0f22fec2fa8a8e06af8f2c4b1",
+        "step": 11
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "0acd0fe3277ec9f82f71c1d105f8a1293ebb60977ec4d6d76b644c2ca7ffa070",
+        "clean_boundary_state_sha256": "c46334e335fec4283745a6fad83948ccfc1c117433118bf32ca4c972d2d5a780",
+        "remaining_horizon": 173,
+        "selection_rank_sha256": "2ed026cbc715c80c882869b4987715f4b1f49e143e4e750ab678c48ee244299d",
+        "step": 47
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "0a1965c5c44ec489e04c1b322c0e68f942382005230b7e64709eea4185293254",
+        "clean_boundary_state_sha256": "7be4b81fafd5ee50ad5d9c8bff45abbda3271eedd6930b3773698d4cd076bce5",
+        "remaining_horizon": 139,
+        "selection_rank_sha256": "2f531d6a1b9cb0f05eb210d00ccd9978858915f67359d319435cddefe6271373",
+        "step": 81
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "3107b0331535db593d2541a214836730b54ec6a7d6b09ce8856e3260c33b1721",
+        "clean_boundary_state_sha256": "c91c0ddc519a40dceabe15c9631065b29703d30b725057401bdb2f4452a5a03f",
+        "remaining_horizon": 67,
+        "selection_rank_sha256": "314be9f6460aa7f6a06870cb62e47beb6e5e7c57055b49a4da4c71dd238b2c8a",
+        "step": 153
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "52c09e63fbcd4e9b1121d52aef701d99e2f55bef216663337dd004f2824ced34",
+        "clean_boundary_state_sha256": "5450e55e7732bee990d355b34c8e27281f2d41e1fbb5a74f3d2377ee786102fa",
+        "remaining_horizon": 112,
+        "selection_rank_sha256": "316ca8e46889b4b12a16ebe4fb0b0844f24b9309fee9bf26813d684c7c74f9cb",
+        "step": 108
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ee4c91411ba338f4f47b717ec815bf68c534d9c8be21fbe012145b62e20f0aea",
+        "clean_boundary_state_sha256": "d1bce4047f50dae51bdbe65fe15db4481fb23742d55eca1aaa277c583d6db1e2",
+        "remaining_horizon": 203,
+        "selection_rank_sha256": "3495288e8f8ddddaaa3f137c7988683eb95ba077cd64287184930adbce38d9e6",
+        "step": 17
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "d9241a7c43d95bf5cc72eb91fd79b4a604cd3b7bc732baf2b5a15856dc8c8805",
+        "clean_boundary_state_sha256": "6361d828610a10677a0fdeaf6a1359a5d377c2d1b5a33015df9d1766c13301ac",
+        "remaining_horizon": 156,
+        "selection_rank_sha256": "3523e16be9ce638761f5437ea885c63f8f86eddac6f03467ba31a59b3f315411",
+        "step": 64
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "19ba2c7707801080e488652fc34bf0fad13def40933e951909bb497be8ceaec7",
+        "clean_boundary_state_sha256": "ecea259096922cc3bd61e9d38e4141588e1dd2ab329f538e4ac27731914d0edf",
+        "remaining_horizon": 58,
+        "selection_rank_sha256": "35cf8db0e42022bb811dcdf98a6a167544f0004b56a0b4104dcc8068decd3aa2",
+        "step": 162
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "d022553e831b81a66451cb9537cb631ef2a096e47bdd20ffa6a1b271b946652b",
+        "clean_boundary_state_sha256": "a8ad1e0b2b7e34589c009ce568e4923251873aeb38f219c64a56d767ece922ac",
+        "remaining_horizon": 90,
+        "selection_rank_sha256": "3645c1b4fc2ff56488eaa7fea5fd8c752948a44a1ed1434801f1e64bc306f7c2",
+        "step": 130
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "0ab9349a7168e03684688db01f572f7ff36e158291845e7087f456df33bac893",
+        "clean_boundary_state_sha256": "5d10e9611559eeb7b281339c38e99b04481dce88b24698ee63496d99dee4365c",
+        "remaining_horizon": 108,
+        "selection_rank_sha256": "37a61d4a1cb36046d9438dcab849e928d757d6801d14abd7146e438ca4e4dc10",
+        "step": 112
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "1307170aa754750e2d2db4fc4e805056d937a6261a74b85ca93c9881d716e985",
+        "clean_boundary_state_sha256": "7cc0c32bd709837fb4d7b32a26d4dd84d65162a4ae98a95385191e3a667bb721",
+        "remaining_horizon": 72,
+        "selection_rank_sha256": "3831b4942a578ef116bdba519a2d150b7fb4ca38f5107b4e4c78b35b380638ec",
+        "step": 148
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "45d85cad0591d54254052ebfbfa4c148be02f4ed49a03dc541a2fc10fe2504bc",
+        "clean_boundary_state_sha256": "e368ee20bff0ad7ef72eeae738801aa8c5985700a01a1ba904449905ff495c91",
+        "remaining_horizon": 80,
+        "selection_rank_sha256": "38f87f2dc0b864a1551944f25f0a536a47bc5bded5c7e827c2d91d7f1fab28eb",
+        "step": 140
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "c8afabe674e8077b0560f9b92a2d8cf1d95b3b7e38d404192b9467aea9f64942",
+        "clean_boundary_state_sha256": "aac630f753cea627d672df415e6e9cd07a7650d7aa4658b4ad35ecb3184eb643",
+        "remaining_horizon": 136,
+        "selection_rank_sha256": "3bfbbd8a86e9a8b3928bd5afa507f79a9e09e62024c890bc62de3cdc7045ad6d",
+        "step": 84
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "f7ef7cb7dbe101a9b84683362f10f65b8fbbfe02645719bc5cf8aa5e7587414d",
+        "clean_boundary_state_sha256": "b7f9fffbfbfd837d57e61a12aa569c2031afd60156b6eb67948e235112b13b3f",
+        "remaining_horizon": 135,
+        "selection_rank_sha256": "3c38f9f3b66c9a0016c0e856667fa889b0b31ca2d60ad1644f6c7969fac93056",
+        "step": 85
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "5bbcc575ef4a72ef3f909eac565c7cf7da1d05bac3e54b1509c2bbac636e469f",
+        "clean_boundary_state_sha256": "7a821cb586448f2eb090f2e3f80089288495c213cb26f303ea4f8d70c998d50d",
+        "remaining_horizon": 147,
+        "selection_rank_sha256": "3d4bfdae6a209a89af14ced8aa8190481210cfeb04b1f8482b2b770970187bff",
+        "step": 73
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "21d1edf52368cdba0cd3e3fa95d0bdcbcd712096bb86fe9edca5d49fb9164c48",
+        "clean_boundary_state_sha256": "40a9f7fd052732e613e59eb16ee20a0c20992d83a3afa014ad6c541e67591a9c",
+        "remaining_horizon": 154,
+        "selection_rank_sha256": "3e2d21e7c1a95c6fea247935d401d7ce32455498c5b065aa0d10ce44b3fde55c",
+        "step": 66
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "fef748871061a7ed25891432d1498a547c39a0ce18fc97da033a242433f70dd9",
+        "clean_boundary_state_sha256": "410db5e705fd7094619ed6335ba7c84aae04ccb5a367ed81d1856cef5e04edb7",
+        "remaining_horizon": 113,
+        "selection_rank_sha256": "3eeadb8b94bb72c68a9254d3729950cf35959df0976f232b7c13a9d1d9072156",
+        "step": 107
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ebdbf977c22b1e083f88ef697cebd0e9230cb472c2b9f7b39c2c50afc4cb64a3",
+        "clean_boundary_state_sha256": "d91a56cadd1640389544d594f6a3d9c7a6ea7698007cf15cb60e42f01e532c4f",
+        "remaining_horizon": 64,
+        "selection_rank_sha256": "3f5c01a67c7f8580a65bbd8bffee3bbeaefa10787ca31144d16c51a459763084",
+        "step": 156
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "221d184f8556f7f83892bf9be3d262203444c06a384e64bd12ba34532bc2fa16",
+        "clean_boundary_state_sha256": "d5dae593acaca62d938d86c0f0a5ba674dcd59ec83125fa84c67c29a7fb76af3",
+        "remaining_horizon": 93,
+        "selection_rank_sha256": "3f82d09dd5d66c0cf38e1080ae574e7b33f8bcf7a2d1d1d8bcd868f684686b31",
+        "step": 127
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "54058a4e8ba628a26a731675e7d8227efc87d973ff350e5568edce3700c4a68f",
+        "clean_boundary_state_sha256": "beca3c4a44684bca09ee772883db19fffb7370afb2a55c9a0969e22c7fb76614",
+        "remaining_horizon": 48,
+        "selection_rank_sha256": "404b70f5c67749f853514b4a3bc8aa1c4782df03c99907c2d631c4df54208cef",
+        "step": 172
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "4c5d9b76868d4ff630e5fc76731f344bbc9b2dd4d243b3dbd5b6a0ecf6e84571",
+        "clean_boundary_state_sha256": "b1407bb4d188228b916ccbe81aecfcb7afda7f358bfffad981b3789ed82082d5",
+        "remaining_horizon": 110,
+        "selection_rank_sha256": "406cafe9c0b193aa0882aae4e48de1af13fb12f7994bd1ac796b0f337114d251",
+        "step": 110
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "9226f07dec3df353810acf2079ffabbfbb994806acf94eb1031674cac880ba85",
+        "clean_boundary_state_sha256": "f9ea3b750c55bce11fbb38a98afc3e0425bb953a957c3f6dbcfc9978a465d620",
+        "remaining_horizon": 37,
+        "selection_rank_sha256": "41ecd1c345004a1e082f526c6df3f380b6cb17f0a2470cce896f491ea877c4d2",
+        "step": 183
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "83d8867142f7a6ab66a77c4ab1994c56b598be3d0d1c53cfa409911c770a50e8",
+        "clean_boundary_state_sha256": "a1f3514db3ca46acf2b7133f27f222f8dedb6bd683da803943096d78e438c7a9",
+        "remaining_horizon": 42,
+        "selection_rank_sha256": "42ab986ce7abeeaf6da4d107451f1dab36b0f33b3651b0759fbc9d4532b3f13b",
+        "step": 178
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "fa7a40beebb9c23404820b3d9d14c6f8a9ba2b55b823a5bd7f8d65a56a7c4d83",
+        "clean_boundary_state_sha256": "4e19900993fd38dc934bb8a707199a03f7fe7207eed53aa6865fa4d109ef64dc",
+        "remaining_horizon": 142,
+        "selection_rank_sha256": "450ef0eb7636e963c3a662a682c9e19063de2d2462001f37849e3cb3eeaeac8c",
+        "step": 78
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "6f6c72d9b69427eac4efc476570bdc65d453b6d44b6e4c9726a26f35da873b05",
+        "clean_boundary_state_sha256": "dec615ac2e587f93753be4a571a838ecc171293473086639e0d33d9cdd4b6760",
+        "remaining_horizon": 174,
+        "selection_rank_sha256": "46301803e249fa4d50bb6b3329016f04493544fee68c70dc086928a336254602",
+        "step": 46
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "a2432c83389b2a5d7abf160f7f3c340c8db3568a50cc683493fe241edad624c6",
+        "clean_boundary_state_sha256": "816c0d682b74fdd163f77d16023f94c926f029106b2082cdd4f48ebe32dbf34e",
+        "remaining_horizon": 96,
+        "selection_rank_sha256": "48185f7b34ca2f35c0f612b6f252ec6df927c3d7c6a5520e66be4134c8327d0d",
+        "step": 124
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ceafcb65f086d655c40f64658be888565e37a6ce7e9f2b4c9b966dc937a54f78",
+        "clean_boundary_state_sha256": "fb735e4242871fc07fe333aee2f36bed1856009e28500fbdfa445ed0c1c1c1aa",
+        "remaining_horizon": 141,
+        "selection_rank_sha256": "487816be19bf79713930a61063e648b2409fc3ff7bd16f30f1a3efcf0fe81631",
+        "step": 79
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "7903769d3fcc5c0d973872b681bf0ed7486d19cc9ad6743c50d5a4ddadacbd61",
+        "clean_boundary_state_sha256": "63f7264220c45d29f81d2493cd48c47a4fa1262de6a18c7eabc6dd3bc9f5b633",
+        "remaining_horizon": 46,
+        "selection_rank_sha256": "48ec288f9334aea293c1c76dc0baa3dbe27b2a1aaedb1f990d0ce5dc401ec6ce",
+        "step": 174
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "8772af50a0dba7f6f757ee1fd56b3b119422f072f0c981b511c18902f9346442",
+        "clean_boundary_state_sha256": "6cef46fc31b2366ef389df42e6009c02eea365db6da558ee3bcd026f2050ba5b",
+        "remaining_horizon": 128,
+        "selection_rank_sha256": "498450907cd6b08454dc169e2d2f42401bac0045fa7abae261087f2115874a3b",
+        "step": 92
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "960ea36dcaec62b7bddedefd1f2dda44026a32f3496283d7d39267c7bfe467b0",
+        "clean_boundary_state_sha256": "9b29212c0580dcdca7dcb733cc01bed39bfbadc02f5d643e859008ea5c16989c",
+        "remaining_horizon": 220,
+        "selection_rank_sha256": "49ce20c2e28e3cb63d06d096030ad90f22a012fd418e01ebad41b3656ea39069",
+        "step": 0
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "2cd697e7cd7541e50a46f08df61991c4c9762dfdd19779f07a722b3397ad3461",
+        "clean_boundary_state_sha256": "b19556a3ce17885bd0f133642fa5e488f7cb8d762661300d0d7bbd72c1ca7bb3",
+        "remaining_horizon": 131,
+        "selection_rank_sha256": "4a6a1efbb28dd6ac6c17004ee363926367373388b190c3510e6816fa0ac8b154",
+        "step": 89
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "4f01b1a5835d98c8d3d713a1754bbec047c2fc211aff30a4faef4ab22603a3d9",
+        "clean_boundary_state_sha256": "a1d6e77fb751d8001797374d61ca37bacb09ec07bfe71fc01577f885178f1e86",
+        "remaining_horizon": 81,
+        "selection_rank_sha256": "4d9622fc87f3a4d3e2cfecbc0fdc437e5aa50415ecf664c2e397c0358f61e882",
+        "step": 139
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "b6bcd218ad4fc550b3d4773a28410da4b6c46ddeb2c2f5a0c40aa5c27c39bd76",
+        "clean_boundary_state_sha256": "90f00e67fb3e6303167cb3ecf77650e587f69f5212867d4d23f68db7ab7175d1",
+        "remaining_horizon": 114,
+        "selection_rank_sha256": "4ea2352f1f5cc609464fb4c4b249a2b1884858b4e457d2551551c334e34f6df8",
+        "step": 106
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "fa6b2270bf17fa41b27dc03b49cc08115a2ac4af2c7bca454818ee3c9ebc637c",
+        "clean_boundary_state_sha256": "0078af4458f14f6b6a8e4f22cc163076e639294fadd876ae3ec4538f33bce4a2",
+        "remaining_horizon": 45,
+        "selection_rank_sha256": "4f3e144336e10dca4fe92e8c4baab0eb45c0099d954a683d9f4460c3bca597a0",
+        "step": 175
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ea46b61bce8e548a5cac561bd177dac37dcf589c724a7de52fafb158d20dd4b6",
+        "clean_boundary_state_sha256": "cc6200b7ab885c4823035a1eb3c80ae67f1817d5585b3b2b038df0014030945a",
+        "remaining_horizon": 21,
+        "selection_rank_sha256": "502368abe0c27c5656419928f42cfe63b984865d467a4e750a8cc169a945ffd7",
+        "step": 199
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "e714ba4d65ef209f30d446363b6a1bab0d2af08627d0e2638d7f7767d513eba1",
+        "clean_boundary_state_sha256": "60e5fca962f19933f730dc5a87e26d73d215ba8e55c09a8f527b2bf8fa14837a",
+        "remaining_horizon": 211,
+        "selection_rank_sha256": "50e0e7f806ceca594e71eb2307c1fab794192eb44f1e16713055c45ef60c4eb8",
+        "step": 9
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "73de35c974b8ff89d2a02cbc2a8a8ffffc542087d9a6d12c5c440f4d4f870e25",
+        "clean_boundary_state_sha256": "19b864993988752fa62a04a57d7886a8fddf3ff3e1e4cfb81d0d8566b07a2a46",
+        "remaining_horizon": 134,
+        "selection_rank_sha256": "520833b4d7d2c2749c92f1791b8ea70fafc9976cdd5345f130fbf2cfe73a3ceb",
+        "step": 86
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "f2f8446a9bd7a6156f9698dafce63262682d01fbf9abc5372baae83d137288db",
+        "clean_boundary_state_sha256": "58ed8aefda6e62227a056b2a59762e4b7c08f93e8d59e82a9eebe05d40fe1c65",
+        "remaining_horizon": 99,
+        "selection_rank_sha256": "57224cbefb6340c3e46be8adf84d55dcb2648cc585b25152790490ead58e7f38",
+        "step": 121
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "7674093391f8c52981afe2c279753fc58c103c2c611b59dc88322f950bdebfcf",
+        "clean_boundary_state_sha256": "a6819811779c11961638a7e87035dbbbe19afe6e17e4c5d60f4d7b9c82002247",
+        "remaining_horizon": 163,
+        "selection_rank_sha256": "5826f0ec28919adbd9f07b9092e670ecb92f2d3b9c897578bb6638e8a9bdd0b8",
+        "step": 57
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "8935569d81168020f8505e3933ae47ee78b1355978bc9ed6f63780fe1323ce39",
+        "clean_boundary_state_sha256": "ed6355d1d946c65329ff2ce6a119af240c66c0de627bf96fcc1b8b20c2615da5",
+        "remaining_horizon": 47,
+        "selection_rank_sha256": "5a9000ea214d07e64b503fb22d174ef26102e22df64a17ef29db1e5d115a2bef",
+        "step": 173
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "9504191edb2b66872ff54ed2a9da8ad12235ab74d11562fea676078c134fea5e",
+        "clean_boundary_state_sha256": "7a27e8e4fe56d2db6c1c878e65299214e82257aa87a27bedff5cb7cd049d9653",
+        "remaining_horizon": 38,
+        "selection_rank_sha256": "5b2ee1e76b0917dfe2cea39ac57a53726e52c9c591ba2bbc050d354e237c47af",
+        "step": 182
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "76a7c1817cbc0a404e79b179861be4d275876bd94c64e25ed4c0742233720f8d",
+        "clean_boundary_state_sha256": "90db404096d195870eac29dbf1ce3802763a0610b3fbd0498b1731f9c76528cb",
+        "remaining_horizon": 193,
+        "selection_rank_sha256": "5b9a44e8176dbda824b265b98531d25051091cecce81e9d877e223eec74c5ef1",
+        "step": 27
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "580506a9f642ea2ea0530eb08d752750c5b38fb6f20e4c4ce4f3442ec4f0d62b",
+        "clean_boundary_state_sha256": "a4fb0d351b99960f7e0f1795a46a827c2d4bd5953e836ccc34a6395a1422de73",
+        "remaining_horizon": 161,
+        "selection_rank_sha256": "5e424ec0f56d3c7fa1882f88c19c314a6372249f99170d32e4453ddf8ef85050",
+        "step": 59
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "0e6a37df6eebf1bf87a351f651625510c67c7c92a2826ea5a841df4cd37d69ce",
+        "clean_boundary_state_sha256": "0ecf6e0356ad8d9b0ea83c738f8f6b1698f4b270cd4ba3534ce72c88f74cdb28",
+        "remaining_horizon": 219,
+        "selection_rank_sha256": "5f4fb897804ee194313e4cb57ac239df0aa5af7f6b1df5f6d5dfb71bc1197975",
+        "step": 1
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "b2c0a5f360fc0d7858bea81a997663d39ff3868e2035c1c061b14bcb370d2993",
+        "clean_boundary_state_sha256": "2c500042660fd46ba4b169ae206d5d26bd082023e652b16799c88c8372757e1d",
+        "remaining_horizon": 78,
+        "selection_rank_sha256": "5f9fce78ad70d23c3c630d4d49ccd77a0bab1453bc24b83e40d98e115d3d6d13",
+        "step": 142
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "734a2b71ba7e33275c723926dd9bd7c635ff7d4ee33b6eff85386df97b4c2055",
+        "clean_boundary_state_sha256": "6272549ecf8e9514b4a7da767c3f032ea4aa51747f34b6da96648db4736510f8",
+        "remaining_horizon": 86,
+        "selection_rank_sha256": "615ba0ded5735be1387b504f2e23df4f167b4c3f4d3924c1e98acad7054574ee",
+        "step": 134
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "9b943a823490bbca8547c7742c211dba8244acaa122da4b8e2979d86fa09f833",
+        "clean_boundary_state_sha256": "f1576968174021f84d48720ab37229a63c31a1f8de0cda0d05dd70e8b7dd3c7b",
+        "remaining_horizon": 35,
+        "selection_rank_sha256": "621866f603f623d233685cf1a55110973d1839d89a4b2089a8743846da7731d5",
+        "step": 185
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ab9537e12c1d6d82000775764a0e2e6186bc5a66efb03ce99325706d3b7b25dd",
+        "clean_boundary_state_sha256": "2a7d80428ffee9a5ec0232edc3fd247dafea03217decbdeb771d04c01bc30189",
+        "remaining_horizon": 23,
+        "selection_rank_sha256": "646fee537c9b8a4a37d819e7ba059f04fb62df7d46d87ea0233e9e97c1eb152b",
+        "step": 197
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "20f7983cfc33b97f0c1792515121a61bfe64e50542bfd25f0c2fa9a0c49bd45f",
+        "clean_boundary_state_sha256": "429f88622b4ee691783129674f4d7a413c0736fdaa216f65759263db0eb3c755",
+        "remaining_horizon": 109,
+        "selection_rank_sha256": "6645d4faa36444cab23e6c2a1c66b291fb02ea1c1137162337445fcdce5b193f",
+        "step": 111
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "bac07c627bf8f5a86730f14c2c10ba3618f992dcb8be6ad556ff0732616b7d29",
+        "clean_boundary_state_sha256": "c2f0fe8a7794777bd7105449de7e1b9de3e9c9dd85bb78002ec79ce0ae0acf04",
+        "remaining_horizon": 168,
+        "selection_rank_sha256": "6a14251a5d1b0ade7ecdfa337556f8833810a76a431c49ef31995ade8aa8ecb2",
+        "step": 52
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "50dcec3a6cdddd881c6809c66c73fdfd0d492a3a6d9ac0bd9241920932b0fa3d",
+        "clean_boundary_state_sha256": "32de855693a204489295efa23296fd60e8bf25fda852becd818a1c7ff5d6489c",
+        "remaining_horizon": 34,
+        "selection_rank_sha256": "6ca6d95b2daaceac24fdc25144fc646de5ceca8cd608493b369cb37fe7b96cca",
+        "step": 186
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "14072de548ce06885ca61bc72191d7c4e6718fba6a0ba75f9a0707eb53e26924",
+        "clean_boundary_state_sha256": "0ae8502e13fbca4dea7de1025384cae526aaf7a17f7af602d2730e6ca4584ac3",
+        "remaining_horizon": 94,
+        "selection_rank_sha256": "6dc798282fe8d08e6e5cded5e13b7d26ce4bb2b48919e077ed5fcb6f3603aba7",
+        "step": 126
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "2cc6afa16862d907287fb858c3d52f0a223f8c4938847293c73f3c2737fbd45b",
+        "clean_boundary_state_sha256": "56360823487daba9730862dc195c3d708e4bf2654416a74632457ff34131d6ce",
+        "remaining_horizon": 118,
+        "selection_rank_sha256": "6debd0f6b84a0c277b01cf40015ea5f3cd3bb7231edf2e33249c4cc080c815a9",
+        "step": 102
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "469595f082694a1b173e81e45dbe2e9a79cd5f746f9d18111129ec44e23ed476",
+        "clean_boundary_state_sha256": "a96641ff9bf6a5a3903ed9ed3f9d212e3ca8bc8d59a55c1554dac72ad0d0ea8d",
+        "remaining_horizon": 123,
+        "selection_rank_sha256": "6e268bd2cae7c0725ae1cbed657867fbd358a09f02f76ba067ccd03951b8ba91",
+        "step": 97
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "46bef26cd2124e5883fc342dedec0f88d18bfb471736235e8a69ad8f91c26edd",
+        "clean_boundary_state_sha256": "989e2d8e384bccf3c292b2635634c5eeed3f80b01d0efcb6f59a57ab133ec94e",
+        "remaining_horizon": 196,
+        "selection_rank_sha256": "6e95eeea9b10e82d18323e9ecb21ea1e7d001cbd8ee3d246737683077cf713ae",
+        "step": 24
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "914ba697e3894e21ae640f8e0d449c456c9c9cfd90595bcf1b75937ab1c93c3a",
+        "clean_boundary_state_sha256": "30c46ae7cd5024f4bb40d83bf53340071ef4f7caecd4566c09ec9ec7b00bdaff",
+        "remaining_horizon": 122,
+        "selection_rank_sha256": "6f216d97ca52beb2e2115f583558fb0a76067bf0aa2caa7f0a2e76aa3d7e9f38",
+        "step": 98
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "d405c6e178161d16da9b472bdd83b1bb34105ba81a65710418add17652dfd555",
+        "clean_boundary_state_sha256": "4802f98ec902c24bc31ee9e2926251274c66545f79b6c1a0cca6ce5642a8d944",
+        "remaining_horizon": 68,
+        "selection_rank_sha256": "705a0def3f1ea6a6487ad7da33dacffa580f5f7696a15f1800e83f677340066e",
+        "step": 152
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "7ddfcb15e7d0fac52c5ff2d13ad17d0295da25f5aaffdaffe86ded93b682f908",
+        "clean_boundary_state_sha256": "bdf8338684deedf7b89712eeecd890c6496ffcf76224dd0ed36a651cb0a4b87e",
+        "remaining_horizon": 49,
+        "selection_rank_sha256": "71ae003a6d2a0b15324e45c803abc70a098a3e8beff9bab03d85a64e126f15bc",
+        "step": 171
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "f5faf5704e53891c6059b64dd8774f2f4debb8ad56a3f0f364993c2e021a840d",
+        "clean_boundary_state_sha256": "5830ec1b7a7ca646289904f151800832307cebf9d9351d924dd519817ef3c949",
+        "remaining_horizon": 217,
+        "selection_rank_sha256": "73fee5cfe242d0076e792c7cd8d9d1fb7b58553cdab62b72221cdfc59d576a98",
+        "step": 3
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "cba73f1f1e1ba7681f3627d38581adc2ce2b1188364bbd7171b434a6825676bb",
+        "clean_boundary_state_sha256": "15e4b97d8bc88b9ac5a2fc72329e0f5f356ca77f39d99f521d59c620afa645f1",
+        "remaining_horizon": 77,
+        "selection_rank_sha256": "740b878a8c54b2e1b3d3c804de004ed3e5725a1c4386cd3752266fe10d9c106a",
+        "step": 143
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "289f239d2a7dbc522ad83645418cd5e63d764793a24cbf6d5c4cdc3d1216bd06",
+        "clean_boundary_state_sha256": "3309584c9c7d67e1c452cac92903a86618adcace2b5d371560c9a6e622f6476d",
+        "remaining_horizon": 197,
+        "selection_rank_sha256": "74d7c0f26c30b85b6fadf2b248e89023904188c992ec0c793bbb0ddceda26866",
+        "step": 23
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "f12794e2e347f249fef27a4d0f643a56a298afc0e817e64dec11b2fbf78e839b",
+        "clean_boundary_state_sha256": "c9e8e1f45ba278acc411221ffdd5cc060c2e91e53eaabfcd986f36e20378f5b8",
+        "remaining_horizon": 162,
+        "selection_rank_sha256": "763006cff75660f428104ff30b1dbe0aae99df53f688c2d190094c2bfbc5089f",
+        "step": 58
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "eda1fa5d0eb2b76d59af9fd2ba3d20653eeb480e02a3993dbc4c82a0d6016de8",
+        "clean_boundary_state_sha256": "7849bba934c313e763b69de24b791d6ded19419829dd24f307373013059dc0a7",
+        "remaining_horizon": 22,
+        "selection_rank_sha256": "77137371268770506cacae820704551d98d17f840e6bf87d0c5269628a5da9b9",
+        "step": 198
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ad02575d1df13a491d45c67b1d39100e228ba23b09f1c4c237861aca868f43ca",
+        "clean_boundary_state_sha256": "7e4e1bc97392e65e259068a99d506fe3d8376eb149f0b7df15da7228d98c3cdb",
+        "remaining_horizon": 100,
+        "selection_rank_sha256": "77984cce31730f8a78bba7c100fdac2ad873f83128e576c680cfd24b6de2b15c",
+        "step": 120
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "7994d30d628f718dcd34b3d3763293777d9fb7a7e2e49f90e89d714509ea2f7a",
+        "clean_boundary_state_sha256": "9fbfe5e4f5a7ef0b0f7a82845d0d228ed0609badba63ad2cee5a8fb8a9563121",
+        "remaining_horizon": 52,
+        "selection_rank_sha256": "78e62f9e28e876d689ee1cac19bd217650054af7a16ae1974c38228438af0d26",
+        "step": 168
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "b8ff2cece56a8662af79c6e69cee77fd315dcde5a6ec40814afb3cd55a774eb5",
+        "clean_boundary_state_sha256": "2cf3b543ffa35adf8d0746127e09fba680023d6697650bed7557fc5396c3c76c",
+        "remaining_horizon": 144,
+        "selection_rank_sha256": "79735cf5c218e9be8e8b22e245896db8a62d3a139365f78a43e059d6e1669f48",
+        "step": 76
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "a2c5bb5ee8d0687f2bdcdb97a339238c0d6e4f544ddd0e126e440e8d0e03a004",
+        "clean_boundary_state_sha256": "d19a6d9c0d737ce48bc04846c08cc4b079ac17daef474280cd3d3f0db08bf994",
+        "remaining_horizon": 61,
+        "selection_rank_sha256": "7a08c7fe4274956c4094e4960d2425e21706a9bcc7eba0f6a69e69a29cd6ea61",
+        "step": 159
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "67b56217be6037f60b1da17487addc4a0f5bfcb3fefed56d2750bfb0ba883ec3",
+        "clean_boundary_state_sha256": "5de586fd384dd92f88ef492e5525e10eac379258a3ecde532edd066428b42a91",
+        "remaining_horizon": 159,
+        "selection_rank_sha256": "7ac1aa9deb2b7c8ff80c7f8ac6438d97ed746d6d6a2d40052d69d42b8e49e5b5",
+        "step": 61
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "97bb58f842a5c36cc2ed2e2b05d27a3fdbd6afe23fa14697019c3de610de583c",
+        "clean_boundary_state_sha256": "b750333689526823dc87c28268aa3b8749c8097c57b81e2c9b25a8fcff5f53f1",
+        "remaining_horizon": 30,
+        "selection_rank_sha256": "7d5d508425c6f9e504304d023048eba169df67ab088ae49e148eb724632dfb09",
+        "step": 190
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "87cdbe29bc4de19d83d5b095f4e7cf82cbb89433f2418ec59ed81ca0dba8399e",
+        "clean_boundary_state_sha256": "2bcde1d7e1d6fc8c886c91f2395d9c83e5d1e568ba0094905790648857f3bcbc",
+        "remaining_horizon": 51,
+        "selection_rank_sha256": "7dd0a0f8d2d97800851cedaef08812718adbfa6e1e14e442b69e70c8162dc7af",
+        "step": 169
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "40823079dedeb43fbc1fe7abc17f82e3bf970f59fb9643ba5d36f5214965df73",
+        "clean_boundary_state_sha256": "4c26eb40ca460a9ef6cce8e1dbcccf77b48e9d0e9f4157e1d98a935a4bdcf130",
+        "remaining_horizon": 43,
+        "selection_rank_sha256": "7feaa44c2640db9b82272b5908d4c4c65ad31a20e9f6dd855eecbfb5e4c1fe7e",
+        "step": 177
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "a32fe36706958fdf353dd78b5c5804adbdefc8da1d8d86a8f65343c0231b8241",
+        "clean_boundary_state_sha256": "e844497a055a6ecce31e21242c5982db40193cfe0a44d642f8cdb6bff1729699",
+        "remaining_horizon": 207,
+        "selection_rank_sha256": "7ffcf4eb05db12e78ad06578d45a45ab15a01bc7ddb702d3ccfbfa973dd48e5a",
+        "step": 13
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "077bc211b1a892a8dc8401f0e006e08515a43a85e1c910af9a6863a0236a43dd",
+        "clean_boundary_state_sha256": "8b7d61ee2f75aa2720570e059a5a95174279c617180aca758a48d32d8e750a59",
+        "remaining_horizon": 111,
+        "selection_rank_sha256": "8119c95e6c5d64fcabe1ac3506be0982243a09db91ddfc7ed91296f3e65e172b",
+        "step": 109
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "cb1222723918fe6db379502a87437c6b809a5d1dcf036985a1fb7c35aaabb856",
+        "clean_boundary_state_sha256": "a3705d8682be9a60dcceceb3efc8624338c0e4abe365fbb29f90035193efeb42",
+        "remaining_horizon": 50,
+        "selection_rank_sha256": "83a88bc255c63d29af2b08d2c2126250b7e2f5238dae2fe0e17ec18485f92530",
+        "step": 170
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "299ac96cd3dbb53b73eb934bd13d3a002ad72c64b3c5865337339e81993fa44c",
+        "clean_boundary_state_sha256": "654116a3c121a1818c93cb1534994986fb4265104beac2f1849a3c84e8aab5c5",
+        "remaining_horizon": 172,
+        "selection_rank_sha256": "86da0b65a8056486f577dbf0715137aa4a6e5fa0c15ca39cd4c9f06f971cf78c",
+        "step": 48
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "a507181294de59556f6a7f3cdb2412d8e8a5c611f8e96bf689b6a2d4cf4b5748",
+        "clean_boundary_state_sha256": "467c9f6f27218bbec8651517c9ac885cc4a7ae469970d49b17f5c7ec98626fdb",
+        "remaining_horizon": 165,
+        "selection_rank_sha256": "89586199632d1fc562d7f3550c2b21286e3bd41386f96eb2e982b877c70c1f3c",
+        "step": 55
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "f2c90fdb62baf051dd192439b27177947dc511765d8086fe020fadada50d014c",
+        "clean_boundary_state_sha256": "3c387adadafc7b12b05abf4ac4a1c8c2d0a0e2b94a0ef9dd99cab14ebc5580a2",
+        "remaining_horizon": 214,
+        "selection_rank_sha256": "8b4addaa4415373dbd218ab7644c9f8d1aaeafc8e645755a4dd479007cbd1428",
+        "step": 6
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ece124d9321a9c09692a79246fac2c54dff79f65e819afeef3b13eac9c5751e8",
+        "clean_boundary_state_sha256": "6b61c316a0831258b9e3618156ba985155f08940894651d2f3f6f93e95d1c3e7",
+        "remaining_horizon": 69,
+        "selection_rank_sha256": "8d5e1512c3479af755aac1103743cdb97a1df0dbf6d90cce0bccbe2e59b21257",
+        "step": 151
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "03f74afdac4ee3ef527cf0d171f8678a6ac58502fd7ac9cf4982261d46dc18a6",
+        "clean_boundary_state_sha256": "c97537bdec6235c46a7f241df34a26e55e7dbb3379bb077f0fb14595b0a58cab",
+        "remaining_horizon": 25,
+        "selection_rank_sha256": "8e199407d91b1fc3c615cd3f42ee0a50f2d4739992d83801cc215c4895f2aef2",
+        "step": 195
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "e37c735e0717b84f768478dd0406c4d8a4fc5574cbf5b5241b78863614356b4e",
+        "clean_boundary_state_sha256": "7a719f385de883246d5c771a30f48924b81d73b40a60a2bb44591a83e8d0987b",
+        "remaining_horizon": 213,
+        "selection_rank_sha256": "8e993e6cdf4661e5bfbdaebf73cdd53792b71dacf1fabbfcb17bb92bcdf1b12b",
+        "step": 7
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "60da90d29f3e30c443637087f78537fbf5376cd441bbd4c09d7a73d442dabce8",
+        "clean_boundary_state_sha256": "a13e9d8a6b7a2a5e0042e413bea676a7a7253783e6b00371d7dc25940242eb63",
+        "remaining_horizon": 20,
+        "selection_rank_sha256": "8f89ea521da56d491916c736e6adf449c88e3151e33be4f3025900499da8f26b",
+        "step": 200
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "84ec361d6480623007b4817a649abb37598947ec57b4f4c0cbcd726c0f62564c",
+        "clean_boundary_state_sha256": "f6be556f3a66fd824e1de89eac885fa3a5052066e253c12ac0a16670022e30ed",
+        "remaining_horizon": 201,
+        "selection_rank_sha256": "8f9a0eaef3196d02e95262eca16870b3ce8ab6e221b10924da19e4cb0c68de6e",
+        "step": 19
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "a567dcb73e7ad3321dc9497cb126b999a9cc0625d262c79e76115b8b1883fce0",
+        "clean_boundary_state_sha256": "857d120a5a4c9669a91fb6c6421a0161c4a17825c731b969d714d1fe0fb70f06",
+        "remaining_horizon": 169,
+        "selection_rank_sha256": "906c320042b0628a7962a335f6e2ed2cdf833bd948a5eec2f194472b47b14959",
+        "step": 51
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "f9e7531e408f4230b9616a67c4625eb7f9c736f63b967cd64916a84466b823f2",
+        "clean_boundary_state_sha256": "af1433bafd7dfaa548bc5c61938a00aa3014fadb172e0b28972e5553d0513c2b",
+        "remaining_horizon": 29,
+        "selection_rank_sha256": "9174211a7fd0316020673588eaf36e97559288536fce8207e9549cfb02e885c9",
+        "step": 191
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "991c41efe844676643071327e22e0f822354b4f147a53a1e62dd4ba9183c75c6",
+        "clean_boundary_state_sha256": "1aa6f32e1625613afc84a155db38542dc626ce3b20a2c2da3dfcb2c297811691",
+        "remaining_horizon": 200,
+        "selection_rank_sha256": "92a687a15109814adbffcc2e78ac01859913c691d70b4fb8521720dcf8ebc81a",
+        "step": 20
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "b0e26b94116cf94832e78b75f7248f9d9f52dae47fa73ce0e08f1ac44188329e",
+        "clean_boundary_state_sha256": "69fceccf6784b82c941c19d1939235310bd9123016b173bacdafeada94cbde9a",
+        "remaining_horizon": 87,
+        "selection_rank_sha256": "9342821719681ea7c750ce793356ea92b1579796d63d2fe9be5f7400a9bf394d",
+        "step": 133
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "fbcec8d9a81896ed0b59e9beb5ab2ddde69176aeaae1e9fe714d7be51f79292f",
+        "clean_boundary_state_sha256": "39f61448bc01e24c185728953565061a322e75706e5e390e8d9aa5d035900fde",
+        "remaining_horizon": 138,
+        "selection_rank_sha256": "943b169f77a3d248cc7ada447b152ead10546e197487a8161a2af928141c9a4d",
+        "step": 82
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "577c2a0fd95f613e43883481ad855c7a612d4a056c0f0bb92b2226c86c9eb61e",
+        "clean_boundary_state_sha256": "cf44160ee0f97fbf66c11daa5faad703a69e14240f3a1ff51705db0b8749084f",
+        "remaining_horizon": 177,
+        "selection_rank_sha256": "954df1f1d86503f43064c2f872d8329f20b145995a23307d280b5c2e05bd3b5a",
+        "step": 43
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "5ee3ddb3bf95d861f1e16c46c61214b6d693fd97b1fd9a3f9c76a2b002db59ea",
+        "clean_boundary_state_sha256": "18fb74cc9a094e55551a70b14d6a818765646e30466140ed523afe9476858d2e",
+        "remaining_horizon": 205,
+        "selection_rank_sha256": "9556d0b65c37dcd517ce986d56ebc5c419accaa750aa24292cdf5f6d14156a99",
+        "step": 15
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "c7927a875d4aca12f9f65ab656203e09b9c49be6c579203ff18bebd00891010a",
+        "clean_boundary_state_sha256": "1c7df4bd54e6d8881ad2eee122c72c56bb09c0b803c8f14b28ecd3ad7b5b4fac",
+        "remaining_horizon": 88,
+        "selection_rank_sha256": "95f9ca48b9a904890bac647f73c1d12788d9973af08251274834f94b55472086",
+        "step": 132
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "83c9559aa781cd2dc62341d1fa63d07c7cdf2dd46d8e0f06250718e80066c68b",
+        "clean_boundary_state_sha256": "4122498265ca113103812a05ed2a1f3e5d122b69a88b7a289b32d18f8d4fa205",
+        "remaining_horizon": 157,
+        "selection_rank_sha256": "9b5d7cef3d94709e43aac3d5364825895189900a803f348fc0fe4cc6bd74bc3b",
+        "step": 63
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "727b829c6d49817737b428cf05df885c5465c766ee7947bcef03cc04d00db0a7",
+        "clean_boundary_state_sha256": "48b7d9baa4f753b8f427d78ca60a33cc4bebc5f069c2432560fab86fc06e107f",
+        "remaining_horizon": 91,
+        "selection_rank_sha256": "9bda55d7d2d1eeb623b6b4b5015b95e8992f7f2a4ac2a9562236104a9372d1f5",
+        "step": 129
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "2ef3d174e319042f6c36830829b4b0b5f1f902309235cfaa4005ae520337df35",
+        "clean_boundary_state_sha256": "e858f0ddb06727936c35771333fe6e9f09d081a48357c46bdc59a3123d9361a3",
+        "remaining_horizon": 186,
+        "selection_rank_sha256": "9c2ff609c965d9139194958d36265d69bba852bb9d6c55bbb586ba2111d09d5d",
+        "step": 34
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ab8ce11c1685054b9b145a707549e37855bfcdbc090cf9d23cf13442674e8be8",
+        "clean_boundary_state_sha256": "e0b578c99b9561f698e4676e2a2157bfa6c1cc6ff6c34f3ffecf796765bd61b1",
+        "remaining_horizon": 104,
+        "selection_rank_sha256": "9c7c1e7ae2a9c70ac52416f522c012ee136ce5f72d134ef2f82ccb2d4bcff578",
+        "step": 116
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "f8bd21943e0688848a39b15be92ef97d08431550a855ea3280e70243da9e5ed5",
+        "clean_boundary_state_sha256": "4a0c6af39c6d5c87bbfc1fea40eab19ed3c151506761434a69a73d2eb15bbd2b",
+        "remaining_horizon": 56,
+        "selection_rank_sha256": "9cb13694d6439f6839e67b7754a6f6bd36bd8ece14ab1d5a847b98f896c3ff19",
+        "step": 164
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "7eeeff51bdf2754c19e39c7ae856bd9020d8eb8a778a78ddccc2afd6e8f6593f",
+        "clean_boundary_state_sha256": "baf980c728295bc568c19be3846ec38be44c9201cbbc68737f81ba4ca17b216f",
+        "remaining_horizon": 40,
+        "selection_rank_sha256": "9cc8032f55788b52ce21382276771d3632839d663aae30ad32e748ce776469cf",
+        "step": 180
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "5396b82b98d973e47a5ff368a9ff944155b054d1f39540d92b2b17e8f4fa3202",
+        "clean_boundary_state_sha256": "adb3d6470e01058593e5f5a05cf486be766242a780209bbf590546175d7da29b",
+        "remaining_horizon": 206,
+        "selection_rank_sha256": "9dee7e33f1315623dd109285f674100165ff9678a8bcfa5c58c1fea93c237665",
+        "step": 14
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "714c9de97427382370481eaac726ec08a340c57959638c31031b03c688f5431e",
+        "clean_boundary_state_sha256": "d21173be62f6a52617c7608ba59caba08e415737a9ca2bc30d610edd3277ca14",
+        "remaining_horizon": 36,
+        "selection_rank_sha256": "9f72f29d7faf981dcdc8c9301a05fcbdd3daf37d3442e98701a9fb6765b5b7f9",
+        "step": 184
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "6a41181e233b0b8d58e6ac09ea7497629a7f8d1383bff2de2f07ac4899053b65",
+        "clean_boundary_state_sha256": "3346c6823530bbba33911550e1c6ac31694bb3e78fedc943e7abd8e7d5b31681",
+        "remaining_horizon": 189,
+        "selection_rank_sha256": "9f88438d949928e49598772ab2ff13177e188fabdff7d905ba5eeeaa6794cad6",
+        "step": 31
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "fd0333da40553fb755f8867f08a69c72e2ba451d4ed46765ad60bf314960fdd0",
+        "clean_boundary_state_sha256": "cb02f4db5f57e6d4c8dee94987cef22f040de97d2678dc54395d6bbddf3f8ddf",
+        "remaining_horizon": 160,
+        "selection_rank_sha256": "9ff857ed1d5f6d525641ad2bc356f0144aa15903be4dd96011c02f92b3e51c64",
+        "step": 60
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ccbd523ef1be423619aa19c29eaa1c9a76c0add1568abdd4b6665cdcd5301f79",
+        "clean_boundary_state_sha256": "ab7960a2dda04ed4849bd957a4e691e9d25a415ee58a0e3388a6af3e539b0732",
+        "remaining_horizon": 55,
+        "selection_rank_sha256": "a07bf7199063b7a98c99ddbffeb8164e1dc9be48907c95e75fd3fc76eb16abdf",
+        "step": 165
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "18736904f8779d2b78b83d02d833600b8d72b13d12f5ecc6848363db157093c3",
+        "clean_boundary_state_sha256": "078d4c7ec50e1842115b71a9fa76244eb11476fce4fea3de44077fa516dc2807",
+        "remaining_horizon": 103,
+        "selection_rank_sha256": "a22cd069ba6521f4712c31645901dc4a093f5891adeda07abc9f8763e1037170",
+        "step": 117
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "dd0f0e2d8c75efb05374111b700d86caf9c4184bd71f4d2d7a36ba0c0462897c",
+        "clean_boundary_state_sha256": "e17e54c385a36669ea5a0d58f46a563832838c5d8c21159d2c48d35789a3823b",
+        "remaining_horizon": 208,
+        "selection_rank_sha256": "a328426e11e4e59038deab8928d61cbbbb225e456dcf691313364dab64e9cf37",
+        "step": 12
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "b65d1d80d5a573448d205fb770fb2ecd88b9d56a20be22d659387900960e0bab",
+        "clean_boundary_state_sha256": "e674e355b47702db74c8ac3c23a023a867abfb7d1f1e3f7b071b882b51e0267b",
+        "remaining_horizon": 190,
+        "selection_rank_sha256": "a344129ab552320d5921d130a82622f54f38202a04ebb6aa7d920e3ad2123e74",
+        "step": 30
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "00cb88cabbbe8b3c94aac5df1d572c7ae5fb0ee88331574e468b01d06b590f3e",
+        "clean_boundary_state_sha256": "435c409be72589ddc987b143cedc96137e31fdcbc5d1875100af1131aa39cf38",
+        "remaining_horizon": 76,
+        "selection_rank_sha256": "a367ba25f73dbf90d368c2eaafc8bd0a318760892e3b6db790b94cf16c1a5c53",
+        "step": 144
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "b9fc4908f61b4745852a6674ddcfeb961028ed42ce4e4a9a6b9dcd49dbdae626",
+        "clean_boundary_state_sha256": "0fd78d9176b2f4601003766145392b5e5b0d8757ec5b92bd81deab00435e6de5",
+        "remaining_horizon": 82,
+        "selection_rank_sha256": "a4d7b001c42bac78d65c6d44b9b57805a4e6d3d3210c9c284076f0137ef4c38d",
+        "step": 138
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "3f32928a85b7257ab420fa34680e52f8852875401be19b6f513eb5ee57a0e8c8",
+        "clean_boundary_state_sha256": "d386b419cdc16ead13d9099c95c9b821ef2376d2485281cc785829019fab4a7f",
+        "remaining_horizon": 39,
+        "selection_rank_sha256": "a58b566112b8583550e99b806f1b49e5640b9929fd12211da7a9c068256d7504",
+        "step": 181
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "90369e736e1fa28d5d1cc89f1ef1d61e47061b5460c08219517023affdcddee9",
+        "clean_boundary_state_sha256": "2b8e0cab7713fb569f395bcacf4f7026b1b881e998d08995032c4735997cd1e1",
+        "remaining_horizon": 105,
+        "selection_rank_sha256": "a6211de99280ceed3c4ee30bca4dd497c4092ca2b7bff26a7de2e31d4f8a4cfe",
+        "step": 115
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "aea314316e177245f0015d61c6fe54f12cafb6dec1a69941052a74cd4c8205e9",
+        "clean_boundary_state_sha256": "590ce833691ad5be2eb3a67963265a4662934dc7d191f2ebd27d8697f343e730",
+        "remaining_horizon": 28,
+        "selection_rank_sha256": "a648e7d8aa2c24eb137ff4587c5bb1f39b2602b22595f567d8bb359babdc0848",
+        "step": 192
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "500392ebeaeb5478020beedb89001a325eaf52274fbb020f1d2d134684ce74e0",
+        "clean_boundary_state_sha256": "bd3a963f9894b8f58efa86b9fdcafc74ebf22af4f4bb724cc303f414f219abb4",
+        "remaining_horizon": 71,
+        "selection_rank_sha256": "a6c95aa1fef74e99bc1313d5142cd21941ebc7b8364ff4ad4231cbf8f2b75f6a",
+        "step": 149
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "c794b74073af3d0b9ca076aad048001fafbe29ee7612a3a7cab620a13ac7d733",
+        "clean_boundary_state_sha256": "2893dec469c9193841e53c56647f517aae655e6cff9143a1edab06bacaf869b3",
+        "remaining_horizon": 129,
+        "selection_rank_sha256": "aa0039b778f9b917aed009b7382704f07e1bad3953ccf64ce83913c2bb689ebd",
+        "step": 91
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "d7deb90ba4dfbad08175549acad7803d3a22e60af151f5f4990a9c5169442b5b",
+        "clean_boundary_state_sha256": "a95ff83b1e31fea87a5d4cc8dfd38dd7b4f35ba89202102f8cdd5b096a88de45",
+        "remaining_horizon": 137,
+        "selection_rank_sha256": "abc8cad7bfe9a57bd12ebcd4e675bbea81d448458478aa057847bda1da0791b7",
+        "step": 83
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "28529ea40a0867b59608d251928c08fca72ba82ae885408d060e404f8cc69193",
+        "clean_boundary_state_sha256": "593b9e8fc64340c143d7a656d88bf099722fc2c521596b714d90439cb4a303a5",
+        "remaining_horizon": 184,
+        "selection_rank_sha256": "ac5d58b5d4fe522aeff77ebbfa19109767706fda0b5dc7dfeec9b323613adcde",
+        "step": 36
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "d825772b2028d7c2928bf0db925d732eab37f3a3196712c4af23d267b8cf16fd",
+        "clean_boundary_state_sha256": "a0677f34a6958f9cfd31c2ee707bb03c16d0147fa5fad17820e6cec252013b84",
+        "remaining_horizon": 44,
+        "selection_rank_sha256": "affd929897cca32f1addbcf616aa4d8d640b9b629c838545a166a209de2283f5",
+        "step": 176
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "cb3b099ca20bbafdab5d648af732462a4d848a85188e9a63f3815b9b61c18e2a",
+        "clean_boundary_state_sha256": "41456a6918d97989b83ce36177233cac73e2c322efa9730548b6c01941a1a0c9",
+        "remaining_horizon": 146,
+        "selection_rank_sha256": "b1dd6111d4a87637170352f6a19bbf2a434053e12dd7d3fd680fcc8b90cc3bc5",
+        "step": 74
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "9629e3fe1cf03a37b8c086cd5466b34b1a5b6ab2311427a4f4bab913238a6597",
+        "clean_boundary_state_sha256": "a72f844d7216e31f8ea5d0ac50b385b40a658c654747287bc1a0deb44a93a16c",
+        "remaining_horizon": 116,
+        "selection_rank_sha256": "b51e397ecb8a0872349207903348874d98f26f64016d274ba696dc6305766ba7",
+        "step": 104
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "594354545e34198dd1a74bcd82544368a02036f7c53df2e20bcf23f6d0e22cc6",
+        "clean_boundary_state_sha256": "6006d0b0815832f14ac60dd1f52c9fc03fbfbd10d786ac2d9d0ccd807f2adebd",
+        "remaining_horizon": 171,
+        "selection_rank_sha256": "b5be106437a386b28c7ee09f2cad0c3aba29cdeeb86c09f7c0f8b787f646cdea",
+        "step": 49
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "4340d197780424543391b530a7ee755d72ef1be5c90b3c77f3c52175c3d9a4f4",
+        "clean_boundary_state_sha256": "1693d38ba831c9a8bcfdd5eee06829c77703d11fa340ce33bf1f2d5485fe3a56",
+        "remaining_horizon": 60,
+        "selection_rank_sha256": "b81b37eccae6569272bc5ab7b3e1c678b40154f2951909d7e8cb26bb5c5cf2e1",
+        "step": 160
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "f407e921f45af19f0500eec74eab4f0864a4c368df186654e0fa605df3c8e55a",
+        "clean_boundary_state_sha256": "c57e5e8c7a272c977d574128ffd6274ef1f182f7f3270244cdc2dff18407f168",
+        "remaining_horizon": 70,
+        "selection_rank_sha256": "bc9154318f07e6e7c0c9529106c4bc76ffa568f2b5ed7e1612ddc05c358a32a2",
+        "step": 150
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "fd595721569ea8df1d0dc0a0ad8b5b2b4fb6671647463c59369baef32b405f3b",
+        "clean_boundary_state_sha256": "78e531bb7450dad3e45bc6d401a1cf09c75949822831a4a762c27e2a699fd229",
+        "remaining_horizon": 117,
+        "selection_rank_sha256": "bdefe29cdcc3c27b6712a387d28090a133ec38cba1cec6cc031dd3b8bed29654",
+        "step": 103
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "54f28a0774d895722c77391ae07a4dbe76aee20651b9727b35d25538343f3f00",
+        "clean_boundary_state_sha256": "d350cf3b7e3232e3233a0955d0eba4d5398ad2df0710635aa7634441a8db7b34",
+        "remaining_horizon": 153,
+        "selection_rank_sha256": "be8fe16b21a1f5b84b1fa156e4d3dc999b0bdff460f33ecbb26a2bad8799172f",
+        "step": 67
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "6faf5c7959c41bf9e3866ce907a0e8a6d4308b54ca396228007dc0aefa848263",
+        "clean_boundary_state_sha256": "09aa5dfcaa38307f38fbbff6ca0a32665dc8e38545befc0ab94c4696a6c04b9d",
+        "remaining_horizon": 66,
+        "selection_rank_sha256": "beb2b1790e94fe7e32b67035b7fd3c403c340c5353d7ad6ea5da20aff02aec97",
+        "step": 154
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "7a93976e99f755ede0a276437faa897fbde340d2fba0b8a6502fe87e8ecce044",
+        "clean_boundary_state_sha256": "783052318712c100b48c2edcb4e9f26845adad058989065c7fe49926cd72557a",
+        "remaining_horizon": 98,
+        "selection_rank_sha256": "bf07b1ce86dcdfd4fbd35ba4ba43dfeb872f8fecf0330da62655f2dffa3dee04",
+        "step": 122
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "fe245042f15937aa5a4995a34dacd71c6b99832fb9ba45923ad9b07ed31ae0fa",
+        "clean_boundary_state_sha256": "f93f4d9048c662256c105463e9d9afcb9e80e5ba70c3a5b61bc640b845fb08d8",
+        "remaining_horizon": 75,
+        "selection_rank_sha256": "c5eb76a866d5fe907fc39fa8ae53470188068fbf2d403549f6226e92279bd31a",
+        "step": 145
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "52f2fb04e493b63b047200291757515e8c02ca139b349e64109329fb53108451",
+        "clean_boundary_state_sha256": "3f500f35d39ce325c5f09372f4e5d0c01152387a1fd7f54f4cda6c4996d5fc15",
+        "remaining_horizon": 179,
+        "selection_rank_sha256": "c6cc289e2d97b4a0251e272624da96210991f271eb4f71cb99ec7f2ec16cf760",
+        "step": 41
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "d470106080b6f9c2d97ae3788804beab55d82fb72245b8c03376d1f53f8c54d5",
+        "clean_boundary_state_sha256": "dff4bdc67aebd6bdb2365d4666c6a2df9a7ccf5f515e97fa4634f3c16baff92a",
+        "remaining_horizon": 166,
+        "selection_rank_sha256": "c750f05a8a4cf51babb50c0442dc52805c52f828b84a090fcef88b700f79f0a4",
+        "step": 54
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "bf32476e99d697e65fe364fd7af7c93935c74542131e2118e7485cd927a32a48",
+        "clean_boundary_state_sha256": "48bc5ddc43ec9d45c070e6e2787181321d21fbf7f60b9b73acedf23585c896b8",
+        "remaining_horizon": 187,
+        "selection_rank_sha256": "c7d8b0f67bafd64777b8e22b81fc7802a9fa2c6a10f7f940fc68a27cbbf41ac4",
+        "step": 33
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "318845eca93377b4aedcc76ef4047f00dd162287644ed37452285ff20c6eebd5",
+        "clean_boundary_state_sha256": "ab5fe69668a5ea980512c86258bb5d79f1df9e3b90aa41d6932f40ac4930c779",
+        "remaining_horizon": 65,
+        "selection_rank_sha256": "c7fa33a4d6b9e206785e788c3134d02ffdcab885f93dd71275945e4d60f3b2ec",
+        "step": 155
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "bc262d7e14a47224c20515b6c91e7ed7dbfe714389a47581c4fe90c96f89577f",
+        "clean_boundary_state_sha256": "3bb015e251fc77e4fb20882db27c9d6e6ddf67ce69a3bea8a9fb5518afd7809d",
+        "remaining_horizon": 32,
+        "selection_rank_sha256": "c892ecdb6a5585975c78073570e41a3e5bb850b64a7443c92fcd0d058de8c7b8",
+        "step": 188
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "44c6d69208d82ea9479e6977c78b767daaedf6d06446f605a44cdf8a468c6e2a",
+        "clean_boundary_state_sha256": "4830608ee4265ef54bddda6f38770bc253f7f022923bdec956855c27b7d949cc",
+        "remaining_horizon": 188,
+        "selection_rank_sha256": "c8f0cd26360d61b9b50e748888ee8f2c39bda967728df65620c0c37c65599902",
+        "step": 32
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "1e3302ee3405b613cac447bc2b4e1c671f905ef8f5d4a4b5daab00b73a0a36b8",
+        "clean_boundary_state_sha256": "6f0329038d793d574b7becac3e135b110c5465468148860f8715173b1979071b",
+        "remaining_horizon": 83,
+        "selection_rank_sha256": "cb3339c81ba9bbb08ca21f64d467ca86e82326fbd1eeb0b91c0cd443cadd10d1",
+        "step": 137
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ea0fe291d9cce711f09c65ae5bbe9c95ae482a2e902293a354c77e8ae13801e6",
+        "clean_boundary_state_sha256": "1464c907c0d22ff8a3d14a09d0bcbe22e01ea49d6dcfacd13d6e4c0aa4309e04",
+        "remaining_horizon": 125,
+        "selection_rank_sha256": "ccc42a042be038c6f9a2c768469cd751e645169ddae6947bc5fa39bb6079699f",
+        "step": 95
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "19dcee7025b2cee7576dba1b2a835634b0de1e21068a4c05d4d27e85aaddb21a",
+        "clean_boundary_state_sha256": "688606109cd8496c399339d42b1fec7a950e86260c6b1d75197f1411f216e6ee",
+        "remaining_horizon": 155,
+        "selection_rank_sha256": "cd9048d46b18deb0f703293b0a4082bf93b7b39e201180752ace0f2b7b08bdf8",
+        "step": 65
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "4b8dc9550d771fcfcd296305fe229fbd6c13f8fd9ad8f609a21e7aea72afbc8e",
+        "clean_boundary_state_sha256": "3e8cad80a3cf01ee514797a5e5a15e6f636115803e91b2a429fb528d5d4fefbd",
+        "remaining_horizon": 212,
+        "selection_rank_sha256": "cdbdd97a980cad9d06a453368eb811a0dd1bbd0d9bbe35e23e37aef7191175fa",
+        "step": 8
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "25f7b505af7f721a7111f28ad1ff32c11b28104fe0dd3a118a514a1d1d244e7f",
+        "clean_boundary_state_sha256": "cad139cf8812dfc566da02d5bbaf9669c2d78ccbd57e8f7096cd8edab9bb5390",
+        "remaining_horizon": 101,
+        "selection_rank_sha256": "ce82ef217af3ad8244206f88a790ff7429b1dac7dccf58ce1ec7cd2485cd7225",
+        "step": 119
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "9ad2437a39b9aec92f1921b5089087712013c20363abc6ee08e106282a06f2f9",
+        "clean_boundary_state_sha256": "a214904256ec1cc9e7832c64378bd1f8decf42b3a9a049e8ce4a0bf76f00ffc8",
+        "remaining_horizon": 127,
+        "selection_rank_sha256": "cecdae21330f754ee43aab527589d1e8e3697c30f2f4675cc961d6cca152dad5",
+        "step": 93
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "c9c751c8baf92885898efa4d43bb7004fe77dedfb946ce7e6045b45e8ceabf9c",
+        "clean_boundary_state_sha256": "7bd2d1a1ff325b71f72f8d590d03e7304a051b8d6af355ad705d09814e82d0ac",
+        "remaining_horizon": 24,
+        "selection_rank_sha256": "cffb24bcf7dea378f0b02e680ddc0cb47cc1d19a9893f7edff2d9b577ef3fbdf",
+        "step": 196
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "844787e12b56024f6d8d5f61d66d867c126f3e819daf391f79d22b11817a66c5",
+        "clean_boundary_state_sha256": "567954fca5fae9560811eff634626f84293f9c54ebcf7dc6a6d04c6179326bdf",
+        "remaining_horizon": 74,
+        "selection_rank_sha256": "d04a14f6f6a690067fb5bbf4fb9801c9a6c3a6c588d2470744357e0836baf4af",
+        "step": 146
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "13742bc3210b6303e2761ddd281d405d0b2b46df3c37e84b061d5bec5e41690d",
+        "clean_boundary_state_sha256": "6f030ef51b8a7dc64a8c674868b039a304781b62037044c27caea009c6822b1d",
+        "remaining_horizon": 73,
+        "selection_rank_sha256": "d194238dead9e6569f3f0c496f5a53a7752428ff1dc0a1e5e55386c7a5f7dfad",
+        "step": 147
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "8ddf341e673ec48c32447877d3d37d9b69889c830b2039a5070f739c1ec1a6e8",
+        "clean_boundary_state_sha256": "b5984bfe2c8b608bc4c3d88ceb920ab3884e60b9b3315bf3cd204144c7e6fa0b",
+        "remaining_horizon": 120,
+        "selection_rank_sha256": "d1bf887670bfe911fc013d9d5642d1a7b423b472e130ca1148009262ca1f5dfe",
+        "step": 100
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "0d598bb52afe8554aa748462424f98880f0368e5ac5eb398e6765eb5a303e159",
+        "clean_boundary_state_sha256": "138fd92403612d27a2326e2cffb980614e0a72f08710a1b0398acf6c1164b331",
+        "remaining_horizon": 198,
+        "selection_rank_sha256": "d28584adb77b4c022c2c2fde9354e4843233edf7c277fbb99f8d9481383d22ba",
+        "step": 22
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "28c37054f99759218acd60cdde15dc4a3e6340bb5ddb874045aef49b0d62f627",
+        "clean_boundary_state_sha256": "c4baabb9babc2480f7c736d58ee9793ad8972572013f468c041a10eed26f9c80",
+        "remaining_horizon": 85,
+        "selection_rank_sha256": "d298b3d449f1da37a02c60aae60a827f2099f6a38a8050a52219ca29c908c176",
+        "step": 135
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "532355fb7b793700ee1f2405cd572ad29526c8be6bc3711cff0971d5a5f00f8b",
+        "clean_boundary_state_sha256": "b569d19479d68ee101afe0c31a0d963d7b490f31aa99d00a9894fc6ac7219ff1",
+        "remaining_horizon": 53,
+        "selection_rank_sha256": "d2e6fa1e51db17889f554c2f536ebcc6fd434344a85a0f09ceee2f029accb57a",
+        "step": 167
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ea20fae5d96080ad1ae04008fcd96bbfeba45267ad7ee4592f0d5e5459e58eda",
+        "clean_boundary_state_sha256": "16b5f767fafecd5fd7a90e1c1d5a7fa945ff82a0a471a3cb915ddd5034bccb46",
+        "remaining_horizon": 150,
+        "selection_rank_sha256": "d4d5407694b20c6206a5dd1b2f0e712e18b4b3aa01dac220292e615619140bc9",
+        "step": 70
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "233a0c3b02cfe81a24e43fdbd190b5ce828109fda659d76c249ffe7ab11a5923",
+        "clean_boundary_state_sha256": "c1c212c9092164bb0512c7d11df722594843b77e5e851c63fec66955c8b6452a",
+        "remaining_horizon": 195,
+        "selection_rank_sha256": "dbe1575a078dad6c6303ae80db2bfa029f7d24e19bf12aed4b9182b1d6789f10",
+        "step": 25
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ea7aafa3a992cce592575be8ce68d0f3e06f3d99a60fc7f845d8c1c850f0c3e0",
+        "clean_boundary_state_sha256": "d495f4e794230e6c897b16f70284e66445de2005520f551c07da67b09ef3c4cf",
+        "remaining_horizon": 62,
+        "selection_rank_sha256": "dc2b6b07f60958ed1839aed02570aa2bc3e8d6ea732f592d1db2bfe07e56ce27",
+        "step": 158
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "7759e82b189963b349f19ad3f49a1ed004e1343a8b681363d179f8d95751ed14",
+        "clean_boundary_state_sha256": "7e60c68593c548eb4461e6217830c58813cf42d3f01dfc74c0753e15f682173f",
+        "remaining_horizon": 92,
+        "selection_rank_sha256": "dceb942f81e01a619c298a375922d6d428559dbc4c144c59fd39762302cc3df9",
+        "step": 128
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "338f47922cf164492093ee3db0d5f025c9322daadd71b65b398f5a3da0aa0f94",
+        "clean_boundary_state_sha256": "33b2eda20582c8590394b05b672ea02dc3027c0f65c6e06bd14b2f7ab6cbee90",
+        "remaining_horizon": 218,
+        "selection_rank_sha256": "de9dd42a46ea71a28ca9399d892b93d04a87e3192eeb1284d0e7dded3e8574ee",
+        "step": 2
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "27856d52fbbb9b23554863135e346fd8ee9e61212f1e65fa647e9b26a2fe4c24",
+        "clean_boundary_state_sha256": "6a3993b94bc984dc9f11051dc49c5005e17780e32c6d7503cc7579b1caa0582c",
+        "remaining_horizon": 164,
+        "selection_rank_sha256": "df180a04f71015eacffd1e567b2815a054605c717167fbb46992e6bd6d1006b1",
+        "step": 56
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "9b0c5dbf52b0525dcfeb5416d80591f8c520c3f06c16b83baf29c4b5600ac68a",
+        "clean_boundary_state_sha256": "15d696b2548c5f427d92c8e7c36a250f085c712d4f1343825b0613b4aedcf2f3",
+        "remaining_horizon": 192,
+        "selection_rank_sha256": "df66802de1442e5a6e95f4b780bfb7e708fe614b00a7d885c944fcd35a5ecd60",
+        "step": 28
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "45ca666d2924aea23e7f6303294ed0415a83cdfe192a28bf7b24f89dc874fb25",
+        "clean_boundary_state_sha256": "0b3b191d00630ea0f1f71f4b418a2e5808fb07ba353e500d314c430d273abc77",
+        "remaining_horizon": 59,
+        "selection_rank_sha256": "dfd60b7cdfe998040b1ed81ed047c03490b9095099bc8b9f10d812dc81510cd7",
+        "step": 161
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "e4fd8f61137414d0d4373f7d59d8128f62820401f01041778e9f0bd8e3e4c9d8",
+        "clean_boundary_state_sha256": "094c91baa410514f394e41a2236d7ad91114de51f44db541b5dc19618558f3fd",
+        "remaining_horizon": 145,
+        "selection_rank_sha256": "e0b3ad1145d9ae2084600a5e5f742621b28fa2a7bcb2436fe3d057841979f30f",
+        "step": 75
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "01683622e1925dddf590748d339865f86f1e548aa95f096b3565f2626d79abf4",
+        "clean_boundary_state_sha256": "18533ce260665ed7257f47c47274e2cd45d86c6ef7d773bbefa378d527d9cae0",
+        "remaining_horizon": 115,
+        "selection_rank_sha256": "e0d6714b211d1aaf64d60f64ffc86b2e92ae8910efd6fe36a14a72e5e722e9f9",
+        "step": 105
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "dccf017bde5e83654c7be50ae07fd888238129558d2123cd03bce3073bdb6855",
+        "clean_boundary_state_sha256": "c3b335905b1f1456b3218b792d36e11de1d81a1abcaad534cf8c0615c79144c2",
+        "remaining_horizon": 126,
+        "selection_rank_sha256": "e147df89ca353f5ac7f31b3da9143e7182a262dc299a3bf75d8fd7fe777d3515",
+        "step": 94
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "8bdbb43fec448d0a6ba93e3f43f6e92fd42ae7f9d074d2bbc0067422403b7f1e",
+        "clean_boundary_state_sha256": "c867e979390070cbdf695fd29d52c6d2be3c70b6a810d195934e57b261b92726",
+        "remaining_horizon": 181,
+        "selection_rank_sha256": "e18fca52528b1ef05f5b51acc8c5442953759881b298fa58af6cb70bd02d8ec5",
+        "step": 39
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "86b76bb100267d516beb68ea7d362344ab7410f0eb983d32c7b0dbdb12c6b4a0",
+        "clean_boundary_state_sha256": "7d8e6e525107cf4cfb48719ce857a7af20144a599ad5c1efcb3733c6280182dd",
+        "remaining_horizon": 27,
+        "selection_rank_sha256": "e37acc3bd89f0eb659ca24754ad9857801b64383f0f69d6f65a29a70075800a8",
+        "step": 193
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "e0a3f98d96ec9555809deab490dd6e74b23de5fb094e4912903f99cf9436b781",
+        "clean_boundary_state_sha256": "3753b9677b5ac4e00b129d3e2e6a600363ea6ff4955ecd2cb759155096d26149",
+        "remaining_horizon": 204,
+        "selection_rank_sha256": "e424bc1d4e2c0dbac7029f8b669928f4c5d30c5e933f740c9cd0ea119d7c5b82",
+        "step": 16
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "e2f9ad5e6885b4228460decbcf3ebc59166b7f7fed10cb41184862f27aedf5b4",
+        "clean_boundary_state_sha256": "1a0277897c38f6cc229c02ab70007fd477071fb5a5856c61a5b43bbc028a67bb",
+        "remaining_horizon": 180,
+        "selection_rank_sha256": "e4ba9da41e271abb072333e24e9a67071498bc66d976b45e59811202bc52899c",
+        "step": 40
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "400ed0a68b45b754c8f865bd708b7eb22ec638403a4a17795158ce35affdb060",
+        "clean_boundary_state_sha256": "4a979fa6d57e96c349a494a81cf106ac4121fbb1f377f852201ec75ea041f088",
+        "remaining_horizon": 199,
+        "selection_rank_sha256": "e56eb74f3f6c8ae48575b58e0ef2180fd98c33a3cef5a6d7bfc2a12743cac0dc",
+        "step": 21
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "55a732e2fa19334c28b8181361cf0e2428ea2bc569d3d1653b7ecfd666de43f6",
+        "clean_boundary_state_sha256": "f2888ebbbfa2a58f359b3d1a2859761541f358d38c781ff6abaef34bc2b47e57",
+        "remaining_horizon": 130,
+        "selection_rank_sha256": "e5eac00b33818f23424b34bbd3d6593711fc4c1880447e0fc08fb40f5e34099e",
+        "step": 90
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "ccf5c51dd413ffad0b12fe870a9a108a04548f0789d802915a97ac3e806d095b",
+        "clean_boundary_state_sha256": "ddfce2ff118e53efffeffd5305ec6811937262a16292bd2e169afab6413819e5",
+        "remaining_horizon": 151,
+        "selection_rank_sha256": "e84264a609d166c361f900452961160ab2cb90b0d5b5718975132812ff4e0e8b",
+        "step": 69
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "23b82fb33b2fa98c1823b79c0f56449b562c4a77e007c1c37404c8b5f9529093",
+        "clean_boundary_state_sha256": "d5c61e49bc88ada68d2aabaccc602f796dd8c2d4d1177c6595c163e99c2d0718",
+        "remaining_horizon": 170,
+        "selection_rank_sha256": "eacf533df06e2cf9774812066c728b870655db0ee1e4c8201eef51a82fce7418",
+        "step": 50
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "5c79cdbf64675fb3329b395b0c7e9262adc274d7d4f398e82a5bac3adc69d450",
+        "clean_boundary_state_sha256": "19da179997eb5e79adb6d7c76d69d11f7782fa2bb0c62d56bc8f4230dc5bd4f7",
+        "remaining_horizon": 121,
+        "selection_rank_sha256": "ec8515563caaa77a0ae30ce410dcb23fbd4f9d16a97902f36dd908c3925f2f9b",
+        "step": 99
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "5136c27258cee2ebb1e8838085cdecb6fd762347c280d29596fd47adadb8613b",
+        "clean_boundary_state_sha256": "6144eedf45aa8b60962bb418055375b8c3b99e84b1df63bfbf5816161e5a7d92",
+        "remaining_horizon": 31,
+        "selection_rank_sha256": "efb9fec66f3314e7154337a284d40cd8adf37eecc685b4584bdc3cdc64aa393e",
+        "step": 189
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "b4d499cb12937ddd91d5b5e57d8f2c12f0cb41d7f355fd26a32bf14494a78d38",
+        "clean_boundary_state_sha256": "943a7f1b1f3b780e8873d29a885c099671c5652950832ac50c979f14acedc9c3",
+        "remaining_horizon": 119,
+        "selection_rank_sha256": "f0fc0cdac357e5654e06daec399e82cb32febbd8030d627ddae32a523c21bdf6",
+        "step": 101
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "901aeee67fdd964829672ddd3e5f821ca9a42961cb7d705d5ee4a7e23c4354e9",
+        "clean_boundary_state_sha256": "29dedd0bc481d7fce09ca5947022a22dfc41a26dabfed0a3882e46aa1b74f466",
+        "remaining_horizon": 183,
+        "selection_rank_sha256": "f4439330d6ca9f9ae3fa7e5befe29b6ce37aee62cfe224ea0663993d2be0f136",
+        "step": 37
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "666eedb7ac803984ec0b3b6a3eb35ed733834d26084441c72b432f84dd0c8dd7",
+        "clean_boundary_state_sha256": "6d089e5cbecf81eb193f1a13a5f32a3a599b2ea8659477b2e9f34a82b0f40fef",
+        "remaining_horizon": 176,
+        "selection_rank_sha256": "f95bab0486927092c55b623c89575c6fb48c7d50d57d8c132111080688f645c6",
+        "step": 44
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "9d1a0e2e3327fd47c5fa751c3afaa30bca4ac5492ef31b2c1059e1580dd193b6",
+        "clean_boundary_state_sha256": "fcf1d12dc0e945a6f8b1945e21bdef88e17372852fbdcf1ca8683344314b9b8c",
+        "remaining_horizon": 33,
+        "selection_rank_sha256": "f9be6aeb68f39e694d11ba2401dcdd9b061370991c7a7a161af9efdbec688a71",
+        "step": 187
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "217784d40e6d941beef03d20a78432330d4ad611b1cd047a8f0235458a69aa94",
+        "clean_boundary_state_sha256": "da9aa26e2da3ed17732edb9ab602c4d2639e8c30a8dc5e4c3ea1f5d4de262483",
+        "remaining_horizon": 54,
+        "selection_rank_sha256": "f9ca0bdd55346680df66ac424e85fa4208a0f6a26369d0b64afba6f2410a93d3",
+        "step": 166
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "7e6d3757b3d1c49652f709b6c9f734619bd058a7aa8d0a54a35dacee717bb0af",
+        "clean_boundary_state_sha256": "7fbc89a96bc004b9a11898aa5b0076a745527c093d22ab2b004d3e8384e8da1f",
+        "remaining_horizon": 216,
+        "selection_rank_sha256": "fa615583da0b4a05dd793f4a16692b766d2510bfdb683d27e104e995b4590a6d",
+        "step": 4
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "490dcf53e2469f7b8728092d4406253683ea602f88b22f5c27882a022b2b2be8",
+        "clean_boundary_state_sha256": "4e6342c5ca0393b2749cb4acc521727aaf916d1f39b49b9381f10489c2685bd3",
+        "remaining_horizon": 178,
+        "selection_rank_sha256": "fdc6dace1a3af76182b554e0c11356432c59aa53a929cd96284821e704cb6a90",
+        "step": 42
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "45819f02e1d06b3ca24b07593c497f1203a23e54327629d6c1778a2176dc61d3",
+        "clean_boundary_state_sha256": "a9e58fdb6a02f32f8bd900b46aa88e6cfeff827286b2a0dbff1fd500eeea1c54",
+        "remaining_horizon": 143,
+        "selection_rank_sha256": "ff6a1db5844c4d96296c225191883fe19b294571bbc8af861df0292ee86161b4",
+        "step": 77
+      },
+      {
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "64a7d4ed9b4b05a4958466cda145a1a52a3b5d0dc11e24998b477894a40984e7",
+        "clean_boundary_state_sha256": "8d1e7f00bbb4b6c09793d9d3759f30289ee98572026a86b175e5e5867d54eada",
+        "remaining_horizon": 148,
+        "selection_rank_sha256": "ffe602037c46f510b76c4f6eaad2222ba1745be6090d7bde01d2a4121f393df7",
+        "step": 72
+      }
+    ],
+    "point_a": {
+      "boundary": "FRESH_PER_STEP",
+      "candidate_digest": "02c4f391ad14450dabe7f5271e0c2211c518ecdd50656045a25489aab59f8805",
+      "clean_boundary_state_sha256": "b7e4349373b7e14ac42d02401a11a2ddd1afe01fa1347ca31819b9d31cab78d9",
+      "point_label": "ENGINEERING_INTERVENTION_POINT_A",
+      "remaining_horizon": 202,
+      "selection_rank_sha256": "02f6a7ceb93b0d9a9e5d26271071008e8e8b9802f002a65d05aa0a1898373778",
+      "step": 18
+    },
+    "point_b": {
+      "boundary": "FRESH_PER_STEP",
+      "candidate_digest": "03f74afdac4ee3ef527cf0d171f8678a6ac58502fd7ac9cf4982261d46dc18a6",
+      "clean_boundary_state_sha256": "c97537bdec6235c46a7f241df34a26e55e7dbb3379bb077f0fb14595b0a58cab",
+      "point_label": "ENGINEERING_INTERVENTION_POINT_B",
+      "remaining_horizon": 25,
+      "selection_rank_sha256": "8e199407d91b1fc3c615cd3f42ee0a50f2d4739992d83801cc215c4895f2aef2",
+      "step": 195
+    },
+    "selection_mode": "TWO_POINTS",
+    "status": "ENGINEERING_POINT_SELECTED"
+  },
+  "gate": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_DECOUPLING_AND_QUALIFICATION_V1",
+  "model_family": "M0_OPENVLA",
+  "runtime_source_checkpoint": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620",
+  "schema": "STAGE_AA_AA1R1_ENGINEERING_POINT_LEDGER_CELL_V1",
+  "scientific_anchor_evaluation": "NOT_EVALUATED_BY_DESIGN",
+  "selection_salt": "STAGE_AA_AA1R1_ENGINEERING_POINT_V1_20260826",
+  "status": "STAGE_AA_AA1R1_ENGINEERING_POINTS_SEALED_BEFORE_OPEN"
+}
