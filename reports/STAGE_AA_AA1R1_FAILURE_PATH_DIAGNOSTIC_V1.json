@@ -1,0 +1,62 @@
+{
+  "schema": "STAGE_AA_AA1R1_FAILURE_PATH_DIAGNOSTIC_V1",
+  "status": "STAGE_AA_AA1R1_OLD_RUN_FAILURES_PRESERVED_VALIDATOR_SEAM_IDENTIFIED",
+  "gate": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_DECOUPLING_AND_QUALIFICATION_V1",
+  "claim_boundary": "Engineering diagnosis only; no scientific result and no AA2 exposure.",
+  "old_runtime_source": {
+    "commit": "5113b4b6898b0ee241a988e49ed5b4c4b51be5f7",
+    "runner_sha256": "1f7235e5331bb60693c9c5b87e3b6037751a90adec2b23d895062ee8701cd489",
+    "runner_path": "scripts/stage_aa/run_stage_aa1r1_engineering_branch.py",
+    "old_receipt_schema": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_CELL_RECEIPT_V1"
+  },
+  "diagnosis": {
+    "validator_seam": "The old arm_preserved predicate compared each re-inferred branch policy arm against the clean-trajectory arm at the same step.",
+    "correct_intervention_invariant": "The OPEN overwrite must preserve the arm of the same-step policy action that is actually intercepted.",
+    "why_clean_comparison_is_invalid": [
+      "After OPEN, a fresh M1 queue or M2 replan observes a different branch state, so policy-vs-clean arm drift is not evidence that the overwrite changed the arm.",
+      "OpenPI Policy.infer advances its internal JAX RNG and samples fresh diffusion noise on each JAX inference, so repeated inference need not reproduce the sealed clean action.",
+      "The frozen command_open_action contract already checks raw and final arm preservation against the same-step policy action.",
+      "Policy-vs-clean arm drift remains useful diagnostics but must not invalidate the action-interception branch."
+    ],
+    "repair_boundary": "Change only AA1R1 receipt/validator semantics to separate intervention arm preservation from policy-vs-clean drift; preserve AA0, identities, canaries, model loaders, doses, endpoint rules, and branch boundaries."
+  },
+  "old_cell_results": [
+    {
+      "model_family": "M0_OPENVLA",
+      "receipt_path": "reports/server_evidence/STAGE_AA_AA1R1/receipts/AA1R1_M0_libero_object_task_02_state_42.json",
+      "receipt_bytes": 353604,
+      "receipt_sha256": "2bc9dec000db947cd3faa12f3c34ae25f48083415b73af112e2729edbcc1a060",
+      "status": "PASS_AA1R1_ENGINEERING_BRANCH_CELL",
+      "branch_count": 4,
+      "branch_pass_count": 4
+    },
+    {
+      "model_family": "M1_OPENVLA_OFT",
+      "receipt_path": "reports/server_evidence/STAGE_AA_AA1R1/receipts/AA1R1_M1_libero_object_task_02_state_42.json",
+      "receipt_bytes": 273057,
+      "receipt_sha256": "256dbb0a9dda000d0dfc6fb8ffb3951d16e2622cbf79609918c0c0f806cfb5fd",
+      "status": "AA1R1_ENGINEERING_HOLD_BRANCH_INVALID",
+      "branch_count": 4,
+      "branch_pass_count": 1
+    },
+    {
+      "model_family": "M2_PI05_LIBERO",
+      "receipt_path": "reports/server_evidence/STAGE_AA_AA1R1/receipts/AA1R1_M2_libero_object_task_02_state_42.json",
+      "receipt_bytes": 268717,
+      "receipt_sha256": "fd1c7b33127075556d7b6f098ff02b957d21df25f85244bc09d83b50a793ca2b",
+      "status": "AA1R1_ENGINEERING_HOLD_BRANCH_INVALID",
+      "branch_count": 4,
+      "branch_pass_count": 0
+    }
+  ],
+  "scientific_firewall": {
+    "aa2_scientific_parent_exposure": 0,
+    "scientific_parent_exposure": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "vphys_reads": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0
+  },
+  "next_legal_action": "Create a new AA1R1 runtime source revision, run static/mock checks, then retry only the same three canary cells."
+}

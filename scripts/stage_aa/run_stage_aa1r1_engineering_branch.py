@@ -229,7 +229,13 @@ def run_branch(config: dict[str, Any], family: str, canary: dict[str, Any], infe
     queue_boundary_steps: list[int] = []
     rows: list[dict[str, Any]] = []
     action_receipts: list[dict[str, Any]] = []
-    arm_deltas: list[float] = []
+    # The intervention contract is local to the policy action at the same
+    # branch step.  Comparing a post-OPEN policy action with the clean
+    # trajectory is not an arm-preservation test: the branch observation may
+    # legitimately differ after OPEN, and M2 also samples a fresh action at
+    # each replan.  Keep that comparison as diagnostics only.
+    policy_clean_arm_deltas: list[float] = []
+    intervention_arm_deltas: list[float] = []
     state_restore_exact = True
     try:
         for offset in range(required):
@@ -247,7 +253,7 @@ def run_branch(config: dict[str, Any], family: str, canary: dict[str, Any], infe
                     queue = AA1.model_pairs(infer, obs, clean["language"], family, counters)
                 raw_action, final_action = queue.pop(0)
                 reference = np.asarray(clean["actions"][step]["final"], dtype=np.float32)
-                arm_deltas.append(float(np.max(np.abs(reference[:6] - final_action[:6]))))
+                policy_clean_arm_deltas.append(float(np.max(np.abs(reference[:6] - final_action[:6]))))
             if raw_action.size != ACTION_DIM or final_action.size != ACTION_DIM:
                 raise RuntimeError("AA1R1_FINAL_ACTION_NOT_EXACTLY_SEVEN")
             if not np.isfinite(raw_action).all() or not np.isfinite(final_action).all():
@@ -259,7 +265,17 @@ def run_branch(config: dict[str, Any], family: str, canary: dict[str, Any], infe
                 if not np.array_equal(opened_final[:6], final_action[:6]) or float(opened_final[-1]) != -1.0:
                     raise RuntimeError("AA1R1_OPEN_ACTION_CONTRACT_INVALID")
                 action = opened_final
-                action_receipts.append({"step": step, "raw_policy_action": raw_action.tolist(), "opened_raw_action": opened_raw.tolist(), "env_action": opened_final.tolist(), "arm_delta_linf": arm_deltas[-1] if arm_deltas else 0.0})
+                intervention_arm_delta = float(np.max(np.abs(opened_final[:6] - final_action[:6])))
+                intervention_arm_deltas.append(intervention_arm_delta)
+                action_receipts.append({
+                    "step": step,
+                    "raw_policy_action": raw_action.tolist(),
+                    "opened_raw_action": opened_raw.tolist(),
+                    "env_action": opened_final.tolist(),
+                    "arm_delta_linf": intervention_arm_delta,
+                    "intervention_arm_delta_linf": intervention_arm_delta,
+                    "policy_vs_clean_arm_delta_linf": policy_clean_arm_deltas[-1],
+                })
                 counters["open_intervention_steps"] += 1
             else:
                 action = final_action
@@ -270,7 +286,7 @@ def run_branch(config: dict[str, Any], family: str, canary: dict[str, Any], infe
         expected_boundaries = [] if is_clean else list(range(anchor_step, anchor_step + required, QUEUE_LENGTH[family]))
         queue_reset_verified = True if is_clean else queue_boundary_steps == expected_boundaries
         telemetry_aligned = len(rows) == required and all(isinstance(row.get("pre"), dict) and isinstance(row.get("post"), dict) for row in rows)
-        arm_preserved = all(delta <= ARM_TOLERANCE for delta in arm_deltas)
+        arm_preserved = all(delta <= ARM_TOLERANCE for delta in intervention_arm_deltas)
         exact_open_delivery = dose is None or (len(action_receipts) == int(dose) and [row["step"] for row in action_receipts] == list(range(anchor_step, anchor_step + int(dose))))
         valid = state_restore_exact and telemetry_aligned and queue_reset_verified and arm_preserved and exact_open_delivery
         endpoint_output = "AA_ENGINEERING_ENDPOINT_NOT_RUN" if dose is None else AA1.endpoint_label(clean.get("engineering_clean_rows", []), rows, int(dose), valid)
@@ -283,7 +299,11 @@ def run_branch(config: dict[str, Any], family: str, canary: dict[str, Any], infe
             "state_restore_exact": state_restore_exact,
             "exact_open_delivery": exact_open_delivery,
             "arm_preserved": arm_preserved,
-            "max_arm_delta_linf": max(arm_deltas, default=0.0),
+            "arm_preservation_basis": "OPENED_ACTION_VS_SAME_STEP_POLICY_ACTION",
+            "policy_vs_clean_arm_drift_is_diagnostic_only": True,
+            "max_arm_delta_linf": max(intervention_arm_deltas, default=0.0),
+            "max_intervention_arm_delta_linf": max(intervention_arm_deltas, default=0.0),
+            "max_policy_vs_clean_arm_delta_linf": max(policy_clean_arm_deltas, default=0.0),
             "queue_reset_verified": queue_reset_verified,
             "queue_boundary_steps": queue_boundary_steps,
             "expected_queue_boundary_steps": expected_boundaries,
@@ -362,7 +382,7 @@ def run_cell(args: argparse.Namespace) -> dict[str, Any]:
     static = AA1.static_validate(legacy_args, aa1_protocol, plan, aa0, capacity, z1_config, args.canonical_parent_key)
     canary = static["canary"]
     counters = {"model_inference_calls": 0, "env_step_calls": 0, "physical_telemetry_reads": 0, "open_intervention_steps": 0, "pgd_calls": 0, "attacked_env_steps": 0, "v_phys_reads": 0, "task_success_reads": 0, "attack_outcome_reads": 0, "eval160_reads": 0, "protected_reads": 0, "scientific_parent_exposure": 0, "aa2_exposure": 0}
-    receipt = {"schema": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_CELL_RECEIPT_V1", "status": "RUNNING", "gate": protocol["gate"], "model_family": args.model_family, "canonical_parent_key": args.canonical_parent_key, "gpu_id": args.gpu_id, "canary_permanent_exclusion": True, "scientific_use": False, "runtime_counters": counters, "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    receipt = {"schema": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_CELL_RECEIPT_V2", "status": "RUNNING", "gate": protocol["gate"], "model_family": args.model_family, "canonical_parent_key": args.canonical_parent_key, "gpu_id": args.gpu_id, "canary_permanent_exclusion": True, "scientific_use": False, "runtime_counters": counters, "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     atomic_write(args.output, receipt)
     AA1.require_single_gpu(args.gpu_id)
     receipt["gpu"] = AA1.gpu_snapshot(args.gpu_id)
@@ -441,7 +461,7 @@ def main() -> int:
         print(json.dumps({"status": result["status"], "model_family": args.model_family, "canonical_parent_key": args.canonical_parent_key, "branch_count": result.get("branch_count", 0)}, sort_keys=True))
         return 0 if result["status"].startswith("PASS_") else 1
     except Exception as exc:
-        failure = {"schema": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_CELL_RECEIPT_V1", "status": "AA1R1_ENGINEERING_HOLD_RUNTIME_ERROR", "model_family": args.model_family, "canonical_parent_key": args.canonical_parent_key, "gpu_id": args.gpu_id, "error": {"type": type(exc).__name__, "message": str(exc)}, "scientific_claim": "NONE_DUE_TO_ENGINEERING_HOLD", "next_legal_action": "STOP_FOR_PI"}
+        failure = {"schema": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_CELL_RECEIPT_V2", "status": "AA1R1_ENGINEERING_HOLD_RUNTIME_ERROR", "model_family": args.model_family, "canonical_parent_key": args.canonical_parent_key, "gpu_id": args.gpu_id, "error": {"type": type(exc).__name__, "message": str(exc)}, "scientific_claim": "NONE_DUE_TO_ENGINEERING_HOLD", "next_legal_action": "STOP_FOR_PI"}
         atomic_write(args.output, failure)
         print(json.dumps(failure, sort_keys=True), file=sys.stderr)
         return 1
