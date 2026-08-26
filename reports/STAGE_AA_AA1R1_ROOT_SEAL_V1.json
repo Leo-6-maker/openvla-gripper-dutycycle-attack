@@ -1,0 +1,100 @@
+{
+  "schema": "STAGE_AA_AA1R1_ROOT_SEAL_V1",
+  "status": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_QUALIFIED_STOP_FOR_PI",
+  "gate": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_DECOUPLING_AND_QUALIFICATION_V1",
+  "authorization_pi_comment_id": 5419093246,
+  "git_binding": {
+    "artifact_commit": "169c9c85f37d7e22ff6f4725083156b0fdbdb274",
+    "artifact_tree": "fe7ae56fad1c7fa98d2561eb51844db87486d5a8",
+    "runtime_source_commit": "14d14ea0bbb77d76cfeb8837f8b82efd0250fa77",
+    "runtime_source_tree": "525becdaf3347c5b727c1745311250338e673c39",
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2"
+  },
+  "immutable_parent_authorities": {
+    "aa0_protocol": {"path": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json", "bytes": 11817, "sha256": "b795a796a81d76173e0cfce148ee768cdd9dc90dbd6d69d541d1e40a04c51d16"},
+    "aa0_root": {"path": "reports/STAGE_AA_AA0_ROOT_SEAL_V1.json", "bytes": 4701, "sha256": "72011d93101eff387e023f8f24bf77dc81bf0c1db558b418455d05ce0c889999"},
+    "aa1_protocol": {"path": "configs/STAGE_AA_AA1_ENGINEERING_RUNTIME_PROTOCOL_V1.json", "bytes": 3978, "sha256": "26e01b57917052d3cf29cc1abb68c6c6e21d1175b9ea9c1b6fcea24b88f6d0b2"},
+    "aa1_root": {"path": "reports/STAGE_AA_AA1_ROOT_SEAL_V1.json", "bytes": 3182, "sha256": "e9b688730df7cad916259d929f733e3a80754be73f5fbb0c59d710dd192acaad"},
+    "aa1r1_protocol": {"path": "configs/STAGE_AA_AA1R1_ENGINEERING_BRANCH_QUALIFICATION_PROTOCOL_V1.json", "bytes": 4080, "sha256": "56aaf3a0339af3e2d1d2df6e465d8dfd8aa9497b65c0f325b66f2be260e28fbf"}
+  },
+  "runtime_source_authority": {
+    "path": "reports/STAGE_AA_AA1R1_RUNTIME_SOURCE_AUTHORITY_V3.json",
+    "bytes": 4820,
+    "sha256": "0c95c85ac924d91d78510465f87e0a133d3dc180a088c54e83a14d8ef96d8188"
+  },
+  "artifact_bindings": {
+    "receipt_index": {
+      "path": "reports/STAGE_AA_AA1R1_ENGINEERING_BRANCH_RECEIPT_INDEX_V1.json",
+      "bytes": 8550,
+      "sha256": "9b96dec89766bebb30666451676ffd9d934a7baadefce018db035a9ab13a1479",
+      "cell_count": 9,
+      "branch_receipt_count": 9,
+      "point_ledger_count": 9,
+      "branch_count": 36
+    },
+    "terminal": {
+      "path": "reports/STAGE_AA_AA1R1_ENGINEERING_BRANCH_TERMINAL_V1.json",
+      "bytes": 4334,
+      "sha256": "5db5b2ebb0cd0d17ddd5c970927d17b1deb2350964eaf873addcd5937cf50758"
+    },
+    "failure_diagnostic": {
+      "path": "reports/STAGE_AA_AA1R1_FAILURE_PATH_DIAGNOSTIC_V1.json",
+      "bytes": 3459,
+      "sha256": "a12e73ce1273bf9ce15fe2591ce5d5e43fa1f8a369e0ed6756fe7aa1f010b9f9",
+      "historical_failure_receipts_preserved": true
+    },
+    "retry_namespace": "reports/server_evidence/STAGE_AA_AA1R1_retry_v3/",
+    "retry_artifact_count": 18
+  },
+  "qualification_result": {
+    "cells_expected": 9,
+    "cells_passed": 9,
+    "branches_expected": 36,
+    "branches_passed": 36,
+    "clean_replay_point_runs": 18,
+    "clean_replay_point_passes": 18,
+    "model_family_a_route_sets": {"M0_OPENVLA": "3/3", "M1_OPENVLA_OFT": "3/3", "M2_PI05_LIBERO": "3/3"},
+    "all_cells_have_distinct_A_B": true,
+    "exact_open_delivery": true,
+    "intervention_arm_preservation_max_linf": 0.0,
+    "queue_or_replan_reset_verified": true,
+    "telemetry_one_to_one": true,
+    "invalid_branches": 0,
+    "endpoint_outputs_scientific_use": false,
+    "policy_vs_clean_drift_use": "diagnostic_only"
+  },
+  "aggregate_runtime_counters": {
+    "model_inference_calls": 1607,
+    "env_step_calls": 13239,
+    "physical_telemetry_reads": 5634,
+    "open_intervention_steps": 207,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "v_phys_reads": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "scientific_parent_exposure": 0,
+    "aa2_exposure": 0,
+    "task_success_reads": 0
+  },
+  "ci": {
+    "checked_commit": "169c9c85f37d7e22ff6f4725083156b0fdbdb274",
+    "status": "PASS",
+    "workflows": {
+      "repository-hygiene-cpu": {"conclusion": "success", "run_id": 32922858021, "job_id": 98039699416},
+      "stageb-cpu": {"conclusion": "success", "run_id": 32922858033, "job_id": 98039699487},
+      "detector-v5-cpu": {"conclusion": "success", "run_id": 32922858089, "job_id": 98039699466},
+      "source-registry": {"conclusion": "success", "run_id": 32922858193, "job_id": 98039699802}
+    }
+  },
+  "scientific_firewall": {
+    "aa2_candidates_exposed": 0,
+    "stage_z_identities_exposed": 0,
+    "foreign_gpu_processes_touched": false,
+    "paper_promotion": false,
+    "next_scientific_gate_authorized": false
+  },
+  "root_seal_sha256_sidecar": "reports/STAGE_AA_AA1R1_ROOT_SEAL_V1.sha256",
+  "next_legal_action": "STOP_FOR_PI"
+}
