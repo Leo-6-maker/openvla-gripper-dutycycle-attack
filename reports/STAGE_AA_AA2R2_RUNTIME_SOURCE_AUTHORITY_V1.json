@@ -7,8 +7,8 @@
   "git_binding": {
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
     "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
-    "commit": "1dc08e5866608d1dd136fd43cbd6154ae9114f94",
-    "tree": "6b9fd34fe3cce2b939dbda1ce10e774c8ea9241c"
+    "commit": "f1c98a0b32ed309b99812dd888a1c8e635ee34e8",
+    "tree": "b6ece42183814711bc88732b80b8859501c4725e"
   },
   "versioned_runtime_files": {
     "amendment_protocol": {
@@ -24,7 +24,7 @@
     "static_semantics_report": {
       "path": "reports/STAGE_AA_AA2R2_STATIC_SEMANTICS_RECONCILIATION_V1.json",
       "bytes": 6984,
-      "sha256": "23095b09d86abfe10e7759a5ad1023ff7431c6791cff2c085eb2b785c4a0ffc5"
+      "sha256": "4c208e06fd1e09f65fb00f5eef9ddcd0f1f885f33bb22089c0e8fec8cff840d4"
     },
     "v2_validator": {
       "path": "src/stage_aa/action_semantics_v2.py",
@@ -33,8 +33,8 @@
     },
     "v2_runner": {
       "path": "scripts/stage_aa/run_stage_aa2r2_engineering_canary.py",
-      "bytes": 22846,
-      "sha256": "b827add0ed3a8723dfb04300b212c467a4b7e89ca98244f42ef83d026dbddfef"
+      "bytes": 23172,
+      "sha256": "2792ceaa45d326e482fbfe62346d2a13d0c44fd669b45383708ca7b21dfdb9c5"
     }
   },
   "immutable_parent_authorities": {
@@ -78,7 +78,7 @@
     }
   },
   "runtime_materialization": {
-    "root": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa2r2-runtime-1dc08e58-preauthority",
+    "root": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa2r2-runtime-f1c98a0b-requal-v1",
     "archive_method": "git archive --format=tar.gz with core.autocrlf=false",
     "official_spec_delivery": "restored from the existing frozen authority-bound working-tree bytes after exact Git-blob extraction",
     "historical_runtime_root_untouched": true,
