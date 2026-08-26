@@ -1,0 +1,125 @@
+{
+  "schema": "STAGE_AA_AA2R1_FORENSIC_EVIDENCE_HOLD_V1",
+  "status": "STAGE_AA_AA2R1_FORENSIC_EVIDENCE_INSUFFICIENT_HOLD_STOP_FOR_PI",
+  "gate": "STAGE_AA_AA2R1_OPENVLA_THREE_STATE_ACTION_SEMANTICS_RECONCILIATION_AND_CENSUS_RECOVERY_V1",
+  "authorization_pi_comment_id": 5420593523,
+  "claim_boundary": "AA2-0117 action-semantics forensic closure only; no recovery, census completion, denominator freeze, treatment, endpoint, or scientific conclusion",
+  "target_cell": {
+    "cell_id": "AA2-0117",
+    "model_family": "M1_OPENVLA_OFT",
+    "suite": "libero_10",
+    "canonical_parent_key": "libero_10/task_04/state_32",
+    "seed": 108110688
+  },
+  "forensic_result": {
+    "raw_gripper": null,
+    "env_gripper": null,
+    "offending_row_present": false,
+    "values_inferred": false,
+    "mapping_status": "UNRESOLVED",
+    "reason": "The persisted failure path contains only the validator error and counters; no durable row or action vector records the offending raw/final gripper values.",
+    "continue_authorized": false
+  },
+  "historical_runtime_evidence": {
+    "receipt": {
+      "server_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa1r1-runtime-14d14ea0/reports/server_evidence/STAGE_AA_AA2/receipts/AA2-0117.json",
+      "repository_path": "reports/server_evidence/STAGE_AA_AA2/receipts/AA2-0117.json",
+      "bytes": 1721,
+      "sha256": "f07bf2478f3ed8063869e865913eefbf5fdec0891d19e652ffa07b9d8bc9872d",
+      "observed_fields": [
+        "cell_id",
+        "model_family",
+        "canonical_parent_key",
+        "seed",
+        "error.message",
+        "runtime_counters"
+      ],
+      "raw_final_row": "ABSENT"
+    },
+    "worker_log": {
+      "server_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa1r1-runtime-14d14ea0/reports/server_evidence/STAGE_AA_AA2/AA2_WORKER_M1_GPU5.log",
+      "repository_path": "reports/server_evidence/STAGE_AA_AA2/AA2_WORKER_M1_GPU5.log",
+      "bytes": 46884,
+      "sha256": "353b1d85224e043c542f6ec5903ec1a28d94adea08a6d726e3b7676a46d7c21a",
+      "target_cell_records": [
+        "AA2_CELL_START",
+        "AA2_ENGINEERING_HOLD_RUNTIME_ERROR",
+        "AA2_WORKER_STOPPED_ON_CELL_FAILURE"
+      ],
+      "raw_final_row": "ABSENT"
+    },
+    "search_scope": {
+      "server_runtime_root": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa1r1-runtime-14d14ea0",
+      "target_specific_raw_final_matches": 0,
+      "target_specific_cell_matches": 3,
+      "target_specific_cell_match_paths": [
+        "reports/server_evidence/STAGE_AA_AA2/AA2_WORKER_M1_GPU5.log",
+        "reports/server_evidence/STAGE_AA_AA2/receipts/AA2-0117.json",
+        "reports/STAGE_AA_AA2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json"
+      ],
+      "searched_runtime_artifact_classes": [
+        "AA2-0117-named files",
+        "AA2 receipts",
+        "AA2 worker logs",
+        "AA2 launch manifest",
+        "runtime-root text artifacts"
+      ],
+      "result": "No original runtime artifact in the searched runtime root contains raw_gripper and env_gripper for AA2-0117. Other successful receipts contain such fields, confirming the search was field-sensitive rather than a schema assumption."
+    },
+    "failure_path_observation": "The AA2 runner exception handler persists status, error, scientific_claim, next_legal_action, and counters; the in-memory clean rows/actions are not written on this exception path."
+    
+  },
+  "authority_comparison": {
+    "official_openvla_spec": {
+      "repository_path": "src/gripper_attack/openvla_libero_exec_spec.py",
+      "bytes": 7833,
+      "sha256": "13ea43ffe674da22c5d1c5a1a2c54c92a27c9fcc79ef13dc057594bbbe31bf92",
+      "rule": "raw < 0.5 -> env +1; raw == 0.5 -> env 0; raw > 0.5 -> env -1"
+    },
+    "historical_validator": {
+      "repository_path": "src/stage_z_preparation/action_semantics.py",
+      "bytes": 7777,
+      "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c",
+      "source_authority_commit": "c3fbd9470d76af9eb975e803dba4e0c882fdb417",
+      "source_authority_tree": "b2b3d433f5433311c42a1451b3f5978f82506008",
+      "rule_under_test": "math.isclose(raw, 0.5, abs_tol=1e-6) -> RAW_GRIPPER_AT_THRESHOLD"
+    },
+    "static_boundary_probe": {
+      "official_mapping": [
+        {"raw": 0.4999999, "env": 1.0},
+        {"raw": 0.5, "env": 0.0},
+        {"raw": 0.5000001, "env": -1.0}
+      ],
+      "historical_validator": [
+        {"raw": 0.4999999, "accepted": false, "reason": "RAW_GRIPPER_AT_THRESHOLD"},
+        {"raw": 0.5, "accepted": false, "reason": "RAW_GRIPPER_AT_THRESHOLD"},
+        {"raw": 0.5000001, "accepted": false, "reason": "RAW_GRIPPER_AT_THRESHOLD"}
+      ],
+      "interpretation": "The implementation discrepancy is statically established; it does not establish the missing AA2-0117 runtime values."
+    }
+  },
+  "runtime_source_authority": {
+    "repository_path": "reports/STAGE_AA_AA2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+    "bytes": 3676,
+    "sha256": "04caf9c098c304546c79a5482daa982aaa63e68992e747a781cba26375ef5830",
+    "runtime_runner_sha256": "4fcc246d0ab1de834b8843e46d1649cb3b36b5aa5588ebc344a140d1d90d86c1",
+    "old_authority_unchanged": true
+  },
+  "governance": {
+    "new_aa_action_semantics_adapter_created": false,
+    "old_stage_z_stage_v_authority_modified": false,
+    "aa2_0117_recovery_started": false,
+    "other_recovery_cells_started": false,
+    "new_model_inference_after_hold": 0,
+    "new_env_step_after_hold": 0,
+    "new_open_intervention_steps_after_hold": 0,
+    "new_pgd_calls_after_hold": 0,
+    "new_v_phys_reads_after_hold": 0,
+    "protected_or_eval160_reads_after_hold": 0,
+    "aa3_authorized": false,
+    "scientific_parent_or_manifest_changed": false,
+    "original_aa2_0117_receipt_preserved": true
+  },
+  "next_legal_action": "STOP_FOR_PI_AND_SUPPLY_OR_RECONSTRUCT_ONLY_FROM_ORIGINAL_RUNTIME_EVIDENCE",
+  "recorded_at_utc": "2026-08-26T04:38:03Z"
+}
