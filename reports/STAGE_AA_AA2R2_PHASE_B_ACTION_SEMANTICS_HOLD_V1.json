@@ -1,0 +1,88 @@
+{
+  "schema": "STAGE_AA_AA2R2_PHASE_B_ACTION_SEMANTICS_HOLD_V1",
+  "status": "STAGE_AA_AA2R2_PHASE_B_ENGINEERING_HOLD_ACTION_SEMANTICS_STOP",
+  "gate": "STAGE_AA_AA2R2_OFFICIAL_THREE_STATE_ACTION_SEMANTICS_AMENDMENT_REQUALIFICATION_AND_CENSUS_RESUME_V1",
+  "claim_boundary": "Engineering-only fail-closed interruption during the AA2R2 Phase-B clean census; no treatment, endpoint, vulnerability, or promotion claim.",
+  "source_authority": {
+    "path": "reports/STAGE_AA_AA2R2_PHASE_B_RUNTIME_SOURCE_AUTHORITY_V1.json",
+    "sha256": "9b3d28f27f16d747275dd5ae1608ea245b2e81bf018b14e100b7ac8491bf63e3",
+    "phase_a_root_sha256": "94830704cdb9c044b9a5d0d62bfaa33f4966f82174b91de4f5e52320d9deb2af"
+  },
+  "failure": {
+    "receipt_path": "reports/server_evidence/STAGE_AA_AA2R2/phase_b/receipts/AA2-0266.json",
+    "receipt_bytes": 3272,
+    "receipt_sha256": "bfa857dbf23dff3a4484d51c3dc57056a489f49a0cd0060c19dfca6d02beb6c1",
+    "cell_id": "AA2-0266",
+    "model_family": "M2_PI05_LIBERO",
+    "suite": "libero_object",
+    "canonical_parent_key": "libero_object/task_06/state_36",
+    "seed": 211455442,
+    "step": 18,
+    "boundary_step": 15,
+    "queue_index": 3,
+    "boundary": "FRESH_PI05_REPLAN",
+    "validator_version": "STAGE_AA_AA2R2_ACTION_SEMANTICS_V2",
+    "rule": "PI05_CLIP_RAW_TO_LIBERO_V1",
+    "reason": "FINAL_ACTION_OUT_OF_LIBERO_RANGE",
+    "raw_gripper": -1.0000007152557373,
+    "final_gripper": -1.0000007152557373,
+    "required_official_final_gripper": -1.0,
+    "first_offending_row_digest": "32c7b047ab5903774aa0cfe8e452c35fe6eef992a4e42964c6d6fc93329c0277"
+  },
+  "interruption": {
+    "observed_stop_utc": "2026-08-26T18:59:08Z",
+    "incomplete_phase_b_receipts": [
+      {
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_b/receipts/AA2-0013.json",
+        "cell_id": "AA2-0013",
+        "status": "RUNNING",
+        "bytes": 997,
+        "sha256": "c70ccb7615d64039f2dd017c4039a04f9a2d1b4d74755af2dda6ae1e3a87fb84"
+      },
+      {
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_b/receipts/AA2-0071.json",
+        "cell_id": "AA2-0071",
+        "status": "RUNNING",
+        "bytes": 1008,
+        "sha256": "5e1368b4532017e4cd5213c48a34bbbb354773371e695d46b9ff3d1585fd5067"
+      },
+      {
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_b/receipts/AA2-0135.json",
+        "cell_id": "AA2-0135",
+        "status": "RUNNING",
+        "bytes": 1009,
+        "sha256": "d22780bb39f06842e771a5f6d9e0f6efdf36d027a576bb99fbf14184da45c1a7"
+      }
+    ],
+    "project_workers_stopped": true,
+    "foreign_processes_touched": false,
+    "completed_phase_b_outputs_at_stop": 76,
+    "incomplete_phase_b_outputs_at_stop": 4
+  },
+  "runtime_counters_from_failure": {
+    "aa2_exposure": 1,
+    "scientific_parent_exposure": 1,
+    "model_inference_calls": 4,
+    "env_step_calls": 25,
+    "physical_telemetry_reads": 15,
+    "open_intervention_steps": 0,
+    "attacked_env_steps": 0,
+    "pgd_calls": 0,
+    "aa_v_phys_reads": 0,
+    "stage_z_v_phys_reads": 0,
+    "task_success_reads": 0,
+    "attack_outcome_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0
+  },
+  "interpretation": {
+    "root_cause": "Historical loader clip tolerance accepted a float32 value just outside the official Libero interval; AA2R2 V2 then correctly rejected the un-clipped delivery value.",
+    "scientific_contract_changed": false,
+    "cohort_changed": false,
+    "treatment_started": false,
+    "failure_receipt_immutable": true,
+    "running_receipts_immutable": true,
+    "old_stage_z_and_aa2r2_v1_authorities_immutable": true
+  },
+  "next_legal_action": "STAGE_AA_AA2R2_PHASE_B_POST_FAILURE_OFFICIAL_CLIP_REPAIR_AND_SAME_CELL_RESUME"
+}

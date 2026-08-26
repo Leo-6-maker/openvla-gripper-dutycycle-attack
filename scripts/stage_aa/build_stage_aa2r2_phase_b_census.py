@@ -108,17 +108,29 @@ def validate_authority(root: Path, manifest: dict[str, Any], protocol: dict[str,
         require(sha256_file(path) == binding.get("sha256"), f"SOURCE_FILE_SHA:{name}")
 
 
-def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, Any], source_gate: str, capacity: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], Counter[str]]:
+def resolve_receipts(
+    root: Path,
+    manifest: dict[str, Any],
+    protocol: dict[str, Any],
+    source_gate: str,
+    capacity: dict[str, Any],
+    phase_dir: Path | None = None,
+    resume_dir: Path | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], Counter[str]]:
     old_dir = root / "reports/server_evidence/STAGE_AA_AA2/receipts"
-    phase_dir = root / "reports/server_evidence/STAGE_AA_AA2R2/phase_b"
+    phase_dir = phase_dir or (root / "reports/server_evidence/STAGE_AA_AA2R2/phase_b")
+    resume_dir = resume_dir or phase_dir
     normal_dir = phase_dir / "receipts"
     recovery_dir = phase_dir / "recovery"
+    resume_normal_dir = resume_dir / "receipts"
+    resume_recovery_dir = resume_dir / "recovery"
     pool = set(capacity["analysis_pool_after_aa1_reservation"]["keys"])
     manifest_cells = manifest["cells"]
     require(len({row["cell_id"] for row in manifest_cells}) == 324, "MANIFEST_CELL_IDS")
     old_ids = set()
     expected_normal: set[str] = set()
     expected_recovery: set[str] = set()
+    expected_repair_recovery: set[str] = set()
     receipt_index: list[dict[str, Any]] = []
     receipts: dict[str, dict[str, Any]] = {}
     source_counts: Counter[str] = Counter()
@@ -132,19 +144,30 @@ def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, A
             if old_status == "AA2_CLEAN_CELL_COMPLETE":
                 source_kind = "HISTORICAL_AA2_COMPLETE"
                 path = old_path
-                require(not (normal_dir / f"{cell_id}.json").exists(), f"HISTORICAL_RERUN_NORMAL:{cell_id}")
-                require(not (recovery_dir / f"{cell_id}.recovery.json").exists(), f"HISTORICAL_RERUN_RECOVERY:{cell_id}")
+                require(not (resume_normal_dir / f"{cell_id}.json").exists(), f"HISTORICAL_RERUN_NORMAL:{cell_id}")
+                require(not (resume_recovery_dir / f"{cell_id}.recovery.json").exists(), f"HISTORICAL_RERUN_RECOVERY:{cell_id}")
             elif old_status in RECOVERY_STATUSES:
                 require(cell_id in RECOVERY_IDS, f"UNAUTHORIZED_RECOVERY:{cell_id}:{old_status}")
                 source_kind = "PHASE_B_RECOVERY"
                 expected_recovery.add(cell_id)
-                path = recovery_dir / f"{cell_id}.recovery.json"
+                historical_recovery = recovery_dir / f"{cell_id}.recovery.json"
+                path = historical_recovery if historical_recovery.is_file() else resume_recovery_dir / f"{cell_id}.recovery.json"
             else:
                 raise RuntimeError(f"UNEXPECTED_HISTORICAL_STATUS:{cell_id}:{old_status}")
         else:
-            source_kind = "PHASE_B_NORMAL"
             expected_normal.add(cell_id)
-            path = normal_dir / f"{cell_id}.json"
+            phase_normal = normal_dir / f"{cell_id}.json"
+            phase_status = load_json(phase_normal).get("status") if phase_normal.is_file() else None
+            if phase_status == "AA2R2_PHASE_B_CLEAN_CELL_COMPLETE":
+                source_kind = "PHASE_B_NORMAL"
+                path = phase_normal
+            elif phase_status in {"RUNNING", "AA2R2_ENGINEERING_INVALID_ACTION_SEMANTICS", "AA2R2_ENGINEERING_HOLD_RUNTIME_ERROR"}:
+                source_kind = "PHASE_B_REPAIR_RECOVERY"
+                expected_repair_recovery.add(cell_id)
+                path = resume_recovery_dir / f"{cell_id}.recovery.json"
+            else:
+                source_kind = "PHASE_B_NORMAL"
+                path = resume_normal_dir / f"{cell_id}.json"
         require(path.is_file(), f"RECEIPT_MISSING:{cell_id}:{path}")
         receipt = load_json(path)
         require(receipt.get("status") in {"AA2_CLEAN_CELL_COMPLETE", "AA2R2_PHASE_B_CLEAN_CELL_COMPLETE"}, f"RECEIPT_NOT_COMPLETE:{cell_id}:{receipt.get('status')}")
@@ -169,7 +192,7 @@ def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, A
         for key in FORBIDDEN_COUNTERS:
             require(key in counters and int(counters[key]) == 0, f"RECEIPT_FIREWALL:{cell_id}:{key}")
         require(cell.get("canonical_parent_key") in pool, f"RECEIPT_PARENT_POOL:{cell_id}")
-        if source_kind == "PHASE_B_RECOVERY":
+        if source_kind in {"PHASE_B_RECOVERY", "PHASE_B_REPAIR_RECOVERY"}:
             require(receipt.get("attempt_kind") == "RECOVERY" and receipt.get("recovery_of") == cell_id, f"RECOVERY_BINDING:{cell_id}")
         elif source_kind == "PHASE_B_NORMAL":
             require(receipt.get("attempt_kind") == "NORMAL", f"NORMAL_BINDING:{cell_id}")
@@ -199,24 +222,40 @@ def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, A
     require(source_counts["HISTORICAL_AA2_COMPLETE"] == 32, f"HISTORICAL_COMPLETE_COUNT:{source_counts}")
     require(expected_recovery == RECOVERY_IDS, f"RECOVERY_SET:{sorted(expected_recovery)}")
     require(len(expected_normal) == 288, f"NORMAL_SET_COUNT:{len(expected_normal)}")
-    actual_normal = {p.stem for p in normal_dir.glob("AA2-*.json")}
-    recovery_suffix = ".recovery.json"
-    actual_recovery = {p.name[:-len(recovery_suffix)] for p in recovery_dir.glob("AA2-*.recovery.json")}
-    require(actual_normal == expected_normal, f"UNEXPECTED_NORMAL_RECEIPTS:{sorted(actual_normal ^ expected_normal)}")
-    require(actual_recovery == expected_recovery, f"UNEXPECTED_RECOVERY_RECEIPTS:{sorted(actual_recovery ^ expected_recovery)}")
+    def complete_ids(directory: Path, suffix: str) -> set[str]:
+        result: set[str] = set()
+        for candidate in directory.glob(f"AA2-*{suffix}"):
+            try:
+                if load_json(candidate).get("status") in {"AA2_CLEAN_CELL_COMPLETE", "AA2R2_PHASE_B_CLEAN_CELL_COMPLETE"}:
+                    result.add(candidate.name[:-len(suffix)])
+            except (OSError, json.JSONDecodeError):
+                result.add(candidate.name[:-len(suffix)])
+        return result
+
+    actual_normal = complete_ids(normal_dir, ".json") | complete_ids(resume_normal_dir, ".json")
+    actual_recovery = complete_ids(recovery_dir, ".recovery.json") | complete_ids(resume_recovery_dir, ".recovery.json")
+    require(actual_normal == expected_normal - expected_repair_recovery, f"UNEXPECTED_NORMAL_RECEIPTS:{sorted(actual_normal ^ (expected_normal - expected_repair_recovery))}")
+    require(actual_recovery == expected_recovery | expected_repair_recovery, f"UNEXPECTED_RECOVERY_RECEIPTS:{sorted(actual_recovery ^ (expected_recovery | expected_repair_recovery))}")
     require(len(receipt_index) == 324 and len(receipts) == 324, "FULL_CENSUS_COUNT")
     return receipt_index, receipts, source_counts
 
 
-def build(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+def build(
+    root: Path,
+    *,
+    source_path: Path | None = None,
+    phase_dir: Path | None = None,
+    resume_dir: Path | None = None,
+    artifact_version: str = "V1",
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     manifest_path = root / "reports/STAGE_AA_AA2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json"
     protocol_path = root / "configs/STAGE_AA_AA2_CLEAN_SCREEN_PROTOCOL_V1.json"
-    source_path = root / "reports/STAGE_AA_AA2R2_PHASE_B_RUNTIME_SOURCE_AUTHORITY_V1.json"
+    source_path = source_path or (root / "reports/STAGE_AA_AA2R2_PHASE_B_RUNTIME_SOURCE_AUTHORITY_V1.json")
     capacity_path = root / "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json"
     aa0_path = root / "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json"
     manifest, protocol, source, capacity, aa0 = (load_json(path) for path in (manifest_path, protocol_path, source_path, capacity_path, aa0_path))
     validate_authority(root, manifest, protocol, source, capacity, aa0)
-    index, receipts, source_counts = resolve_receipts(root, manifest, protocol, source["gate"], capacity)
+    index, receipts, source_counts = resolve_receipts(root, manifest, protocol, source["gate"], capacity, phase_dir, resume_dir)
     forbidden = Counter()
     by_model: dict[str, dict[str, Any]] = {}
     by_suite: dict[str, dict[str, Any]] = {}
@@ -279,7 +318,7 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], d
     require(len({job["branch_id"] for job in aa3_jobs}) == len(aa3_jobs), "AA3_BRANCH_IDS")
     status = "STAGE_AA_AA2_COMMON_DENOMINATOR_FROZEN_AUTONOMOUS_CONTINUE" if len(common) >= 24 else "STAGE_AA_AA2_CAPACITY_LIMIT_STOP_FOR_PI"
     terminal = {
-        "schema": "STAGE_AA_AA2R2_PHASE_B_CENSUS_TERMINAL_V1",
+        "schema": f"STAGE_AA_AA2R2_PHASE_B_CENSUS_TERMINAL_{artifact_version}",
         "status": status,
         "gate": protocol["gate"],
         "authorization_pi_comment_id": protocol["authorization_pi_comment_id"],
@@ -309,7 +348,7 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], d
         "next_legal_action": "STAGE_AA_AUTONOMOUS_AA3_EXECUTION" if len(common) >= 24 else "STOP_FOR_PI",
     }
     receipt_index = {
-        "schema": "STAGE_AA_AA2R2_PHASE_B_RECEIPT_INDEX_V1",
+        "schema": f"STAGE_AA_AA2R2_PHASE_B_RECEIPT_INDEX_{artifact_version}",
         "status": status,
         "gate": protocol["gate"],
         "receipt_count": len(index),
@@ -317,7 +356,7 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], d
         "terminal_sha256_after_write": None,
     }
     common_artifact = {
-        "schema": "STAGE_AA_AA2R2_COMMON_DENOMINATOR_V1",
+        "schema": f"STAGE_AA_AA2R2_COMMON_DENOMINATOR_{artifact_version}",
         "status": status,
         "source_terminal_schema": terminal["schema"],
         "source_terminal_sha256_after_write": None,
@@ -330,7 +369,7 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], d
         "next_legal_action": terminal["next_legal_action"],
     }
     root_seal = {
-        "schema": "STAGE_AA_AA2R2_PHASE_B_ROOT_SEAL_V1",
+        "schema": f"STAGE_AA_AA2R2_PHASE_B_ROOT_SEAL_{artifact_version}",
         "status": status,
         "gate": protocol["gate"],
         "authorization_pi_comment_id": protocol["authorization_pi_comment_id"],
@@ -351,16 +390,32 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], d
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
+    parser.add_argument("--source-authority", type=Path, default=None)
+    parser.add_argument("--phase-dir", type=Path, default=None)
+    parser.add_argument("--resume-phase-dir", type=Path, default=None)
+    parser.add_argument("--artifact-version", choices=("V1", "V2"), default="V1")
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
-    receipt_index, terminal, common_artifact, root_seal = build(args.root)
+    receipt_index, terminal, common_artifact, root_seal = build(
+        args.root,
+        source_path=args.source_authority,
+        phase_dir=args.phase_dir,
+        resume_dir=args.resume_phase_dir,
+        artifact_version=args.artifact_version,
+    )
     if args.write:
-        paths = {name: args.root / name for name in OUTPUTS}
+        outputs = OUTPUTS if args.artifact_version == "V1" else (
+            "reports/STAGE_AA_AA2R2_PHASE_B_V2_RECEIPT_INDEX_V1.json",
+            "reports/STAGE_AA_AA2R2_PHASE_B_V2_CENSUS_TERMINAL_V1.json",
+            "reports/STAGE_AA_AA2R2_COMMON_DENOMINATOR_V2.json",
+            "reports/STAGE_AA_AA2R2_PHASE_B_V2_ROOT_SEAL_V1.json",
+        )
+        paths = {name: args.root / name for name in outputs}
         require(not any(path.exists() for path in paths.values()), "APPEND_ONLY_OUTPUT_ALREADY_EXISTS")
-        terminal_path = paths[OUTPUTS[1]]
-        index_path = paths[OUTPUTS[0]]
-        common_path = paths[OUTPUTS[2]]
-        root_path = paths[OUTPUTS[3]]
+        terminal_path = paths[outputs[1]]
+        index_path = paths[outputs[0]]
+        common_path = paths[outputs[2]]
+        root_path = paths[outputs[3]]
         write_json(terminal_path, terminal)
         receipt_index["terminal_sha256_after_write"] = sha256_file(terminal_path)
         write_json(index_path, receipt_index)

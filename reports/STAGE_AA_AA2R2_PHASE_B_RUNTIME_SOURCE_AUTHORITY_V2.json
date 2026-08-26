@@ -1,0 +1,162 @@
+{
+  "schema": "STAGE_AA_AA2R2_PHASE_B_RUNTIME_SOURCE_AUTHORITY_V2",
+  "status": "STAGE_AA_AA2R2_PHASE_B_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+  "gate": "STAGE_AA_AA2R2_OFFICIAL_THREE_STATE_ACTION_SEMANTICS_AMENDMENT_REQUALIFICATION_AND_CENSUS_RESUME_V1",
+  "parent_authorization": {
+    "pi_comment_id": 5421992873,
+    "autonomous_continuation": true,
+    "repair_class": "official_m2_clip_delivery_boundary_after_fail_closed_runtime_hold",
+    "scientific_contract_changed": false,
+    "cohort_changed": false,
+    "old_authorities_immutable": true
+  },
+  "claim_boundary": "AA2R2 Phase-B clean-only census under the frozen AA0 eligibility contract; no treatment, endpoint, vulnerability, or promotion claim.",
+  "git_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "commit": "9cd308243c42e784684919fb9ca0e9ad257fef12",
+    "tree_at_runtime_code_commit": "d4b77479e82415454f4034afb3be4bad56db1b51"
+  },
+  "previous_phase_b_authority": {
+    "path": "reports/STAGE_AA_AA2R2_PHASE_B_RUNTIME_SOURCE_AUTHORITY_V1.json",
+    "bytes": 6640,
+    "sha256": "9b3d28f27f16d747275dd5ae1608ea245b2e81bf018b14e100b7ac8491bf63e3"
+  },
+  "phase_a_root": {
+    "path": "reports/STAGE_AA_AA2R2_PHASE_A_ROOT_SEAL_V2.json",
+    "bytes": 14340,
+    "sha256": "94830704cdb9c044b9a5d0d62bfaa33f4966f82174b91de4f5e52320d9deb2af"
+  },
+  "original_manifest": {
+    "path": "reports/STAGE_AA_AA2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+    "bytes": 318007,
+    "sha256": "6eef2ea995fe75bfcf66c7f2c285b5e084aa386f2f4184a574fc6a4948a5dc35"
+  },
+  "historical_authorities": {
+    "aa2_protocol": {
+      "path": "configs/STAGE_AA_AA2_CLEAN_SCREEN_PROTOCOL_V1.json",
+      "bytes": 4454,
+      "sha256": "89ba4b9c93a4fca65fc2e5005414e34fa2fe7e02360bb96eef67399239c245a2"
+    },
+    "aa2_source_authority": {
+      "path": "reports/STAGE_AA_AA2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "bytes": 3676,
+      "sha256": "04caf9c098c304546c79a5482daa982aaa63e68992e747a781cba26375ef5830"
+    },
+    "aa2_runner": {
+      "path": "scripts/stage_aa/run_stage_aa2_clean_screen.py",
+      "bytes": 22255,
+      "sha256": "4fcc246d0ab1de834b8843e46d1649cb3b36b5aa5588ebc344a140d1d90d86c1"
+    },
+    "aa0_protocol": {
+      "path": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+      "bytes": 11817,
+      "sha256": "b795a796a81d76173e0cfce148ee768cdd9dc90dbd6d69d541d1e40a04c51d16"
+    },
+    "aa0_capacity": {
+      "path": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+      "bytes": 81848,
+      "sha256": "19679c6878a35c6e13bb46d2c1078d7d96a864a90525f542b6dedb62782fbbf5"
+    },
+    "z1_runtime_protocol": {
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "bytes": 7795,
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"
+    },
+    "m1_checkpoint_manifest": {
+      "path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+      "bytes": 23200,
+      "sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd"
+    }
+  },
+  "versioned_runtime_files": {
+    "phase_b_runner_v3": {
+      "path": "scripts/stage_aa/run_stage_aa2r2_clean_screen_v3.py",
+      "bytes": 2495,
+      "sha256": "065a45e2c5b525ac5b446c5f64e2a945bc6818cf60c298836511d33f1d649765"
+    },
+    "phase_b_family_worker_v2": {
+      "path": "scripts/stage_aa/run_stage_aa2r2_family_worker_v2.py",
+      "bytes": 6973,
+      "sha256": "e6d1ebcb61a920ec58ea91a74c32c9be0f9eebf3170aae9928a39bed70badead"
+    },
+    "phase_b_base_runner_v1": {
+      "path": "scripts/stage_aa/run_stage_aa2r2_clean_screen.py",
+      "bytes": 24085,
+      "sha256": "7e38e12449ed19e9ceb7ba804ca272e770004576a1609d18cd6473415873a0a4"
+    },
+    "v2_validator": {
+      "path": "src/stage_aa/action_semantics_v2.py",
+      "bytes": 8314,
+      "sha256": "9c72edacc7c9c0b8811f36a2183ccb61f3da6fe009ae4db79c23c7bec6f684bc"
+    },
+    "amendment_protocol": {
+      "path": "configs/STAGE_AA_AA2R2_ACTION_SEMANTICS_AMENDMENT_V1.json",
+      "bytes": 4279,
+      "sha256": "600b991b6841c794246cd95659bc6858f148348e65bf4d3e27615b56353eeb7c"
+    },
+    "phase_a_root": {
+      "path": "reports/STAGE_AA_AA2R2_PHASE_A_ROOT_SEAL_V2.json",
+      "bytes": 14340,
+      "sha256": "94830704cdb9c044b9a5d0d62bfaa33f4966f82174b91de4f5e52320d9deb2af"
+    },
+    "aa1_loader": {
+      "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
+      "bytes": 30378,
+      "sha256": "2d3a3dc4ae9729ef70730be6c13a42d68a8fe6930cd95c3f914b1273a7c6db94"
+    },
+    "z1_loader": {
+      "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+      "bytes": 31442,
+      "sha256": "16a9b4c655238cf02b4d1a0c7c5ebe30fe5fbd79bdaa1290691de6d7a6933d00"
+    },
+    "telemetry": {
+      "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+      "bytes": 18122,
+      "sha256": "52e2d393018e13f95cabf12d47bae41246733710e7505680c1ef533517b32240"
+    },
+    "failure_hold": {
+      "path": "reports/STAGE_AA_AA2R2_PHASE_B_ACTION_SEMANTICS_HOLD_V1.json",
+      "bytes": 3703,
+      "sha256": "941e50e495f67ee1ef6d813cea05dc07423cb8ebfb2cf7969a7724b1d6321b5a"
+    }
+  },
+  "phase_b": {
+    "authorized": true,
+    "scientific_only_clean": true,
+    "full_census_required": true,
+    "original_cell_count": 324,
+    "historical_complete_cells_preserved": 32,
+    "phase_b_v1_complete_outputs_preserved": 76,
+    "old_phase_b_outputs_immutable": true,
+    "resume_output_root": "reports/server_evidence/STAGE_AA_AA2R2/phase_b_v2",
+    "historical_recovery_ids": ["AA2-0004", "AA2-0085", "AA2-0233", "AA2-0117"],
+    "post_failure_same_cell_recovery_ids": ["AA2-0013", "AA2-0071", "AA2-0135", "AA2-0266"],
+    "missing_historical_recovery_to_resume": ["AA2-0085"],
+    "no_new_identity": true,
+    "no_replacement_or_top_up": true,
+    "common_denominator_before_full_census": false
+  },
+  "delivery_boundary_repair": {
+    "affected_model": "M2_PI05_LIBERO",
+    "official_rule": "PI05_CLIP_RAW_TO_LIBERO_V1",
+    "repair": "clip_model_delivery_chunk_elementwise_to[-1,+1] before AA2R2 V2 validation and env.step",
+    "historical_loader_immutable": true,
+    "openvla_m0_m1_delivery_unchanged": true,
+    "neutral_or_open_semantics_changed": false,
+    "new_inference_or_env_step_after_failure": false
+  },
+  "scientific_firewall": {
+    "open_intervention_steps": 0,
+    "attacked_env_steps": 0,
+    "pgd_calls": 0,
+    "aa_v_phys_reads": 0,
+    "stage_z_v_phys_reads": 0,
+    "task_success_reads": 0,
+    "attack_outcome_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "paper_promotion": false
+  },
+  "next_legal_action": "STATIC_REQUALIFICATION_THEN_AA2R2_PHASE_B_V2_SAME_CELL_RESUME"
+}
