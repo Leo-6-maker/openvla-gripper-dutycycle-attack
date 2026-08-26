@@ -108,7 +108,7 @@ def validate_authority(root: Path, manifest: dict[str, Any], protocol: dict[str,
         require(sha256_file(path) == binding.get("sha256"), f"SOURCE_FILE_SHA:{name}")
 
 
-def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, Any], capacity: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], Counter[str]]:
+def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, Any], source_gate: str, capacity: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], Counter[str]]:
     old_dir = root / "reports/server_evidence/STAGE_AA_AA2/receipts"
     phase_dir = root / "reports/server_evidence/STAGE_AA_AA2R2/phase_b"
     normal_dir = phase_dir / "receipts"
@@ -153,7 +153,7 @@ def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, A
         if source_kind == "HISTORICAL_AA2_COMPLETE":
             require(receipt.get("gate") == protocol["gate"], f"RECEIPT_GATE:{cell_id}")
         else:
-            require(receipt.get("gate") == source["gate"], f"RECEIPT_GATE:{cell_id}")
+            require(receipt.get("gate") == source_gate, f"RECEIPT_GATE:{cell_id}")
         require(receipt.get("clean_only") is True, f"RECEIPT_NOT_CLEAN_ONLY:{cell_id}")
         clean = receipt.get("clean", {})
         require(clean.get("status") in {"PASS_AA2_CLEAN_TRAJECTORY_CAPTURED", "PASS_AA2R2_CLEAN_TRAJECTORY_CAPTURED"}, f"RECEIPT_CLEAN_STATUS:{cell_id}")
@@ -216,7 +216,7 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], d
     aa0_path = root / "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json"
     manifest, protocol, source, capacity, aa0 = (load_json(path) for path in (manifest_path, protocol_path, source_path, capacity_path, aa0_path))
     validate_authority(root, manifest, protocol, source, capacity, aa0)
-    index, receipts, source_counts = resolve_receipts(root, manifest, protocol, capacity)
+    index, receipts, source_counts = resolve_receipts(root, manifest, protocol, source["gate"], capacity)
     forbidden = Counter()
     by_model: dict[str, dict[str, Any]] = {}
     by_suite: dict[str, dict[str, Any]] = {}
