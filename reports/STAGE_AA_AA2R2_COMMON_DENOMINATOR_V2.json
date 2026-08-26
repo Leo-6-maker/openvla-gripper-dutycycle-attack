@@ -1,0 +1,13 @@
+{
+  "aa3_branch_manifest_sha256_after_write": "ca3cfe0a82e4fc934c3c3ea89e4d265c120c2298547b7ae8a62ede3529d0f918",
+  "frozen_primary_parent_keys": [],
+  "n_common": 0,
+  "next_legal_action": "STOP_FOR_PI",
+  "per_model_critical_anchors": {},
+  "per_model_noncritical_anchors": {},
+  "primary_n": 0,
+  "schema": "STAGE_AA_AA2R2_COMMON_DENOMINATOR_V2",
+  "source_terminal_schema": "STAGE_AA_AA2R2_PHASE_B_CENSUS_TERMINAL_V2",
+  "source_terminal_sha256_after_write": "3df73e7a806088b36841fd2a910afff5401c498bfc7c5214b5fdee6088a386b4",
+  "status": "STAGE_AA_AA2_CAPACITY_LIMIT_STOP_FOR_PI"
+}
