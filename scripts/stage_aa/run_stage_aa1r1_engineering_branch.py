@@ -308,7 +308,7 @@ def clean_determinism(config: dict[str, Any], family: str, canary: dict[str, Any
 def validate_protocol(protocol: dict[str, Any], aa0: dict[str, Any], aa1_protocol: dict[str, Any], plan: dict[str, Any]) -> None:
     if protocol.get("status") != "STAGE_AA_AA1R1_ENGINEERING_BRANCH_QUALIFICATION_AUTHORIZED":
         raise RuntimeError("AA1R1_PROTOCOL_NOT_AUTHORIZED")
-    if protocol.get("aa0_scientific_contract_immutable") is not True or protocol.get("aa2_authorized") is not False:
+    if protocol.get("authorization", {}).get("aa0_scientific_contract_immutable") is not True or protocol.get("authorization", {}).get("aa2_authorized") is not False:
         raise RuntimeError("AA1R1_SCIENTIFIC_FIREWALL_INVALID")
     if aa0.get("status") != "STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_FROZEN_STOP_FOR_PI":
         raise RuntimeError("AA0_PROTOCOL_NOT_FROZEN")
