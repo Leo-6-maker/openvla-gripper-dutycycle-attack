@@ -32,6 +32,7 @@
     "bytes": 318007,
     "sha256": "6eef2ea995fe75bfcf66c7f2c285b5e084aa386f2f4184a574fc6a4948a5dc35"
   },
+  "original_manifest_sha256": "6eef2ea995fe75bfcf66c7f2c285b5e084aa386f2f4184a574fc6a4948a5dc35",
   "historical_authorities": {
     "aa2_protocol": {
       "path": "configs/STAGE_AA_AA2_CLEAN_SCREEN_PROTOCOL_V1.json",
