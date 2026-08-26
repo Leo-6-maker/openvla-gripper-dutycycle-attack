@@ -1,0 +1,287 @@
+{
+  "boundary_probes": [
+    {
+      "accepted": true,
+      "expected_env": 1.0,
+      "raw": 0.4999999,
+      "semantic_state": "CLOSE"
+    },
+    {
+      "accepted": true,
+      "expected_env": -0.0,
+      "raw": 0.5,
+      "semantic_state": "NEUTRAL_BOUNDARY"
+    },
+    {
+      "accepted": true,
+      "expected_env": -1.0,
+      "raw": 0.5000001,
+      "semantic_state": "OPEN"
+    },
+    {
+      "accepted": true,
+      "expected_env": 1.0,
+      "raw": 0.49999999999999994,
+      "semantic_state": "CLOSE"
+    },
+    {
+      "accepted": true,
+      "expected_env": -1.0,
+      "raw": 0.5000000000000001,
+      "semantic_state": "OPEN"
+    }
+  ],
+  "compatibility": {
+    "old_accepted_count": 12,
+    "old_pass_implies_v2_pass": true,
+    "rows": [
+      {
+        "family": "M0_OPENVLA",
+        "old_accepted": true,
+        "raw": -1.0,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M0_OPENVLA",
+        "old_accepted": true,
+        "raw": 0.0,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M0_OPENVLA",
+        "old_accepted": true,
+        "raw": 0.499,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M0_OPENVLA",
+        "old_accepted": true,
+        "raw": 0.501,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M0_OPENVLA",
+        "old_accepted": true,
+        "raw": 1.0,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M0_OPENVLA",
+        "old_accepted": true,
+        "raw": 2.0,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M1_OPENVLA_OFT",
+        "old_accepted": true,
+        "raw": -1.0,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M1_OPENVLA_OFT",
+        "old_accepted": true,
+        "raw": 0.0,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M1_OPENVLA_OFT",
+        "old_accepted": true,
+        "raw": 0.499,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M1_OPENVLA_OFT",
+        "old_accepted": true,
+        "raw": 0.501,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M1_OPENVLA_OFT",
+        "old_accepted": true,
+        "raw": 1.0,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      },
+      {
+        "family": "M1_OPENVLA_OFT",
+        "old_accepted": true,
+        "raw": 2.0,
+        "same_semantic_state": true,
+        "v2_accepted": true
+      }
+    ],
+    "same_open_close_meaning": true,
+    "tested_families": [
+      "M0_OPENVLA",
+      "M1_OPENVLA_OFT"
+    ],
+    "tested_raw_values": [
+      -1.0,
+      0.0,
+      0.499,
+      0.501,
+      1.0,
+      2.0
+    ]
+  },
+  "m2_clip_probe": {
+    "accepted": true,
+    "result": {
+      "accepted": true,
+      "expected_final_action": [
+        1.0,
+        -1.0,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        -0.9986837
+      ],
+      "expected_final_gripper": null,
+      "final_action": [
+        1.0,
+        -1.0,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        -0.9986837
+      ],
+      "final_gripper": null,
+      "final_value_tolerance": 1e-06,
+      "model_family": "M2_PI05_LIBERO",
+      "raw_action": [
+        2.0,
+        -2.0,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        -0.9986837
+      ],
+      "raw_gripper": null,
+      "reason": "OK",
+      "rule": "PI05_CLIP_RAW_TO_LIBERO_V1",
+      "semantic_state": "CONTINUOUS_CLIPPED",
+      "validator_version": "STAGE_AA_AA2R2_ACTION_SEMANTICS_V2"
+    }
+  },
+  "malformed_nonfinite_probes": [
+    {
+      "accepted": false,
+      "case": "raw_nan",
+      "family": "M0_OPENVLA",
+      "reason": "MALFORMED_OR_NONFINITE_RAW_ACTION"
+    },
+    {
+      "accepted": false,
+      "case": "final_inf",
+      "family": "M0_OPENVLA",
+      "reason": "MALFORMED_OR_NONFINITE_FINAL_ACTION"
+    },
+    {
+      "accepted": false,
+      "case": "raw_wrong_dim",
+      "family": "M0_OPENVLA",
+      "reason": "MALFORMED_OR_NONFINITE_RAW_ACTION"
+    },
+    {
+      "accepted": false,
+      "case": "raw_nan",
+      "family": "M1_OPENVLA_OFT",
+      "reason": "MALFORMED_OR_NONFINITE_RAW_ACTION"
+    },
+    {
+      "accepted": false,
+      "case": "final_inf",
+      "family": "M1_OPENVLA_OFT",
+      "reason": "MALFORMED_OR_NONFINITE_FINAL_ACTION"
+    },
+    {
+      "accepted": false,
+      "case": "raw_wrong_dim",
+      "family": "M1_OPENVLA_OFT",
+      "reason": "MALFORMED_OR_NONFINITE_RAW_ACTION"
+    },
+    {
+      "accepted": false,
+      "case": "raw_nan",
+      "family": "M2_PI05_LIBERO",
+      "reason": "MALFORMED_OR_NONFINITE_RAW_ACTION"
+    },
+    {
+      "accepted": false,
+      "case": "final_inf",
+      "family": "M2_PI05_LIBERO",
+      "reason": "MALFORMED_OR_NONFINITE_FINAL_ACTION"
+    },
+    {
+      "accepted": false,
+      "case": "raw_wrong_dim",
+      "family": "M2_PI05_LIBERO",
+      "reason": "MALFORMED_OR_NONFINITE_RAW_ACTION"
+    }
+  ],
+  "next_legal_action": "PHASE_A_9_CELL_RUNTIME_QUALIFICATION",
+  "official_rule": "raw < 0.5 -> env +1; raw == 0.5 -> env 0; raw > 0.5 -> env -1",
+  "schema": "STAGE_AA_AA2R2_STATIC_SEMANTICS_RECONCILIATION_V1",
+  "scientific_firewall": {
+    "aa_v_phys_reads": 0,
+    "attacked_env_steps": 0,
+    "bridge_f1_reads": 0,
+    "open_intervention_steps": 0,
+    "paper_promotion": false,
+    "pgd_calls": 0,
+    "protected_eval160_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0
+  },
+  "source_commit": "1dc08e5866608d1dd136fd43cbd6154ae9114f94",
+  "source_files": {
+    "historical_validator": {
+      "bytes": 7777,
+      "path": "src/stage_z_preparation/action_semantics.py",
+      "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c"
+    },
+    "official_executable_spec": {
+      "bytes": 7833,
+      "path": "src/gripper_attack/openvla_libero_exec_spec.py",
+      "sha256": "13ea43ffe674dae22c5d1c5a1a2c54c92a27c9fcc79ef13dc057594bbe31bf92"
+    },
+    "v2_runner": {
+      "bytes": 22846,
+      "path": "scripts/stage_aa/run_stage_aa2r2_engineering_canary.py",
+      "sha256": "b827add0ed3a8723dfb04300b212c467a4b7e89ca98244f42ef83d026dbddfef"
+    },
+    "v2_validator": {
+      "bytes": 8314,
+      "path": "src/stage_aa/action_semantics_v2.py",
+      "sha256": "9c72edacc7c9c0b8811f36a2183ccb61f3da6fe009ae4db79c23c7bec6f684bc"
+    }
+  },
+  "status": "STAGE_AA_AA2R2_STATIC_SEMANTICS_RECONCILIATION_PASS",
+  "wrong_final_at_exact_threshold": [
+    {
+      "accepted": false,
+      "final": 1.0,
+      "raw": 0.5,
+      "reason": "OPENVLA_GRIPPER_MAPPING_MISMATCH"
+    },
+    {
+      "accepted": false,
+      "final": -1.0,
+      "raw": 0.5,
+      "reason": "OPENVLA_GRIPPER_MAPPING_MISMATCH"
+    }
+  ]
+}
