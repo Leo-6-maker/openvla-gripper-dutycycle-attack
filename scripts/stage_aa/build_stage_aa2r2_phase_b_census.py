@@ -154,7 +154,7 @@ def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, A
             require(receipt.get("gate") == protocol["gate"], f"RECEIPT_GATE:{cell_id}")
         else:
             require(receipt.get("gate") == source_gate, f"RECEIPT_GATE:{cell_id}")
-        require(receipt.get("clean_only") is True, f"RECEIPT_NOT_CLEAN_ONLY:{cell_id}")
+        require(bool_field(receipt.get("clean_only"), f"clean_only:{cell_id}"), f"RECEIPT_NOT_CLEAN_ONLY:{cell_id}")
         clean = receipt.get("clean", {})
         require(clean.get("status") in {"PASS_AA2_CLEAN_TRAJECTORY_CAPTURED", "PASS_AA2R2_CLEAN_TRAJECTORY_CAPTURED"}, f"RECEIPT_CLEAN_STATUS:{cell_id}")
         complete = bool_field(clean.get("complete_trajectory"), f"complete_trajectory:{cell_id}")
