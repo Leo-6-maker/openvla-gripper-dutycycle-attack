@@ -1,1 +1,2 @@
 /exports/paper_v2/* text eol=lf
+reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/*.log whitespace=-trailing-space
