@@ -150,7 +150,10 @@ def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, A
         require(receipt.get("status") in {"AA2_CLEAN_CELL_COMPLETE", "AA2R2_PHASE_B_CLEAN_CELL_COMPLETE"}, f"RECEIPT_NOT_COMPLETE:{cell_id}:{receipt.get('status')}")
         for field in ("cell_id", "model_family", "suite", "canonical_parent_key", "seed"):
             require(receipt.get(field) == cell.get(field), f"RECEIPT_BINDING:{cell_id}:{field}")
-        require(receipt.get("gate") == protocol["gate"], f"RECEIPT_GATE:{cell_id}")
+        if source_kind == "HISTORICAL_AA2_COMPLETE":
+            require(receipt.get("gate") == protocol["gate"], f"RECEIPT_GATE:{cell_id}")
+        else:
+            require(receipt.get("gate") == source["gate"], f"RECEIPT_GATE:{cell_id}")
         require(receipt.get("clean_only") is True, f"RECEIPT_NOT_CLEAN_ONLY:{cell_id}")
         clean = receipt.get("clean", {})
         require(clean.get("status") in {"PASS_AA2_CLEAN_TRAJECTORY_CAPTURED", "PASS_AA2R2_CLEAN_TRAJECTORY_CAPTURED"}, f"RECEIPT_CLEAN_STATUS:{cell_id}")
@@ -284,7 +287,7 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], d
             "manifest": {"path": rel(manifest_path, root), "bytes": manifest_path.stat().st_size, "sha256": sha256_file(manifest_path)},
             "protocol": {"path": rel(protocol_path, root), "bytes": protocol_path.stat().st_size, "sha256": sha256_file(protocol_path)},
             "source": {"path": rel(source_path, root), "bytes": source_path.stat().st_size, "sha256": sha256_file(source_path)},
-            "phase_a_root_sha256": source.get("phase_a_root_seal_sha256"),
+            "phase_a_root_sha256": source.get("phase_a_root", {}).get("sha256"),
         },
         "census": {"manifest_cell_count": 324, "receipt_count": len(index), "source_counts": dict(sorted(source_counts.items())), "by_model": by_model, "by_suite": by_suite},
         "eligibility_sets": {f"E_{family.split('_', 1)[0]}": sorted(eligible[family]) for family in MODELS},
@@ -330,7 +333,7 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], d
         "status": status,
         "gate": protocol["gate"],
         "authorization_pi_comment_id": protocol["authorization_pi_comment_id"],
-        "phase_a_root_seal_sha256": source.get("phase_a_root_seal_sha256"),
+        "phase_a_root_seal_sha256": source.get("phase_a_root", {}).get("sha256"),
         "manifest_sha256": sha256_file(manifest_path),
         "source_authority_sha256": sha256_file(source_path),
         "receipt_count": len(index),
