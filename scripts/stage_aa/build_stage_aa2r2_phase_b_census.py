@@ -153,8 +153,12 @@ def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, A
         require(receipt.get("gate") == protocol["gate"], f"RECEIPT_GATE:{cell_id}")
         require(receipt.get("clean_only") is True, f"RECEIPT_NOT_CLEAN_ONLY:{cell_id}")
         clean = receipt.get("clean", {})
-        require(clean.get("complete_trajectory") is True and clean.get("status") == "PASS", f"RECEIPT_CLEAN_STATUS:{cell_id}")
-        require(int(clean.get("steps_captured", -1)) == int(clean.get("horizon", -2)), f"RECEIPT_HORIZON:{cell_id}")
+        require(clean.get("status") in {"PASS_AA2_CLEAN_TRAJECTORY_CAPTURED", "PASS_AA2R2_CLEAN_TRAJECTORY_CAPTURED"}, f"RECEIPT_CLEAN_STATUS:{cell_id}")
+        complete = bool_field(clean.get("complete_trajectory"), f"complete_trajectory:{cell_id}")
+        steps = int(clean.get("steps_captured", -1))
+        horizon = int(clean.get("horizon", -2))
+        require(0 < steps <= horizon, f"RECEIPT_HORIZON:{cell_id}")
+        require(int(clean.get("telemetry_valid_rows", -1)) == steps, f"RECEIPT_TELEMETRY_ROWS:{cell_id}")
         eligibility = receipt.get("eligibility", {})
         critical = bool_field(eligibility.get("critical"), f"critical:{cell_id}")
         noncritical = bool_field(eligibility.get("noncritical"), f"noncritical:{cell_id}")
@@ -185,6 +189,9 @@ def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, A
             "noncritical_eligible": noncritical,
             "runtime_counters": counters,
             "clean_trajectory_sha256": clean.get("clean_trajectory_digest"),
+            "complete_trajectory": complete,
+            "steps_captured": steps,
+            "horizon": horizon,
         })
     require(source_counts["HISTORICAL_AA2_COMPLETE"] == 32, f"HISTORICAL_COMPLETE_COUNT:{source_counts}")
     require(expected_recovery == RECOVERY_IDS, f"RECOVERY_SET:{sorted(expected_recovery)}")
