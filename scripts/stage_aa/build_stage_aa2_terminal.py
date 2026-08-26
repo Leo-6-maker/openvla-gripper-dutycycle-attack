@@ -13,7 +13,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 COMMON_SALT = "STAGE_AA_AA2_COMMON_PARENT_SELECTION_V1_20260826"
-FORBIDDEN_COUNTERS = ("open_intervention_steps", "attacked_env_steps", "pgd_calls", "aa_v_phys_reads", "task_success_reads", "eval160_reads", "protected_reads")
+FORBIDDEN_COUNTERS = ("open_intervention_steps", "attacked_env_steps", "pgd_calls", "aa_v_phys_reads", "attack_outcome_reads", "task_success_reads", "eval160_reads", "protected_reads")
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -62,6 +62,11 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
             raise RuntimeError(f"AA2_RECEIPT_NOT_COMPLETE:{cell['cell_id']}:{receipt.get('status')}")
         if receipt.get("cell_id") != cell["cell_id"] or receipt.get("model_family") != cell["model_family"] or receipt.get("canonical_parent_key") != cell["canonical_parent_key"]:
             raise RuntimeError(f"AA2_RECEIPT_CELL_BINDING_INVALID:{cell['cell_id']}")
+        if receipt.get("gate") != protocol["gate"] or receipt.get("clean_only") is not True:
+            raise RuntimeError(f"AA2_RECEIPT_CLEAN_CONTRACT_INVALID:{cell['cell_id']}")
+        counters = receipt.get("runtime_counters", {})
+        if any(int(counters.get(key, 0)) != 0 for key in FORBIDDEN_COUNTERS):
+            raise RuntimeError(f"AA2_RECEIPT_SCIENTIFIC_FIREWALL_NONZERO:{cell['cell_id']}")
         receipts[cell["cell_id"]] = receipt
         receipt_index.append(
             {
@@ -171,8 +176,29 @@ def main() -> int:
     index_path = ROOT / "reports/STAGE_AA_AA2_CLEAN_SCREEN_RECEIPT_INDEX_V1.json"
     terminal_path = ROOT / "reports/STAGE_AA_AA2_CLEAN_SCREEN_TERMINAL_V1.json"
     if args.write:
-        write_json(index_path, index)
         write_json(terminal_path, terminal)
+        index["terminal_sha256_after_write"] = sha256_file(terminal_path)
+        write_json(index_path, index)
+        root_path = ROOT / "reports/STAGE_AA_AA2_ROOT_SEAL_V1.json"
+        root = {
+            "schema": "STAGE_AA_AA2_ROOT_SEAL_V1",
+            "status": terminal["status"],
+            "gate": terminal["gate"],
+            "authorization_pi_comment_id": terminal["authorization_pi_comment_id"],
+            "source_authority": {"path": str(source_path.relative_to(ROOT)).replace("\\", "/"), "bytes": source_path.stat().st_size, "sha256": sha256_file(source_path)},
+            "protocol": {"path": str(protocol_path.relative_to(ROOT)).replace("\\", "/"), "bytes": protocol_path.stat().st_size, "sha256": sha256_file(protocol_path)},
+            "launch_manifest": {"path": str(manifest_path.relative_to(ROOT)).replace("\\", "/"), "bytes": manifest_path.stat().st_size, "sha256": sha256_file(manifest_path)},
+            "receipt_index": {"path": str(index_path.relative_to(ROOT)).replace("\\", "/"), "bytes": index_path.stat().st_size, "sha256": sha256_file(index_path)},
+            "terminal": {"path": str(terminal_path.relative_to(ROOT)).replace("\\", "/"), "bytes": terminal_path.stat().st_size, "sha256": sha256_file(terminal_path)},
+            "receipt_count": len(index["receipts"]),
+            "receipts": index["receipts"],
+            "scientific_firewall": terminal["scientific_firewall"],
+            "next_legal_action": "STOP_FOR_PI",
+        }
+        root["root_payload_sha256"] = hashlib.sha256(canonical(root)).hexdigest()
+        write_json(root_path, root)
+        root_sidecar = root_path.with_suffix(".sha256")
+        root_sidecar.write_text(f"{sha256_file(root_path)}  {root_path.name}\n", encoding="utf-8")
     print(json.dumps({"status": "AA2_TERMINAL_BUILD_PASS", "receipt_count": terminal["census"]["receipt_count"], "n_common": terminal["common_denominator"]["n_common"], "terminal_status": terminal["status"], "write": args.write}, sort_keys=True))
     return 0
 
