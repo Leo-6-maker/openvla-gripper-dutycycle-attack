@@ -1,0 +1,157 @@
+{
+  "canonical_parent_key": "libero_10/task_02/state_42",
+  "cell_id": "AA2-0114",
+  "checkpoint": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10",
+  "checkpoint_manifest": {
+    "bytes": 15939159245,
+    "files": 25,
+    "manifest_path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa1r1-runtime-14d14ea0/reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+    "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "suite": "libero_10",
+    "verified": true
+  },
+  "clean": {
+    "baseline_z_m": 0.9661079269401629,
+    "binding": {
+      "bddl_path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/bddl_files/libero_10/KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it.bddl",
+      "body_names": [
+        "world",
+        "table",
+        "robot0_base",
+        "robot0_link0",
+        "robot0_link1",
+        "robot0_link2",
+        "robot0_link3",
+        "robot0_link4",
+        "robot0_link5",
+        "robot0_link6",
+        "robot0_link7",
+        "robot0_right_hand",
+        "gripper0_right_gripper",
+        "gripper0_eef",
+        "gripper0_leftfinger",
+        "gripper0_finger_joint1_tip",
+        "gripper0_rightfinger",
+        "gripper0_finger_joint2_tip",
+        "mount0_base",
+        "mount0_controller_box",
+        "mount0_pedestal_feet",
+        "mount0_torso",
+        "mount0_pedestal",
+        "chefmate_8_frypan_1_main",
+        "moka_pot_1_main",
+        "flat_stove_1_main",
+        "flat_stove_1_base",
+        "flat_stove_1_burner",
+        "flat_stove_1_burner_plate",
+        "flat_stove_1_button"
+      ],
+      "eef_site_id": 5,
+      "eef_site_name": "gripper0_grip_site",
+      "reason": "",
+      "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+      "status": "PASS",
+      "target_body_ids": {
+        "moka_pot_1": 24
+      },
+      "target_body_names": {
+        "moka_pot_1": "moka_pot_1_main"
+      },
+      "target_object_ids": [
+        "moka_pot_1"
+      ],
+      "taxonomy_eligibility": {
+        "declared_object_ids": [
+          "chefmate_8_frypan_1",
+          "moka_pot_1"
+        ],
+        "eligible": true,
+        "fixture_binding_inference_allowed": false,
+        "reason": "",
+        "rule": "at least one declared source object in an In/On goal predicate",
+        "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+        "status": "PASS",
+        "target_object_ids": [
+          "moka_pot_1"
+        ]
+      }
+    },
+    "boundary_count": 54,
+    "clean_trajectory_digest": "cfb3c80e80424332361738ab459980d3d97a88f81990e957453349d1e2702492",
+    "complete_trajectory": false,
+    "critical_candidates": [],
+    "critical_reason_counts": {
+      "CLEAN_STABLE_CONTINUATION_INVALID": 52,
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 52,
+      "STABLE_GRASP_WINDOW_INVALID": 52
+    },
+    "horizon": 520,
+    "language": "turn on the stove and put the moka pot on it",
+    "noncritical_candidates": [],
+    "noncritical_reason_counts": {
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 52,
+      "NOT_PRE_CONTACT": 52
+    },
+    "selected_critical": null,
+    "selected_noncritical": null,
+    "status": "PASS_AA2_CLEAN_TRAJECTORY_CAPTURED",
+    "steps_captured": 431,
+    "target_object": "moka_pot_1",
+    "telemetry_valid_rows": 431
+  },
+  "clean_only": true,
+  "eligibility": {
+    "critical": false,
+    "critical_anchor": null,
+    "noncritical": false,
+    "noncritical_affects_primary_denominator": false,
+    "noncritical_anchor": null
+  },
+  "gate": "STAGE_AA_AA2_CLEAN_ONLY_FULL_CENSUS_AND_COMMON_DENOMINATOR_FREEZE_V1",
+  "gpu": {
+    "compute_processes": [],
+    "free_memory_mib": 81213,
+    "index": 5,
+    "used_memory_mib": 10,
+    "utilization_gpu_percent": 54
+  },
+  "model_family": "M1_OPENVLA_OFT",
+  "next_legal_action": "STOP_FOR_PI_AFTER_FULL_CENSUS",
+  "normalization": {
+    "available_norm_stats_keys": [
+      "libero_10_no_noops"
+    ],
+    "checkpoint_mutated": false,
+    "component_state_dict_loader": "official_openvla_utils.load_component_state_dict",
+    "dataset_statistics_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10/dataset_statistics.json",
+    "dataset_statistics_sha256": "dbe516987e8124416af39c32d3f39ce2137ccb4e282adc590bb4bcede09fb5e1",
+    "requested_task_suite": "libero_10",
+    "resolution_mode": "OFFICIAL_NO_NOOPS_FALLBACK",
+    "resolved_unnorm_key": "libero_10_no_noops",
+    "stats_loader": "official_openvla_utils._load_dataset_stats",
+    "vision_num_images_in_input": 2
+  },
+  "runtime_counters": {
+    "aa2_exposure": 1,
+    "aa_v_phys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 441,
+    "eval160_reads": 0,
+    "model_inference_calls": 54,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 431,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 1,
+    "task_success_reads": 0
+  },
+  "schema": "STAGE_AA_AA2_CLEAN_SCREEN_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_AA2_CLEAN_DENOMINATOR_ONLY",
+  "seed": 139301871,
+  "source_task_idx": 2,
+  "state": "state_42",
+  "status": "AA2_CLEAN_CELL_COMPLETE",
+  "suite": "libero_10",
+  "timestamp_utc": "2026-08-26T03:57:53Z"
+}

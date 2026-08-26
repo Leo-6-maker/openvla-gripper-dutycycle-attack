@@ -1,0 +1,169 @@
+{
+  "canonical_parent_key": "libero_spatial/task_03/state_40",
+  "cell_id": "AA2-0080",
+  "checkpoint": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620",
+  "checkpoint_manifest": null,
+  "clean": {
+    "baseline_z_m": 0.917187042328319,
+    "binding": {
+      "bddl_path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate.bddl",
+      "body_names": [
+        "world",
+        "table",
+        "robot0_base",
+        "robot0_link0",
+        "robot0_link1",
+        "robot0_link2",
+        "robot0_link3",
+        "robot0_link4",
+        "robot0_link5",
+        "robot0_link6",
+        "robot0_link7",
+        "robot0_right_hand",
+        "gripper0_right_gripper",
+        "gripper0_eef",
+        "gripper0_leftfinger",
+        "gripper0_finger_joint1_tip",
+        "gripper0_rightfinger",
+        "gripper0_finger_joint2_tip",
+        "mount0_base",
+        "mount0_controller_box",
+        "mount0_pedestal_feet",
+        "mount0_torso",
+        "mount0_pedestal",
+        "akita_black_bowl_1_main",
+        "akita_black_bowl_2_main",
+        "cookies_1_main",
+        "glazed_rim_porcelain_ramekin_1_main",
+        "plate_1_main",
+        "wooden_cabinet_1_main",
+        "wooden_cabinet_1_base",
+        "wooden_cabinet_1_cabinet_top",
+        "wooden_cabinet_1_cabinet_middle",
+        "wooden_cabinet_1_cabinet_bottom",
+        "flat_stove_1_main",
+        "flat_stove_1_base",
+        "flat_stove_1_burner",
+        "flat_stove_1_burner_plate",
+        "flat_stove_1_button"
+      ],
+      "eef_site_id": 13,
+      "eef_site_name": "gripper0_grip_site",
+      "reason": "",
+      "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+      "status": "PASS",
+      "target_body_ids": {
+        "akita_black_bowl_1": 23
+      },
+      "target_body_names": {
+        "akita_black_bowl_1": "akita_black_bowl_1_main"
+      },
+      "target_object_ids": [
+        "akita_black_bowl_1"
+      ],
+      "taxonomy_eligibility": {
+        "declared_object_ids": [
+          "akita_black_bowl_1",
+          "akita_black_bowl_2",
+          "cookies_1",
+          "glazed_rim_porcelain_ramekin_1",
+          "plate_1"
+        ],
+        "eligible": true,
+        "fixture_binding_inference_allowed": false,
+        "reason": "",
+        "rule": "at least one declared source object in an In/On goal predicate",
+        "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+        "status": "PASS",
+        "target_object_ids": [
+          "akita_black_bowl_1"
+        ]
+      }
+    },
+    "boundary_count": 92,
+    "clean_trajectory_digest": "d9eec394f8b9c9e5e88528b36186a3e24a28155d6f5707446929c65f8bf939d7",
+    "complete_trajectory": false,
+    "critical_candidates": [],
+    "critical_reason_counts": {
+      "CLEAN_STABLE_CONTINUATION_INVALID": 73,
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 73,
+      "STABLE_GRASP_WINDOW_INVALID": 73,
+      "TERMINAL_OR_NATURAL_RELEASE_IN_ELIGIBILITY_WINDOW": 1
+    },
+    "horizon": 220,
+    "language": "pick up the black bowl on the cookie box and place it on the plate",
+    "noncritical_candidates": [],
+    "noncritical_reason_counts": {
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 73,
+      "NOT_PRE_CONTACT": 73,
+      "TERMINAL_OR_NATURAL_RELEASE_IN_ELIGIBILITY_WINDOW": 1
+    },
+    "selected_critical": null,
+    "selected_noncritical": null,
+    "status": "PASS_AA2_CLEAN_TRAJECTORY_CAPTURED",
+    "steps_captured": 92,
+    "target_object": "akita_black_bowl_1",
+    "telemetry_valid_rows": 92
+  },
+  "clean_only": true,
+  "eligibility": {
+    "critical": false,
+    "critical_anchor": null,
+    "noncritical": false,
+    "noncritical_affects_primary_denominator": false,
+    "noncritical_anchor": null
+  },
+  "gate": "STAGE_AA_AA2_CLEAN_ONLY_FULL_CENSUS_AND_COMMON_DENOMINATOR_FREEZE_V1",
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/opt/anaconda3/envs/unsloth/bin/python",
+        "pid": "830624",
+        "used_memory_mib": "18196"
+      }
+    ],
+    "free_memory_mib": 63007,
+    "index": 7,
+    "used_memory_mib": 18216,
+    "utilization_gpu_percent": 0
+  },
+  "model_family": "M0_OPENVLA",
+  "next_legal_action": "STOP_FOR_PI_AFTER_FULL_CENSUS",
+  "normalization": {
+    "available_norm_stats_keys": [
+      "libero_spatial"
+    ],
+    "checkpoint_mutated": false,
+    "component_state_dict_loader": null,
+    "dataset_statistics_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620/dataset_statistics.json",
+    "dataset_statistics_sha256": "7636449e2a70f48b42713237c57031bb95a6df1dfd81ef913d756d7d2626b1df",
+    "requested_task_suite": "libero_spatial",
+    "resolution_mode": "EXACT_SUITE_KEY",
+    "resolved_unnorm_key": "libero_spatial",
+    "stats_loader": "checkpoint_embedded_or_existing_norm_stats",
+    "vision_num_images_in_input": 1
+  },
+  "runtime_counters": {
+    "aa2_exposure": 1,
+    "aa_v_phys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 102,
+    "eval160_reads": 0,
+    "model_inference_calls": 92,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 92,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 1,
+    "task_success_reads": 0
+  },
+  "schema": "STAGE_AA_AA2_CLEAN_SCREEN_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_AA2_CLEAN_DENOMINATOR_ONLY",
+  "seed": 2058700214,
+  "source_task_idx": 3,
+  "state": "state_40",
+  "status": "AA2_CLEAN_CELL_COMPLETE",
+  "suite": "libero_spatial",
+  "timestamp_utc": "2026-08-26T03:53:48Z"
+}

@@ -1,0 +1,168 @@
+{
+  "canonical_parent_key": "libero_10/task_00/state_29",
+  "cell_id": "AA2-0001",
+  "checkpoint": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+  "checkpoint_manifest": null,
+  "clean": {
+    "baseline_z_m": 0.4751698094694408,
+    "binding": {
+      "bddl_path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/bddl_files/libero_10/LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket.bddl",
+      "body_names": [
+        "world",
+        "floor",
+        "living_room_table",
+        "living_room_table_col",
+        "robot0_base",
+        "robot0_link0",
+        "robot0_link1",
+        "robot0_link2",
+        "robot0_link3",
+        "robot0_link4",
+        "robot0_link5",
+        "robot0_link6",
+        "robot0_link7",
+        "robot0_right_hand",
+        "gripper0_right_gripper",
+        "gripper0_eef",
+        "gripper0_leftfinger",
+        "gripper0_finger_joint1_tip",
+        "gripper0_rightfinger",
+        "gripper0_finger_joint2_tip",
+        "mount0_base",
+        "alphabet_soup_1_main",
+        "cream_cheese_1_main",
+        "tomato_sauce_1_main",
+        "ketchup_1_main",
+        "orange_juice_1_main",
+        "milk_1_main",
+        "butter_1_main",
+        "basket_1_main"
+      ],
+      "eef_site_id": 9,
+      "eef_site_name": "gripper0_grip_site",
+      "reason": "",
+      "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+      "status": "PASS",
+      "target_body_ids": {
+        "alphabet_soup_1": 21,
+        "tomato_sauce_1": 23
+      },
+      "target_body_names": {
+        "alphabet_soup_1": "alphabet_soup_1_main",
+        "tomato_sauce_1": "tomato_sauce_1_main"
+      },
+      "target_object_ids": [
+        "alphabet_soup_1",
+        "tomato_sauce_1"
+      ],
+      "taxonomy_eligibility": {
+        "declared_object_ids": [
+          "alphabet_soup_1",
+          "cream_cheese_1",
+          "tomato_sauce_1",
+          "ketchup_1",
+          "orange_juice_1",
+          "milk_1",
+          "butter_1",
+          "basket_1"
+        ],
+        "eligible": true,
+        "fixture_binding_inference_allowed": false,
+        "reason": "",
+        "rule": "at least one declared source object in an In/On goal predicate",
+        "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+        "status": "PASS",
+        "target_object_ids": [
+          "alphabet_soup_1",
+          "tomato_sauce_1"
+        ]
+      }
+    },
+    "boundary_count": 315,
+    "clean_trajectory_digest": "a442c1655b49102a93b77769e3fe1a476ce5c7e05892eaf68e81c7c0ce689c37",
+    "complete_trajectory": false,
+    "critical_candidates": [],
+    "critical_reason_counts": {
+      "CLEAN_STABLE_CONTINUATION_INVALID": 231,
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 296,
+      "STABLE_GRASP_WINDOW_INVALID": 214,
+      "TERMINAL_OR_NATURAL_RELEASE_IN_ELIGIBILITY_WINDOW": 1
+    },
+    "horizon": 520,
+    "language": "put both the alphabet soup and the tomato sauce in the basket",
+    "noncritical_candidates": [],
+    "noncritical_reason_counts": {
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 296,
+      "ESTABLISHED_GRASP_ALREADY_PRESENT": 197,
+      "NOT_PRE_CONTACT": 292,
+      "TERMINAL_OR_NATURAL_RELEASE_IN_ELIGIBILITY_WINDOW": 1
+    },
+    "selected_critical": null,
+    "selected_noncritical": null,
+    "status": "PASS_AA2_CLEAN_TRAJECTORY_CAPTURED",
+    "steps_captured": 315,
+    "target_object": "alphabet_soup_1",
+    "telemetry_valid_rows": 315
+  },
+  "clean_only": true,
+  "eligibility": {
+    "critical": false,
+    "critical_anchor": null,
+    "noncritical": false,
+    "noncritical_affects_primary_denominator": false,
+    "noncritical_anchor": null
+  },
+  "gate": "STAGE_AA_AA2_CLEAN_ONLY_FULL_CENSUS_AND_COMMON_DENOMINATOR_FREEZE_V1",
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/opt/anaconda3/envs/unsloth/bin/python",
+        "pid": "2205365",
+        "used_memory_mib": "57046"
+      }
+    ],
+    "free_memory_mib": 24160,
+    "index": 4,
+    "used_memory_mib": 57062,
+    "utilization_gpu_percent": 49
+  },
+  "model_family": "M0_OPENVLA",
+  "next_legal_action": "STOP_FOR_PI_AFTER_FULL_CENSUS",
+  "normalization": {
+    "available_norm_stats_keys": [
+      "libero_10"
+    ],
+    "checkpoint_mutated": false,
+    "component_state_dict_loader": null,
+    "dataset_statistics_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/dataset_statistics.json",
+    "dataset_statistics_sha256": "54ca346948d5e62e9519a9ed93e45f0a069b9ec997ad1f48f1d8867d4d2d86d2",
+    "requested_task_suite": "libero_10",
+    "resolution_mode": "EXACT_SUITE_KEY",
+    "resolved_unnorm_key": "libero_10",
+    "stats_loader": "checkpoint_embedded_or_existing_norm_stats",
+    "vision_num_images_in_input": 1
+  },
+  "runtime_counters": {
+    "aa2_exposure": 1,
+    "aa_v_phys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 325,
+    "eval160_reads": 0,
+    "model_inference_calls": 315,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 315,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 1,
+    "task_success_reads": 0
+  },
+  "schema": "STAGE_AA_AA2_CLEAN_SCREEN_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_AA2_CLEAN_DENOMINATOR_ONLY",
+  "seed": 1061090577,
+  "source_task_idx": 0,
+  "state": "state_29",
+  "status": "AA2_CLEAN_CELL_COMPLETE",
+  "suite": "libero_10",
+  "timestamp_utc": "2026-08-26T03:40:40Z"
+}

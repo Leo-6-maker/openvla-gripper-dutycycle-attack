@@ -1,0 +1,1152 @@
+{
+  "canonical_parent_key": "libero_10/task_00/state_36",
+  "cell_id": "AA2-0002",
+  "checkpoint": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+  "checkpoint_manifest": null,
+  "clean": {
+    "baseline_z_m": 0.4751698094694408,
+    "binding": {
+      "bddl_path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/bddl_files/libero_10/LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket.bddl",
+      "body_names": [
+        "world",
+        "floor",
+        "living_room_table",
+        "living_room_table_col",
+        "robot0_base",
+        "robot0_link0",
+        "robot0_link1",
+        "robot0_link2",
+        "robot0_link3",
+        "robot0_link4",
+        "robot0_link5",
+        "robot0_link6",
+        "robot0_link7",
+        "robot0_right_hand",
+        "gripper0_right_gripper",
+        "gripper0_eef",
+        "gripper0_leftfinger",
+        "gripper0_finger_joint1_tip",
+        "gripper0_rightfinger",
+        "gripper0_finger_joint2_tip",
+        "mount0_base",
+        "alphabet_soup_1_main",
+        "cream_cheese_1_main",
+        "tomato_sauce_1_main",
+        "ketchup_1_main",
+        "orange_juice_1_main",
+        "milk_1_main",
+        "butter_1_main",
+        "basket_1_main"
+      ],
+      "eef_site_id": 9,
+      "eef_site_name": "gripper0_grip_site",
+      "reason": "",
+      "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+      "status": "PASS",
+      "target_body_ids": {
+        "alphabet_soup_1": 21,
+        "tomato_sauce_1": 23
+      },
+      "target_body_names": {
+        "alphabet_soup_1": "alphabet_soup_1_main",
+        "tomato_sauce_1": "tomato_sauce_1_main"
+      },
+      "target_object_ids": [
+        "alphabet_soup_1",
+        "tomato_sauce_1"
+      ],
+      "taxonomy_eligibility": {
+        "declared_object_ids": [
+          "alphabet_soup_1",
+          "cream_cheese_1",
+          "tomato_sauce_1",
+          "ketchup_1",
+          "orange_juice_1",
+          "milk_1",
+          "butter_1",
+          "basket_1"
+        ],
+        "eligible": true,
+        "fixture_binding_inference_allowed": false,
+        "reason": "",
+        "rule": "at least one declared source object in an In/On goal predicate",
+        "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+        "status": "PASS",
+        "target_object_ids": [
+          "alphabet_soup_1",
+          "tomato_sauce_1"
+        ]
+      }
+    },
+    "boundary_count": 520,
+    "clean_trajectory_digest": "51e42a89a0134b5bb4da3584f4285c36b9d0378cadc44c0480cea859dc0ec274",
+    "complete_trajectory": true,
+    "critical_candidates": [],
+    "critical_reason_counts": {
+      "CLEAN_STABLE_CONTINUATION_INVALID": 501,
+      "STABLE_GRASP_WINDOW_INVALID": 501
+    },
+    "horizon": 520,
+    "language": "put both the alphabet soup and the tomato sauce in the basket",
+    "noncritical_candidates": [
+      {
+        "anchor_class": "NONCRITICAL",
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "882e6fb15bd0aa18f482a1bda97020a09cade7a60e5451b64386bc7f50588c25",
+        "remaining_horizon_steps": 443,
+        "selection_rank_sha256": "9415f69b4ff54c1f143d96347574cf3e5f8b44e8d88e010ce71fa4caf82db794",
+        "step": 77
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "boundary": "FRESH_PER_STEP",
+        "candidate_digest": "63d3cbdd7a5ce33be033a37857d39b36bf7c29935607fe55c679126a6090b495",
+        "remaining_horizon_steps": 258,
+        "selection_rank_sha256": "a62566345720116ae0441233b734fadf1f6bcdb0b7115503e9e9cf9294ac47dd",
+        "step": 262
+      }
+    ],
+    "noncritical_reason_counts": {
+      "NOT_PRE_CONTACT": 499
+    },
+    "selected_critical": null,
+    "selected_noncritical": {
+      "anchor_class": "NONCRITICAL",
+      "boundary": "FRESH_PER_STEP",
+      "candidate_digest": "882e6fb15bd0aa18f482a1bda97020a09cade7a60e5451b64386bc7f50588c25",
+      "evidence_rows": [
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.07707400405261455,
+            -0.14931771388751022,
+            0.48532791495542493
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03979087062452034,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11094936299580208,
+            -0.16774311952612297,
+            0.4755157863086889
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 443,
+          "step": 77,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08083806217290862,
+            -0.14976605434482504,
+            0.48334444972903345
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03738446871500454,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11340947551827839,
+            -0.16636684669092436,
+            0.4755268268633593
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 442,
+          "step": 78,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08456152103972224,
+            -0.15015054767266284,
+            0.48166334256459964
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03473570418760182,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11504077617531402,
+            -0.1655352145558563,
+            0.47526833070524777
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 441,
+          "step": 79,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08697741918175533,
+            -0.1505621615200981,
+            0.48065020676408
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03234703329235465,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11559754294808454,
+            -0.16478151160254254,
+            0.47564729144902756
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 440,
+          "step": 80,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08724934478773791,
+            -0.15084965881593468,
+            0.48097744243656176
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03216760369509062,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11573532195362089,
+            -0.1648547471305387,
+            0.4757657887940656
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 439,
+          "step": 81,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.0875209283222503,
+            -0.1510691399337145,
+            0.48125496457904227
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03198027541583654,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11584730348542883,
+            -0.16489739016939714,
+            0.4758573742641921
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 438,
+          "step": 82,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08777928072079583,
+            -0.15102673848692486,
+            0.48141526002129287
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03181690603437694,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11592135520376265,
+            -0.1648090221188852,
+            0.47590274595929566
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 437,
+          "step": 83,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08776508965551845,
+            -0.15048746006337618,
+            0.4818764715343386
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03165774891674887,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11544727215412097,
+            -0.16446913369826135,
+            0.4755185913091743
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 436,
+          "step": 84,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08891772300181403,
+            -0.15043279959239655,
+            0.481569928167638
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03141887812332717,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11629073727010689,
+            -0.16448221697682025,
+            0.4752077065780849
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 435,
+          "step": 85,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09051736513288366,
+            -0.15030769073459316,
+            0.48089237857339695
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.030587327314951465,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11736408073431612,
+            -0.1638481746715743,
+            0.47528044945408915
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 434,
+          "step": 86,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09119098712804599,
+            -0.1507482688333542,
+            0.4807336150764611
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03002186756817943,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.1176852284930792,
+            -0.1637702372187354,
+            0.47527503960819106
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 433,
+          "step": 87,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09109120991257895,
+            -0.1507176072298726,
+            0.48091498030218144
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.02997538558627777,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11769261056406961,
+            -0.16334978648162246,
+            0.4753187966225153
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 432,
+          "step": 88,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09086946399112969,
+            -0.15160131206293928,
+            0.4817016138657284
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.028973748780327307,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.1174313602191558,
+            -0.16162415099117922,
+            0.47591486287958357
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 431,
+          "step": 89,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09125865285363285,
+            -0.15272023631355489,
+            0.48449278488587494
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.028495073325182207,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11820249154747167,
+            -0.1571788781848685,
+            0.4763614090544874
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 430,
+          "step": 90,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09138895661640559,
+            -0.15347336419212007,
+            0.4899314883098263
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.02983880222159349,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11930048457515414,
+            -0.1552509610032416,
+            0.47953240784064727
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 429,
+          "step": 91,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09083868116891612,
+            -0.15402298328104896,
+            0.49657240038107214
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03888221110681772,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.125392399188276,
+            -0.15601603762815572,
+            0.47885532821992816
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 428,
+          "step": 92,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08951928125961589,
+            -0.15461055284804426,
+            0.5033810327245457
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.04480968625215295,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.12629215843003794,
+            -0.1569132713447384,
+            0.4778788568536436
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 427,
+          "step": 93,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.0877425431057714,
+            -0.15493402251790583,
+            0.5101584648885082
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.050588530874780435,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.12651511709505725,
+            -0.15821364680437144,
+            0.4778299785822552
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 426,
+          "step": 94,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08596342517702027,
+            -0.15454119961970017,
+            0.517671770927941
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.056865301476032665,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.12501864206808025,
+            -0.15977884169377024,
+            0.47667275080481764
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 425,
+          "step": 95,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08348900111596273,
+            -0.15260217579660218,
+            0.5275902868724143
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.06561653483853835,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.122439204186098,
+            -0.16083522205436346,
+            0.47543064467339313
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 424,
+          "step": 96,
+          "terminal_after": false,
+          "terminal_before": false
+        }
+      ],
+      "remaining_horizon_steps": 443,
+      "selection_rank_sha256": "9415f69b4ff54c1f143d96347574cf3e5f8b44e8d88e010ce71fa4caf82db794",
+      "step": 77
+    },
+    "status": "PASS_AA2_CLEAN_TRAJECTORY_CAPTURED",
+    "steps_captured": 520,
+    "target_object": "alphabet_soup_1",
+    "telemetry_valid_rows": 520
+  },
+  "clean_only": true,
+  "eligibility": {
+    "critical": false,
+    "critical_anchor": null,
+    "noncritical": true,
+    "noncritical_affects_primary_denominator": false,
+    "noncritical_anchor": {
+      "anchor_class": "NONCRITICAL",
+      "boundary": "FRESH_PER_STEP",
+      "candidate_digest": "882e6fb15bd0aa18f482a1bda97020a09cade7a60e5451b64386bc7f50588c25",
+      "evidence_rows": [
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.07707400405261455,
+            -0.14931771388751022,
+            0.48532791495542493
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03979087062452034,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11094936299580208,
+            -0.16774311952612297,
+            0.4755157863086889
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 443,
+          "step": 77,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08083806217290862,
+            -0.14976605434482504,
+            0.48334444972903345
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03738446871500454,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11340947551827839,
+            -0.16636684669092436,
+            0.4755268268633593
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 442,
+          "step": 78,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08456152103972224,
+            -0.15015054767266284,
+            0.48166334256459964
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03473570418760182,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11504077617531402,
+            -0.1655352145558563,
+            0.47526833070524777
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 441,
+          "step": 79,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08697741918175533,
+            -0.1505621615200981,
+            0.48065020676408
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03234703329235465,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11559754294808454,
+            -0.16478151160254254,
+            0.47564729144902756
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 440,
+          "step": 80,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08724934478773791,
+            -0.15084965881593468,
+            0.48097744243656176
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03216760369509062,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11573532195362089,
+            -0.1648547471305387,
+            0.4757657887940656
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 439,
+          "step": 81,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.0875209283222503,
+            -0.1510691399337145,
+            0.48125496457904227
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03198027541583654,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11584730348542883,
+            -0.16489739016939714,
+            0.4758573742641921
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 438,
+          "step": 82,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08777928072079583,
+            -0.15102673848692486,
+            0.48141526002129287
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03181690603437694,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11592135520376265,
+            -0.1648090221188852,
+            0.47590274595929566
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 437,
+          "step": 83,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08776508965551845,
+            -0.15048746006337618,
+            0.4818764715343386
+          ],
+          "env_gripper": -1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03165774891674887,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11544727215412097,
+            -0.16446913369826135,
+            0.4755185913091743
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.9960784316062927,
+          "remaining_horizon": 436,
+          "step": 84,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08891772300181403,
+            -0.15043279959239655,
+            0.481569928167638
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03141887812332717,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11629073727010689,
+            -0.16448221697682025,
+            0.4752077065780849
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 435,
+          "step": 85,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09051736513288366,
+            -0.15030769073459316,
+            0.48089237857339695
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.030587327314951465,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11736408073431612,
+            -0.1638481746715743,
+            0.47528044945408915
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 434,
+          "step": 86,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09119098712804599,
+            -0.1507482688333542,
+            0.4807336150764611
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03002186756817943,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.1176852284930792,
+            -0.1637702372187354,
+            0.47527503960819106
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 433,
+          "step": 87,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09109120991257895,
+            -0.1507176072298726,
+            0.48091498030218144
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.02997538558627777,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11769261056406961,
+            -0.16334978648162246,
+            0.4753187966225153
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 432,
+          "step": 88,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09086946399112969,
+            -0.15160131206293928,
+            0.4817016138657284
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.028973748780327307,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.1174313602191558,
+            -0.16162415099117922,
+            0.47591486287958357
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 431,
+          "step": 89,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09125865285363285,
+            -0.15272023631355489,
+            0.48449278488587494
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.028495073325182207,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11820249154747167,
+            -0.1571788781848685,
+            0.4763614090544874
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 430,
+          "step": 90,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09138895661640559,
+            -0.15347336419212007,
+            0.4899314883098263
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.02983880222159349,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.11930048457515414,
+            -0.1552509610032416,
+            0.47953240784064727
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 429,
+          "step": 91,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.09083868116891612,
+            -0.15402298328104896,
+            0.49657240038107214
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.03888221110681772,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.125392399188276,
+            -0.15601603762815572,
+            0.47885532821992816
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 428,
+          "step": 92,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08951928125961589,
+            -0.15461055284804426,
+            0.5033810327245457
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.04480968625215295,
+          "object_gripper_contact": true,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.12629215843003794,
+            -0.1569132713447384,
+            0.4778788568536436
+          ],
+          "object_support_contact": false,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 427,
+          "step": 93,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.0877425431057714,
+            -0.15493402251790583,
+            0.5101584648885082
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.050588530874780435,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.12651511709505725,
+            -0.15821364680437144,
+            0.4778299785822552
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 426,
+          "step": 94,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08596342517702027,
+            -0.15454119961970017,
+            0.517671770927941
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.056865301476032665,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.12501864206808025,
+            -0.15977884169377024,
+            0.47667275080481764
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 425,
+          "step": 95,
+          "terminal_after": false,
+          "terminal_before": false
+        },
+        {
+          "contact_telemetry_valid": true,
+          "eef_position": [
+            -0.08348900111596273,
+            -0.15260217579660218,
+            0.5275902868724143
+          ],
+          "env_gripper": 1.0,
+          "model_boundary": true,
+          "object_eef_distance_m": 0.06561653483853835,
+          "object_gripper_contact": false,
+          "object_identity": "alphabet_soup_1",
+          "object_position": [
+            -0.122439204186098,
+            -0.16083522205436346,
+            0.47543064467339313
+          ],
+          "object_support_contact": true,
+          "raw_gripper": 0.0,
+          "remaining_horizon": 424,
+          "step": 96,
+          "terminal_after": false,
+          "terminal_before": false
+        }
+      ],
+      "remaining_horizon_steps": 443,
+      "selection_rank_sha256": "9415f69b4ff54c1f143d96347574cf3e5f8b44e8d88e010ce71fa4caf82db794",
+      "step": 77
+    }
+  },
+  "gate": "STAGE_AA_AA2_CLEAN_ONLY_FULL_CENSUS_AND_COMMON_DENOMINATOR_FREEZE_V1",
+  "gpu": {
+    "compute_processes": [],
+    "free_memory_mib": 81213,
+    "index": 4,
+    "used_memory_mib": 10,
+    "utilization_gpu_percent": 63
+  },
+  "model_family": "M0_OPENVLA",
+  "next_legal_action": "STOP_FOR_PI_AFTER_FULL_CENSUS",
+  "normalization": {
+    "available_norm_stats_keys": [
+      "libero_10"
+    ],
+    "checkpoint_mutated": false,
+    "component_state_dict_loader": null,
+    "dataset_statistics_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/dataset_statistics.json",
+    "dataset_statistics_sha256": "54ca346948d5e62e9519a9ed93e45f0a069b9ec997ad1f48f1d8867d4d2d86d2",
+    "requested_task_suite": "libero_10",
+    "resolution_mode": "EXACT_SUITE_KEY",
+    "resolved_unnorm_key": "libero_10",
+    "stats_loader": "checkpoint_embedded_or_existing_norm_stats",
+    "vision_num_images_in_input": 1
+  },
+  "runtime_counters": {
+    "aa2_exposure": 1,
+    "aa_v_phys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 530,
+    "eval160_reads": 0,
+    "model_inference_calls": 520,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 520,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 1,
+    "task_success_reads": 0
+  },
+  "schema": "STAGE_AA_AA2_CLEAN_SCREEN_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_AA2_CLEAN_DENOMINATOR_ONLY",
+  "seed": 246501041,
+  "source_task_idx": 0,
+  "state": "state_36",
+  "status": "AA2_CLEAN_CELL_COMPLETE",
+  "suite": "libero_10",
+  "timestamp_utc": "2026-08-26T03:47:37Z"
+}
