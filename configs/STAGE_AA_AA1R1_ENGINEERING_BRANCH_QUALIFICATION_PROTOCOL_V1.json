@@ -1,0 +1,110 @@
+{
+  "schema": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_QUALIFICATION_PROTOCOL_V1",
+  "status": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_QUALIFICATION_AUTHORIZED",
+  "gate": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_DECOUPLING_AND_QUALIFICATION_V1",
+  "authorization": {
+    "pi_comment_id": 5419093246,
+    "aa0_scientific_contract_immutable": true,
+    "aa2_authorized": false,
+    "scope": "Engineering branch-path qualification on the same three permanently excluded canaries only."
+  },
+  "canaries": [
+    "libero_10/task_04/state_20",
+    "libero_object/task_02/state_42",
+    "libero_spatial/task_05/state_34"
+  ],
+  "population_firewall": {
+    "fourth_canary_allowed": false,
+    "aa2_candidates_allowed": false,
+    "stage_z_identities_allowed": false,
+    "replacement_or_top_up": false,
+    "scientific_parent_exposure_must_equal": 0
+  },
+  "scientific_contract": {
+    "authority": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+    "scientific_critical_anchor_required": false,
+    "scientific_noncritical_anchor_required": false,
+    "scientific_eligibility_predicates_evaluated": false,
+    "stable_grasp_definition_changed": false,
+    "clean_continuation_changed": false,
+    "thresholds_changed": false,
+    "denominator_changed": false,
+    "selection_salt_changed": false,
+    "doses_changed": false,
+    "endpoint_definition_changed": false,
+    "promotion_or_statistical_rule_changed": false
+  },
+  "engineering_intervention_point": {
+    "constructs": [
+      "ENGINEERING_INTERVENTION_POINT_A",
+      "ENGINEERING_INTERVENTION_POINT_B"
+    ],
+    "selection_salt": "STAGE_AA_AA1R1_ENGINEERING_POINT_V1_20260826",
+    "scientific_semantic": "NONE",
+    "legal_requirements": [
+      "complete clean trajectory row",
+      "legal nonterminal state for the next 20 physical steps",
+      "authoritative fresh model boundary",
+      "exact snapshot available",
+      "finite required telemetry channels",
+      "at least 20 legal physical steps remain",
+      "no AA0 scientific eligibility predicate"
+    ],
+    "selection": "enumerate all engineering-legal clean points, rank deterministically, select A then distinct B when available",
+    "selection_must_be_sealed_before_open": true,
+    "zero_point_policy": "engineering HOLD; no replacement"
+  },
+  "branch_matrix": {
+    "point_a_routes": [
+      "ENGINEERING_CLEAN_REPLAY_A",
+      "ENGINEERING_OPEN_T3_A",
+      "ENGINEERING_OPEN_T5_A",
+      "ENGINEERING_OPEN_T10_A"
+    ],
+    "point_b_route": "ENGINEERING_OPEN_T5_B",
+    "one_point_only": "record ONE_POINT_ONLY; no synthetic B point",
+    "maximum_branches": 45,
+    "endpoint_outputs_are_engineering_trace_only": true
+  },
+  "model_boundaries": {
+    "M0_OPENVLA": "FRESH_PER_STEP",
+    "M1_OPENVLA_OFT": "FRESH_OFT_ACTION_QUEUE",
+    "M2_PI05_LIBERO": "FRESH_PI05_REPLAN"
+  },
+  "required_invariants": {
+    "action_dim": 7,
+    "arm_indices": [0, 1, 2, 3, 4, 5],
+    "gripper_index": 6,
+    "arm_tolerance_linf": 1e-7,
+    "native_open_final": -1.0,
+    "open_doses": [3, 5, 10],
+    "snapshot_restore_exact": true,
+    "clean_replay_deterministic": true,
+    "telemetry_one_to_one": true,
+    "contact_false_alone_not_positive_loss": true,
+    "invalid_branch_retained": true,
+    "no_decode_reencode_or_fallback": true,
+    "m1_residual_queue_cross_boundary_forbidden": true,
+    "m2_residual_plan_cross_boundary_forbidden": true
+  },
+  "source_bindings": {
+    "aa0": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+    "aa1": "configs/STAGE_AA_AA1_ENGINEERING_RUNTIME_PROTOCOL_V1.json",
+    "aa1_plan": "reports/STAGE_AA_AA1_ENGINEERING_CANARY_PLAN_V1.json",
+    "runner": "scripts/stage_aa/run_stage_aa1r1_engineering_branch.py"
+  },
+  "forbidden": [
+    "AA2 scientific candidates",
+    "Stage-Z identities",
+    "PGD",
+    "protected/Eval160",
+    "BRIDGE/F1",
+    "task-success selection or claims",
+    "scientific attack-rate estimation",
+    "paper promotion"
+  ],
+  "terminal": {
+    "pass": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_QUALIFIED_STOP_FOR_PI",
+    "hold": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_HOLD_STOP_FOR_PI"
+  }
+}
