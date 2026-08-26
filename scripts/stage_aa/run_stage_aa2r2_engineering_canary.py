@@ -161,7 +161,7 @@ def validate_static(
         raise RuntimeError("AA2R2_PROTOCOL_NOT_AUTHORIZED")
     if protocol.get("phase_a", {}).get("authorized") is not True:
         raise RuntimeError("AA2R2_PHASE_A_NOT_AUTHORIZED")
-    if protocol.get("scientific_firewall", {}).get("aa2_scientific_parent_exposure") != 0:
+    if protocol.get("phase_a", {}).get("scientific_parent_exposure") != 0:
         raise RuntimeError("AA2R2_SCIENTIFIC_FIREWALL_INVALID")
     if source.get("status") != "STAGE_AA_AA2R2_RUNTIME_SOURCE_AUTHORITY_FROZEN":
         raise RuntimeError("AA2R2_SOURCE_AUTHORITY_NOT_FROZEN")
