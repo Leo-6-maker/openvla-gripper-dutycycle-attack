@@ -28,14 +28,17 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--family", choices=MODELS, required=True)
     parser.add_argument("--gpu-id", type=int, required=True)
+    parser.add_argument("--start-ordinal", type=int, default=1)
+    parser.add_argument("--end-ordinal", type=int, default=108)
     parser.add_argument("--root", type=Path, default=Path("/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa1r1-runtime-14d14ea0"))
     args = parser.parse_args()
     root = args.root
     manifest_path = root / "reports/STAGE_AA_AA2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json"
     manifest = read_json(manifest_path)
     cells = [cell for cell in manifest["cells"] if cell["model_family"] == args.family]
-    if len(cells) != 108:
-        raise RuntimeError(f"AA2_WORKER_EXPECTED_108_CELLS:{len(cells)}")
+    if len(cells) != 108 or not (1 <= args.start_ordinal <= args.end_ordinal <= len(cells)):
+        raise RuntimeError(f"AA2_WORKER_SHARD_INVALID:{len(cells)}:{args.start_ordinal}:{args.end_ordinal}")
+    cells = cells[args.start_ordinal - 1 : args.end_ordinal]
     runner = root / "scripts/stage_aa/run_stage_aa2_clean_screen.py"
     common = [
         PYTHON,
@@ -54,7 +57,7 @@ def main() -> int:
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
     env["PYTHONUNBUFFERED"] = "1"
-    print(json.dumps({"status": "AA2_WORKER_STARTED", "family": args.family, "gpu_id": args.gpu_id, "cell_count": len(cells)}, sort_keys=True), flush=True)
+    print(json.dumps({"status": "AA2_WORKER_STARTED", "family": args.family, "gpu_id": args.gpu_id, "cell_count": len(cells), "start_ordinal": args.start_ordinal, "end_ordinal": args.end_ordinal}, sort_keys=True), flush=True)
     for number, cell in enumerate(cells, start=1):
         output = receipt_dir / f"{cell['cell_id']}.json"
         if output.is_file():
