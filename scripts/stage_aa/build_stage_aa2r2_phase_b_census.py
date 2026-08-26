@@ -200,7 +200,8 @@ def resolve_receipts(root: Path, manifest: dict[str, Any], protocol: dict[str, A
     require(expected_recovery == RECOVERY_IDS, f"RECOVERY_SET:{sorted(expected_recovery)}")
     require(len(expected_normal) == 288, f"NORMAL_SET_COUNT:{len(expected_normal)}")
     actual_normal = {p.stem for p in normal_dir.glob("AA2-*.json")}
-    actual_recovery = {p.name.removesuffix(".recovery.json") for p in recovery_dir.glob("AA2-*.recovery.json")}
+    recovery_suffix = ".recovery.json"
+    actual_recovery = {p.name[:-len(recovery_suffix)] for p in recovery_dir.glob("AA2-*.recovery.json")}
     require(actual_normal == expected_normal, f"UNEXPECTED_NORMAL_RECEIPTS:{sorted(actual_normal ^ expected_normal)}")
     require(actual_recovery == expected_recovery, f"UNEXPECTED_RECOVERY_RECEIPTS:{sorted(actual_recovery ^ expected_recovery)}")
     require(len(receipt_index) == 324 and len(receipts) == 324, "FULL_CENSUS_COUNT")
