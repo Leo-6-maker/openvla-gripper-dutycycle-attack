@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -66,3 +68,32 @@ def test_historical_pass_implies_v2_pass_with_same_open_close_meaning():
                 assert new["accepted"] is True
                 assert new["semantic_state"] == ("OPEN" if raw > 0.5 else "CLOSE")
                 assert math.isclose(new["expected_final_gripper"], expected, rel_tol=0.0, abs_tol=1e-12)
+
+
+def test_semantics_failure_persists_full_offending_row_before_raise(tmp_path):
+    path = ROOT / "scripts/stage_aa/run_stage_aa2r2_engineering_canary.py"
+    spec = importlib.util.spec_from_file_location("aa2r2_failure_logging_test", path)
+    assert spec is not None and spec.loader is not None
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    output = tmp_path / "failure.json"
+    counters = {"model_inference_calls": 1, "env_step_calls": 0}
+    context = {
+        "receipt": {"cell_id": "TEST", "canonical_parent_key": "engineering", "seed": 1},
+        "output": output,
+        "counters": counters,
+        "pair_audits": [],
+        "family": MODEL_M0,
+    }
+    raw = np.asarray(_action(float("nan")), dtype=np.float32)
+    final = np.asarray(_action(1.0), dtype=np.float32)
+    check = validate_action_pair(MODEL_M0, raw.tolist(), final.tolist())
+    runner._record_pair_failure(context, check, raw, final, step=7, boundary_step=7, queue_index=0, meta={"fresh_boundary": "FRESH_PER_STEP"})
+    saved = json.loads(output.read_text(encoding="utf-8"))
+    row = saved["error"]["diagnostics"]["offending_row"]
+    assert saved["status"] == "AA2R2_ENGINEERING_INVALID_ACTION_SEMANTICS"
+    assert row["cell_id"] == "TEST"
+    assert row["step"] == 7
+    assert row["raw_action_7d"][-1] == "NaN"
+    assert row["final_action_7d"][-1] == 1.0
+    assert row["first_offending_row_digest"]

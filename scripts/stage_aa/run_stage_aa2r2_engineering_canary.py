@@ -149,6 +149,7 @@ def find_canary(plan: dict[str, Any], family: str, parent_key: str) -> dict[str,
 
 def validate_static(
     protocol: dict[str, Any],
+    source: dict[str, Any],
     plan: dict[str, Any],
     aa0: dict[str, Any],
     capacity: dict[str, Any],
@@ -162,6 +163,12 @@ def validate_static(
         raise RuntimeError("AA2R2_PHASE_A_NOT_AUTHORIZED")
     if protocol.get("scientific_firewall", {}).get("aa2_scientific_parent_exposure") != 0:
         raise RuntimeError("AA2R2_SCIENTIFIC_FIREWALL_INVALID")
+    if source.get("status") != "STAGE_AA_AA2R2_RUNTIME_SOURCE_AUTHORITY_FROZEN":
+        raise RuntimeError("AA2R2_SOURCE_AUTHORITY_NOT_FROZEN")
+    for key, binding in source.get("versioned_runtime_files", {}).items():
+        path = ROOT / str(binding["path"])
+        if not path.is_file() or sha256_file(path) != binding.get("sha256"):
+            raise RuntimeError(f"AA2R2_SOURCE_BINDING_MISMATCH:{key}")
     if plan.get("status") != "STAGE_AA_AA2R2_ENGINEERING_CANARY_PLAN_FROZEN":
         raise RuntimeError("AA2R2_CANARY_PLAN_NOT_FROZEN")
     if plan.get("cell_count") != 9 or len(plan.get("canaries", [])) != 9:
@@ -388,6 +395,7 @@ def capture_engineering_clean(config: dict[str, Any], family: str, canary: dict[
 
 def run_cell(args: argparse.Namespace) -> dict[str, Any]:
     protocol = load_json(args.protocol)
+    source = load_json(args.source_authority)
     plan = load_json(args.canary_plan)
     aa0 = load_json(args.aa0)
     capacity = load_json(args.capacity)
@@ -438,7 +446,7 @@ def run_cell(args: argparse.Namespace) -> dict[str, Any]:
     atomic_write(args.output, receipt)
     model = None
     try:
-        canary, checkpoint = validate_static(protocol, plan, aa0, capacity, z1_config, args.model_family, args.canonical_parent_key)
+        canary, checkpoint = validate_static(protocol, source, plan, aa0, capacity, z1_config, args.model_family, args.canonical_parent_key)
         AA1.require_single_gpu(args.gpu_id)
         receipt["gpu"] = gpu_snapshot(args.gpu_id)
         set_clean_seed(int(canary["seed"]))
@@ -499,6 +507,7 @@ def run_cell(args: argparse.Namespace) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--protocol", type=Path, required=True)
+    parser.add_argument("--source-authority", type=Path, required=True)
     parser.add_argument("--canary-plan", type=Path, required=True)
     parser.add_argument("--aa0", type=Path, required=True)
     parser.add_argument("--capacity", type=Path, required=True)
