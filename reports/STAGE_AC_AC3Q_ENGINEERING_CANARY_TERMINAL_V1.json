@@ -1,0 +1,40 @@
+{
+  "aggregate_runtime_counters": {
+    "ac2_exposure": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "engineering_endpoint_evaluations": 36,
+    "env_step_calls": 11001,
+    "eval160_reads": 0,
+    "model_inference_calls": 1607,
+    "open_intervention_steps": 207,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 4914,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "claim_boundary": "G1 consumed-only engineering qualification; no AC3 scientific result",
+  "gate": "STAGE_AC_AC3_AC4_AC5_TREATMENT_NAIVE_MULTI_MODEL_PHYSICAL_REPLICATION_PROGRAM_V1",
+  "model_cell_counts": {
+    "M0_OPENVLA": 3,
+    "M1_OPENVLA_OFT": 3,
+    "M2_PI05_LIBERO": 3
+  },
+  "next_legal_action": "EXECUTE_G2_384_SCIENTIFIC_BRANCHES_AFTER_SOURCE_AUTHORITY_REVIEW",
+  "qualification": "9/9 model-canary cells passed required clean/T3/T5/T10 routes; 45 branch videos and exact receipts verified",
+  "schema": "STAGE_AC_AC3Q_ENGINEERING_CANARY_TERMINAL_V1",
+  "scientific_firewall": {
+    "ac2_exposure": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "v_phys_reads": 0
+  },
+  "status": "STAGE_AC_AC3Q_G1_ENGINEERING_QUALIFICATION_PASS_STOP_FOR_PI",
+  "superseded_engineering_invalid_attempts": 3
+}

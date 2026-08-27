@@ -1,0 +1,1351 @@
+{
+  "aggregate_runtime_counters": {
+    "ac2_exposure": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "engineering_endpoint_evaluations": 36,
+    "env_step_calls": 11001,
+    "eval160_reads": 0,
+    "model_inference_calls": 1607,
+    "open_intervention_steps": 207,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 4914,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "claim_boundary": "consumed-only engineering qualification; no scientific outcome",
+  "counts": {
+    "duplicate_video_sha_groups": 4,
+    "expected_cells": 9,
+    "pass_cells": 9,
+    "receipt_files_seen": 12,
+    "verified_branch_routes": 45,
+    "verified_videos": 45
+  },
+  "current_pass_cells": [
+    {
+      "branch_count": 5,
+      "branch_pass_count": 5,
+      "branches": [
+        {
+          "arm_preserved": true,
+          "condition": "CLEAN_REFERENCE",
+          "dose": null,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 0,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_CLEAN_REFERENCE_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "29785c26d60b5c01885b543463e9b5c3a1b56aca4a954b396f363f994f7a9e31"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T3",
+          "dose": 3,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 3,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 13,
+          "route": "ENGINEERING_OPEN_T3_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "41d164497c7cffaab3f9232fe9cfd4fef9bc4f6c6a921c331842bfa6e1a77321"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "9caff8474f365d00400d52759470efc06f936535ed388311ec367c0f1b2892ab"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T10",
+          "dose": 10,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 10,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_OPEN_T10_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "ddcc1f7ad0ecec91dec823ab2af87773205bd5eb99b75b38ace1f8cbfad3aa77"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_B",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "57c80642e56b226fc16bb7bbbea19e4aa07b037dee036dbc408310b4fc528746"
+        }
+      ],
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "clean_replay_status": "PASS_AC3Q_CLEAN_REPLAY_DETERMINISTIC",
+      "clean_trajectory_digest": "69a7c05fa255fb31531219c3ce5d87418d9279f480fe44500d45ca24d78c2534",
+      "gpu_admission": {
+        "free_memory_mib": 20878,
+        "index": 0,
+        "used_memory_mib": 60345,
+        "utilization_gpu_percent": 100
+      },
+      "model_family": "M0_OPENVLA",
+      "receipt": {
+        "bytes": 431191,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M0_OPENVLA__libero_10__task_04__state_20__attempt_2.json",
+        "sha256": "ebf38bc502f8695e157b0eef4df62fdff4bca01b7e39f08a498ca208c88a2a3d"
+      },
+      "runtime_counters": {
+        "ac2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "engineering_endpoint_evaluations": 4,
+        "env_step_calls": 3404,
+        "eval160_reads": 0,
+        "model_inference_calls": 583,
+        "open_intervention_steps": 23,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 726,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "videos": [
+        {
+          "bytes": 12566,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_10__task_04__state_20__attempt_2/M0_OPENVLA_libero_10__task_04__state_20_CLEAN_REFERENCE.mp4",
+          "sha256": "41104fa9bf4fa4c50ba3143158c616461b4afa2660d92474f3fdd001afb505fa"
+        },
+        {
+          "bytes": 10405,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_10__task_04__state_20__attempt_2/M0_OPENVLA_libero_10__task_04__state_20_OPEN_T3.mp4",
+          "sha256": "8d0334505394ac2111d1d6404f32cc1570a211ff63180591edf5175794117f75"
+        },
+        {
+          "bytes": 11248,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_10__task_04__state_20__attempt_2/M0_OPENVLA_libero_10__task_04__state_20_OPEN_T5.mp4",
+          "sha256": "a4ca11055972505b62e84cc7e18f040f0be964b6cef9a14e9cd7c7fd84bf42ae"
+        },
+        {
+          "bytes": 12566,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_10__task_04__state_20__attempt_2/M0_OPENVLA_libero_10__task_04__state_20_OPEN_T10.mp4",
+          "sha256": "41104fa9bf4fa4c50ba3143158c616461b4afa2660d92474f3fdd001afb505fa"
+        },
+        {
+          "bytes": 14994,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_10__task_04__state_20__attempt_2/M0_OPENVLA_libero_10__task_04__state_20_OPEN_T5_B.mp4",
+          "sha256": "dc6c273b5de80981cae4a87ba1c02039eb31b11d1828bc0f00f9b725eae68754"
+        }
+      ]
+    },
+    {
+      "branch_count": 5,
+      "branch_pass_count": 5,
+      "branches": [
+        {
+          "arm_preserved": true,
+          "condition": "CLEAN_REFERENCE",
+          "dose": null,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 0,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_CLEAN_REFERENCE_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "ce988afa9aec3dc884aa3b418d38529cb92e96afcc09a91fe76e86386531c983"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T3",
+          "dose": 3,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 3,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 13,
+          "route": "ENGINEERING_OPEN_T3_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "f160ee7d17e2fd81e2519e082e458e5e44b24f10af4cb51f30b079d2ccec312c"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "7790fa0fb244642ad1c3953a6fcc1e1cd1767d95a13e409f776f847c23a6522f"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T10",
+          "dose": 10,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 10,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_OPEN_T10_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "4ffa4350cbdd71657c239c9711525e5fdde362199daec37bff80ab5617c0a959"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_B",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "40840d8b35e03c43766374f35de1f2a31f37ee905070de0a0200f333f75a4768"
+        }
+      ],
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "clean_replay_status": "PASS_AC3Q_CLEAN_REPLAY_DETERMINISTIC",
+      "clean_trajectory_digest": "3387d04b69a1fe556b70f69912940ca2fdd25af177a9cd40e5c7902cc512f1cf",
+      "gpu_admission": {
+        "free_memory_mib": 21496,
+        "index": 1,
+        "used_memory_mib": 59727,
+        "utilization_gpu_percent": 100
+      },
+      "model_family": "M0_OPENVLA",
+      "receipt": {
+        "bytes": 317042,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M0_OPENVLA__libero_object__task_02__state_42__attempt_1.json",
+        "sha256": "6ed072e87b6e94a7d32b555ccd36ba1ba604694f43e384bd12d8dfa6d7a09c98"
+      },
+      "runtime_counters": {
+        "ac2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "engineering_endpoint_evaluations": 4,
+        "env_step_calls": 836,
+        "eval160_reads": 0,
+        "model_inference_calls": 343,
+        "open_intervention_steps": 23,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 486,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "videos": [
+        {
+          "bytes": 17137,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_object__task_02__state_42__attempt_1/M0_OPENVLA_libero_object__task_02__state_42_CLEAN_REFERENCE.mp4",
+          "sha256": "15fb2151fcf24947c70bcba2df9ae554756c9a7707482d309a92fac3fa8680e6"
+        },
+        {
+          "bytes": 14394,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_object__task_02__state_42__attempt_1/M0_OPENVLA_libero_object__task_02__state_42_OPEN_T3.mp4",
+          "sha256": "829519243679ce41b82099373d6615cd3545a5f88928754dc3f46001564fb52d"
+        },
+        {
+          "bytes": 15278,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_object__task_02__state_42__attempt_1/M0_OPENVLA_libero_object__task_02__state_42_OPEN_T5.mp4",
+          "sha256": "47a75a47a8c65dd02b7f66e2cb24f4500afffb96958b849266228733de1eb50a"
+        },
+        {
+          "bytes": 17137,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_object__task_02__state_42__attempt_1/M0_OPENVLA_libero_object__task_02__state_42_OPEN_T10.mp4",
+          "sha256": "15fb2151fcf24947c70bcba2df9ae554756c9a7707482d309a92fac3fa8680e6"
+        },
+        {
+          "bytes": 15372,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_object__task_02__state_42__attempt_1/M0_OPENVLA_libero_object__task_02__state_42_OPEN_T5_B.mp4",
+          "sha256": "1c91e94f5218a82a067fb4f351aa865080d7d5494f52764ca41f9b89abe71670"
+        }
+      ]
+    },
+    {
+      "branch_count": 5,
+      "branch_pass_count": 5,
+      "branches": [
+        {
+          "arm_preserved": true,
+          "condition": "CLEAN_REFERENCE",
+          "dose": null,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 0,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_CLEAN_REFERENCE_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "86cc08c16b0d436a7a450acd8b4b1a483954c7e075879cb571973efa8648ea2d"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T3",
+          "dose": 3,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 3,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 13,
+          "route": "ENGINEERING_OPEN_T3_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "3dac91a2cd5afc709a66cf7338877913b1bc98651610e44c4f798c44068ec373"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "4a52a1a81d78b802fe2bfa65d28b5e0b8c905cdf7d1fa27219e8889547be2a0e"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T10",
+          "dose": 10,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 10,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_OPEN_T10_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "72f9926ef96b850eb36a58012ad368481f97d0a3b7b0196e88cba5f329d4ac25"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_B",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "31154a394385a5d459c1c0d02010daeb8d47d3f8730f611ba591195d2a32166b"
+        }
+      ],
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "clean_replay_status": "PASS_AC3Q_CLEAN_REPLAY_DETERMINISTIC",
+      "clean_trajectory_digest": "81443c3a9bcd2bcf3836f161a383a5b4f947ff33115335f97324fd5b295129f2",
+      "gpu_admission": {
+        "free_memory_mib": 21518,
+        "index": 2,
+        "used_memory_mib": 59704,
+        "utilization_gpu_percent": 100
+      },
+      "model_family": "M0_OPENVLA",
+      "receipt": {
+        "bytes": 307034,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M0_OPENVLA__libero_spatial__task_05__state_34__attempt_1.json",
+        "sha256": "ccc1ae8641336d07c6a6d50d3d8611db3fb8e1467cf76920df23004245ad73a5"
+      },
+      "runtime_counters": {
+        "ac2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "engineering_endpoint_evaluations": 4,
+        "env_step_calls": 678,
+        "eval160_reads": 0,
+        "model_inference_calls": 283,
+        "open_intervention_steps": 23,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 426,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "videos": [
+        {
+          "bytes": 20752,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_spatial__task_05__state_34__attempt_1/M0_OPENVLA_libero_spatial__task_05__state_34_CLEAN_REFERENCE.mp4",
+          "sha256": "14533fd8fd1e7aa71c7f8763530d384bdafc7c8c0f0253e23fedaf275376b88e"
+        },
+        {
+          "bytes": 15760,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_spatial__task_05__state_34__attempt_1/M0_OPENVLA_libero_spatial__task_05__state_34_OPEN_T3.mp4",
+          "sha256": "72b43d501e1697fbd1d8a5aad53fd4545dc0e45b68edf02774b88a70fb31ec4a"
+        },
+        {
+          "bytes": 17280,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_spatial__task_05__state_34__attempt_1/M0_OPENVLA_libero_spatial__task_05__state_34_OPEN_T5.mp4",
+          "sha256": "ea17d00cc2472ac43213fbbeb8d74cf85b5a856b60945d36d0d8956ce98cc9ad"
+        },
+        {
+          "bytes": 20781,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_spatial__task_05__state_34__attempt_1/M0_OPENVLA_libero_spatial__task_05__state_34_OPEN_T10.mp4",
+          "sha256": "e07f67500a13a382866d82075a93df9085b23b52ddd9a5b564ffd4c88e0d6e8e"
+        },
+        {
+          "bytes": 17495,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_spatial__task_05__state_34__attempt_1/M0_OPENVLA_libero_spatial__task_05__state_34_OPEN_T5_B.mp4",
+          "sha256": "feefbd461a4c98a7fcc9df20cd6791336ad68d19958d5be2a6b7d737faaff2a0"
+        }
+      ]
+    },
+    {
+      "branch_count": 5,
+      "branch_pass_count": 5,
+      "branches": [
+        {
+          "arm_preserved": true,
+          "condition": "CLEAN_REFERENCE",
+          "dose": null,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 0,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_CLEAN_REFERENCE_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "d5368ccd7d077f0c7241921ce995bacdedb5d344cea1a9caffc3ef86f08e97b1"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T3",
+          "dose": 3,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 3,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 13,
+          "route": "ENGINEERING_OPEN_T3_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "576778d61fee46923b9c62943ebaeebf8a66429d72c549cd38e8674dcb931b5e"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "875563ca4d5c1fb49d1f3ea87d179e75eef63ae2a3df22b1761014bd6c54abb2"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T10",
+          "dose": 10,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 10,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_OPEN_T10_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "33585270c0d8515b9bd176243a13575c5b2e7203b404387458711b9afaf65c65"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_B",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "9675f5b138c20f89c4432f3b156dd65abce1621210389e517e452ca5c1c622c8"
+        }
+      ],
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "clean_replay_status": "PASS_AC3Q_CLEAN_REPLAY_DETERMINISTIC",
+      "clean_trajectory_digest": "f02adebcc0540f80b206460e0bcf39be521a56ce39e69997eb67ce404b02f605",
+      "gpu_admission": {
+        "free_memory_mib": 21822,
+        "index": 3,
+        "used_memory_mib": 59401,
+        "utilization_gpu_percent": 100
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "receipt": {
+        "bytes": 249984,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M1_OPENVLA_OFT__libero_10__task_04__state_20__attempt_2.json",
+        "sha256": "d4706daee00b1ef1b221a4aaef172d02f56a373579e3d9eb281469d0b8f3b80d"
+      },
+      "runtime_counters": {
+        "ac2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "engineering_endpoint_evaluations": 4,
+        "env_step_calls": 1941,
+        "eval160_reads": 0,
+        "model_inference_calls": 74,
+        "open_intervention_steps": 23,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 726,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "videos": [
+        {
+          "bytes": 15890,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_10__task_04__state_20__attempt_2/M1_OPENVLA_OFT_libero_10__task_04__state_20_CLEAN_REFERENCE.mp4",
+          "sha256": "f8bb86041058289f77f9bc334fdd8419abb7dab6057527226077bf84ec944b65"
+        },
+        {
+          "bytes": 12488,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_10__task_04__state_20__attempt_2/M1_OPENVLA_OFT_libero_10__task_04__state_20_OPEN_T3.mp4",
+          "sha256": "968d810af3857883cb1105fa99b1cda91f8f89975d966f72991ade8f6ab25447"
+        },
+        {
+          "bytes": 13876,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_10__task_04__state_20__attempt_2/M1_OPENVLA_OFT_libero_10__task_04__state_20_OPEN_T5.mp4",
+          "sha256": "f1d90f7c60ac81542ea1f10584211135a3a1a33c8201524c3e8804645c32fb97"
+        },
+        {
+          "bytes": 15890,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_10__task_04__state_20__attempt_2/M1_OPENVLA_OFT_libero_10__task_04__state_20_OPEN_T10.mp4",
+          "sha256": "f8bb86041058289f77f9bc334fdd8419abb7dab6057527226077bf84ec944b65"
+        },
+        {
+          "bytes": 20976,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_10__task_04__state_20__attempt_2/M1_OPENVLA_OFT_libero_10__task_04__state_20_OPEN_T5_B.mp4",
+          "sha256": "8c2fda47d06a7eee85d63c3dd0329992ab9c7c15b23e208dde70d1a6cd114327"
+        }
+      ]
+    },
+    {
+      "branch_count": 5,
+      "branch_pass_count": 5,
+      "branches": [
+        {
+          "arm_preserved": true,
+          "condition": "CLEAN_REFERENCE",
+          "dose": null,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 0,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_CLEAN_REFERENCE_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "791fb1e0bdb7acf91c9eae752cc604f8a53dd90f4a479bfae932e06dc9c03e99"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T3",
+          "dose": 3,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 3,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 13,
+          "route": "ENGINEERING_OPEN_T3_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "6d230180a6c819ba2149e9c47a2418a3751f90316326a9b9b035a5c1d9250fd4"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "29df0cfe72f60add3df8be8b00d99edce58da85a63f4ff136d9f7f47736624fd"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T10",
+          "dose": 10,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 10,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_OPEN_T10_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "ebc257a937c9f970973c66d543a223abacef94842b362037eb030c6ea23a5d2b"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_B",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "814c4b07e39287b5b5d2c6059425b3dd19c050ea34232dad9483c2ca9433bf3e"
+        }
+      ],
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "clean_replay_status": "PASS_AC3Q_CLEAN_REPLAY_DETERMINISTIC",
+      "clean_trajectory_digest": "816cc1aa5af7946e3668e6c2d4cb59ea3c7d0e447528ef37b51497790873c6c9",
+      "gpu_admission": {
+        "free_memory_mib": 22898,
+        "index": 4,
+        "used_memory_mib": 58325,
+        "utilization_gpu_percent": 100
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "receipt": {
+        "bytes": 236478,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M1_OPENVLA_OFT__libero_object__task_02__state_42__attempt_2.json",
+        "sha256": "41903786f548ec394b4040e27dea3e3dc47418084fc61d259411963b7fcdaff7"
+      },
+      "runtime_counters": {
+        "ac2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "engineering_endpoint_evaluations": 4,
+        "env_step_calls": 1045,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "open_intervention_steps": 23,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 486,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "videos": [
+        {
+          "bytes": 25564,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_object__task_02__state_42__attempt_2/M1_OPENVLA_OFT_libero_object__task_02__state_42_CLEAN_REFERENCE.mp4",
+          "sha256": "07caebcc7db724d6b33f768bb59d8c3ece908d30f77a6532f6d78b9bbd8eb31b"
+        },
+        {
+          "bytes": 20353,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_object__task_02__state_42__attempt_2/M1_OPENVLA_OFT_libero_object__task_02__state_42_OPEN_T3.mp4",
+          "sha256": "dba933fb66b63bfc3c8b29ad8bccb2fe10c05f25623d9a52c0e9436f5bec23e0"
+        },
+        {
+          "bytes": 21991,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_object__task_02__state_42__attempt_2/M1_OPENVLA_OFT_libero_object__task_02__state_42_OPEN_T5.mp4",
+          "sha256": "45ce11a168c63ede0158e9153fe1bce99cf37ac74b501758052e730b7f2cf89e"
+        },
+        {
+          "bytes": 25561,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_object__task_02__state_42__attempt_2/M1_OPENVLA_OFT_libero_object__task_02__state_42_OPEN_T10.mp4",
+          "sha256": "92584864fa605815a7bbfd1a1d5e6b4f7cd857373ac54d11b0a08ecef607d746"
+        },
+        {
+          "bytes": 19996,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_object__task_02__state_42__attempt_2/M1_OPENVLA_OFT_libero_object__task_02__state_42_OPEN_T5_B.mp4",
+          "sha256": "0337946b1c76c7a045c7addbe159af50eb7621fdfcecb9c78e846e0ee07af058"
+        }
+      ]
+    },
+    {
+      "branch_count": 5,
+      "branch_pass_count": 5,
+      "branches": [
+        {
+          "arm_preserved": true,
+          "condition": "CLEAN_REFERENCE",
+          "dose": null,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 0,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_CLEAN_REFERENCE_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "cf861619c4eef94305f606d03e8ce1354055c06f5fdf810b9d69bf5e108aad5c"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T3",
+          "dose": 3,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 3,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 13,
+          "route": "ENGINEERING_OPEN_T3_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "134cb3fd28d1d11390855a8d6dc3d8d17813978facef2dd27debc08cd2491b42"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "b4bc945ba1f03c33125c237ba4bc726364f39243bd6c133d4287e8ea4f587cba"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T10",
+          "dose": 10,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 10,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_OPEN_T10_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "79d6e8ea4199b2de3953a04fb0bd8347a9c8f4eb6ce574aaa113962749e37d49"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_B",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "23d1b8839d98390809bf02dd732aa33fa742b4ee7aabf76d91d0ab669d268fcd"
+        }
+      ],
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "clean_replay_status": "PASS_AC3Q_CLEAN_REPLAY_DETERMINISTIC",
+      "clean_trajectory_digest": "dac5a346e8f3329d2a93b488133dd39a21f1e770bfd93548b4a2bd92f352cc41",
+      "gpu_admission": {
+        "free_memory_mib": 23482,
+        "index": 5,
+        "used_memory_mib": 57740,
+        "utilization_gpu_percent": 96
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "receipt": {
+        "bytes": 234092,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M1_OPENVLA_OFT__libero_spatial__task_05__state_34__attempt_1.json",
+        "sha256": "4a7efe970185c8f390cb3f23716d919d3525c63df8175324e497c8d8fbcecc2a"
+      },
+      "runtime_counters": {
+        "ac2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "engineering_endpoint_evaluations": 4,
+        "env_step_calls": 993,
+        "eval160_reads": 0,
+        "model_inference_calls": 37,
+        "open_intervention_steps": 23,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 426,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "videos": [
+        {
+          "bytes": 22149,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_spatial__task_05__state_34__attempt_1/M1_OPENVLA_OFT_libero_spatial__task_05__state_34_CLEAN_REFERENCE.mp4",
+          "sha256": "d04f1a44d70db8fc26f4f1f66e38a0a07d0c1b87c4eedbfba2c51fd0bd86e0fb"
+        },
+        {
+          "bytes": 17219,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_spatial__task_05__state_34__attempt_1/M1_OPENVLA_OFT_libero_spatial__task_05__state_34_OPEN_T3.mp4",
+          "sha256": "6c3c9cbd2d3137176f59168b28332c2c978a142b1e2d0f5ff6d326216cb4f693"
+        },
+        {
+          "bytes": 18594,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_spatial__task_05__state_34__attempt_1/M1_OPENVLA_OFT_libero_spatial__task_05__state_34_OPEN_T5.mp4",
+          "sha256": "905f35766020170d16b5d243e74adf19cd5d1c57f5135099e663fb1831030de6"
+        },
+        {
+          "bytes": 22149,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_spatial__task_05__state_34__attempt_1/M1_OPENVLA_OFT_libero_spatial__task_05__state_34_OPEN_T10.mp4",
+          "sha256": "d04f1a44d70db8fc26f4f1f66e38a0a07d0c1b87c4eedbfba2c51fd0bd86e0fb"
+        },
+        {
+          "bytes": 19047,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_spatial__task_05__state_34__attempt_1/M1_OPENVLA_OFT_libero_spatial__task_05__state_34_OPEN_T5_B.mp4",
+          "sha256": "a4c7ef7f6fecfe310e342a1da4a390001ae612c00be365c4ae75d716635d8e18"
+        }
+      ]
+    },
+    {
+      "branch_count": 5,
+      "branch_pass_count": 5,
+      "branches": [
+        {
+          "arm_preserved": true,
+          "condition": "CLEAN_REFERENCE",
+          "dose": null,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 0,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_CLEAN_REFERENCE_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "b8455ba4b9a01438b67746918220063b9c4c633e49e50fec3b507e2aa77e6e17"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T3",
+          "dose": 3,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 3,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 13,
+          "route": "ENGINEERING_OPEN_T3_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "229085a149735404b9aad23cb5d9d0a592d0f6dd78dcab0dc9636499f7855789"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "8626754cff13d7abf20c9bdca6fa835daa3a8ee9469e4e01df91d01581e914ce"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T10",
+          "dose": 10,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 10,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_OPEN_T10_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "fc9457fdced1993fe4fffe6341ff7c97533dd48c4714d790fb5fc52bdf68bd72"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_B",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "3d8e45582e802420225a622393350244726c7cf69e566ced63d73cef6eeaf63d"
+        }
+      ],
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "clean_replay_status": "PASS_AC3Q_CLEAN_REPLAY_DETERMINISTIC",
+      "clean_trajectory_digest": "ba4edd60eceb0364e89323c2f9155d1148a5b5cc62ce500766bc4eea9c1d3a79",
+      "gpu_admission": {
+        "free_memory_mib": 24124,
+        "index": 6,
+        "used_memory_mib": 57098,
+        "utilization_gpu_percent": 92
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "receipt": {
+        "bytes": 240507,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M2_PI05_LIBERO__libero_10__task_04__state_20__attempt_1.json",
+        "sha256": "bba7b88be37f9a51f4424d93889275ae16ec72798dbf0b9347e9cfd705f60c8f"
+      },
+      "runtime_counters": {
+        "ac2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "engineering_endpoint_evaluations": 4,
+        "env_step_calls": 938,
+        "eval160_reads": 0,
+        "model_inference_calls": 117,
+        "open_intervention_steps": 23,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 726,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "videos": [
+        {
+          "bytes": 23009,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_10__task_04__state_20__attempt_1/M2_PI05_LIBERO_libero_10__task_04__state_20_CLEAN_REFERENCE.mp4",
+          "sha256": "3e72ffcb68146f6eba3b550520d6cf636c766ab4976b5d51398a203252ec97e4"
+        },
+        {
+          "bytes": 17838,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_10__task_04__state_20__attempt_1/M2_PI05_LIBERO_libero_10__task_04__state_20_OPEN_T3.mp4",
+          "sha256": "3f5021c41461f51e977e97094047f8a7722c8dfe52e1ccb059dd7e5c05be75ea"
+        },
+        {
+          "bytes": 19423,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_10__task_04__state_20__attempt_1/M2_PI05_LIBERO_libero_10__task_04__state_20_OPEN_T5.mp4",
+          "sha256": "aa6aa0e40fa10601fa79d028b9852092215549ff251c85d49e8e1822de360f63"
+        },
+        {
+          "bytes": 22828,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_10__task_04__state_20__attempt_1/M2_PI05_LIBERO_libero_10__task_04__state_20_OPEN_T10.mp4",
+          "sha256": "31b99df8ec34dfe1057389b5d26999bfab25d1df54ac910bc05dd976eb5921bc"
+        },
+        {
+          "bytes": 20747,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_10__task_04__state_20__attempt_1/M2_PI05_LIBERO_libero_10__task_04__state_20_OPEN_T5_B.mp4",
+          "sha256": "4b9762602d39a3748edc5f5defb89106a909b92904364baafd4f3c7008ea7ffd"
+        }
+      ]
+    },
+    {
+      "branch_count": 5,
+      "branch_pass_count": 5,
+      "branches": [
+        {
+          "arm_preserved": true,
+          "condition": "CLEAN_REFERENCE",
+          "dose": null,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 0,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_CLEAN_REFERENCE_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "076b726f2fbbc9d738b98c4a7a363e0bcfd726bc936d8b98caeeef3cb8f205dd"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T3",
+          "dose": 3,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 3,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 13,
+          "route": "ENGINEERING_OPEN_T3_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "b2d788769f669ca9359852f1864f3ed3036c677b5f856a01202202a7ff665274"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "d85136e3e268b86d6eb11ea378299bea347cdaf841d0da02a3b38b6e75dcb486"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T10",
+          "dose": 10,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 10,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_OPEN_T10_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "4dc0288156cb5d9a28c2f5fe0df98b81df819f2db47115c6a45e3261d15232d8"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_B",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "b03b86042b2a003f84af6e416465fbeb3164b4404627c957cbdaae4ffdfbdacb"
+        }
+      ],
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "clean_replay_status": "PASS_AC3Q_CLEAN_REPLAY_DETERMINISTIC",
+      "clean_trajectory_digest": "3581c0e5fca6e04ec180179ecf11bba877f684bdd50b0ad6762eab2ae9da8034",
+      "gpu_admission": {
+        "free_memory_mib": 23532,
+        "index": 7,
+        "used_memory_mib": 57690,
+        "utilization_gpu_percent": 93
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "receipt": {
+        "bytes": 231496,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M2_PI05_LIBERO__libero_object__task_02__state_42__attempt_1.json",
+        "sha256": "dd4ff0c8a9d603c7d621e5bb1fff990e461e4ecbe0e09db6d841bc00cd644dcc"
+      },
+      "runtime_counters": {
+        "ac2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "engineering_endpoint_evaluations": 4,
+        "env_step_calls": 553,
+        "eval160_reads": 0,
+        "model_inference_calls": 69,
+        "open_intervention_steps": 23,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 486,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "videos": [
+        {
+          "bytes": 25089,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_object__task_02__state_42__attempt_1/M2_PI05_LIBERO_libero_object__task_02__state_42_CLEAN_REFERENCE.mp4",
+          "sha256": "a4e3efab8feaa983153607dbefa4f98ade7830408da81590a0b444fee79a5ed0"
+        },
+        {
+          "bytes": 19297,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_object__task_02__state_42__attempt_1/M2_PI05_LIBERO_libero_object__task_02__state_42_OPEN_T3.mp4",
+          "sha256": "157654e750a7f671c504476c1f2521003c6362f6bb782a93cfa5964465b06575"
+        },
+        {
+          "bytes": 21025,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_object__task_02__state_42__attempt_1/M2_PI05_LIBERO_libero_object__task_02__state_42_OPEN_T5.mp4",
+          "sha256": "f7f1f71c303040b41bfc7b101cd16f1f231d8f6685b1465c8ab6fbdf879a6a55"
+        },
+        {
+          "bytes": 24704,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_object__task_02__state_42__attempt_1/M2_PI05_LIBERO_libero_object__task_02__state_42_OPEN_T10.mp4",
+          "sha256": "234ca61db6faa017ab7b353622f8d1c8c82f7f6925a7fe558873608ab9560341"
+        },
+        {
+          "bytes": 22921,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_object__task_02__state_42__attempt_1/M2_PI05_LIBERO_libero_object__task_02__state_42_OPEN_T5_B.mp4",
+          "sha256": "9478fa16884869f8f307aadc88b417a02adf0f77a8d08301774b9d2035288d1a"
+        }
+      ]
+    },
+    {
+      "branch_count": 5,
+      "branch_pass_count": 5,
+      "branches": [
+        {
+          "arm_preserved": true,
+          "condition": "CLEAN_REFERENCE",
+          "dose": null,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 0,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_CLEAN_REFERENCE_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "b7602c1c36ba52e9134423564759a560d42c0df5804f93ddd64415f447564d36"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T3",
+          "dose": 3,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 3,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 13,
+          "route": "ENGINEERING_OPEN_T3_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "a3a264b32549cfee02099724d4b69e6a2fbc55da968a296ed756f86b7722cdcb"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "5d4d03ef6441683b931020793304fcb5df83cfce474ef69dca83dcfe8e0f8005"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T10",
+          "dose": 10,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 10,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 20,
+          "route": "ENGINEERING_OPEN_T10_A",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "ba679394465b5352066b4cab7c9aff2085daf81446bcdf56fb2601360a02e59c"
+        },
+        {
+          "arm_preserved": true,
+          "condition": "OPEN_T5",
+          "dose": 5,
+          "exact_open_delivery": true,
+          "max_arm_delta_linf": 0.0,
+          "open_intervention_steps": 5,
+          "queue_reset_verified": true,
+          "required_horizon_steps": 15,
+          "route": "ENGINEERING_OPEN_T5_B",
+          "state_restore_exact": true,
+          "status": "PASS_AC3Q_ENGINEERING_BRANCH",
+          "telemetry_aligned": true,
+          "trace_digest": "7d6c51a08be61871991c71895b80f72c7af82e0a530e351b02a07aa8484acf9d"
+        }
+      ],
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "clean_replay_status": "PASS_AC3Q_CLEAN_REPLAY_DETERMINISTIC",
+      "clean_trajectory_digest": "800b9df94930b42d807dab6afbbe43c4e82fcea6542dcc0b3295c4b27a39b124",
+      "gpu_admission": {
+        "free_memory_mib": 21496,
+        "index": 1,
+        "used_memory_mib": 59727,
+        "utilization_gpu_percent": 100
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "receipt": {
+        "bytes": 229278,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M2_PI05_LIBERO__libero_spatial__task_05__state_34__attempt_1.json",
+        "sha256": "e3ec017284beba7eb6da1b3b6156c58f929ced487254ddcfec0bfabc931bb3fb"
+      },
+      "runtime_counters": {
+        "ac2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "engineering_endpoint_evaluations": 4,
+        "env_step_calls": 613,
+        "eval160_reads": 0,
+        "model_inference_calls": 57,
+        "open_intervention_steps": 23,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 426,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "videos": [
+        {
+          "bytes": 19293,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_spatial__task_05__state_34__attempt_1/M2_PI05_LIBERO_libero_spatial__task_05__state_34_CLEAN_REFERENCE.mp4",
+          "sha256": "6e79f330dfe92382a575eaaef63d964d2ed4b419a60e4f0710b1ca1371539b77"
+        },
+        {
+          "bytes": 14438,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_spatial__task_05__state_34__attempt_1/M2_PI05_LIBERO_libero_spatial__task_05__state_34_OPEN_T3.mp4",
+          "sha256": "5d4644e351767bf87c44710e8de7cd8f94c6797eee627e57bfcf78ebfad694be"
+        },
+        {
+          "bytes": 15261,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_spatial__task_05__state_34__attempt_1/M2_PI05_LIBERO_libero_spatial__task_05__state_34_OPEN_T5.mp4",
+          "sha256": "2c6d2df66d0b20f11759059aaa6f29dd5dd11a1f00c1b69de6517460a899db9c"
+        },
+        {
+          "bytes": 17955,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_spatial__task_05__state_34__attempt_1/M2_PI05_LIBERO_libero_spatial__task_05__state_34_OPEN_T10.mp4",
+          "sha256": "f5a902678d3fc023b415d9b899e888bef42e8d0e37cc51d203a692c3b897bb72"
+        },
+        {
+          "bytes": 16968,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M2_PI05_LIBERO__libero_spatial__task_05__state_34__attempt_1/M2_PI05_LIBERO_libero_spatial__task_05__state_34_OPEN_T5_B.mp4",
+          "sha256": "7db2569f5cff82bc05fb15c88309e6e7f38bc232dbb0063e0e29fc3558ddf537"
+        }
+      ]
+    }
+  ],
+  "duplicate_video_sha_groups": {
+    "15fb2151fcf24947c70bcba2df9ae554756c9a7707482d309a92fac3fa8680e6": [
+      "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_object__task_02__state_42__attempt_1/M0_OPENVLA_libero_object__task_02__state_42_CLEAN_REFERENCE.mp4",
+      "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_object__task_02__state_42__attempt_1/M0_OPENVLA_libero_object__task_02__state_42_OPEN_T10.mp4"
+    ],
+    "41104fa9bf4fa4c50ba3143158c616461b4afa2660d92474f3fdd001afb505fa": [
+      "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_10__task_04__state_20__attempt_2/M0_OPENVLA_libero_10__task_04__state_20_CLEAN_REFERENCE.mp4",
+      "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M0_OPENVLA__libero_10__task_04__state_20__attempt_2/M0_OPENVLA_libero_10__task_04__state_20_OPEN_T10.mp4"
+    ],
+    "d04f1a44d70db8fc26f4f1f66e38a0a07d0c1b87c4eedbfba2c51fd0bd86e0fb": [
+      "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_spatial__task_05__state_34__attempt_1/M1_OPENVLA_OFT_libero_spatial__task_05__state_34_CLEAN_REFERENCE.mp4",
+      "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_spatial__task_05__state_34__attempt_1/M1_OPENVLA_OFT_libero_spatial__task_05__state_34_OPEN_T10.mp4"
+    ],
+    "f8bb86041058289f77f9bc334fdd8419abb7dab6057527226077bf84ec944b65": [
+      "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_10__task_04__state_20__attempt_2/M1_OPENVLA_OFT_libero_10__task_04__state_20_CLEAN_REFERENCE.mp4",
+      "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/videos/M1_OPENVLA_OFT__libero_10__task_04__state_20__attempt_2/M1_OPENVLA_OFT_libero_10__task_04__state_20_OPEN_T10.mp4"
+    ]
+  },
+  "evidence_root": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1",
+  "g0_root": {
+    "bytes": 3722,
+    "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3_G0_ROOT_SEAL_V1.json",
+    "sha256": "5b997085f210189532f72a827f4d6a601e81147437186ad93f6e4b8be407b917"
+  },
+  "gate": "STAGE_AC_AC3_AC4_AC5_TREATMENT_NAIVE_MULTI_MODEL_PHYSICAL_REPLICATION_PROGRAM_V1",
+  "schema": "STAGE_AC_AC3Q_ENGINEERING_CANARY_RECEIPT_INDEX_V1",
+  "status": "STAGE_AC_AC3Q_G1_ENGINEERING_QUALIFICATION_PASS",
+  "superseded_attempts": [
+    {
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "error": {
+        "message": "AC3Q_CANARY_BINDING_MISMATCH:seed",
+        "type": "RuntimeError"
+      },
+      "model_family": "M0_OPENVLA",
+      "receipt": {
+        "bytes": 542,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M0_OPENVLA__libero_10__task_04__state_20.json",
+        "sha256": "01524758a4ddec02060ee4500b4d44bf9497bd7d10475f4488cda50dee7a6977"
+      },
+      "status": "AC3Q_ENGINEERING_HOLD_RUNTIME_ERROR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "error": {
+        "message": "M1_MANIFEST_SHA256_MISMATCH",
+        "type": "RuntimeError"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "receipt": {
+        "bytes": 540,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M1_OPENVLA_OFT__libero_10__task_04__state_20__attempt_1.json",
+        "sha256": "b693402e5938187e5166e7d725111ce09fe4947c15376172b86adf04dade12e3"
+      },
+      "status": "AC3Q_ENGINEERING_HOLD_RUNTIME_ERROR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "error": {
+        "message": "M1_MANIFEST_SHA256_MISMATCH",
+        "type": "RuntimeError"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "receipt": {
+        "bytes": 544,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3Q_ENGINEERING_V1/receipts/M1_OPENVLA_OFT__libero_object__task_02__state_42__attempt_1.json",
+        "sha256": "3a1f721cb41776487e7eed11e22ed02d6fa5db7ffdf909ea7df1d439cc4b36cc"
+      },
+      "status": "AC3Q_ENGINEERING_HOLD_RUNTIME_ERROR"
+    }
+  ]
+}
