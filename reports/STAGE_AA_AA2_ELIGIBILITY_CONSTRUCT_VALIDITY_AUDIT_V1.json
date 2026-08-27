@@ -1,0 +1,355 @@
+{
+  "aggregate_historical_forbidden_counters": {
+    "aa_v_phys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "task_success_reads": 0
+  },
+  "authority": {
+    "receipt_index_count": 324,
+    "server_root": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa2r2-phase-b-59a48842",
+    "source_bindings": {
+      "aa0_protocol": {
+        "bytes": 11817,
+        "path": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+        "sha256": "b795a796a81d76173e0cfce148ee768cdd9dc90dbd6d69d541d1e40a04c51d16"
+      },
+      "aa2_protocol": {
+        "bytes": 4454,
+        "path": "configs/STAGE_AA_AA2_CLEAN_SCREEN_PROTOCOL_V1.json",
+        "sha256": "89ba4b9c93a4fca65fc2e5005414e34fa2fe7e02360bb96eef67399239c245a2"
+      },
+      "manifest": {
+        "bytes": 318007,
+        "path": "reports/STAGE_AA_AA2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+        "sha256": "6eef2ea995fe75bfcf66c7f2c285b5e084aa386f2f4184a574fc6a4948a5dc35"
+      },
+      "receipt_index": {
+        "bytes": 392370,
+        "path": "reports/STAGE_AA_AA2R2_PHASE_B_V2_RECEIPT_INDEX_V1.json",
+        "sha256": "beae081e18188be8103e3c52f481de42f2942836a66ce53ec3969869c16fc943"
+      },
+      "root_seal": {
+        "bytes": 1207,
+        "path": "reports/STAGE_AA_AA2R2_PHASE_B_V2_ROOT_SEAL_V1.json",
+        "sha256": "7fb7071eb78be4b8078895fab660295d3953ed82034cb8f56acf92921ef3531c"
+      },
+      "runner": {
+        "bytes": 22255,
+        "path": "scripts/stage_aa/run_stage_aa2_clean_screen.py",
+        "sha256": "4fcc246d0ab1de834b8843e46d1649cb3b36b5aa5588ebc344a140d1d90d86c1"
+      },
+      "telemetry": {
+        "bytes": 18122,
+        "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+        "sha256": "52e2d393018e13f95cabf12d47bae41246733710e7505680c1ef533517b32240"
+      },
+      "terminal": {
+        "bytes": 219703,
+        "path": "reports/STAGE_AA_AA2R2_PHASE_B_V2_CENSUS_TERMINAL_V1.json",
+        "sha256": "3df73e7a806088b36841fd2a910afff5401c498bfc7c5214b5fdee6088a386b4"
+      }
+    },
+    "verified_receipt_count": 324
+  },
+  "canonical_payload_sha256": "c59941dc6b933d601403b86995af80377cc56a1ef863f29abe335bb79c233563",
+  "claim_boundary": "Retrospective evidence sufficiency and implementation-forensics only; no denominator amendment and no AA3 result.",
+  "coverage": {
+    "by_model": {
+      "M0_OPENVLA": {
+        "cells": 108,
+        "censored_candidate_attempts": 9555,
+        "complete": 37,
+        "critical_eligible": 1,
+        "noncritical_eligible": 7,
+        "truncated": 71,
+        "truncated_with_at_least_20_steps": 71
+      },
+      "M1_OPENVLA_OFT": {
+        "cells": 108,
+        "censored_candidate_attempts": 799,
+        "complete": 58,
+        "critical_eligible": 4,
+        "noncritical_eligible": 3,
+        "truncated": 50,
+        "truncated_with_at_least_20_steps": 50
+      },
+      "M2_PI05_LIBERO": {
+        "cells": 108,
+        "censored_candidate_attempts": 2609,
+        "complete": 6,
+        "critical_eligible": 1,
+        "noncritical_eligible": 1,
+        "truncated": 102,
+        "truncated_with_at_least_20_steps": 102
+      }
+    },
+    "by_suite": {
+      "libero_10": {
+        "cells": 69,
+        "censored_candidate_attempts": 4614,
+        "complete": 29,
+        "critical_eligible": 3,
+        "noncritical_eligible": 4,
+        "truncated": 40
+      },
+      "libero_object": {
+        "cells": 123,
+        "censored_candidate_attempts": 4126,
+        "complete": 42,
+        "critical_eligible": 3,
+        "noncritical_eligible": 2,
+        "truncated": 81
+      },
+      "libero_spatial": {
+        "cells": 132,
+        "censored_candidate_attempts": 4223,
+        "complete": 30,
+        "critical_eligible": 0,
+        "noncritical_eligible": 5,
+        "truncated": 102
+      }
+    },
+    "critical_eligible_cells": [
+      {
+        "cell_id": "AA2-0046",
+        "model_family": "M0_OPENVLA",
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_b_v2/receipts/AA2-0046.json",
+        "suite": "libero_object"
+      },
+      {
+        "cell_id": "AA2-0109",
+        "model_family": "M1_OPENVLA_OFT",
+        "path": "reports/server_evidence/STAGE_AA_AA2/receipts/AA2-0109.json",
+        "suite": "libero_10"
+      },
+      {
+        "cell_id": "AA2-0129",
+        "model_family": "M1_OPENVLA_OFT",
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_b/receipts/AA2-0129.json",
+        "suite": "libero_10"
+      },
+      {
+        "cell_id": "AA2-0167",
+        "model_family": "M1_OPENVLA_OFT",
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_b_v2/receipts/AA2-0167.json",
+        "suite": "libero_object"
+      },
+      {
+        "cell_id": "AA2-0170",
+        "model_family": "M1_OPENVLA_OFT",
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_b_v2/receipts/AA2-0170.json",
+        "suite": "libero_object"
+      },
+      {
+        "cell_id": "AA2-0235",
+        "model_family": "M2_PI05_LIBERO",
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_b/receipts/AA2-0235.json",
+        "suite": "libero_10"
+      }
+    ],
+    "critical_eligible_total": 6,
+    "noncritical_eligible_total": 11
+  },
+  "diagnostic_variants": {
+    "combined_corrected": {
+      "computable": false,
+      "reason": "Both required inputs are unavailable for rejected candidates."
+    },
+    "original_frozen_implementation": {
+      "computable": true,
+      "parent_set_authority": "sealed AA2R2 V2 receipt eligibility flags"
+    },
+    "relative_distance_corrected": {
+      "computable": false,
+      "reason": "No authoritative alternative formula and no rejected per-step positions/anchor reference."
+    },
+    "truncation_continuation_corrected": {
+      "computable": false,
+      "reason": "No persisted rows/actions for rejected windows; complete flag alone cannot prove local stability."
+    }
+  },
+  "disposition": "HOLD_AA2_RETROSPECTIVE_ELIGIBILITY_EVIDENCE_INSUFFICIENT",
+  "distance_alarm": {
+    "current_implementation_uses_object_eef_distance_for_both_012m_and_004m": true,
+    "diagnostic": {
+      "accepted_critical_anchor_count_with_evidence": 6,
+      "accepted_critical_anchor_evidence": [
+        {
+          "anchor_step": 259,
+          "cell_id": "AA2-0046",
+          "distance_max_m": 0.021572007912516258,
+          "distance_min_m": 0.02149830645656386,
+          "evidence_rows": 20,
+          "model_family": "M0_OPENVLA",
+          "suite": "libero_object"
+        },
+        {
+          "anchor_step": 96,
+          "cell_id": "AA2-0109",
+          "distance_max_m": 0.029961749637593276,
+          "distance_min_m": 0.029674261439239145,
+          "evidence_rows": 20,
+          "model_family": "M1_OPENVLA_OFT",
+          "suite": "libero_10"
+        },
+        {
+          "anchor_step": 176,
+          "cell_id": "AA2-0129",
+          "distance_max_m": 0.018595908717589506,
+          "distance_min_m": 0.01828112777293555,
+          "evidence_rows": 20,
+          "model_family": "M1_OPENVLA_OFT",
+          "suite": "libero_10"
+        },
+        {
+          "anchor_step": 64,
+          "cell_id": "AA2-0167",
+          "distance_max_m": 0.033746050368608664,
+          "distance_min_m": 0.033524083092466135,
+          "evidence_rows": 20,
+          "model_family": "M1_OPENVLA_OFT",
+          "suite": "libero_object"
+        },
+        {
+          "anchor_step": 56,
+          "cell_id": "AA2-0170",
+          "distance_max_m": 0.03399390033517915,
+          "distance_min_m": 0.03377884410445121,
+          "evidence_rows": 20,
+          "model_family": "M1_OPENVLA_OFT",
+          "suite": "libero_object"
+        },
+        {
+          "anchor_step": 105,
+          "cell_id": "AA2-0235",
+          "distance_max_m": 0.025484059832904814,
+          "distance_min_m": 0.024854092108829,
+          "evidence_rows": 20,
+          "model_family": "M2_PI05_LIBERO",
+          "suite": "libero_10"
+        }
+      ],
+      "distance_failure_count_computable": false,
+      "reason": "Rejected candidates retain reason counts but not per-row distance values or failure-reason intersections.",
+      "rejected_candidate_distance_rows_available": false
+    },
+    "interpretation": "The code-level 0.04 gate is proven. Whether that is wrong cannot be established from the frozen contract or rejected-cell bytes: object_eef_distance_m is a persisted Euclidean object-to-EEF separation, while no separate anchor-relative field/formula is persisted.",
+    "relative_to_anchor_reconstruction_possible_from_persisted_bytes": false,
+    "separate_authoritative_relative_to_anchor_formula_found": false,
+    "status": "UNRESOLVED_CONTRACT_AMBIGUITY"
+  },
+  "historical_result_preservation": {
+    "aa2r2_v2_root_unchanged": true,
+    "historical_n_common": 0,
+    "historical_terminal_status": "STAGE_AA_AA2_CAPACITY_LIMIT_STOP_FOR_PI",
+    "root_seal_declared_status": "STAGE_AA_AA2_CAPACITY_LIMIT_STOP_FOR_PI",
+    "sealed_common_denominator_not_rewritten": true
+  },
+  "new_aa_v_phys_reads": 0,
+  "new_env_steps": 0,
+  "new_model_inference": 0,
+  "new_open_intervention_steps": 0,
+  "new_protected_reads": 0,
+  "next_legal_action": "STOP_FOR_PI_REVIEW_BEFORE_ANY_AA2_DENOMINATOR_AMENDMENT_OR_AA3",
+  "read_only": true,
+  "reason_counts": {
+    "M0_OPENVLA": {
+      "CLEAN_STABLE_CONTINUATION_INVALID": 19558,
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 9555,
+      "STABLE_GRASP_WINDOW_INVALID": 19466,
+      "TERMINAL_OR_NATURAL_RELEASE_IN_ELIGIBILITY_WINDOW": 71
+    },
+    "M1_OPENVLA_OFT": {
+      "CLEAN_STABLE_CONTINUATION_INVALID": 3020,
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 799,
+      "STABLE_GRASP_WINDOW_INVALID": 3000,
+      "TERMINAL_OR_NATURAL_RELEASE_IN_ELIGIBILITY_WINDOW": 2
+    },
+    "M2_PI05_LIBERO": {
+      "CLEAN_STABLE_CONTINUATION_INVALID": 2556,
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 2609,
+      "STABLE_GRASP_WINDOW_INVALID": 2513,
+      "TERMINAL_OR_NATURAL_RELEASE_IN_ELIGIBILITY_WINDOW": 15
+    }
+  },
+  "receipt_persistence": {
+    "critical_anchor_evidence_groups": 6,
+    "critical_anchor_evidence_rows": 120,
+    "noncritical_anchor_evidence_groups": 11,
+    "noncritical_anchor_evidence_rows": 220,
+    "raw_clean_actions_field_present_and_nonempty": 0,
+    "raw_clean_rows_field_present_and_nonempty": 0,
+    "rejected_candidate_distance_values_available": false,
+    "rejected_candidate_per_step_rows_available": false,
+    "rejected_candidate_reason_intersections_available": false
+  },
+  "schema": "STAGE_AA_AA2_ELIGIBILITY_CONSTRUCT_VALIDITY_AUDIT_V1",
+  "source_findings": {
+    "frozen_contract_values": {
+      "aa0_carry_relative_distance_max_m": 0.04,
+      "aa0_complete_trajectory": true,
+      "aa0_continuation_steps": 20,
+      "aa2_carry_relative_distance_max_m": 0.04,
+      "aa2_complete_trajectory": true,
+      "aa2_continuation_steps": 20
+    },
+    "runner": {
+      "candidate_loop_lines": [
+        {
+          "line": 173,
+          "text": "for step in range(max(0, len(rows) - 19)):"
+        }
+      ],
+      "continuation_censor_lines": [
+        {
+          "line": 179,
+          "text": "if len(continuation) != 20 or not complete:"
+        }
+      ],
+      "distance_gate_lines": [
+        {
+          "line": 128,
+          "text": "and float(row[\"object_eef_distance_m\"]) <= 0.04"
+        }
+      ],
+      "full_horizon_definition_lines": [
+        {
+          "line": 322,
+          "text": "complete = len(rows) == horizon"
+        }
+      ],
+      "path": "scripts/stage_aa/run_stage_aa2_clean_screen.py",
+      "sha256": "4fcc246d0ab1de834b8843e46d1649cb3b36b5aa5588ebc344a140d1d90d86c1"
+    },
+    "telemetry": {
+      "object_eef_distance_definition_lines": [
+        {
+          "line": 348,
+          "text": "distance = math.sqrt(sum((position[index] - eef[index]) ** 2 for index in range(3))) if eef else math.inf"
+        },
+        {
+          "line": 368,
+          "text": "distance = math.sqrt(sum((position[index] - eef[index]) ** 2 for index in range(3)))"
+        }
+      ],
+      "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+      "sha256": "52e2d393018e13f95cabf12d47bae41246733710e7505680c1ef533517b32240"
+    }
+  },
+  "status": "STAGE_AA_AA2_ELIGIBILITY_CONSTRUCT_VALIDITY_ALARM_EVIDENCE_INSUFFICIENT",
+  "truncation_alarm": {
+    "censored_candidate_attempts": 12963,
+    "implementation_behavior": "complete_trajectory is len(rows)==horizon; every candidate in a truncated receipt receives CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED.",
+    "interpretation": "The scanner demonstrably rejects local 20-row windows when the episode is not full-horizon, but missing raw rows prevent testing whether any rejected window otherwise satisfied all frozen geometry/contact rules.",
+    "literal_protocol_constraint": "Both AA0 and AA2 freeze complete_trajectory=true, so dropping this gate would be a protocol amendment, not an unmarked bug fix.",
+    "local_20_step_validity_reconstructible": false,
+    "status": "IMPLEMENTATION_BEHAVIOR_CONFIRMED_CONSTRUCT_VALIDITY_UNRESOLVED",
+    "truncated_cells": 223,
+    "truncated_cells_with_at_least_20_captured_steps": 223
+  }
+}
