@@ -85,7 +85,7 @@
     "aa0_protocol_sha256": "b795a796a81d76173e0cfce148ee768cdd9dc90dbd6d69d541d1e40a04c51d16",
     "aa2r2_root_seal_sha256": "7fb7071eb78be4b8078895fab660295d3953ed82034cb8f56acf92921ef3531c",
     "aa2_construct_audit_sha256": "f291b9e699eadce50bf4af8408c0c07ab4ce68d36f876efba51ddfc02d07ef9a",
-    "aa2r2_canary_plan_sha256": "2a8e09ce222b1cc3a775b45e3f13c161b4dfe8a258595aa0d548651f2bd838b1"
+    "aa2r2_canary_plan_sha256": "1310253378a27b964ef3b15860c5f1640e04444c75a8e262b433c2aca38c3b58"
   },
   "terminal_states": [
     "STAGE_AC_AC0_CONSTRUCT_VALIDATION_PASS_STOP_FOR_PI",
