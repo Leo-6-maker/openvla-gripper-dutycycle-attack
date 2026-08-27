@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import importlib.util
 from math import isclose
+from pathlib import Path
+
+import numpy as np
 
 from stage_ac.eligibility_v2 import classify_calibration_control, evaluate_candidate, scan_candidates
 
@@ -76,3 +80,20 @@ def test_scan_is_deterministic_and_hash_ranked():
     assert first == second
     assert reasons_first == reasons_second
     assert {row["step"] for row in first} == {0, 1}
+
+
+def test_ac2_pi05_adapter_applies_official_clip_to_float_overshoot():
+    path = Path(__file__).parents[2] / "scripts/stage_ac/run_stage_ac2_clean_screen.py"
+    spec = importlib.util.spec_from_file_location("ac2_clean_screen_clip_test", path)
+    assert spec is not None and spec.loader is not None
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+
+    raw = np.asarray([[1.0000005, -1.0000005, 0.0, 0.0, 0.0, 0.0, -0.9986837]], dtype=np.float32)
+
+    def infer(_obs, _language):
+        return raw.copy(), {"raw_action_chunk": raw.tolist()}
+
+    final, meta = runner.official_final_action_adapter(infer, "M2_PI05_LIBERO")({}, "pick")
+    assert np.allclose(final, [[1.0, -1.0, 0.0, 0.0, 0.0, 0.0, -0.9986837]], atol=0.0)
+    assert meta["ac2_official_final_clip_applied"] is True

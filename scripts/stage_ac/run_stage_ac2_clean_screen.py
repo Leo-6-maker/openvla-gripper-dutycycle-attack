@@ -50,6 +50,14 @@ ACTION_DIM = 7
 MIN_FREE_MIB = 20_480
 M1_MANIFEST_SOURCE = ROOT / "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json"
 M1_RECONCILIATION = ROOT / "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json"
+AC2_PROTOCOL_STATUSES = frozenset({
+    "STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_AUTHORIZED_PRE_EXPOSURE",
+    "STAGE_AC_AC2R2_CLEAN_SCREEN_REPAIR_PROTOCOL_AUTHORIZED_PRE_RESUME",
+})
+AC2_SOURCE_STATUSES = frozenset({
+    "STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+    "STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+})
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -167,19 +175,41 @@ def prepare_m1_runtime_manifest(args: argparse.Namespace) -> Path:
     return target
 
 
+def official_final_action_adapter(infer: Any, family: str) -> Any:
+    """Apply the already-frozen PI05 clip at the AC2 action boundary.
+
+    The Z1 loader permits tiny float32 overshoots within its input tolerance;
+    the official LIBERO boundary still clips those values before delivery.
+    """
+
+    if family != "M2_PI05_LIBERO":
+        return infer
+
+    def infer_with_clip(obs: dict[str, Any], language: str) -> tuple[np.ndarray, dict[str, Any]]:
+        chunk, meta = infer(obs, language)
+        values = np.asarray(chunk, dtype=np.float32)
+        clipped = np.clip(values, -1.0, 1.0).astype(np.float32)
+        if isinstance(meta, dict):
+            meta = dict(meta)
+            meta["ac2_official_final_clip_applied"] = bool(not np.array_equal(values, clipped))
+        return clipped, meta
+
+    return infer_with_clip
+
+
 def validate_static(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], Path, dict[str, Any] | None]:
     protocol = load_json(args.protocol)
     source = load_json(args.source_authority)
     manifest = load_json(args.launch_manifest)
     config = load_json(args.z1_config)
     cell = find_cell(manifest, args.cell_id)
-    if protocol.get("status") != "STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_AUTHORIZED_PRE_EXPOSURE":
+    if protocol.get("status") not in AC2_PROTOCOL_STATUSES:
         raise RuntimeError("AC2_PROTOCOL_NOT_AUTHORIZED")
     if protocol.get("clean_only") is not True or protocol.get("open_intervention_allowed") is not False or protocol.get("attack_or_pgd_allowed") is not False:
         raise RuntimeError("AC2_CLEAN_ONLY_FIREWALL_INVALID")
     if any(protocol.get(key) is not False for key in ("physical_endpoint_read_allowed", "v_phys_read_allowed", "task_success_read_allowed", "protected_or_eval160_allowed")):
         raise RuntimeError("AC2_FORBIDDEN_READ_FIREWALL_INVALID")
-    if source.get("status") != "STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_FROZEN":
+    if source.get("status") not in AC2_SOURCE_STATUSES:
         raise RuntimeError("AC2_SOURCE_AUTHORITY_NOT_FROZEN")
     if manifest.get("status") != "STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_FROZEN_PRE_EXPOSURE" or manifest.get("cell_count") != 720 or len(manifest.get("cells", [])) != 720:
         raise RuntimeError("AC2_LAUNCH_MANIFEST_INVALID")
@@ -240,6 +270,7 @@ def capture_clean(config: dict[str, Any], cell: dict[str, Any], infer: Any, coun
     boundary_states: dict[str, Any] = {}
     baseline_z: float | None = None
     done = False
+    pair_infer = official_final_action_adapter(infer, family)
     try:
         binding = AA1.TAXONOMY.bind_object_taxonomy(env, AA1.bddl_path(env, task))
         if binding.get("status") != "PASS":
@@ -268,7 +299,7 @@ def capture_clean(config: dict[str, Any], cell: dict[str, Any], infer: Any, coun
                 snapshot_value = safe_value(snapshot)
                 boundary_states[str(step)] = {"sha256": sha256_bytes(np.asarray(snapshot, dtype=np.float64).tobytes()), "state": snapshot_value}
                 context["partial_boundary_states"] = boundary_states
-                queue = AA2R2.model_pairs_v2(infer, obs, language, family, counters, context)
+                queue = AA2R2.model_pairs_v2(pair_infer, obs, language, family, counters, context)
             raw_action, final_action = queue.pop(0)
             if raw_action.size != ACTION_DIM or final_action.size != ACTION_DIM:
                 raise RuntimeError("AC2_FINAL_ACTION_NOT_EXACTLY_SEVEN")

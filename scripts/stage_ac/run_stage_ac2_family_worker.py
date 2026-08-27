@@ -18,6 +18,11 @@ ROOT = Path(__file__).resolve().parents[2]
 MODELS = ("M0_OPENVLA", "M1_OPENVLA_OFT", "M2_PI05_LIBERO")
 SUITES = ("libero_10", "libero_object", "libero_spatial")
 DEFAULT_OUTPUT_ROOT = Path("/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2_CLEAN_SCREEN_V1")
+DEFAULT_PROTOCOL = ROOT / "configs/STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1.json"
+DEFAULT_SOURCE_AUTHORITY = ROOT / "reports/STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_V1.json"
+DEFAULT_LAUNCH_MANIFEST = ROOT / "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json"
+DEFAULT_Z1_CONFIG = ROOT / "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json"
+DEFAULT_M1_MANIFEST = ROOT / "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json"
 
 
 def load_module(path: Path, name: str) -> ModuleType:
@@ -47,11 +52,11 @@ def existing_status(path: Path) -> str | None:
 
 def cell_args(args: argparse.Namespace, cell: dict[str, Any], output: Path) -> SimpleNamespace:
     return SimpleNamespace(
-        protocol=args.root / "configs/STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1.json",
-        source_authority=args.root / "reports/STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_V1.json",
-        launch_manifest=args.root / "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
-        z1_config=args.root / "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
-        m1_manifest=args.root / "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+        protocol=args.protocol,
+        source_authority=args.source_authority,
+        launch_manifest=args.launch_manifest,
+        z1_config=args.z1_config,
+        m1_manifest=args.m1_manifest,
         cell_id=str(cell["cell_id"]),
         gpu_id=int(args.gpu_id),
         output=output,
@@ -67,6 +72,11 @@ def main() -> int:
     parser.add_argument("--end-ordinal", type=int)
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    parser.add_argument("--protocol", type=Path, default=DEFAULT_PROTOCOL)
+    parser.add_argument("--source-authority", type=Path, default=DEFAULT_SOURCE_AUTHORITY)
+    parser.add_argument("--launch-manifest", type=Path, default=DEFAULT_LAUNCH_MANIFEST)
+    parser.add_argument("--z1-config", type=Path, default=DEFAULT_Z1_CONFIG)
+    parser.add_argument("--m1-manifest", type=Path, default=DEFAULT_M1_MANIFEST)
     args = parser.parse_args()
 
     if args.start_ordinal < 1:
