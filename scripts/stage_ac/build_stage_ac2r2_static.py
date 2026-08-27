@@ -68,6 +68,7 @@ def build(*, write: bool) -> dict[str, Any]:
     launch_binding = base.canonical_binding(LAUNCH_MANIFEST.relative_to(ROOT).as_posix())
     canary_root_binding = base.canonical_binding(AC2R1_ROOT.relative_to(ROOT).as_posix())
     prior_binding = artifact(PRIOR_FAILURES)
+    m1_reconciliation_binding = base.canonical_binding("reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json")
     runtime_files = [base.canonical_binding(str(row["path"])) for row in old_source["runtime_files"]]
 
     protocol = copy.deepcopy(old_protocol)
@@ -104,6 +105,7 @@ def build(*, write: bool) -> dict[str, Any]:
         "prior_ac2_source_authority": old_source_binding,
         "launch_manifest": launch_binding,
         "ac2r1_canary_root": canary_root_binding,
+        "m1_manifest_reconciliation": m1_reconciliation_binding,
         "prior_failure_receipts": prior_binding,
     }
     protocol_binding = write_json(PROTOCOL, protocol) if write else artifact(PROTOCOL)
@@ -126,6 +128,7 @@ def build(*, write: bool) -> dict[str, Any]:
             "protocol": protocol_binding,
             "launch_manifest": launch_binding,
             "ac2r1_canary_root": canary_root_binding,
+            "m1_manifest_reconciliation": m1_reconciliation_binding,
             "prior_failure_receipts": prior_binding,
             "z1_protocol": base.canonical_binding("configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json"),
         },
@@ -149,6 +152,7 @@ def build(*, write: bool) -> dict[str, Any]:
             "source_authority": source_binding,
             "launch_manifest": launch_binding,
             "ac2r1_canary_root": canary_root_binding,
+            "m1_manifest_reconciliation": m1_reconciliation_binding,
             "prior_failure_receipts": prior_binding,
         },
         "scientific_firewall": {
