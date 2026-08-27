@@ -3,9 +3,9 @@
   "gate": "STAGE_AC_AC2_TREATMENT_NAIVE_MODEL_SPECIFIC_GPU_SCREENING_AND_CONDITIONAL_AC3_V1",
   "git_binding": {
     "branch": "codex/stage-ac-model-specific-replication-20260827",
-    "commit": "b376cc9a53ee919574faee4923ee04dc1c48c034",
+    "commit": "643380ed9be1bb7fd4a48e7cb88d37edaf3db0f1",
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "tree": "dff0fbb24593200cb4e78393fc2c1d5659cd5eec"
+    "tree": "d91ad672359a731bae00a67cb9294b15df5b4523"
   },
   "next_legal_action": "GPU_AC2_CLEAN_ONLY_AFTER_THIS_SEAL_IS_COMMITTED_AND_VERIFIED",
   "official_libero_authority": {
@@ -57,7 +57,7 @@
       "libero_spatial/task_09": 8
     }
   },
-  "root_payload_sha256": "12b53efc5ebb31e8111ed667bf4fef19122351ac053b997d9bad1c2c26b3c48b",
+  "root_payload_sha256": "6a2dbb610a4532bd996c043ba75471c69233d19b5eca3eedd25ceaaab71eb1a4",
   "schema": "STAGE_AC_AC2_PRE_GPU_ROOT_SEAL_V1",
   "scientific_firewall": {
     "env_step": 0,
@@ -100,7 +100,7 @@
     "manifest": {
       "bytes": 1297796,
       "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
-      "sha256": "2168b463b3546e94ef15b8d1038dde235789828131973f938e28c505ee51853c"
+      "sha256": "5e7630d87d2998a64b4b00b62cc5550e7c82a28c1ccb688aed1d37239fade264"
     },
     "protocol": {
       "bytes": 5513,
@@ -110,7 +110,7 @@
     "runtime_source_authority": {
       "bytes": 6484,
       "path": "reports/STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_V1.json",
-      "sha256": "bd757496a3063cb88df5d01dfe5c5d682fdf5c08eaa83cea441956d5411e3cfb"
+      "sha256": "57a5e3124899ee819688e0dbf3e7cc3a6e201dcc2fa74f9238451aaadf5a6f19"
     },
     "z1_protocol": {
       "bytes": 7795,

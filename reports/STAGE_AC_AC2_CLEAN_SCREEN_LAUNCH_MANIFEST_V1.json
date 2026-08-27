@@ -14407,9 +14407,9 @@
   "gate": "STAGE_AC_AC2_TREATMENT_NAIVE_MODEL_SPECIFIC_GPU_SCREENING_AND_CONDITIONAL_AC3_V1",
   "git_binding": {
     "branch": "codex/stage-ac-model-specific-replication-20260827",
-    "commit": "b376cc9a53ee919574faee4923ee04dc1c48c034",
+    "commit": "643380ed9be1bb7fd4a48e7cb88d37edaf3db0f1",
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "tree": "dff0fbb24593200cb4e78393fc2c1d5659cd5eec"
+    "tree": "d91ad672359a731bae00a67cb9294b15df5b4523"
   },
   "next_legal_action": "EXECUTE_ALL_CELLS_EXACTLY_ONCE_UNLESS_PI_APPROVES_A_TECHNICAL_RECOVERY",
   "parents": [
@@ -22687,7 +22687,7 @@
     "runtime_source_authority": {
       "bytes": 6484,
       "path": "reports/STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_V1.json",
-      "sha256": "bd757496a3063cb88df5d01dfe5c5d682fdf5c08eaa83cea441956d5411e3cfb"
+      "sha256": "57a5e3124899ee819688e0dbf3e7cc3a6e201dcc2fa74f9238451aaadf5a6f19"
     },
     "z1_protocol": {
       "bytes": 7795,
