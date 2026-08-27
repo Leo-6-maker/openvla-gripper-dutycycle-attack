@@ -78,6 +78,19 @@ def canonical_hash(value: Any) -> str:
     return sha256_bytes(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8"))
 
 
+def boundary_state_array(value: Any) -> np.ndarray:
+    embedded_sha = None
+    if isinstance(value, dict):
+        embedded_sha = value.get("sha256")
+        value = value.get("state")
+    array = np.asarray(value, dtype=np.float64)
+    require(array.ndim == 1 and array.size > 0, "AC3_G2_BOUNDARY_STATE_INVALID")
+    digest = sha256_bytes(array.tobytes())
+    if embedded_sha is not None:
+        require(digest == str(embedded_sha), "AC3_G2_BOUNDARY_STATE_EMBEDDED_SHA")
+    return array
+
+
 def atomic_write(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f"{path.name}.tmp.{os.getpid()}")
@@ -296,11 +309,11 @@ def load_source_unit(unit: dict[str, Any]) -> tuple[dict[str, Any], dict[str, An
     require(actions[step : step + 20] == anchor["actions"], f"AC3_G2_SOURCE_ANCHOR_ACTION_MISMATCH:{source_path}")
     state = np.asarray(anchor["boundary_state"], dtype=np.float64)
     require(sha256_bytes(state.tobytes()) == str(anchor["boundary_state_sha256"]), f"AC3_G2_ANCHOR_STATE_SHA:{source_path}")
-    source_state = np.asarray(states[str(step)], dtype=np.float64)
+    source_state = boundary_state_array(states[str(step)])
     require(np.array_equal(state, source_state), f"AC3_G2_ANCHOR_STATE_SOURCE_MISMATCH:{source_path}")
     require(str(clean.get("clean_trajectory_digest")) == str(anchor["source_clean_trajectory_digest"]), f"AC3_G2_SOURCE_TRAJECTORY_DIGEST:{source_path}")
     prepared = dict(clean)
-    prepared["boundary_states"] = {int(key): np.asarray(value, dtype=np.float64) for key, value in states.items()}
+    prepared["boundary_states"] = {int(key): boundary_state_array(value) for key, value in states.items()}
     prepared["engineering_clean_rows"] = rows[step : step + 20]
     point = {
         "step": step,
@@ -516,9 +529,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def self_test() -> None:
+    global np
+    import numpy as np  # noqa: F401
+
     assert len(MODELS) == 3 and len(SUITES) == 3
     assert sum(DOSES.values()) == 18
     assert QUEUE_LENGTH["M2_PI05_LIBERO"] == 5
+    wrapped = {"sha256": sha256_bytes(np.asarray([1.0, 2.0], dtype=np.float64).tobytes()), "state": [1.0, 2.0]}
+    assert np.array_equal(boundary_state_array(wrapped), np.asarray([1.0, 2.0], dtype=np.float64))
     print(json.dumps({"status": "AC3_G2_STATIC_SELF_TEST_PASS", "shards": 9, "primary_branches": 384, "four_conditions_per_parent": True}, sort_keys=True))
 
 
