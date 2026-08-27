@@ -160,6 +160,11 @@
       "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
       "sha256": "ee2582686618f2738a4cd4fb3090911f3c7746f002dd7f683e26647dad6dc71a"
     },
+    "m1_manifest_reconciliation": {
+      "bytes": 3162,
+      "path": "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json",
+      "sha256": "29c48a904523ce028d1b16c233ba35486509b2de640b4a113c526c64b537361e"
+    },
     "prior_ac2_protocol": {
       "bytes": 6339,
       "path": "configs/STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1.json",
