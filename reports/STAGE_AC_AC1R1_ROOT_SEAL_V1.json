@@ -1,0 +1,220 @@
+{
+  "gate": "STAGE_AC_AC1R1_OFFICIAL_INIT_STATE_UNIVERSE_EXPANSION_AND_MODEL_SPECIFIC_REPLICATION_PROGRAM_V1",
+  "next_legal_action": "STOP_FOR_PI_REVIEW_AND_SEPARATE_NEW_POPULATION_AUTHORITY",
+  "outputs": {
+    "blacklist": {
+      "bytes": 1491353,
+      "path": "STAGE_AC_AC1R1_HISTORICAL_EXPOSURE_BLACKLIST_V1.json",
+      "sha256": "d90773f29a04265db6a32fdb39f0cb62d39a64e1c4d988df3baa42623452ca7d"
+    },
+    "fresh": {
+      "bytes": 113964,
+      "path": "STAGE_AC_AC1R1_FRESH_UNIVERSE_V1.json",
+      "sha256": "369d7ca81d77962db3362a3622143a3cb9254ac8165272510f225fbf93e6101f"
+    },
+    "universe": {
+      "bytes": 3406619,
+      "path": "STAGE_AC_AC1R1_OFFICIAL_INIT_STATE_UNIVERSE_V1.json",
+      "sha256": "860b4c0bd8354a6de9247bff876ca42f5640280986d1e15a6a5c67e3f7c86b7e"
+    }
+  },
+  "population": {
+    "error_count": 0,
+    "fresh_set_sha256": "6d79daf431c9f3d4e87cf28ab79ce6dc4a16cb75a97b4106f31f088f913e5832",
+    "fresh_unique_rows": 48,
+    "historical_key_set_sha256": "9720bde623b300b186eed19bdd658d15d28365432df5c3fecd3097b529431ffa",
+    "historical_target_keys": 1452,
+    "official_rows": 1500,
+    "selected_rows": 0,
+    "selection": {
+      "all_tasks_have_target_capacity": false,
+      "duplicate_count": 0,
+      "fresh_count": 48,
+      "parents_per_task": 8,
+      "selection_capacity_ok": false,
+      "selection_salt": "STAGE_AC_AC2_FRESH_PARENT_SELECTION_V1_20260827",
+      "target_parent_count": 240,
+      "task_counts": {
+        "libero_10/task_00": 2,
+        "libero_10/task_01": 0,
+        "libero_10/task_02": 2,
+        "libero_10/task_03": 2,
+        "libero_10/task_04": 1,
+        "libero_10/task_05": 1,
+        "libero_10/task_06": 2,
+        "libero_10/task_07": 1,
+        "libero_10/task_08": 2,
+        "libero_10/task_09": 2,
+        "libero_object/task_00": 2,
+        "libero_object/task_01": 1,
+        "libero_object/task_02": 2,
+        "libero_object/task_03": 1,
+        "libero_object/task_04": 1,
+        "libero_object/task_05": 3,
+        "libero_object/task_06": 2,
+        "libero_object/task_07": 1,
+        "libero_object/task_08": 3,
+        "libero_object/task_09": 2,
+        "libero_spatial/task_00": 1,
+        "libero_spatial/task_01": 0,
+        "libero_spatial/task_02": 1,
+        "libero_spatial/task_03": 3,
+        "libero_spatial/task_04": 1,
+        "libero_spatial/task_05": 1,
+        "libero_spatial/task_06": 2,
+        "libero_spatial/task_07": 3,
+        "libero_spatial/task_08": 1,
+        "libero_spatial/task_09": 2
+      }
+    },
+    "unresolved_out_of_scope_count": 747
+  },
+  "root_payload_sha256": "775b93726032f3408c94f1ce1cfbac3602d61afb2761e99d0e6b434c7c1a3986",
+  "schema": "STAGE_AC_AC1R1_ROOT_SEAL_V1",
+  "scientific_firewall": {
+    "fresh_scientific_identity_exposure": 0,
+    "new_env_step": 0,
+    "new_model_inference": 0,
+    "open_intervention": 0,
+    "pgd": 0,
+    "protected_or_eval160": 0,
+    "v_phys": 0
+  },
+  "source_authorities": {
+    "builder_script": {
+      "bytes": 21652,
+      "path": "scripts/stage_ac/build_stage_ac1r1_static_population.py",
+      "sha256": "f6cf2fe2de0c41c516dbc86e1d7616c5b6748919154f88084b210141e07146f2"
+    },
+    "history_sources": [
+      {
+        "file": {
+          "bytes": 692177,
+          "path": "reports/STAGE_X_X1R_T1D0R1_G10_IDENTITY_EXCLUSION_LEDGER_V1.json",
+          "sha256": "16457ee12f2d1ec72d0bbf13a33dd67d632062787ef8bfd3be62187c99c13532"
+        },
+        "kind": "g10",
+        "source_id": "stage_x_g10_exclusion"
+      },
+      {
+        "file": {
+          "bytes": 518676,
+          "path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_EXPOSURE_CLASSIFICATION_V3.json",
+          "sha256": "b9a0a1ef8f708a3e55876338dbdd322e765caa8c9b336b1c462d5e63d911bd58"
+        },
+        "kind": "f1a3_frozen",
+        "source_id": "stage_x_f1a3_frozen_identity"
+      },
+      {
+        "file": {
+          "bytes": 272020,
+          "path": "reports/STAGE_X_X1R2_F1A3_SOURCE_SPLIT_AND_POPULATION_FREEZE_V3_20260821/F1A3_SPLIT_LEDGER_V3.json",
+          "sha256": "17c6b08de61c9939e5d4b90611aed0cbfc547fb14682282d56bc1af8d4f616d4"
+        },
+        "kind": "listed",
+        "source_id": "stage_x_f1a3_split_ledger"
+      },
+      {
+        "file": {
+          "bytes": 64954,
+          "path": "reports/server_evidence/STAGE_V_M4_ELIGIBLE_FORMAL_PARENT_MANIFEST_V2.json",
+          "sha256": "8026d9310a58caa74e8a8b44fb8c5e56dead3d6fa35718c1a4e3f457c3cec7ad"
+        },
+        "kind": "listed",
+        "source_id": "stage_v_m4"
+      },
+      {
+        "file": {
+          "bytes": 5221,
+          "path": "configs/STAGE_VI_B2_FRESH_PARENT_MANIFEST_V3.json",
+          "sha256": "cbf5125b64c09815bd79ef05ba40d948797f99638294eab8808e65f37c0dbedd"
+        },
+        "kind": "listed",
+        "source_id": "stage_vi_b2"
+      },
+      {
+        "file": {
+          "bytes": 44744,
+          "path": "reports/STAGE_Z_Z0_SHARED_40_IDENTITY_PANEL_V1.json",
+          "sha256": "6523c1f2e514a2f329e369d17a38810e08669d23bcdbb63c0cf48462e0b0f84e"
+        },
+        "kind": "listed",
+        "source_id": "stage_z_z0_40"
+      },
+      {
+        "file": {
+          "bytes": 19254,
+          "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+          "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+        },
+        "kind": "listed",
+        "source_id": "stage_z_z0r1_36"
+      },
+      {
+        "file": {
+          "bytes": 234402,
+          "path": "reports/STAGE_Z_Z2_SCIENTIFIC_EXPOSURE_LEDGER_V2.json",
+          "sha256": "9e56f8ba27d282768fb5a8e114fd4ef340c082e5a0f02c16f3b7870449f76866"
+        },
+        "kind": "listed",
+        "source_id": "stage_z_z2_exposure"
+      },
+      {
+        "file": {
+          "bytes": 81848,
+          "path": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+          "sha256": "19679c6878a35c6e13bb46d2c1078d7d96a864a90525f542b6dedb62782fbbf5"
+        },
+        "kind": "listed",
+        "source_id": "stage_aa_aa0"
+      },
+      {
+        "file": {
+          "bytes": 318007,
+          "path": "reports/STAGE_AA_AA2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+          "sha256": "6eef2ea995fe75bfcf66c7f2c285b5e084aa386f2f4184a574fc6a4948a5dc35"
+        },
+        "kind": "listed",
+        "source_id": "stage_aa_aa2"
+      },
+      {
+        "file": {
+          "bytes": 219703,
+          "path": "reports/STAGE_AA_AA2R2_PHASE_B_V2_CENSUS_TERMINAL_V1.json",
+          "sha256": "3df73e7a806088b36841fd2a910afff5401c498bfc7c5214b5fdee6088a386b4"
+        },
+        "kind": "listed",
+        "source_id": "stage_aa_aa2r2"
+      },
+      {
+        "file": {
+          "bytes": 29513,
+          "path": "reports/STAGE_AC_AC0_CONSTRUCT_VALIDATION_TERMINAL_V1.json",
+          "sha256": "fecd402d0771b864384d3231b7888fb0a9d12e0d1e8806cf5139ec7bdb9649b0"
+        },
+        "kind": "listed",
+        "source_id": "stage_ac_ac0"
+      }
+    ],
+    "official_repo": {
+      "git": {
+        "commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+        "tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60",
+        "working_tree": "CLEAN"
+      },
+      "root": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+      "task_map": {
+        "bytes": 9775,
+        "path": "libero/libero/benchmark/libero_suite_task_map.py",
+        "sha256": "0c950df0a785aa55de968bb38ccd865d2017f71ddbe6f48cfd05ac0742b6d62d"
+      }
+    },
+    "project_source": {
+      "git": null,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac0-calibration-7ad34013",
+      "status": "NOT_A_GIT_CHECKOUT"
+    },
+    "selection_salt": "STAGE_AC_AC2_FRESH_PARENT_SELECTION_V1_20260827"
+  },
+  "status": "STAGE_AC_AC1R1_NEW_POPULATION_CAPACITY_HOLD_STOP_FOR_PI"
+}
