@@ -14407,9 +14407,9 @@
   "gate": "STAGE_AC_AC2_TREATMENT_NAIVE_MODEL_SPECIFIC_GPU_SCREENING_AND_CONDITIONAL_AC3_V1",
   "git_binding": {
     "branch": "codex/stage-ac-model-specific-replication-20260827",
-    "commit": "643380ed9be1bb7fd4a48e7cb88d37edaf3db0f1",
+    "commit": "3c830b8ac3f88901e10cd91e7bb1d5bd23e3e26c",
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "tree": "d91ad672359a731bae00a67cb9294b15df5b4523"
+    "tree": "f3b155cd9ba2f64ff6490fd5224b45fd2542f880"
   },
   "next_legal_action": "EXECUTE_ALL_CELLS_EXACTLY_ONCE_UNLESS_PI_APPROVES_A_TECHNICAL_RECOVERY",
   "parents": [
@@ -22679,15 +22679,20 @@
       "path": "reports/STAGE_AC_AC1R2_OFFICIAL_STATE_EXPOSURE_TAXONOMY_V1.json",
       "sha256": "2b386876d94867cf10d1d053986f979396b8f55e6aa187ba772cc67ce37017e6"
     },
+    "m1_manifest_reconciliation": {
+      "bytes": 3162,
+      "path": "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json",
+      "sha256": "29c48a904523ce028d1b16c233ba35486509b2de640b4a113c526c64b537361e"
+    },
     "protocol": {
-      "bytes": 5513,
+      "bytes": 6339,
       "path": "configs/STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1.json",
-      "sha256": "f5f90b0a968c08bbf6d2fa43631660a2095163bee644089e03153c7d88ef7009"
+      "sha256": "843739ca4eb4c9ea496f1a2596edec5713ff252efbcdd817d31f2ae69ea6da8c"
     },
     "runtime_source_authority": {
-      "bytes": 6484,
+      "bytes": 7079,
       "path": "reports/STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_V1.json",
-      "sha256": "57a5e3124899ee819688e0dbf3e7cc3a6e201dcc2fa74f9238451aaadf5a6f19"
+      "sha256": "bea2ad26236eee51b3e4b355fb10826249165445f3da0333e01d10aea5ffc573"
     },
     "z1_protocol": {
       "bytes": 7795,

@@ -4,9 +4,9 @@
   "gate": "STAGE_AC_AC2_TREATMENT_NAIVE_MODEL_SPECIFIC_GPU_SCREENING_AND_CONDITIONAL_AC3_V1",
   "git_binding": {
     "branch": "codex/stage-ac-model-specific-replication-20260827",
-    "commit": "643380ed9be1bb7fd4a48e7cb88d37edaf3db0f1",
+    "commit": "3c830b8ac3f88901e10cd91e7bb1d5bd23e3e26c",
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "tree": "d91ad672359a731bae00a67cb9294b15df5b4523"
+    "tree": "f3b155cd9ba2f64ff6490fd5224b45fd2542f880"
   },
   "input_authorities": {
     "ac0_protocol": {
@@ -39,10 +39,15 @@
       "path": "reports/STAGE_AC_AC1R2_OFFICIAL_STATE_EXPOSURE_TAXONOMY_V1.json",
       "sha256": "2b386876d94867cf10d1d053986f979396b8f55e6aa187ba772cc67ce37017e6"
     },
+    "m1_manifest_reconciliation": {
+      "bytes": 3162,
+      "path": "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json",
+      "sha256": "29c48a904523ce028d1b16c233ba35486509b2de640b4a113c526c64b537361e"
+    },
     "protocol": {
-      "bytes": 5513,
+      "bytes": 6339,
       "path": "configs/STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1.json",
-      "sha256": "f5f90b0a968c08bbf6d2fa43631660a2095163bee644089e03153c7d88ef7009"
+      "sha256": "843739ca4eb4c9ea496f1a2596edec5713ff252efbcdd817d31f2ae69ea6da8c"
     },
     "z1_protocol": {
       "bytes": 7795,
@@ -95,14 +100,24 @@
   },
   "runtime_files": [
     {
-      "bytes": 24900,
+      "bytes": 26128,
       "path": "scripts/stage_ac/run_stage_ac2_clean_screen.py",
-      "sha256": "2b53f4928354064f27e68610e3e79627e9d7f3ec875c838d53502227addc6a39"
+      "sha256": "80e6eb384192ab0a0d8ba76bc91c63d268177aa3d14848c1b4c93b8bfe62b4c0"
     },
     {
-      "bytes": 6855,
+      "bytes": 6957,
       "path": "scripts/stage_ac/run_stage_ac2_family_worker.py",
-      "sha256": "a2bfc4d2c68ef97ec6052b21ee6667a09ce0d424ac9d3647892b03452f736750"
+      "sha256": "185e1d1fa0187edce296a8f29a23859125be57f14ed4422b48f9f5c2f7080aac"
+    },
+    {
+      "bytes": 7252,
+      "path": "src/stage_ac/m1_manifest_authority.py",
+      "sha256": "65a0255ddeeb63214c2e4144192eaf4f4eb4e5bc78078a22f3307b9c5210c8e7"
+    },
+    {
+      "bytes": 1789,
+      "path": "scripts/stage_ac/reconcile_m1_manifest_authority.py",
+      "sha256": "e051688847462ba6959ad7a52002813dfe1a71daca8d4a1b0b47334f03617a27"
     },
     {
       "bytes": 8535,
@@ -125,9 +140,9 @@
       "sha256": "16a9b4c655238cf02b4d1a0c7c5ebe30fe5fbd79bdaa1290691de6d7a6933d00"
     },
     {
-      "bytes": 18122,
+      "bytes": 17720,
       "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
-      "sha256": "52e2d393018e13f95cabf12d47bae41246733710e7505680c1ef533517b32240"
+      "sha256": "ac1d8936bf6a705cec18904e97b56f24571f0f60a3e39f18f02ae58d7e735dac"
     },
     {
       "bytes": 8314,

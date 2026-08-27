@@ -1,0 +1,90 @@
+{
+  "authorization_pi_comment_id": 5435208429,
+  "canary_cells": [
+    {
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "cell_id": "AA2R2-A-M1-LIBERO10",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "seed": 2026082611,
+      "state_id": 20,
+      "suite": "libero_10",
+      "task_idx": 4
+    },
+    {
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "cell_id": "AA2R2-A-M1-OBJECT",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "seed": 2026082612,
+      "state_id": 42,
+      "suite": "libero_object",
+      "task_idx": 2
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "cell_id": "AA2R2-A-M1-SPATIAL",
+      "permanent_exclusion": true,
+      "scientific_use": false,
+      "seed": 2026082613,
+      "state_id": 34,
+      "suite": "libero_spatial",
+      "task_idx": 5
+    }
+  ],
+  "canary_count": 3,
+  "gate": "STAGE_Z_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_AND_PRE_GPU_REQUALIFICATION",
+  "git_binding": {
+    "branch": "codex/stage-ac-model-specific-replication-20260827",
+    "commit": "3c830b8ac3f88901e10cd91e7bb1d5bd23e3e26c",
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "tree": "f3b155cd9ba2f64ff6490fd5224b45fd2542f880"
+  },
+  "next_legal_action": "GPU_AC2R1_M1_CANARIES_ONLY_AFTER_THIS_SEAL_IS_COMMITTED_AND_VERIFIED",
+  "root_payload_sha256": "4de85fc1590fbc40e395d66a6316008d9cbb1887d85ea8faa9792fb741c75f22",
+  "schema": "STAGE_AC_AC2R1_PRE_GPU_ROOT_SEAL_V1",
+  "scientific_firewall": {
+    "env_step": 0,
+    "gpu_worker": 0,
+    "model_inference": 0,
+    "open_intervention": 0,
+    "pgd": 0,
+    "physical_endpoint_read": 0,
+    "protected_or_eval160": 0,
+    "scientific_parent_exposure": 0,
+    "v_phys": 0
+  },
+  "source_bindings": {
+    "canary_plan": {
+      "bytes": 4418,
+      "path": "reports/STAGE_AA_AA2R2_ENGINEERING_CANARY_PLAN_V1.json",
+      "sha256": "2a8e09ce222b1cc3a775b45e3f13c161b4dfe8a258595aa0d548651f2bd838b1"
+    },
+    "m1_manifest": {
+      "bytes": 22607,
+      "path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+      "sha256": "0f7143983d1b64cd18dfa79585c1def28d5b5d4904663c40260a1155211a4280"
+    },
+    "m1_reconciliation": {
+      "bytes": 3162,
+      "path": "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json",
+      "sha256": "29c48a904523ce028d1b16c233ba35486509b2de640b4a113c526c64b537361e"
+    },
+    "protocol": {
+      "bytes": 3209,
+      "path": "configs/STAGE_AC_AC2R1_M1_MANIFEST_REQUALIFICATION_PROTOCOL_V1.json",
+      "sha256": "9188f71b43b9299d728777ef9e2bc2784e51b5c21d5100aaa83f54f59dacf4ac"
+    },
+    "source_authority": {
+      "bytes": 5083,
+      "path": "reports/STAGE_AC_AC2R1_M1_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "sha256": "1ac612172cd80cafe36db8b4c8618c024a035049bf3790f5793c55a226ea09c8"
+    },
+    "z1_protocol": {
+      "bytes": 7795,
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"
+    }
+  },
+  "status": "STAGE_AC_AC2R1_PRE_GPU_STATIC_REQUALIFICATION_PASS"
+}
