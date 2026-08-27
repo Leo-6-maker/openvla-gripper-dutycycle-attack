@@ -1,0 +1,84 @@
+{
+  "artifacts": {
+    "blind_sample": {
+      "bytes": 33359,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC4_BLIND_AUDIT_SAMPLE_V1.json",
+      "sha256": "6756393b524b9893d82fe75c7bcee6cac9753db0d78e2db56635fda1c41110bf"
+    },
+    "launch_manifest": {
+      "bytes": 8942568,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3_G0_LAUNCH_MANIFEST_V1.json",
+      "sha256": "501a000e25e828ebd12116d16e7f4c8fe6f5c52efdcdf3e04a762a60aaef8d64"
+    },
+    "protocol": {
+      "bytes": 5798,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/configs/STAGE_AC_AC3_AC4_AC5_PROGRAM_PROTOCOL_V1.json",
+      "sha256": "e2ab9d00a3cc56a94c0d4b6ac952dffdf1c70e62158fcae5276c1f1359661337"
+    },
+    "source_authority": {
+      "bytes": 3918,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3_SOURCE_AUTHORITY_V1.json",
+      "sha256": "db6a667de7d3c0a8f70265ffad82a69849bc9408723e0d00223b9380ea4d8c84"
+    }
+  },
+  "authorization_pi_comment_id": 5434166412,
+  "claim_boundary": "G0 static freeze only; no scientific treatment result",
+  "counts": {
+    "ac4_blind_videos": 96,
+    "primary_branches": 384,
+    "selected_model_parent_units": 96
+  },
+  "gate": "STAGE_AC_AC3_AC4_AC5_TREATMENT_NAIVE_MULTI_MODEL_PHYSICAL_REPLICATION_PROGRAM_V1",
+  "git_binding": {
+    "commit": "32f83edcfd39dbb30bc9c13643b2f37833d01d21",
+    "tree": "876a9f36fc5f8604bc9ff653a6013daaf6a604b2"
+  },
+  "historical_authorities_immutable": true,
+  "inputs": {
+    "configs/STAGE_AC_AC2R2_CLEAN_SCREEN_REPAIR_PROTOCOL_V1.json": {
+      "bytes": 7601,
+      "path": "configs/STAGE_AC_AC2R2_CLEAN_SCREEN_REPAIR_PROTOCOL_V1.json",
+      "sha256": "3a7ec62cdeddfe337decd0f7bad5cc6f2c3ed61e958d2cf7e16d493d00c3dbe0"
+    },
+    "reports/STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_V1.json": {
+      "bytes": 7560,
+      "path": "reports/STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "sha256": "12ff0b1f8885c1f68322b5611d8155a6c95cb49fb9d13ce75b2e8f4b0b7f0c2b"
+    },
+    "reports/STAGE_AC_AC2R3_ELIGIBILITY_RECOMPUTATION_V1.json": {
+      "bytes": 897795,
+      "path": "reports/STAGE_AC_AC2R3_ELIGIBILITY_RECOMPUTATION_V1.json",
+      "sha256": "d5d836352c87fa2b3706716c6a399013302832bd2b51c1c81250ecdd6dd613d9"
+    },
+    "reports/STAGE_AC_AC2R3_MODEL_SPECIFIC_DENOMINATOR_LEDGER_V1.json": {
+      "bytes": 149194,
+      "path": "reports/STAGE_AC_AC2R3_MODEL_SPECIFIC_DENOMINATOR_LEDGER_V1.json",
+      "sha256": "7b0e4fea92ba9ddbdb8e2dff26ea4c393338b3d8cedb3c87a6c1f7b930a72a11"
+    },
+    "reports/STAGE_AC_AC2R3_ROOT_SEAL_V1.json": {
+      "bytes": 11616,
+      "path": "reports/STAGE_AC_AC2R3_ROOT_SEAL_V1.json",
+      "sha256": "368d8a8875d497042de7d4d3aed5a5d2d5ec6713b9efb897d9c11c2ba5606a97"
+    },
+    "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json": {
+      "bytes": 1298033,
+      "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+      "sha256": "ee2582686618f2738a4cd4fb3090911f3c7746f002dd7f683e26647dad6dc71a"
+    }
+  },
+  "next_legal_action": "EXECUTE_G1_CONSUMED_ONLY_ENGINEERING_QUALIFICATION",
+  "root_payload_sha256": "5957e8f885df1e97275c25a02b910dc3fd855010d68a9ffc80148967af4a8ff3",
+  "schema": "STAGE_AC_AC3_G0_ROOT_SEAL_V1",
+  "scientific_firewall": {
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "new_env_steps": 0,
+    "new_inference": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "v_phys_reads": 0
+  },
+  "status": "STAGE_AC_AC3_PRELAUNCH_AUTHORITY_FROZEN_CONTINUE"
+}

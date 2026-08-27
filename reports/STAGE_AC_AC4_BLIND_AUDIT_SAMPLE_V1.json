@@ -1,0 +1,972 @@
+{
+  "gate": "STAGE_AC_AC3_AC4_AC5_TREATMENT_NAIVE_MULTI_MODEL_PHYSICAL_REPLICATION_PROGRAM_V1",
+  "hide_model_suite_parent_condition": true,
+  "next_legal_action": "MATERIALIZE_BLIND_DERIVATIVES_ONLY_AFTER_G2",
+  "sample": [
+    {
+      "blinded_video_id": "W-19b63fac9b2613af93edaf67",
+      "branch_id": "AC3-13a1632d09c7bb61e7ce",
+      "canonical_parent_key": "libero_10/task_00/state_11",
+      "cell_id": "AC2-0003",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-5a0ebd09893ddb880efb53a5",
+      "branch_id": "AC3-3b1f72fcb5c648c05c1c",
+      "canonical_parent_key": "libero_10/task_00/state_11",
+      "cell_id": "AC2-0003",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-fbc8bcb9d86ef9890d0332a0",
+      "branch_id": "AC3-30d0c89ace079c6aa745",
+      "canonical_parent_key": "libero_10/task_00/state_11",
+      "cell_id": "AC2-0003",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-6474aa74abda92a5d031bc19",
+      "branch_id": "AC3-6b032f4a7dfabcc6488f",
+      "canonical_parent_key": "libero_10/task_00/state_11",
+      "cell_id": "AC2-0003",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-8c079ab2b211cea772cf1008",
+      "branch_id": "AC3-1ab2b276138815ac1d2a",
+      "canonical_parent_key": "libero_object/task_00/state_05",
+      "cell_id": "AC2-0084",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-9c41fdd254e95929410e6001",
+      "branch_id": "AC3-3e2b416eef2bb61823f2",
+      "canonical_parent_key": "libero_object/task_00/state_05",
+      "cell_id": "AC2-0084",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-67a9f04b5cbbb1e7a2947e9c",
+      "branch_id": "AC3-d6b1247b332296151618",
+      "canonical_parent_key": "libero_object/task_00/state_05",
+      "cell_id": "AC2-0084",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-0a2b7e1ea43ad32c2f6bc829",
+      "branch_id": "AC3-3812f2ba001f4ae7661e",
+      "canonical_parent_key": "libero_object/task_00/state_05",
+      "cell_id": "AC2-0084",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-dfc7777a3eb32016c2ea64a9",
+      "branch_id": "AC3-6d7c004314a0d5bc10d9",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "cell_id": "AC2-0117",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-be7ab96313324e30c3b2f857",
+      "branch_id": "AC3-3a7360ad918b8d9352de",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "cell_id": "AC2-0117",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-c19771e1d263bb32ca2cb041",
+      "branch_id": "AC3-e2b2be50a8dc81a46788",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "cell_id": "AC2-0117",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-4647c15351187e80f72141db",
+      "branch_id": "AC3-860952b21cf4ea208187",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "cell_id": "AC2-0117",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-50ca6418ba523926b9309663",
+      "branch_id": "AC3-01415683c2f3a5ffca9b",
+      "canonical_parent_key": "libero_object/task_00/state_16",
+      "cell_id": "AC2-0087",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-3badec8045c6f88b79e72d48",
+      "branch_id": "AC3-fc96bf0fef000f82e697",
+      "canonical_parent_key": "libero_object/task_00/state_16",
+      "cell_id": "AC2-0087",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-9488a0a669d09799e6aabc63",
+      "branch_id": "AC3-d8a74097121733aeb811",
+      "canonical_parent_key": "libero_object/task_00/state_16",
+      "cell_id": "AC2-0087",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-90253fddb93c3d008987220e",
+      "branch_id": "AC3-b7d45c91ef388b015056",
+      "canonical_parent_key": "libero_object/task_00/state_16",
+      "cell_id": "AC2-0087",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-fbad4bb135a369d15d4713f5",
+      "branch_id": "AC3-c4509a1f31aff3813301",
+      "canonical_parent_key": "libero_10/task_00/state_26",
+      "cell_id": "AC2-0001",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-7d2aa5f89a4471bd2118cd19",
+      "branch_id": "AC3-99ec88bbac487a54b02a",
+      "canonical_parent_key": "libero_10/task_00/state_26",
+      "cell_id": "AC2-0001",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-9fffd4b9a79e59b86ac48948",
+      "branch_id": "AC3-92a6136ada9035d31a6d",
+      "canonical_parent_key": "libero_10/task_00/state_26",
+      "cell_id": "AC2-0001",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-77fa21aa61502ac85fddb334",
+      "branch_id": "AC3-5224ad1fbe5487d5c764",
+      "canonical_parent_key": "libero_10/task_00/state_26",
+      "cell_id": "AC2-0001",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-61e2b69db565a8f5a7c4daa9",
+      "branch_id": "AC3-364a651500079e7ccbcc",
+      "canonical_parent_key": "libero_object/task_03/state_25",
+      "cell_id": "AC2-0106",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-abc8256b65c9e3317aa54dd4",
+      "branch_id": "AC3-4be6164af48157fc8782",
+      "canonical_parent_key": "libero_object/task_03/state_25",
+      "cell_id": "AC2-0106",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-8ff4d105a38eb2fe8cd9ec2c",
+      "branch_id": "AC3-44bce56bbe03a90fdb82",
+      "canonical_parent_key": "libero_object/task_03/state_25",
+      "cell_id": "AC2-0106",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-0735e83de4c8f277021a9660",
+      "branch_id": "AC3-0b0e905ab9e9fa70e6bb",
+      "canonical_parent_key": "libero_object/task_03/state_25",
+      "cell_id": "AC2-0106",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-cb7f0af5f66bc63af40a9342",
+      "branch_id": "AC3-59fb4712b6f03dd52bfd",
+      "canonical_parent_key": "libero_10/task_07/state_44",
+      "cell_id": "AC2-0058",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-9c02a8fd19f8b1e3bc1843aa",
+      "branch_id": "AC3-6cdaf135d2eb97fff22d",
+      "canonical_parent_key": "libero_10/task_07/state_44",
+      "cell_id": "AC2-0058",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-5b0d7781c0d681182ee91d58",
+      "branch_id": "AC3-24bf0929c37900aea997",
+      "canonical_parent_key": "libero_10/task_07/state_44",
+      "cell_id": "AC2-0058",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-c947da36f71bf40413ea4692",
+      "branch_id": "AC3-7a8eb07d0fd77a04fb54",
+      "canonical_parent_key": "libero_10/task_07/state_44",
+      "cell_id": "AC2-0058",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-2b0873a25cd6710d2319820b",
+      "branch_id": "AC3-318fc90483a8f7aa4d00",
+      "canonical_parent_key": "libero_10/task_09/state_35",
+      "cell_id": "AC2-0073",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-f1e1e10b47f018772912e608",
+      "branch_id": "AC3-6bcea177fc40eedee394",
+      "canonical_parent_key": "libero_10/task_09/state_35",
+      "cell_id": "AC2-0073",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-5448c49a9f86b689f1f85e68",
+      "branch_id": "AC3-ebda1f20a06ff22b70bb",
+      "canonical_parent_key": "libero_10/task_09/state_35",
+      "cell_id": "AC2-0073",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-9bb5c1b625a20f4d09870512",
+      "branch_id": "AC3-6cbb9b2150e891bfd82c",
+      "canonical_parent_key": "libero_10/task_09/state_35",
+      "cell_id": "AC2-0073",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-6fee6792bbaee57ea1cb8c9c",
+      "branch_id": "AC3-e3b95c5ebca06c6ec917",
+      "canonical_parent_key": "libero_spatial/task_06/state_16",
+      "cell_id": "AC2-0454",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-b73ace87e22caf82b4beee1f",
+      "branch_id": "AC3-f741cd6a2ac098df012b",
+      "canonical_parent_key": "libero_spatial/task_06/state_16",
+      "cell_id": "AC2-0454",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-b06557c2fd15fd57b2477192",
+      "branch_id": "AC3-03abac0c52fc01fe5155",
+      "canonical_parent_key": "libero_spatial/task_06/state_16",
+      "cell_id": "AC2-0454",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-81405ff224390872af2a6c9b",
+      "branch_id": "AC3-65bcfd948a45dd0be9ac",
+      "canonical_parent_key": "libero_spatial/task_06/state_16",
+      "cell_id": "AC2-0454",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-3e9f80f8a503c42b1a4912b9",
+      "branch_id": "AC3-2515cb9746b8b3cad5a5",
+      "canonical_parent_key": "libero_10/task_04/state_04",
+      "cell_id": "AC2-0279",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-02bb41cf9df3092e96017c8a",
+      "branch_id": "AC3-f1454e13381cc36d2185",
+      "canonical_parent_key": "libero_10/task_04/state_04",
+      "cell_id": "AC2-0279",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-69ee745f1e710fca02831258",
+      "branch_id": "AC3-55d951f568abf4b7f4d0",
+      "canonical_parent_key": "libero_10/task_04/state_04",
+      "cell_id": "AC2-0279",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-390cd8befa5c6ef57d0446aa",
+      "branch_id": "AC3-6e7295a1a340d55efa46",
+      "canonical_parent_key": "libero_10/task_04/state_04",
+      "cell_id": "AC2-0279",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-3b95ca83584383a1a65091e1",
+      "branch_id": "AC3-e9ab4ef9a6b905cc4d49",
+      "canonical_parent_key": "libero_10/task_02/state_02",
+      "cell_id": "AC2-0263",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-d8486d5fd4a255e617d8dbd3",
+      "branch_id": "AC3-a27a0150129ce8b6601f",
+      "canonical_parent_key": "libero_10/task_02/state_02",
+      "cell_id": "AC2-0263",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-8c44b20f2da700d3e9cb39df",
+      "branch_id": "AC3-57c892a424dd447b58c4",
+      "canonical_parent_key": "libero_10/task_02/state_02",
+      "cell_id": "AC2-0263",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-1b1a258e7b6454d0081ed498",
+      "branch_id": "AC3-666b26955dbd6cb80825",
+      "canonical_parent_key": "libero_10/task_02/state_02",
+      "cell_id": "AC2-0263",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-de90feeed2fee23794441cf7",
+      "branch_id": "AC3-aff4282f32f38d3b3ba9",
+      "canonical_parent_key": "libero_spatial/task_04/state_09",
+      "cell_id": "AC2-0439",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-9d21b0529ec84d09a4a87e3b",
+      "branch_id": "AC3-58f2f48a60211e123d52",
+      "canonical_parent_key": "libero_spatial/task_04/state_09",
+      "cell_id": "AC2-0439",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-32271787b8804a59fd5cc1e8",
+      "branch_id": "AC3-a6365aed05b774c65c82",
+      "canonical_parent_key": "libero_spatial/task_04/state_09",
+      "cell_id": "AC2-0439",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-f927d63d38ce0c8ff9d5d434",
+      "branch_id": "AC3-d8a0feb0d816c41b135a",
+      "canonical_parent_key": "libero_spatial/task_04/state_09",
+      "cell_id": "AC2-0439",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-ad71bd865746a12311843a06",
+      "branch_id": "AC3-eac7eff176d988cbbb05",
+      "canonical_parent_key": "libero_spatial/task_03/state_43",
+      "cell_id": "AC2-0430",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-8dfade783873936b6572da81",
+      "branch_id": "AC3-d8048374d24d6c6ae58e",
+      "canonical_parent_key": "libero_spatial/task_03/state_43",
+      "cell_id": "AC2-0430",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-0455bc70aa3a738428b6142a",
+      "branch_id": "AC3-c67e9ed089005bc20e43",
+      "canonical_parent_key": "libero_spatial/task_03/state_43",
+      "cell_id": "AC2-0430",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-57df08e12c8e1c02efeef37b",
+      "branch_id": "AC3-227c68b5919657dfcf35",
+      "canonical_parent_key": "libero_spatial/task_03/state_43",
+      "cell_id": "AC2-0430",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-a6342dbf8cb206e8e2e22386",
+      "branch_id": "AC3-d01fba122a421b7d7785",
+      "canonical_parent_key": "libero_10/task_07/state_38",
+      "cell_id": "AC2-0297",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-7564d33e1919b11cf51a7855",
+      "branch_id": "AC3-891e6c43cf3e0c901f2c",
+      "canonical_parent_key": "libero_10/task_07/state_38",
+      "cell_id": "AC2-0297",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-f1731a35db6a7063ef739650",
+      "branch_id": "AC3-9923adc394f586064f8e",
+      "canonical_parent_key": "libero_10/task_07/state_38",
+      "cell_id": "AC2-0297",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-0f6a9be5a0c37b1fe3b3646b",
+      "branch_id": "AC3-cc46035821893f19368b",
+      "canonical_parent_key": "libero_10/task_07/state_38",
+      "cell_id": "AC2-0297",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-3e82600407a3ada2ca54d681",
+      "branch_id": "AC3-075f22b452dee2a1b6d7",
+      "canonical_parent_key": "libero_object/task_09/state_44",
+      "cell_id": "AC2-0396",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-b4592ad9de4d4bc106e602f5",
+      "branch_id": "AC3-7c5c4b52703ac52c0c09",
+      "canonical_parent_key": "libero_object/task_09/state_44",
+      "cell_id": "AC2-0396",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-04fed5181be26e8109368d04",
+      "branch_id": "AC3-c1a69aeac8c7f870d5d1",
+      "canonical_parent_key": "libero_object/task_09/state_44",
+      "cell_id": "AC2-0396",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-a3f242f414846050dfda512b",
+      "branch_id": "AC3-9d539ccd1e6b11d0bb0e",
+      "canonical_parent_key": "libero_object/task_09/state_44",
+      "cell_id": "AC2-0396",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-bef29f80918cc6bec88e164f",
+      "branch_id": "AC3-b964058612ad008bbcbe",
+      "canonical_parent_key": "libero_spatial/task_09/state_38",
+      "cell_id": "AC2-0473",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-a164b93450b535f7e8bd5104",
+      "branch_id": "AC3-31b23682db18c681e95f",
+      "canonical_parent_key": "libero_spatial/task_09/state_38",
+      "cell_id": "AC2-0473",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-e5d6e3c06d9e1dc378549985",
+      "branch_id": "AC3-b26e3918a5633e060959",
+      "canonical_parent_key": "libero_spatial/task_09/state_38",
+      "cell_id": "AC2-0473",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-55cce55def7932cfa6b70e08",
+      "branch_id": "AC3-d2687ea70ff9176cb4ea",
+      "canonical_parent_key": "libero_spatial/task_09/state_38",
+      "cell_id": "AC2-0473",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-e15a6f30f25a216ca80a0d49",
+      "branch_id": "AC3-1cc7c6d60a2cb4065deb",
+      "canonical_parent_key": "libero_10/task_08/state_01",
+      "cell_id": "AC2-0548",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-b9a877db5a6be8d7a5aa0271",
+      "branch_id": "AC3-c12426f7ab3199deecea",
+      "canonical_parent_key": "libero_10/task_08/state_01",
+      "cell_id": "AC2-0548",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-085f7e6842628596ed0d5930",
+      "branch_id": "AC3-dccb88b08762dbff16ed",
+      "canonical_parent_key": "libero_10/task_08/state_01",
+      "cell_id": "AC2-0548",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-31ac226304149abd54193362",
+      "branch_id": "AC3-744d9f4ad0b5abfb67be",
+      "canonical_parent_key": "libero_10/task_08/state_01",
+      "cell_id": "AC2-0548",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-048811760d98c87f0840e043",
+      "branch_id": "AC3-6a3e337b1cb1a2e86c28",
+      "canonical_parent_key": "libero_object/task_07/state_00",
+      "cell_id": "AC2-0622",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-3e0b84ecf2fc927f903a8d20",
+      "branch_id": "AC3-64077d6b1eef59d624e5",
+      "canonical_parent_key": "libero_object/task_07/state_00",
+      "cell_id": "AC2-0622",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-000e7d60fc9bb49fbb83c718",
+      "branch_id": "AC3-1cb3de055b2703c42687",
+      "canonical_parent_key": "libero_object/task_07/state_00",
+      "cell_id": "AC2-0622",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-6145616d271d1a06bab58f23",
+      "branch_id": "AC3-1d9f4227f780860813a5",
+      "canonical_parent_key": "libero_object/task_07/state_00",
+      "cell_id": "AC2-0622",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-eaee109bdee6ddd55cb3b9e4",
+      "branch_id": "AC3-1c031d2c356f191de65b",
+      "canonical_parent_key": "libero_spatial/task_00/state_06",
+      "cell_id": "AC2-0643",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-f6e2e0b88ac9426427a77a20",
+      "branch_id": "AC3-bdd5da71883b0b1f4764",
+      "canonical_parent_key": "libero_spatial/task_00/state_06",
+      "cell_id": "AC2-0643",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-fb92b1e098c286f08f2d0c6e",
+      "branch_id": "AC3-ff791a3fe8fc9b38cd75",
+      "canonical_parent_key": "libero_spatial/task_00/state_06",
+      "cell_id": "AC2-0643",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-f589632282f79f0bc57a958a",
+      "branch_id": "AC3-abe49dd7088cfa73afb6",
+      "canonical_parent_key": "libero_spatial/task_00/state_06",
+      "cell_id": "AC2-0643",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-39399997b34031c47cab2460",
+      "branch_id": "AC3-b1b5ad313a0598e6693c",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "cell_id": "AC2-0597",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-ab9a3647eda12282311cfd22",
+      "branch_id": "AC3-d27941cef044f750986c",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "cell_id": "AC2-0597",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-b59922583efc4f8222d2c6f8",
+      "branch_id": "AC3-d62f76637959785f34fb",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "cell_id": "AC2-0597",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-da2b1ede59098a764ec92a45",
+      "branch_id": "AC3-479359a74ced13bbfefe",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "cell_id": "AC2-0597",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "H0_UNTOUCHED"
+    },
+    {
+      "blinded_video_id": "W-db63fa3247fdfebcc6c8841e",
+      "branch_id": "AC3-795205d718542bf51d7e",
+      "canonical_parent_key": "libero_spatial/task_07/state_20",
+      "cell_id": "AC2-0697",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-c91536a9320877eba4638c97",
+      "branch_id": "AC3-35559eba529891491e4f",
+      "canonical_parent_key": "libero_spatial/task_07/state_20",
+      "cell_id": "AC2-0697",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-50d2857e43b750149528cf0d",
+      "branch_id": "AC3-0f74de3cfbe925fc490b",
+      "canonical_parent_key": "libero_spatial/task_07/state_20",
+      "cell_id": "AC2-0697",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-f9d0fef524aed20d1b809e8f",
+      "branch_id": "AC3-287ceb62d5abe1990b74",
+      "canonical_parent_key": "libero_spatial/task_07/state_20",
+      "cell_id": "AC2-0697",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-8396d975a970e5e230b3c493",
+      "branch_id": "AC3-c9eba5bc4350fa53a1a5",
+      "canonical_parent_key": "libero_10/task_00/state_20",
+      "cell_id": "AC2-0484",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-b252563bb47dcb1fa8f9bdd7",
+      "branch_id": "AC3-8ac4ea847335fe5f0062",
+      "canonical_parent_key": "libero_10/task_00/state_20",
+      "cell_id": "AC2-0484",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-8b4a1f4d2eb6b904db0e533b",
+      "branch_id": "AC3-f819d48b25d9ef330749",
+      "canonical_parent_key": "libero_10/task_00/state_20",
+      "cell_id": "AC2-0484",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-aea7922bc2431a952baf6778",
+      "branch_id": "AC3-584207a3c3db2e89e939",
+      "canonical_parent_key": "libero_10/task_00/state_20",
+      "cell_id": "AC2-0484",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-c48e9766ab0b632b8db5fd70",
+      "branch_id": "AC3-64cb75d7631b77e177bc",
+      "canonical_parent_key": "libero_object/task_02/state_38",
+      "cell_id": "AC2-0580",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-69403594cd9052957c9bc7fd",
+      "branch_id": "AC3-6992e31a8ce7cb51a339",
+      "canonical_parent_key": "libero_object/task_02/state_38",
+      "cell_id": "AC2-0580",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-fa72891111ab73947eded693",
+      "branch_id": "AC3-15c6d032a12fd9494132",
+      "canonical_parent_key": "libero_object/task_02/state_38",
+      "cell_id": "AC2-0580",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-925c040e686e9c861a5fc964",
+      "branch_id": "AC3-81bcd996c89b44f644e6",
+      "canonical_parent_key": "libero_object/task_02/state_38",
+      "cell_id": "AC2-0580",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-80a1486fe98dc5a504474208",
+      "branch_id": "AC3-3da3eeea5028ef320048",
+      "canonical_parent_key": "libero_10/task_09/state_35",
+      "cell_id": "AC2-0553",
+      "condition": "CLEAN_REFERENCE",
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-07727cfbd05a76de8ac69440",
+      "branch_id": "AC3-05d3bf8f14fa0af8b7a6",
+      "canonical_parent_key": "libero_10/task_09/state_35",
+      "cell_id": "AC2-0553",
+      "condition": "OPEN_T3",
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-5b887fa1cd83856acf1360b9",
+      "branch_id": "AC3-c5fd398223f584b7ad2d",
+      "canonical_parent_key": "libero_10/task_09/state_35",
+      "cell_id": "AC2-0553",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    },
+    {
+      "blinded_video_id": "W-710dd4f0ce96f68e30c15335",
+      "branch_id": "AC3-ebe75022a81d86f04913",
+      "canonical_parent_key": "libero_10/task_09/state_35",
+      "cell_id": "AC2-0553",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_exposure_class": "HC_CLEAN_ONLY"
+    }
+  ],
+  "sample_count": 96,
+  "schema": "STAGE_AC_AC4_BLIND_AUDIT_SAMPLE_V1",
+  "selection_salt": "STAGE_AC_AC4_BLIND_AUDIT_PARENT_SELECTION_V1_20260828",
+  "status": "STAGE_AC_AC4_BLIND_SAMPLE_FROZEN_PRE_TREATMENT",
+  "video_id_salt": "STAGE_AC_AC4_BLIND_VIDEO_ID_V1_20260828"
+}
