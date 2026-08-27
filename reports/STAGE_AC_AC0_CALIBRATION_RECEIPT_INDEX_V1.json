@@ -1,0 +1,688 @@
+{
+  "gate": "STAGE_AC_AC0_MODEL_SPECIFIC_PHASE_CONSTRUCT_VALIDATION",
+  "receipt_count": 9,
+  "receipts": [
+    {
+      "action_pair_audit_count": 520,
+      "boundary_count": 520,
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "cell_id": "AA2R2-A-M0-LIBERO10",
+      "clean_trajectory_digest": "5dcfd1d50c926bda5539acf56fc577b82968ad6cc6fee4f7374f1897b15f2c04",
+      "complete_trajectory": true,
+      "control_labels_all_rows": {
+        "SUPPORT_CONTACT": 479,
+        "UNKNOWN_CONTROL": 41
+      },
+      "critical_candidates": {
+        "ONE_ROW_FLICKER": 16,
+        "STRICT_NO_FLICKER": 16
+      },
+      "critical_reason_counts": {
+        "ONE_ROW_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 446,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 476,
+          "LIFT_THRESHOLD_NOT_MET": 485,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 196,
+          "STABLE_GRASP_WINDOW_INVALID": 461,
+          "SUPPORT_CONTACT_PRESENT": 479
+        },
+        "STRICT_NO_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 446,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 478,
+          "LIFT_THRESHOLD_NOT_MET": 485,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 196,
+          "STABLE_GRASP_WINDOW_INVALID": 461,
+          "SUPPORT_CONTACT_PRESENT": 479
+        }
+      },
+      "env_step_calls": 530,
+      "log": {
+        "bytes": 3693,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/logs/AA2R2-A-M0-LIBERO10-R1.log",
+        "sha256": "34bf4bf838f86fd7d111065fd7d7b8ed5a48a80c8df332cf1ba7fa6f1038c390"
+      },
+      "model_family": "M0_OPENVLA",
+      "model_inference_calls": 520,
+      "physical_telemetry_reads": 1040,
+      "receipt": {
+        "bytes": 4310283,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/receipts/AA2R2-A-M0-LIBERO10-R1.json",
+        "sha256": "e6c9e4436c41f3863bc2e8fbc24494215b8d16c2596cdc5aaed786079ddce9b9"
+      },
+      "scientific_firewall": {
+        "aa2_exposure": 0,
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "seed": 2026082601,
+      "status": "PASS_AC0_CALIBRATION_CELL",
+      "steps_captured": 520,
+      "suite": "libero_10",
+      "superseded_attempts": [
+        {
+          "error": {
+            "action_pair_audit_count": 1,
+            "message": "TiffWriter.write() got an unexpected keyword argument 'fps'",
+            "type": "TypeError"
+          },
+          "receipt": {
+            "bytes": 1529,
+            "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/receipts/AA2R2-A-M0-LIBERO10.json",
+            "sha256": "4a1def70e5df8e618912c7650ad3415e4aeca1ecbdb2913b2d069e33faa8223c"
+          },
+          "runtime_counters": {
+            "aa2_exposure": 0,
+            "aa_v_phys_reads": 0,
+            "attack_outcome_reads": 0,
+            "attacked_env_steps": 0,
+            "env_step_calls": 10,
+            "eval160_reads": 0,
+            "model_inference_calls": 1,
+            "open_intervention_steps": 0,
+            "pgd_calls": 0,
+            "physical_telemetry_reads": 1,
+            "protected_reads": 0,
+            "scientific_parent_exposure": 0,
+            "task_success_reads": 0,
+            "v_phys_reads": 0
+          },
+          "status": "AC0_ENGINEERING_HOLD_RUNTIME_ERROR"
+        }
+      ],
+      "video": {
+        "bytes": 227640,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/videos/AA2R2-A-M0-LIBERO10-R1.mp4",
+        "sha256": "1b53db6ecf884fc3ea6d9112c7955ba9282a63bc3ce832cea9b865ea48aeb411"
+      }
+    },
+    {
+      "action_pair_audit_count": 248,
+      "boundary_count": 248,
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "cell_id": "AA2R2-A-M0-OBJECT",
+      "clean_trajectory_digest": "8d57839b794e8d897281a671c48660bcc0a652e1235e1a54785658ce64b57ea9",
+      "complete_trajectory": false,
+      "control_labels_all_rows": {
+        "SUPPORT_CONTACT": 183,
+        "UNKNOWN_CONTROL": 65
+      },
+      "critical_candidates": {
+        "ONE_ROW_FLICKER": 44,
+        "STRICT_NO_FLICKER": 44
+      },
+      "critical_reason_counts": {
+        "ONE_ROW_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 165,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 174,
+          "LIFT_THRESHOLD_NOT_MET": 185,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 50,
+          "STABLE_GRASP_WINDOW_INVALID": 175,
+          "SUPPORT_CONTACT_PRESENT": 183
+        },
+        "STRICT_NO_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 165,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 175,
+          "LIFT_THRESHOLD_NOT_MET": 185,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 50,
+          "STABLE_GRASP_WINDOW_INVALID": 175,
+          "SUPPORT_CONTACT_PRESENT": 183
+        }
+      },
+      "env_step_calls": 258,
+      "log": {
+        "bytes": 3697,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/logs/AA2R2-A-M0-OBJECT.log",
+        "sha256": "62e5206b8fdbfe2865a6d0950279715000148d3de989934178a72079df7f1269"
+      },
+      "model_family": "M0_OPENVLA",
+      "model_inference_calls": 248,
+      "physical_telemetry_reads": 496,
+      "receipt": {
+        "bytes": 2276804,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/receipts/AA2R2-A-M0-OBJECT.json",
+        "sha256": "aafb7b3c51c8fa69d287a3c80eeaccea264f1793075587146f78f9e9d0dfa071"
+      },
+      "scientific_firewall": {
+        "aa2_exposure": 0,
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "seed": 2026082602,
+      "status": "PASS_AC0_CALIBRATION_CELL",
+      "steps_captured": 248,
+      "suite": "libero_object",
+      "superseded_attempts": [],
+      "video": {
+        "bytes": 102486,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/videos/AA2R2-A-M0-OBJECT.mp4",
+        "sha256": "51b65493fdb63120fc96bb92e5cff3328771655797c24e6db1f0213fecca69ab"
+      }
+    },
+    {
+      "action_pair_audit_count": 220,
+      "boundary_count": 220,
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "cell_id": "AA2R2-A-M0-SPATIAL",
+      "clean_trajectory_digest": "972234efeb6419cdb8032748ef0d40efb518720e4ab8154ea988177b81b80aa8",
+      "complete_trajectory": true,
+      "control_labels_all_rows": {
+        "SUPPORT_CONTACT": 220
+      },
+      "critical_candidates": {
+        "ONE_ROW_FLICKER": 0,
+        "STRICT_NO_FLICKER": 0
+      },
+      "critical_reason_counts": {
+        "ONE_ROW_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 201,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 201,
+          "LIFT_THRESHOLD_NOT_MET": 201,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 113,
+          "STABLE_GRASP_WINDOW_INVALID": 201,
+          "SUPPORT_CONTACT_PRESENT": 201
+        },
+        "STRICT_NO_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 201,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 201,
+          "LIFT_THRESHOLD_NOT_MET": 201,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 113,
+          "STABLE_GRASP_WINDOW_INVALID": 201,
+          "SUPPORT_CONTACT_PRESENT": 201
+        }
+      },
+      "env_step_calls": 230,
+      "log": {
+        "bytes": 3698,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/logs/AA2R2-A-M0-SPATIAL.log",
+        "sha256": "e2a0f11f5beaf8d11a082275660a9b0c8789e95282e2aa671143a4b6077cc9f3"
+      },
+      "model_family": "M0_OPENVLA",
+      "model_inference_calls": 220,
+      "physical_telemetry_reads": 440,
+      "receipt": {
+        "bytes": 1838206,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/receipts/AA2R2-A-M0-SPATIAL.json",
+        "sha256": "178b6db42e59a37a7669bf29fa8ced1652e1fe4e23b5d512d3fc4de595c10014"
+      },
+      "scientific_firewall": {
+        "aa2_exposure": 0,
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "seed": 2026082603,
+      "status": "PASS_AC0_CALIBRATION_CELL",
+      "steps_captured": 220,
+      "suite": "libero_spatial",
+      "superseded_attempts": [],
+      "video": {
+        "bytes": 156403,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/videos/AA2R2-A-M0-SPATIAL.mp4",
+        "sha256": "a539027ee1aea0f0f545539c65844ba4d914775d662a0b6a021a382fa37bf601"
+      }
+    },
+    {
+      "action_pair_audit_count": 520,
+      "boundary_count": 65,
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "cell_id": "AA2R2-A-M1-LIBERO10",
+      "clean_trajectory_digest": "5f4aac99aa1b65586ae9e4e4ef554293c7c79f7371c0dd9616b6d1f2093a415b",
+      "complete_trajectory": true,
+      "control_labels_all_rows": {
+        "SUPPORT_CONTACT": 447,
+        "UNKNOWN_CONTROL": 73
+      },
+      "critical_candidates": {
+        "ONE_ROW_FLICKER": 6,
+        "STRICT_NO_FLICKER": 6
+      },
+      "critical_reason_counts": {
+        "ONE_ROW_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 432,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 438,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 442,
+          "LIFT_THRESHOLD_NOT_MET": 456,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 151,
+          "STABLE_GRASP_WINDOW_INVALID": 429,
+          "SUPPORT_CONTACT_PRESENT": 447
+        },
+        "STRICT_NO_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 432,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 438,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 446,
+          "LIFT_THRESHOLD_NOT_MET": 456,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 151,
+          "STABLE_GRASP_WINDOW_INVALID": 429,
+          "SUPPORT_CONTACT_PRESENT": 447
+        }
+      },
+      "env_step_calls": 530,
+      "log": {
+        "bytes": 5091,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/logs/AA2R2-A-M1-LIBERO10.log",
+        "sha256": "6d16fa59a498086175f870660d9bc128c502d6501de53076130f55dbfe25e1d4"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_inference_calls": 65,
+      "physical_telemetry_reads": 1040,
+      "receipt": {
+        "bytes": 2924840,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/receipts/AA2R2-A-M1-LIBERO10.json",
+        "sha256": "bdde46f9948ee7c690086c36eac00979aa1a56330723c34393b7e52e9072dab0"
+      },
+      "scientific_firewall": {
+        "aa2_exposure": 0,
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "seed": 2026082611,
+      "status": "PASS_AC0_CALIBRATION_CELL",
+      "steps_captured": 520,
+      "suite": "libero_10",
+      "superseded_attempts": [],
+      "video": {
+        "bytes": 317950,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/videos/AA2R2-A-M1-LIBERO10.mp4",
+        "sha256": "200be1759707c5e77bd5c077087327998c88e9f3f71749c4164195332675c181"
+      }
+    },
+    {
+      "action_pair_audit_count": 280,
+      "boundary_count": 35,
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "cell_id": "AA2R2-A-M1-OBJECT",
+      "clean_trajectory_digest": "046f00b080f9d44be6e8e43500e6631a41fad2a69108e203f9d02cf270d71f3a",
+      "complete_trajectory": true,
+      "control_labels_all_rows": {
+        "SUPPORT_CONTACT": 280
+      },
+      "critical_candidates": {
+        "ONE_ROW_FLICKER": 0,
+        "STRICT_NO_FLICKER": 0
+      },
+      "critical_reason_counts": {
+        "ONE_ROW_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 181,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 228,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 204,
+          "LIFT_THRESHOLD_NOT_MET": 261,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 65,
+          "STABLE_GRASP_WINDOW_INVALID": 182,
+          "SUPPORT_CONTACT_PRESENT": 261
+        },
+        "STRICT_NO_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 181,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 228,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 206,
+          "LIFT_THRESHOLD_NOT_MET": 261,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 65,
+          "STABLE_GRASP_WINDOW_INVALID": 182,
+          "SUPPORT_CONTACT_PRESENT": 261
+        }
+      },
+      "env_step_calls": 290,
+      "log": {
+        "bytes": 5095,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/logs/AA2R2-A-M1-OBJECT.log",
+        "sha256": "5cee098659a01d9046e12a8f251bd840192218a1686fd3440e62594d410def8e"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_inference_calls": 35,
+      "physical_telemetry_reads": 560,
+      "receipt": {
+        "bytes": 1597780,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/receipts/AA2R2-A-M1-OBJECT.json",
+        "sha256": "08a6cd8dc48017ade006737ed59e1b5893f184dccb2b4a5ea4b1a3d5498577c1"
+      },
+      "scientific_firewall": {
+        "aa2_exposure": 0,
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "seed": 2026082612,
+      "status": "PASS_AC0_CALIBRATION_CELL",
+      "steps_captured": 280,
+      "suite": "libero_object",
+      "superseded_attempts": [],
+      "video": {
+        "bytes": 179965,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/videos/AA2R2-A-M1-OBJECT.mp4",
+        "sha256": "c2c4d511119b5a9a1f414a3e9b46cee40c654a76bd9864fe2c038101a9510e6e"
+      }
+    },
+    {
+      "action_pair_audit_count": 224,
+      "boundary_count": 28,
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "cell_id": "AA2R2-A-M1-SPATIAL",
+      "clean_trajectory_digest": "e29151bfba0a32ea5bab8a3a28db6e48ededa03d1c529012f1a6b50eff7afd0a",
+      "complete_trajectory": true,
+      "control_labels_all_rows": {
+        "SUPPORT_CONTACT": 220
+      },
+      "critical_candidates": {
+        "ONE_ROW_FLICKER": 0,
+        "STRICT_NO_FLICKER": 0
+      },
+      "critical_reason_counts": {
+        "ONE_ROW_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 201,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 175,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 201,
+          "LIFT_THRESHOLD_NOT_MET": 201,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 81,
+          "STABLE_GRASP_WINDOW_INVALID": 201,
+          "SUPPORT_CONTACT_PRESENT": 201
+        },
+        "STRICT_NO_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 201,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 175,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 201,
+          "LIFT_THRESHOLD_NOT_MET": 201,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 81,
+          "STABLE_GRASP_WINDOW_INVALID": 201,
+          "SUPPORT_CONTACT_PRESENT": 201
+        }
+      },
+      "env_step_calls": 230,
+      "log": {
+        "bytes": 5096,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/logs/AA2R2-A-M1-SPATIAL.log",
+        "sha256": "6a77fe2993596525044ed82f2d042ec9736d651864083ad6b0148a1b88987f7b"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_inference_calls": 28,
+      "physical_telemetry_reads": 440,
+      "receipt": {
+        "bytes": 1250520,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/receipts/AA2R2-A-M1-SPATIAL.json",
+        "sha256": "3f6f8e90230a5f4193bf4c0257fe7cb1080f8b4a2d31c889557cc3744e4bbcef"
+      },
+      "scientific_firewall": {
+        "aa2_exposure": 0,
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "seed": 2026082613,
+      "status": "PASS_AC0_CALIBRATION_CELL",
+      "steps_captured": 220,
+      "suite": "libero_spatial",
+      "superseded_attempts": [],
+      "video": {
+        "bytes": 149477,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/videos/AA2R2-A-M1-SPATIAL.mp4",
+        "sha256": "1212d009996e8ddb117900a6a97b89c7caeb51cdd98b46ea2ec3ad0cd8d4f473"
+      }
+    },
+    {
+      "action_pair_audit_count": 225,
+      "boundary_count": 45,
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "cell_id": "AA2R2-A-M2-LIBERO10",
+      "clean_trajectory_digest": "c15e90c944efc09860d88a85cc2a4d221a155adc4d6791d538faa27acebb80e3",
+      "complete_trajectory": false,
+      "control_labels_all_rows": {
+        "SUPPORT_CONTACT": 181,
+        "UNKNOWN_CONTROL": 41
+      },
+      "critical_candidates": {
+        "ONE_ROW_FLICKER": 4,
+        "STRICT_NO_FLICKER": 4
+      },
+      "critical_reason_counts": {
+        "ONE_ROW_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 151,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 162,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 168,
+          "LIFT_THRESHOLD_NOT_MET": 181,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 143,
+          "STABLE_GRASP_WINDOW_INVALID": 153,
+          "SUPPORT_CONTACT_PRESENT": 181
+        },
+        "STRICT_NO_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 151,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 162,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 170,
+          "LIFT_THRESHOLD_NOT_MET": 181,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 143,
+          "STABLE_GRASP_WINDOW_INVALID": 153,
+          "SUPPORT_CONTACT_PRESENT": 181
+        }
+      },
+      "env_step_calls": 232,
+      "log": {
+        "bytes": 7322,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/logs/AA2R2-A-M2-LIBERO10.log",
+        "sha256": "851a6639dd5d8a01cb144de64de307995a26b02250da68548cf83d08bb83e95e"
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "model_inference_calls": 45,
+      "physical_telemetry_reads": 444,
+      "receipt": {
+        "bytes": 1412825,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/receipts/AA2R2-A-M2-LIBERO10.json",
+        "sha256": "031be16f1eaeed7f7947d8e551cf1044daf333ccd640fa0c135bab2300db3652"
+      },
+      "scientific_firewall": {
+        "aa2_exposure": 0,
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "seed": 2026082621,
+      "status": "PASS_AC0_CALIBRATION_CELL",
+      "steps_captured": 222,
+      "suite": "libero_10",
+      "superseded_attempts": [],
+      "video": {
+        "bytes": 149662,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/videos/AA2R2-A-M2-LIBERO10.mp4",
+        "sha256": "2ea0a90588232fd19967af244e3224526970568dd00dd4edb008d3554746b3aa"
+      }
+    },
+    {
+      "action_pair_audit_count": 120,
+      "boundary_count": 24,
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "cell_id": "AA2R2-A-M2-OBJECT",
+      "clean_trajectory_digest": "1d214a7fc86652e0745eea5ca0a923aac62aec5001cf7462019feb7f960e2d31",
+      "complete_trajectory": false,
+      "control_labels_all_rows": {
+        "SUPPORT_CONTACT": 51,
+        "UNKNOWN_CONTROL": 66
+      },
+      "critical_candidates": {
+        "ONE_ROW_FLICKER": 9,
+        "STRICT_NO_FLICKER": 9
+      },
+      "critical_reason_counts": {
+        "ONE_ROW_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 34,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 78,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 43,
+          "LIFT_THRESHOLD_NOT_MET": 54,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 39,
+          "STABLE_GRASP_WINDOW_INVALID": 44,
+          "SUPPORT_CONTACT_PRESENT": 51
+        },
+        "STRICT_NO_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 34,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 78,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 44,
+          "LIFT_THRESHOLD_NOT_MET": 54,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 39,
+          "STABLE_GRASP_WINDOW_INVALID": 44,
+          "SUPPORT_CONTACT_PRESENT": 51
+        }
+      },
+      "env_step_calls": 127,
+      "log": {
+        "bytes": 7326,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/logs/AA2R2-A-M2-OBJECT.log",
+        "sha256": "feb83d57dcbe5ec517a4bfccc6aa82a8f07e2104bafd47e3baea1d1e8e471407"
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "model_inference_calls": 24,
+      "physical_telemetry_reads": 234,
+      "receipt": {
+        "bytes": 774521,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/receipts/AA2R2-A-M2-OBJECT.json",
+        "sha256": "94666f3d9e7c518d83c3e0473b93db5738d611e68ee72ed0fcc5b22b10bbe18c"
+      },
+      "scientific_firewall": {
+        "aa2_exposure": 0,
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "seed": 2026082622,
+      "status": "PASS_AC0_CALIBRATION_CELL",
+      "steps_captured": 117,
+      "suite": "libero_object",
+      "superseded_attempts": [],
+      "video": {
+        "bytes": 82268,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/videos/AA2R2-A-M2-OBJECT.mp4",
+        "sha256": "82618248ffc847696d764d82f4dc1e34a9ff1ade2bbd9162f5a76cb397043793"
+      }
+    },
+    {
+      "action_pair_audit_count": 220,
+      "boundary_count": 44,
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "cell_id": "AA2R2-A-M2-SPATIAL",
+      "clean_trajectory_digest": "8a274c5bc30dd863d974647342d0e3958f14f9bf1975375cf3d5ac1d7a2d40f7",
+      "complete_trajectory": true,
+      "control_labels_all_rows": {
+        "PRE_CONTACT": 1,
+        "SUPPORT_CONTACT": 171,
+        "UNKNOWN_CONTROL": 48
+      },
+      "critical_candidates": {
+        "ONE_ROW_FLICKER": 4,
+        "STRICT_NO_FLICKER": 4
+      },
+      "critical_reason_counts": {
+        "ONE_ROW_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 61,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 160,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 156,
+          "LIFT_THRESHOLD_NOT_MET": 184,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 92,
+          "STABLE_GRASP_WINDOW_INVALID": 141,
+          "SUPPORT_CONTACT_PRESENT": 176
+        },
+        "STRICT_NO_FLICKER": {
+          "ABSOLUTE_OBJECT_EEF_DISTANCE_EXCEEDED": 61,
+          "ANCHOR_NOT_FRESH_BOUNDARY": 160,
+          "CONTACT_FLICKER_LIMIT_EXCEEDED": 158,
+          "LIFT_THRESHOLD_NOT_MET": 184,
+          "RELATIVE_CARRY_DISPLACEMENT_EXCEEDED": 92,
+          "STABLE_GRASP_WINDOW_INVALID": 141,
+          "SUPPORT_CONTACT_PRESENT": 176
+        }
+      },
+      "env_step_calls": 230,
+      "log": {
+        "bytes": 7327,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/logs/AA2R2-A-M2-SPATIAL.log",
+        "sha256": "9d7a8e7a25d690b10aa5cfee5a1d38985a26b9a6bc4db074a3f49da747989c7d"
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "model_inference_calls": 44,
+      "physical_telemetry_reads": 440,
+      "receipt": {
+        "bytes": 1395477,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/receipts/AA2R2-A-M2-SPATIAL.json",
+        "sha256": "a87318062894f9245d68b409fe0bef76049cc32af4ad9f1eca40548b1bd10cb8"
+      },
+      "scientific_firewall": {
+        "aa2_exposure": 0,
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "seed": 2026082623,
+      "status": "PASS_AC0_CALIBRATION_CELL",
+      "steps_captured": 220,
+      "suite": "libero_spatial",
+      "superseded_attempts": [],
+      "video": {
+        "bytes": 148460,
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013/videos/AA2R2-A-M2-SPATIAL.mp4",
+        "sha256": "b781f1f7824cdd3ddab8541443ea501e47b90673926893df9b40687d71868799"
+      }
+    }
+  ],
+  "schema": "STAGE_AC_AC0_CALIBRATION_RECEIPT_INDEX_V1",
+  "status": "STAGE_AC_AC0_CONSTRUCT_VALIDATION_PASS_STOP_FOR_PI",
+  "terminal_sha256_after_write": "fecd402d0771b864384d3231b7888fb0a9d12e0d1e8806cf5139ec7bdb9649b0"
+}
