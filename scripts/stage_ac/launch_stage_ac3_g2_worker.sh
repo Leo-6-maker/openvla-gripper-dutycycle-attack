@@ -28,7 +28,7 @@ exec /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python \
   --protocol "$ROOT/configs/STAGE_AC_AC3_AC4_AC5_PROGRAM_PROTOCOL_V1.json" \
   --g0-root "$ROOT/reports/STAGE_AC_AC3_G0_ROOT_SEAL_V1.json" \
   --g1-root "$ROOT/reports/STAGE_AC_AC3Q_G1_ROOT_SEAL_V1.json" \
-  --runtime-authority "$ROOT/reports/STAGE_AC_AC3Q_RUNTIME_SOURCE_AUTHORITY_V8.json" \
+  --runtime-authority "$ROOT/reports/STAGE_AC_AC3Q_RUNTIME_SOURCE_AUTHORITY_V9.json" \
   --manifest "$ROOT/reports/STAGE_AC_AC3_G0_LAUNCH_MANIFEST_V1.json" \
   --blind-sample "$ROOT/reports/STAGE_AC_AC4_BLIND_AUDIT_SAMPLE_V1.json" \
   --config "$ROOT/configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json" \
