@@ -45,7 +45,7 @@ def existing_status(path: Path) -> str | None:
     return str(value.get("status"))
 
 
-def cell_args(args: argparse.Namespace, runner: ModuleType, cell: dict[str, Any], output: Path) -> SimpleNamespace:
+def cell_args(args: argparse.Namespace, cell: dict[str, Any], output: Path) -> SimpleNamespace:
     return SimpleNamespace(
         protocol=args.root / "configs/STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1.json",
         source_authority=args.root / "reports/STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_V1.json",
@@ -110,7 +110,7 @@ def main() -> int:
         return 0
 
     first_cell, first_output = pending[0]
-    static_args = cell_args(args, runner, first_cell, first_output)
+    static_args = cell_args(args, first_cell, first_output)
     protocol, source, _cell, _checkpoint, _checkpoint_manifest = runner.validate_static(static_args)
     config = runner.load_json(static_args.z1_config)
     gpu = runner.AA1.gpu_snapshot(int(args.gpu_id))
@@ -130,11 +130,12 @@ def main() -> int:
     load_suite = str(first_cell["suite"])
     infer = model = None
     try:
-        infer, model, normalization, checkpoint, checkpoint_manifest = runner.load_model(config, args.family, load_suite)
+        runtime_manifest = runner.prepare_m1_runtime_manifest(static_args) if args.family == "M1_OPENVLA_OFT" else None
+        infer, model, normalization, checkpoint, checkpoint_manifest = runner.load_model(config, args.family, load_suite, runtime_manifest)
         for ordinal, (cell, output) in enumerate(pending, start=args.start_ordinal):
             emit({"status": "AC2_CELL_START", "cell_id": cell["cell_id"], "ordinal": ordinal, "family": args.family, "suite": cell["suite"], "gpu_id": args.gpu_id})
             result = runner.run_loaded_cell(
-                cell_args(args, runner, cell, output),
+                cell_args(args, cell, output),
                 protocol,
                 source,
                 cell,

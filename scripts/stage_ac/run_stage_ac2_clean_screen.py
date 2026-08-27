@@ -23,6 +23,7 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
 from stage_ac import eligibility_v2 as ELIGIBILITY
+from stage_ac import m1_manifest_authority as M1_MANIFEST
 
 
 def load_module(path: Path, name: str) -> ModuleType:
@@ -47,6 +48,8 @@ QUEUE_LENGTH = {"M0_OPENVLA": 1, "M1_OPENVLA_OFT": 8, "M2_PI05_LIBERO": 5}
 BOUNDARY = {"M0_OPENVLA": "FRESH_PER_STEP", "M1_OPENVLA_OFT": "FRESH_OFT_ACTION_QUEUE", "M2_PI05_LIBERO": "FRESH_PI05_REPLAN"}
 ACTION_DIM = 7
 MIN_FREE_MIB = 20_480
+M1_MANIFEST_SOURCE = ROOT / "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json"
+M1_RECONCILIATION = ROOT / "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -153,6 +156,17 @@ def find_parent(manifest: dict[str, Any], key: str) -> dict[str, Any]:
     return rows[0]
 
 
+def m1_manifest_source(args: argparse.Namespace) -> Path:
+    value = getattr(args, "m1_manifest", None)
+    return Path(value) if value is not None else M1_MANIFEST_SOURCE
+
+
+def prepare_m1_runtime_manifest(args: argparse.Namespace) -> Path:
+    target = args.output.resolve().parent.parent / "authority/STAGE_AC_AC2R1_M1_MANIFEST_HISTORICAL_CRLF_V1.json"
+    M1_MANIFEST.materialize_historical_runtime_manifest(m1_manifest_source(args), M1_RECONCILIATION, args.z1_config, target)
+    return target
+
+
 def validate_static(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], Path, dict[str, Any] | None]:
     protocol = load_json(args.protocol)
     source = load_json(args.source_authority)
@@ -194,6 +208,11 @@ def validate_static(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str,
     config_binding = input_bindings.get("z1_protocol")
     if config_binding is None or sha256_file(args.z1_config) != str(config_binding["sha256"]):
         raise RuntimeError("AC2_Z1_PROTOCOL_BINDING_INVALID")
+    m1_reconciliation_binding = input_bindings.get("m1_manifest_reconciliation")
+    if m1_reconciliation_binding is None:
+        raise RuntimeError("AC2R1_M1_RECONCILIATION_BINDING_MISSING")
+    reconciliation_path = binding_path(ROOT, m1_reconciliation_binding)
+    M1_MANIFEST.validate_reconciliation(m1_manifest_source(args), reconciliation_path, args.z1_config)
     if args.cell_id not in {row["cell_id"] for row in manifest["cells"]}:
         raise RuntimeError("AC2_CELL_NOT_IN_MANIFEST")
     if int(cell["state_id"]) != int(str(cell["state"]).split("_")[-1]) or int(cell["source_task_idx"]) != int(str(cell["task"]).split("_")[-1]):
@@ -205,7 +224,7 @@ def validate_static(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str,
         raise RuntimeError(f"AC2_CHECKPOINT_NOT_MATERIALIZED:{checkpoint}")
     checkpoint_manifest = None
     if cell["model_family"] == "M1_OPENVLA_OFT":
-        manifest_path = ROOT / "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json"
+        manifest_path = prepare_m1_runtime_manifest(args)
         checkpoint_manifest = Z1.verify_m1_materialization(manifest_path, checkpoint, str(cell["suite"]), str(config["model_families"]["M1_OPENVLA_OFT"]["checkpoint_manifests_sha256"]))
     return protocol, source, cell, checkpoint, checkpoint_manifest
 
@@ -372,11 +391,11 @@ def empty_counters() -> dict[str, int]:
     }
 
 
-def load_model(config: dict[str, Any], family: str, suite: str) -> tuple[Any, Any, dict[str, Any], Path, dict[str, Any] | None]:
+def load_model(config: dict[str, Any], family: str, suite: str, runtime_manifest: Path | None = None) -> tuple[Any, Any, dict[str, Any], Path, dict[str, Any] | None]:
     checkpoint = checkpoint_path(config, family, suite)
     checkpoint_manifest = None
     if family == "M1_OPENVLA_OFT":
-        manifest_path = ROOT / "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json"
+        manifest_path = runtime_manifest or M1_MANIFEST_SOURCE
         checkpoint_manifest = Z1.verify_m1_materialization(manifest_path, checkpoint, suite, str(config["model_families"][family]["checkpoint_manifests_sha256"]))
     if family == "M0_OPENVLA":
         infer, model, normalization = Z1.load_openvla(str(checkpoint), oft=False, suite=suite, return_chunk=True)
@@ -486,7 +505,8 @@ def run_cell(args: argparse.Namespace) -> dict[str, Any]:
     config = load_json(args.z1_config)
     infer = model = None
     try:
-        infer, model, normalization, checkpoint, checkpoint_manifest = load_model(config, str(cell["model_family"]), str(cell["suite"]))
+        runtime_manifest = prepare_m1_runtime_manifest(args) if cell["model_family"] == "M1_OPENVLA_OFT" else None
+        infer, model, normalization, checkpoint, checkpoint_manifest = load_model(config, str(cell["model_family"]), str(cell["suite"]), runtime_manifest)
         return run_loaded_cell(args, protocol, source, cell, config, infer, normalization, checkpoint, checkpoint_manifest, gpu)
     finally:
         if model is not None:

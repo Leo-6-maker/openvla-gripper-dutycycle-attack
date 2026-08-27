@@ -32,6 +32,7 @@ Z1_PROTOCOL = "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json"
 AC0_PROTOCOL = "configs/STAGE_AC_AC0_CONSTRUCT_VALIDATION_PROTOCOL_V1.json"
 AC0_ROOT = "reports/STAGE_AC_AC0_ROOT_SEAL_V1.json"
 AC0_TERMINAL = "reports/STAGE_AC_AC0_CONSTRUCT_VALIDATION_TERMINAL_V1.json"
+M1_RECONCILIATION = "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json"
 AC1R2_ROOT = "reports/STAGE_AC_AC1R2_ROOT_SEAL_V1.json"
 AC1R2_POPULATION = "reports/STAGE_AC_AC1R2_TREATMENT_NAIVE_POPULATION_V1.json"
 AC1R2_TAXONOMY = "reports/STAGE_AC_AC1R2_OFFICIAL_STATE_EXPOSURE_TAXONOMY_V1.json"
@@ -45,6 +46,8 @@ INHERITED_RUNTIME = (
     "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
     "src/stage_aa/action_semantics_v2.py",
 )
+M1_MANIFEST_HELPER = "src/stage_ac/m1_manifest_authority.py"
+M1_RECONCILIATION_SCRIPT = "scripts/stage_ac/reconcile_m1_manifest_authority.py"
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -75,6 +78,18 @@ def binding(relative: str) -> dict[str, Any]:
     if not path.is_file():
         raise FileNotFoundError(path)
     return {"path": relative, "bytes": path.stat().st_size, "sha256": sha256_file(path)}
+
+
+def canonical_binding(relative: str) -> dict[str, Any]:
+    """Bind tracked runtime inputs to Git bytes, independent of local EOL checkout."""
+    path = ROOT / relative
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    try:
+        data = subprocess.check_output(["git", "show", f"HEAD:{relative}"])
+    except subprocess.CalledProcessError:
+        data = path.read_bytes()
+    return {"path": relative, "bytes": len(data), "sha256": sha256_bytes(data)}
 
 
 def git_value(*args: str) -> str:
@@ -139,12 +154,14 @@ def build(*, write: bool) -> dict[str, Any]:
     ac0_root_path = ROOT / AC0_ROOT
     ac0_protocol_path = ROOT / AC0_PROTOCOL
     ac0_terminal_path = ROOT / AC0_TERMINAL
+    m1_reconciliation_path = ROOT / M1_RECONCILIATION
     z1_path = ROOT / Z1_PROTOCOL
     population = json.loads(population_path.read_text(encoding="utf-8"))
     taxonomy = json.loads(taxonomy_path.read_text(encoding="utf-8"))
     z1 = json.loads(z1_path.read_text(encoding="utf-8"))
     ac0 = json.loads(ac0_protocol_path.read_text(encoding="utf-8"))
     ac0_terminal = json.loads(ac0_terminal_path.read_text(encoding="utf-8"))
+    m1_reconciliation = json.loads(m1_reconciliation_path.read_text(encoding="utf-8"))
 
     if population.get("status") != "STAGE_AC_AC1R2_TREATMENT_NAIVE_TAXONOMY_PASS_STOP_FOR_PI":
         raise RuntimeError("AC1R2_POPULATION_NOT_SEALED_PASS")
@@ -158,6 +175,8 @@ def build(*, write: bool) -> dict[str, Any]:
         raise RuntimeError("AC0_FRESH_SCIENCE_FIREWALL_INVALID")
     if ac0_terminal.get("status") != "STAGE_AC_AC0_CONSTRUCT_VALIDATION_PASS_STOP_FOR_PI" or ac0_terminal.get("control_validation", {}).get("flicker_variant_selected") != "STRICT_NO_FLICKER":
         raise RuntimeError("AC0_TERMINAL_FLICKER_SELECTION_NOT_FROZEN")
+    if m1_reconciliation.get("status") != "STAGE_AC_AC2R1_M1_MANIFEST_BYTE_RECONCILIATION_PASS":
+        raise RuntimeError("AC2R1_M1_RECONCILIATION_NOT_PASS")
     if not (population_path.is_file() and taxonomy_path.is_file() and ac1r2_root_path.is_file() and ac0_root_path.is_file() and ac0_terminal_path.is_file()):
         raise RuntimeError("AC1R2_OR_AC0_ROOT_AUTHORITY_MISSING")
 
@@ -203,14 +222,15 @@ def build(*, write: bool) -> dict[str, Any]:
 
     code_commit = git_value("rev-parse", "HEAD")
     code_tree = git_value("rev-parse", "HEAD^{tree}")
-    runtime_files = [binding(RUNNER), binding(WORKER), binding(ELIGIBILITY), *(binding(path) for path in INHERITED_RUNTIME)]
-    parent_binding = binding(AC1R2_POPULATION)
-    taxonomy_binding = binding(AC1R2_TAXONOMY)
-    ac1r2_root_binding = binding(AC1R2_ROOT)
-    ac0_root_binding = binding(AC0_ROOT)
-    ac0_terminal_binding = binding(AC0_TERMINAL)
-    ac0_protocol_binding = binding(AC0_PROTOCOL)
-    z1_binding = binding(Z1_PROTOCOL)
+    runtime_files = [canonical_binding(RUNNER), canonical_binding(WORKER), canonical_binding(M1_MANIFEST_HELPER), canonical_binding(M1_RECONCILIATION_SCRIPT), canonical_binding(ELIGIBILITY), *(canonical_binding(path) for path in INHERITED_RUNTIME)]
+    parent_binding = canonical_binding(AC1R2_POPULATION)
+    taxonomy_binding = canonical_binding(AC1R2_TAXONOMY)
+    ac1r2_root_binding = canonical_binding(AC1R2_ROOT)
+    ac0_root_binding = canonical_binding(AC0_ROOT)
+    ac0_terminal_binding = canonical_binding(AC0_TERMINAL)
+    m1_reconciliation_binding = binding(M1_RECONCILIATION)
+    ac0_protocol_binding = canonical_binding(AC0_PROTOCOL)
+    z1_binding = canonical_binding(Z1_PROTOCOL)
 
     eligibility_v2 = ac0["eligibility_v2"]
     protocol = {
@@ -302,12 +322,19 @@ def build(*, write: bool) -> dict[str, Any]:
             "protected_reads": 0,
             "eval160_reads": 0,
         },
+        "m1_manifest_authority": {
+            "historical_z1_sha256": m1_reconciliation["historical_z1_authority"]["sha256"],
+            "git_lf_sha256": m1_reconciliation["git_runtime_representation"]["sha256"],
+            "reconciliation": m1_reconciliation_binding,
+            "runtime_rule": "derive exact historical CRLF bytes for the unchanged Z1 per-file verifier; do not weaken verifier or alter checkpoint rows",
+        },
         "source_bindings": {
             "ac1r2_population": parent_binding,
             "ac1r2_taxonomy": taxonomy_binding,
             "ac1r2_root": ac1r2_root_binding,
             "ac0_root": ac0_root_binding,
             "ac0_terminal": ac0_terminal_binding,
+            "m1_manifest_reconciliation": m1_reconciliation_binding,
             "z1_runtime_protocol": z1_binding,
         },
         "next_legal_action": "EXECUTE_ALL_720_CLEAN_CELLS_ONLY",
@@ -354,6 +381,7 @@ def build(*, write: bool) -> dict[str, Any]:
             "ac0_protocol": ac0_protocol_binding,
             "ac0_root": ac0_root_binding,
             "ac0_terminal": ac0_terminal_binding,
+            "m1_manifest_reconciliation": m1_reconciliation_binding,
             "ac1r2_population": parent_binding,
             "ac1r2_taxonomy": taxonomy_binding,
             "ac1r2_root": ac1r2_root_binding,
@@ -421,6 +449,7 @@ def build(*, write: bool) -> dict[str, Any]:
             "ac1r2_root": ac1r2_root_binding,
             "ac0_root": ac0_root_binding,
             "ac0_terminal": ac0_terminal_binding,
+            "m1_manifest_reconciliation": m1_reconciliation_binding,
             "z1_protocol": z1_binding,
         },
         "parents": selected,
@@ -471,6 +500,7 @@ def build(*, write: bool) -> dict[str, Any]:
             "ac1r2_root": ac1r2_root_binding,
             "ac0_root": ac0_root_binding,
             "ac0_terminal": ac0_terminal_binding,
+            "m1_manifest_reconciliation": m1_reconciliation_binding,
             "z1_protocol": z1_binding,
         },
         "scientific_firewall": {
