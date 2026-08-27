@@ -216,7 +216,8 @@ def validate_static(args: argparse.Namespace, protocol: Dict[str, Any], plan: Di
     video = args.video.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     video.parent.mkdir(parents=True, exist_ok=True)
-    if output.exists() or video.exists() or video.with_suffix(video.suffix + ".partial").exists():
+    partial_video = video.with_name(f"{video.stem}.partial{video.suffix}")
+    if output.exists() or video.exists() or partial_video.exists():
         raise RuntimeError("AC0_APPEND_ONLY_OUTPUT_EXISTS")
     if shutil.disk_usage(str(output.parent)).free < int(args.min_free_gib * 1024**3):
         raise RuntimeError(f"AC0_STORAGE_RESERVE_TOO_LOW:{shutil.disk_usage(str(output.parent)).free}")
@@ -236,7 +237,7 @@ def capture_clean(
 ) -> Dict[str, Any]:
     suite = str(canary["suite"])
     env, _task_suite, task, obs, _initial_states = RUNTIME.make_env(config, suite, int(canary["task_idx"]), int(canary["state_id"]), counters)
-    partial_video = video_path.with_suffix(video_path.suffix + ".partial")
+    partial_video = video_path.with_name(f"{video_path.stem}.partial{video_path.suffix}")
     writer = open_video_writer(partial_video)
     try:
         binding = RUNTIME.TAXONOMY.bind_object_taxonomy(env, RUNTIME.bddl_path(env, task))
