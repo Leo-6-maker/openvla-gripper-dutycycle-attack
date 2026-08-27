@@ -97,3 +97,21 @@ def test_ac2_pi05_adapter_applies_official_clip_to_float_overshoot():
     final, meta = runner.official_final_action_adapter(infer, "M2_PI05_LIBERO")({}, "pick")
     assert np.allclose(final, [[1.0, -1.0, 0.0, 0.0, 0.0, 0.0, -0.9986837]], atol=0.0)
     assert meta["ac2_official_final_clip_applied"] is True
+
+
+def test_ac2r2_source_binds_same_immutable_launch_manifest(tmp_path):
+    path = Path(__file__).parents[2] / "scripts/stage_ac/run_stage_ac2_clean_screen.py"
+    spec = importlib.util.spec_from_file_location("ac2_manifest_binding_test", path)
+    assert spec is not None and spec.loader is not None
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+
+    manifest = tmp_path / "manifest.json"
+    data = b'{"cell_count":720}\n'
+    manifest.write_bytes(data)
+    binding = {"path": "manifest.json", "bytes": len(data), "sha256": runner.sha256_bytes(data)}
+    source = {
+        "status": "STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+        "input_authorities": {"launch_manifest": binding},
+    }
+    runner.validate_manifest_source_binding(tmp_path, {"source_bindings": {"runtime_source_authority": {"sha256": "old"}}}, source, tmp_path / "new-source.json", manifest)

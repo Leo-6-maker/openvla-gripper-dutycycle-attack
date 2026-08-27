@@ -164,6 +164,25 @@ def find_parent(manifest: dict[str, Any], key: str) -> dict[str, Any]:
     return rows[0]
 
 
+def validate_manifest_source_binding(root: Path, manifest: dict[str, Any], source: dict[str, Any], source_path: Path, launch_manifest_path: Path) -> None:
+    manifest_binding = manifest.get("source_bindings", {}).get("runtime_source_authority")
+    if source.get("status") == "STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_FROZEN":
+        # The immutable V1 launch manifest points at the superseded V1 source.
+        # AC2R2 keeps that manifest byte-identical and binds it through its own
+        # versioned source authority instead of rewriting the historical link.
+        launch_binding = source.get("input_authorities", {}).get("launch_manifest")
+        if not isinstance(launch_binding, dict):
+            raise RuntimeError("AC2R2_LAUNCH_MANIFEST_BINDING_MISSING")
+        bound_path = binding_path(root, launch_binding)
+        if bound_path.resolve() != launch_manifest_path.resolve():
+            raise RuntimeError("AC2R2_LAUNCH_MANIFEST_PATH_MISMATCH")
+        if int(bound_path.stat().st_size) != int(launch_binding["bytes"]) or sha256_file(bound_path) != str(launch_binding["sha256"]):
+            raise RuntimeError("AC2R2_LAUNCH_MANIFEST_BINDING_INVALID")
+        return
+    if manifest_binding is None or sha256_file(source_path) != str(manifest_binding["sha256"]):
+        raise RuntimeError("AC2_SOURCE_AUTHORITY_MANIFEST_BINDING_INVALID")
+
+
 def m1_manifest_source(args: argparse.Namespace) -> Path:
     value = getattr(args, "m1_manifest", None)
     return Path(value) if value is not None else M1_MANIFEST_SOURCE
@@ -232,9 +251,7 @@ def validate_static(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str,
     input_bindings = source.get("input_authorities", {})
     for name, expected in input_bindings.items():
         verify_binding(ROOT, expected, name)
-    manifest_binding = manifest.get("source_bindings", {}).get("runtime_source_authority")
-    if manifest_binding is None or sha256_file(args.source_authority) != str(manifest_binding["sha256"]):
-        raise RuntimeError("AC2_SOURCE_AUTHORITY_MANIFEST_BINDING_INVALID")
+    validate_manifest_source_binding(ROOT, manifest, source, args.source_authority, args.launch_manifest)
     config_binding = input_bindings.get("z1_protocol")
     if config_binding is None or sha256_file(args.z1_config) != str(config_binding["sha256"]):
         raise RuntimeError("AC2_Z1_PROTOCOL_BINDING_INVALID")
