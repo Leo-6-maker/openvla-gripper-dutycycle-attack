@@ -1,0 +1,3515 @@
+{
+  "authorization_pi_comment_id": 5441904205,
+  "claim_boundary": "AC2 clean-only complete-census evidence audit; no AC3 treatment or physical susceptibility claim",
+  "denominator": {
+    "M0_OPENVLA": {
+      "eligible_by_suite": {
+        "libero_10": 60,
+        "libero_object": 62,
+        "libero_spatial": 64
+      },
+      "eligible_by_task": {
+        "task_00": 19,
+        "task_01": 18,
+        "task_02": 22,
+        "task_03": 18,
+        "task_04": 22,
+        "task_05": 16,
+        "task_06": 19,
+        "task_07": 20,
+        "task_08": 10,
+        "task_09": 22
+      },
+      "eligible_count": 186,
+      "eligible_parent_keys": [
+        "libero_10/task_00/state_04",
+        "libero_10/task_00/state_11",
+        "libero_10/task_00/state_18",
+        "libero_10/task_00/state_26",
+        "libero_10/task_00/state_29",
+        "libero_10/task_01/state_05",
+        "libero_10/task_01/state_08",
+        "libero_10/task_01/state_17",
+        "libero_10/task_01/state_26",
+        "libero_10/task_01/state_30",
+        "libero_10/task_01/state_31",
+        "libero_10/task_01/state_43",
+        "libero_10/task_02/state_02",
+        "libero_10/task_02/state_11",
+        "libero_10/task_02/state_13",
+        "libero_10/task_02/state_26",
+        "libero_10/task_02/state_31",
+        "libero_10/task_02/state_41",
+        "libero_10/task_03/state_09",
+        "libero_10/task_03/state_12",
+        "libero_10/task_03/state_23",
+        "libero_10/task_03/state_25",
+        "libero_10/task_04/state_04",
+        "libero_10/task_04/state_12",
+        "libero_10/task_04/state_13",
+        "libero_10/task_04/state_18",
+        "libero_10/task_04/state_25",
+        "libero_10/task_04/state_29",
+        "libero_10/task_04/state_37",
+        "libero_10/task_04/state_45",
+        "libero_10/task_05/state_04",
+        "libero_10/task_05/state_06",
+        "libero_10/task_05/state_13",
+        "libero_10/task_05/state_18",
+        "libero_10/task_05/state_24",
+        "libero_10/task_05/state_37",
+        "libero_10/task_05/state_44",
+        "libero_10/task_05/state_45",
+        "libero_10/task_06/state_03",
+        "libero_10/task_06/state_05",
+        "libero_10/task_06/state_06",
+        "libero_10/task_06/state_07",
+        "libero_10/task_06/state_11",
+        "libero_10/task_06/state_33",
+        "libero_10/task_06/state_44",
+        "libero_10/task_07/state_09",
+        "libero_10/task_07/state_18",
+        "libero_10/task_07/state_35",
+        "libero_10/task_07/state_38",
+        "libero_10/task_07/state_44",
+        "libero_10/task_08/state_09",
+        "libero_10/task_08/state_29",
+        "libero_10/task_09/state_00",
+        "libero_10/task_09/state_05",
+        "libero_10/task_09/state_06",
+        "libero_10/task_09/state_17",
+        "libero_10/task_09/state_19",
+        "libero_10/task_09/state_35",
+        "libero_10/task_09/state_41",
+        "libero_10/task_09/state_46",
+        "libero_object/task_00/state_05",
+        "libero_object/task_00/state_16",
+        "libero_object/task_00/state_32",
+        "libero_object/task_00/state_34",
+        "libero_object/task_00/state_40",
+        "libero_object/task_00/state_42",
+        "libero_object/task_00/state_43",
+        "libero_object/task_01/state_04",
+        "libero_object/task_01/state_22",
+        "libero_object/task_01/state_35",
+        "libero_object/task_01/state_38",
+        "libero_object/task_02/state_01",
+        "libero_object/task_02/state_05",
+        "libero_object/task_02/state_16",
+        "libero_object/task_02/state_24",
+        "libero_object/task_02/state_38",
+        "libero_object/task_02/state_39",
+        "libero_object/task_02/state_43",
+        "libero_object/task_02/state_45",
+        "libero_object/task_03/state_03",
+        "libero_object/task_03/state_10",
+        "libero_object/task_03/state_18",
+        "libero_object/task_03/state_25",
+        "libero_object/task_03/state_36",
+        "libero_object/task_03/state_42",
+        "libero_object/task_03/state_45",
+        "libero_object/task_04/state_06",
+        "libero_object/task_04/state_11",
+        "libero_object/task_04/state_14",
+        "libero_object/task_04/state_15",
+        "libero_object/task_04/state_24",
+        "libero_object/task_04/state_28",
+        "libero_object/task_04/state_40",
+        "libero_object/task_04/state_45",
+        "libero_object/task_05/state_08",
+        "libero_object/task_05/state_22",
+        "libero_object/task_05/state_23",
+        "libero_object/task_05/state_37",
+        "libero_object/task_05/state_40",
+        "libero_object/task_06/state_18",
+        "libero_object/task_06/state_30",
+        "libero_object/task_06/state_43",
+        "libero_object/task_06/state_48",
+        "libero_object/task_07/state_00",
+        "libero_object/task_07/state_12",
+        "libero_object/task_07/state_19",
+        "libero_object/task_07/state_25",
+        "libero_object/task_07/state_32",
+        "libero_object/task_07/state_43",
+        "libero_object/task_07/state_44",
+        "libero_object/task_07/state_48",
+        "libero_object/task_08/state_00",
+        "libero_object/task_08/state_37",
+        "libero_object/task_08/state_46",
+        "libero_object/task_08/state_47",
+        "libero_object/task_09/state_08",
+        "libero_object/task_09/state_14",
+        "libero_object/task_09/state_24",
+        "libero_object/task_09/state_26",
+        "libero_object/task_09/state_27",
+        "libero_object/task_09/state_39",
+        "libero_object/task_09/state_44",
+        "libero_spatial/task_00/state_01",
+        "libero_spatial/task_00/state_06",
+        "libero_spatial/task_00/state_08",
+        "libero_spatial/task_00/state_15",
+        "libero_spatial/task_00/state_33",
+        "libero_spatial/task_00/state_43",
+        "libero_spatial/task_00/state_46",
+        "libero_spatial/task_01/state_00",
+        "libero_spatial/task_01/state_13",
+        "libero_spatial/task_01/state_27",
+        "libero_spatial/task_01/state_37",
+        "libero_spatial/task_01/state_40",
+        "libero_spatial/task_01/state_43",
+        "libero_spatial/task_01/state_45",
+        "libero_spatial/task_02/state_12",
+        "libero_spatial/task_02/state_17",
+        "libero_spatial/task_02/state_23",
+        "libero_spatial/task_02/state_34",
+        "libero_spatial/task_02/state_35",
+        "libero_spatial/task_02/state_38",
+        "libero_spatial/task_02/state_43",
+        "libero_spatial/task_02/state_46",
+        "libero_spatial/task_03/state_02",
+        "libero_spatial/task_03/state_13",
+        "libero_spatial/task_03/state_14",
+        "libero_spatial/task_03/state_15",
+        "libero_spatial/task_03/state_40",
+        "libero_spatial/task_03/state_41",
+        "libero_spatial/task_03/state_44",
+        "libero_spatial/task_04/state_09",
+        "libero_spatial/task_04/state_15",
+        "libero_spatial/task_04/state_19",
+        "libero_spatial/task_04/state_39",
+        "libero_spatial/task_04/state_43",
+        "libero_spatial/task_04/state_46",
+        "libero_spatial/task_05/state_26",
+        "libero_spatial/task_05/state_44",
+        "libero_spatial/task_05/state_47",
+        "libero_spatial/task_06/state_03",
+        "libero_spatial/task_06/state_16",
+        "libero_spatial/task_06/state_18",
+        "libero_spatial/task_06/state_31",
+        "libero_spatial/task_06/state_33",
+        "libero_spatial/task_06/state_39",
+        "libero_spatial/task_06/state_44",
+        "libero_spatial/task_06/state_48",
+        "libero_spatial/task_07/state_07",
+        "libero_spatial/task_07/state_15",
+        "libero_spatial/task_07/state_20",
+        "libero_spatial/task_07/state_26",
+        "libero_spatial/task_07/state_36",
+        "libero_spatial/task_07/state_39",
+        "libero_spatial/task_07/state_40",
+        "libero_spatial/task_08/state_37",
+        "libero_spatial/task_08/state_39",
+        "libero_spatial/task_08/state_42",
+        "libero_spatial/task_08/state_49",
+        "libero_spatial/task_09/state_10",
+        "libero_spatial/task_09/state_11",
+        "libero_spatial/task_09/state_20",
+        "libero_spatial/task_09/state_25",
+        "libero_spatial/task_09/state_29",
+        "libero_spatial/task_09/state_38",
+        "libero_spatial/task_09/state_39"
+      ],
+      "floor_n": 24,
+      "frozen_h0_count": 17,
+      "frozen_hc_count": 15,
+      "frozen_primary_parent_keys": [
+        "libero_object/task_06/state_30",
+        "libero_object/task_00/state_32",
+        "libero_10/task_04/state_04",
+        "libero_spatial/task_06/state_18",
+        "libero_object/task_00/state_16",
+        "libero_object/task_00/state_05",
+        "libero_spatial/task_02/state_35",
+        "libero_object/task_02/state_38",
+        "libero_object/task_04/state_15",
+        "libero_object/task_03/state_25",
+        "libero_object/task_06/state_43",
+        "libero_spatial/task_00/state_06",
+        "libero_object/task_09/state_44",
+        "libero_object/task_04/state_40",
+        "libero_object/task_04/state_06",
+        "libero_object/task_05/state_40",
+        "libero_10/task_07/state_44",
+        "libero_10/task_09/state_35",
+        "libero_spatial/task_04/state_09",
+        "libero_spatial/task_07/state_20",
+        "libero_object/task_07/state_00",
+        "libero_10/task_05/state_06",
+        "libero_spatial/task_05/state_47",
+        "libero_10/task_09/state_00",
+        "libero_spatial/task_04/state_19",
+        "libero_10/task_09/state_41",
+        "libero_10/task_05/state_13",
+        "libero_spatial/task_06/state_16",
+        "libero_10/task_01/state_17",
+        "libero_10/task_00/state_26",
+        "libero_object/task_02/state_16",
+        "libero_10/task_00/state_11"
+      ],
+      "frozen_primary_ranked": [
+        {
+          "canonical_parent_key": "libero_object/task_06/state_30",
+          "rank_sha256": "00db071edb1eaa21cd08c9dc8491ba6c62113e6dcde3bd07809c00a0564457ff"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_32",
+          "rank_sha256": "0276cddd72f3e2326edcc051476a09796a7c97ae59d006353e9497af447ed69a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_04",
+          "rank_sha256": "02e6a644e69973e6315551adfefd03fb1240038c43967af3454a7a1f7c8862c3"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_18",
+          "rank_sha256": "03dd393701313df5165fea341f429425b3df9653c578fa0637146dd0a51329cc"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_16",
+          "rank_sha256": "042cc54110b6ebaf6e36813cb316804751ddd7975eb01c2d435af424b02bd71e"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_05",
+          "rank_sha256": "04fb1230dc64a933dedf561e5918f276c85eeb2b0b9aa5e8f5324057e527af61"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_35",
+          "rank_sha256": "071d8d79ee94b31a7c6f7a91c3c91d6738adce9b32ea22907a2a81b3a59c2fed"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_38",
+          "rank_sha256": "07c514083490b2e952ecc5154789669a24422860187359bc529a609b5f0b1a64"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_15",
+          "rank_sha256": "083eac463fcd5d8f90a7f0a80faa1e6b2dc662e18707c73ac045a2af51d31589"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_25",
+          "rank_sha256": "090471d23cc295ce229a5cbae1be008894b574a1b6615e8c0ccc86bb2d4fa703"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_43",
+          "rank_sha256": "092927b5f3ff5c407af6aa1751f767f1d2b07cffc37adadff50bfabb67fac546"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_06",
+          "rank_sha256": "0b3a4d8eff7ab661dc88956ef542c113a88cd70c3ea99c94733a9d735f6f6192"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_44",
+          "rank_sha256": "0c73e5516f87e1eb6917de22f7f5899d09147268ccf055e03948eab40de2aae1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_40",
+          "rank_sha256": "0e7317c2ac1d74abf488d7e85e2e4f298eb54d8a1311b2c6b70820430260f5d8"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_06",
+          "rank_sha256": "0f23d59031e8ad293e7bcf3e2121a31b01f301d91b5cc2e56d22daf96a331c58"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_40",
+          "rank_sha256": "0fb20c5eb45d0f194dee7b53c5bfbdfed7b7c8a839146beb84dcd851142b013f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_44",
+          "rank_sha256": "0fc9183a4d88497822a7ed798326c7c4c1c1483df22b087a2d8031a7f8ab6fc4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_35",
+          "rank_sha256": "107677907a1e2301a3a451415197744f267f031da4a3c840c5224f8dee89ecc1"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_09",
+          "rank_sha256": "12352fdaef05cbe77abcdcfcdca504f1dc1d52e6056235e6eaf45494fb9f8c3d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_20",
+          "rank_sha256": "1249b44d25264c6a9485982768b1f92fb0b4b3e7ce6236e7bcf1fe05148d33cb"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_00",
+          "rank_sha256": "1461a826b880e1266315d53b44800d6455b6414b9ff362118baa547d17d419e7"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_06",
+          "rank_sha256": "160710722ada923b99c9998f11e3d95ee13b7fad757af8b75f61a388c0cd4f58"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_47",
+          "rank_sha256": "16ed611b5f6651226502930a38ee906c7783e9b5f3a28a68a70b456321a43f5f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_00",
+          "rank_sha256": "1ef3f390d231518721e022a58a49d9443aed86dccac0926b6540e90d5fe104fe"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_19",
+          "rank_sha256": "22233678ee92e5927320f71d0c9b785cd64c7f17b2c21306b29c30a6a0a1202a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_41",
+          "rank_sha256": "230e40197f1bac14a2bc6086d3dbd3995db5f814cda5912684d970fec7e274a5"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_13",
+          "rank_sha256": "2439fbb34557ca8423985439fee82ff7fafdcaee7fefcce9412159a1ff9c3576"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_16",
+          "rank_sha256": "25cf5367ba3543a83faf3c92f303ee387e805659401a8047a9c9d7220160ff50"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_17",
+          "rank_sha256": "281b9b5a24b00d69a79e9ebcc3ddd223f76be91a509e04f8d47623a36ab590b7"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_26",
+          "rank_sha256": "29b2c5ae53fdcbfca29585db1283887c9e421ce8f032476b2235d9e65ef8ae41"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_16",
+          "rank_sha256": "2cb6c3698bf2ed3bac65143dad624123ed57f1557580ec780f058008a5dd879a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_11",
+          "rank_sha256": "3009381aa647848267dad0b5332453b7e0659beac020f778825830a4598ffc29"
+        }
+      ],
+      "rank_rule": "sha256(model_specific_denominator_salt|canonical_parent_key), ascending; no suite/task rebalance",
+      "ranked_eligible": [
+        {
+          "canonical_parent_key": "libero_object/task_06/state_30",
+          "rank_sha256": "00db071edb1eaa21cd08c9dc8491ba6c62113e6dcde3bd07809c00a0564457ff"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_32",
+          "rank_sha256": "0276cddd72f3e2326edcc051476a09796a7c97ae59d006353e9497af447ed69a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_04",
+          "rank_sha256": "02e6a644e69973e6315551adfefd03fb1240038c43967af3454a7a1f7c8862c3"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_18",
+          "rank_sha256": "03dd393701313df5165fea341f429425b3df9653c578fa0637146dd0a51329cc"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_16",
+          "rank_sha256": "042cc54110b6ebaf6e36813cb316804751ddd7975eb01c2d435af424b02bd71e"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_05",
+          "rank_sha256": "04fb1230dc64a933dedf561e5918f276c85eeb2b0b9aa5e8f5324057e527af61"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_35",
+          "rank_sha256": "071d8d79ee94b31a7c6f7a91c3c91d6738adce9b32ea22907a2a81b3a59c2fed"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_38",
+          "rank_sha256": "07c514083490b2e952ecc5154789669a24422860187359bc529a609b5f0b1a64"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_15",
+          "rank_sha256": "083eac463fcd5d8f90a7f0a80faa1e6b2dc662e18707c73ac045a2af51d31589"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_25",
+          "rank_sha256": "090471d23cc295ce229a5cbae1be008894b574a1b6615e8c0ccc86bb2d4fa703"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_43",
+          "rank_sha256": "092927b5f3ff5c407af6aa1751f767f1d2b07cffc37adadff50bfabb67fac546"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_06",
+          "rank_sha256": "0b3a4d8eff7ab661dc88956ef542c113a88cd70c3ea99c94733a9d735f6f6192"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_44",
+          "rank_sha256": "0c73e5516f87e1eb6917de22f7f5899d09147268ccf055e03948eab40de2aae1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_40",
+          "rank_sha256": "0e7317c2ac1d74abf488d7e85e2e4f298eb54d8a1311b2c6b70820430260f5d8"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_06",
+          "rank_sha256": "0f23d59031e8ad293e7bcf3e2121a31b01f301d91b5cc2e56d22daf96a331c58"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_40",
+          "rank_sha256": "0fb20c5eb45d0f194dee7b53c5bfbdfed7b7c8a839146beb84dcd851142b013f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_44",
+          "rank_sha256": "0fc9183a4d88497822a7ed798326c7c4c1c1483df22b087a2d8031a7f8ab6fc4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_35",
+          "rank_sha256": "107677907a1e2301a3a451415197744f267f031da4a3c840c5224f8dee89ecc1"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_09",
+          "rank_sha256": "12352fdaef05cbe77abcdcfcdca504f1dc1d52e6056235e6eaf45494fb9f8c3d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_20",
+          "rank_sha256": "1249b44d25264c6a9485982768b1f92fb0b4b3e7ce6236e7bcf1fe05148d33cb"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_00",
+          "rank_sha256": "1461a826b880e1266315d53b44800d6455b6414b9ff362118baa547d17d419e7"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_06",
+          "rank_sha256": "160710722ada923b99c9998f11e3d95ee13b7fad757af8b75f61a388c0cd4f58"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_47",
+          "rank_sha256": "16ed611b5f6651226502930a38ee906c7783e9b5f3a28a68a70b456321a43f5f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_00",
+          "rank_sha256": "1ef3f390d231518721e022a58a49d9443aed86dccac0926b6540e90d5fe104fe"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_19",
+          "rank_sha256": "22233678ee92e5927320f71d0c9b785cd64c7f17b2c21306b29c30a6a0a1202a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_41",
+          "rank_sha256": "230e40197f1bac14a2bc6086d3dbd3995db5f814cda5912684d970fec7e274a5"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_13",
+          "rank_sha256": "2439fbb34557ca8423985439fee82ff7fafdcaee7fefcce9412159a1ff9c3576"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_16",
+          "rank_sha256": "25cf5367ba3543a83faf3c92f303ee387e805659401a8047a9c9d7220160ff50"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_17",
+          "rank_sha256": "281b9b5a24b00d69a79e9ebcc3ddd223f76be91a509e04f8d47623a36ab590b7"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_26",
+          "rank_sha256": "29b2c5ae53fdcbfca29585db1283887c9e421ce8f032476b2235d9e65ef8ae41"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_16",
+          "rank_sha256": "2cb6c3698bf2ed3bac65143dad624123ed57f1557580ec780f058008a5dd879a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_11",
+          "rank_sha256": "3009381aa647848267dad0b5332453b7e0659beac020f778825830a4598ffc29"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_44",
+          "rank_sha256": "302c0cbee602c8d317ef870520544cbae0d876234d5c26d3a6e0718a0b99a690"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_44",
+          "rank_sha256": "31f086c265a9e805bf67f310412e3e2ae65a131c6a170198d1639e4f9237b8e7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_29",
+          "rank_sha256": "32f5512dc7c73373411fd9de49173d24759a10341306aabbc74a319d5ed9fec5"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_38",
+          "rank_sha256": "342b8b682216fd2cf99487538a5481659a7c25e8f09b18ddceacef3a7b5ef09e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_25",
+          "rank_sha256": "343ab7a28579e0daa460f97297d273f5641b25b89c15f01ba297925312049e46"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_26",
+          "rank_sha256": "34f0327d04a9c62bfb65309d3d2bb39f65f37d9e7f35eb35d9ce32105b67e9cc"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_02",
+          "rank_sha256": "356762b01053216f897369a1415835a7bb6c2f7c2069a882af116f5009411aa2"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_29",
+          "rank_sha256": "35ebe475941eeea857fb6605d7ab2804258f3fc1478858ec01dfeb75a0985da8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_40",
+          "rank_sha256": "373265db92ac775b3f31f222d1144fdae6b97542b7b3d0a3ac984b39822e8ae7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_17",
+          "rank_sha256": "3762205143c1b8cc6b46b1d12d6adee6cfa1a40dfdd2d8ebff57d68a63b0ab57"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_06",
+          "rank_sha256": "389df72d79b11a2a9acd92a108657ddd72c32dedfac0cfe21398c82d3ed102b1"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_01",
+          "rank_sha256": "391be906869c08249b1bcd1686c5eb2a1f8e1478a8319264ff59325e27d0e85d"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_08",
+          "rank_sha256": "3a6ad44f7e766fd269d9965fadacbc182ff6fef30c6a70acc0cf0dddf4abbc0a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_38",
+          "rank_sha256": "3acca8ea89a8f7f5583a570e1053e85c317008d8d1ba0efb55963844d7888b6b"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_04",
+          "rank_sha256": "3ad9d9f595ba82004f8109ce51327f4d15f9317d3d7f23c8c5c2f7f4d6bf4988"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_44",
+          "rank_sha256": "3b4492bc374116f5e2cad508d3e44bc47213fea7499bd211875e7cb8554d3ae3"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_13",
+          "rank_sha256": "3c43a9840649870eaf405d7a33e58347d527e9f7f95479583f1fd0020d635fc4"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_37",
+          "rank_sha256": "3f5f5be6d7281d5a9f5b700db98a22c13849086399155945803fdd30210ac28b"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_04",
+          "rank_sha256": "4047bdbc41932b7518b8fce80bc5ec31da48dec000b13da19069f9da1a5ef460"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_14",
+          "rank_sha256": "4089912d7811b3dd6782bc778dfdcb871edd410ff61ac3baeed8eb116c9e077b"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_45",
+          "rank_sha256": "4148ec84b8679f965eae9cc18407a6581dd72dcda92eadd384d885f771b8c27a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_18",
+          "rank_sha256": "41ed6ea24ba9aeb94ff354ef4b8f5842f5492be64c08a545230fe8acab7299e5"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_31",
+          "rank_sha256": "425f634899c3c9a5998d7fe7c9054cc31b55536f21857662b53b4cbf52a53f9b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_02",
+          "rank_sha256": "42c8f858d6066039815b48e8d01f2c0cb2f35923ba0c678786ddec70fd7b5bba"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_04",
+          "rank_sha256": "475e142d268132f3f664a46c599982d0dc5991055accedcedae3f9b1705c7642"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_11",
+          "rank_sha256": "4824c2f7f61e55dea599fc6bee918e70fd9bddf72b4fd6ed3eb3f680df6d9e77"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_29",
+          "rank_sha256": "48838cd472126847193aba9d46ee378741efccd0d49e2eb2d904bf73dc6a1993"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_22",
+          "rank_sha256": "48bb7236f7b60cf6880b20b2e54d4226f403ecb8dd440e8d09766cdd5838f98f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_01",
+          "rank_sha256": "4a272eac76864a72c02c3bb5bc0d79a20ef45139a753e466152671ee92d92174"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_46",
+          "rank_sha256": "4acb914b413a2cd6530c8fdc89008de59371f789507331c5a57599b4299837ab"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_45",
+          "rank_sha256": "4b5932ce6ef3533634b5e7c345443ee40e8d4d1a940957faa07975973a56a137"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_46",
+          "rank_sha256": "4f11a349bf62ef50b3b09362546cc1bf3e41e4da7a9fd36643ecf2e4cb178975"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_39",
+          "rank_sha256": "52ae08ff25aeac2a0664f2ac993343ed2ce39e33358afaad06d992c4cf2b3584"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_37",
+          "rank_sha256": "535c9adf7c802bf466ad81c082214d6e95f6b7b0c218b4d637848112c7ab95d6"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_12",
+          "rank_sha256": "55d007b428eabad69c3304f7e6a1627a35dd7a1176f1fab295710e3c78537f6d"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_08",
+          "rank_sha256": "5651cd63d96828abf9aef3802604aedaa4d7ab8c665120f60acf6415d28be8df"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_17",
+          "rank_sha256": "570a628246b3374fe4e5d93935210988778f66163e21f6bec0f97ce69f86c240"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_31",
+          "rank_sha256": "5b0c4a1b8a03950c6ff03e4182a2b9e7808d6a087c7b93faf3421c7b55cd06f9"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_18",
+          "rank_sha256": "5b8f65038c875c85532b50b89783186934cb6c49df99b2e1ce887f035a5dec6e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_33",
+          "rank_sha256": "5ccc9cc17a11c7aa830b795561a48816894c508c761bbbaac3a98484a46e8b32"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_25",
+          "rank_sha256": "5d25caf555a9b6443b80bae097c104a931a323d96cd1f7b031d0eeaa36c7669b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_43",
+          "rank_sha256": "5dd66ef384a5dd67b0d64aa3dccacd31c4b17acfa47633869275476bd8bb2695"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_26",
+          "rank_sha256": "60c2fad3c3f9190285cd760d3ce34fcfdfe308e172496faa4e713a0834050ef1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_12",
+          "rank_sha256": "62d5fd41bacf7825d2bd0e478e5968707a5e5aee21da5b4e0ad965ef86fe9475"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_15",
+          "rank_sha256": "6451c37cd869cf2ec4988b5ec809066f8e99993dfbf4652a6101d1381b75a968"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_44",
+          "rank_sha256": "649e196f0eed4c51b7a4462a9145c6f063cee0a60ad3d862dbd7010ff1c33b3f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_06",
+          "rank_sha256": "65d779c2bd55bd7a2d77f2e7149c1308ffeebb5a32bc2fb4b797c50c1876fc3a"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_22",
+          "rank_sha256": "6670193efc237332eccc4ce9ae4e306767c5886e640e04127397976aaafed82c"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_15",
+          "rank_sha256": "67a34b86feddf3216837ade164b541851a693f78d5a509029e5b7b3f2ffc369a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_39",
+          "rank_sha256": "68269f91d37f508918a97d88e4920a0421f19ab373249970ae319c442c93ffac"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_28",
+          "rank_sha256": "68eda89c67c5cec5c82a9d5516bc2c97e377b642cc2108883038fcdbedb8f317"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_43",
+          "rank_sha256": "69540ed85b104f05dbc9d3eef2dad5082069e97bf036cb642ffa19eb16414c7e"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_45",
+          "rank_sha256": "699f9a99c01c18bc0bd6544ce17e4fc3e62223f70e811b8bca343fbb0582670c"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_24",
+          "rank_sha256": "6a2a5748f917f64c1a0a69ef2ea8affcb1a7b375a0cf2a50df29d62d0ed511fe"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_18",
+          "rank_sha256": "6b06aac3e2b54bf419d1797854b5ac349e3a9348a78ece61f14bfab498ce3278"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_46",
+          "rank_sha256": "6c6adf48a42b5a1af173aa7de1ff4a0af120fb215aae5c872012d2f08e363735"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_00",
+          "rank_sha256": "6cff63ed28fb0205915770b534a292f027f6ff3c4d9b94c8466bdf1bee648351"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_23",
+          "rank_sha256": "703451b5391d3fb4e43dfd3a9f74dba6ed0946756487348a7980f50f73afdc96"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_14",
+          "rank_sha256": "7131abcac02eeb51d5a8f0a60610f8697435c35656039831b7e5616512dede74"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_37",
+          "rank_sha256": "718757d44bab1556c55a1fae98b4df6348e1a1c761ddc53c8739567386de188a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_03",
+          "rank_sha256": "726d1e60937000e3b619279f4f812ff1059242679877951bd9d3fac5737c80c9"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_05",
+          "rank_sha256": "7370b68fb3f74bc81287ad06e1e329a2789b2422e06801bc6bbe69546518c606"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_07",
+          "rank_sha256": "762bd218ee424307cea6a57ca0ef1c4ab668010bd0026c25c2ec6f08e8255b3a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_36",
+          "rank_sha256": "76a20c79b4b55e5e4db0ef684c26332768083a2d86ba2e1cda94e71b531931c6"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_09",
+          "rank_sha256": "77ba0f4e4b97377ee452217c14d0c33406a12a875cf26b2ffbcf4e1781bde391"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_43",
+          "rank_sha256": "79cb9b458bbdcaaeb16750abc2d569ffe5cbeb18fa62c375991cf06fd5914248"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_43",
+          "rank_sha256": "7a6717448edce244cf519f0121208598e043c26194806d66ca18f798802bdc69"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_20",
+          "rank_sha256": "7c94e62e4ca8d681da3d5ecb63cfbdc6b32d15889975da2bde147377400fe034"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_40",
+          "rank_sha256": "7da504eeaddbd3af95d7b646635b2d6496c7c133bf1666df8b8d618f8b6c5fda"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_27",
+          "rank_sha256": "81adfd6d74369d94aa2855c18fbf7ce2765ab447d064e36be933605924045383"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_35",
+          "rank_sha256": "85e513471da3babf6acef0a2091b55139d089a873d5db017eff7d19c26746fb0"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_39",
+          "rank_sha256": "871f8f527bc3fb2021c03d26009c12e0c1cd917196cc8c57ced2e0eb6ec06a60"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_44",
+          "rank_sha256": "8a207c8cf031b385f21f4da7f93712caacd3a75801044b262f42d8095fd7a3f9"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_18",
+          "rank_sha256": "9265eb625ddad8e7c836d5a901fad21aeea0b1ae86231ff272856b161fc1ff26"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_39",
+          "rank_sha256": "94072ad6ad85eb88a9da56195ca47f28c17d5c44acd2058942777730e99eb598"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_46",
+          "rank_sha256": "963815792885d1d152961f2770ef1c05bd7ed8f51318cd85353998fdcaf1ba2e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_09",
+          "rank_sha256": "977be1001a79b1f560101b8b3a203ef441bd04e732d3dd39c92eb780ee34c0de"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_15",
+          "rank_sha256": "98528b33b5c2ed084dee8535404e58888068f3d26a9a735e6af2f389ce09c081"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_19",
+          "rank_sha256": "990ab75fb364e5fc7ab053d7f15855318e56822c6a33ba3ded00daa6503033f1"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_18",
+          "rank_sha256": "99aa5ee35e6f3e273be330133ad478487d379c58af08c907ac07b359a61c7e8c"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_33",
+          "rank_sha256": "9ac6bf539f4135780268bf45e43823cacdf8ca826246071112bce6657e145edb"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_09",
+          "rank_sha256": "9ba3b7d6c4bbf3bd3548f3bb4ff5a287aed7fa3237af04cc7fba4295f2ac3495"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_05",
+          "rank_sha256": "9bbe5e772f5133c7420163b0d6ab8838019f5dfdc909f003cf17970977ac5c12"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_29",
+          "rank_sha256": "9c415aed036132a74753e31bd1df1fd4c03a409e35999b73cb6c968b5f7494ab"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_49",
+          "rank_sha256": "9d1654a42d15faeae8f68fc75ec7337747656ba82eafead171f7b7bb07157931"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_44",
+          "rank_sha256": "a1aa1ef13609c85680c88f96892a958ab4bed704ef5e9fa9ef96fae7bcc2ee2d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_39",
+          "rank_sha256": "a28930401d64a04f3fbae9322c793cfdf73e92af12ff35ccbaa7a1a914292a6a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_42",
+          "rank_sha256": "a33b13c065e3bfc3915a01bd7f55a713a9f79e45da443867a6f19b310d0f4305"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_08",
+          "rank_sha256": "a3b7d162448a28100b813cde46feac681fc5bfe02e8904d2a1df6a3b29c1efc6"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_18",
+          "rank_sha256": "a4f1ed5405f28bfcea4cd02550892c924324b06a99209cb5b77b202068ba1772"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_34",
+          "rank_sha256": "a5d372e7f173a3bd3f4e625baa9c422d40260e3cbbdf4f3dc3cf2c1ea94f84ef"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_10",
+          "rank_sha256": "a6fc4b5a546a5b9eaa6deb8e910612c962eaa15521ed4dd0901624e2b51653bb"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_39",
+          "rank_sha256": "a78d70036ae3c8bca4f6a7f2bba3264a3980603227d672a972229933f6ab4237"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_45",
+          "rank_sha256": "a98d1a41c87b1a977978e00f3bba3bfb27b854acdd2883b5fcb03faa683a4a4f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_41",
+          "rank_sha256": "aab83449bbd409a086681361f8ee4268bc55242eacbde0ef4e792ddd4ed00fea"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_46",
+          "rank_sha256": "ab4d32cd2795bd02ed0fa6462db120e2f05a61915446e094b74823aa00d54fcc"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_12",
+          "rank_sha256": "abab58bc67c8ccbab666719625f895931d9d88c6b905d6a45c2bc88f0efd688d"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_26",
+          "rank_sha256": "abeecf0895f03690d43d5f1ee8d8db9d2105b922e6d9b0c1fbf0711e76562be0"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_43",
+          "rank_sha256": "ae4e0ce33e79f778a09fec15b8fbffda305a8cf22a9f7add709574ae7ce6974c"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_15",
+          "rank_sha256": "b2432bb21ddbfb1b39b6cef8d464bb74a8b7ad9d854c7505fc9fcc65e32139da"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_11",
+          "rank_sha256": "b2947b90cd01a78ae7b4c45b4fd4edfcba279297907dd761c1cac228881d6b43"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_48",
+          "rank_sha256": "b547a22eefcddd6892e71caa5dacc3f447d158bfb5c2ae25fe101e9df9f35c40"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_25",
+          "rank_sha256": "b5675ae6b0b4e8cbff916f245a9248b70515e774cd5da2e4a9b015a8bb4f575d"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_11",
+          "rank_sha256": "b709a544a1ab6f3a1305e30da3023019cde03dfe4bcf2221bc97c1a70669409b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_10",
+          "rank_sha256": "b9d349b5aaf85eb807f719cf47aba99feda7bc46a6236b632bfc20c10f893171"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_12",
+          "rank_sha256": "b9e2c6f9b30e078cba6e8bb18ebc65e1c61bf1fd41c6cb2fcf9c997c0f41611b"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_37",
+          "rank_sha256": "ba1d22a3ba37ecf33879d6278e33a1df195a31f9e1765a91a3d5828d9715e194"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_47",
+          "rank_sha256": "ba97f8910a137e4fa05e445f480dd0de3fe8926f6a2e9f9c6090c10084f57af9"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_40",
+          "rank_sha256": "bdf1ea9e1fa4d3ca16c74374d8ec84b87e5538214f69ff9d701b9a823acfb65c"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_48",
+          "rank_sha256": "be3ffaebc21c09cc4f2e52dfff1f85ba6002dc0069afe2b4f43d82d0cf934953"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_35",
+          "rank_sha256": "bf782187460046320734b479ed7b3916c3b98bf749c547e003c874696a6b3125"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_26",
+          "rank_sha256": "c3d61db6e610f9ddf5d8961cc314f33a4983a488f18d96a8a42512c9dab2e1f0"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_45",
+          "rank_sha256": "c46283677970212d70489d04bbdd913b3e0d939ce91fab6027e5c1e2c2c869d3"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_14",
+          "rank_sha256": "c4e2321167a3dd61a3eb33692782aca9ed964631c4c340d9d8f88662a325a6c0"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_32",
+          "rank_sha256": "ca3e96450c02de85ed921399d091fafd72ab2fdc796418fa376d6d43eabc33b0"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_30",
+          "rank_sha256": "cbad52591d450af1845b6b3b9c3e33cf9172cdd9386f15322fac1c59fd23206e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_31",
+          "rank_sha256": "cbae1dec49b3a03e895d79afe1ae8496f658f0d3f6eef65a8af3ae59c66afd50"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_03",
+          "rank_sha256": "cea2e035f169bc1c8b24132f3dcf46fef3f343fabaec86386c48b33628d2999f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_25",
+          "rank_sha256": "ceb3438bbd6bb276fa5b81f5364ce099bc077a3c39a7611c7e101a19efad1a0a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_41",
+          "rank_sha256": "d4ccdc123201151d0208df946403ba24d837a4a29240ea867de367ff287eb457"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_23",
+          "rank_sha256": "d5ed3fac88050c2a1b6cf0a99999b17a0707c6ea531fe1311605ab781ad48a22"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_08",
+          "rank_sha256": "d6c38d6488c63e208fd2bc82c4ea2872ee5dca9536c4a3d0242b03a9efd45aac"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_19",
+          "rank_sha256": "d7108e8c9b008300b89dc9b4bf3f9bf65d866863b99fd74eb2743513acb02a6d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_26",
+          "rank_sha256": "d738205610267c4b21e30efe0d49ca74e11a4a19cea98256f1a083bd6fe5b744"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_40",
+          "rank_sha256": "d74e062c6b24b20834f31bc550b5abcd6f6a29cb1331e8de849ade6add497a3a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_23",
+          "rank_sha256": "d7b4243bac2265e9f2da3a746fddfcfd56e039cde2d5fb9e1a0ba2de6de5da7f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_42",
+          "rank_sha256": "d9b3a8c25901b3f28b9577b2c4d728b83930ac1657db38c51bb81de7987ccbf1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_24",
+          "rank_sha256": "da7720cd413f6417e6ef319e6c5ee23a669f9f54bcd1fb48484dfeb517601d6f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_24",
+          "rank_sha256": "db12dee9609d92ed221b89fe5070b09a2c30ba233a451fa2d3a2f70792bf2e37"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_34",
+          "rank_sha256": "dc4249399703c2fce8b0f9e659017b6b9444d1831f89bdc0ffe7d27078a91949"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_45",
+          "rank_sha256": "dcd0e731448d0044236636dd7ee3259dca15f9c85f3a8aecd4ce8516f03e620a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_37",
+          "rank_sha256": "df6645a30d0e419daaba77479bdf73f64369e22d3ec20db242f4489663e20e3d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_43",
+          "rank_sha256": "e17c41a8bfec048e827d1d7bc5e40499dbea5485ba3130fc1b70ebdb3fdea74e"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_00",
+          "rank_sha256": "e4031fc943765531432bbc71744bc3e1643a15e30e3f8a886a6a546d7d84189b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_43",
+          "rank_sha256": "e6c6d8c9291c3133a209e29dc1bc6a4329148924480fefe549cd6a26e4f47dd6"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_37",
+          "rank_sha256": "e81112dbaee6c94015243adf6354ba19fb587226f4b0552b5a8e4dd30465d530"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_42",
+          "rank_sha256": "e9498dbcfe3f3f8583ae4d0d824121bf1ff76013a0613296d5737fd999e1db3a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_13",
+          "rank_sha256": "e9af54e5ae3bcf6a176ca559de55bc7bce009eea0c66c792999a0e4e3bb366c4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_24",
+          "rank_sha256": "eb3cf99bfa3bde9818bfc68abb7bec48e6878861e6bd530dbf22e6553977015f"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_38",
+          "rank_sha256": "eba08178dba20f4f47d4aba3773d3b0c5255625f9658dae691c55e7aa7a7b5a1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_05",
+          "rank_sha256": "ebfd24026b6eedb5913608099b31df54ef7437be4b3868e03ba086c79d88400f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_36",
+          "rank_sha256": "f1a13958ff12538b1fced80f0dbd6b5a9b011f3c32b4296e8accc786bf5e6c60"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_05",
+          "rank_sha256": "f25e8a2b98eca0323f8e8e6b28cc6ac1bb8a4afab5f5ba474a182336ed511076"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_07",
+          "rank_sha256": "f35601d676c957d0b45a4f9b5d2b3f01a52401a375344bbd41b2a50e83d0208c"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_11",
+          "rank_sha256": "f629e9d268d283dec88abbee85ab7d0d1abe3102d65ce30b829ae91435abec92"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_03",
+          "rank_sha256": "f88411c3721b808543ba614bebede5f214a1a3e64c62e840865b071316d103b8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_48",
+          "rank_sha256": "f95509b46a9c27ca437930eac221ac17d4c0eed527c3d4e6ed018388499a2a71"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_39",
+          "rank_sha256": "f98621d27d3c0943697ca9fd41526427163fef8ac57757943b20077bd42da45d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_33",
+          "rank_sha256": "fc4c36599227dfe90ec2b5976158be075a4da7a1cdab5d4fdcf3037d41171187"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_38",
+          "rank_sha256": "fcdbdca226594f5f4a7d4fdcf36312cd5f3f0823275ee7ed7c2c2c48c1eeb843"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_13",
+          "rank_sha256": "fd3ca85a8889820276b4a95111fd8a8ac5adb7841e9c667666464efa63be835a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_13",
+          "rank_sha256": "fdcf502cb9aab43a485ab6b41083c27316bda7fdd538a6cdf95ae66d7a6f7788"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_27",
+          "rank_sha256": "fe81a8d82d405d6f8d78f73d91b64d0211d636c856ba8cba5c1ced1a61f40df8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_43",
+          "rank_sha256": "ff276c5a6e309c305cd733237941ba29ff38a091b9af6998624e837b9d2a96e6"
+        }
+      ],
+      "salt": "STAGE_AC_AC2_MODEL_SPECIFIC_DENOMINATOR_V1_20260827",
+      "selected_step_distribution": {
+        "49": 1,
+        "50": 1,
+        "51": 1,
+        "52": 1,
+        "54": 2,
+        "55": 1,
+        "56": 1,
+        "57": 4,
+        "58": 4,
+        "59": 2,
+        "60": 1,
+        "61": 2,
+        "62": 2,
+        "63": 3,
+        "64": 1,
+        "65": 1,
+        "66": 4,
+        "67": 7,
+        "68": 4,
+        "69": 2,
+        "70": 3,
+        "71": 2,
+        "72": 3,
+        "73": 4,
+        "74": 2,
+        "75": 4,
+        "76": 4,
+        "77": 4,
+        "79": 2,
+        "80": 1,
+        "81": 3,
+        "82": 3,
+        "83": 3,
+        "84": 4,
+        "86": 1,
+        "87": 2,
+        "88": 6,
+        "89": 2,
+        "90": 2,
+        "91": 2,
+        "92": 2,
+        "93": 3,
+        "94": 1,
+        "95": 3,
+        "96": 1,
+        "98": 2,
+        "99": 3,
+        "101": 3,
+        "102": 3,
+        "103": 2,
+        "104": 1,
+        "105": 1,
+        "106": 1,
+        "107": 2,
+        "110": 2,
+        "111": 1,
+        "112": 2,
+        "113": 2,
+        "114": 3,
+        "116": 1,
+        "118": 1,
+        "119": 2,
+        "120": 1,
+        "122": 2,
+        "123": 2,
+        "127": 1,
+        "128": 1,
+        "130": 1,
+        "132": 1,
+        "133": 1,
+        "135": 1,
+        "136": 1,
+        "138": 1,
+        "140": 2,
+        "142": 1,
+        "143": 1,
+        "144": 1,
+        "145": 1,
+        "148": 1,
+        "152": 1,
+        "157": 1,
+        "168": 1,
+        "170": 2,
+        "175": 1,
+        "177": 1,
+        "184": 1,
+        "185": 1,
+        "194": 1,
+        "215": 2,
+        "217": 1,
+        "223": 1,
+        "244": 1,
+        "280": 1,
+        "284": 1,
+        "298": 1,
+        "401": 1,
+        "406": 1,
+        "407": 1,
+        "408": 1
+      },
+      "status": "N_AT_LEAST_32_SELECT_32",
+      "target_n": 32
+    },
+    "M1_OPENVLA_OFT": {
+      "eligible_by_suite": {
+        "libero_10": 43,
+        "libero_object": 34,
+        "libero_spatial": 51
+      },
+      "eligible_by_task": {
+        "task_00": 4,
+        "task_01": 14,
+        "task_02": 17,
+        "task_03": 15,
+        "task_04": 14,
+        "task_05": 12,
+        "task_06": 14,
+        "task_07": 16,
+        "task_08": 8,
+        "task_09": 14
+      },
+      "eligible_count": 128,
+      "eligible_parent_keys": [
+        "libero_10/task_00/state_29",
+        "libero_10/task_00/state_30",
+        "libero_10/task_01/state_08",
+        "libero_10/task_01/state_32",
+        "libero_10/task_02/state_02",
+        "libero_10/task_02/state_13",
+        "libero_10/task_02/state_28",
+        "libero_10/task_02/state_31",
+        "libero_10/task_02/state_43",
+        "libero_10/task_03/state_06",
+        "libero_10/task_03/state_09",
+        "libero_10/task_03/state_12",
+        "libero_10/task_03/state_14",
+        "libero_10/task_03/state_22",
+        "libero_10/task_03/state_23",
+        "libero_10/task_03/state_25",
+        "libero_10/task_03/state_31",
+        "libero_10/task_04/state_04",
+        "libero_10/task_04/state_12",
+        "libero_10/task_04/state_13",
+        "libero_10/task_04/state_18",
+        "libero_10/task_04/state_25",
+        "libero_10/task_04/state_29",
+        "libero_10/task_04/state_37",
+        "libero_10/task_04/state_45",
+        "libero_10/task_06/state_03",
+        "libero_10/task_06/state_05",
+        "libero_10/task_06/state_06",
+        "libero_10/task_06/state_07",
+        "libero_10/task_06/state_11",
+        "libero_10/task_06/state_46",
+        "libero_10/task_07/state_09",
+        "libero_10/task_07/state_11",
+        "libero_10/task_07/state_18",
+        "libero_10/task_07/state_38",
+        "libero_10/task_07/state_43",
+        "libero_10/task_07/state_44",
+        "libero_10/task_08/state_09",
+        "libero_10/task_09/state_00",
+        "libero_10/task_09/state_06",
+        "libero_10/task_09/state_17",
+        "libero_10/task_09/state_41",
+        "libero_10/task_09/state_46",
+        "libero_object/task_01/state_04",
+        "libero_object/task_01/state_12",
+        "libero_object/task_01/state_20",
+        "libero_object/task_01/state_22",
+        "libero_object/task_01/state_25",
+        "libero_object/task_01/state_35",
+        "libero_object/task_01/state_38",
+        "libero_object/task_01/state_42",
+        "libero_object/task_02/state_01",
+        "libero_object/task_02/state_05",
+        "libero_object/task_02/state_16",
+        "libero_object/task_02/state_43",
+        "libero_object/task_03/state_03",
+        "libero_object/task_03/state_10",
+        "libero_object/task_03/state_11",
+        "libero_object/task_03/state_18",
+        "libero_object/task_03/state_45",
+        "libero_object/task_05/state_08",
+        "libero_object/task_05/state_22",
+        "libero_object/task_05/state_23",
+        "libero_object/task_05/state_33",
+        "libero_object/task_05/state_34",
+        "libero_object/task_05/state_37",
+        "libero_object/task_05/state_40",
+        "libero_object/task_05/state_47",
+        "libero_object/task_07/state_00",
+        "libero_object/task_07/state_43",
+        "libero_object/task_09/state_08",
+        "libero_object/task_09/state_14",
+        "libero_object/task_09/state_24",
+        "libero_object/task_09/state_27",
+        "libero_object/task_09/state_33",
+        "libero_object/task_09/state_39",
+        "libero_object/task_09/state_44",
+        "libero_spatial/task_00/state_01",
+        "libero_spatial/task_00/state_08",
+        "libero_spatial/task_01/state_27",
+        "libero_spatial/task_01/state_31",
+        "libero_spatial/task_01/state_40",
+        "libero_spatial/task_01/state_43",
+        "libero_spatial/task_02/state_12",
+        "libero_spatial/task_02/state_17",
+        "libero_spatial/task_02/state_23",
+        "libero_spatial/task_02/state_34",
+        "libero_spatial/task_02/state_35",
+        "libero_spatial/task_02/state_38",
+        "libero_spatial/task_02/state_43",
+        "libero_spatial/task_02/state_46",
+        "libero_spatial/task_03/state_40",
+        "libero_spatial/task_03/state_43",
+        "libero_spatial/task_04/state_09",
+        "libero_spatial/task_04/state_15",
+        "libero_spatial/task_04/state_19",
+        "libero_spatial/task_04/state_39",
+        "libero_spatial/task_04/state_43",
+        "libero_spatial/task_04/state_46",
+        "libero_spatial/task_05/state_01",
+        "libero_spatial/task_05/state_17",
+        "libero_spatial/task_05/state_41",
+        "libero_spatial/task_05/state_47",
+        "libero_spatial/task_06/state_03",
+        "libero_spatial/task_06/state_16",
+        "libero_spatial/task_06/state_18",
+        "libero_spatial/task_06/state_31",
+        "libero_spatial/task_06/state_33",
+        "libero_spatial/task_06/state_39",
+        "libero_spatial/task_06/state_44",
+        "libero_spatial/task_06/state_48",
+        "libero_spatial/task_07/state_07",
+        "libero_spatial/task_07/state_13",
+        "libero_spatial/task_07/state_15",
+        "libero_spatial/task_07/state_20",
+        "libero_spatial/task_07/state_26",
+        "libero_spatial/task_07/state_36",
+        "libero_spatial/task_07/state_39",
+        "libero_spatial/task_07/state_40",
+        "libero_spatial/task_08/state_19",
+        "libero_spatial/task_08/state_37",
+        "libero_spatial/task_08/state_38",
+        "libero_spatial/task_08/state_39",
+        "libero_spatial/task_08/state_42",
+        "libero_spatial/task_08/state_46",
+        "libero_spatial/task_08/state_49",
+        "libero_spatial/task_09/state_11",
+        "libero_spatial/task_09/state_38"
+      ],
+      "floor_n": 24,
+      "frozen_h0_count": 16,
+      "frozen_hc_count": 16,
+      "frozen_primary_parent_keys": [
+        "libero_10/task_04/state_04",
+        "libero_spatial/task_06/state_18",
+        "libero_10/task_02/state_43",
+        "libero_spatial/task_02/state_35",
+        "libero_object/task_09/state_44",
+        "libero_object/task_05/state_40",
+        "libero_10/task_07/state_44",
+        "libero_spatial/task_04/state_09",
+        "libero_spatial/task_07/state_20",
+        "libero_spatial/task_08/state_19",
+        "libero_object/task_07/state_00",
+        "libero_spatial/task_05/state_47",
+        "libero_10/task_09/state_00",
+        "libero_spatial/task_04/state_19",
+        "libero_10/task_09/state_41",
+        "libero_spatial/task_06/state_16",
+        "libero_spatial/task_05/state_17",
+        "libero_object/task_02/state_16",
+        "libero_10/task_06/state_46",
+        "libero_spatial/task_06/state_44",
+        "libero_10/task_03/state_14",
+        "libero_spatial/task_09/state_38",
+        "libero_10/task_04/state_25",
+        "libero_10/task_02/state_02",
+        "libero_spatial/task_03/state_43",
+        "libero_10/task_04/state_29",
+        "libero_spatial/task_07/state_40",
+        "libero_spatial/task_02/state_17",
+        "libero_10/task_06/state_06",
+        "libero_spatial/task_00/state_01",
+        "libero_10/task_01/state_08",
+        "libero_10/task_07/state_38"
+      ],
+      "frozen_primary_ranked": [
+        {
+          "canonical_parent_key": "libero_10/task_04/state_04",
+          "rank_sha256": "02e6a644e69973e6315551adfefd03fb1240038c43967af3454a7a1f7c8862c3"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_18",
+          "rank_sha256": "03dd393701313df5165fea341f429425b3df9653c578fa0637146dd0a51329cc"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_43",
+          "rank_sha256": "05672d5077230b6d170ca3f75c72e4f1cc7fcc699347d425495eb2f7fc13241b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_35",
+          "rank_sha256": "071d8d79ee94b31a7c6f7a91c3c91d6738adce9b32ea22907a2a81b3a59c2fed"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_44",
+          "rank_sha256": "0c73e5516f87e1eb6917de22f7f5899d09147268ccf055e03948eab40de2aae1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_40",
+          "rank_sha256": "0fb20c5eb45d0f194dee7b53c5bfbdfed7b7c8a839146beb84dcd851142b013f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_44",
+          "rank_sha256": "0fc9183a4d88497822a7ed798326c7c4c1c1483df22b087a2d8031a7f8ab6fc4"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_09",
+          "rank_sha256": "12352fdaef05cbe77abcdcfcdca504f1dc1d52e6056235e6eaf45494fb9f8c3d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_20",
+          "rank_sha256": "1249b44d25264c6a9485982768b1f92fb0b4b3e7ce6236e7bcf1fe05148d33cb"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_19",
+          "rank_sha256": "12822d9f2cdf62d24263c4b41aad0531a6fd50f6a95d625691d3485042e96fb6"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_00",
+          "rank_sha256": "1461a826b880e1266315d53b44800d6455b6414b9ff362118baa547d17d419e7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_47",
+          "rank_sha256": "16ed611b5f6651226502930a38ee906c7783e9b5f3a28a68a70b456321a43f5f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_00",
+          "rank_sha256": "1ef3f390d231518721e022a58a49d9443aed86dccac0926b6540e90d5fe104fe"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_19",
+          "rank_sha256": "22233678ee92e5927320f71d0c9b785cd64c7f17b2c21306b29c30a6a0a1202a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_41",
+          "rank_sha256": "230e40197f1bac14a2bc6086d3dbd3995db5f814cda5912684d970fec7e274a5"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_16",
+          "rank_sha256": "25cf5367ba3543a83faf3c92f303ee387e805659401a8047a9c9d7220160ff50"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_17",
+          "rank_sha256": "2b4e281b2981ad9734a39deab87a85aa219f811adafea185f780d7dfe448253f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_16",
+          "rank_sha256": "2cb6c3698bf2ed3bac65143dad624123ed57f1557580ec780f058008a5dd879a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_46",
+          "rank_sha256": "2f9f1adc29425f1ce02fefe8c0c1b002d55c437fe35e76eaa3ec6c642eec5ebe"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_44",
+          "rank_sha256": "302c0cbee602c8d317ef870520544cbae0d876234d5c26d3a6e0718a0b99a690"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_14",
+          "rank_sha256": "307f9e87fac236719fc3c9f74dc39ca8af2c3c15b8980be5d6f5f5f06d767fae"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_38",
+          "rank_sha256": "342b8b682216fd2cf99487538a5481659a7c25e8f09b18ddceacef3a7b5ef09e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_25",
+          "rank_sha256": "343ab7a28579e0daa460f97297d273f5641b25b89c15f01ba297925312049e46"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_02",
+          "rank_sha256": "356762b01053216f897369a1415835a7bb6c2f7c2069a882af116f5009411aa2"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_43",
+          "rank_sha256": "3592adaf9e6f73a1bf26e572a7b07c2cabae5e947231a9c8a9fb21088bc34ccd"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_29",
+          "rank_sha256": "35ebe475941eeea857fb6605d7ab2804258f3fc1478858ec01dfeb75a0985da8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_40",
+          "rank_sha256": "373265db92ac775b3f31f222d1144fdae6b97542b7b3d0a3ac984b39822e8ae7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_17",
+          "rank_sha256": "3762205143c1b8cc6b46b1d12d6adee6cfa1a40dfdd2d8ebff57d68a63b0ab57"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_06",
+          "rank_sha256": "389df72d79b11a2a9acd92a108657ddd72c32dedfac0cfe21398c82d3ed102b1"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_01",
+          "rank_sha256": "391be906869c08249b1bcd1686c5eb2a1f8e1478a8319264ff59325e27d0e85d"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_08",
+          "rank_sha256": "3a6ad44f7e766fd269d9965fadacbc182ff6fef30c6a70acc0cf0dddf4abbc0a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_38",
+          "rank_sha256": "3acca8ea89a8f7f5583a570e1053e85c317008d8d1ba0efb55963844d7888b6b"
+        }
+      ],
+      "rank_rule": "sha256(model_specific_denominator_salt|canonical_parent_key), ascending; no suite/task rebalance",
+      "ranked_eligible": [
+        {
+          "canonical_parent_key": "libero_10/task_04/state_04",
+          "rank_sha256": "02e6a644e69973e6315551adfefd03fb1240038c43967af3454a7a1f7c8862c3"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_18",
+          "rank_sha256": "03dd393701313df5165fea341f429425b3df9653c578fa0637146dd0a51329cc"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_43",
+          "rank_sha256": "05672d5077230b6d170ca3f75c72e4f1cc7fcc699347d425495eb2f7fc13241b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_35",
+          "rank_sha256": "071d8d79ee94b31a7c6f7a91c3c91d6738adce9b32ea22907a2a81b3a59c2fed"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_44",
+          "rank_sha256": "0c73e5516f87e1eb6917de22f7f5899d09147268ccf055e03948eab40de2aae1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_40",
+          "rank_sha256": "0fb20c5eb45d0f194dee7b53c5bfbdfed7b7c8a839146beb84dcd851142b013f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_44",
+          "rank_sha256": "0fc9183a4d88497822a7ed798326c7c4c1c1483df22b087a2d8031a7f8ab6fc4"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_09",
+          "rank_sha256": "12352fdaef05cbe77abcdcfcdca504f1dc1d52e6056235e6eaf45494fb9f8c3d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_20",
+          "rank_sha256": "1249b44d25264c6a9485982768b1f92fb0b4b3e7ce6236e7bcf1fe05148d33cb"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_19",
+          "rank_sha256": "12822d9f2cdf62d24263c4b41aad0531a6fd50f6a95d625691d3485042e96fb6"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_00",
+          "rank_sha256": "1461a826b880e1266315d53b44800d6455b6414b9ff362118baa547d17d419e7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_47",
+          "rank_sha256": "16ed611b5f6651226502930a38ee906c7783e9b5f3a28a68a70b456321a43f5f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_00",
+          "rank_sha256": "1ef3f390d231518721e022a58a49d9443aed86dccac0926b6540e90d5fe104fe"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_19",
+          "rank_sha256": "22233678ee92e5927320f71d0c9b785cd64c7f17b2c21306b29c30a6a0a1202a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_41",
+          "rank_sha256": "230e40197f1bac14a2bc6086d3dbd3995db5f814cda5912684d970fec7e274a5"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_16",
+          "rank_sha256": "25cf5367ba3543a83faf3c92f303ee387e805659401a8047a9c9d7220160ff50"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_17",
+          "rank_sha256": "2b4e281b2981ad9734a39deab87a85aa219f811adafea185f780d7dfe448253f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_16",
+          "rank_sha256": "2cb6c3698bf2ed3bac65143dad624123ed57f1557580ec780f058008a5dd879a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_46",
+          "rank_sha256": "2f9f1adc29425f1ce02fefe8c0c1b002d55c437fe35e76eaa3ec6c642eec5ebe"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_44",
+          "rank_sha256": "302c0cbee602c8d317ef870520544cbae0d876234d5c26d3a6e0718a0b99a690"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_14",
+          "rank_sha256": "307f9e87fac236719fc3c9f74dc39ca8af2c3c15b8980be5d6f5f5f06d767fae"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_38",
+          "rank_sha256": "342b8b682216fd2cf99487538a5481659a7c25e8f09b18ddceacef3a7b5ef09e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_25",
+          "rank_sha256": "343ab7a28579e0daa460f97297d273f5641b25b89c15f01ba297925312049e46"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_02",
+          "rank_sha256": "356762b01053216f897369a1415835a7bb6c2f7c2069a882af116f5009411aa2"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_43",
+          "rank_sha256": "3592adaf9e6f73a1bf26e572a7b07c2cabae5e947231a9c8a9fb21088bc34ccd"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_29",
+          "rank_sha256": "35ebe475941eeea857fb6605d7ab2804258f3fc1478858ec01dfeb75a0985da8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_40",
+          "rank_sha256": "373265db92ac775b3f31f222d1144fdae6b97542b7b3d0a3ac984b39822e8ae7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_17",
+          "rank_sha256": "3762205143c1b8cc6b46b1d12d6adee6cfa1a40dfdd2d8ebff57d68a63b0ab57"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_06",
+          "rank_sha256": "389df72d79b11a2a9acd92a108657ddd72c32dedfac0cfe21398c82d3ed102b1"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_01",
+          "rank_sha256": "391be906869c08249b1bcd1686c5eb2a1f8e1478a8319264ff59325e27d0e85d"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_08",
+          "rank_sha256": "3a6ad44f7e766fd269d9965fadacbc182ff6fef30c6a70acc0cf0dddf4abbc0a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_38",
+          "rank_sha256": "3acca8ea89a8f7f5583a570e1053e85c317008d8d1ba0efb55963844d7888b6b"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_04",
+          "rank_sha256": "3ad9d9f595ba82004f8109ce51327f4d15f9317d3d7f23c8c5c2f7f4d6bf4988"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_25",
+          "rank_sha256": "3db70abdf9325b0941176780734a9cc46c2281bbb9c4feca4b51b3120515a60c"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_14",
+          "rank_sha256": "4089912d7811b3dd6782bc778dfdcb871edd410ff61ac3baeed8eb116c9e077b"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_18",
+          "rank_sha256": "41ed6ea24ba9aeb94ff354ef4b8f5842f5492be64c08a545230fe8acab7299e5"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_11",
+          "rank_sha256": "4824c2f7f61e55dea599fc6bee918e70fd9bddf72b4fd6ed3eb3f680df6d9e77"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_22",
+          "rank_sha256": "48bb7236f7b60cf6880b20b2e54d4226f403ecb8dd440e8d09766cdd5838f98f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_01",
+          "rank_sha256": "4a272eac76864a72c02c3bb5bc0d79a20ef45139a753e466152671ee92d92174"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_46",
+          "rank_sha256": "4acb914b413a2cd6530c8fdc89008de59371f789507331c5a57599b4299837ab"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_46",
+          "rank_sha256": "4f11a349bf62ef50b3b09362546cc1bf3e41e4da7a9fd36643ecf2e4cb178975"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_37",
+          "rank_sha256": "535c9adf7c802bf466ad81c082214d6e95f6b7b0c218b4d637848112c7ab95d6"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_12",
+          "rank_sha256": "55d007b428eabad69c3304f7e6a1627a35dd7a1176f1fab295710e3c78537f6d"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_08",
+          "rank_sha256": "5651cd63d96828abf9aef3802604aedaa4d7ab8c665120f60acf6415d28be8df"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_17",
+          "rank_sha256": "570a628246b3374fe4e5d93935210988778f66163e21f6bec0f97ce69f86c240"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_20",
+          "rank_sha256": "592fb46d516bc8ecc9db1c25abf8f0fbab4b52d5036c6e612faaa37a01eb1fe8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_31",
+          "rank_sha256": "5b0c4a1b8a03950c6ff03e4182a2b9e7808d6a087c7b93faf3421c7b55cd06f9"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_41",
+          "rank_sha256": "5cfe17c8a4fb2f5bdab30246e2886bd2ec242dacf2ea02cd5c45039d7f88172f"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_31",
+          "rank_sha256": "5d52e87ab5e23ef3ff68d980502977e473cae0e9f3ebfe0a1606251563c199ed"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_42",
+          "rank_sha256": "5e6dee9802e3c06d18d39c659a08b70251e68b65d9bb72e3449abe1f42550992"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_06",
+          "rank_sha256": "5f785cf18fb761fe51d9c094e8c1e41dca2e318d61101b667127236c477fce2c"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_06",
+          "rank_sha256": "65d779c2bd55bd7a2d77f2e7149c1308ffeebb5a32bc2fb4b797c50c1876fc3a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_22",
+          "rank_sha256": "6610f44a7ca2273db2d956abc58cfac83a9f8a5d7179174c710826fae3c4ff56"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_22",
+          "rank_sha256": "6670193efc237332eccc4ce9ae4e306767c5886e640e04127397976aaafed82c"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_15",
+          "rank_sha256": "67a34b86feddf3216837ade164b541851a693f78d5a509029e5b7b3f2ffc369a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_39",
+          "rank_sha256": "68269f91d37f508918a97d88e4920a0421f19ab373249970ae319c442c93ffac"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_43",
+          "rank_sha256": "69540ed85b104f05dbc9d3eef2dad5082069e97bf036cb642ffa19eb16414c7e"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_45",
+          "rank_sha256": "699f9a99c01c18bc0bd6544ce17e4fc3e62223f70e811b8bca343fbb0582670c"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_24",
+          "rank_sha256": "6a2a5748f917f64c1a0a69ef2ea8affcb1a7b375a0cf2a50df29d62d0ed511fe"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_18",
+          "rank_sha256": "6b06aac3e2b54bf419d1797854b5ac349e3a9348a78ece61f14bfab498ce3278"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_46",
+          "rank_sha256": "6c6adf48a42b5a1af173aa7de1ff4a0af120fb215aae5c872012d2f08e363735"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_23",
+          "rank_sha256": "703451b5391d3fb4e43dfd3a9f74dba6ed0946756487348a7980f50f73afdc96"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_37",
+          "rank_sha256": "718757d44bab1556c55a1fae98b4df6348e1a1c761ddc53c8739567386de188a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_03",
+          "rank_sha256": "726d1e60937000e3b619279f4f812ff1059242679877951bd9d3fac5737c80c9"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_05",
+          "rank_sha256": "7370b68fb3f74bc81287ad06e1e329a2789b2422e06801bc6bbe69546518c606"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_07",
+          "rank_sha256": "762bd218ee424307cea6a57ca0ef1c4ab668010bd0026c25c2ec6f08e8255b3a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_36",
+          "rank_sha256": "76a20c79b4b55e5e4db0ef684c26332768083a2d86ba2e1cda94e71b531931c6"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_13",
+          "rank_sha256": "77a64e1b3040ca442bcf76a68888306697623881c934b3c8f04b0b70c260195d"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_09",
+          "rank_sha256": "77ba0f4e4b97377ee452217c14d0c33406a12a875cf26b2ffbcf4e1781bde391"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_30",
+          "rank_sha256": "792fd4ac4acc1f403284d2e44930fe3a43c822a53c82d82f20c335d072c91793"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_43",
+          "rank_sha256": "79cb9b458bbdcaaeb16750abc2d569ffe5cbeb18fa62c375991cf06fd5914248"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_38",
+          "rank_sha256": "7a430054990b57e89aec2ec57b54b0f673f2b22196f4f640782aca8d8af49574"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_40",
+          "rank_sha256": "7da504eeaddbd3af95d7b646635b2d6496c7c133bf1666df8b8d618f8b6c5fda"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_27",
+          "rank_sha256": "81adfd6d74369d94aa2855c18fbf7ce2765ab447d064e36be933605924045383"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_39",
+          "rank_sha256": "871f8f527bc3fb2021c03d26009c12e0c1cd917196cc8c57ced2e0eb6ec06a60"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_31",
+          "rank_sha256": "87696f20dedc2698c19ac3073211141e984b30911a7e76c52bbdcc8230a716ff"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_33",
+          "rank_sha256": "8e80d82d1672183e1fa0ceb24fdcd0597b36060b26c147b823fa06f042771667"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_47",
+          "rank_sha256": "938099db49c43bd6dc3d881fdb1752514b37dc5a627d2fddf84d67360af2b6e9"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_39",
+          "rank_sha256": "94072ad6ad85eb88a9da56195ca47f28c17d5c44acd2058942777730e99eb598"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_09",
+          "rank_sha256": "977be1001a79b1f560101b8b3a203ef441bd04e732d3dd39c92eb780ee34c0de"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_15",
+          "rank_sha256": "98528b33b5c2ed084dee8535404e58888068f3d26a9a735e6af2f389ce09c081"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_09",
+          "rank_sha256": "9ba3b7d6c4bbf3bd3548f3bb4ff5a287aed7fa3237af04cc7fba4295f2ac3495"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_29",
+          "rank_sha256": "9c415aed036132a74753e31bd1df1fd4c03a409e35999b73cb6c968b5f7494ab"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_49",
+          "rank_sha256": "9d1654a42d15faeae8f68fc75ec7337747656ba82eafead171f7b7bb07157931"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_39",
+          "rank_sha256": "a28930401d64a04f3fbae9322c793cfdf73e92af12ff35ccbaa7a1a914292a6a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_42",
+          "rank_sha256": "a33b13c065e3bfc3915a01bd7f55a713a9f79e45da443867a6f19b310d0f4305"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_08",
+          "rank_sha256": "a3b7d162448a28100b813cde46feac681fc5bfe02e8904d2a1df6a3b29c1efc6"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_18",
+          "rank_sha256": "a4f1ed5405f28bfcea4cd02550892c924324b06a99209cb5b77b202068ba1772"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_10",
+          "rank_sha256": "a6fc4b5a546a5b9eaa6deb8e910612c962eaa15521ed4dd0901624e2b51653bb"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_39",
+          "rank_sha256": "a78d70036ae3c8bca4f6a7f2bba3264a3980603227d672a972229933f6ab4237"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_12",
+          "rank_sha256": "abab58bc67c8ccbab666719625f895931d9d88c6b905d6a45c2bc88f0efd688d"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_11",
+          "rank_sha256": "b2947b90cd01a78ae7b4c45b4fd4edfcba279297907dd761c1cac228881d6b43"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_25",
+          "rank_sha256": "b5675ae6b0b4e8cbff916f245a9248b70515e774cd5da2e4a9b015a8bb4f575d"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_11",
+          "rank_sha256": "b9479a6df7b659143d5b3a26ac8a03ead18d0cfd8975e320201a7cb782b4f6e4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_12",
+          "rank_sha256": "b9e2c6f9b30e078cba6e8bb18ebc65e1c61bf1fd41c6cb2fcf9c997c0f41611b"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_33",
+          "rank_sha256": "bced63a03ea3b13b184f7fa9221e329a53added64c455c3f64032b05527e32d9"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_40",
+          "rank_sha256": "bdf1ea9e1fa4d3ca16c74374d8ec84b87e5538214f69ff9d701b9a823acfb65c"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_35",
+          "rank_sha256": "bf782187460046320734b479ed7b3916c3b98bf749c547e003c874696a6b3125"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_34",
+          "rank_sha256": "c15845f1cf51ea244195185458adc2c36726ece4d44910210b9f2c32982b028a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_01",
+          "rank_sha256": "c192643e4ea6f83a84768db13b849eea5b633fcc8e3de6732fdaa94d9eb2e2b8"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_45",
+          "rank_sha256": "c46283677970212d70489d04bbdd913b3e0d939ce91fab6027e5c1e2c2c869d3"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_31",
+          "rank_sha256": "cbae1dec49b3a03e895d79afe1ae8496f658f0d3f6eef65a8af3ae59c66afd50"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_03",
+          "rank_sha256": "cea2e035f169bc1c8b24132f3dcf46fef3f343fabaec86386c48b33628d2999f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_43",
+          "rank_sha256": "d0770ff3016735ff0d44d8f2c987332f46bc400b6e1f5fe5ebbe06f9c2ec40b4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_11",
+          "rank_sha256": "d1f6f202d0cd030520068f57577ae1c50abd93fe55a6996da3a53c9320ba98d5"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_23",
+          "rank_sha256": "d5ed3fac88050c2a1b6cf0a99999b17a0707c6ea531fe1311605ab781ad48a22"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_08",
+          "rank_sha256": "d6c38d6488c63e208fd2bc82c4ea2872ee5dca9536c4a3d0242b03a9efd45aac"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_26",
+          "rank_sha256": "d738205610267c4b21e30efe0d49ca74e11a4a19cea98256f1a083bd6fe5b744"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_23",
+          "rank_sha256": "d7b4243bac2265e9f2da3a746fddfcfd56e039cde2d5fb9e1a0ba2de6de5da7f"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_34",
+          "rank_sha256": "dc4249399703c2fce8b0f9e659017b6b9444d1831f89bdc0ffe7d27078a91949"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_37",
+          "rank_sha256": "df6645a30d0e419daaba77479bdf73f64369e22d3ec20db242f4489663e20e3d"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_32",
+          "rank_sha256": "df90fbf40a8905644d3d958771a7fb205fdaeb6b189bcdf8b3d3d647cbe33e16"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_43",
+          "rank_sha256": "e17c41a8bfec048e827d1d7bc5e40499dbea5485ba3130fc1b70ebdb3fdea74e"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_43",
+          "rank_sha256": "e6c6d8c9291c3133a209e29dc1bc6a4329148924480fefe549cd6a26e4f47dd6"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_38",
+          "rank_sha256": "eba08178dba20f4f47d4aba3773d3b0c5255625f9658dae691c55e7aa7a7b5a1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_05",
+          "rank_sha256": "ebfd24026b6eedb5913608099b31df54ef7437be4b3868e03ba086c79d88400f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_28",
+          "rank_sha256": "ef57af2e0137895b3334e837fcf1a96de9a795064d46ccddaa9e263b290f670f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_12",
+          "rank_sha256": "f0b98e7196c1092ced3e9222aff35abfe28aee62c83e9fda59a4ccef8ffd21db"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_07",
+          "rank_sha256": "f35601d676c957d0b45a4f9b5d2b3f01a52401a375344bbd41b2a50e83d0208c"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_03",
+          "rank_sha256": "f88411c3721b808543ba614bebede5f214a1a3e64c62e840865b071316d103b8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_46",
+          "rank_sha256": "f947ce7315ab010fa4438c692564a993c810eea3fa0dcf87a3a0a73c5086b8e3"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_48",
+          "rank_sha256": "f95509b46a9c27ca437930eac221ac17d4c0eed527c3d4e6ed018388499a2a71"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_33",
+          "rank_sha256": "fc4c36599227dfe90ec2b5976158be075a4da7a1cdab5d4fdcf3037d41171187"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_38",
+          "rank_sha256": "fcdbdca226594f5f4a7d4fdcf36312cd5f3f0823275ee7ed7c2c2c48c1eeb843"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_13",
+          "rank_sha256": "fd3ca85a8889820276b4a95111fd8a8ac5adb7841e9c667666464efa63be835a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_13",
+          "rank_sha256": "fdcf502cb9aab43a485ab6b41083c27316bda7fdd538a6cdf95ae66d7a6f7788"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_27",
+          "rank_sha256": "fe81a8d82d405d6f8d78f73d91b64d0211d636c856ba8cba5c1ced1a61f40df8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_43",
+          "rank_sha256": "ff276c5a6e309c305cd733237941ba29ff38a091b9af6998624e837b9d2a96e6"
+        }
+      ],
+      "salt": "STAGE_AC_AC2_MODEL_SPECIFIC_DENOMINATOR_V1_20260827",
+      "selected_step_distribution": {
+        "48": 9,
+        "56": 14,
+        "64": 22,
+        "72": 19,
+        "80": 16,
+        "88": 4,
+        "96": 4,
+        "104": 12,
+        "112": 6,
+        "120": 1,
+        "128": 2,
+        "136": 1,
+        "160": 7,
+        "168": 1,
+        "184": 1,
+        "192": 3,
+        "232": 2,
+        "352": 1,
+        "392": 1,
+        "408": 1,
+        "496": 1
+      },
+      "status": "N_AT_LEAST_32_SELECT_32",
+      "target_n": 32
+    },
+    "M2_PI05_LIBERO": {
+      "eligible_by_suite": {
+        "libero_10": 77,
+        "libero_object": 80,
+        "libero_spatial": 78
+      },
+      "eligible_by_task": {
+        "task_00": 24,
+        "task_01": 24,
+        "task_02": 24,
+        "task_03": 23,
+        "task_04": 24,
+        "task_05": 24,
+        "task_06": 24,
+        "task_07": 24,
+        "task_08": 21,
+        "task_09": 23
+      },
+      "eligible_count": 235,
+      "eligible_parent_keys": [
+        "libero_10/task_00/state_04",
+        "libero_10/task_00/state_06",
+        "libero_10/task_00/state_11",
+        "libero_10/task_00/state_18",
+        "libero_10/task_00/state_20",
+        "libero_10/task_00/state_26",
+        "libero_10/task_00/state_29",
+        "libero_10/task_00/state_30",
+        "libero_10/task_01/state_05",
+        "libero_10/task_01/state_08",
+        "libero_10/task_01/state_17",
+        "libero_10/task_01/state_26",
+        "libero_10/task_01/state_30",
+        "libero_10/task_01/state_31",
+        "libero_10/task_01/state_32",
+        "libero_10/task_01/state_43",
+        "libero_10/task_02/state_02",
+        "libero_10/task_02/state_11",
+        "libero_10/task_02/state_13",
+        "libero_10/task_02/state_26",
+        "libero_10/task_02/state_28",
+        "libero_10/task_02/state_31",
+        "libero_10/task_02/state_41",
+        "libero_10/task_02/state_43",
+        "libero_10/task_03/state_06",
+        "libero_10/task_03/state_09",
+        "libero_10/task_03/state_12",
+        "libero_10/task_03/state_14",
+        "libero_10/task_03/state_22",
+        "libero_10/task_03/state_23",
+        "libero_10/task_03/state_25",
+        "libero_10/task_03/state_31",
+        "libero_10/task_04/state_04",
+        "libero_10/task_04/state_12",
+        "libero_10/task_04/state_13",
+        "libero_10/task_04/state_18",
+        "libero_10/task_04/state_25",
+        "libero_10/task_04/state_29",
+        "libero_10/task_04/state_37",
+        "libero_10/task_04/state_45",
+        "libero_10/task_05/state_04",
+        "libero_10/task_05/state_06",
+        "libero_10/task_05/state_13",
+        "libero_10/task_05/state_18",
+        "libero_10/task_05/state_24",
+        "libero_10/task_05/state_37",
+        "libero_10/task_05/state_44",
+        "libero_10/task_05/state_45",
+        "libero_10/task_06/state_03",
+        "libero_10/task_06/state_05",
+        "libero_10/task_06/state_06",
+        "libero_10/task_06/state_07",
+        "libero_10/task_06/state_11",
+        "libero_10/task_06/state_33",
+        "libero_10/task_06/state_44",
+        "libero_10/task_06/state_46",
+        "libero_10/task_07/state_04",
+        "libero_10/task_07/state_09",
+        "libero_10/task_07/state_11",
+        "libero_10/task_07/state_18",
+        "libero_10/task_07/state_35",
+        "libero_10/task_07/state_38",
+        "libero_10/task_07/state_43",
+        "libero_10/task_07/state_44",
+        "libero_10/task_08/state_01",
+        "libero_10/task_08/state_09",
+        "libero_10/task_08/state_10",
+        "libero_10/task_08/state_13",
+        "libero_10/task_08/state_17",
+        "libero_10/task_08/state_29",
+        "libero_10/task_09/state_00",
+        "libero_10/task_09/state_05",
+        "libero_10/task_09/state_06",
+        "libero_10/task_09/state_19",
+        "libero_10/task_09/state_35",
+        "libero_10/task_09/state_41",
+        "libero_10/task_09/state_46",
+        "libero_object/task_00/state_05",
+        "libero_object/task_00/state_16",
+        "libero_object/task_00/state_32",
+        "libero_object/task_00/state_33",
+        "libero_object/task_00/state_34",
+        "libero_object/task_00/state_40",
+        "libero_object/task_00/state_42",
+        "libero_object/task_00/state_43",
+        "libero_object/task_01/state_04",
+        "libero_object/task_01/state_12",
+        "libero_object/task_01/state_20",
+        "libero_object/task_01/state_22",
+        "libero_object/task_01/state_25",
+        "libero_object/task_01/state_35",
+        "libero_object/task_01/state_38",
+        "libero_object/task_01/state_42",
+        "libero_object/task_02/state_01",
+        "libero_object/task_02/state_05",
+        "libero_object/task_02/state_16",
+        "libero_object/task_02/state_24",
+        "libero_object/task_02/state_38",
+        "libero_object/task_02/state_39",
+        "libero_object/task_02/state_43",
+        "libero_object/task_02/state_45",
+        "libero_object/task_03/state_03",
+        "libero_object/task_03/state_10",
+        "libero_object/task_03/state_11",
+        "libero_object/task_03/state_18",
+        "libero_object/task_03/state_25",
+        "libero_object/task_03/state_36",
+        "libero_object/task_03/state_42",
+        "libero_object/task_03/state_45",
+        "libero_object/task_04/state_06",
+        "libero_object/task_04/state_11",
+        "libero_object/task_04/state_14",
+        "libero_object/task_04/state_15",
+        "libero_object/task_04/state_24",
+        "libero_object/task_04/state_28",
+        "libero_object/task_04/state_40",
+        "libero_object/task_04/state_45",
+        "libero_object/task_05/state_08",
+        "libero_object/task_05/state_22",
+        "libero_object/task_05/state_23",
+        "libero_object/task_05/state_33",
+        "libero_object/task_05/state_34",
+        "libero_object/task_05/state_37",
+        "libero_object/task_05/state_40",
+        "libero_object/task_05/state_47",
+        "libero_object/task_06/state_00",
+        "libero_object/task_06/state_13",
+        "libero_object/task_06/state_18",
+        "libero_object/task_06/state_29",
+        "libero_object/task_06/state_30",
+        "libero_object/task_06/state_42",
+        "libero_object/task_06/state_43",
+        "libero_object/task_06/state_48",
+        "libero_object/task_07/state_00",
+        "libero_object/task_07/state_12",
+        "libero_object/task_07/state_19",
+        "libero_object/task_07/state_25",
+        "libero_object/task_07/state_32",
+        "libero_object/task_07/state_43",
+        "libero_object/task_07/state_44",
+        "libero_object/task_07/state_48",
+        "libero_object/task_08/state_00",
+        "libero_object/task_08/state_10",
+        "libero_object/task_08/state_12",
+        "libero_object/task_08/state_15",
+        "libero_object/task_08/state_31",
+        "libero_object/task_08/state_37",
+        "libero_object/task_08/state_46",
+        "libero_object/task_08/state_47",
+        "libero_object/task_09/state_08",
+        "libero_object/task_09/state_14",
+        "libero_object/task_09/state_24",
+        "libero_object/task_09/state_26",
+        "libero_object/task_09/state_27",
+        "libero_object/task_09/state_33",
+        "libero_object/task_09/state_39",
+        "libero_object/task_09/state_44",
+        "libero_spatial/task_00/state_01",
+        "libero_spatial/task_00/state_06",
+        "libero_spatial/task_00/state_08",
+        "libero_spatial/task_00/state_11",
+        "libero_spatial/task_00/state_15",
+        "libero_spatial/task_00/state_33",
+        "libero_spatial/task_00/state_43",
+        "libero_spatial/task_00/state_46",
+        "libero_spatial/task_01/state_00",
+        "libero_spatial/task_01/state_13",
+        "libero_spatial/task_01/state_27",
+        "libero_spatial/task_01/state_31",
+        "libero_spatial/task_01/state_37",
+        "libero_spatial/task_01/state_40",
+        "libero_spatial/task_01/state_43",
+        "libero_spatial/task_01/state_45",
+        "libero_spatial/task_02/state_12",
+        "libero_spatial/task_02/state_17",
+        "libero_spatial/task_02/state_23",
+        "libero_spatial/task_02/state_34",
+        "libero_spatial/task_02/state_35",
+        "libero_spatial/task_02/state_38",
+        "libero_spatial/task_02/state_43",
+        "libero_spatial/task_02/state_46",
+        "libero_spatial/task_03/state_13",
+        "libero_spatial/task_03/state_14",
+        "libero_spatial/task_03/state_15",
+        "libero_spatial/task_03/state_40",
+        "libero_spatial/task_03/state_41",
+        "libero_spatial/task_03/state_43",
+        "libero_spatial/task_03/state_44",
+        "libero_spatial/task_04/state_09",
+        "libero_spatial/task_04/state_15",
+        "libero_spatial/task_04/state_19",
+        "libero_spatial/task_04/state_33",
+        "libero_spatial/task_04/state_39",
+        "libero_spatial/task_04/state_42",
+        "libero_spatial/task_04/state_43",
+        "libero_spatial/task_04/state_46",
+        "libero_spatial/task_05/state_01",
+        "libero_spatial/task_05/state_17",
+        "libero_spatial/task_05/state_26",
+        "libero_spatial/task_05/state_36",
+        "libero_spatial/task_05/state_37",
+        "libero_spatial/task_05/state_41",
+        "libero_spatial/task_05/state_44",
+        "libero_spatial/task_05/state_47",
+        "libero_spatial/task_06/state_03",
+        "libero_spatial/task_06/state_16",
+        "libero_spatial/task_06/state_18",
+        "libero_spatial/task_06/state_31",
+        "libero_spatial/task_06/state_33",
+        "libero_spatial/task_06/state_39",
+        "libero_spatial/task_06/state_44",
+        "libero_spatial/task_06/state_48",
+        "libero_spatial/task_07/state_07",
+        "libero_spatial/task_07/state_13",
+        "libero_spatial/task_07/state_15",
+        "libero_spatial/task_07/state_20",
+        "libero_spatial/task_07/state_26",
+        "libero_spatial/task_07/state_36",
+        "libero_spatial/task_07/state_39",
+        "libero_spatial/task_07/state_40",
+        "libero_spatial/task_08/state_04",
+        "libero_spatial/task_08/state_37",
+        "libero_spatial/task_08/state_38",
+        "libero_spatial/task_08/state_39",
+        "libero_spatial/task_08/state_42",
+        "libero_spatial/task_08/state_46",
+        "libero_spatial/task_08/state_49",
+        "libero_spatial/task_09/state_07",
+        "libero_spatial/task_09/state_10",
+        "libero_spatial/task_09/state_11",
+        "libero_spatial/task_09/state_20",
+        "libero_spatial/task_09/state_25",
+        "libero_spatial/task_09/state_29",
+        "libero_spatial/task_09/state_38",
+        "libero_spatial/task_09/state_39"
+      ],
+      "floor_n": 24,
+      "frozen_h0_count": 15,
+      "frozen_hc_count": 17,
+      "frozen_primary_parent_keys": [
+        "libero_object/task_06/state_30",
+        "libero_object/task_00/state_32",
+        "libero_10/task_04/state_04",
+        "libero_10/task_00/state_20",
+        "libero_spatial/task_06/state_18",
+        "libero_object/task_00/state_16",
+        "libero_object/task_00/state_05",
+        "libero_10/task_02/state_43",
+        "libero_spatial/task_02/state_35",
+        "libero_object/task_02/state_38",
+        "libero_object/task_04/state_15",
+        "libero_object/task_03/state_25",
+        "libero_object/task_06/state_43",
+        "libero_spatial/task_00/state_06",
+        "libero_object/task_09/state_44",
+        "libero_object/task_04/state_40",
+        "libero_object/task_04/state_06",
+        "libero_object/task_05/state_40",
+        "libero_10/task_07/state_44",
+        "libero_10/task_09/state_35",
+        "libero_spatial/task_04/state_09",
+        "libero_spatial/task_07/state_20",
+        "libero_spatial/task_05/state_37",
+        "libero_object/task_07/state_00",
+        "libero_10/task_05/state_06",
+        "libero_spatial/task_05/state_47",
+        "libero_10/task_09/state_00",
+        "libero_spatial/task_04/state_19",
+        "libero_10/task_09/state_41",
+        "libero_10/task_05/state_13",
+        "libero_spatial/task_06/state_16",
+        "libero_10/task_08/state_01"
+      ],
+      "frozen_primary_ranked": [
+        {
+          "canonical_parent_key": "libero_object/task_06/state_30",
+          "rank_sha256": "00db071edb1eaa21cd08c9dc8491ba6c62113e6dcde3bd07809c00a0564457ff"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_32",
+          "rank_sha256": "0276cddd72f3e2326edcc051476a09796a7c97ae59d006353e9497af447ed69a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_04",
+          "rank_sha256": "02e6a644e69973e6315551adfefd03fb1240038c43967af3454a7a1f7c8862c3"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_20",
+          "rank_sha256": "038c6a48b099ccd60a01734824453ba19ff1f61cd6c17d4f1d59d59493378b7b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_18",
+          "rank_sha256": "03dd393701313df5165fea341f429425b3df9653c578fa0637146dd0a51329cc"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_16",
+          "rank_sha256": "042cc54110b6ebaf6e36813cb316804751ddd7975eb01c2d435af424b02bd71e"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_05",
+          "rank_sha256": "04fb1230dc64a933dedf561e5918f276c85eeb2b0b9aa5e8f5324057e527af61"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_43",
+          "rank_sha256": "05672d5077230b6d170ca3f75c72e4f1cc7fcc699347d425495eb2f7fc13241b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_35",
+          "rank_sha256": "071d8d79ee94b31a7c6f7a91c3c91d6738adce9b32ea22907a2a81b3a59c2fed"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_38",
+          "rank_sha256": "07c514083490b2e952ecc5154789669a24422860187359bc529a609b5f0b1a64"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_15",
+          "rank_sha256": "083eac463fcd5d8f90a7f0a80faa1e6b2dc662e18707c73ac045a2af51d31589"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_25",
+          "rank_sha256": "090471d23cc295ce229a5cbae1be008894b574a1b6615e8c0ccc86bb2d4fa703"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_43",
+          "rank_sha256": "092927b5f3ff5c407af6aa1751f767f1d2b07cffc37adadff50bfabb67fac546"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_06",
+          "rank_sha256": "0b3a4d8eff7ab661dc88956ef542c113a88cd70c3ea99c94733a9d735f6f6192"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_44",
+          "rank_sha256": "0c73e5516f87e1eb6917de22f7f5899d09147268ccf055e03948eab40de2aae1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_40",
+          "rank_sha256": "0e7317c2ac1d74abf488d7e85e2e4f298eb54d8a1311b2c6b70820430260f5d8"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_06",
+          "rank_sha256": "0f23d59031e8ad293e7bcf3e2121a31b01f301d91b5cc2e56d22daf96a331c58"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_40",
+          "rank_sha256": "0fb20c5eb45d0f194dee7b53c5bfbdfed7b7c8a839146beb84dcd851142b013f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_44",
+          "rank_sha256": "0fc9183a4d88497822a7ed798326c7c4c1c1483df22b087a2d8031a7f8ab6fc4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_35",
+          "rank_sha256": "107677907a1e2301a3a451415197744f267f031da4a3c840c5224f8dee89ecc1"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_09",
+          "rank_sha256": "12352fdaef05cbe77abcdcfcdca504f1dc1d52e6056235e6eaf45494fb9f8c3d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_20",
+          "rank_sha256": "1249b44d25264c6a9485982768b1f92fb0b4b3e7ce6236e7bcf1fe05148d33cb"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_37",
+          "rank_sha256": "131adbf6a96d4d3b6199e5971d95a011dab229e69b2c415967ea9406efedeae5"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_00",
+          "rank_sha256": "1461a826b880e1266315d53b44800d6455b6414b9ff362118baa547d17d419e7"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_06",
+          "rank_sha256": "160710722ada923b99c9998f11e3d95ee13b7fad757af8b75f61a388c0cd4f58"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_47",
+          "rank_sha256": "16ed611b5f6651226502930a38ee906c7783e9b5f3a28a68a70b456321a43f5f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_00",
+          "rank_sha256": "1ef3f390d231518721e022a58a49d9443aed86dccac0926b6540e90d5fe104fe"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_19",
+          "rank_sha256": "22233678ee92e5927320f71d0c9b785cd64c7f17b2c21306b29c30a6a0a1202a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_41",
+          "rank_sha256": "230e40197f1bac14a2bc6086d3dbd3995db5f814cda5912684d970fec7e274a5"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_13",
+          "rank_sha256": "2439fbb34557ca8423985439fee82ff7fafdcaee7fefcce9412159a1ff9c3576"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_16",
+          "rank_sha256": "25cf5367ba3543a83faf3c92f303ee387e805659401a8047a9c9d7220160ff50"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_01",
+          "rank_sha256": "272a112207c98c31a99143f8b93478815381ee1ea995b0fe05e6d18821b3e116"
+        }
+      ],
+      "rank_rule": "sha256(model_specific_denominator_salt|canonical_parent_key), ascending; no suite/task rebalance",
+      "ranked_eligible": [
+        {
+          "canonical_parent_key": "libero_object/task_06/state_30",
+          "rank_sha256": "00db071edb1eaa21cd08c9dc8491ba6c62113e6dcde3bd07809c00a0564457ff"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_32",
+          "rank_sha256": "0276cddd72f3e2326edcc051476a09796a7c97ae59d006353e9497af447ed69a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_04",
+          "rank_sha256": "02e6a644e69973e6315551adfefd03fb1240038c43967af3454a7a1f7c8862c3"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_20",
+          "rank_sha256": "038c6a48b099ccd60a01734824453ba19ff1f61cd6c17d4f1d59d59493378b7b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_18",
+          "rank_sha256": "03dd393701313df5165fea341f429425b3df9653c578fa0637146dd0a51329cc"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_16",
+          "rank_sha256": "042cc54110b6ebaf6e36813cb316804751ddd7975eb01c2d435af424b02bd71e"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_05",
+          "rank_sha256": "04fb1230dc64a933dedf561e5918f276c85eeb2b0b9aa5e8f5324057e527af61"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_43",
+          "rank_sha256": "05672d5077230b6d170ca3f75c72e4f1cc7fcc699347d425495eb2f7fc13241b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_35",
+          "rank_sha256": "071d8d79ee94b31a7c6f7a91c3c91d6738adce9b32ea22907a2a81b3a59c2fed"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_38",
+          "rank_sha256": "07c514083490b2e952ecc5154789669a24422860187359bc529a609b5f0b1a64"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_15",
+          "rank_sha256": "083eac463fcd5d8f90a7f0a80faa1e6b2dc662e18707c73ac045a2af51d31589"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_25",
+          "rank_sha256": "090471d23cc295ce229a5cbae1be008894b574a1b6615e8c0ccc86bb2d4fa703"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_43",
+          "rank_sha256": "092927b5f3ff5c407af6aa1751f767f1d2b07cffc37adadff50bfabb67fac546"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_06",
+          "rank_sha256": "0b3a4d8eff7ab661dc88956ef542c113a88cd70c3ea99c94733a9d735f6f6192"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_44",
+          "rank_sha256": "0c73e5516f87e1eb6917de22f7f5899d09147268ccf055e03948eab40de2aae1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_40",
+          "rank_sha256": "0e7317c2ac1d74abf488d7e85e2e4f298eb54d8a1311b2c6b70820430260f5d8"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_06",
+          "rank_sha256": "0f23d59031e8ad293e7bcf3e2121a31b01f301d91b5cc2e56d22daf96a331c58"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_40",
+          "rank_sha256": "0fb20c5eb45d0f194dee7b53c5bfbdfed7b7c8a839146beb84dcd851142b013f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_44",
+          "rank_sha256": "0fc9183a4d88497822a7ed798326c7c4c1c1483df22b087a2d8031a7f8ab6fc4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_35",
+          "rank_sha256": "107677907a1e2301a3a451415197744f267f031da4a3c840c5224f8dee89ecc1"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_09",
+          "rank_sha256": "12352fdaef05cbe77abcdcfcdca504f1dc1d52e6056235e6eaf45494fb9f8c3d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_20",
+          "rank_sha256": "1249b44d25264c6a9485982768b1f92fb0b4b3e7ce6236e7bcf1fe05148d33cb"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_37",
+          "rank_sha256": "131adbf6a96d4d3b6199e5971d95a011dab229e69b2c415967ea9406efedeae5"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_00",
+          "rank_sha256": "1461a826b880e1266315d53b44800d6455b6414b9ff362118baa547d17d419e7"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_06",
+          "rank_sha256": "160710722ada923b99c9998f11e3d95ee13b7fad757af8b75f61a388c0cd4f58"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_47",
+          "rank_sha256": "16ed611b5f6651226502930a38ee906c7783e9b5f3a28a68a70b456321a43f5f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_00",
+          "rank_sha256": "1ef3f390d231518721e022a58a49d9443aed86dccac0926b6540e90d5fe104fe"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_19",
+          "rank_sha256": "22233678ee92e5927320f71d0c9b785cd64c7f17b2c21306b29c30a6a0a1202a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_41",
+          "rank_sha256": "230e40197f1bac14a2bc6086d3dbd3995db5f814cda5912684d970fec7e274a5"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_13",
+          "rank_sha256": "2439fbb34557ca8423985439fee82ff7fafdcaee7fefcce9412159a1ff9c3576"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_16",
+          "rank_sha256": "25cf5367ba3543a83faf3c92f303ee387e805659401a8047a9c9d7220160ff50"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_01",
+          "rank_sha256": "272a112207c98c31a99143f8b93478815381ee1ea995b0fe05e6d18821b3e116"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_17",
+          "rank_sha256": "281b9b5a24b00d69a79e9ebcc3ddd223f76be91a509e04f8d47623a36ab590b7"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_06",
+          "rank_sha256": "295a927c2dbd9d7bf248d23b49d947f1da19effa94a06b54eae9d8812cdf15f9"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_26",
+          "rank_sha256": "29b2c5ae53fdcbfca29585db1283887c9e421ce8f032476b2235d9e65ef8ae41"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_17",
+          "rank_sha256": "2b4e281b2981ad9734a39deab87a85aa219f811adafea185f780d7dfe448253f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_16",
+          "rank_sha256": "2cb6c3698bf2ed3bac65143dad624123ed57f1557580ec780f058008a5dd879a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_46",
+          "rank_sha256": "2f9f1adc29425f1ce02fefe8c0c1b002d55c437fe35e76eaa3ec6c642eec5ebe"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_11",
+          "rank_sha256": "3009381aa647848267dad0b5332453b7e0659beac020f778825830a4598ffc29"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_44",
+          "rank_sha256": "302c0cbee602c8d317ef870520544cbae0d876234d5c26d3a6e0718a0b99a690"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_10",
+          "rank_sha256": "3070807355e41c038fe3fac7f9e3bb364feb874e8640c85644f92d79be4f39d0"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_14",
+          "rank_sha256": "307f9e87fac236719fc3c9f74dc39ca8af2c3c15b8980be5d6f5f5f06d767fae"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_44",
+          "rank_sha256": "31f086c265a9e805bf67f310412e3e2ae65a131c6a170198d1639e4f9237b8e7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_29",
+          "rank_sha256": "32f5512dc7c73373411fd9de49173d24759a10341306aabbc74a319d5ed9fec5"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_38",
+          "rank_sha256": "342b8b682216fd2cf99487538a5481659a7c25e8f09b18ddceacef3a7b5ef09e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_25",
+          "rank_sha256": "343ab7a28579e0daa460f97297d273f5641b25b89c15f01ba297925312049e46"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_26",
+          "rank_sha256": "34f0327d04a9c62bfb65309d3d2bb39f65f37d9e7f35eb35d9ce32105b67e9cc"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_02",
+          "rank_sha256": "356762b01053216f897369a1415835a7bb6c2f7c2069a882af116f5009411aa2"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_43",
+          "rank_sha256": "3592adaf9e6f73a1bf26e572a7b07c2cabae5e947231a9c8a9fb21088bc34ccd"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_29",
+          "rank_sha256": "35ebe475941eeea857fb6605d7ab2804258f3fc1478858ec01dfeb75a0985da8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_40",
+          "rank_sha256": "373265db92ac775b3f31f222d1144fdae6b97542b7b3d0a3ac984b39822e8ae7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_17",
+          "rank_sha256": "3762205143c1b8cc6b46b1d12d6adee6cfa1a40dfdd2d8ebff57d68a63b0ab57"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_06",
+          "rank_sha256": "389df72d79b11a2a9acd92a108657ddd72c32dedfac0cfe21398c82d3ed102b1"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_01",
+          "rank_sha256": "391be906869c08249b1bcd1686c5eb2a1f8e1478a8319264ff59325e27d0e85d"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_08",
+          "rank_sha256": "3a6ad44f7e766fd269d9965fadacbc182ff6fef30c6a70acc0cf0dddf4abbc0a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_38",
+          "rank_sha256": "3acca8ea89a8f7f5583a570e1053e85c317008d8d1ba0efb55963844d7888b6b"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_04",
+          "rank_sha256": "3ad9d9f595ba82004f8109ce51327f4d15f9317d3d7f23c8c5c2f7f4d6bf4988"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_44",
+          "rank_sha256": "3b4492bc374116f5e2cad508d3e44bc47213fea7499bd211875e7cb8554d3ae3"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_13",
+          "rank_sha256": "3c43a9840649870eaf405d7a33e58347d527e9f7f95479583f1fd0020d635fc4"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_25",
+          "rank_sha256": "3db70abdf9325b0941176780734a9cc46c2281bbb9c4feca4b51b3120515a60c"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_04",
+          "rank_sha256": "3e941c296f9d01757ea9ac774ea166dd6ccebadf3de8f8938198d8d895b801b7"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_04",
+          "rank_sha256": "3ed110f2f60a9b030dc78bb4b2b19a5e98856107db4512ddf3875e7439c49adb"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_37",
+          "rank_sha256": "3f5f5be6d7281d5a9f5b700db98a22c13849086399155945803fdd30210ac28b"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_10",
+          "rank_sha256": "40204127fae17a422d286ca04c8491dbaa95165dd710eac3bfaa865c9e742b61"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_04",
+          "rank_sha256": "4047bdbc41932b7518b8fce80bc5ec31da48dec000b13da19069f9da1a5ef460"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_14",
+          "rank_sha256": "4089912d7811b3dd6782bc778dfdcb871edd410ff61ac3baeed8eb116c9e077b"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_45",
+          "rank_sha256": "4148ec84b8679f965eae9cc18407a6581dd72dcda92eadd384d885f771b8c27a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_18",
+          "rank_sha256": "41ed6ea24ba9aeb94ff354ef4b8f5842f5492be64c08a545230fe8acab7299e5"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_31",
+          "rank_sha256": "425f634899c3c9a5998d7fe7c9054cc31b55536f21857662b53b4cbf52a53f9b"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_04",
+          "rank_sha256": "475e142d268132f3f664a46c599982d0dc5991055accedcedae3f9b1705c7642"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_11",
+          "rank_sha256": "4824c2f7f61e55dea599fc6bee918e70fd9bddf72b4fd6ed3eb3f680df6d9e77"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_29",
+          "rank_sha256": "48838cd472126847193aba9d46ee378741efccd0d49e2eb2d904bf73dc6a1993"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_22",
+          "rank_sha256": "48bb7236f7b60cf6880b20b2e54d4226f403ecb8dd440e8d09766cdd5838f98f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_01",
+          "rank_sha256": "4a272eac76864a72c02c3bb5bc0d79a20ef45139a753e466152671ee92d92174"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_46",
+          "rank_sha256": "4acb914b413a2cd6530c8fdc89008de59371f789507331c5a57599b4299837ab"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_45",
+          "rank_sha256": "4b5932ce6ef3533634b5e7c345443ee40e8d4d1a940957faa07975973a56a137"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_46",
+          "rank_sha256": "4f11a349bf62ef50b3b09362546cc1bf3e41e4da7a9fd36643ecf2e4cb178975"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_42",
+          "rank_sha256": "513f84cd9155664255bb2bbcca21cd7651f17b3c44c80a3ae2d28fcafad945c4"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_39",
+          "rank_sha256": "52ae08ff25aeac2a0664f2ac993343ed2ce39e33358afaad06d992c4cf2b3584"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_37",
+          "rank_sha256": "535c9adf7c802bf466ad81c082214d6e95f6b7b0c218b4d637848112c7ab95d6"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_12",
+          "rank_sha256": "55d007b428eabad69c3304f7e6a1627a35dd7a1176f1fab295710e3c78537f6d"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_08",
+          "rank_sha256": "5651cd63d96828abf9aef3802604aedaa4d7ab8c665120f60acf6415d28be8df"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_20",
+          "rank_sha256": "592fb46d516bc8ecc9db1c25abf8f0fbab4b52d5036c6e612faaa37a01eb1fe8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_31",
+          "rank_sha256": "5b0c4a1b8a03950c6ff03e4182a2b9e7808d6a087c7b93faf3421c7b55cd06f9"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_18",
+          "rank_sha256": "5b8f65038c875c85532b50b89783186934cb6c49df99b2e1ce887f035a5dec6e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_33",
+          "rank_sha256": "5ccc9cc17a11c7aa830b795561a48816894c508c761bbbaac3a98484a46e8b32"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_41",
+          "rank_sha256": "5cfe17c8a4fb2f5bdab30246e2886bd2ec242dacf2ea02cd5c45039d7f88172f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_00",
+          "rank_sha256": "5d0fe220a14409617d8a542c4662287a568e2d71de55d1f6c473847bf9e043e2"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_25",
+          "rank_sha256": "5d25caf555a9b6443b80bae097c104a931a323d96cd1f7b031d0eeaa36c7669b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_31",
+          "rank_sha256": "5d52e87ab5e23ef3ff68d980502977e473cae0e9f3ebfe0a1606251563c199ed"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_43",
+          "rank_sha256": "5dd66ef384a5dd67b0d64aa3dccacd31c4b17acfa47633869275476bd8bb2695"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_42",
+          "rank_sha256": "5e6dee9802e3c06d18d39c659a08b70251e68b65d9bb72e3449abe1f42550992"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_06",
+          "rank_sha256": "5f785cf18fb761fe51d9c094e8c1e41dca2e318d61101b667127236c477fce2c"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_17",
+          "rank_sha256": "5ff8198a4a78c53c4c9a55411f3d370537ab0c51771cb09ad318a355082723a6"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_26",
+          "rank_sha256": "60c2fad3c3f9190285cd760d3ce34fcfdfe308e172496faa4e713a0834050ef1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_12",
+          "rank_sha256": "62d5fd41bacf7825d2bd0e478e5968707a5e5aee21da5b4e0ad965ef86fe9475"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_15",
+          "rank_sha256": "6451c37cd869cf2ec4988b5ec809066f8e99993dfbf4652a6101d1381b75a968"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_44",
+          "rank_sha256": "649e196f0eed4c51b7a4462a9145c6f063cee0a60ad3d862dbd7010ff1c33b3f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_06",
+          "rank_sha256": "65d779c2bd55bd7a2d77f2e7149c1308ffeebb5a32bc2fb4b797c50c1876fc3a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_22",
+          "rank_sha256": "6610f44a7ca2273db2d956abc58cfac83a9f8a5d7179174c710826fae3c4ff56"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_22",
+          "rank_sha256": "6670193efc237332eccc4ce9ae4e306767c5886e640e04127397976aaafed82c"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_15",
+          "rank_sha256": "67a34b86feddf3216837ade164b541851a693f78d5a509029e5b7b3f2ffc369a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_39",
+          "rank_sha256": "68269f91d37f508918a97d88e4920a0421f19ab373249970ae319c442c93ffac"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_28",
+          "rank_sha256": "68eda89c67c5cec5c82a9d5516bc2c97e377b642cc2108883038fcdbedb8f317"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_43",
+          "rank_sha256": "69540ed85b104f05dbc9d3eef2dad5082069e97bf036cb642ffa19eb16414c7e"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_45",
+          "rank_sha256": "699f9a99c01c18bc0bd6544ce17e4fc3e62223f70e811b8bca343fbb0582670c"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_24",
+          "rank_sha256": "6a2a5748f917f64c1a0a69ef2ea8affcb1a7b375a0cf2a50df29d62d0ed511fe"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_18",
+          "rank_sha256": "6b06aac3e2b54bf419d1797854b5ac349e3a9348a78ece61f14bfab498ce3278"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_46",
+          "rank_sha256": "6c6adf48a42b5a1af173aa7de1ff4a0af120fb215aae5c872012d2f08e363735"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_00",
+          "rank_sha256": "6cff63ed28fb0205915770b534a292f027f6ff3c4d9b94c8466bdf1bee648351"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_23",
+          "rank_sha256": "703451b5391d3fb4e43dfd3a9f74dba6ed0946756487348a7980f50f73afdc96"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_14",
+          "rank_sha256": "7131abcac02eeb51d5a8f0a60610f8697435c35656039831b7e5616512dede74"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_37",
+          "rank_sha256": "718757d44bab1556c55a1fae98b4df6348e1a1c761ddc53c8739567386de188a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_03",
+          "rank_sha256": "726d1e60937000e3b619279f4f812ff1059242679877951bd9d3fac5737c80c9"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_05",
+          "rank_sha256": "7370b68fb3f74bc81287ad06e1e329a2789b2422e06801bc6bbe69546518c606"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_07",
+          "rank_sha256": "762bd218ee424307cea6a57ca0ef1c4ab668010bd0026c25c2ec6f08e8255b3a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_36",
+          "rank_sha256": "76a20c79b4b55e5e4db0ef684c26332768083a2d86ba2e1cda94e71b531931c6"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_13",
+          "rank_sha256": "77a64e1b3040ca442bcf76a68888306697623881c934b3c8f04b0b70c260195d"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_09",
+          "rank_sha256": "77ba0f4e4b97377ee452217c14d0c33406a12a875cf26b2ffbcf4e1781bde391"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_30",
+          "rank_sha256": "792fd4ac4acc1f403284d2e44930fe3a43c822a53c82d82f20c335d072c91793"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_43",
+          "rank_sha256": "79cb9b458bbdcaaeb16750abc2d569ffe5cbeb18fa62c375991cf06fd5914248"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_38",
+          "rank_sha256": "7a430054990b57e89aec2ec57b54b0f673f2b22196f4f640782aca8d8af49574"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_43",
+          "rank_sha256": "7a6717448edce244cf519f0121208598e043c26194806d66ca18f798802bdc69"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_15",
+          "rank_sha256": "7bf892657b3f5208aa35df15e7a9559303af146346bb96fe942707097714dd20"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_20",
+          "rank_sha256": "7c94e62e4ca8d681da3d5ecb63cfbdc6b32d15889975da2bde147377400fe034"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_40",
+          "rank_sha256": "7da504eeaddbd3af95d7b646635b2d6496c7c133bf1666df8b8d618f8b6c5fda"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_27",
+          "rank_sha256": "81adfd6d74369d94aa2855c18fbf7ce2765ab447d064e36be933605924045383"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_33",
+          "rank_sha256": "82c4365cf079940d2b15268f94ea23ce9dd3142196eee579ac1a9c0a899e1b97"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_36",
+          "rank_sha256": "85c71fc24922ea98141c3f99e6428356bfb4e81158d560b72e20b55361c9bb6c"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_35",
+          "rank_sha256": "85e513471da3babf6acef0a2091b55139d089a873d5db017eff7d19c26746fb0"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_39",
+          "rank_sha256": "871f8f527bc3fb2021c03d26009c12e0c1cd917196cc8c57ced2e0eb6ec06a60"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_31",
+          "rank_sha256": "87696f20dedc2698c19ac3073211141e984b30911a7e76c52bbdcc8230a716ff"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_44",
+          "rank_sha256": "8a207c8cf031b385f21f4da7f93712caacd3a75801044b262f42d8095fd7a3f9"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_33",
+          "rank_sha256": "8e80d82d1672183e1fa0ceb24fdcd0597b36060b26c147b823fa06f042771667"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_18",
+          "rank_sha256": "9265eb625ddad8e7c836d5a901fad21aeea0b1ae86231ff272856b161fc1ff26"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_47",
+          "rank_sha256": "938099db49c43bd6dc3d881fdb1752514b37dc5a627d2fddf84d67360af2b6e9"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_39",
+          "rank_sha256": "94072ad6ad85eb88a9da56195ca47f28c17d5c44acd2058942777730e99eb598"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_46",
+          "rank_sha256": "963815792885d1d152961f2770ef1c05bd7ed8f51318cd85353998fdcaf1ba2e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_09",
+          "rank_sha256": "977be1001a79b1f560101b8b3a203ef441bd04e732d3dd39c92eb780ee34c0de"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_15",
+          "rank_sha256": "98528b33b5c2ed084dee8535404e58888068f3d26a9a735e6af2f389ce09c081"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_19",
+          "rank_sha256": "990ab75fb364e5fc7ab053d7f15855318e56822c6a33ba3ded00daa6503033f1"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_18",
+          "rank_sha256": "99aa5ee35e6f3e273be330133ad478487d379c58af08c907ac07b359a61c7e8c"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_33",
+          "rank_sha256": "9ac6bf539f4135780268bf45e43823cacdf8ca826246071112bce6657e145edb"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_29",
+          "rank_sha256": "9b4e4ae05a83f24ab65d5253a410e7ae5d9186dc1068fc30433b03caf5332546"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_09",
+          "rank_sha256": "9ba3b7d6c4bbf3bd3548f3bb4ff5a287aed7fa3237af04cc7fba4295f2ac3495"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_05",
+          "rank_sha256": "9bbe5e772f5133c7420163b0d6ab8838019f5dfdc909f003cf17970977ac5c12"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_00/state_29",
+          "rank_sha256": "9c415aed036132a74753e31bd1df1fd4c03a409e35999b73cb6c968b5f7494ab"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_49",
+          "rank_sha256": "9d1654a42d15faeae8f68fc75ec7337747656ba82eafead171f7b7bb07157931"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_44",
+          "rank_sha256": "a1aa1ef13609c85680c88f96892a958ab4bed704ef5e9fa9ef96fae7bcc2ee2d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_39",
+          "rank_sha256": "a28930401d64a04f3fbae9322c793cfdf73e92af12ff35ccbaa7a1a914292a6a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_42",
+          "rank_sha256": "a33b13c065e3bfc3915a01bd7f55a713a9f79e45da443867a6f19b310d0f4305"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_08",
+          "rank_sha256": "a3b7d162448a28100b813cde46feac681fc5bfe02e8904d2a1df6a3b29c1efc6"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_18",
+          "rank_sha256": "a4f1ed5405f28bfcea4cd02550892c924324b06a99209cb5b77b202068ba1772"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_34",
+          "rank_sha256": "a5d372e7f173a3bd3f4e625baa9c422d40260e3cbbdf4f3dc3cf2c1ea94f84ef"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_10",
+          "rank_sha256": "a6fc4b5a546a5b9eaa6deb8e910612c962eaa15521ed4dd0901624e2b51653bb"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_39",
+          "rank_sha256": "a78d70036ae3c8bca4f6a7f2bba3264a3980603227d672a972229933f6ab4237"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_45",
+          "rank_sha256": "a98d1a41c87b1a977978e00f3bba3bfb27b854acdd2883b5fcb03faa683a4a4f"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_42",
+          "rank_sha256": "a99be00d55e55444b119ed8d56d950199395b25e6001b60e591df833ffe44f4e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_41",
+          "rank_sha256": "aab83449bbd409a086681361f8ee4268bc55242eacbde0ef4e792ddd4ed00fea"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_46",
+          "rank_sha256": "ab4d32cd2795bd02ed0fa6462db120e2f05a61915446e094b74823aa00d54fcc"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_12",
+          "rank_sha256": "abab58bc67c8ccbab666719625f895931d9d88c6b905d6a45c2bc88f0efd688d"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_26",
+          "rank_sha256": "abeecf0895f03690d43d5f1ee8d8db9d2105b922e6d9b0c1fbf0711e76562be0"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_43",
+          "rank_sha256": "ae4e0ce33e79f778a09fec15b8fbffda305a8cf22a9f7add709574ae7ce6974c"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_15",
+          "rank_sha256": "b2432bb21ddbfb1b39b6cef8d464bb74a8b7ad9d854c7505fc9fcc65e32139da"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_11",
+          "rank_sha256": "b2947b90cd01a78ae7b4c45b4fd4edfcba279297907dd761c1cac228881d6b43"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_48",
+          "rank_sha256": "b547a22eefcddd6892e71caa5dacc3f447d158bfb5c2ae25fe101e9df9f35c40"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_25",
+          "rank_sha256": "b5675ae6b0b4e8cbff916f245a9248b70515e774cd5da2e4a9b015a8bb4f575d"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_11",
+          "rank_sha256": "b709a544a1ab6f3a1305e30da3023019cde03dfe4bcf2221bc97c1a70669409b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_00/state_11",
+          "rank_sha256": "b73bd51d2184eb2a52b1570dd6fe777d4dcc1050229fb07eacc13d061054de25"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_11",
+          "rank_sha256": "b9479a6df7b659143d5b3a26ac8a03ead18d0cfd8975e320201a7cb782b4f6e4"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_10",
+          "rank_sha256": "b9d349b5aaf85eb807f719cf47aba99feda7bc46a6236b632bfc20c10f893171"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_12",
+          "rank_sha256": "b9e2c6f9b30e078cba6e8bb18ebc65e1c61bf1fd41c6cb2fcf9c997c0f41611b"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_37",
+          "rank_sha256": "ba1d22a3ba37ecf33879d6278e33a1df195a31f9e1765a91a3d5828d9715e194"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_47",
+          "rank_sha256": "ba97f8910a137e4fa05e445f480dd0de3fe8926f6a2e9f9c6090c10084f57af9"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_33",
+          "rank_sha256": "bced63a03ea3b13b184f7fa9221e329a53added64c455c3f64032b05527e32d9"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_40",
+          "rank_sha256": "bdf1ea9e1fa4d3ca16c74374d8ec84b87e5538214f69ff9d701b9a823acfb65c"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_48",
+          "rank_sha256": "be3ffaebc21c09cc4f2e52dfff1f85ba6002dc0069afe2b4f43d82d0cf934953"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_35",
+          "rank_sha256": "bf782187460046320734b479ed7b3916c3b98bf749c547e003c874696a6b3125"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_05/state_34",
+          "rank_sha256": "c15845f1cf51ea244195185458adc2c36726ece4d44910210b9f2c32982b028a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_05/state_01",
+          "rank_sha256": "c192643e4ea6f83a84768db13b849eea5b633fcc8e3de6732fdaa94d9eb2e2b8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_33",
+          "rank_sha256": "c29c20f3dbc0a2897799442f26c740ecc9411481a53c17de5e0406a585863f23"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_26",
+          "rank_sha256": "c3d61db6e610f9ddf5d8961cc314f33a4983a488f18d96a8a42512c9dab2e1f0"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_45",
+          "rank_sha256": "c46283677970212d70489d04bbdd913b3e0d939ce91fab6027e5c1e2c2c869d3"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_14",
+          "rank_sha256": "c4e2321167a3dd61a3eb33692782aca9ed964631c4c340d9d8f88662a325a6c0"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_08/state_13",
+          "rank_sha256": "c6b098940ba43056976ce0e6f8d0b46bad8765d7b992580c3fe1e1808f849bd2"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_32",
+          "rank_sha256": "ca3e96450c02de85ed921399d091fafd72ab2fdc796418fa376d6d43eabc33b0"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_30",
+          "rank_sha256": "cbad52591d450af1845b6b3b9c3e33cf9172cdd9386f15322fac1c59fd23206e"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_31",
+          "rank_sha256": "cbae1dec49b3a03e895d79afe1ae8496f658f0d3f6eef65a8af3ae59c66afd50"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_03",
+          "rank_sha256": "cea2e035f169bc1c8b24132f3dcf46fef3f343fabaec86386c48b33628d2999f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_25",
+          "rank_sha256": "ceb3438bbd6bb276fa5b81f5364ce099bc077a3c39a7611c7e101a19efad1a0a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_43",
+          "rank_sha256": "d0770ff3016735ff0d44d8f2c987332f46bc400b6e1f5fe5ebbe06f9c2ec40b4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_07/state_11",
+          "rank_sha256": "d1f6f202d0cd030520068f57577ae1c50abd93fe55a6996da3a53c9320ba98d5"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_12",
+          "rank_sha256": "d201ff3cd488b97c70172284ea3dfd8ad646aeeb1771194d35a79f92ffe83778"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_31",
+          "rank_sha256": "d2420c1abcedf6b078d6f866fa835ad0566d06156e33d497ff313efcc604a2e0"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_03/state_41",
+          "rank_sha256": "d4ccdc123201151d0208df946403ba24d837a4a29240ea867de367ff287eb457"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_03/state_23",
+          "rank_sha256": "d5ed3fac88050c2a1b6cf0a99999b17a0707c6ea531fe1311605ab781ad48a22"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_08",
+          "rank_sha256": "d6c38d6488c63e208fd2bc82c4ea2872ee5dca9536c4a3d0242b03a9efd45aac"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_19",
+          "rank_sha256": "d7108e8c9b008300b89dc9b4bf3f9bf65d866863b99fd74eb2743513acb02a6d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_26",
+          "rank_sha256": "d738205610267c4b21e30efe0d49ca74e11a4a19cea98256f1a083bd6fe5b744"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_40",
+          "rank_sha256": "d74e062c6b24b20834f31bc550b5abcd6f6a29cb1331e8de849ade6add497a3a"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_06/state_13",
+          "rank_sha256": "d7918e014350a18fe5bdbbe3fe95fe9f932629b2744d85b71c0489963c38c74f"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_23",
+          "rank_sha256": "d7b4243bac2265e9f2da3a746fddfcfd56e039cde2d5fb9e1a0ba2de6de5da7f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_42",
+          "rank_sha256": "d9b3a8c25901b3f28b9577b2c4d728b83930ac1657db38c51bb81de7987ccbf1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_24",
+          "rank_sha256": "da7720cd413f6417e6ef319e6c5ee23a669f9f54bcd1fb48484dfeb517601d6f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_24",
+          "rank_sha256": "db12dee9609d92ed221b89fe5070b09a2c30ba233a451fa2d3a2f70792bf2e37"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_34",
+          "rank_sha256": "dc4249399703c2fce8b0f9e659017b6b9444d1831f89bdc0ffe7d27078a91949"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_04/state_45",
+          "rank_sha256": "dcd0e731448d0044236636dd7ee3259dca15f9c85f3a8aecd4ce8516f03e620a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_37",
+          "rank_sha256": "df6645a30d0e419daaba77479bdf73f64369e22d3ec20db242f4489663e20e3d"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_32",
+          "rank_sha256": "df90fbf40a8905644d3d958771a7fb205fdaeb6b189bcdf8b3d3d647cbe33e16"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_43",
+          "rank_sha256": "e17c41a8bfec048e827d1d7bc5e40499dbea5485ba3130fc1b70ebdb3fdea74e"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_00",
+          "rank_sha256": "e4031fc943765531432bbc71744bc3e1643a15e30e3f8a886a6a546d7d84189b"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_04/state_43",
+          "rank_sha256": "e6c6d8c9291c3133a209e29dc1bc6a4329148924480fefe549cd6a26e4f47dd6"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_08/state_37",
+          "rank_sha256": "e81112dbaee6c94015243adf6354ba19fb587226f4b0552b5a8e4dd30465d530"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_00/state_42",
+          "rank_sha256": "e9498dbcfe3f3f8583ae4d0d824121bf1ff76013a0613296d5737fd999e1db3a"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_01/state_13",
+          "rank_sha256": "e9af54e5ae3bcf6a176ca559de55bc7bce009eea0c66c792999a0e4e3bb366c4"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_24",
+          "rank_sha256": "eb3cf99bfa3bde9818bfc68abb7bec48e6878861e6bd530dbf22e6553977015f"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_38",
+          "rank_sha256": "eba08178dba20f4f47d4aba3773d3b0c5255625f9658dae691c55e7aa7a7b5a1"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_02/state_05",
+          "rank_sha256": "ebfd24026b6eedb5913608099b31df54ef7437be4b3868e03ba086c79d88400f"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_28",
+          "rank_sha256": "ef57af2e0137895b3334e837fcf1a96de9a795064d46ccddaa9e263b290f670f"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_12",
+          "rank_sha256": "f0b98e7196c1092ced3e9222aff35abfe28aee62c83e9fda59a4ccef8ffd21db"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_03/state_36",
+          "rank_sha256": "f1a13958ff12538b1fced80f0dbd6b5a9b011f3c32b4296e8accc786bf5e6c60"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_01/state_05",
+          "rank_sha256": "f25e8a2b98eca0323f8e8e6b28cc6ac1bb8a4afab5f5ba474a182336ed511076"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_07/state_07",
+          "rank_sha256": "f35601d676c957d0b45a4f9b5d2b3f01a52401a375344bbd41b2a50e83d0208c"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_11",
+          "rank_sha256": "f629e9d268d283dec88abbee85ab7d0d1abe3102d65ce30b829ae91435abec92"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_03",
+          "rank_sha256": "f88411c3721b808543ba614bebede5f214a1a3e64c62e840865b071316d103b8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_08/state_46",
+          "rank_sha256": "f947ce7315ab010fa4438c692564a993c810eea3fa0dcf87a3a0a73c5086b8e3"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_48",
+          "rank_sha256": "f95509b46a9c27ca437930eac221ac17d4c0eed527c3d4e6ed018388499a2a71"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_39",
+          "rank_sha256": "f98621d27d3c0943697ca9fd41526427163fef8ac57757943b20077bd42da45d"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_06/state_33",
+          "rank_sha256": "fc4c36599227dfe90ec2b5976158be075a4da7a1cdab5d4fdcf3037d41171187"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_01/state_38",
+          "rank_sha256": "fcdbdca226594f5f4a7d4fdcf36312cd5f3f0823275ee7ed7c2c2c48c1eeb843"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_02/state_13",
+          "rank_sha256": "fd3ca85a8889820276b4a95111fd8a8ac5adb7841e9c667666464efa63be835a"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_04/state_13",
+          "rank_sha256": "fdcf502cb9aab43a485ab6b41083c27316bda7fdd538a6cdf95ae66d7a6f7788"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_09/state_07",
+          "rank_sha256": "fe3eb751c5f2b83b452324e5472ff16033200a7bc05b6b02144ae528e7cfe343"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_09/state_27",
+          "rank_sha256": "fe81a8d82d405d6f8d78f73d91b64d0211d636c856ba8cba5c1ced1a61f40df8"
+        },
+        {
+          "canonical_parent_key": "libero_spatial/task_02/state_43",
+          "rank_sha256": "ff276c5a6e309c305cd733237941ba29ff38a091b9af6998624e837b9d2a96e6"
+        }
+      ],
+      "salt": "STAGE_AC_AC2_MODEL_SPECIFIC_DENOMINATOR_V1_20260827",
+      "selected_step_distribution": {
+        "45": 1,
+        "50": 9,
+        "55": 14,
+        "60": 20,
+        "65": 27,
+        "70": 15,
+        "75": 22,
+        "80": 15,
+        "85": 15,
+        "90": 11,
+        "95": 13,
+        "100": 12,
+        "105": 12,
+        "110": 6,
+        "115": 6,
+        "120": 6,
+        "125": 3,
+        "130": 7,
+        "135": 1,
+        "140": 1,
+        "145": 2,
+        "170": 1,
+        "195": 1,
+        "200": 1,
+        "205": 1,
+        "210": 1,
+        "215": 1,
+        "220": 1,
+        "225": 2,
+        "265": 1,
+        "295": 1,
+        "315": 1,
+        "360": 1,
+        "380": 1,
+        "430": 1,
+        "460": 1,
+        "495": 1
+      },
+      "status": "N_AT_LEAST_32_SELECT_32",
+      "target_n": 32
+    }
+  },
+  "gate": "STAGE_AC_AC2R3_COMPLETE_CENSUS_EVIDENCE_AUDIT_AND_MODEL_SPECIFIC_DENOMINATOR_FREEZE_V1",
+  "manifest": {
+    "bytes": 1298033,
+    "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+    "sha256": "ee2582686618f2738a4cd4fb3090911f3c7746f002dd7f683e26647dad6dc71a"
+  },
+  "protocol": {
+    "bytes": 7601,
+    "path": "configs/STAGE_AC_AC2R2_CLEAN_SCREEN_REPAIR_PROTOCOL_V1.json",
+    "sha256": "3a7ec62cdeddfe337decd0f7bad5cc6f2c3ed61e958d2cf7e16d493d00c3dbe0"
+  },
+  "source_authority": {
+    "bytes": 7560,
+    "path": "reports/STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+    "sha256": "12ff0b1f8885c1f68322b5611d8155a6c95cb49fb9d13ce75b2e8f4b0b7f0c2b"
+  }
+}
