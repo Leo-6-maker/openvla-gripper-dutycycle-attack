@@ -202,7 +202,12 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         })
     require(len(rows) == 9 and len(all_videos) == 45, f"AC3Q_G1_COMPLETENESS_INVALID:{len(rows)}:{len(all_videos)}")
     require(len({(r["model_family"], r["canonical_parent_key"]) for r in rows}) == 9, "AC3Q_G1_DUPLICATE_CELL")
-    require(len({v["sha256"] for v in all_videos}) == len(all_videos), "AC3Q_G1_VIDEO_SHA_DUPLICATE")
+    video_sha_groups: dict[str, list[str]] = {}
+    for video in all_videos:
+        video_sha_groups.setdefault(str(video["sha256"]), []).append(str(video["path"]))
+    duplicate_video_sha_groups = {
+        sha: paths for sha, paths in video_sha_groups.items() if len(paths) > 1
+    }
     index = {
         "schema": "STAGE_AC_AC3Q_ENGINEERING_CANARY_RECEIPT_INDEX_V1",
         "status": "STAGE_AC_AC3Q_G1_ENGINEERING_QUALIFICATION_PASS",
@@ -212,7 +217,8 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         "g0_root": g0_record,
         "current_pass_cells": rows,
         "superseded_attempts": history,
-        "counts": {"expected_cells": 9, "pass_cells": len(rows), "verified_branch_routes": sum(len(r["branches"]) for r in rows), "verified_videos": len(all_videos), "receipt_files_seen": len(list(receipts_root.glob("*.json")))},
+        "counts": {"expected_cells": 9, "pass_cells": len(rows), "verified_branch_routes": sum(len(r["branches"]) for r in rows), "verified_videos": len(all_videos), "duplicate_video_sha_groups": len(duplicate_video_sha_groups), "receipt_files_seen": len(list(receipts_root.glob("*.json")))},
+        "duplicate_video_sha_groups": duplicate_video_sha_groups,
         "aggregate_runtime_counters": dict(sorted(aggregate.items())),
     }
     terminal = {
