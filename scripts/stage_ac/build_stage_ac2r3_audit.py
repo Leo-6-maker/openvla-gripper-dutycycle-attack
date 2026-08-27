@@ -359,7 +359,7 @@ def audit(root: Path, output_root: Path) -> dict[str, Any]:
 
     m2_map = load(root / M2_AUTHORITY)
     m2_spec = m2_map["z_m2"]
-    m2_checkpoint = Path(m2_spec["checkpoint"])
+    m2_checkpoint = Path(m2_spec.get("checkpoint_path", m2_spec.get("checkpoint")))
     expected_files = m2_spec.get("checkpoint_file_manifest") or m2_spec.get("checkpoint_manifest")
     require(isinstance(expected_files, list), "M2 global checkpoint file manifest missing")
     actual_files = []
