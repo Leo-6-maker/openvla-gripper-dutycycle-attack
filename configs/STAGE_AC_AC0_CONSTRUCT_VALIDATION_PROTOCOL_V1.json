@@ -1,0 +1,95 @@
+{
+  "schema": "STAGE_AC_AC0_CONSTRUCT_VALIDATION_PROTOCOL_V1",
+  "gate": "STAGE_AC_AC0_MODEL_SPECIFIC_PHASE_CONSTRUCT_VALIDATION",
+  "status": "STAGE_AC_AC0_PROVISIONAL_ENGINEERING_CALIBRATION_ONLY",
+  "purpose": "Validate clean-established-grasp and local continuation measurement before any fresh Stage-AC science.",
+  "fresh_science_authorized": false,
+  "aa_boundary": {
+    "aa2_population_immutable": true,
+    "aa2_root_rewritten": false,
+    "aa2_result_is_measurement_limited": true,
+    "aa3_authorized": false
+  },
+  "calibration_population": {
+    "source": "AA1_AA2R2_CONSUMED_ENGINEERING_IDENTITIES_ONLY",
+    "new_identity_count": 0,
+    "cell_count": 9,
+    "permanent_exclusion_from_ac_science": true,
+    "cells": [
+      {"model_family": "M0_OPENVLA", "parent_key": "libero_10/task_04/state_20", "suite": "libero_10", "task_idx": 4, "state_id": 20, "seed": 2026082601},
+      {"model_family": "M0_OPENVLA", "parent_key": "libero_object/task_02/state_42", "suite": "libero_object", "task_idx": 2, "state_id": 42, "seed": 2026082602},
+      {"model_family": "M0_OPENVLA", "parent_key": "libero_spatial/task_05/state_34", "suite": "libero_spatial", "task_idx": 5, "state_id": 34, "seed": 2026082603},
+      {"model_family": "M1_OPENVLA_OFT", "parent_key": "libero_10/task_04/state_20", "suite": "libero_10", "task_idx": 4, "state_id": 20, "seed": 2026082611},
+      {"model_family": "M1_OPENVLA_OFT", "parent_key": "libero_object/task_02/state_42", "suite": "libero_object", "task_idx": 2, "state_id": 42, "seed": 2026082612},
+      {"model_family": "M1_OPENVLA_OFT", "parent_key": "libero_spatial/task_05/state_34", "suite": "libero_spatial", "task_idx": 5, "state_id": 34, "seed": 2026082613},
+      {"model_family": "M2_PI05_LIBERO", "parent_key": "libero_10/task_04/state_20", "suite": "libero_10", "task_idx": 4, "state_id": 20, "seed": 2026082621},
+      {"model_family": "M2_PI05_LIBERO", "parent_key": "libero_object/task_02/state_42", "suite": "libero_object", "task_idx": 2, "state_id": 42, "seed": 2026082622},
+      {"model_family": "M2_PI05_LIBERO", "parent_key": "libero_spatial/task_05/state_34", "suite": "libero_spatial", "task_idx": 5, "state_id": 34, "seed": 2026082623}
+    ]
+  },
+  "eligibility_v2": {
+    "stable_grasp_window_steps": 3,
+    "clean_continuation_steps": 20,
+    "absolute_object_eef_distance_max_m": 0.12,
+    "relative_carry_displacement_max_m": 0.04,
+    "relative_vector": "object_position - eef_position",
+    "relative_reference": "first row of the candidate continuation",
+    "minimum_lift_m": 0.015,
+    "gripper_contact_required_in_initial_window": true,
+    "support_contact_forbidden": true,
+    "full_episode_horizon_required": false,
+    "required_local_rows": "anchor through anchor+19 inclusive",
+    "terminal_rule": "terminal_after is allowed only on the final local row; terminal_before or earlier terminal_after invalidates the window",
+    "distance_field_consistency_tolerance_m": 0.000001,
+    "critical_selection_salt": "STAGE_AC_AC0_CRITICAL_RANK_V1_20260827",
+    "noncritical_selection_salt": "STAGE_AC_AC0_NONCRITICAL_RANK_V1_20260827"
+  },
+  "contact_flicker_calibration": {
+    "variants": [
+      {"id": "STRICT_NO_FLICKER", "max_false_contact_rows_after_initial_window": 0},
+      {"id": "ONE_ROW_FLICKER", "max_false_contact_rows_after_initial_window": 1}
+    ],
+    "selection_rule": "Choose the least permissive variant that accepts every known positive control and rejects every known negative control; if neither variant separates controls, HOLD.",
+    "fresh_science_selection": "frozen_after_ac0_only",
+    "outcome_labels_not_used": true
+  },
+  "control_contract": {
+    "positive": "privileged stable-carry/grasp state with 3-row established grasp and local 20-row stable continuation",
+    "negative": ["PRE_CONTACT", "SUPPORT_CONTACT", "INTENDED_RELEASE_OR_DROP"],
+    "model_family_balance_required": true,
+    "false_positive_forbidden": true,
+    "unidentifiable_control": "HOLD",
+    "manual_video_is_secondary_to_privileged_control_label": true
+  },
+  "evidence_requirements": {
+    "per_step_telemetry": true,
+    "per_step_authoritative_7d_action": true,
+    "per_step_action_boundary": true,
+    "snapshot_state_at_boundaries": true,
+    "clean_trajectory_digest": true,
+    "uniform_video": true,
+    "video_format": "MP4_10FPS_256x256",
+    "failure_receipt_before_raise": true
+  },
+  "forbidden": {
+    "fresh_scientific_identity": 0,
+    "aa2_denominator_amendment": true,
+    "open_intervention": true,
+    "pgd": true,
+    "v_phys": true,
+    "protected_or_eval160": true,
+    "parameter_tuning_after_fresh_science": true,
+    "replacement_or_top_up": true
+  },
+  "authority": {
+    "aa0_protocol_sha256": "b795a796a81d76173e0cfce148ee768cdd9dc90dbd6d69d541d1e40a04c51d16",
+    "aa2r2_root_seal_sha256": "7fb7071eb78be4b8078895fab660295d3953ed82034cb8f56acf92921ef3531c",
+    "aa2_construct_audit_sha256": "f291b9e699eadce50bf4af8408c0c07ab4ce68d36f876efba51ddfc02d07ef9a",
+    "aa2r2_canary_plan_sha256": "2a8e09ce222b1cc3a775b45e3f13c161b4dfe8a258595aa0d548651f2bd838b1"
+  },
+  "terminal_states": [
+    "STAGE_AC_AC0_CONSTRUCT_VALIDATION_PASS_STOP_FOR_PI",
+    "STAGE_AC_AC0_CONSTRUCT_VALIDATION_HOLD_STOP_FOR_PI"
+  ],
+  "next_gate": "AC1_STATIC_FRESH_POPULATION_INVENTORY_ONLY_AFTER_AC0_PASS"
+}
