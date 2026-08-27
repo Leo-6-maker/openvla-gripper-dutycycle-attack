@@ -1,0 +1,109 @@
+{
+  "schema": "STAGE_AA_AA2R2_ACTION_SEMANTICS_AMENDMENT_V1",
+  "status": "STAGE_AA_AA2R2_ACTION_SEMANTICS_AMENDMENT_AUTHORIZED",
+  "gate": "STAGE_AA_AA2R2_OFFICIAL_THREE_STATE_ACTION_SEMANTICS_AMENDMENT_REQUALIFICATION_AND_CENSUS_RESUME_V1",
+  "authorization": {
+    "pi_comment_id": 5421992873,
+    "amendment_class": "engineering_action_semantics_correction_after_AA2_clean_execution_began",
+    "scientific_eligibility_contract_unchanged": true,
+    "old_authorities_immutable": true,
+    "phase_b_conditional_on_phase_a_pass": true
+  },
+  "source_bindings": {
+    "official_executable_spec": {
+      "path": "src/gripper_attack/openvla_libero_exec_spec.py",
+      "sha256": "13ea43ffe674da22c5d1c5a1a2c54c92a27c9fcc79ef13dc057594bbbe31bf92"
+    },
+    "historical_aa2_source_authority": {
+      "path": "reports/STAGE_AA_AA2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "sha256": "04caf9c098c304546c79a5482daa982aaa63e68992e747a781cba26375ef5830"
+    },
+    "historical_validator": {
+      "path": "src/stage_z_preparation/action_semantics.py",
+      "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c"
+    },
+    "aa0_protocol": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+    "aa0_capacity": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+    "aa1_canary_plan": "reports/STAGE_AA_AA1_ENGINEERING_CANARY_PLAN_V1.json",
+    "z1_runtime_config": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+    "m1_checkpoint_manifest": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+    "versioned_validator": "src/stage_aa/action_semantics_v2.py",
+    "versioned_runner": "scripts/stage_aa/run_stage_aa2r2_engineering_canary.py"
+  },
+  "phase_a": {
+    "authorized": true,
+    "engineering_only": true,
+    "canary_plan": "reports/STAGE_AA_AA2R2_ENGINEERING_CANARY_PLAN_V1.json",
+    "model_families": ["M0_OPENVLA", "M1_OPENVLA_OFT", "M2_PI05_LIBERO"],
+    "expected_cells": 9,
+    "scientific_parent_exposure": 0,
+    "open_intervention_steps": 0,
+    "attacked_env_steps": 0,
+    "pgd_calls": 0,
+    "aa_v_phys_reads": 0,
+    "stage_z_v_phys_reads": 0,
+    "task_success_reads": 0,
+    "protected_eval160_reads": 0,
+    "bridge_f1_reads": 0,
+    "paper_promotion": false
+  },
+  "action_semantics_v2": {
+    "validator_version": "STAGE_AA_AA2R2_ACTION_SEMANTICS_V2",
+    "openvla_rule": "raw_gripper_to_env_gripper(raw, binarize=True)",
+    "raw_threshold": 0.5,
+    "raw_below_threshold": "+1.0_CLOSE",
+    "raw_equal_threshold": "0.0_NEUTRAL_BOUNDARY",
+    "raw_above_threshold": "-1.0_OPEN",
+    "raw_threshold_dead_band": false,
+    "final_value_comparison_tolerance": 1e-6,
+    "m2_rule": "element-wise clip raw continuous action to [-1,+1]",
+    "neutral_is_scientific_event": false,
+    "neutral_changes_eligibility": false
+  },
+  "failure_logging": {
+    "persist_before_raise": true,
+    "required_fields": [
+      "cell_id",
+      "model_family",
+      "canonical_parent_key",
+      "seed",
+      "step",
+      "raw_action_7d",
+      "final_action_7d",
+      "raw_gripper",
+      "final_gripper",
+      "expected_final_gripper",
+      "validator_version",
+      "queue_or_replan_boundary",
+      "first_offending_row_digest",
+      "runtime_counters"
+    ]
+  },
+  "frozen_scientific_contract": {
+    "aa2_manifest": "108 parents x 3 models = 324 cells",
+    "stable_grasp_window_steps": 3,
+    "clean_continuation_steps": 20,
+    "lift_delta_min_m": 0.015,
+    "object_eef_distance_max_m": 0.12,
+    "carry_relative_distance_max_m": 0.04,
+    "n_target": 32,
+    "n_floor": 24,
+    "replacement_or_top_up": false,
+    "aa3_authorized": false
+  },
+  "phase_b": {
+    "authorized_only_after_phase_a_exact_pass": true,
+    "completed_v1_cells_rerun": false,
+    "recovery_cells": ["AA2-0004", "AA2-0085", "AA2-0233", "AA2-0117"],
+    "full_census_required": true,
+    "required_final_cell_count": 324,
+    "common_denominator_before_full_census": false
+  },
+  "terminal": {
+    "phase_a_pass": "STAGE_AA_AA2R2_THREE_STATE_SEMANTICS_ENGINEERING_REQUALIFIED",
+    "phase_a_hold": "STAGE_AA_AA2R2_ENGINEERING_OR_ACTION_AUTHORITY_HOLD_STOP_FOR_PI",
+    "phase_b_common": "STAGE_AA_AA2R2_COMMON_DENOMINATOR_FROZEN_STOP_FOR_PI",
+    "phase_b_capacity": "STAGE_AA_AA2R2_CAPACITY_LIMIT_STOP_FOR_PI",
+    "aa3": "UNAUTHORIZED"
+  }
+}

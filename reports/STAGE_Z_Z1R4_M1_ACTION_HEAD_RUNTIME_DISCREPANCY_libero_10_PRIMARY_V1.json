@@ -1,0 +1,63 @@
+{
+  "schema": "STAGE_Z_Z1R4_M1_ACTION_HEAD_RUNTIME_DISCREPANCY_V1",
+  "status": "ENGINEERING_INVALID_M1_RUNTIME_ACTION_HEAD_COMPONENT_PREFIX_DISCREPANCY",
+  "gate": "STAGE_Z_Z1R4_OFT_DATASET_STATS_LOADER_PARITY_RECOVERY",
+  "append_only": true,
+  "claim_boundary": "Engineering-invalid runtime receipt only; not a scientific negative, not a vulnerability outcome, and not eligible for any scientific denominator or Paper-V2 claim.",
+  "execution": {
+    "model_family": "M1_OPENVLA_OFT",
+    "suite": "libero_10",
+    "role": "PRIMARY",
+    "canonical_parent_key": "libero_10/task_04/state_03",
+    "task_idx": 4,
+    "state_id": 3,
+    "gpu_id": 4,
+    "cuda_visible_devices": "4",
+    "runner_commit": "7500d78ca7a3c8bc97c675f6a67fd0050c8b24fa",
+    "runner_tree": "2c345ff07d36645af0d5342b21da892604c8a197",
+    "runner_git_blob": "0d0dc820d0b660d73d7bea4e2bfc9efb4a6499",
+    "protocol": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V5.json",
+    "protocol_sha256": "d711e695b38a5fa5e005029efb344b8230ce5d02ac37be59c5c0e1b2f6c3cc17",
+    "source_authority": "reports/STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V6.json",
+    "source_authority_sha256": "cf174413a64521b32b8b436040d894803f48d6e4175a90c736dee635bb7d7aae",
+    "pre_gpu_audit": "reports/STAGE_Z_Z1R4_PRE_GPU_STATIC_AUDIT_V1.json",
+    "pre_gpu_audit_sha256": "a557616d9c78d581c348d5ba6c189def7916ddde59ea2e6e93aedd6ac45ea444"
+  },
+  "checkpoint": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10",
+    "manifest": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+    "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "files_verified": 25,
+    "bytes_verified": 15939159245,
+    "dataset_statistics_sha256": "dbe516987e8124416af39c32d3f39ce2137ccb4e282adc590bb4bcede09fb5e1",
+    "checkpoint_mutated": false
+  },
+  "failure": {
+    "boundary": "4/4 model shards loaded; failure while loading the frozen action-head component; no proprio projector load, policy inference, official LIBERO import, simulator construction, env.step, task-success read, physical-outcome read, or scientific counting.",
+    "exception_type": "RuntimeError",
+    "exception_marker": "Error(s) in loading state_dict for L1RegressionActionHead",
+    "observed_checkpoint_keys": "module.model.*",
+    "expected_module_keys": "model.*",
+    "official_upstream_contract": "experiments.robot.openvla_utils.load_component_state_dict strips a leading module. prefix before load_state_dict",
+    "classification": "ENGINEERING_INVALID_M1_RUNTIME_ACTION_HEAD_COMPONENT_PREFIX_DISCREPANCY"
+  },
+  "archived_log": {
+    "path": "reports/server_evidence/STAGE_Z_Z1R4_M1_ACTION_HEAD_RUNTIME_DISCREPANCY_libero_10_PRIMARY.log",
+    "sha256": "6210e2624f5575afd54e34910479798d444c8fd9a58b886db0e9bb30376753df"
+  },
+  "runtime_counters": {
+    "model_load": "4_OF_4_SHARDS_COMPLETED",
+    "model_inference_calls": "NOT_MATERIALIZED",
+    "env_step_calls": "NOT_MATERIALIZED",
+    "physical_interventions": "NOT_MATERIALIZED",
+    "pgd_calls": "NOT_MATERIALIZED",
+    "attacked_env_steps": "NOT_MATERIALIZED",
+    "vphys_reads": "NOT_MATERIALIZED",
+    "attack_outcome_reads": "NOT_MATERIALIZED",
+    "eval160_reads": "NOT_MATERIALIZED",
+    "protected_reads": "NOT_MATERIALIZED",
+    "scientific_parent_exposure": 0
+  },
+  "next_legal_action": "STAGE_Z_Z1R5_OFFICIAL_COMPONENT_STATE_DICT_PARITY_STATIC_REPAIR",
+  "timestamp_utc": "2026-08-24T19:13:02Z"
+}

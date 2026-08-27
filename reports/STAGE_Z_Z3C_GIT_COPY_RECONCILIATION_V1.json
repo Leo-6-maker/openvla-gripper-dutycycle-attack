@@ -1,0 +1,33 @@
+{
+  "schema": "STAGE_Z_Z3C_GIT_COPY_RECONCILIATION_V1",
+  "status": "STAGE_Z_Z3C_GIT_COPY_RECONCILIATION_PASS",
+  "root_seal": {
+    "path": "reports/STAGE_Z_Z3C_ROOT_SEAL_V1.json",
+    "sha256": "9ccceaa1c61e54aff3348491772c463853c7679aab4ec585d2adaf196ae57c77",
+    "unchanged": true
+  },
+  "nested_paths_named_by_root_seal": {
+    "terminal_synthesis": "reports/STAGE_Z_Z3C_TERMINAL_V1/STAGE_Z_Z3C_TERMINAL_SYNTHESIS_V1.json",
+    "branch_index": "reports/STAGE_Z_Z3C_TERMINAL_V1/STAGE_Z_Z3C_BRANCH_RECEIPT_INDEX_V1.json"
+  },
+  "committed_top_level_copies": [
+    {
+      "root_expected_sha256": "f76c58ca9b7e33d1ff340867304fd98bf9aa90501c411421ef7134c78383126c",
+      "copy_path": "reports/STAGE_Z_Z3C_TERMINAL_SYNTHESIS_V1.json",
+      "copy_sha256": "f76c58ca9b7e33d1ff340867304fd98bf9aa90501c411421ef7134c78383126c",
+      "byte_equal": true
+    },
+    {
+      "root_expected_sha256": "e1ee03b782eb72a22f794681335a074bab79407c9b067f87556860c2667f3520",
+      "copy_path": "reports/STAGE_Z_Z3C_BRANCH_RECEIPT_INDEX_V1.json",
+      "copy_sha256": "e1ee03b782eb72a22f794681335a074bab79407c9b067f87556860c2667f3520",
+      "byte_equal": true
+    }
+  ],
+  "git_binding": {
+    "head_commit": "80c6e86788267f03c20013aa1602b25899779905",
+    "head_tree": "12322088b0ce4ef6a3823565ad544b92621c0e98"
+  },
+  "claim_boundary": "Append-only static provenance reconciliation only; no model, simulator, video regeneration, or human-label operation.",
+  "next_legal_action": "STAGE_Z_Z3D_BLINDED_VIDEO_PACKAGE_FREEZE"
+}

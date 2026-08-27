@@ -1,0 +1,154 @@
+{
+  "schema": "STAGE_Z_Z1R1_TERMINAL_SYNTHESIS_V1",
+  "status": "STAGE_Z_Z1R1_TERMINAL_SYNTHESIS_PASS_4_OF_12_ENGINEERING_ONLY",
+  "gate": "STAGE_Z_Z1R2_ENTRYPOINT_RECOVERY_AND_FULL_RUNTIME_QUALIFICATION",
+  "append_only": true,
+  "pi_authorization_comment": "5398805417",
+  "claim_boundary": "Terminal engineering synthesis only; no scientific vulnerability, physical mechanism, visual exploitability, V_phys, Eval160, protected, F1, or BRIDGE claim.",
+  "synthesis_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "head_commit": "392d60fb8ec7b542feebe5860a14da68919ccdf1",
+    "head_tree": "72f571aaf68c2758c90cd0b68f7d649922a89279",
+    "live_pr": 139,
+    "live_pr_state": "OPEN_DRAFT_MERGEABLE"
+  },
+  "matrix": {
+    "M0_OPENVLA": {"pass": 4, "total": 4, "status": "HISTORICAL_ENGINEERING_PASS"},
+    "M1_OPENVLA_OFT": {"pass": 0, "total": 4, "status": "NO_VALID_CELL; TWO_ENGINEERING_INVALID_ATTEMPTS"},
+    "M2_PI05_LIBERO": {"pass": 0, "total": 4, "status": "NOT_ATTEMPTED"},
+    "valid_z1_cells": 4,
+    "total_z1_cells": 12,
+    "scientific_parent_exposure": "0/36"
+  },
+  "m0_historical_passes": {
+    "runtime_source_authority": {
+      "path": "reports/STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V2.json",
+      "repository_sha256": "c892c9679b6f45e92a749e9afbf999e482caa63c45508639a9e7c3266b1505d9",
+      "server_sha256_bound_by_receipts": "34c528cc21ac74d1c007b452c9f801a976c4600d9e98cad62fa5aa2d0539b275",
+      "git_blob": "354f1aa98780cff00e188a2a67544e7062db015d",
+      "authority_role": "old V2 source remains immutable authority for all four M0 receipts"
+    },
+    "receipts": [
+      {
+        "suite": "libero_10",
+        "path": "reports/STAGE_Z_Z1_M0_OPENVLA_libero_10_PRIMARY.json",
+        "sha256": "ad50c87afdb4c871b86d666f7640b79ff1a2fe59b566d2c1a45daf95a412d7fb",
+        "git_blob": "fcba45bb07709f6b5a2f8e08f697821bbb8265e6",
+        "status": "PASS",
+        "model_inference_calls": 1,
+        "env_step_calls": 22,
+        "physical_interventions": 0,
+        "pgd_calls": 0,
+        "attacked_env_steps": 0,
+        "vphys_reads": 0,
+        "eval160_reads": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0
+      },
+      {
+        "suite": "libero_goal",
+        "path": "reports/STAGE_Z_Z1_M0_OPENVLA_libero_goal_PRIMARY.json",
+        "sha256": "48270ef090b82f14988d55fc23a05939d89ddf8f2375101b2a44a2d1fdc8ce50",
+        "git_blob": "cffa6bb8fd7d125d0ac97ee69212d4471e003a32",
+        "status": "PASS",
+        "model_inference_calls": 1,
+        "env_step_calls": 22,
+        "physical_interventions": 0,
+        "pgd_calls": 0,
+        "attacked_env_steps": 0,
+        "vphys_reads": 0,
+        "eval160_reads": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0
+      },
+      {
+        "suite": "libero_object",
+        "path": "reports/STAGE_Z_Z1_M0_OPENVLA_libero_object_PRIMARY.json",
+        "sha256": "6230a7595d5178f306189bd4c20d6da6b972d1e16a6ec7d843162b6028073ecc",
+        "git_blob": "90b8c410361f22fcb60af49719e7dbc41da032c7",
+        "status": "PASS",
+        "model_inference_calls": 1,
+        "env_step_calls": 22,
+        "physical_interventions": 0,
+        "pgd_calls": 0,
+        "attacked_env_steps": 0,
+        "vphys_reads": 0,
+        "eval160_reads": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0
+      },
+      {
+        "suite": "libero_spatial",
+        "path": "reports/STAGE_Z_Z1_M0_OPENVLA_libero_spatial_PRIMARY.json",
+        "sha256": "dbaaba95bbc3d9506be29a2867d6f0865b5faecfbf1bbece510d457df2df0076",
+        "git_blob": "c2fd1b78f40635685dd0d5a4b0b2b9734b9c886f",
+        "status": "PASS",
+        "model_inference_calls": 1,
+        "env_step_calls": 22,
+        "physical_interventions": 0,
+        "pgd_calls": 0,
+        "attacked_env_steps": 0,
+        "vphys_reads": 0,
+        "eval160_reads": 0,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0
+      }
+    ]
+  },
+  "m1_engineering_invalid_attempts": [
+    {
+      "attempt": "attempt_1",
+      "receipt": "reports/STAGE_Z_Z1_R1_M1_OPTIONAL_IMPORT_ENGINEERING_INVALID_libero_10_PRIMARY_V1.json",
+      "receipt_sha256": "ac5fb39b47915581adf8da41c477e0b952659cb09dde77b9b935fa958ec3ed4e",
+      "receipt_git_blob": "6065a95ef5c2546a4e2cd0af7c4adfe76ec93097",
+      "log": "reports/server_evidence/STAGE_Z_Z1_R1_M1_OPTIONAL_IMPORT_ENGINEERING_INVALID_libero_10_PRIMARY.log",
+      "log_sha256": "282131df4375940bdd36b641794f40bca2dcffc7f42f24ab83530b24acede22b",
+      "classification": "ENGINEERING_INVALID_M1_OPTIONAL_IMPORT_DEPENDENCY",
+      "boundary": "FAILED_BEFORE_MODEL_CONSTRUCTION",
+      "counts_as_z1_cell": false,
+      "counters": "NOT_MATERIALIZED"
+    },
+    {
+      "attempt": "authorized_r1_retry",
+      "receipt": "reports/STAGE_Z_Z1_R1_M1_ENTRYPOINT_ENGINEERING_INVALID_libero_10_PRIMARY_V1.json",
+      "receipt_sha256": "66cd3025e328525ba3dd562b250f98beb427d2bcac132b0afcc7a6a0b4d7c06e",
+      "receipt_git_blob": "d69182a7d27b6b22c261c75e640adef756673b6e",
+      "log": "reports/server_evidence/STAGE_Z_Z1_R1_M1_ENTRYPOINT_ENGINEERING_INVALID_libero_10_PRIMARY.log",
+      "log_sha256": "10f672a3ab1fa0a44e9ad49583373e33e2405815d10ad27e1ed0dd11331348b9",
+      "classification": "ENGINEERING_INVALID_M1_RUNTIME_ENTRYPOINT_ENVIRONMENT",
+      "boundary": "FAILED_BEFORE_MODEL_CONSTRUCTION",
+      "counts_as_z1_cell": false,
+      "counters": "NOT_MATERIALIZED"
+    }
+  ],
+  "current_counters": {
+    "historical_m0_model_inference_calls": 4,
+    "historical_m0_env_step_calls": 88,
+    "historical_m0_physical_interventions": 0,
+    "historical_m0_pgd_calls": 0,
+    "historical_m0_attacked_env_steps": 0,
+    "historical_m0_vphys_reads": 0,
+    "historical_m0_eval160_reads": 0,
+    "historical_m0_protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "m1_invalid_attempt_runtime_counters": "NOT_MATERIALIZED",
+    "m2_runtime_counters": "NOT_MATERIALIZED"
+  },
+  "z0r2_bindings": {
+    "root_seal_path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V2.json",
+    "root_seal_sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d",
+    "root_sidecar_path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V2.sha256",
+    "root_sidecar_file_sha256": "5878934d3a41cefeb9f936dfa89d657a826920a75daf30904d71a9fdcd45c2b6",
+    "artifact_manifest_path": "reports/STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V2.json",
+    "artifact_manifest_sha256": "4b4267d757ed5d59fc85286c9094bc03bdb04f00ef5d03c570f00786e5eb1640"
+  },
+  "terminal_disposition": {
+    "both_m1_attempts_are_engineering_invalid": true,
+    "scientific_denominator_changed": false,
+    "protected_boundary_touched": false,
+    "next_authorized_gate": "STAGE_Z_Z1R2_ENTRYPOINT_RECOVERY_AND_FULL_RUNTIME_QUALIFICATION",
+    "z2_z3_z4_z5_authorized": false
+  },
+  "timestamp_utc": "2026-08-24T17:21:15Z"
+}

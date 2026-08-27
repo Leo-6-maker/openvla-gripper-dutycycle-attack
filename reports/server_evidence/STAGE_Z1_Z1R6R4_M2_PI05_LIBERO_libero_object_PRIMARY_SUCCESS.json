@@ -1,0 +1,88 @@
+{
+  "action_before_intervention": [
+    0.1367620825767517,
+    -0.012400208972394466,
+    -0.011649591848254204,
+    -0.014483053237199783,
+    -0.0026265562046319246,
+    -0.015565739944577217,
+    -1.0
+  ],
+  "action_meta": {
+    "action_after_libero_clip": [
+      0.1367620825767517,
+      -0.012400208972394466,
+      -0.011649591848254204,
+      -0.014483053237199783,
+      -0.0026265562046319246,
+      -0.015565739944577217,
+      -1.0
+    ],
+    "action_was_clipped": true,
+    "chunk_length": 10,
+    "raw_action": [
+      0.1367620825767517,
+      -0.012400208972394466,
+      -0.011649591848254204,
+      -0.014483053237199783,
+      -0.0026265562046319246,
+      -0.015565739944577217,
+      -1.0037486553192139
+    ],
+    "replan": "fresh_policy_infer"
+  },
+  "branch_replay": {
+    "mode": "FRESH_OFFICIAL_ENV_AFTER_SNAPSHOT_RESTORE_PROBE",
+    "post_state_a_sha256": "078405af616b6887325ac9e5da7eec5145d3420cf2ab7df37c329c8c85cd537c",
+    "post_state_b_sha256": "078405af616b6887325ac9e5da7eec5145d3420cf2ab7df37c329c8c85cd537c",
+    "post_state_exact": true,
+    "pre_state_exact": true,
+    "pre_state_sha256": "98bee622e3fd409426e3e733e0b441d50b2911b8f9079bb62e82895d10cbec50"
+  },
+  "canonical_parent_key": "libero_object/task_03/state_13",
+  "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+  "checkpoint_manifest": null,
+  "cuda_visible_devices": "4",
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3",
+        "pid": "3923068",
+        "used_memory_mib": "28538"
+      }
+    ],
+    "free_memory_mib": 52664,
+    "index": 4,
+    "used_memory_mib": 28558,
+    "utilization_gpu_percent": 17
+  },
+  "intervention": false,
+  "model_family": "M2_PI05_LIBERO",
+  "normalization": {
+    "checkpoint_mutated": false
+  },
+  "physical_outcome_read": false,
+  "role": "PRIMARY",
+  "runtime_counters": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 22,
+    "eval160_reads": 0,
+    "model_inference_calls": 1,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z1_RUNTIME_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_ENGINEERING_ONLY",
+  "selection_rank_sha256": "8deee4ce8f1e0725d411d63b426fdedc203c06b48d6195d4df8224a201095d5b",
+  "state_id": 13,
+  "status": "PASS",
+  "suite": "libero_object",
+  "task_idx": 3,
+  "task_language": "pick up the bbq sauce and place it in the basket",
+  "task_success_read": false,
+  "timestamp_utc": "2026-08-24T21:31:23Z"
+}

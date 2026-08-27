@@ -1,0 +1,28 @@
+{
+  "claim_boundary": "Z3 branch execution only; task success is unread and manual labels remain pending.",
+  "gpu": {
+    "compute_processes": [],
+    "free_memory_mib": 81213,
+    "index": 5,
+    "used_memory_mib": 10,
+    "utilization_gpu_percent": 0
+  },
+  "jobs_completed": 50,
+  "model_family": "M1_OPENVLA_OFT",
+  "next_legal_action": "CONTINUE_Z3_MATRIX_OR_STOP_ON_ANY_FAILURE",
+  "runtime_counters": {
+    "attack_outcome_reads": 0,
+    "env_step_calls": 1330,
+    "eval160_reads": 0,
+    "model_inference_calls": 0,
+    "open_intervention_steps": 230,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 10,
+    "v_phys_reads": 0
+  },
+  "schema": "STAGE_Z_Z3_WORKER_RECEIPT_V1",
+  "status": "PASS_Z3_WORKER_BATCH",
+  "suite": "libero_spatial"
+}

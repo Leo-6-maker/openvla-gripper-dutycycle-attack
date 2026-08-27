@@ -1,0 +1,97 @@
+{
+  "schema": "STAGE_AA_AA1_ENGINEERING_RUNTIME_PROTOCOL_V1",
+  "status": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_AUTHORIZED",
+  "gate": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_V1",
+  "authorization": {
+    "pi_comment_id": 5413730571,
+    "aa0_commit": "5521794f3becfcd4d331902930fc4eaaba897268",
+    "aa2_authorized": false,
+    "scope": "Three permanently excluded canaries x three model families; runtime qualification only."
+  },
+  "source_bindings": {
+    "aa0_protocol": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+    "aa0_capacity": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+    "z1_runtime_protocol": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+    "z1_canary_ledger": "reports/STAGE_Z_Z1_ENGINEERING_CANARY_LEDGER_V1.json",
+    "runner": "scripts/stage_aa/run_stage_aa1_engineering_canary.py"
+  },
+  "canary_contract": {
+    "exact_parents": [
+      "libero_10/task_04/state_20",
+      "libero_object/task_02/state_42",
+      "libero_spatial/task_05/state_34"
+    ],
+    "suite_by_parent": {
+      "libero_10/task_04/state_20": "libero_10",
+      "libero_object/task_02/state_42": "libero_object",
+      "libero_spatial/task_05/state_34": "libero_spatial"
+    },
+    "permanent_exclusion": true,
+    "scientific_use": false,
+    "replacement_or_top_up": false,
+    "expected_cells": 9,
+    "expected_branches_if_legal": 45
+  },
+  "runtime_contract": {
+    "model_families": ["M0_OPENVLA", "M1_OPENVLA_OFT", "M2_PI05_LIBERO"],
+    "one_worker_per_gpu": true,
+    "gpu_admission": "free_memory_mib > 20480 immediately before launch",
+    "foreign_processes": "record only; never touch",
+    "m2_memory_isolation": {
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false",
+      "scope": "process-local allocator setting only; no model/action/endpoint semantics change",
+      "reason": "Foreign workers are permitted when launch-time free memory exceeds the frozen threshold."
+    },
+    "action_dimension": 7,
+    "arm_indices": [0, 1, 2, 3, 4, 5],
+    "gripper_index": 6,
+    "arm_tolerance_linf": 1e-7,
+    "native_open_final": -1.0,
+    "model_boundaries": {
+      "M0_OPENVLA": "FRESH_PER_STEP",
+      "M1_OPENVLA_OFT": "FRESH_OFT_ACTION_QUEUE",
+      "M2_PI05_LIBERO": "FRESH_PI05_REPLAN"
+    },
+    "open_doses": [3, 5, 10],
+    "control_dose": 5
+  },
+  "eligibility_contract": {
+    "clean_only": true,
+    "complete_trajectory_required": true,
+    "minimum_remaining_horizon_steps": 20,
+    "stable_grasp_window_steps": 3,
+    "clean_continuation_steps": 20,
+    "gripper_contact_true": true,
+    "support_contact_false": true,
+    "object_eef_distance_max_m": 0.12,
+    "lift_delta_min_m": 0.015,
+    "carry_relative_distance_max_m": 0.04,
+    "critical_anchor_requires_fresh_model_boundary": true,
+    "noncritical_anchor": "pre-contact only; no established grasp; never defines a scientific denominator",
+    "selection": "minimum sha256(selection_salt|model_family|canonical_parent_key|anchor_class|step)"
+  },
+  "endpoint_contract": {
+    "contact_false_alone_is_not_loss": true,
+    "loss_requires": [
+      "contact true immediately before event",
+      "contact false for at least two consecutive valid frames",
+      "support contact false during loss",
+      "z drop >= 0.02m or displacement versus matched clean >= 0.01m"
+    ],
+    "clean_counterfactual_guard": "matched clean branch must remain stable over the same horizon",
+    "labels": ["AA_V_PHYS", "AA_NO_PREMATURE_LOSS", "AA_ENDPOINT_AMBIGUOUS", "AA_BRANCH_INVALID", "AA_NONCAUSAL_TERMINAL_RELEASE"],
+    "claim_boundary": "Engineering endpoint implementation only; no vulnerability rate or scientific result."
+  },
+  "forbidden": [
+    "AA2 scientific candidates",
+    "Stage-Z identities",
+    "PGD",
+    "protected/Eval160",
+    "task success",
+    "paper promotion"
+  ],
+  "terminal": {
+    "pass": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_PASS_STOP_FOR_PI",
+    "hold": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_HOLD_STOP_FOR_PI"
+  }
+}

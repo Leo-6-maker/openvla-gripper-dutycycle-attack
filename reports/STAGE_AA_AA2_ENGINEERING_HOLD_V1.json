@@ -1,0 +1,115 @@
+{
+  "schema": "STAGE_AA_AA2_ENGINEERING_HOLD_V1",
+  "status": "STAGE_AA_AA2_ENGINEERING_HOLD_STOP_FOR_PI",
+  "gate": "STAGE_AA_AA2_CLEAN_ONLY_FULL_CENSUS_AND_COMMON_DENOMINATOR_FREEZE_V1",
+  "authorization_pi_comment_id": 5419855172,
+  "claim_boundary": "Partial AA2 clean execution only; no common denominator, capacity, treatment, endpoint, or cross-model scientific conclusion",
+  "source_authority": {
+    "commit": "c3fbd9470d76af9eb975e803dba4e0c882fdb417",
+    "tree": "b2b3d433f5433311c42a1451b3f5978f82506008",
+    "runtime_runner_sha256": "4fcc246d0ab1de834b8843e46d1649cb3b36b5aa5588ebc344a140d1d90d86c1"
+  },
+  "execution": {
+    "required_cell_count": 324,
+    "receipt_file_count_observed": 36,
+    "complete_receipt_count": 32,
+    "interrupted_running_receipt_count": 3,
+    "engineering_hold_receipt_count": 1,
+    "full_census_complete": false,
+    "retry_performed": false,
+    "complete_cells_by_model": {
+      "M0_OPENVLA": 8,
+      "M1_OPENVLA_OFT": 8,
+      "M2_PI05_LIBERO": 16
+    }
+  },
+  "engineering_hold": {
+    "cell_id": "AA2-0117",
+    "model_family": "M1_OPENVLA_OFT",
+    "canonical_parent_key": "libero_10/task_04/state_32",
+    "seed": 108110688,
+    "classification": "FROZEN_ACTION_SEMANTICS_CONTRACT_REJECTION_NOT_AN_AUTHORIZED_TECHNICAL_RETRY",
+    "error": {
+      "type": "RuntimeError",
+      "message": "ACTION_SEMANTICS_INVALID:M1_OPENVLA_OFT:RAW_GRIPPER_AT_THRESHOLD"
+    },
+    "runtime_counters": {
+      "aa2_exposure": 1,
+      "aa_v_phys_reads": 0,
+      "attack_outcome_reads": 0,
+      "attacked_env_steps": 0,
+      "env_step_calls": 226,
+      "eval160_reads": 0,
+      "model_inference_calls": 28,
+      "open_intervention_steps": 0,
+      "pgd_calls": 0,
+      "physical_telemetry_reads": 216,
+      "protected_reads": 0,
+      "scientific_parent_exposure": 1,
+      "task_success_reads": 0
+    },
+    "receipt": {
+      "path": "reports/server_evidence/STAGE_AA_AA2/receipts/AA2-0117.json",
+      "bytes": 1721,
+      "sha256": "f07bf2478f3ed8063869e865913eefbf5fdec0891d19e652ffa07b9d8bc9872d"
+    }
+  },
+  "interrupted_receipts": [
+    {
+      "cell_id": "AA2-0004",
+      "model_family": "M0_OPENVLA",
+      "canonical_parent_key": "libero_10/task_01/state_36",
+      "status": "RUNNING",
+      "path": "reports/server_evidence/STAGE_AA_AA2/receipts/AA2-0004.json",
+      "bytes": 834,
+      "sha256": "e05aa626241a4bad41cce3ca363ed47566b72f8529536335a1cb9c92b6d8559e"
+    },
+    {
+      "cell_id": "AA2-0085",
+      "model_family": "M0_OPENVLA",
+      "canonical_parent_key": "libero_spatial/task_04/state_41",
+      "status": "RUNNING",
+      "path": "reports/server_evidence/STAGE_AA_AA2/receipts/AA2-0085.json",
+      "bytes": 844,
+      "sha256": "d52fdc2528f1920f2bf2c34d213653e353c6c2a68336331fc55b57b705f7eb59"
+    },
+    {
+      "cell_id": "AA2-0233",
+      "model_family": "M2_PI05_LIBERO",
+      "canonical_parent_key": "libero_10/task_06/state_32",
+      "status": "RUNNING",
+      "path": "reports/server_evidence/STAGE_AA_AA2/receipts/AA2-0233.json",
+      "bytes": 838,
+      "sha256": "6eb4f883ea1ace14878c2f0516d3202a686b11f016133f459d4dc1565afbf1ec"
+    }
+  ],
+  "stop_action": {
+    "owned_workers_stopped_after_fail_closed_hold": true,
+    "foreign_processes_touched": false,
+    "foreign_processes_preserved": true,
+    "one_worker_per_gpu_respected": true,
+    "gpu_admission_rule": "free_memory_mib > 20480",
+    "server_runtime": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa1r1-runtime-14d14ea0",
+    "worker_logs": [
+      "reports/server_evidence/STAGE_AA_AA2/AA2_WORKER_M0_GPU4.log",
+      "reports/server_evidence/STAGE_AA_AA2/AA2_WORKER_M0_GPU7_ORD80_108.log",
+      "reports/server_evidence/STAGE_AA_AA2/AA2_WORKER_M1_GPU5.log",
+      "reports/server_evidence/STAGE_AA_AA2/AA2_WORKER_M2_GPU6.log"
+    ]
+  },
+  "protocol_decision": {
+    "technical_retry_allowed_causes": [
+      "OOM",
+      "allocator",
+      "process crash",
+      "simulator exception",
+      "telemetry corruption",
+      "checkpoint materialization failure"
+    ],
+    "technical_retry_not_used_because": "RAW_GRIPPER_AT_THRESHOLD is a frozen action-semantics contract rejection, not an authorized infrastructure failure",
+    "scientific_ineligibility_not_assigned": true,
+    "threshold_or_mapping_changed": false,
+    "aa3_authorized": false,
+    "next_legal_action": "STOP_FOR_PI"
+  }
+}

@@ -128,17 +128,17 @@
     },
     {
       "declared_bindings": [],
-      "git_blob": "9b9c937e86018df5ddc062afe0cf177bc93aabd7",
-      "path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json",
-      "sha256_git_blob_bytes": "a5403173c57f27c5e3e931b468358a4cdf2e4b908b5e1eb9ce2670d36c530c7a"
+      "git_blob": "688d7c2d1f2d66e81a41911230aea1f446cdef83",
+      "path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V2.json",
+      "sha256_git_blob_bytes": "3af400653cfa65a5eb42c297e61fd0d7d7ece7b2afe4021de49182156043ee07"
     }
   ],
-  "generated_at": "2026-08-24T03:36:23+08:00",
+  "generated_at": "2026-08-24T17:28:20+08:00",
   "generated_files": [
     {
-      "bytes": 17714,
+      "bytes": 17703,
       "path": "exports/paper_v2/evidence_hierarchy.json",
-      "sha256": "b583294b78b4afcf73ef17456c22d9774f7f3564b1b91901d6115eb7857bc9e2"
+      "sha256": "108a53ef07193035f36abd49d28625ef86476d8b8ddb51cf5141329e8ba6ad13"
     },
     {
       "bytes": 2246,
@@ -168,13 +168,13 @@
     {
       "bytes": 1193,
       "path": "exports/paper_v2/core_numbers.tex",
-      "sha256": "530da4a521dec10ba8de2961bca0fd7d9863741d6c285c22b4172cb85c7265ed"
+      "sha256": "ad7c1511992436f4621c8c1aefe25dceb33628eea36f4e29bbc4082576e1ae79"
     }
   ],
   "generator": {
-    "git_blob": "cf341aced763463989b266b40164c9a371afef12",
+    "git_blob": "9f39afb22310855acd97a89cd50f19829f53d26b",
     "path": "scripts/paper_v2/export_paper_v2_evidence.py",
-    "sha256_git_blob_bytes": "3c9464072056bf492f9a61ab3cff999b0f954a2f039358166ed655bb82201831"
+    "sha256_git_blob_bytes": "5b04155a7f946c7a65998924ffcb253d114a889f7b65df427ed0fc74a4ad3ffa"
   },
   "no_manual_scientific_number_transcription": true,
   "paper_repository_role": "presentation consumer; not scientific source-of-truth",
@@ -189,10 +189,10 @@
   },
   "schema": "PAPER_V2_EXPORT_MANIFEST_V1",
   "source_repository": {
-    "commit_timestamp": "2026-08-24T03:36:23+08:00",
-    "head": "a3a1846939df4be4c04de5c1de8bfee541b4d656",
+    "commit_timestamp": "2026-08-24T17:28:20+08:00",
+    "head": "247fe953f0b3c82336c0943aa00320743666675f",
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "tree": "a919b788041286ede2ae2425efacd8b677e0d884"
+    "tree": "a89f46e6bd89f5a496827ff1b298a5775cd37c6f"
   },
   "statement": "Eval160/protected were not read; committed sealed static authorities only.",
   "status": "PAPER_V2_DETERMINISTIC_EXPORT_PASS",

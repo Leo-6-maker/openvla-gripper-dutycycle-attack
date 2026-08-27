@@ -1,0 +1,476 @@
+{
+  "anchor_rule": {
+    "critical_phases": [
+      "CARRY",
+      "CONTACT_MANIPULATION",
+      "ENGAGED_LIFT"
+    ],
+    "critical_salt": "STAGE_Z_Z2_CRITICAL_ANCHOR_V1_20260823",
+    "noncritical_phases": [
+      "PRE_CONTACT"
+    ],
+    "noncritical_salt": "STAGE_Z_Z2_NONCRITICAL_CONTROL_V1_20260823",
+    "outcome_fields_used": [],
+    "phase_classifier": {
+      "clean_only": true,
+      "history_rule": "only current row and clean rows at or before current step",
+      "minimum_remaining_steps": 20,
+      "outcome_blind": true,
+      "registered_phase_labels": [
+        "PRE_CONTACT",
+        "CONTACT_MANIPULATION",
+        "ENGAGED_LIFT",
+        "CARRY"
+      ],
+      "required_fields": [
+        "step",
+        "clean_record_valid",
+        "clean_terminal",
+        "remaining_horizon",
+        "object_identity",
+        "object_position",
+        "eef_position",
+        "object_eef_distance_m",
+        "object_gripper_contact",
+        "object_support_contact",
+        "contact_telemetry_valid",
+        "raw_gripper",
+        "env_gripper"
+      ],
+      "schema": "STAGE_V_M3_5_PHASE_CLASSIFIER_V1",
+      "state_rule": "object identity and baseline are explicit; missing telemetry yields UNKNOWN",
+      "thresholds": {
+        "action_semantics_tolerance": 1e-06,
+        "carry_relative_distance_m": 0.04,
+        "carry_stability_steps": 3,
+        "env_close_value": 1.0,
+        "env_open_value": -1.0,
+        "lift_delta_m": 0.015,
+        "object_eef_distance_m": 0.12,
+        "raw_open_threshold": 0.5
+      },
+      "unknown_label": "UNKNOWN",
+      "version": "V1"
+    },
+    "student_or_detector_used": false
+  },
+  "canonical_parent_key": "libero_spatial/task_03/state_33",
+  "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+  "checkpoint_manifest": null,
+  "clean_reference": {
+    "candidate_count": 0,
+    "candidate_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "critical_candidates": [],
+    "decision_boundaries": [
+      {
+        "action_chunk_sha256": "7370fdfd4ea823cbe90c1fe7c6d24e28f96c3b5a170241625088802387822736",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "23a26a77037d6adc830040be19b82bdd425df786fc9c98b22199d5ddc658b5da",
+        "step": 0
+      },
+      {
+        "action_chunk_sha256": "ee5d738951d78e8e84ca31b4ac79d94feda77e5ca2203444ad58c29a46843ec7",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "a25ebfbc287a1c6a3d8ef138d87551a3178af1f8b766ec844b11d968f175befb",
+        "step": 5
+      },
+      {
+        "action_chunk_sha256": "abbf139030ef18b69409adc224fd95349a37dfdd4b6c93548772b3fd5c8cbc40",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "740daa9c895b5ad87943c5b3527e3f5ad500727ec258e411cb6ed8e70aa48b10",
+        "step": 10
+      },
+      {
+        "action_chunk_sha256": "877ce955e8ae1f49341378ee9df0fa18f04e19d583559e9aa7687756664d38e9",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "075faa858dd753a32700c3742406566d78ccf61dc228207006b75c59dac5feb3",
+        "step": 15
+      },
+      {
+        "action_chunk_sha256": "24e878d1ae01aa80f4122955345315d863c50f2baf922c505d391da57d47a7fd",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "b82f01bd367ac75f660d40c11b0192356a91a78ea8b0317231c8e574c0cf5763",
+        "step": 20
+      },
+      {
+        "action_chunk_sha256": "5e851a93457d1fd13cc6f5ffc31eee32dec6444135a05b512183b22b32ae6053",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "dfea1ad9e46aaa83a51ccd16d670ef023f4f81f6699cc206fc225c42cdf2e5a3",
+        "step": 25
+      },
+      {
+        "action_chunk_sha256": "d8780d4b5866a859afaeea5ef4bede4e81c84361e02a0c00a13d33f25073bdb8",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "ac98b6a3da1c0c10680eee8cb4845fdb815717e6fa615955e39876907aed8b13",
+        "step": 30
+      },
+      {
+        "action_chunk_sha256": "e047f7f5376794a2e9b1b225de2a12e260940471123e539c1bd0854379fdda2e",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "65122643dee41c5d193718ea82e6baee703f34223356b2da8326c85c557813bc",
+        "step": 35
+      },
+      {
+        "action_chunk_sha256": "83b71b19a463029897ae86c4fb88e6d7436327151ecfe29804307671d6fd78fe",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "3f8f033e61eff936ab1d59f65bb2aa6047396651d0e91a8885313efbe438807e",
+        "step": 40
+      },
+      {
+        "action_chunk_sha256": "befb908b6bc24dc9475de5324b4321d57efb5d75a5e48f08a45e80fe5a9781c9",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "85b5539800e161320e236784d7f776f25721fbd0753f15fcb1ed8d281768215a",
+        "step": 45
+      },
+      {
+        "action_chunk_sha256": "dc8bd19ef80ea7b1baf47dd403d6b232d28ca0b9b9dac364c5bbf94b717cd203",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "4735bf16aae7d08cb025a4618dffcecaac1155d96b242bdfa6040f145e5b1a6c",
+        "step": 50
+      },
+      {
+        "action_chunk_sha256": "e7932021630f6778bc028e01aa9cf3fb7d4cf7124309a70b162a237260809a7b",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "555d9903995292aefa170e8ac0c25803f338fc4d92a2b7e96a78a06f6c8c21b2",
+        "step": 55
+      },
+      {
+        "action_chunk_sha256": "8dbe5e71479b0f6193b40a34d7d236e3d528c270a4a685ddeba99f8700dcdf64",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "7afd74bd840c4874c4770745e89cfd65799eb5ca428c95344652d78dcecbbee7",
+        "step": 60
+      },
+      {
+        "action_chunk_sha256": "a3f657fb85276fc1648b558e351bfccd5aebbb1707150acc24ffad8e70158bbc",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "e2b47943b79eac0670c8308262ed9ebc00783c421c05148a9f19f4f0fea81870",
+        "step": 65
+      },
+      {
+        "action_chunk_sha256": "1e14dfbe16ce1fd6a2eebd7ba29bddfe08ba3b5dcec0096af4760f9f0dc79a4b",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "5d8a8d08e3be98515669a12c9c24a7906c87e8d378918636f08443fa8806e182",
+        "step": 70
+      },
+      {
+        "action_chunk_sha256": "f76552ccf51ef12e13da72ffe0c35e3c35af2f47375e2cff5818abe2fd277e1f",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "550065135fe5208371a127a1647e709c749289669843f1c06cc0ea4c755f0ab8",
+        "step": 75
+      },
+      {
+        "action_chunk_sha256": "37a4972d0f8271f9222564627246fb9832b6bf007cdaeacc3caba4cf474be44e",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "872e89820ecc767f1e0457a8cd990ec8af29b28706bf3a28624e37d3794a6676",
+        "step": 80
+      },
+      {
+        "action_chunk_sha256": "9c3da5ec1dbc1f12bc0ed158bce2a619766caa6e58485c329930c138a49b1d3c",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "11f20ef7f134280cc07fe5d1ea5d61cd0a004135a17125bbc93611f0b4116023",
+        "step": 85
+      },
+      {
+        "action_chunk_sha256": "8639857c437c5fca8dca0122d3dff00c9b5a4bc0279f89b2ec9e253c098e1ac4",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "af905ee4516259e649f594073bdf3cc3283329fea37e7377d64f59d2269b2548",
+        "step": 90
+      },
+      {
+        "action_chunk_sha256": "fe649a932e8183a4bdcee0c53c032ac763460f11175f6d6f91d20aae6a7fba14",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "5c0bd32d356a05c467e1e11fa7eb797554b149aea94c10363d1afa07d8f35abc",
+        "step": 95
+      },
+      {
+        "action_chunk_sha256": "43ce09a4cee3182801f6d423f244155d8d81fcd826fb1a53480810a4e150fa8f",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "6d3d6df9fa66cce1d8965fc79696d8ca732b447abf8e592e17d37f83d8350181",
+        "step": 100
+      },
+      {
+        "action_chunk_sha256": "0eb16a3cc8c060fbea7c1e4349e7c7b840da2f9822cd44df2eb9ec99747a366f",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "042de7fad3b444ec5f99c67929d7993254dfb0b50433ba79a03d834eb797fda0",
+        "step": 105
+      },
+      {
+        "action_chunk_sha256": "f194b7aa01ec5fa2bca9235f96c806618048caf520057a3cfb493657cdb3ca74",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "4d25f5ce533272ac1bca19363c8d50fef4d18d7dd450e28f14ef36f387812ff0",
+        "step": 110
+      },
+      {
+        "action_chunk_sha256": "ac6311281034535733f02df1a13ea61f370a705eea3711fb1873bf15eeda581c",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "09fb37b45a3fbd25d7556a6355327ece38a5ba79f4dccbadfe83894371089401",
+        "step": 115
+      },
+      {
+        "action_chunk_sha256": "314d778a91c2a1729328bf5099917b4966b0ff59e18cc33613d7ae554b360e46",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "daac6c854dd5de7aa72796ec56531762ceafdfdf3fdf2919fce41fc97d92cf86",
+        "step": 120
+      },
+      {
+        "action_chunk_sha256": "6bed5c7acc314fe53417a6c811dd7ff00a5d1b88bd9efa1661b44e15a8973c19",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "4dcb9dab254d55d35000fe4314d646578472eba5b45115916d1ec0d3a46eca4f",
+        "step": 125
+      },
+      {
+        "action_chunk_sha256": "cc089da4da85fcc51cc984bb55a7f88a1d671b7393730a494aa931e43262641d",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "87f394f71c748471c8a1fe2bd363cbc26b86eae377303f7421f21a4a150b5a3e",
+        "step": 130
+      },
+      {
+        "action_chunk_sha256": "438b283d27e9dd58c589d6dcb925c3c459a38bf853c2301c5c79dbf0974e4810",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "05f7d9393989104bcffd2c85d1a9557ce49356322e8e04cd13afac59f72f1ebb",
+        "step": 135
+      },
+      {
+        "action_chunk_sha256": "f0ed5b18c3f42c550a9485102ece79fbc26527f9b8d34875da9a71c3585ae481",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "a5db543c5777148f57632baf8b105ec16159a14227f7f4e4eab50beb650a1071",
+        "step": 140
+      },
+      {
+        "action_chunk_sha256": "0febb896c8cefafd8e43603b304c116d50708ab7941035ed1fcdd4d3ff8ba535",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "0d979ba5cc0aff6c3fe52ee875d0e0b449f09056c0e2ad9d5433ca9ddc6be961",
+        "step": 145
+      },
+      {
+        "action_chunk_sha256": "6a78ee6c6f2b4595324e3893ac6e763599b8c4c0b8e5e84083d4a9f96b4d5ee3",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "61f3ad3e8a6aa43ba87a50601df48c55518643204e451494a341374986dae6ce",
+        "step": 150
+      },
+      {
+        "action_chunk_sha256": "e2ce8878de9a6cc5880056e444fc8f9f2efbc77957d5b022df5d2372c0107494",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "c3172b15bfa7d373eaa5ddb771a0bae1f2eab94aa04b67a69f828e776cf553d2",
+        "step": 155
+      },
+      {
+        "action_chunk_sha256": "182bb828edb1d8811966f7bf537811845c90960c27eeffdfb103f7c849f1c952",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "09f75e620eb5d07887400e72556fed9eb6ed3b47d16c42b6adc88b5a49c16444",
+        "step": 160
+      },
+      {
+        "action_chunk_sha256": "d7ad8a4bdae93ba61592495a2b430c1e39f40d5398f26656e0cc0605f4a04905",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "488ea9e95260944c63ba91b6b2a1db726c1c4149fbec992bade62412535ac325",
+        "step": 165
+      },
+      {
+        "action_chunk_sha256": "24045b6d79d5ccf93654887c4fc4603d9706ee82904081b69734b9b8dd8e114a",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "14a71b05678bb7339d1a95eff70189f3044c965683407147e65dc235f9cb02e5",
+        "step": 170
+      },
+      {
+        "action_chunk_sha256": "3997f60f2ba1a70a4d2ced9588db9333636012b351949084f782042f775045ef",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "a6c8fcb0ec48e7021c115a75a93e215a350124531b35e999413c7ee2951694b5",
+        "step": 175
+      },
+      {
+        "action_chunk_sha256": "7db8255a1f88f856b973ffad60343a75520379c139c4200dd2ea4820ac474d71",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "65493d77932d082c230019689db6215b844a030c84b79920cdc3f3d794c5d1e6",
+        "step": 180
+      },
+      {
+        "action_chunk_sha256": "0490f53859a2109389a3d8d6e2423a5610ea3357e035cab66706c3ed041628ba",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "24adee0e7b2c276f1eedd8f57abde44fffd445d04df5a45fe056276c76b559d6",
+        "step": 185
+      },
+      {
+        "action_chunk_sha256": "92a736d07acb15cb35f8d47698dfc8201c3bc9954b0e028cc64f323cc1b8a00d",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "033f77f80ea2a8e70a357f1c5862d587e21f483729aa7e557b2db5acf7af7d03",
+        "step": 190
+      },
+      {
+        "action_chunk_sha256": "dcf720527cf4a0bfe1544a07ec802c062a787f2fe6c54a1a664d646f768c35e7",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "6ab07706b23d538be7b669b235c5230d0c4c14156ad4a1990a565e1408739596",
+        "step": 195
+      },
+      {
+        "action_chunk_sha256": "f1f1b6de22a8b9a7fbc41b203d598c056f009ab2212a9b9279b899b104dd2614",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "99ab7bab945c4f763278fd497fe9f0237845564ef22f05fc21727b7a721cc972",
+        "step": 200
+      },
+      {
+        "action_chunk_sha256": "ce3c8d1e8b0421f425dc1ec78aa4504a4333a78cfa53acbc9ff3eb1eca4cdfaa",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "ec86450fb28312859b37fd4ddf52d37984f280de07dd779a159cd59bbf320359",
+        "step": 205
+      },
+      {
+        "action_chunk_sha256": "69ad844da2942437fa1c35c4be4e53052584405dbc563196b0dbcec00ecc9074",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "8a5b1f959d7703bc3767ffef457d221eed38fd2f9d5f987786d903f74aa07087",
+        "step": 210
+      },
+      {
+        "action_chunk_sha256": "9a396a8422368856ae1b594633f58c843f689a59f480e54aec96ccc6a3dba939",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "381f779e6eec1ccc4c5a9af81383124b13ad10029fd9ad890f8b41c87588ac91",
+        "step": 215
+      }
+    ],
+    "decision_boundary_count": 44,
+    "dummy_wait_steps": 10,
+    "horizon": 220,
+    "noncritical_candidates": []
+  },
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3",
+        "pid": "3925201",
+        "used_memory_mib": "28540"
+      }
+    ],
+    "free_memory_mib": 52662,
+    "index": 7,
+    "used_memory_mib": 28560,
+    "utilization_gpu_percent": 100
+  },
+  "model_family": "M2_PI05_LIBERO",
+  "normalization": {
+    "checkpoint_mutated": false
+  },
+  "object_binding": {
+    "bddl_path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate.bddl",
+    "eef_site_id": 13,
+    "eef_site_name": "gripper0_grip_site",
+    "reason": "",
+    "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+    "status": "PASS",
+    "target_body_ids": {
+      "akita_black_bowl_1": 23
+    },
+    "target_body_names": {
+      "akita_black_bowl_1": "akita_black_bowl_1_main"
+    },
+    "target_object_ids": [
+      "akita_black_bowl_1"
+    ],
+    "taxonomy_eligibility": {
+      "declared_object_ids": [
+        "akita_black_bowl_1",
+        "akita_black_bowl_2",
+        "cookies_1",
+        "glazed_rim_porcelain_ramekin_1",
+        "plate_1"
+      ],
+      "eligible": true,
+      "fixture_binding_inference_allowed": false,
+      "reason": "",
+      "rule": "at least one declared source object in an In/On goal predicate",
+      "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+      "status": "PASS",
+      "target_object_ids": [
+        "akita_black_bowl_1"
+      ]
+    }
+  },
+  "panel_row": {
+    "candidate_count_after_union_exclusion": 3,
+    "canonical_parent_key": "libero_spatial/task_03/state_33",
+    "selected_rank_sha256": "4cb3ae7fb375c5c3b366410d83ca5a32d96c6fae726e5fb99772fbe4139f0707",
+    "source_v1_row_digest": "8b2484a338524f765cb110cb2e5625826621951196ee954076aa521351a8dc66",
+    "state": "FROZEN_SHARED_FRESH",
+    "suite": "libero_spatial",
+    "task_idx": 3
+  },
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "role": "PRIMARY",
+  "runtime_counters": {
+    "anchor_telemetry_reads": 220,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 230,
+    "eval160_reads": 0,
+    "model_inference_calls": 44,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 1,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+  "scientific_claim": "Z2_CLEAN_REFERENCE_AND_ANCHOR_ONLY",
+  "selected_anchors": {
+    "critical": null,
+    "noncritical": null
+  },
+  "state_id": 33,
+  "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR",
+  "suite": "libero_spatial",
+  "task_idx": 3,
+  "task_language": "pick up the black bowl on the cookie box and place it on the plate",
+  "timestamp_utc": "2026-08-25T01:49:09Z"
+}

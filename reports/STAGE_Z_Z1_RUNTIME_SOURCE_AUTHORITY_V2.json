@@ -1,0 +1,99 @@
+{
+  "schema": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V2",
+  "supersedes": {
+    "path": "reports/STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V1.json",
+    "sha256": "f409b6a3d4583755b3880fc455f0dfa58ec933717a3b217d53424574f0c4448a"
+  },
+  "status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+  "gate": "STAGE_Z_Z1_MULTI_MODEL_RUNTIME_CANARY_QUALIFICATION_V1",
+  "claim_boundary": "Static source binding only; no model inference, simulator, env.step, scientific outcome, or physical result.",
+  "runtime_code": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "commit": "e62c1bb44593e00bc050742f7af72e737e6df5d0",
+    "tree": "fae27406dc7b8b91190d7220b37beac16808310a",
+    "files": [
+      {"path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V1.json", "git_blob_sha": "c0b5d4846a6ae115555dcb37c5b3b9e98c42205a"},
+      {"path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py", "git_blob_sha": "80bf607a3df54fc8fa1529d689322fd9d16f75f1"},
+      {"path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py", "git_blob_sha": "414acc538ee2d43d25460ea89a36677f899a4a9d", "role": "read-only pre-GPU source/resource audit"},
+      {"path": "src/stage_z_preparation/contract.py", "role": "ExecutionAuthorization guard"},
+      {"path": "src/stage_z_preparation/runner.py", "role": "guarded callback entry"}
+    ]
+  },
+  "m1_manifest_binding": {
+    "repository_path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+    "sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "validation": "before each M1 model load, exact file set, byte count, file size, and file SHA256 are checked"
+  },
+  "z0r2_bindings": {
+    "root_seal_sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d",
+    "generation_receipt_sha256": "c319f9a01ec35297cf4f4b8f418745f8d634ad734b424100488262cc0db83b94",
+    "model_authority_sha256": "7abcc9505c42a15c143d1333c1b3eda3254b46f2d210d5b15fcb5a5db684ea79",
+    "common_libero_sha256": "bf2f85f6a8719349d18daa80e36b4a70571bb7044f14b2addc0de555c3b4b118",
+    "scientific_panel_sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1",
+    "canary_ledger_sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc"
+  },
+  "external_source_checkouts": {
+    "common_libero": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+      "commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+      "tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60",
+      "git_status_required": "CLEAN",
+      "runtime_files": [
+        {"path": "libero/libero/__init__.py", "git_blob_sha": "426ccc5c8d4c9540a45ea9b42a0540c6d59a4f6a"},
+        {"path": "libero/libero/benchmark/__init__.py", "git_blob_sha": "2b833d0935163fb75a26ca77bf1e38eca6ccc31b"},
+        {"path": "libero/libero/envs/env_wrapper.py", "git_blob_sha": "b5a732b0d7e5d67ba5428fdf0edef150e80f6296"}
+      ]
+    },
+    "openvla_oft": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+      "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+      "git_status_required": "CLEAN",
+      "runtime_files": [
+        {"path": "experiments/robot/libero/run_libero_eval.py", "git_blob_sha": "cdf27f56c5464808481d56af0898475541e10817"},
+        {"path": "experiments/robot/libero/libero_utils.py", "git_blob_sha": "8e2c23458cbf48a9d78bf61e7cf0cbd5e196d635"},
+        {"path": "experiments/robot/openvla_utils.py", "git_blob_sha": "c14c9dcfd3d10bbf80191dd64120e8746e72bb6a"},
+        {"path": "experiments/robot/robot_utils.py", "git_blob_sha": "64559e99040752be0f58d07675f8f621023499dd"}
+      ]
+    },
+    "openpi": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822",
+      "commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be",
+      "git_status_required": "CLEAN",
+      "runtime_files": [
+        {"path": "src/openpi/policies/policy_config.py", "git_blob_sha": "6570df05ed068f297d48326990a1cd10ee68ac5a"},
+        {"path": "src/openpi/training/config.py", "git_blob_sha": "4ca47e1286534c4ee7a919ccc38462f8f38bdd60"},
+        {"path": "src/openpi/policies/libero_policy.py", "git_blob_sha": "fe5aab0add5795531913363d7c46d916c81d1f9b"},
+        {"path": "src/openpi/policies/policy.py", "git_blob_sha": "b9b708bdcaffa086be4b22b84a29b8cc00c710e4"}
+      ]
+    }
+  },
+  "model_authority": {
+    "M0_OPENVLA": "Z0R2 exact load-bearing checkpoint bytes; checkpoint-embedded model/processor code; no external mutable loader checkout",
+    "M1_OPENVLA_OFT": "Z0R2 four sealed 25-file manifests; sequential materialization only",
+    "M2_PI05_LIBERO": "Z0R2 existing pi05_libero 16-file manifest d9104dfdea46eca2fadf05ec7fc478b19d39b19aa8dfda0e6adedcd6d6b6efac"
+  },
+  "pre_gpu_requirements": {
+    "common_libero_checkout_clean": true,
+    "openvla_oft_checkout_clean": true,
+    "openpi_checkout_clean": true,
+    "libero_config_must_point_to_common_checkout": true,
+    "gpu_free_memory_mib_strictly_greater_than": 20480,
+    "foreign_compute_processes": "record only; never terminate or modify",
+    "one_project_worker_per_gpu": true
+  },
+  "counters": {
+    "model_inference": 0,
+    "simulator": 0,
+    "env_step": 0,
+    "physical_intervention": 0,
+    "pgd": 0,
+    "attacked_env_steps": 0,
+    "v_phys": 0,
+    "eval160": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0
+  },
+  "next_legal_action": "REMOTE_PRE_GPU_STATIC_AUDIT_ONLY"
+}

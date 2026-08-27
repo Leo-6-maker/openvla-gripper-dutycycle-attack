@@ -1,0 +1,85 @@
+{
+  "artifact_manifest": [
+    {
+      "bytes": 5029,
+      "path": "configs/STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_PROTOCOL_V1.json",
+      "sha256": "bd1089d95f3613b52ce1b0e925ee3b3bb80aedb849da185a1c8f9e3917e0b362"
+    },
+    {
+      "bytes": 4769,
+      "path": "reports/STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_DISCREPANCY_V1.json",
+      "sha256": "74a999fc59d6231a5ffb825c5dd88b3d67547f5f6226daadd86b7341ff7f26bc"
+    },
+    {
+      "bytes": 2929,
+      "path": "reports/STAGE_Z_Z2R1_M2_ACTION_SEMANTICS_STATIC_PARITY_V1.json",
+      "sha256": "aaac8c2ab29ac4625b23c2a7d503e6fa98a73a4086d854149b5077d9cfe2307d"
+    },
+    {
+      "bytes": 2238,
+      "path": "reports/STAGE_Z_Z2R1_STORAGE_PREFLIGHT_V1.json",
+      "sha256": "b0b498bbdbfb706b4a30666ce2609ff23271a2b9071a51f9581727f2e32811ec"
+    },
+    {
+      "bytes": 6564,
+      "path": "reports/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_MANIFEST_V1.json",
+      "sha256": "50a33ffda80cffc37c8b2f4325c17000be701e5609cfd091545eaf71a27e7771"
+    },
+    {
+      "bytes": 105922,
+      "path": "reports/server_evidence/STAGE_Z_Z2R1_M2_ENGINEERING_CANARY_libero_10_PRIMARY.json",
+      "sha256": "8de630035bc13de625c3aa92a01818560ca100a82109b51ebf0a99d1c8d19f2d"
+    },
+    {
+      "bytes": 68404,
+      "path": "reports/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_RECEIPT_LEDGER_V1.json",
+      "sha256": "5b40af2c4aecc50947b06919aacbeeb694811731e0b5b6c41be10ea8a6c7a7ff"
+    },
+    {
+      "bytes": 4771,
+      "path": "reports/STAGE_Z_Z2R1_M2_CLEAN_REPAIR_TERMINAL_SYNTHESIS_V1.json",
+      "sha256": "c0da135186f8a2db25ced98197af489f1ac5d563cc629839820c4f0349b1bc22"
+    },
+    {
+      "bytes": 24550,
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "sha256": "f903b841524ec9eb687f6df6132da6ed8084686fe15b7cc12257815cdce8172c"
+    },
+    {
+      "bytes": 7777,
+      "path": "src/stage_z_preparation/action_semantics.py",
+      "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c"
+    },
+    {
+      "bytes": 9843,
+      "path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py",
+      "sha256": "e3c48886777a45cfe7d2b9942bbeeb6ebc992f29568846180d31d064b839fbe6"
+    }
+  ],
+  "claim_boundary": "M2 clean action-semantics repair and anchor feasibility only; no physical OPEN susceptibility or attack efficacy claim.",
+  "execution_scope": {
+    "attack": false,
+    "eval160": false,
+    "m2_clean_cells": 34,
+    "physical_intervention": false,
+    "protected": false,
+    "structural_abstentions_not_loaded": [
+      "libero_goal/task_00/state_21",
+      "libero_goal/task_07/state_30"
+    ],
+    "vphys": false
+  },
+  "git_binding": {
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "head_before_root_seal": "4396435a53cb7a16f9dde90b74eb4f59c6758481",
+    "tree_before_root_seal": "41896fa2daeb643abeb15043ac61d8aa8c4fbbef"
+  },
+  "historical_z2_root_preserved": {
+    "path": "reports/STAGE_Z_Z2_TERMINAL_ROOT_SEAL_V2.json",
+    "sha256": "e37659a552bea7665fbfcc7a52e8fa8131e29aef6613a197a7087ab8d7cf4c6f"
+  },
+  "next_legal_action": "STOP_FOR_PI",
+  "schema": "STAGE_Z_Z2R1_M2_CLEAN_REPAIR_ROOT_SEAL_V1",
+  "status": "SEALED_STAGE_Z_Z2R1_M2_CLEAN_REPAIR_STOP_FOR_PI",
+  "z3_authorized": false
+}

@@ -1,0 +1,39 @@
+{
+  "schema": "STAGE_Z_Z3_C_LAUNCH_PLAN_V1",
+  "status": "FROZEN_BEFORE_SCIENTIFIC_ENV_STEP",
+  "protocol_path": "configs/STAGE_Z_Z3_CROSS_MODEL_COMMAND_OPEN_PHYSICAL_MATRIX_PROTOCOL_V2.json",
+  "protocol_sha256": "92747fe2263fb47ad9b53dee916660f7b8e2db1d5d895e6c80922db29caf7f1b",
+  "manifest_path": "reports/STAGE_Z_Z3_EXECUTION_MANIFEST_V2.json",
+  "manifest_sha256": "b7d7c755e5f17744e168dc9e8911d60ba1c8e334fe6f4176dbbade0af7bcc037",
+  "reconciliation_path": "reports/STAGE_Z_Z3_EXECUTION_MANIFEST_RECONCILIATION_V1.json",
+  "reconciliation_sha256": "85c77d7be3387269c7296ee33a7250d8db671a4c9cf479504c7802a07129ad4b",
+  "global_order": "manifest jobs order; each model-family/suite lane preserves parent-contiguous five-arm order",
+  "stage_order": [
+    {"stage": "M0_OPENVLA", "groups": [1, 2, 3, 4], "execution": "parallel fixed lanes GPU4,5,6,7"},
+    {"stage": "M1_OPENVLA_OFT", "groups": [5, 6, 7, 8], "execution": "sequential suites GPU5; verify exact 25-file cache before each suite"},
+    {"stage": "M2_PI05_LIBERO", "groups": [9, 10, 11, 12], "execution": "parallel fixed lanes GPU4,5,6,7"}
+  ],
+  "resource_contract": {
+    "gpu_free_memory_mib_strictly_greater_than": 20480,
+    "one_project_worker_per_gpu": true,
+    "foreign_processes": "record_only_never_touch",
+    "output_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/stage_z_z3c_outputs_v1",
+    "no_all_branch_video": true,
+    "manual_video_limit": 120
+  },
+  "groups": [
+    {"sequence": 1, "model_family": "M0_OPENVLA", "suite": "libero_10", "jobs": 45, "parents": 9, "gpu": 4, "first_branch_id": "Z3-029eb23c66e36a39ce9f", "last_branch_id": "Z3-da80086ecb8a66cdd3d8", "branch_ids_sha256": "0bcbea8bf95ae142f9728a33c30e85fb3e90cf8af33ba54d2ca9c7e412612414", "parent_order_sha256": "ea1962a66844e2324e18d84489326bae82ed2db87c61db2002f0505ddf8ec6ce"},
+    {"sequence": 2, "model_family": "M0_OPENVLA", "suite": "libero_goal", "jobs": 20, "parents": 4, "gpu": 5, "first_branch_id": "Z3-dbf4d0c4bf2af37211d3", "last_branch_id": "Z3-d6c55e9f1154d331c407", "branch_ids_sha256": "b8321854edcfa8cc75056d27116ea90441e198f55ef2d904abaec5e0a1c77c0b", "parent_order_sha256": "9a0a30fa3aaa0ae404413bcd08d60245004b3c948e128865dbe746fdbb5ba11c"},
+    {"sequence": 3, "model_family": "M0_OPENVLA", "suite": "libero_object", "jobs": 50, "parents": 10, "gpu": 6, "first_branch_id": "Z3-6f892b2ab410f3be022b", "last_branch_id": "Z3-2fa2d866db09a300928e", "branch_ids_sha256": "61f73192f3bd90814fe7ffb82c13b0d437893fc5d8ad83390853f6ba025aefcb", "parent_order_sha256": "5039e8e7fd2d0637f6df170b06bb1080ea8aad833bfaa250c908c0fb891b0d2c"},
+    {"sequence": 4, "model_family": "M0_OPENVLA", "suite": "libero_spatial", "jobs": 45, "parents": 9, "gpu": 7, "first_branch_id": "Z3-62c63d66fc6c29a8204e", "last_branch_id": "Z3-c6aa39589b8e8b3e5ffb", "branch_ids_sha256": "439a0552cca1c38e376784c114fbb62d4bae4edbcbba25d0a24b970135dbd02c", "parent_order_sha256": "fcbcd8348fb5c8b03ec383a0be60de1c3a175a725b75a7c830aab342840f70f8"},
+    {"sequence": 5, "model_family": "M1_OPENVLA_OFT", "suite": "libero_10", "jobs": 45, "parents": 9, "gpu": 5, "first_branch_id": "Z3-c2618807ec1668c523d2", "last_branch_id": "Z3-5362c08ed462fb06efd2", "branch_ids_sha256": "9b2a08ae2b241322d637018b775cba64c6a3301faf04e5290591594225b0df85", "parent_order_sha256": "d6a3d7c8d04896d3c3dff6e61862c83760cc24b9d87bcd2af14cb318de0fac61"},
+    {"sequence": 6, "model_family": "M1_OPENVLA_OFT", "suite": "libero_goal", "jobs": 10, "parents": 2, "gpu": 5, "first_branch_id": "Z3-2a90d19dbf09e2bafc21", "last_branch_id": "Z3-c16480c76336bd9c1c19", "branch_ids_sha256": "3c98eaf56819d7a1c7528a0ede8d019581d51293dac5d55fde6b2ece4237fe55", "parent_order_sha256": "0637487ce26678e16b90f554d60cb2d16d3c6b8a1c820bbe5c9242734a0de243"},
+    {"sequence": 7, "model_family": "M1_OPENVLA_OFT", "suite": "libero_object", "jobs": 25, "parents": 5, "gpu": 5, "first_branch_id": "Z3-c089aa9ee836a132287e", "last_branch_id": "Z3-17d3eb7614fe17df8b2a", "branch_ids_sha256": "8f289677f945287a4a62bfc73653a2ee4d8da18cbe9f4e92897bee932a1d0482", "parent_order_sha256": "5bb991901c5569ede0364d4569539aa1cbdb682c7eca6c4a5e5062cbdf043f1b"},
+    {"sequence": 8, "model_family": "M1_OPENVLA_OFT", "suite": "libero_spatial", "jobs": 50, "parents": 10, "gpu": 5, "first_branch_id": "Z3-7150b636d13f0e8b7a87", "last_branch_id": "Z3-3c5360088b7b58fc456d", "branch_ids_sha256": "18a844a5abd4c305e0975b1035903de14e3bb9e66018bdd05d96c3a9aa4f6cbf", "parent_order_sha256": "8a3ca64b2176caf0f4da577e30afb46d26bced247f23a053f6a7418bd048de4d"},
+    {"sequence": 9, "model_family": "M2_PI05_LIBERO", "suite": "libero_10", "jobs": 50, "parents": 10, "gpu": 4, "first_branch_id": "Z3-7ce84f418d67669d2ea9", "last_branch_id": "Z3-25fc5b6e8d86136b5280", "branch_ids_sha256": "7333552990686b752f7511326db7f627a89b47a5141e2f993e10108ed1b10c66", "parent_order_sha256": "26779e19f10ff04d4500245564e2052a313d171b07d24495d0175c46c0a39d85"},
+    {"sequence": 10, "model_family": "M2_PI05_LIBERO", "suite": "libero_goal", "jobs": 20, "parents": 4, "gpu": 5, "first_branch_id": "Z3-6a40baea1ecdd86d6f95", "last_branch_id": "Z3-e07ab601e65f2d272a9d", "branch_ids_sha256": "a9b9a3625a8f45cf9a9f871d56a6f5f06c36f5f657fa7846baf23e4bf7907a36", "parent_order_sha256": "9a0a30fa3aaa0ae404413bcd08d60245004b3c948e128865dbe746fdbb5ba11c"},
+    {"sequence": 11, "model_family": "M2_PI05_LIBERO", "suite": "libero_object", "jobs": 50, "parents": 10, "gpu": 6, "first_branch_id": "Z3-272be874a6fd3219cafa", "last_branch_id": "Z3-56eb451398b26d94f4e1", "branch_ids_sha256": "6d3a89781d0d9c6f7b15a70b0e718989022cd27c11315e56945824c56cf30c94", "parent_order_sha256": "5039e8e7fd2d0637f6df170b06bb1080ea8aad833bfaa250c908c0fb891b0d2c"},
+    {"sequence": 12, "model_family": "M2_PI05_LIBERO", "suite": "libero_spatial", "jobs": 50, "parents": 10, "gpu": 7, "first_branch_id": "Z3-4294aaf67e9755e033bf", "last_branch_id": "Z3-b8a3e90dac6637d99f6e", "branch_ids_sha256": "f5cefbbc653d3603f8da6b072b5f478e5b6a075cca2ba7bd0acdf537a672e82d", "parent_order_sha256": "8a3ca64b2176caf0f4da577e30afb46d26bced247f23a053f6a7418bd048de4d"}
+  ],
+  "scientific_scope": {"fixed_branches": 460, "model_parent_pairs": 92, "arms_per_pair": 5, "manual_outcome_blind_max_pairs": 24, "manual_outcome_blind_max_videos": 120, "pgd_calls": 0, "protected_reads": 0, "eval160_reads": 0, "bridge": false, "f1": false}
+}

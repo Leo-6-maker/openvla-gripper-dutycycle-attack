@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 579, in <module>
+    main()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 572, in main
+    result = run_cell(config, ledger, args)
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 530, in run_cell
+    result = authorized_runtime()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 435, in authorized_runtime
+    from stage_z_preparation.contract import ExecutionAuthorization, ProtectedCounters, Z0R2_PASS
+ModuleNotFoundError: No module named 'stage_z_preparation'

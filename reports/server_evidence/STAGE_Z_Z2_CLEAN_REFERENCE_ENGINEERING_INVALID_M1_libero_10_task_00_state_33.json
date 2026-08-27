@@ -1,0 +1,25 @@
+{
+  "canonical_parent_key": "libero_10/task_00/state_33",
+  "error": {
+    "message": "Z1_SOURCE_AUTHORITY_NOT_FROZEN",
+    "type": "RuntimeError"
+  },
+  "model_family": "M1_OPENVLA_OFT",
+  "runtime_counters": {
+    "anchor_telemetry_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 0,
+    "eval160_reads": 0,
+    "model_inference_calls": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_DUE_TO_ENGINEERING_INVALID",
+  "status": "ENGINEERING_INVALID_Z2_CLEAN_REFERENCE",
+  "suite": "libero_10"
+}

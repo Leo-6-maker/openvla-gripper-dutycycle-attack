@@ -1,0 +1,25 @@
+{
+  "canonical_parent_key": "libero_10/task_00/state_33",
+  "error": {
+    "message": "Unrecognized configuration class <class 'transformers_modules.openvla-7b-finetuned-libero-10.configuration_prismatic.OpenVLAConfig'> for this kind of AutoModel: AutoModelForImageTextToText.\nModel type should be one of AriaConfig, AyaVisionConfig, BlipConfig, Blip2Config, ChameleonConfig, Emu3Config, FuyuConfig, Gemma3Config, Gemma3nConfig, GitConfig, Glm4vConfig, GotOcr2Config, IdeficsConfig, Idefics2Config, Idefics3Config, InstructBlipConfig, InternVLConfig, JanusConfig, Kosmos2Config, Llama4Config, LlavaConfig, LlavaNextConfig, LlavaNextVideoConfig, LlavaOnevisionConfig, Mistral3Config, MllamaConfig, PaliGemmaConfig, Pix2StructConfig, PixtralVisionConfig, Qwen2_5_VLConfig, Qwen2VLConfig, ShieldGemma2Config, SmolVLMConfig, UdopConfig, VipLlavaConfig, VisionEncoderDecoderConfig.",
+    "type": "ValueError"
+  },
+  "model_family": "M0_OPENVLA",
+  "runtime_counters": {
+    "anchor_telemetry_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 0,
+    "eval160_reads": 0,
+    "model_inference_calls": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_DUE_TO_ENGINEERING_INVALID",
+  "status": "ENGINEERING_INVALID_Z2_CLEAN_REFERENCE",
+  "suite": "libero_10"
+}

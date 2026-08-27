@@ -1,0 +1,25 @@
+{
+  "canonical_parent_key": "libero_10/task_04/state_03",
+  "error": "KeyError:'raw_action'",
+  "gpu_id": 6,
+  "model_family": "M0_OPENVLA",
+  "next_legal_action": "STOP_FOR_PI",
+  "protocol_sha256": "5b5948f19736ab466d783e1772b4729c201529b31b4ced91e8b445fda98c83be",
+  "role": "PRIMARY",
+  "runtime_counters": {
+    "attacked_env_steps": 0,
+    "engineering_command_open_steps": 0,
+    "env_step_calls": 10,
+    "eval160_reads": 0,
+    "model_inference_calls": 1,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z3_ENGINEERING_SENTINEL_RECEIPT_V1",
+  "status": "ENGINEERING_INVALID_Z3_SENTINEL",
+  "suite": "libero_10",
+  "timestamp_utc": "2026-08-25T08:40:39Z"
+}

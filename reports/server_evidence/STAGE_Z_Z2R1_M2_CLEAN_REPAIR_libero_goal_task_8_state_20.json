@@ -1,0 +1,2144 @@
+{
+  "anchor_rule": {
+    "action_semantics_adapter": {
+      "diagnostics": {
+        "accepted": 300,
+        "checks": 300,
+        "historical_classifier_gripper_placeholder": "raw=0.0,env=1.0_for_valid_M2_rows",
+        "invalid": 0,
+        "model_family": "M2_PI05_LIBERO",
+        "rule": "PI05_CLIP_RAW_TO_LIBERO_V1",
+        "schema": "STAGE_Z_ACTION_SEMANTICS_DIAGNOSTICS_V1"
+      },
+      "module": "stage_z_preparation.action_semantics"
+    },
+    "critical_phases": [
+      "CARRY",
+      "CONTACT_MANIPULATION",
+      "ENGAGED_LIFT"
+    ],
+    "critical_salt": "STAGE_Z_Z2_CRITICAL_ANCHOR_V1_20260823",
+    "noncritical_phases": [
+      "PRE_CONTACT"
+    ],
+    "noncritical_salt": "STAGE_Z_Z2_NONCRITICAL_CONTROL_V1_20260823",
+    "outcome_fields_used": [],
+    "phase_classifier": {
+      "clean_only": true,
+      "history_rule": "only current row and clean rows at or before current step",
+      "minimum_remaining_steps": 20,
+      "outcome_blind": true,
+      "registered_phase_labels": [
+        "PRE_CONTACT",
+        "CONTACT_MANIPULATION",
+        "ENGAGED_LIFT",
+        "CARRY"
+      ],
+      "required_fields": [
+        "step",
+        "clean_record_valid",
+        "clean_terminal",
+        "remaining_horizon",
+        "object_identity",
+        "object_position",
+        "eef_position",
+        "object_eef_distance_m",
+        "object_gripper_contact",
+        "object_support_contact",
+        "contact_telemetry_valid",
+        "raw_gripper",
+        "env_gripper"
+      ],
+      "schema": "STAGE_V_M3_5_PHASE_CLASSIFIER_V1",
+      "state_rule": "object identity and baseline are explicit; missing telemetry yields UNKNOWN",
+      "thresholds": {
+        "action_semantics_tolerance": 1e-06,
+        "carry_relative_distance_m": 0.04,
+        "carry_stability_steps": 3,
+        "env_close_value": 1.0,
+        "env_open_value": -1.0,
+        "lift_delta_m": 0.015,
+        "object_eef_distance_m": 0.12,
+        "raw_open_threshold": 0.5
+      },
+      "unknown_label": "UNKNOWN",
+      "version": "V1"
+    },
+    "student_or_detector_used": false
+  },
+  "canonical_parent_key": "libero_goal/task_08/state_20",
+  "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+  "checkpoint_manifest": null,
+  "clean_reference": {
+    "action_semantics": {
+      "accepted": 300,
+      "checks": 300,
+      "historical_classifier_gripper_placeholder": "raw=0.0,env=1.0_for_valid_M2_rows",
+      "invalid": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "rule": "PI05_CLIP_RAW_TO_LIBERO_V1",
+      "schema": "STAGE_Z_ACTION_SEMANTICS_DIAGNOSTICS_V1"
+    },
+    "candidate_count": 57,
+    "candidate_digest": "fe0f1c558776e58cdacf4a8b4fbef0bfe5658a3210cecc74d95f129ee0af1d05",
+    "critical_candidates": [
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "f79a7288c2f50262250a09ed6f9b329bc58d26e39674c7701f3e1ae56a38e805",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "39e3215085693878b179747484a1e687a50fd4c4d46095362bf894a30466b840",
+        "step": 30
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "db69a9a8ac941523ae650ed7aeea478a67fb2455d210b24ba978dcabbfed2f1c",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "b1ba0c186d7d1986a3b2136a1ad9dc950f4f38068481c6f7e27a488208a19043",
+        "step": 35
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "c7dfa4a78d6b17159d5b5ec01d32e7c10ae966849c6bb11ad55dccbda086371b",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "40c521e5e07c8df1d3c3ca76b7f70d1a58faab7af7dc3ec48c864f1f0ac4559a",
+        "step": 40
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "f96e4ca5d590fa0eecf4da835f5e50ab623c1fccd7fa817ded3b23ce658850f0",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "ENGAGED_LIFT",
+        "state_sha256": "2d0790e6dbcc8614e88865ffd6c84d1cfe219d41f407188210585f1dbc645721",
+        "step": 45
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "34105d0487a32fa287ff7d887b9b517cc3c457da966f3be85502c2b15f629706",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "ENGAGED_LIFT",
+        "state_sha256": "0309865b2d5e95f1917e3732aa982127908ae332c067675fa2b612301e51251a",
+        "step": 50
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "a39e24c68d4ad1c56713d1a931b06ed4e0fccd60f631e501a64fa8faf2645488",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "33671fb9be3eb5b0832677a0a66b6ce6493b3a9bb40ea11ea6aeb635474d5614",
+        "step": 70
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "813f4c93127fcc4142df811a07c078d3ad0870ebe568874b349cf2067a93c9cf",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "e149060f769b26672b7a3477a14717b0f795dc2cc80c5215ce6d2042d08e4c83",
+        "step": 75
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "fb869746d602a599d22068955e448fe556a8bb52c8237b16aa6628a63df9916b",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "e187c0620dce76714a6960a01d6ba7a035cc7257d199672be860fdb4e9c68cc1",
+        "step": 80
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "b9451438eba0477bb2b2dd52959f154d1d8a67e311d3b2cb5c29e61f6870b8d8",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "ENGAGED_LIFT",
+        "state_sha256": "6d2013d3002c9b6d55a95fb28b93537172b1bf8ab8c257dadcc76701a5bbf0e3",
+        "step": 85
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "d39aa031f929105cbffe7c8a88353b83d407dcf4655b2f4327f6a12779fbbd3f",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "ENGAGED_LIFT",
+        "state_sha256": "d040a3f5f225c6c9be0cf588448e75f08840df9d46e0f98858f6cd46371e039a",
+        "step": 90
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "329edbfd8246b17deab805e44f8f2cb1451c2a74a68502b418551040b8add5e5",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "ENGAGED_LIFT",
+        "state_sha256": "ce02230a87ca6d6a655be7f8e8ff87d26c44cace76224c1b1097129c82029dab",
+        "step": 95
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "d53b161dc88e0b00fcff3d24b21eca01d2f25b1229a6d7c6bb4e5d48e49f6ce5",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "ENGAGED_LIFT",
+        "state_sha256": "a389ab4fa3c2654878ccf4c7b9918489d347071643ed150ae246d553e1f059ae",
+        "step": 100
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "8a545569f603e4e33d9fd8e61b9386f1aebe02f3e13c21f04e51607c784c6ae0",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "ENGAGED_LIFT",
+        "state_sha256": "251715630d12fa6263b5f59f6c32810e15d92b127c059f89835eb85e0e189dfb",
+        "step": 105
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "acfd00f9df5a7c1f75ef5a74948b6b9d3270a5d466e40b759c22d43cb905d9f1",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "a59a8fdf2767abaca54ab446220258e15fe0d2a7813aa61fc5e973d64cbf24e6",
+        "step": 110
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "839ec9264a0417bce4e56f0f535108e7545693bf7dcb876456081d972a52d35c",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "d283c8c1adff1095ad6fbd3ed62986422956683ebe358bdb7d7b10f7d7c0319f",
+        "step": 115
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "af8a3245c71b2f98ce738518929214415ca9a61ded1019e09cb91ad903348726",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "253f3fb8b6edbc96b87e6c6cba4bbf3e9ad8040184965a3e088c3b1483125606",
+        "step": 120
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "ab515036f5c3aa47e3cf847122234e18c3419bdf61d5e056d8fad0e667725914",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "d666e5ebe7f22547f117b04c062924ed3c83dc74aad4a6f6f6a3cdbd192769f8",
+        "step": 125
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "5f20180435abb5effc2a36076c7f1a4e5ccd39b18e59d177e0b9d7ddf2a74392",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "375646b415ec6aec6db8ff6aa664152fb3e498de87170ee80b7a43c6d73bdaa4",
+        "step": 130
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "57d98714467d843dcec4576c77ed4ac157c97ebc6c4e8f5983e2d30bcd422525",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "4f8dda559a38a5ceb9d2c2b60f723d9545d34b2ce1fb4b5aa1c9b3d44f0db68c",
+        "step": 135
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "31475bdb7429382ba8b34fbcf191c197154568465fd40bcbbccfb2d23644bcad",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "dc9abbdd54cbf33278552f938385aef44f6f9fe1872802d8dcf44f6954eec9c8",
+        "step": 140
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "9962c8823e74f81034a2fb0d2ee00a6791d26835f01fc91d65fee169919e5d7b",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "1ed4c6778550c3c6028290fbe60ddd44a573469e3d5c30554ce9ca25944894fa",
+        "step": 145
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "9770edd1a460017a8e7ca45df069efa2fbe8683925fc814392306bfc20c1d83e",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "0288cedc2331c2ae5f7a497bad4164d64db55205d4c2956cac30bf2b1314f039",
+        "step": 150
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "3097776d0e316320d6e28504c7700cf8f3e53cbc82bdc79d648db357d483215c",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "0362e31c65e230100aa117def87b6b53da5f743cae6d4a4e6368260fcc910f67",
+        "step": 175
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "bb13eeba0d65f094b20c9e577c1863a2bc0389b77821fad19535c58a48d79fb7",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "e3b1cedcb69a86773c29d855ddeb2d2ca9a1dd561d016ebef4c008ff969b855c",
+        "step": 180
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "9fc9afcc58a54500641a7723899653eb8c7590acf4551edc7f92bc4d20fe1df4",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "0e2df52ff0f01b12deb7860ded5a4aecd00a79eee3463e74bff72ebaef9fc40f",
+        "step": 185
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "5341b6b8e446971fb55a0c377d40e91894a974fb67ca7b96fb73fb952d8fc356",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "95793611194a38c8b5ff03be8d6be66866a2e9f54dd57e031473f6c46fff96c9",
+        "step": 190
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "10efa00592a719ce75a05033bf599c4499c26fa8f1a250bd41758be2d8388206",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "a20103d320a7f21d1d32a211a3acd1de064d17100bf383ff86aaf1c17c6d1d7f",
+        "step": 195
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "5b40593979faa1c74083633ce8c5562dc67fda49c4d5293d4f909350aeb9cf36",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "aab24adcd58b90c97f05b36b8eaf23f5bab7fe2e589c6a07ecb44fa014c925b5",
+        "step": 200
+      },
+      {
+        "anchor_class": "CRITICAL",
+        "candidate_digest": "ff51abf2cc23bb18593e789a8450c6edad9c21d98c6ccfeac219812040ef9f13",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "CONTACT_MANIPULATION",
+        "state_sha256": "1ce4cd45d953e674ad71959bd398a0cc85d6e2210cb7ac5aa5dba6096db43e0c",
+        "step": 205
+      }
+    ],
+    "decision_boundaries": [
+      {
+        "action_chunk_sha256": "4d17b003d2784525e6cd7f7d8c22a13f7d358690c19a52ef4ec1408a38ae0ddf",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "795a2326cf11e22b6f4784180ba7287429391cd4f538c6f28e02c317cad1ad0f",
+        "step": 0
+      },
+      {
+        "action_chunk_sha256": "05b631d0652037683f1ac8deab310deb7a4b5b20a1efb40fc6b6eeb4474fa6fe",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "09f72abada3a730b1c38983ef4e50814d37c1797975dc5615c0bdf764ce08b89",
+        "step": 5
+      },
+      {
+        "action_chunk_sha256": "50b42efa820577ff39793d9a73ea611441fff3ba1daf95fddcb7bbcb5172828f",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "d7aad1e0b612de09e30b46193b34de0e237b3de9695f97fa66c7470b4bc0a38d",
+        "step": 10
+      },
+      {
+        "action_chunk_sha256": "e42ce1d2fa6e7d498dff79f9cb67c30195d6685384495a84787a565d245765f9",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "4d07cc49fad77e192906b44e8b5a4a4c2e66d86b3e7f767231645f5194234b80",
+        "step": 15
+      },
+      {
+        "action_chunk_sha256": "66d39f8edca11800b0946f3650c1c458b54da23d932bb483433aaeb2c54f9d6f",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "ab45ef348fc2a0b45e352acdccea1cd62f0a4f4de41bb5555992496c4377c5ad",
+        "step": 20
+      },
+      {
+        "action_chunk_sha256": "cd46a5f0b8da1b411051e4ca799e15bff96b771a406cbd3e240ab211d04a55d2",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "ee183bc345db9e4069a49806e1e91fefabf0986a7bd55ce17cab32ce3fa6cf2a",
+        "step": 25
+      },
+      {
+        "action_chunk_sha256": "9b00fb010bfdde14ac171c7ee6d95f1b5abd762c1bcbf3fcdb1503e560583ba9",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "39e3215085693878b179747484a1e687a50fd4c4d46095362bf894a30466b840",
+        "step": 30
+      },
+      {
+        "action_chunk_sha256": "dd5c36ea6a7d6cb9e5726e702ccf593ce86b28dbdcd3c2b374b81ed449b42bc7",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "b1ba0c186d7d1986a3b2136a1ad9dc950f4f38068481c6f7e27a488208a19043",
+        "step": 35
+      },
+      {
+        "action_chunk_sha256": "32c067b4e42ccd51fe064022f031749dcbb3588ada70806f140d60c82e576c2a",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "40c521e5e07c8df1d3c3ca76b7f70d1a58faab7af7dc3ec48c864f1f0ac4559a",
+        "step": 40
+      },
+      {
+        "action_chunk_sha256": "895bfb85fffa07897277fc82fd33392e43878590634f6f6cc1f6d982ca6f77f8",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "2d0790e6dbcc8614e88865ffd6c84d1cfe219d41f407188210585f1dbc645721",
+        "step": 45
+      },
+      {
+        "action_chunk_sha256": "3f58d9de424518d9d617381260863b3f29e2fbf3d058a5be92e11e845db26fd2",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "0309865b2d5e95f1917e3732aa982127908ae332c067675fa2b612301e51251a",
+        "step": 50
+      },
+      {
+        "action_chunk_sha256": "f875c13c27dec118a744d1eabf85854762591a8f33430f18a3c0786fa6972d45",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "e33a063bd01291afa64b3dfc24be7d286da09f82d0c57e1a20b362f6bf1ad17a",
+        "step": 55
+      },
+      {
+        "action_chunk_sha256": "ac2dfbb400064fd2fde5722b500f73dd2fa5d9b0678281791f8917d54de68139",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "30ae05100bcf088d15a3211b5ec7c308b51f90bc09f00ee4108cc2e23aba0492",
+        "step": 60
+      },
+      {
+        "action_chunk_sha256": "d13d084989d041f6fa21fb7009906e57ebcd4c2ebe007df94dd9564d6e3f92d6",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "a2a286ea1fdbe3dedfe94ba981aee6ed1235002610160ddfea5d57943db422aa",
+        "step": 65
+      },
+      {
+        "action_chunk_sha256": "c7849e850e85d5ac068bdb7b04488b7f0bb409c7fbc0af053f9f8522b688a5b5",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "33671fb9be3eb5b0832677a0a66b6ce6493b3a9bb40ea11ea6aeb635474d5614",
+        "step": 70
+      },
+      {
+        "action_chunk_sha256": "0e6f0eb9e6e29b6a2080a5924869fb49f82c2df686addb7fce7de0bb59dbfbc8",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "e149060f769b26672b7a3477a14717b0f795dc2cc80c5215ce6d2042d08e4c83",
+        "step": 75
+      },
+      {
+        "action_chunk_sha256": "675cd6f4f30e51074f27df2b2ec7ac84df4cc225008651bbaec1b023dd9a49d5",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "e187c0620dce76714a6960a01d6ba7a035cc7257d199672be860fdb4e9c68cc1",
+        "step": 80
+      },
+      {
+        "action_chunk_sha256": "21cbd8561a2ef9a3a270ea0c04e53f918ded4b39eb5491c235652b00c3e9b482",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "6d2013d3002c9b6d55a95fb28b93537172b1bf8ab8c257dadcc76701a5bbf0e3",
+        "step": 85
+      },
+      {
+        "action_chunk_sha256": "44d40d789b4d612548dccda88c79c1c1cd31adaf3a9f14dcb533a2903acff34f",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "d040a3f5f225c6c9be0cf588448e75f08840df9d46e0f98858f6cd46371e039a",
+        "step": 90
+      },
+      {
+        "action_chunk_sha256": "474d3c9f3337e30aedf03675ee61859a865abd80eb11d3bb3e51e85a80dc754f",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "ce02230a87ca6d6a655be7f8e8ff87d26c44cace76224c1b1097129c82029dab",
+        "step": 95
+      },
+      {
+        "action_chunk_sha256": "b29fd0bbcd09a3c640551e7c8a90e24ea6d249beef05a03e792e78b6775b4e5c",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "a389ab4fa3c2654878ccf4c7b9918489d347071643ed150ae246d553e1f059ae",
+        "step": 100
+      },
+      {
+        "action_chunk_sha256": "2e5c3ed1c674ea087a40c94e85149b5c631b5aeb16ba015b9538bc0ee227ea89",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "251715630d12fa6263b5f59f6c32810e15d92b127c059f89835eb85e0e189dfb",
+        "step": 105
+      },
+      {
+        "action_chunk_sha256": "64d268097576d4f32e993ebff320cce2fc485ec04de4e2658b213b153a7a05c0",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "a59a8fdf2767abaca54ab446220258e15fe0d2a7813aa61fc5e973d64cbf24e6",
+        "step": 110
+      },
+      {
+        "action_chunk_sha256": "a2e9165521ff1ea09d9ae413d54ef28abf1b9b0fd201b539b2b92c169a5e7b5c",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "d283c8c1adff1095ad6fbd3ed62986422956683ebe358bdb7d7b10f7d7c0319f",
+        "step": 115
+      },
+      {
+        "action_chunk_sha256": "39d9336d00ad1ae5cef21ae422ee192fb0c4738488ecfdc39ba4f2a79d66ca80",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "253f3fb8b6edbc96b87e6c6cba4bbf3e9ad8040184965a3e088c3b1483125606",
+        "step": 120
+      },
+      {
+        "action_chunk_sha256": "8d1277846eea001a1a5c13026799399ff895a3043fa346e0b09e0e94f677bf1d",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "d666e5ebe7f22547f117b04c062924ed3c83dc74aad4a6f6f6a3cdbd192769f8",
+        "step": 125
+      },
+      {
+        "action_chunk_sha256": "b2045b327bc59665040c70287c78761679cd1b68bead16397aa7f81a4446cc08",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "375646b415ec6aec6db8ff6aa664152fb3e498de87170ee80b7a43c6d73bdaa4",
+        "step": 130
+      },
+      {
+        "action_chunk_sha256": "7da47768d0ef64238497756ae608354fc4baea5d422b2e00e8c38021f337ae78",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "4f8dda559a38a5ceb9d2c2b60f723d9545d34b2ce1fb4b5aa1c9b3d44f0db68c",
+        "step": 135
+      },
+      {
+        "action_chunk_sha256": "df1044d767f832feeb2aae36229e1d70644b60e5e105a387a1a62390863b74d6",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "dc9abbdd54cbf33278552f938385aef44f6f9fe1872802d8dcf44f6954eec9c8",
+        "step": 140
+      },
+      {
+        "action_chunk_sha256": "652bab3b78d88caa81e7674d65dc4ee4ebe7fad02a16d6210eb20ce4ff3cadc2",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "1ed4c6778550c3c6028290fbe60ddd44a573469e3d5c30554ce9ca25944894fa",
+        "step": 145
+      },
+      {
+        "action_chunk_sha256": "37658c65a2148f017e34b5d630d637c5532cb7dc9373b48c8932209fe5fc2d80",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "0288cedc2331c2ae5f7a497bad4164d64db55205d4c2956cac30bf2b1314f039",
+        "step": 150
+      },
+      {
+        "action_chunk_sha256": "28d29a30d800524bb7ee14c2c322ca5d0678cbd55f657adf4cefb0eee5837df2",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "60a6a7b9ac11111fb59b9f30ef5665cdb62a97655a3c1ec496142c293ff44761",
+        "step": 155
+      },
+      {
+        "action_chunk_sha256": "2e0c4fcada7cc028ab18606ddab4dc4879d3675d7efc995e9e31e14380c3b4c3",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "a7175e267a7012c79bc7c536c9a16f1247d0426af6c56a88591eb6d1c467056f",
+        "step": 160
+      },
+      {
+        "action_chunk_sha256": "998b7df889ca1fc46698ae38b4036f643abd5498c87004838b7eace4b450caf1",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "dbc396a266f188343e36a2d4499339505715a4153b10db0e983d5ef3e6b0c2fb",
+        "step": 165
+      },
+      {
+        "action_chunk_sha256": "d8ab96eedd49a59304ac58148f5aefee1ea0f9bf4e1669d32267308c81e266a5",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "dede86881941f623c704e1493dedfe25e4467c35d7eca308b773967987e4e9f5",
+        "step": 170
+      },
+      {
+        "action_chunk_sha256": "8a96def92926925600c07c4aad879b60828a85a08bdb9fea19ae83c68ae6eeb7",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "0362e31c65e230100aa117def87b6b53da5f743cae6d4a4e6368260fcc910f67",
+        "step": 175
+      },
+      {
+        "action_chunk_sha256": "4a4624d5b3112b930b84d02bd9448d5384a33d2de8ac3f56f0b1287e6fce4db3",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "e3b1cedcb69a86773c29d855ddeb2d2ca9a1dd561d016ebef4c008ff969b855c",
+        "step": 180
+      },
+      {
+        "action_chunk_sha256": "c9024afe13526d48da8514f49f3b7eea5bf3f7cbb53e53b1d0756a5d68a698a2",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "0e2df52ff0f01b12deb7860ded5a4aecd00a79eee3463e74bff72ebaef9fc40f",
+        "step": 185
+      },
+      {
+        "action_chunk_sha256": "4835ae6f7dcb6e2bc4554dd4f2cd95751f4126eee8bff43355ce65f8d22a3099",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "95793611194a38c8b5ff03be8d6be66866a2e9f54dd57e031473f6c46fff96c9",
+        "step": 190
+      },
+      {
+        "action_chunk_sha256": "4e328a66cf7ca84465b6ea6d125710c54aab3bc1884fa7bdf21f2238d138c134",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "a20103d320a7f21d1d32a211a3acd1de064d17100bf383ff86aaf1c17c6d1d7f",
+        "step": 195
+      },
+      {
+        "action_chunk_sha256": "53ce967d186f041efafe452e8b5d1c46c09e16f58b2f7bf6be878d8057252b3a",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "aab24adcd58b90c97f05b36b8eaf23f5bab7fe2e589c6a07ecb44fa014c925b5",
+        "step": 200
+      },
+      {
+        "action_chunk_sha256": "7a23822a7eac17088927b66a35415afcae70160b32480d27aececa53cc424fe8",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "1ce4cd45d953e674ad71959bd398a0cc85d6e2210cb7ac5aa5dba6096db43e0c",
+        "step": 205
+      },
+      {
+        "action_chunk_sha256": "c6db68f421c2e1addaadc83d5aae5431d8bf4251332745af52dfe944bc69ea60",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "2a7e250f44c08f0c6a46068fc1d50f854430a869700b30014b2a6a4abfaa2f2d",
+        "step": 210
+      },
+      {
+        "action_chunk_sha256": "b37d0f365cfa85c21f9c7db2061781bf69d705028d8e88479b1b82086c405b64",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "790ce26d51a129507040b0d4d4b4ff654018348479f7a36058d9bb4d9d253e78",
+        "step": 215
+      },
+      {
+        "action_chunk_sha256": "337bcf80643e9fc7c9ce17ed20730e9d3bbf2d95e91b0c035e6bd270d003fc48",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "2bb9bb433a73781576f2ca7066634fe04146fd137469781bf85541935090211c",
+        "step": 220
+      },
+      {
+        "action_chunk_sha256": "9ae70482f7b05eadaa258dec3f7ff2a2d7e55ad8d3b446f634c6bad23dfb2c5b",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "ca8bdf7383a803ad7c63128dd7a72b2bff580158253e8272a47de87ea66e17ce",
+        "step": 225
+      },
+      {
+        "action_chunk_sha256": "a59a4e605796714d7ddc21bd7f1ca10cf28705410ca9bf36e884bb5f07bb4633",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "4c4c545e8710788bbd3c3b5ca7b92b38cc899eee3f056816e17fc46e9b5c0e83",
+        "step": 230
+      },
+      {
+        "action_chunk_sha256": "d0c16b7cb95d355bc623434e36ae7e5bdf9a69ed53ab8987f7d6d5d9fcc8a29f",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "5ae9dec7d48591007df90c086a23b9d1e466d62dc0b033ca4372e73e34a09569",
+        "step": 235
+      },
+      {
+        "action_chunk_sha256": "c869a1cde38b152ec24041d0e2ef6fb22d1a6427c4dce11f9b8fb26ea3514f80",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "74465b1ffc33c46d177e7a5165ce8e235e09636464a745ca7a6eb7c395ce9a4a",
+        "step": 240
+      },
+      {
+        "action_chunk_sha256": "6418ec2cb6a13ce62a7ac2d9a827fa085b55ec14e45e298c5ed52c36d4b4c927",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "112fd8d1ba659d097cc5b116a58c9ac0516368d6c7319ffa9c2974819f9c398a",
+        "step": 245
+      },
+      {
+        "action_chunk_sha256": "8af3f52a1ee6e0006c4eab43efd150235e7e904504d101bd8e263085293f839d",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "7c782c8ba7804ada2003692a50eb0c11acc7ad67c304f89406a3a04dc037898d",
+        "step": 250
+      },
+      {
+        "action_chunk_sha256": "936af10e47dd71dca3f4acd19db49c6e0a3f3b009d5e58b56b2dc54ddcbba662",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "a8c971d0436d5d674423fcc8af1f9ad70ecee1f4c5a4b28c9ca4e69bbd41ae01",
+        "step": 255
+      },
+      {
+        "action_chunk_sha256": "9a8bfb60d02505af4e2e6a085996b6e53c494ce8517dc7a6e1c38f8d07bc472a",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "93b99f688d025d27edeb1b3a95e26bc196818856db76ffa7c64ac801301628d3",
+        "step": 260
+      },
+      {
+        "action_chunk_sha256": "4b02440b80fa0a81e514e058efcd7c88f56012e1da7854d8d9b2219bc1b3fa0d",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "7ae9138dc6ebfab62d50d1c97da34461f44984ea64335957d8649c5a8f9b3407",
+        "step": 265
+      },
+      {
+        "action_chunk_sha256": "bddeec81b1ae562554cb8967fd3c46b2f83879ddf2b4940119231c957982da72",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "b59c80bf60029e959f12a2d49d82d124c24055529c17af9319fab0201b31bd60",
+        "step": 270
+      },
+      {
+        "action_chunk_sha256": "9971857d1c64af708b2acbd4e90c64f3e8397195993323e4a6fa0dc165992702",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "ee0ccc24d327af185c66527c7b4e366f9558219ccc1c1aba54854766b4ae2375",
+        "step": 275
+      },
+      {
+        "action_chunk_sha256": "dc2dcced3ca68479d637f4739d16077ae48c9eee2acc240501ba130084d45120",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "ba6d0c46940ece64dd626e429ca94954e6727302e4c5d38494e345c9d92099d7",
+        "step": 280
+      },
+      {
+        "action_chunk_sha256": "c655cc591fafa072ff22435f57982f508b6ac9e2b8fb37283c8ea342615e78ba",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "0dc16fa335c426ed81d5ab7873b4579db9aafd954409251c2e637a9f2ad071a1",
+        "step": 285
+      },
+      {
+        "action_chunk_sha256": "1eda2ec5a2e985c3f0d35aab0334e38e9766e7020fa494579ea94fde6c1125a2",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "27ee6750fd87cd90fd37da79a8a55dc6aa5e0494f42e43fe573e7f0c150afc9c",
+        "step": 290
+      },
+      {
+        "action_chunk_sha256": "403b61ae685a7f191db3c0c7bb523d3f99db305bc8eb1ad9683235a71faf3266",
+        "chunk_length": 5,
+        "model_boundary": "FRESH_PI05_REPLAN",
+        "state_sha256": "fb244f4187b3fe800a275638d837610674a1ebac4274597cfe54c752d5b037cc",
+        "step": 295
+      }
+    ],
+    "decision_boundary_count": 60,
+    "dummy_wait_steps": 10,
+    "horizon": 300,
+    "noncritical_candidates": [
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "774f70f15822f0c4026feeab5b61c21f640503b96ae5c78765adb6bd40eccb4f",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "795a2326cf11e22b6f4784180ba7287429391cd4f538c6f28e02c317cad1ad0f",
+        "step": 0
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "8495be96284a261600a2d75381d7ace58465005c6bca96bd2694f3373149f94b",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "09f72abada3a730b1c38983ef4e50814d37c1797975dc5615c0bdf764ce08b89",
+        "step": 5
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "97a90d99f9909672c796060aa1939b5086bce49c5563606d10b4cc92e2e0b37d",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "d7aad1e0b612de09e30b46193b34de0e237b3de9695f97fa66c7470b4bc0a38d",
+        "step": 10
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "21bfd3831b7f9b17c8a1a359effef8f49e625ff1216c8989e0aba73a40b5ca31",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "4d07cc49fad77e192906b44e8b5a4a4c2e66d86b3e7f767231645f5194234b80",
+        "step": 15
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "79edc954246b768654023eb90f25704e3ceca9526553c71c3cc0b7f123c08d85",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "ab45ef348fc2a0b45e352acdccea1cd62f0a4f4de41bb5555992496c4377c5ad",
+        "step": 20
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "008458a615ae1979ab404a8302d0669fb01b7dfed76fdfa1a35f9f253ee2421f",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "ee183bc345db9e4069a49806e1e91fefabf0986a7bd55ce17cab32ce3fa6cf2a",
+        "step": 25
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "764622b1a0a0cd045e3a13302fc9ad633f16153c61ca0a0c16f13337c57595c0",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "e33a063bd01291afa64b3dfc24be7d286da09f82d0c57e1a20b362f6bf1ad17a",
+        "step": 55
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "d4d7af5e052275324d4ed9411c80ff25db8b271c1af5e6499c37cc79f6cee97c",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "30ae05100bcf088d15a3211b5ec7c308b51f90bc09f00ee4108cc2e23aba0492",
+        "step": 60
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "6c14f6010fd4e21b3a46ed283ad9a2d716bff458441e172a07f420ccd3d44709",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "a2a286ea1fdbe3dedfe94ba981aee6ed1235002610160ddfea5d57943db422aa",
+        "step": 65
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "e428b58c7de0eb89293b3c530f7c9c795ad6204958829c836a305bdb821093c8",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "60a6a7b9ac11111fb59b9f30ef5665cdb62a97655a3c1ec496142c293ff44761",
+        "step": 155
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "688618584465b5bffbb101aac712e6b5d8060b691f1421b492f6db207b31f757",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "a7175e267a7012c79bc7c536c9a16f1247d0426af6c56a88591eb6d1c467056f",
+        "step": 160
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "8ad0c29a66604f58189b435ad05cd67de69758a42f50e6468123bb48427bad5a",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "dbc396a266f188343e36a2d4499339505715a4153b10db0e983d5ef3e6b0c2fb",
+        "step": 165
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "f06b4c4158d53586de55ef46b56275ddceccfd708fd98b62d57b138ad551e66c",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "dede86881941f623c704e1493dedfe25e4467c35d7eca308b773967987e4e9f5",
+        "step": 170
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "bc233979329191bd073e25cd944c65475c90e078bb95b3860f03361582165bf4",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "2a7e250f44c08f0c6a46068fc1d50f854430a869700b30014b2a6a4abfaa2f2d",
+        "step": 210
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "ab28dca5781a3b530f784ec225ddcec1c21b1df2559ffb0d6127ea16c4b5768b",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "790ce26d51a129507040b0d4d4b4ff654018348479f7a36058d9bb4d9d253e78",
+        "step": 215
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "1f72247ba92e0b2ce8d59a63d255d8d219a3c94fc1ba23e60765592c76aae305",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "2bb9bb433a73781576f2ca7066634fe04146fd137469781bf85541935090211c",
+        "step": 220
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "fa398d59d275314ea77e8debbfbf3719d1a354b70117d2f407c6368d4b2fbc85",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "ca8bdf7383a803ad7c63128dd7a72b2bff580158253e8272a47de87ea66e17ce",
+        "step": 225
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "f01b043ea2ff61d784fd8e9d4dfa423d6b69cbaa4b8247639f5c8ea23e46a3a6",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "4c4c545e8710788bbd3c3b5ca7b92b38cc899eee3f056816e17fc46e9b5c0e83",
+        "step": 230
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "c98e22d547208a5256b96c1f03db0a56fef6b7b95044b1546bd1b0cfb5868cff",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "5ae9dec7d48591007df90c086a23b9d1e466d62dc0b033ca4372e73e34a09569",
+        "step": 235
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "b771fb5683817b840764d5fe3bf662d007c545066e13b1f303a46090cc026bf1",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "74465b1ffc33c46d177e7a5165ce8e235e09636464a745ca7a6eb7c395ce9a4a",
+        "step": 240
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "4d44526c5b623a082c619cf9032ddbf96340ed8f64b1a9d3ec1b6795e11a054a",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "112fd8d1ba659d097cc5b116a58c9ac0516368d6c7319ffa9c2974819f9c398a",
+        "step": 245
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "54680adfd8a97bb6e65520ec12dd134e6a6aa87fe02e5f0d311da351497fb927",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "7c782c8ba7804ada2003692a50eb0c11acc7ad67c304f89406a3a04dc037898d",
+        "step": 250
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "dcc0924994d8d40e9ef76217e482701e7f0c6724efe166c22697cc7d393e72ac",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "a8c971d0436d5d674423fcc8af1f9ad70ecee1f4c5a4b28c9ca4e69bbd41ae01",
+        "step": 255
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "6821e4ffc724db2d87c354b374a31dfeec6375f110bfae38914fe90424b41587",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "93b99f688d025d27edeb1b3a95e26bc196818856db76ffa7c64ac801301628d3",
+        "step": 260
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "eb3f3da386c6e4d06c9bb6892aa7803e357d32eee0957a3ffc7271d89fa1a1ad",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "7ae9138dc6ebfab62d50d1c97da34461f44984ea64335957d8649c5a8f9b3407",
+        "step": 265
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "37cb4b5aa699fb1fc22282fcf894e365378b8b6b51bd7e02ff730d435314a999",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "b59c80bf60029e959f12a2d49d82d124c24055529c17af9319fab0201b31bd60",
+        "step": 270
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "1f499400855b24328b9526db217e1671f3a77a98d296c35ecf7cdfac44ac9fef",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "ee0ccc24d327af185c66527c7b4e366f9558219ccc1c1aba54854766b4ae2375",
+        "step": 275
+      },
+      {
+        "anchor_class": "NONCRITICAL",
+        "candidate_digest": "a4a37f6c20b717950ae71c9c65de0a6108b753e8290e7e1aae9498e646a5d04c",
+        "model_id": "M2_PI05_LIBERO",
+        "parent_key": "libero_goal/task_08/state_20",
+        "phase": "PRE_CONTACT",
+        "state_sha256": "ba6d0c46940ece64dd626e429ca94954e6727302e4c5d38494e345c9d92099d7",
+        "step": 280
+      }
+    ]
+  },
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/home/huanzze/isaac-gr00t-n1.7/.venv/bin/python3",
+        "pid": "3923069",
+        "used_memory_mib": "28540"
+      }
+    ],
+    "free_memory_mib": 52662,
+    "index": 5,
+    "used_memory_mib": 28561,
+    "utilization_gpu_percent": 62
+  },
+  "model_family": "M2_PI05_LIBERO",
+  "normalization": {
+    "checkpoint_mutated": false
+  },
+  "object_binding": {
+    "bddl_path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/bddl_files/libero_goal/put_the_bowl_on_the_plate.bddl",
+    "eef_site_id": 10,
+    "eef_site_name": "gripper0_grip_site",
+    "reason": "",
+    "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+    "status": "PASS",
+    "target_body_ids": {
+      "akita_black_bowl_1": 23
+    },
+    "target_body_names": {
+      "akita_black_bowl_1": "akita_black_bowl_1_main"
+    },
+    "target_object_ids": [
+      "akita_black_bowl_1"
+    ],
+    "taxonomy_eligibility": {
+      "declared_object_ids": [
+        "akita_black_bowl_1",
+        "cream_cheese_1",
+        "wine_bottle_1",
+        "plate_1"
+      ],
+      "eligible": true,
+      "fixture_binding_inference_allowed": false,
+      "reason": "",
+      "rule": "at least one declared source object in an In/On goal predicate",
+      "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+      "status": "PASS",
+      "target_object_ids": [
+        "akita_black_bowl_1"
+      ]
+    }
+  },
+  "panel_row": {
+    "candidate_count_after_union_exclusion": 1,
+    "canonical_parent_key": "libero_goal/task_08/state_20",
+    "selected_rank_sha256": "3ee781bd6216dbcbf5a6cf514cdcb06e2c8cca1e771c6f6aef35d54acf37305c",
+    "source_v1_row_digest": "a8d753881e578e920ebbdcbae358916950612990c67ebe0b99c250c99680e242",
+    "state": "FROZEN_SHARED_FRESH",
+    "suite": "libero_goal",
+    "task_idx": 8
+  },
+  "population": "scientific",
+  "protected_boundary": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160": "UNREAD",
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected": "UNREAD",
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "role": "PRIMARY",
+  "runtime_counters": {
+    "anchor_telemetry_reads": 300,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 310,
+    "eval160_reads": 0,
+    "model_inference_calls": 60,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 1,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z2R1_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+  "scientific_claim": "Z2_CLEAN_REFERENCE_AND_ANCHOR_ONLY",
+  "selected_anchors": {
+    "critical": {
+      "action_rows": [
+        {
+          "env_action": [
+            -0.013650772161781788,
+            -0.014209364540874958,
+            0.01810358092188835,
+            -0.000589762523304671,
+            -0.0018733884207904339,
+            0.0008467803709208965,
+            -1.0
+          ],
+          "raw_action": [
+            -0.013650772161781788,
+            -0.014209364540874958,
+            0.01810358092188835,
+            -0.000589762523304671,
+            -0.0018733884207904339,
+            0.0008467803709208965,
+            -1.0044870376586914
+          ],
+          "step": 150
+        },
+        {
+          "env_action": [
+            -0.014363640919327736,
+            -0.01334421057254076,
+            0.017687028273940086,
+            -0.0004521578666754067,
+            -0.001766800181940198,
+            0.0012706289999186993,
+            -1.0
+          ],
+          "raw_action": [
+            -0.014363640919327736,
+            -0.01334421057254076,
+            0.017687028273940086,
+            -0.0004521578666754067,
+            -0.001766800181940198,
+            0.0012706289999186993,
+            -1.0006725788116455
+          ],
+          "step": 151
+        },
+        {
+          "env_action": [
+            -0.016189388930797577,
+            -0.014669523574411869,
+            0.018028493970632553,
+            -0.00024270644644275308,
+            -0.0018381166737526655,
+            0.001684041228145361,
+            -1.0
+          ],
+          "raw_action": [
+            -0.016189388930797577,
+            -0.014669523574411869,
+            0.018028493970632553,
+            -0.00024270644644275308,
+            -0.0018381166737526655,
+            0.001684041228145361,
+            -1.0016684532165527
+          ],
+          "step": 152
+        },
+        {
+          "env_action": [
+            -0.014125080779194832,
+            -0.011642323806881905,
+            0.01708432100713253,
+            0.00020033102191518992,
+            -0.0019304060842841864,
+            0.001962595386430621,
+            -1.0
+          ],
+          "raw_action": [
+            -0.014125080779194832,
+            -0.011642323806881905,
+            0.01708432100713253,
+            0.00020033102191518992,
+            -0.0019304060842841864,
+            0.001962595386430621,
+            -1.0036543607711792
+          ],
+          "step": 153
+        },
+        {
+          "env_action": [
+            -0.01776784099638462,
+            -0.01299408357590437,
+            0.01785988360643387,
+            7.110444857971743e-05,
+            -0.0019082946237176657,
+            0.0014722375199198723,
+            -1.0
+          ],
+          "raw_action": [
+            -0.01776784099638462,
+            -0.01299408357590437,
+            0.01785988360643387,
+            7.110444857971743e-05,
+            -0.0019082946237176657,
+            0.0014722375199198723,
+            -1.0019136667251587
+          ],
+          "step": 154
+        },
+        {
+          "env_action": [
+            -0.017836015671491623,
+            -0.020514419302344322,
+            0.011229109950363636,
+            2.3575377781526186e-05,
+            -0.0006257997592911124,
+            0.0010847955709323287,
+            -1.0
+          ],
+          "raw_action": [
+            -0.017836015671491623,
+            -0.020514419302344322,
+            0.011229109950363636,
+            2.3575377781526186e-05,
+            -0.0006257997592911124,
+            0.0010847955709323287,
+            -1.003410816192627
+          ],
+          "step": 155
+        },
+        {
+          "env_action": [
+            -0.019567986950278282,
+            -0.019662784412503242,
+            0.00616186298429966,
+            2.1721216398873366e-05,
+            -0.0007879015756770968,
+            0.0013777222484350204,
+            -1.0
+          ],
+          "raw_action": [
+            -0.019567986950278282,
+            -0.019662784412503242,
+            0.00616186298429966,
+            2.1721216398873366e-05,
+            -0.0007879015756770968,
+            0.0013777222484350204,
+            -1.0030027627944946
+          ],
+          "step": 156
+        },
+        {
+          "env_action": [
+            -0.01999887079000473,
+            -0.019890347495675087,
+            0.008225634694099426,
+            0.0004538855282589793,
+            -0.0009604063234291971,
+            0.0015555624850094318,
+            -1.0
+          ],
+          "raw_action": [
+            -0.01999887079000473,
+            -0.019890347495675087,
+            0.008225634694099426,
+            0.0004538855282589793,
+            -0.0009604063234291971,
+            0.0015555624850094318,
+            -1.0016835927963257
+          ],
+          "step": 157
+        },
+        {
+          "env_action": [
+            -0.019341927021741867,
+            -0.019830545410513878,
+            0.00899125263094902,
+            0.0006033704848960042,
+            -0.0012196648167446256,
+            0.00150769401807338,
+            -1.0
+          ],
+          "raw_action": [
+            -0.019341927021741867,
+            -0.019830545410513878,
+            0.00899125263094902,
+            0.0006033704848960042,
+            -0.0012196648167446256,
+            0.00150769401807338,
+            -1.0008764266967773
+          ],
+          "step": 158
+        },
+        {
+          "env_action": [
+            -0.01895657554268837,
+            -0.019110554829239845,
+            0.007878804579377174,
+            0.0005018723895773292,
+            -0.0011006682179868221,
+            0.0016219057142734528,
+            -1.0
+          ],
+          "raw_action": [
+            -0.01895657554268837,
+            -0.019110554829239845,
+            0.007878804579377174,
+            0.0005018723895773292,
+            -0.0011006682179868221,
+            0.0016219057142734528,
+            -1.0006192922592163
+          ],
+          "step": 159
+        },
+        {
+          "env_action": [
+            -0.05713226646184921,
+            -0.02702285908162594,
+            -0.0008840676164254546,
+            -0.0001493880117777735,
+            -0.002398307900875807,
+            -0.001169758033938706,
+            -1.0
+          ],
+          "raw_action": [
+            -0.05713226646184921,
+            -0.02702285908162594,
+            -0.0008840676164254546,
+            -0.0001493880117777735,
+            -0.002398307900875807,
+            -0.001169758033938706,
+            -1.003720760345459
+          ],
+          "step": 160
+        },
+        {
+          "env_action": [
+            -0.047291260212659836,
+            -0.02315201796591282,
+            -0.007126501761376858,
+            -4.479201015783474e-05,
+            -0.002768593607470393,
+            5.449237141874619e-05,
+            -1.0
+          ],
+          "raw_action": [
+            -0.047291260212659836,
+            -0.02315201796591282,
+            -0.007126501761376858,
+            -4.479201015783474e-05,
+            -0.002768593607470393,
+            5.449237141874619e-05,
+            -1.0032610893249512
+          ],
+          "step": 161
+        },
+        {
+          "env_action": [
+            -0.03725135326385498,
+            -0.02019626460969448,
+            -0.011445170268416405,
+            0.00011155261017847806,
+            -0.002904834458604455,
+            0.0004151799366809428,
+            -1.0
+          ],
+          "raw_action": [
+            -0.03725135326385498,
+            -0.02019626460969448,
+            -0.011445170268416405,
+            0.00011155261017847806,
+            -0.002904834458604455,
+            0.0004151799366809428,
+            -1.0033071041107178
+          ],
+          "step": 162
+        },
+        {
+          "env_action": [
+            -0.03193606436252594,
+            -0.017309343442320824,
+            -0.01150226779282093,
+            7.880340854171664e-05,
+            -0.0031674455385655165,
+            0.001861067139543593,
+            -1.0
+          ],
+          "raw_action": [
+            -0.03193606436252594,
+            -0.017309343442320824,
+            -0.01150226779282093,
+            7.880340854171664e-05,
+            -0.0031674455385655165,
+            0.001861067139543593,
+            -1.002225637435913
+          ],
+          "step": 163
+        },
+        {
+          "env_action": [
+            -0.029578976333141327,
+            -0.016713790595531464,
+            -0.01329060923308134,
+            0.00019087709370069206,
+            -0.0026278826408088207,
+            0.002057080389931798,
+            -1.0
+          ],
+          "raw_action": [
+            -0.029578976333141327,
+            -0.016713790595531464,
+            -0.01329060923308134,
+            0.00019087709370069206,
+            -0.0026278826408088207,
+            0.002057080389931798,
+            -1.0006009340286255
+          ],
+          "step": 164
+        },
+        {
+          "env_action": [
+            -0.020884886384010315,
+            -0.015114287845790386,
+            0.018097100779414177,
+            -0.00017288929666392505,
+            -0.002563376212492585,
+            0.0009940355084836483,
+            -1.0
+          ],
+          "raw_action": [
+            -0.020884886384010315,
+            -0.015114287845790386,
+            0.018097100779414177,
+            -0.00017288929666392505,
+            -0.002563376212492585,
+            0.0009940355084836483,
+            -1.0011636018753052
+          ],
+          "step": 165
+        },
+        {
+          "env_action": [
+            -0.024246716871857643,
+            -0.01145063154399395,
+            0.006752501707524061,
+            -0.00012540601892396808,
+            -0.0029955049976706505,
+            0.0015409636544063687,
+            -1.0
+          ],
+          "raw_action": [
+            -0.024246716871857643,
+            -0.01145063154399395,
+            0.006752501707524061,
+            -0.00012540601892396808,
+            -0.0029955049976706505,
+            0.0015409636544063687,
+            -1.0024677515029907
+          ],
+          "step": 166
+        },
+        {
+          "env_action": [
+            -0.02493995614349842,
+            -0.014364592730998993,
+            0.00602006958797574,
+            9.00886079762131e-05,
+            -0.003495095996186137,
+            0.0016473028808832169,
+            -1.0
+          ],
+          "raw_action": [
+            -0.02493995614349842,
+            -0.014364592730998993,
+            0.00602006958797574,
+            9.00886079762131e-05,
+            -0.003495095996186137,
+            0.0016473028808832169,
+            -1.0022759437561035
+          ],
+          "step": 167
+        },
+        {
+          "env_action": [
+            -0.025101806968450546,
+            -0.01322421245276928,
+            0.002594007644802332,
+            -4.5616081479238346e-05,
+            -0.004092877730727196,
+            0.0022470010444521904,
+            -1.0
+          ],
+          "raw_action": [
+            -0.025101806968450546,
+            -0.01322421245276928,
+            0.002594007644802332,
+            -4.5616081479238346e-05,
+            -0.004092877730727196,
+            0.0022470010444521904,
+            -1.002764105796814
+          ],
+          "step": 168
+        },
+        {
+          "env_action": [
+            -0.026728805154561996,
+            -0.014108609408140182,
+            -0.0006046148482710123,
+            -4.07021761930082e-05,
+            -0.0054000746458768845,
+            0.0031358101405203342,
+            -1.0
+          ],
+          "raw_action": [
+            -0.026728805154561996,
+            -0.014108609408140182,
+            -0.0006046148482710123,
+            -4.07021761930082e-05,
+            -0.0054000746458768845,
+            0.0031358101405203342,
+            -1.001237154006958
+          ],
+          "step": 169
+        }
+      ],
+      "anchor_class": "CRITICAL",
+      "phase": "CONTACT_MANIPULATION",
+      "rank_digest": "02da5e16cf0ea07eeff751444abcfdd17628c1c82ca400d910ac9a012c1926bc",
+      "state": [
+        7.999999999999341,
+        0.06496963069521311,
+        0.8898532324171585,
+        -0.00238814680668562,
+        -1.2975994495700367,
+        -0.18622220451072868,
+        1.9907199017110928,
+        0.896601366763499,
+        0.0395067034650393,
+        -0.03988005829770236,
+        0.05908366583888339,
+        -0.04518344797181134,
+        0.9085268831015167,
+        0.6076675730874908,
+        -0.03835556161050987,
+        0.025267372522835053,
+        0.7928622398609317,
+        -0.034542577591702595,
+        0.11202557515479906,
+        0.9089214774186077,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        -0.21170973292358708,
+        -0.06032209808768328,
+        0.8988754774203452,
+        1.1093590875596498e-08,
+        -6.204091079947251e-06,
+        3.8784043987535737e-07,
+        0.9999999999806799,
+        0.04579996802614358,
+        -0.02814426990476323,
+        0.9025031031155292,
+        0.7059720323478124,
+        2.181506723914871e-05,
+        1.1957679533603638e-05,
+        0.7082397114846198,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.003620719121623459,
+        -0.01660525500059507,
+        -0.0011110738252269293,
+        -0.019182152205274246,
+        -5.981093992476507e-05,
+        0.0036351344386419786,
+        -0.001726992172892061,
+        0.0002684495958942136,
+        -0.00026966663174236486,
+        -9.45774879568596e-08,
+        8.718524980653029e-08,
+        -2.1038255686669207e-08,
+        5.245203194270235e-08,
+        -1.0038835004979284e-06,
+        -4.506540358892352e-07,
+        0.0,
+        0.0,
+        1.768583644633085e-14,
+        0.0,
+        0.0,
+        0.0,
+        1.0433314074416581e-17,
+        1.1632677245726237e-17,
+        1.7704913297034084e-14,
+        -1.2300391153654234e-15,
+        1.2992770835722965e-16,
+        1.8327933536928222e-18,
+        -8.707115436235071e-13,
+        7.423316903760533e-13,
+        4.696770977981067e-13,
+        -3.2704990585718764e-10,
+        2.72212558054672e-10,
+        1.6773081283465434e-11,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state_sha256": "0288cedc2331c2ae5f7a497bad4164d64db55205d4c2956cac30bf2b1314f039",
+      "status": "SELECTED_CRITICAL_ANCHOR",
+      "step": 150
+    },
+    "noncritical": {
+      "action_rows": [
+        {
+          "env_action": [
+            -0.017836015671491623,
+            -0.020514419302344322,
+            0.011229109950363636,
+            2.3575377781526186e-05,
+            -0.0006257997592911124,
+            0.0010847955709323287,
+            -1.0
+          ],
+          "raw_action": [
+            -0.017836015671491623,
+            -0.020514419302344322,
+            0.011229109950363636,
+            2.3575377781526186e-05,
+            -0.0006257997592911124,
+            0.0010847955709323287,
+            -1.003410816192627
+          ],
+          "step": 155
+        },
+        {
+          "env_action": [
+            -0.019567986950278282,
+            -0.019662784412503242,
+            0.00616186298429966,
+            2.1721216398873366e-05,
+            -0.0007879015756770968,
+            0.0013777222484350204,
+            -1.0
+          ],
+          "raw_action": [
+            -0.019567986950278282,
+            -0.019662784412503242,
+            0.00616186298429966,
+            2.1721216398873366e-05,
+            -0.0007879015756770968,
+            0.0013777222484350204,
+            -1.0030027627944946
+          ],
+          "step": 156
+        },
+        {
+          "env_action": [
+            -0.01999887079000473,
+            -0.019890347495675087,
+            0.008225634694099426,
+            0.0004538855282589793,
+            -0.0009604063234291971,
+            0.0015555624850094318,
+            -1.0
+          ],
+          "raw_action": [
+            -0.01999887079000473,
+            -0.019890347495675087,
+            0.008225634694099426,
+            0.0004538855282589793,
+            -0.0009604063234291971,
+            0.0015555624850094318,
+            -1.0016835927963257
+          ],
+          "step": 157
+        },
+        {
+          "env_action": [
+            -0.019341927021741867,
+            -0.019830545410513878,
+            0.00899125263094902,
+            0.0006033704848960042,
+            -0.0012196648167446256,
+            0.00150769401807338,
+            -1.0
+          ],
+          "raw_action": [
+            -0.019341927021741867,
+            -0.019830545410513878,
+            0.00899125263094902,
+            0.0006033704848960042,
+            -0.0012196648167446256,
+            0.00150769401807338,
+            -1.0008764266967773
+          ],
+          "step": 158
+        },
+        {
+          "env_action": [
+            -0.01895657554268837,
+            -0.019110554829239845,
+            0.007878804579377174,
+            0.0005018723895773292,
+            -0.0011006682179868221,
+            0.0016219057142734528,
+            -1.0
+          ],
+          "raw_action": [
+            -0.01895657554268837,
+            -0.019110554829239845,
+            0.007878804579377174,
+            0.0005018723895773292,
+            -0.0011006682179868221,
+            0.0016219057142734528,
+            -1.0006192922592163
+          ],
+          "step": 159
+        },
+        {
+          "env_action": [
+            -0.05713226646184921,
+            -0.02702285908162594,
+            -0.0008840676164254546,
+            -0.0001493880117777735,
+            -0.002398307900875807,
+            -0.001169758033938706,
+            -1.0
+          ],
+          "raw_action": [
+            -0.05713226646184921,
+            -0.02702285908162594,
+            -0.0008840676164254546,
+            -0.0001493880117777735,
+            -0.002398307900875807,
+            -0.001169758033938706,
+            -1.003720760345459
+          ],
+          "step": 160
+        },
+        {
+          "env_action": [
+            -0.047291260212659836,
+            -0.02315201796591282,
+            -0.007126501761376858,
+            -4.479201015783474e-05,
+            -0.002768593607470393,
+            5.449237141874619e-05,
+            -1.0
+          ],
+          "raw_action": [
+            -0.047291260212659836,
+            -0.02315201796591282,
+            -0.007126501761376858,
+            -4.479201015783474e-05,
+            -0.002768593607470393,
+            5.449237141874619e-05,
+            -1.0032610893249512
+          ],
+          "step": 161
+        },
+        {
+          "env_action": [
+            -0.03725135326385498,
+            -0.02019626460969448,
+            -0.011445170268416405,
+            0.00011155261017847806,
+            -0.002904834458604455,
+            0.0004151799366809428,
+            -1.0
+          ],
+          "raw_action": [
+            -0.03725135326385498,
+            -0.02019626460969448,
+            -0.011445170268416405,
+            0.00011155261017847806,
+            -0.002904834458604455,
+            0.0004151799366809428,
+            -1.0033071041107178
+          ],
+          "step": 162
+        },
+        {
+          "env_action": [
+            -0.03193606436252594,
+            -0.017309343442320824,
+            -0.01150226779282093,
+            7.880340854171664e-05,
+            -0.0031674455385655165,
+            0.001861067139543593,
+            -1.0
+          ],
+          "raw_action": [
+            -0.03193606436252594,
+            -0.017309343442320824,
+            -0.01150226779282093,
+            7.880340854171664e-05,
+            -0.0031674455385655165,
+            0.001861067139543593,
+            -1.002225637435913
+          ],
+          "step": 163
+        },
+        {
+          "env_action": [
+            -0.029578976333141327,
+            -0.016713790595531464,
+            -0.01329060923308134,
+            0.00019087709370069206,
+            -0.0026278826408088207,
+            0.002057080389931798,
+            -1.0
+          ],
+          "raw_action": [
+            -0.029578976333141327,
+            -0.016713790595531464,
+            -0.01329060923308134,
+            0.00019087709370069206,
+            -0.0026278826408088207,
+            0.002057080389931798,
+            -1.0006009340286255
+          ],
+          "step": 164
+        },
+        {
+          "env_action": [
+            -0.020884886384010315,
+            -0.015114287845790386,
+            0.018097100779414177,
+            -0.00017288929666392505,
+            -0.002563376212492585,
+            0.0009940355084836483,
+            -1.0
+          ],
+          "raw_action": [
+            -0.020884886384010315,
+            -0.015114287845790386,
+            0.018097100779414177,
+            -0.00017288929666392505,
+            -0.002563376212492585,
+            0.0009940355084836483,
+            -1.0011636018753052
+          ],
+          "step": 165
+        },
+        {
+          "env_action": [
+            -0.024246716871857643,
+            -0.01145063154399395,
+            0.006752501707524061,
+            -0.00012540601892396808,
+            -0.0029955049976706505,
+            0.0015409636544063687,
+            -1.0
+          ],
+          "raw_action": [
+            -0.024246716871857643,
+            -0.01145063154399395,
+            0.006752501707524061,
+            -0.00012540601892396808,
+            -0.0029955049976706505,
+            0.0015409636544063687,
+            -1.0024677515029907
+          ],
+          "step": 166
+        },
+        {
+          "env_action": [
+            -0.02493995614349842,
+            -0.014364592730998993,
+            0.00602006958797574,
+            9.00886079762131e-05,
+            -0.003495095996186137,
+            0.0016473028808832169,
+            -1.0
+          ],
+          "raw_action": [
+            -0.02493995614349842,
+            -0.014364592730998993,
+            0.00602006958797574,
+            9.00886079762131e-05,
+            -0.003495095996186137,
+            0.0016473028808832169,
+            -1.0022759437561035
+          ],
+          "step": 167
+        },
+        {
+          "env_action": [
+            -0.025101806968450546,
+            -0.01322421245276928,
+            0.002594007644802332,
+            -4.5616081479238346e-05,
+            -0.004092877730727196,
+            0.0022470010444521904,
+            -1.0
+          ],
+          "raw_action": [
+            -0.025101806968450546,
+            -0.01322421245276928,
+            0.002594007644802332,
+            -4.5616081479238346e-05,
+            -0.004092877730727196,
+            0.0022470010444521904,
+            -1.002764105796814
+          ],
+          "step": 168
+        },
+        {
+          "env_action": [
+            -0.026728805154561996,
+            -0.014108609408140182,
+            -0.0006046148482710123,
+            -4.07021761930082e-05,
+            -0.0054000746458768845,
+            0.0031358101405203342,
+            -1.0
+          ],
+          "raw_action": [
+            -0.026728805154561996,
+            -0.014108609408140182,
+            -0.0006046148482710123,
+            -4.07021761930082e-05,
+            -0.0054000746458768845,
+            0.0031358101405203342,
+            -1.001237154006958
+          ],
+          "step": 169
+        },
+        {
+          "env_action": [
+            -0.048600830137729645,
+            -0.01560207735747099,
+            -0.04287952929735184,
+            -0.001123257097788155,
+            -0.004759062081575394,
+            0.0030070750508457422,
+            -1.0
+          ],
+          "raw_action": [
+            -0.048600830137729645,
+            -0.01560207735747099,
+            -0.04287952929735184,
+            -0.001123257097788155,
+            -0.004759062081575394,
+            0.0030070750508457422,
+            -1.003544569015503
+          ],
+          "step": 170
+        },
+        {
+          "env_action": [
+            -0.04369177296757698,
+            -0.01419446337968111,
+            -0.04551734775304794,
+            -0.0010059947380796075,
+            -0.0039225248619914055,
+            0.0032238103449344635,
+            -1.0
+          ],
+          "raw_action": [
+            -0.04369177296757698,
+            -0.01419446337968111,
+            -0.04551734775304794,
+            -0.0010059947380796075,
+            -0.0039225248619914055,
+            0.0032238103449344635,
+            -1.0015634298324585
+          ],
+          "step": 171
+        },
+        {
+          "env_action": [
+            -0.040380850434303284,
+            -0.013229639269411564,
+            -0.040017008781433105,
+            -0.0011308568064123392,
+            -0.00298824580386281,
+            0.0029170841444283724,
+            -1.0
+          ],
+          "raw_action": [
+            -0.040380850434303284,
+            -0.013229639269411564,
+            -0.040017008781433105,
+            -0.0011308568064123392,
+            -0.00298824580386281,
+            0.0029170841444283724,
+            -1.0008708238601685
+          ],
+          "step": 172
+        },
+        {
+          "env_action": [
+            -0.03655394911766052,
+            -0.015777191147208214,
+            -0.035449784249067307,
+            -0.0009156902669928968,
+            -0.0018032731022685766,
+            0.002985840430483222,
+            -1.0
+          ],
+          "raw_action": [
+            -0.03655394911766052,
+            -0.015777191147208214,
+            -0.035449784249067307,
+            -0.0009156902669928968,
+            -0.0018032731022685766,
+            0.002985840430483222,
+            -1.0030068159103394
+          ],
+          "step": 173
+        },
+        {
+          "env_action": [
+            -0.033506885170936584,
+            -0.01706722378730774,
+            -0.02601308561861515,
+            -0.000831810524687171,
+            -0.0015387296443805099,
+            0.002202314790338278,
+            -1.0
+          ],
+          "raw_action": [
+            -0.033506885170936584,
+            -0.01706722378730774,
+            -0.02601308561861515,
+            -0.000831810524687171,
+            -0.0015387296443805099,
+            0.002202314790338278,
+            -1.0015537738800049
+          ],
+          "step": 174
+        }
+      ],
+      "anchor_class": "NONCRITICAL",
+      "phase": "PRE_CONTACT",
+      "rank_digest": "027d89e3a98d0bd537105648b439d14f7d1e3741e767e3bb35de520045757ec2",
+      "state": [
+        8.249999999999424,
+        0.06435653970929464,
+        0.8854952974206843,
+        -0.0025084294744654855,
+        -1.3019203607407177,
+        -0.18641771132194868,
+        1.9907279190922587,
+        0.8964423567877624,
+        0.03956688309931905,
+        -0.039940579829763796,
+        0.059083642194506146,
+        -0.045183426175493174,
+        0.9085268778419501,
+        0.6076676211730314,
+        -0.03835545955700989,
+        0.025267299307160915,
+        0.7928622102772981,
+        -0.034542577591702595,
+        0.11202557515479906,
+        0.9089214774186077,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        -0.21170973292358708,
+        -0.06032209808768328,
+        0.8988754774203452,
+        1.1093590875409901e-08,
+        -6.20409107994704e-06,
+        3.8784043987577935e-07,
+        0.9999999999806799,
+        0.04579996802592587,
+        -0.028144269904577614,
+        0.902503103115641,
+        0.7059720323463259,
+        2.1815014279274974e-05,
+        1.1957674602849479e-05,
+        0.7082397114861032,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0019392463874396432,
+        -0.01773653627030568,
+        -0.00028707533563831404,
+        -0.017798207586704397,
+        -0.00037747291082054123,
+        -8.693601305169001e-05,
+        -0.0005267790599572844,
+        0.00021525755183485543,
+        -0.00021694746191454586,
+        -9.457752958876118e-08,
+        8.718529456197095e-08,
+        -2.103826337493541e-08,
+        5.245206161108133e-08,
+        -1.003883781409999e-06,
+        -4.50655171061655e-07,
+        0.0,
+        0.0,
+        1.7739601938101696e-14,
+        0.0,
+        0.0,
+        0.0,
+        3.9582967365144055e-18,
+        6.923689539052105e-18,
+        1.770490279879024e-14,
+        -9.561291763802235e-16,
+        5.84379340500042e-17,
+        5.071461074298445e-18,
+        -8.706789399833777e-13,
+        7.423437007137435e-13,
+        4.691780688755165e-13,
+        -3.2703885520241343e-10,
+        2.7221544144037086e-10,
+        1.677313539168923e-11,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state_sha256": "60a6a7b9ac11111fb59b9f30ef5665cdb62a97655a3c1ec496142c293ff44761",
+      "status": "SELECTED_NONCRITICAL_ANCHOR",
+      "step": 155
+    }
+  },
+  "state_id": 20,
+  "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS",
+  "suite": "libero_goal",
+  "task_idx": 8,
+  "task_language": "put the bowl on the plate",
+  "timestamp_utc": "2026-08-25T05:31:40Z"
+}

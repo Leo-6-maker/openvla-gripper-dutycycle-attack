@@ -1,0 +1,142 @@
+{
+  "canonical_parent_key": "libero_10/task_04/state_30",
+  "cell_id": "AA2-0224",
+  "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+  "checkpoint_manifest": null,
+  "clean": {
+    "baseline_z_m": 0.43436998042952446,
+    "binding": {
+      "bddl_path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/libero/libero/bddl_files/libero_10/LIVING_ROOM_SCENE5_put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate.bddl",
+      "body_names": [
+        "world",
+        "floor",
+        "living_room_table",
+        "living_room_table_col",
+        "robot0_base",
+        "robot0_link0",
+        "robot0_link1",
+        "robot0_link2",
+        "robot0_link3",
+        "robot0_link4",
+        "robot0_link5",
+        "robot0_link6",
+        "robot0_link7",
+        "robot0_right_hand",
+        "gripper0_right_gripper",
+        "gripper0_eef",
+        "gripper0_leftfinger",
+        "gripper0_finger_joint1_tip",
+        "gripper0_rightfinger",
+        "gripper0_finger_joint2_tip",
+        "mount0_base",
+        "porcelain_mug_1_main",
+        "red_coffee_mug_1_main",
+        "white_yellow_mug_1_main",
+        "plate_1_main",
+        "plate_2_main"
+      ],
+      "eef_site_id": 6,
+      "eef_site_name": "gripper0_grip_site",
+      "reason": "",
+      "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+      "status": "PASS",
+      "target_body_ids": {
+        "porcelain_mug_1": 21,
+        "white_yellow_mug_1": 23
+      },
+      "target_body_names": {
+        "porcelain_mug_1": "porcelain_mug_1_main",
+        "white_yellow_mug_1": "white_yellow_mug_1_main"
+      },
+      "target_object_ids": [
+        "porcelain_mug_1",
+        "white_yellow_mug_1"
+      ],
+      "taxonomy_eligibility": {
+        "declared_object_ids": [
+          "porcelain_mug_1",
+          "red_coffee_mug_1",
+          "white_yellow_mug_1",
+          "plate_1",
+          "plate_2"
+        ],
+        "eligible": true,
+        "fixture_binding_inference_allowed": false,
+        "reason": "",
+        "rule": "at least one declared source object in an In/On goal predicate",
+        "schema": "STAGE_V_M3_5_PHYSICAL_TAXONOMY_V2",
+        "status": "PASS",
+        "target_object_ids": [
+          "porcelain_mug_1",
+          "white_yellow_mug_1"
+        ]
+      }
+    },
+    "boundary_count": 48,
+    "clean_trajectory_digest": "f1c803d0a611c9032991da83939aa21de69ed09c47ffcbe2fbdcb6210b317fd9",
+    "complete_trajectory": false,
+    "critical_candidates": [],
+    "critical_reason_counts": {
+      "CLEAN_STABLE_CONTINUATION_INVALID": 44,
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 44,
+      "STABLE_GRASP_WINDOW_INVALID": 44
+    },
+    "horizon": 520,
+    "language": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+    "noncritical_candidates": [],
+    "noncritical_reason_counts": {
+      "CLEAN_TRAJECTORY_INCOMPLETE_OR_HORIZON_CENSORED": 44,
+      "NOT_PRE_CONTACT": 44
+    },
+    "selected_critical": null,
+    "selected_noncritical": null,
+    "status": "PASS_AA2_CLEAN_TRAJECTORY_CAPTURED",
+    "steps_captured": 236,
+    "target_object": "porcelain_mug_1",
+    "telemetry_valid_rows": 236
+  },
+  "clean_only": true,
+  "eligibility": {
+    "critical": false,
+    "critical_anchor": null,
+    "noncritical": false,
+    "noncritical_affects_primary_denominator": false,
+    "noncritical_anchor": null
+  },
+  "gate": "STAGE_AA_AA2_CLEAN_ONLY_FULL_CENSUS_AND_COMMON_DENOMINATOR_FREEZE_V1",
+  "gpu": {
+    "compute_processes": [],
+    "free_memory_mib": 81213,
+    "index": 6,
+    "used_memory_mib": 10,
+    "utilization_gpu_percent": 0
+  },
+  "model_family": "M2_PI05_LIBERO",
+  "next_legal_action": "STOP_FOR_PI_AFTER_FULL_CENSUS",
+  "normalization": {
+    "checkpoint_mutated": false
+  },
+  "runtime_counters": {
+    "aa2_exposure": 1,
+    "aa_v_phys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 246,
+    "eval160_reads": 0,
+    "model_inference_calls": 48,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 236,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 1,
+    "task_success_reads": 0
+  },
+  "schema": "STAGE_AA_AA2_CLEAN_SCREEN_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_AA2_CLEAN_DENOMINATOR_ONLY",
+  "seed": 1276543193,
+  "source_task_idx": 4,
+  "state": "state_30",
+  "status": "AA2_CLEAN_CELL_COMPLETE",
+  "suite": "libero_10",
+  "timestamp_utc": "2026-08-26T03:56:07Z"
+}

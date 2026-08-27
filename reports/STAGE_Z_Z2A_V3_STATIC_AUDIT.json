@@ -1,0 +1,33 @@
+{
+  "base_audit": {
+    "path": "reports/STAGE_Z_Z2A_STATIC_AUDIT_V2.json",
+    "status": "STAGE_Z_Z2_SOURCE_AND_ANCHOR_STATIC_PASS_WITH_LEGACY_RECONCILIATION_REQUIRED"
+  },
+  "checks": {
+    "base_authority_byte_bound": true,
+    "current_head_tree_bound": true,
+    "engineering_canary": "STATIC_SOURCE_ORDER_AND_MOCK_PASS",
+    "h_phys_10_inherited": true,
+    "identity_reuse_firewall": true,
+    "ineligible_fixture_guard_precedes_model_checkpoint_validation": true,
+    "intervention_and_protected_firewall": true,
+    "runner_blob_and_sha_bound": true
+  },
+  "protocol": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V3.json",
+  "protocol_sha256": "9cce2445906d5701a322c719b1d13437c9461985027c4faf632b7d1c10a9586b",
+  "repair_disposition": "only existing taxonomy INELIGIBLE fixtures may abstain before model load; no fallback object or taxonomy widening",
+  "schema": "STAGE_Z_Z2A_V3_STATIC_AUDIT",
+  "scientific_counters": {
+    "attacked_env_steps": 0,
+    "command_open_intervention": 0,
+    "env_step": 0,
+    "eval160_reads": 0,
+    "model_inference": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "v_phys_reads": 0
+  },
+  "status": "STAGE_Z_Z2_SOURCE_AND_ANCHOR_STATIC_PASS_V3",
+  "terminal_action": "continue only unexposed Z2-B cells, then STOP_FOR_PI",
+  "z3_authorized": false
+}

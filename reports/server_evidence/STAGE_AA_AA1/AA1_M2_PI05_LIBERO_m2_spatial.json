@@ -1,0 +1,13 @@
+{
+  "canonical_parent_key": "libero_spatial/task_05/state_34",
+  "error": {
+    "message": "INTERNAL: Failed to initialize BLAS support",
+    "type": "XlaRuntimeError"
+  },
+  "gpu_id": 7,
+  "model_family": "M2_PI05_LIBERO",
+  "next_legal_action": "STOP_FOR_PI",
+  "schema": "STAGE_AA_AA1_ENGINEERING_CANARY_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_DUE_TO_ENGINEERING_INVALID",
+  "status": "ENGINEERING_INVALID_AA1_CELL"
+}

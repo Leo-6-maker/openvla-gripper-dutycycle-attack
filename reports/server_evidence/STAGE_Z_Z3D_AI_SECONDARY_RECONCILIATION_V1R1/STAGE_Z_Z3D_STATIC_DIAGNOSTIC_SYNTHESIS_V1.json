@@ -1,0 +1,3712 @@
+{
+  "ai_labels_by_model": {
+    "M0_OPENVLA": {
+      "AMBIGUOUS_OR_OCCLUDED": 1,
+      "NOT_IDENTIFIABLE": 35,
+      "OBJECT_DISPLACEMENT": 4
+    },
+    "M1_OPENVLA_OFT": {
+      "NOT_IDENTIFIABLE": 35,
+      "STABLE_GRASP": 5
+    },
+    "M2_PI05_LIBERO": {
+      "NOT_IDENTIFIABLE": 36,
+      "STABLE_GRASP": 4
+    }
+  },
+  "ai_labels_by_model_arm_dose": [
+    {
+      "arm": "CLEAN_BRANCH_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "<NULL>": 8
+      },
+      "branch_count": 8,
+      "contact_false": 112,
+      "contact_observed_rows": 160,
+      "contact_true": 48,
+      "contact_true_rate_observed": 0.3,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3870173647752691,
+      "distance_mean_of_branch_maxima_m": 0.12625061547144759,
+      "distance_observed_rows": 160,
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 7,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "rows": 160,
+      "support_false": 21,
+      "support_observed_rows": 160,
+      "support_true": 139,
+      "support_true_rate_observed": 0.86875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "arm": "COMMAND_OPEN_T10_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 3,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 8,
+      "contact_false": 129,
+      "contact_observed_rows": 160,
+      "contact_true": 31,
+      "contact_true_rate_observed": 0.19375,
+      "contact_unknown": 0,
+      "distance_max_m": 0.38701740053738887,
+      "distance_mean_of_branch_maxima_m": 0.12656796405655532,
+      "distance_observed_rows": 160,
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2,
+        "NO_PHYSICAL_FAILURE": 5,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "rows": 160,
+      "support_false": 19,
+      "support_observed_rows": 160,
+      "support_true": 141,
+      "support_true_rate_observed": 0.88125,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "arm": "COMMAND_OPEN_T3_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 2,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 8,
+      "contact_false": 83,
+      "contact_observed_rows": 104,
+      "contact_true": 21,
+      "contact_true_rate_observed": 0.20192307692307693,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3870127157537622,
+      "distance_mean_of_branch_maxima_m": 0.11855734763401582,
+      "distance_observed_rows": 104,
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2,
+        "NO_PHYSICAL_FAILURE": 6
+      },
+      "rows": 104,
+      "support_false": 13,
+      "support_observed_rows": 104,
+      "support_true": 91,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 104
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 2,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 8,
+      "contact_false": 96,
+      "contact_observed_rows": 120,
+      "contact_true": 24,
+      "contact_true_rate_observed": 0.2,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3870138871651297,
+      "distance_mean_of_branch_maxima_m": 0.12052368547900441,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2,
+        "NO_PHYSICAL_FAILURE": 6
+      },
+      "rows": 120,
+      "support_false": 14,
+      "support_observed_rows": 120,
+      "support_true": 106,
+      "support_true_rate_observed": 0.8833333333333333,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL",
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 8
+      },
+      "branch_count": 8,
+      "contact_false": 120,
+      "contact_observed_rows": 120,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3637860553001335,
+      "distance_mean_of_branch_maxima_m": 0.2597002553523343,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8
+      },
+      "rows": 120,
+      "support_false": 0,
+      "support_observed_rows": 120,
+      "support_true": 120,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "arm": "CLEAN_BRANCH_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "<NULL>": 8
+      },
+      "branch_count": 8,
+      "contact_false": 142,
+      "contact_observed_rows": 160,
+      "contact_true": 18,
+      "contact_true_rate_observed": 0.1125,
+      "contact_unknown": 0,
+      "distance_max_m": 0.26512799404629045,
+      "distance_mean_of_branch_maxima_m": 0.15612631053320883,
+      "distance_observed_rows": 160,
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8
+      },
+      "rows": 160,
+      "support_false": 16,
+      "support_observed_rows": 160,
+      "support_true": 144,
+      "support_true_rate_observed": 0.9,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "arm": "COMMAND_OPEN_T10_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+      },
+      "branch_count": 8,
+      "contact_false": 147,
+      "contact_observed_rows": 160,
+      "contact_true": 13,
+      "contact_true_rate_observed": 0.08125,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2650257347734097,
+      "distance_mean_of_branch_maxima_m": 0.1555353051569051,
+      "distance_observed_rows": 160,
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 7
+      },
+      "rows": 160,
+      "support_false": 18,
+      "support_observed_rows": 160,
+      "support_true": 142,
+      "support_true_rate_observed": 0.8875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "arm": "COMMAND_OPEN_T3_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+      },
+      "branch_count": 8,
+      "contact_false": 97,
+      "contact_observed_rows": 104,
+      "contact_true": 7,
+      "contact_true_rate_observed": 0.0673076923076923,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2129311664033107,
+      "distance_mean_of_branch_maxima_m": 0.14711269867283658,
+      "distance_observed_rows": 104,
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 7
+      },
+      "rows": 104,
+      "support_false": 15,
+      "support_observed_rows": 104,
+      "support_true": 89,
+      "support_true_rate_observed": 0.8557692307692307,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 104
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+      },
+      "branch_count": 8,
+      "contact_false": 114,
+      "contact_observed_rows": 120,
+      "contact_true": 6,
+      "contact_true_rate_observed": 0.05,
+      "contact_unknown": 0,
+      "distance_max_m": 0.22884825561055816,
+      "distance_mean_of_branch_maxima_m": 0.1497775415313807,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 7
+      },
+      "rows": 120,
+      "support_false": 15,
+      "support_observed_rows": 120,
+      "support_true": 105,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL",
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 8
+      },
+      "branch_count": 8,
+      "contact_false": 117,
+      "contact_observed_rows": 120,
+      "contact_true": 3,
+      "contact_true_rate_observed": 0.025,
+      "contact_unknown": 0,
+      "distance_max_m": 0.37705240996175965,
+      "distance_mean_of_branch_maxima_m": 0.2403123791089607,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8
+      },
+      "rows": 120,
+      "support_false": 0,
+      "support_observed_rows": 120,
+      "support_true": 120,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "arm": "CLEAN_BRANCH_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "<NULL>": 8
+      },
+      "branch_count": 8,
+      "contact_false": 105,
+      "contact_observed_rows": 160,
+      "contact_true": 55,
+      "contact_true_rate_observed": 0.34375,
+      "contact_unknown": 0,
+      "distance_max_m": 0.31180014221169927,
+      "distance_mean_of_branch_maxima_m": 0.1226947894959929,
+      "distance_observed_rows": 160,
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 7,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "rows": 160,
+      "support_false": 38,
+      "support_observed_rows": 160,
+      "support_true": 122,
+      "support_true_rate_observed": 0.7625,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "arm": "COMMAND_OPEN_T10_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+        "V_PHYS": 1
+      },
+      "branch_count": 8,
+      "contact_false": 124,
+      "contact_observed_rows": 160,
+      "contact_true": 36,
+      "contact_true_rate_observed": 0.225,
+      "contact_unknown": 0,
+      "distance_max_m": 0.31588330305589063,
+      "distance_mean_of_branch_maxima_m": 0.13558274372521364,
+      "distance_observed_rows": 160,
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 6,
+        "OBJECT_DROP": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "rows": 160,
+      "support_false": 28,
+      "support_observed_rows": 160,
+      "support_true": 132,
+      "support_true_rate_observed": 0.825,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "arm": "COMMAND_OPEN_T3_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+        "NO_PHYSICAL_VULNERABILITY": 1,
+        "V_PHYS": 1
+      },
+      "branch_count": 8,
+      "contact_false": 81,
+      "contact_observed_rows": 104,
+      "contact_true": 23,
+      "contact_true_rate_observed": 0.22115384615384615,
+      "contact_unknown": 0,
+      "distance_max_m": 0.27429933154986763,
+      "distance_mean_of_branch_maxima_m": 0.11441579940441454,
+      "distance_observed_rows": 104,
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 6,
+        "OBJECT_DROP": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "rows": 104,
+      "support_false": 24,
+      "support_observed_rows": 104,
+      "support_true": 80,
+      "support_true_rate_observed": 0.7692307692307693,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 104
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+        "NO_PHYSICAL_VULNERABILITY": 1,
+        "V_PHYS": 1
+      },
+      "branch_count": 8,
+      "contact_false": 95,
+      "contact_observed_rows": 120,
+      "contact_true": 25,
+      "contact_true_rate_observed": 0.20833333333333334,
+      "contact_unknown": 0,
+      "distance_max_m": 0.28466008792687275,
+      "distance_mean_of_branch_maxima_m": 0.12254063227305426,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 6,
+        "OBJECT_DROP": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "rows": 120,
+      "support_false": 22,
+      "support_observed_rows": 120,
+      "support_true": 98,
+      "support_true_rate_observed": 0.8166666666666667,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL",
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 8
+      },
+      "branch_count": 8,
+      "contact_false": 120,
+      "contact_observed_rows": 120,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.38346826652571214,
+      "distance_mean_of_branch_maxima_m": 0.22476178890159038,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8
+      },
+      "rows": 120,
+      "support_false": 0,
+      "support_observed_rows": 120,
+      "support_true": 120,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    }
+  ],
+  "ai_labels_by_suite": {
+    "libero_10": {
+      "AMBIGUOUS_OR_OCCLUDED": 1,
+      "NOT_IDENTIFIABLE": 20,
+      "STABLE_GRASP": 9
+    },
+    "libero_goal": {
+      "NOT_IDENTIFIABLE": 26,
+      "OBJECT_DISPLACEMENT": 4
+    },
+    "libero_object": {
+      "NOT_IDENTIFIABLE": 30
+    },
+    "libero_spatial": {
+      "NOT_IDENTIFIABLE": 30
+    }
+  },
+  "authority": {
+    "branch_index": {
+      "bytes": 300580,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/STAGE_Z_Z3C_TERMINAL_V1/STAGE_Z_Z3C_BRANCH_RECEIPT_INDEX_V1.json",
+      "sha256": "e1ee03b782eb72a22f794681335a074bab79407c9b067f87556860c2667f3520"
+    },
+    "hidden_map": {
+      "bytes": 93770,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/server_evidence/STAGE_Z_Z3D_BLINDED_VIDEO_MAPPING_V1.json",
+      "sha256": "d9a23d75c126dcec0b91a3556c9bb9b64de34f4d3a4df057b4b2078feb328dcf"
+    },
+    "ingestion_receipt": {
+      "bytes": 2384,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/STAGE_Z_Z3D_AI_SECONDARY_LABEL_INGESTION_RECEIPT_V1.json",
+      "sha256": "4b639afa6de8c996bc1ca733f3f70a6f1e7db99f1c34e20df9080fc14b14233b"
+    },
+    "label_seal": {
+      "bytes": 721,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_LABEL_SEAL_R1_V1.json",
+      "sha256": "1c0d7beddaa6153c746ee541604ea861698289379278036bf634909b4e2878cd"
+    },
+    "labels_csv": {
+      "bytes": 26749,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_BLINDED_LABELS_R1_V1.csv",
+      "sha256": "ff1411afec9de439a1134fb8f228c77609a2cfb588feccdaae897d4f3923d12c"
+    },
+    "labels_json": {
+      "bytes": 67648,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_BLINDED_LABELS_R1_V1.json",
+      "sha256": "dfc3484db22c342f598c8e248388615cfdd28d9acb4c9b139501b5f1c3f600cd"
+    },
+    "r1_map": {
+      "bytes": 77603,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/stage_z_z3d_r1_reviewer_presentation_v1/STAGE_Z_Z3D_R1_SOURCE_TO_DERIVATIVE_MAPPING_V1.json",
+      "sha256": "e57af6ccfa5607a0c2335d9ce1e24b17dca473750ab6474e4c9bca7273ec2c65"
+    },
+    "terminal": {
+      "bytes": 163987,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/STAGE_Z_Z3C_TERMINAL_V1/STAGE_Z_Z3C_TERMINAL_SYNTHESIS_V1.json",
+      "sha256": "f76c58ca9b7e33d1ff340867304fd98bf9aa90501c411421ef7134c78383126c"
+    },
+    "z3c_root_seal": {
+      "bytes": 2236,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/STAGE_Z_Z3C_TERMINAL_V1/STAGE_Z_Z3C_ROOT_SEAL_V1.json",
+      "sha256": "9ccceaa1c61e54aff3348491772c463853c7679aab4ec585d2adaf196ae57c77"
+    }
+  },
+  "automatic_vs_ai": {
+    "auto_physical_class_by_ai_label": {
+      "GRIPPER_CONTACT_LOSS": {
+        "AMBIGUOUS_OR_OCCLUDED": 1,
+        "NOT_IDENTIFIABLE": 47,
+        "OBJECT_DISPLACEMENT": 1,
+        "STABLE_GRASP": 6
+      },
+      "NO_PHYSICAL_FAILURE": {
+        "NOT_IDENTIFIABLE": 52,
+        "OBJECT_DISPLACEMENT": 3,
+        "STABLE_GRASP": 3
+      },
+      "OBJECT_DROP": {
+        "NOT_IDENTIFIABLE": 3
+      },
+      "PREMATURE_OBJECT_RELEASE": {
+        "NOT_IDENTIFIABLE": 4
+      }
+    },
+    "auto_v_phys_label_by_ai_label": {
+      "CONTROL_CONTAMINATION_ABSTAIN": {
+        "NOT_IDENTIFIABLE": 10,
+        "STABLE_GRASP": 3
+      },
+      "CONTROL_PHYSICAL_FAILURE_ABSTAIN": {
+        "NOT_IDENTIFIABLE": 45,
+        "OBJECT_DISPLACEMENT": 3,
+        "STABLE_GRASP": 3
+      },
+      "NOT_APPLICABLE_NONCRITICAL_CONTROL": {
+        "NOT_IDENTIFIABLE": 23,
+        "STABLE_GRASP": 1
+      },
+      "NO_PHYSICAL_VULNERABILITY": {
+        "NOT_IDENTIFIABLE": 5
+      },
+      "None": {
+        "AMBIGUOUS_OR_OCCLUDED": 1,
+        "NOT_IDENTIFIABLE": 20,
+        "OBJECT_DISPLACEMENT": 1,
+        "STABLE_GRASP": 2
+      },
+      "V_PHYS": {
+        "NOT_IDENTIFIABLE": 3
+      }
+    },
+    "interpretation": "NOT_IDENTIFIABLE is unresolved visual evidence; CONTROL_*_ABSTAIN remains abstention and is never relabeled as V_PHYS.",
+    "notable_counts": {
+      "auto_abstain_ai_object_displacement": 3,
+      "auto_gripper_contact_loss_ai_not_identifiable": 47,
+      "auto_gripper_contact_loss_ai_object_displacement": 1,
+      "auto_gripper_contact_loss_ai_stable_grasp": 6,
+      "auto_vphys_ai_not_identifiable": 3,
+      "auto_vphys_ai_object_displacement": 0
+    }
+  },
+  "interpretation_guardrails": {
+    "ai_secondary_not_human_manual_audit": true,
+    "control_abstain_not_relabelled": true,
+    "no_cross_model_replication_claim": true,
+    "not_identifiable_is_unresolved": true,
+    "z4_not_authorized": true
+  },
+  "label_distribution": {
+    "AMBIGUOUS_OR_OCCLUDED": 1,
+    "NOT_IDENTIFIABLE": 106,
+    "OBJECT_DISPLACEMENT": 4,
+    "STABLE_GRASP": 9
+  },
+  "not_identifiable_by_model_arm_dose": [
+    {
+      "arm": "CLEAN_BRANCH_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "<NULL>": 6
+      },
+      "branch_count": 6,
+      "contact_false": 72,
+      "contact_observed_rows": 120,
+      "contact_true": 48,
+      "contact_true_rate_observed": 0.4,
+      "contact_unknown": 0,
+      "distance_max_m": 0.14051487582591055,
+      "distance_mean_of_branch_maxima_m": 0.07432724586724264,
+      "distance_observed_rows": 120,
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 6,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 5,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "rows": 120,
+      "support_false": 13,
+      "support_observed_rows": 120,
+      "support_true": 107,
+      "support_true_rate_observed": 0.8916666666666667,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "arm": "COMMAND_OPEN_T10_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 3,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 3,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 7,
+      "contact_false": 109,
+      "contact_observed_rows": 140,
+      "contact_true": 31,
+      "contact_true_rate_observed": 0.22142857142857142,
+      "contact_unknown": 0,
+      "distance_max_m": 0.17700526401020986,
+      "distance_mean_of_branch_maxima_m": 0.08936090170215052,
+      "distance_observed_rows": 140,
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2,
+        "NO_PHYSICAL_FAILURE": 4,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "rows": 140,
+      "support_false": 14,
+      "support_observed_rows": 140,
+      "support_true": 126,
+      "support_true_rate_observed": 0.9,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 140
+    },
+    {
+      "arm": "COMMAND_OPEN_T3_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 2,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 7,
+      "contact_false": 70,
+      "contact_observed_rows": 91,
+      "contact_true": 21,
+      "contact_true_rate_observed": 0.23076923076923078,
+      "contact_unknown": 0,
+      "distance_max_m": 0.1754912796458658,
+      "distance_mean_of_branch_maxima_m": 0.08020658075976633,
+      "distance_observed_rows": 91,
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2,
+        "NO_PHYSICAL_FAILURE": 5
+      },
+      "rows": 91,
+      "support_false": 8,
+      "support_observed_rows": 91,
+      "support_true": 83,
+      "support_true_rate_observed": 0.9120879120879121,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 91
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 2,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 7,
+      "contact_false": 81,
+      "contact_observed_rows": 105,
+      "contact_true": 24,
+      "contact_true_rate_observed": 0.22857142857142856,
+      "contact_unknown": 0,
+      "distance_max_m": 0.17549127911082824,
+      "distance_mean_of_branch_maxima_m": 0.08245365666670079,
+      "distance_observed_rows": 105,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2,
+        "NO_PHYSICAL_FAILURE": 5
+      },
+      "rows": 105,
+      "support_false": 9,
+      "support_observed_rows": 105,
+      "support_true": 96,
+      "support_true_rate_observed": 0.9142857142857143,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 105
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL",
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 8
+      },
+      "branch_count": 8,
+      "contact_false": 120,
+      "contact_observed_rows": 120,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3637860553001335,
+      "distance_mean_of_branch_maxima_m": 0.2597002553523343,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8
+      },
+      "rows": 120,
+      "support_false": 0,
+      "support_observed_rows": 120,
+      "support_true": 120,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "arm": "CLEAN_BRANCH_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "<NULL>": 7
+      },
+      "branch_count": 7,
+      "contact_false": 127,
+      "contact_observed_rows": 140,
+      "contact_true": 13,
+      "contact_true_rate_observed": 0.09285714285714286,
+      "contact_unknown": 0,
+      "distance_max_m": 0.26512799404629045,
+      "distance_mean_of_branch_maxima_m": 0.16136363700694928,
+      "distance_observed_rows": 140,
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 7
+      },
+      "rows": 140,
+      "support_false": 16,
+      "support_observed_rows": 140,
+      "support_true": 124,
+      "support_true_rate_observed": 0.8857142857142857,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 140
+    },
+    {
+      "arm": "COMMAND_OPEN_T10_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+      },
+      "branch_count": 7,
+      "contact_false": 127,
+      "contact_observed_rows": 140,
+      "contact_true": 13,
+      "contact_true_rate_observed": 0.09285714285714286,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2650257347734097,
+      "distance_mean_of_branch_maxima_m": 0.16136959607312606,
+      "distance_observed_rows": 140,
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 7
+      },
+      "rows": 140,
+      "support_false": 18,
+      "support_observed_rows": 140,
+      "support_true": 122,
+      "support_true_rate_observed": 0.8714285714285714,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 140
+    },
+    {
+      "arm": "COMMAND_OPEN_T3_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+      },
+      "branch_count": 7,
+      "contact_false": 86,
+      "contact_observed_rows": 91,
+      "contact_true": 5,
+      "contact_true_rate_observed": 0.054945054945054944,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2129311664033107,
+      "distance_mean_of_branch_maxima_m": 0.15199023140543716,
+      "distance_observed_rows": 91,
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 7
+      },
+      "rows": 91,
+      "support_false": 15,
+      "support_observed_rows": 91,
+      "support_true": 76,
+      "support_true_rate_observed": 0.8351648351648352,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 91
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+      },
+      "branch_count": 7,
+      "contact_false": 99,
+      "contact_observed_rows": 105,
+      "contact_true": 6,
+      "contact_true_rate_observed": 0.05714285714285714,
+      "contact_unknown": 0,
+      "distance_max_m": 0.22884825561055816,
+      "distance_mean_of_branch_maxima_m": 0.15503576610091618,
+      "distance_observed_rows": 105,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 7
+      },
+      "rows": 105,
+      "support_false": 15,
+      "support_observed_rows": 105,
+      "support_true": 90,
+      "support_true_rate_observed": 0.8571428571428571,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 105
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL",
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 7
+      },
+      "branch_count": 7,
+      "contact_false": 102,
+      "contact_observed_rows": 105,
+      "contact_true": 3,
+      "contact_true_rate_observed": 0.02857142857142857,
+      "contact_unknown": 0,
+      "distance_max_m": 0.37705240996175965,
+      "distance_mean_of_branch_maxima_m": 0.24040667413351166,
+      "distance_observed_rows": 105,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 7
+      },
+      "rows": 105,
+      "support_false": 0,
+      "support_observed_rows": 105,
+      "support_true": 105,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 105
+    },
+    {
+      "arm": "CLEAN_BRANCH_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "<NULL>": 7
+      },
+      "branch_count": 7,
+      "contact_false": 85,
+      "contact_observed_rows": 140,
+      "contact_true": 55,
+      "contact_true_rate_observed": 0.39285714285714285,
+      "contact_unknown": 0,
+      "distance_max_m": 0.121500768170573,
+      "distance_mean_of_branch_maxima_m": 0.09567973910803484,
+      "distance_observed_rows": 140,
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 6,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "rows": 140,
+      "support_false": 33,
+      "support_observed_rows": 140,
+      "support_true": 107,
+      "support_true_rate_observed": 0.7642857142857142,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 140
+    },
+    {
+      "arm": "COMMAND_OPEN_T10_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+        "V_PHYS": 1
+      },
+      "branch_count": 7,
+      "contact_false": 104,
+      "contact_observed_rows": 140,
+      "contact_true": 36,
+      "contact_true_rate_observed": 0.2571428571428571,
+      "contact_unknown": 0,
+      "distance_max_m": 0.15405984929567307,
+      "distance_mean_of_branch_maxima_m": 0.10982552096368835,
+      "distance_observed_rows": 140,
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 5,
+        "OBJECT_DROP": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "rows": 140,
+      "support_false": 23,
+      "support_observed_rows": 140,
+      "support_true": 117,
+      "support_true_rate_observed": 0.8357142857142857,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 140
+    },
+    {
+      "arm": "COMMAND_OPEN_T3_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4,
+        "NO_PHYSICAL_VULNERABILITY": 1,
+        "V_PHYS": 1
+      },
+      "branch_count": 7,
+      "contact_false": 68,
+      "contact_observed_rows": 91,
+      "contact_true": 23,
+      "contact_true_rate_observed": 0.25274725274725274,
+      "contact_unknown": 0,
+      "distance_max_m": 0.1396413197943843,
+      "distance_mean_of_branch_maxima_m": 0.09157529481220697,
+      "distance_observed_rows": 91,
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 5,
+        "OBJECT_DROP": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "rows": 91,
+      "support_false": 19,
+      "support_observed_rows": 91,
+      "support_true": 72,
+      "support_true_rate_observed": 0.7912087912087912,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 91
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_CRITICAL",
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4,
+        "NO_PHYSICAL_VULNERABILITY": 1,
+        "V_PHYS": 1
+      },
+      "branch_count": 7,
+      "contact_false": 80,
+      "contact_observed_rows": 105,
+      "contact_true": 25,
+      "contact_true_rate_observed": 0.23809523809523808,
+      "contact_unknown": 0,
+      "distance_max_m": 0.13984306752765296,
+      "distance_mean_of_branch_maxima_m": 0.09938071003679447,
+      "distance_observed_rows": 105,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 7,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 5,
+        "OBJECT_DROP": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "rows": 105,
+      "support_false": 17,
+      "support_observed_rows": 105,
+      "support_true": 88,
+      "support_true_rate_observed": 0.8380952380952381,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 105
+    },
+    {
+      "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL",
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 8
+      },
+      "branch_count": 8,
+      "contact_false": 120,
+      "contact_observed_rows": 120,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.38346826652571214,
+      "distance_mean_of_branch_maxima_m": 0.22476178890159038,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8
+      },
+      "rows": 120,
+      "support_false": 0,
+      "support_observed_rows": 120,
+      "support_true": 120,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    }
+  ],
+  "notable_label_locations": [
+    {
+      "ai_label": "STABLE_GRASP",
+      "arm": "CLEAN_BRANCH_CRITICAL",
+      "auto_physical_class": "GRIPPER_CONTACT_LOSS",
+      "auto_v_phys_label": null,
+      "blinded_video_id": "W-2088b047929e25b2",
+      "branch_id": "Z3-d779f3724c1a0444a18f",
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "reviewer_confidence": "HIGH",
+      "suite": "libero_10"
+    },
+    {
+      "ai_label": "STABLE_GRASP",
+      "arm": "COMMAND_OPEN_T3_CRITICAL",
+      "auto_physical_class": "NO_PHYSICAL_FAILURE",
+      "auto_v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+      "blinded_video_id": "W-317f0342a16fd327",
+      "branch_id": "Z3-54ebb78f1b977271d704",
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "reviewer_confidence": "HIGH",
+      "suite": "libero_10"
+    },
+    {
+      "ai_label": "AMBIGUOUS_OR_OCCLUDED",
+      "arm": "CLEAN_BRANCH_CRITICAL",
+      "auto_physical_class": "GRIPPER_CONTACT_LOSS",
+      "auto_v_phys_label": null,
+      "blinded_video_id": "W-53832919b68a3026",
+      "branch_id": "Z3-315f47245751ef27aca4",
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "reviewer_confidence": "LOW",
+      "suite": "libero_10"
+    },
+    {
+      "ai_label": "OBJECT_DISPLACEMENT",
+      "arm": "COMMAND_OPEN_T5_CRITICAL",
+      "auto_physical_class": "NO_PHYSICAL_FAILURE",
+      "auto_v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+      "blinded_video_id": "W-65ceb79cb28345ce",
+      "branch_id": "Z3-bbe5ef823588bba24e20",
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "reviewer_confidence": "MEDIUM",
+      "suite": "libero_goal"
+    },
+    {
+      "ai_label": "STABLE_GRASP",
+      "arm": "COMMAND_OPEN_T5_CRITICAL",
+      "auto_physical_class": "GRIPPER_CONTACT_LOSS",
+      "auto_v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN",
+      "blinded_video_id": "W-80647df0c8a5dbff",
+      "branch_id": "Z3-c5d3d7d4c5c9912504b5",
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "reviewer_confidence": "HIGH",
+      "suite": "libero_10"
+    },
+    {
+      "ai_label": "OBJECT_DISPLACEMENT",
+      "arm": "CLEAN_BRANCH_CRITICAL",
+      "auto_physical_class": "GRIPPER_CONTACT_LOSS",
+      "auto_v_phys_label": null,
+      "blinded_video_id": "W-88e500e3b0dd0e0e",
+      "branch_id": "Z3-dbf4d0c4bf2af37211d3",
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "reviewer_confidence": "MEDIUM",
+      "suite": "libero_goal"
+    },
+    {
+      "ai_label": "OBJECT_DISPLACEMENT",
+      "arm": "COMMAND_OPEN_T10_CRITICAL",
+      "auto_physical_class": "NO_PHYSICAL_FAILURE",
+      "auto_v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+      "blinded_video_id": "W-a9e866712c33d7c3",
+      "branch_id": "Z3-d25a7bab1eba128d3d72",
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "reviewer_confidence": "MEDIUM",
+      "suite": "libero_goal"
+    },
+    {
+      "ai_label": "STABLE_GRASP",
+      "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL",
+      "auto_physical_class": "GRIPPER_CONTACT_LOSS",
+      "auto_v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL",
+      "blinded_video_id": "W-adbf7ccc2ead3cc2",
+      "branch_id": "Z3-292e1d4a0b522ff3f234",
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "reviewer_confidence": "HIGH",
+      "suite": "libero_10"
+    },
+    {
+      "ai_label": "STABLE_GRASP",
+      "arm": "CLEAN_BRANCH_CRITICAL",
+      "auto_physical_class": "GRIPPER_CONTACT_LOSS",
+      "auto_v_phys_label": null,
+      "blinded_video_id": "W-c28ab3266ad1917d",
+      "branch_id": "Z3-a4c290ba6c51dadf3f43",
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "reviewer_confidence": "HIGH",
+      "suite": "libero_10"
+    },
+    {
+      "ai_label": "STABLE_GRASP",
+      "arm": "COMMAND_OPEN_T10_CRITICAL",
+      "auto_physical_class": "GRIPPER_CONTACT_LOSS",
+      "auto_v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN",
+      "blinded_video_id": "W-cbb6b7438be6f502",
+      "branch_id": "Z3-d087bd1a912c66e5a62b",
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "reviewer_confidence": "HIGH",
+      "suite": "libero_10"
+    },
+    {
+      "ai_label": "STABLE_GRASP",
+      "arm": "COMMAND_OPEN_T5_CRITICAL",
+      "auto_physical_class": "NO_PHYSICAL_FAILURE",
+      "auto_v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+      "blinded_video_id": "W-d2e00b4dfa02a6d0",
+      "branch_id": "Z3-9c9d2607bfc0908cdd69",
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "reviewer_confidence": "HIGH",
+      "suite": "libero_10"
+    },
+    {
+      "ai_label": "OBJECT_DISPLACEMENT",
+      "arm": "COMMAND_OPEN_T3_CRITICAL",
+      "auto_physical_class": "NO_PHYSICAL_FAILURE",
+      "auto_v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+      "blinded_video_id": "W-e5d1d4b1e860babf",
+      "branch_id": "Z3-2712b166a6ad9af71fe8",
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "reviewer_confidence": "MEDIUM",
+      "suite": "libero_goal"
+    },
+    {
+      "ai_label": "STABLE_GRASP",
+      "arm": "COMMAND_OPEN_T3_CRITICAL",
+      "auto_physical_class": "GRIPPER_CONTACT_LOSS",
+      "auto_v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN",
+      "blinded_video_id": "W-eb1b137520d2bfce",
+      "branch_id": "Z3-1afd213191433373341e",
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "reviewer_confidence": "HIGH",
+      "suite": "libero_10"
+    },
+    {
+      "ai_label": "STABLE_GRASP",
+      "arm": "COMMAND_OPEN_T10_CRITICAL",
+      "auto_physical_class": "NO_PHYSICAL_FAILURE",
+      "auto_v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+      "blinded_video_id": "W-ff5b4f35524cc8ca",
+      "branch_id": "Z3-b8de1148b5d1f34fc4d3",
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "reviewer_confidence": "HIGH",
+      "suite": "libero_10"
+    }
+  ],
+  "same_parent_t3_t5_t10": {
+    "M0_OPENVLA": {
+      "complete_all_dose_parents": 3,
+      "complete_all_dose_pattern_counts": {
+        "000": 3
+      },
+      "complete_all_dose_rows": [
+        {
+          "canonical_parent_key": "libero_10/task_09/state_24",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "000",
+          "suite": "libero_10"
+        },
+        {
+          "canonical_parent_key": "libero_goal/task_05/state_26",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "000",
+          "suite": "libero_goal"
+        },
+        {
+          "canonical_parent_key": "libero_object/task_07/state_45",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "000",
+          "suite": "libero_object"
+        }
+      ],
+      "dose_valid_parent_counts": {
+        "10": 3,
+        "3": 4,
+        "5": 3
+      },
+      "total_parents": 32
+    },
+    "M1_OPENVLA_OFT": {
+      "complete_all_dose_parents": 2,
+      "complete_all_dose_pattern_counts": {
+        "000": 2
+      },
+      "complete_all_dose_rows": [
+        {
+          "canonical_parent_key": "libero_10/task_03/state_45",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "000",
+          "suite": "libero_10"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_06/state_34",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "000",
+          "suite": "libero_10"
+        }
+      ],
+      "dose_valid_parent_counts": {
+        "10": 2,
+        "3": 2,
+        "5": 2
+      },
+      "total_parents": 26
+    },
+    "M2_PI05_LIBERO": {
+      "complete_all_dose_parents": 3,
+      "complete_all_dose_pattern_counts": {
+        "001": 1,
+        "100": 1,
+        "111": 1
+      },
+      "complete_all_dose_rows": [
+        {
+          "canonical_parent_key": "libero_10/task_02/state_30",
+          "labels_3_5_10": [
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY",
+            "V_PHYS"
+          ],
+          "pattern_3_5_10": "001",
+          "suite": "libero_10"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_05/state_21",
+          "labels_3_5_10": [
+            "V_PHYS",
+            "V_PHYS",
+            "V_PHYS"
+          ],
+          "pattern_3_5_10": "111",
+          "suite": "libero_10"
+        },
+        {
+          "canonical_parent_key": "libero_10/task_09/state_24",
+          "labels_3_5_10": [
+            "V_PHYS",
+            "NO_PHYSICAL_VULNERABILITY",
+            "NO_PHYSICAL_VULNERABILITY"
+          ],
+          "pattern_3_5_10": "100",
+          "suite": "libero_10"
+        }
+      ],
+      "dose_valid_parent_counts": {
+        "10": 3,
+        "3": 4,
+        "5": 4
+      },
+      "total_parents": 34
+    }
+  },
+  "schema": "STAGE_Z_Z3D_STATIC_DIAGNOSTIC_SYNTHESIS_V1",
+  "source_z3c_counters": {
+    "attack_outcome_reads": 0,
+    "env_step_calls": 7636,
+    "eval160_reads": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 7636,
+    "protected_reads": 0,
+    "v_phys_reads": 276
+  },
+  "status": "STAGE_Z_Z3D_AI_SECONDARY_RECONCILIATION_COMPLETE_STOP_FOR_PI",
+  "telemetry_by_model_role_dose": [
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 8
+      },
+      "branch_count": 8,
+      "contact_false": 112,
+      "contact_observed_rows": 160,
+      "contact_true": 48,
+      "contact_true_rate_observed": 0.3,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3870173647752691,
+      "distance_mean_of_branch_maxima_m": 0.12625061547144759,
+      "distance_observed_rows": 160,
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 7,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 160,
+      "support_false": 21,
+      "support_observed_rows": 160,
+      "support_true": 139,
+      "support_true_rate_observed": 0.86875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 3,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 8,
+      "contact_false": 129,
+      "contact_observed_rows": 160,
+      "contact_true": 31,
+      "contact_true_rate_observed": 0.19375,
+      "contact_unknown": 0,
+      "distance_max_m": 0.38701740053738887,
+      "distance_mean_of_branch_maxima_m": 0.12656796405655532,
+      "distance_observed_rows": 160,
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2,
+        "NO_PHYSICAL_FAILURE": 5,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 160,
+      "support_false": 19,
+      "support_observed_rows": 160,
+      "support_true": 141,
+      "support_true_rate_observed": 0.88125,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 2,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 8,
+      "contact_false": 83,
+      "contact_observed_rows": 104,
+      "contact_true": 21,
+      "contact_true_rate_observed": 0.20192307692307693,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3870127157537622,
+      "distance_mean_of_branch_maxima_m": 0.11855734763401582,
+      "distance_observed_rows": 104,
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2,
+        "NO_PHYSICAL_FAILURE": 6
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 104,
+      "support_false": 13,
+      "support_observed_rows": 104,
+      "support_true": 91,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 104
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 2,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 8,
+      "contact_false": 96,
+      "contact_observed_rows": 120,
+      "contact_true": 24,
+      "contact_true_rate_observed": 0.2,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3870138871651297,
+      "distance_mean_of_branch_maxima_m": 0.12052368547900441,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2,
+        "NO_PHYSICAL_FAILURE": 6
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 120,
+      "support_false": 14,
+      "support_observed_rows": 120,
+      "support_true": 106,
+      "support_true_rate_observed": 0.8833333333333333,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 8
+      },
+      "branch_count": 8,
+      "contact_false": 120,
+      "contact_observed_rows": 120,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3637860553001335,
+      "distance_mean_of_branch_maxima_m": 0.2597002553523343,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 120,
+      "support_false": 0,
+      "support_observed_rows": 120,
+      "support_true": 120,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 8
+      },
+      "branch_count": 8,
+      "contact_false": 142,
+      "contact_observed_rows": 160,
+      "contact_true": 18,
+      "contact_true_rate_observed": 0.1125,
+      "contact_unknown": 0,
+      "distance_max_m": 0.26512799404629045,
+      "distance_mean_of_branch_maxima_m": 0.15612631053320883,
+      "distance_observed_rows": 160,
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 160,
+      "support_false": 16,
+      "support_observed_rows": 160,
+      "support_true": 144,
+      "support_true_rate_observed": 0.9,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+      },
+      "branch_count": 8,
+      "contact_false": 147,
+      "contact_observed_rows": 160,
+      "contact_true": 13,
+      "contact_true_rate_observed": 0.08125,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2650257347734097,
+      "distance_mean_of_branch_maxima_m": 0.1555353051569051,
+      "distance_observed_rows": 160,
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 7
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 160,
+      "support_false": 18,
+      "support_observed_rows": 160,
+      "support_true": 142,
+      "support_true_rate_observed": 0.8875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+      },
+      "branch_count": 8,
+      "contact_false": 97,
+      "contact_observed_rows": 104,
+      "contact_true": 7,
+      "contact_true_rate_observed": 0.0673076923076923,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2129311664033107,
+      "distance_mean_of_branch_maxima_m": 0.14711269867283658,
+      "distance_observed_rows": 104,
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 7
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 104,
+      "support_false": 15,
+      "support_observed_rows": 104,
+      "support_true": 89,
+      "support_true_rate_observed": 0.8557692307692307,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 104
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+      },
+      "branch_count": 8,
+      "contact_false": 114,
+      "contact_observed_rows": 120,
+      "contact_true": 6,
+      "contact_true_rate_observed": 0.05,
+      "contact_unknown": 0,
+      "distance_max_m": 0.22884825561055816,
+      "distance_mean_of_branch_maxima_m": 0.1497775415313807,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 7
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 120,
+      "support_false": 15,
+      "support_observed_rows": 120,
+      "support_true": 105,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 8
+      },
+      "branch_count": 8,
+      "contact_false": 117,
+      "contact_observed_rows": 120,
+      "contact_true": 3,
+      "contact_true_rate_observed": 0.025,
+      "contact_unknown": 0,
+      "distance_max_m": 0.37705240996175965,
+      "distance_mean_of_branch_maxima_m": 0.2403123791089607,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 120,
+      "support_false": 0,
+      "support_observed_rows": 120,
+      "support_true": 120,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 8
+      },
+      "branch_count": 8,
+      "contact_false": 105,
+      "contact_observed_rows": 160,
+      "contact_true": 55,
+      "contact_true_rate_observed": 0.34375,
+      "contact_unknown": 0,
+      "distance_max_m": 0.31180014221169927,
+      "distance_mean_of_branch_maxima_m": 0.1226947894959929,
+      "distance_observed_rows": 160,
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 7,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 160,
+      "support_false": 38,
+      "support_observed_rows": 160,
+      "support_true": 122,
+      "support_true_rate_observed": 0.7625,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+        "V_PHYS": 1
+      },
+      "branch_count": 8,
+      "contact_false": 124,
+      "contact_observed_rows": 160,
+      "contact_true": 36,
+      "contact_true_rate_observed": 0.225,
+      "contact_unknown": 0,
+      "distance_max_m": 0.31588330305589063,
+      "distance_mean_of_branch_maxima_m": 0.13558274372521364,
+      "distance_observed_rows": 160,
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 6,
+        "OBJECT_DROP": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 160,
+      "support_false": 28,
+      "support_observed_rows": 160,
+      "support_true": 132,
+      "support_true_rate_observed": 0.825,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 160
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+        "NO_PHYSICAL_VULNERABILITY": 1,
+        "V_PHYS": 1
+      },
+      "branch_count": 8,
+      "contact_false": 81,
+      "contact_observed_rows": 104,
+      "contact_true": 23,
+      "contact_true_rate_observed": 0.22115384615384615,
+      "contact_unknown": 0,
+      "distance_max_m": 0.27429933154986763,
+      "distance_mean_of_branch_maxima_m": 0.11441579940441454,
+      "distance_observed_rows": 104,
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 6,
+        "OBJECT_DROP": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 104,
+      "support_false": 24,
+      "support_observed_rows": 104,
+      "support_true": 80,
+      "support_true_rate_observed": 0.7692307692307693,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 104
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+        "NO_PHYSICAL_VULNERABILITY": 1,
+        "V_PHYS": 1
+      },
+      "branch_count": 8,
+      "contact_false": 95,
+      "contact_observed_rows": 120,
+      "contact_true": 25,
+      "contact_true_rate_observed": 0.20833333333333334,
+      "contact_unknown": 0,
+      "distance_max_m": 0.28466008792687275,
+      "distance_mean_of_branch_maxima_m": 0.12254063227305426,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 6,
+        "OBJECT_DROP": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 120,
+      "support_false": 22,
+      "support_observed_rows": 120,
+      "support_true": 98,
+      "support_true_rate_observed": 0.8166666666666667,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 8
+      },
+      "branch_count": 8,
+      "contact_false": 120,
+      "contact_observed_rows": 120,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.38346826652571214,
+      "distance_mean_of_branch_maxima_m": 0.22476178890159038,
+      "distance_observed_rows": 120,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 8,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 8
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 120,
+      "support_false": 0,
+      "support_observed_rows": 120,
+      "support_true": 120,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 120
+    }
+  ],
+  "telemetry_by_model_suite_role_dose": [
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 29,
+      "contact_observed_rows": 40,
+      "contact_true": 11,
+      "contact_true_rate_observed": 0.275,
+      "contact_unknown": 0,
+      "distance_max_m": 0.17702408379285575,
+      "distance_mean_of_branch_maxima_m": 0.11609262031087351,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_10",
+      "support_false": 3,
+      "support_observed_rows": 40,
+      "support_true": 37,
+      "support_true_rate_observed": 0.925,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 39,
+      "contact_observed_rows": 40,
+      "contact_true": 1,
+      "contact_true_rate_observed": 0.025,
+      "contact_unknown": 0,
+      "distance_max_m": 0.17700526401020986,
+      "distance_mean_of_branch_maxima_m": 0.11605746518930823,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_10",
+      "support_false": 5,
+      "support_observed_rows": 40,
+      "support_true": 35,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 25,
+      "contact_observed_rows": 26,
+      "contact_true": 1,
+      "contact_true_rate_observed": 0.038461538461538464,
+      "contact_unknown": 0,
+      "distance_max_m": 0.1754912796458658,
+      "distance_mean_of_branch_maxima_m": 0.1153004730071362,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_10",
+      "support_false": 5,
+      "support_observed_rows": 26,
+      "support_true": 21,
+      "support_true_rate_observed": 0.8076923076923077,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 29,
+      "contact_observed_rows": 30,
+      "contact_true": 1,
+      "contact_true_rate_observed": 0.03333333333333333,
+      "contact_unknown": 0,
+      "distance_max_m": 0.17549127911082824,
+      "distance_mean_of_branch_maxima_m": 0.11530047273961741,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_10",
+      "support_false": 4,
+      "support_observed_rows": 30,
+      "support_true": 26,
+      "support_true_rate_observed": 0.8666666666666667,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3637860553001335,
+      "distance_mean_of_branch_maxima_m": 0.3051311863631541,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_10",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 20,
+      "contact_observed_rows": 40,
+      "contact_true": 20,
+      "contact_true_rate_observed": 0.5,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3870173647752691,
+      "distance_mean_of_branch_maxima_m": 0.21240331394190248,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_goal",
+      "support_false": 5,
+      "support_observed_rows": 40,
+      "support_true": 35,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 2,
+      "contact_false": 20,
+      "contact_observed_rows": 40,
+      "contact_true": 20,
+      "contact_true_rate_observed": 0.5,
+      "contact_unknown": 0,
+      "distance_max_m": 0.38701740053738887,
+      "distance_mean_of_branch_maxima_m": 0.21240333182296237,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_goal",
+      "support_false": 5,
+      "support_observed_rows": 40,
+      "support_true": 35,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 2,
+      "contact_false": 13,
+      "contact_observed_rows": 26,
+      "contact_true": 13,
+      "contact_true_rate_observed": 0.5,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3870127157537622,
+      "distance_mean_of_branch_maxima_m": 0.2089442297526943,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_goal",
+      "support_false": 5,
+      "support_observed_rows": 26,
+      "support_true": 21,
+      "support_true_rate_observed": 0.8076923076923077,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 2,
+      "contact_false": 15,
+      "contact_observed_rows": 30,
+      "contact_true": 15,
+      "contact_true_rate_observed": 0.5,
+      "contact_unknown": 0,
+      "distance_max_m": 0.3870138871651297,
+      "distance_mean_of_branch_maxima_m": 0.20924866977811532,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_goal",
+      "support_false": 5,
+      "support_observed_rows": 30,
+      "support_true": 25,
+      "support_true_rate_observed": 0.8333333333333334,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.28824364170257205,
+      "distance_mean_of_branch_maxima_m": 0.2709694139995258,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_goal",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 31,
+      "contact_observed_rows": 40,
+      "contact_true": 9,
+      "contact_true_rate_observed": 0.225,
+      "contact_unknown": 0,
+      "distance_max_m": 0.14051487582591055,
+      "distance_mean_of_branch_maxima_m": 0.08931691910011018,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_object",
+      "support_false": 7,
+      "support_observed_rows": 40,
+      "support_true": 33,
+      "support_true_rate_observed": 0.825,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 35,
+      "contact_observed_rows": 40,
+      "contact_true": 5,
+      "contact_true_rate_observed": 0.125,
+      "contact_unknown": 0,
+      "distance_max_m": 0.1405147155986022,
+      "distance_mean_of_branch_maxima_m": 0.08931683898645601,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_object",
+      "support_false": 6,
+      "support_observed_rows": 40,
+      "support_true": 34,
+      "support_true_rate_observed": 0.85,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 24,
+      "contact_observed_rows": 26,
+      "contact_true": 2,
+      "contact_true_rate_observed": 0.07692307692307693,
+      "contact_unknown": 0,
+      "distance_max_m": 0.09282307195245114,
+      "distance_mean_of_branch_maxima_m": 0.06547101716338048,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_object",
+      "support_false": 0,
+      "support_observed_rows": 26,
+      "support_true": 26,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 26,
+      "contact_observed_rows": 30,
+      "contact_true": 4,
+      "contact_true_rate_observed": 0.13333333333333333,
+      "contact_unknown": 0,
+      "distance_max_m": 0.10579307889201055,
+      "distance_mean_of_branch_maxima_m": 0.07195602063316019,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_object",
+      "support_false": 2,
+      "support_observed_rows": 30,
+      "support_true": 28,
+      "support_true_rate_observed": 0.9333333333333333,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.32567639858319136,
+      "distance_mean_of_branch_maxima_m": 0.22275136299445916,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_object",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 32,
+      "contact_observed_rows": 40,
+      "contact_true": 8,
+      "contact_true_rate_observed": 0.2,
+      "contact_unknown": 0,
+      "distance_max_m": 0.09564665194837381,
+      "distance_mean_of_branch_maxima_m": 0.08718960853290418,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_spatial",
+      "support_false": 6,
+      "support_observed_rows": 40,
+      "support_true": 34,
+      "support_true_rate_observed": 0.85,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 35,
+      "contact_observed_rows": 40,
+      "contact_true": 5,
+      "contact_true_rate_observed": 0.125,
+      "contact_unknown": 0,
+      "distance_max_m": 0.09825587533755482,
+      "distance_mean_of_branch_maxima_m": 0.08849422022749469,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_spatial",
+      "support_false": 3,
+      "support_observed_rows": 40,
+      "support_true": 37,
+      "support_true_rate_observed": 0.925,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 21,
+      "contact_observed_rows": 26,
+      "contact_true": 5,
+      "contact_true_rate_observed": 0.19230769230769232,
+      "contact_unknown": 0,
+      "distance_max_m": 0.09029477610827001,
+      "distance_mean_of_branch_maxima_m": 0.08451367061285228,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_spatial",
+      "support_false": 3,
+      "support_observed_rows": 26,
+      "support_true": 23,
+      "support_true_rate_observed": 0.8846153846153846,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 26,
+      "contact_observed_rows": 30,
+      "contact_true": 4,
+      "contact_true_rate_observed": 0.13333333333333333,
+      "contact_unknown": 0,
+      "distance_max_m": 0.09244659241281486,
+      "distance_mean_of_branch_maxima_m": 0.08558957876512471,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_spatial",
+      "support_false": 3,
+      "support_observed_rows": 30,
+      "support_true": 27,
+      "support_true_rate_observed": 0.9,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2763234904410122,
+      "distance_mean_of_branch_maxima_m": 0.23994905805219813,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_spatial",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 35,
+      "contact_observed_rows": 40,
+      "contact_true": 5,
+      "contact_true_rate_observed": 0.125,
+      "contact_unknown": 0,
+      "distance_max_m": 0.16893475709205713,
+      "distance_mean_of_branch_maxima_m": 0.1441998911545414,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_10",
+      "support_false": 2,
+      "support_observed_rows": 40,
+      "support_true": 38,
+      "support_true_rate_observed": 0.95,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 40,
+      "contact_observed_rows": 40,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.16896043514900486,
+      "distance_mean_of_branch_maxima_m": 0.14182785194618172,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_10",
+      "support_false": 2,
+      "support_observed_rows": 40,
+      "support_true": 38,
+      "support_true_rate_observed": 0.95,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 24,
+      "contact_observed_rows": 26,
+      "contact_true": 2,
+      "contact_true_rate_observed": 0.07692307692307693,
+      "contact_unknown": 0,
+      "distance_max_m": 0.16309945575368723,
+      "distance_mean_of_branch_maxima_m": 0.13803471264915979,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_10",
+      "support_false": 2,
+      "support_observed_rows": 26,
+      "support_true": 24,
+      "support_true_rate_observed": 0.9230769230769231,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.16636824249931584,
+      "distance_mean_of_branch_maxima_m": 0.1396691060219741,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_10",
+      "support_false": 2,
+      "support_observed_rows": 30,
+      "support_true": 28,
+      "support_true_rate_observed": 0.9333333333333333,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2632788109771312,
+      "distance_mean_of_branch_maxima_m": 0.25146556245711754,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_10",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 27,
+      "contact_observed_rows": 40,
+      "contact_true": 13,
+      "contact_true_rate_observed": 0.325,
+      "contact_unknown": 0,
+      "distance_max_m": 0.09127307209369716,
+      "distance_mean_of_branch_maxima_m": 0.08268177135781804,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_goal",
+      "support_false": 4,
+      "support_observed_rows": 40,
+      "support_true": 36,
+      "support_true_rate_observed": 0.9,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 27,
+      "contact_observed_rows": 40,
+      "contact_true": 13,
+      "contact_true_rate_observed": 0.325,
+      "contact_unknown": 0,
+      "distance_max_m": 0.09127307209369716,
+      "distance_mean_of_branch_maxima_m": 0.08268191309856943,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_goal",
+      "support_false": 5,
+      "support_observed_rows": 40,
+      "support_true": 35,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 21,
+      "contact_observed_rows": 26,
+      "contact_true": 5,
+      "contact_true_rate_observed": 0.19230769230769232,
+      "contact_unknown": 0,
+      "distance_max_m": 0.08469364165899479,
+      "distance_mean_of_branch_maxima_m": 0.07939219788121823,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_goal",
+      "support_false": 2,
+      "support_observed_rows": 26,
+      "support_true": 24,
+      "support_true_rate_observed": 0.9230769230769231,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 24,
+      "contact_observed_rows": 30,
+      "contact_true": 6,
+      "contact_true_rate_observed": 0.2,
+      "contact_unknown": 0,
+      "distance_max_m": 0.08572734554383377,
+      "distance_mean_of_branch_maxima_m": 0.07990904982363772,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_goal",
+      "support_false": 2,
+      "support_observed_rows": 30,
+      "support_true": 28,
+      "support_true_rate_observed": 0.9333333333333333,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.37705240996175965,
+      "distance_mean_of_branch_maxima_m": 0.3221279827530253,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_goal",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 40,
+      "contact_observed_rows": 40,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.26512799404629045,
+      "distance_mean_of_branch_maxima_m": 0.22165123752661164,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_object",
+      "support_false": 5,
+      "support_observed_rows": 40,
+      "support_true": 35,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 40,
+      "contact_observed_rows": 40,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2650257347734097,
+      "distance_mean_of_branch_maxima_m": 0.22166652119101857,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_object",
+      "support_false": 6,
+      "support_observed_rows": 40,
+      "support_true": 34,
+      "support_true_rate_observed": 0.85,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 26,
+      "contact_observed_rows": 26,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2129311664033107,
+      "distance_mean_of_branch_maxima_m": 0.19561910390096077,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_object",
+      "support_false": 6,
+      "support_observed_rows": 26,
+      "support_true": 20,
+      "support_true_rate_observed": 0.7692307692307693,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.22884825561055816,
+      "distance_mean_of_branch_maxima_m": 0.20357778418883882,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_object",
+      "support_false": 6,
+      "support_observed_rows": 30,
+      "support_true": 24,
+      "support_true_rate_observed": 0.8,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.2516043419857305,
+      "distance_mean_of_branch_maxima_m": 0.1955270508572171,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_object",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 40,
+      "contact_observed_rows": 40,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.19789157114996436,
+      "distance_mean_of_branch_maxima_m": 0.17597234209386423,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_spatial",
+      "support_false": 5,
+      "support_observed_rows": 40,
+      "support_true": 35,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 40,
+      "contact_observed_rows": 40,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.19788274464408806,
+      "distance_mean_of_branch_maxima_m": 0.1759649343918508,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_spatial",
+      "support_false": 5,
+      "support_observed_rows": 40,
+      "support_true": 35,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 26,
+      "contact_observed_rows": 26,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.19788302711969033,
+      "distance_mean_of_branch_maxima_m": 0.17540478026000744,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_spatial",
+      "support_false": 5,
+      "support_observed_rows": 26,
+      "support_true": 21,
+      "support_true_rate_observed": 0.8076923076923077,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.19788274464408806,
+      "distance_mean_of_branch_maxima_m": 0.1759542260910722,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_spatial",
+      "support_false": 5,
+      "support_observed_rows": 30,
+      "support_true": 25,
+      "support_true_rate_observed": 0.8333333333333334,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 27,
+      "contact_observed_rows": 30,
+      "contact_true": 3,
+      "contact_true_rate_observed": 0.1,
+      "contact_unknown": 0,
+      "distance_max_m": 0.26791224400654307,
+      "distance_mean_of_branch_maxima_m": 0.19212892036848278,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M1_OPENVLA_OFT",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_spatial",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 20,
+      "contact_observed_rows": 40,
+      "contact_true": 20,
+      "contact_true_rate_observed": 0.5,
+      "contact_unknown": 0,
+      "distance_max_m": 0.31180014221169927,
+      "distance_mean_of_branch_maxima_m": 0.2147319016298443,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 1,
+        "NO_PHYSICAL_FAILURE": 1
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_10",
+      "support_false": 5,
+      "support_observed_rows": 40,
+      "support_true": 35,
+      "support_true_rate_observed": 0.875,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1,
+        "V_PHYS": 1
+      },
+      "branch_count": 2,
+      "contact_false": 29,
+      "contact_observed_rows": 40,
+      "contact_true": 11,
+      "contact_true_rate_observed": 0.275,
+      "contact_unknown": 0,
+      "distance_max_m": 0.31588330305589063,
+      "distance_mean_of_branch_maxima_m": 0.22787973506056736,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 1,
+        "OBJECT_DROP": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_10",
+      "support_false": 7,
+      "support_observed_rows": 40,
+      "support_true": 33,
+      "support_true_rate_observed": 0.825,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1,
+        "V_PHYS": 1
+      },
+      "branch_count": 2,
+      "contact_false": 20,
+      "contact_observed_rows": 26,
+      "contact_true": 6,
+      "contact_true_rate_observed": 0.23076923076923078,
+      "contact_unknown": 0,
+      "distance_max_m": 0.27429933154986763,
+      "distance_mean_of_branch_maxima_m": 0.20697032567212598,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 1,
+        "OBJECT_DROP": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_10",
+      "support_false": 7,
+      "support_observed_rows": 26,
+      "support_true": 19,
+      "support_true_rate_observed": 0.7307692307692307,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1,
+        "V_PHYS": 1
+      },
+      "branch_count": 2,
+      "contact_false": 20,
+      "contact_observed_rows": 30,
+      "contact_true": 10,
+      "contact_true_rate_observed": 0.3333333333333333,
+      "contact_unknown": 0,
+      "distance_max_m": 0.28466008792687275,
+      "distance_mean_of_branch_maxima_m": 0.21225157772726286,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 1,
+        "OBJECT_DROP": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_10",
+      "support_false": 7,
+      "support_observed_rows": 30,
+      "support_true": 23,
+      "support_true_rate_observed": 0.7666666666666667,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.29636736474303466,
+      "distance_mean_of_branch_maxima_m": 0.25216505735941713,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_10",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 40,
+      "contact_observed_rows": 40,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.121500768170573,
+      "distance_mean_of_branch_maxima_m": 0.11566827069249692,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_goal",
+      "support_false": 0,
+      "support_observed_rows": 40,
+      "support_true": 40,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 40,
+      "contact_observed_rows": 40,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.121500768170573,
+      "distance_mean_of_branch_maxima_m": 0.11566827069249692,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_goal",
+      "support_false": 0,
+      "support_observed_rows": 40,
+      "support_true": 40,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 26,
+      "contact_observed_rows": 26,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.12119987032467439,
+      "distance_mean_of_branch_maxima_m": 0.11551782176954761,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_goal",
+      "support_false": 0,
+      "support_observed_rows": 26,
+      "support_true": 26,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.12119987032467439,
+      "distance_mean_of_branch_maxima_m": 0.11551782176954761,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_goal",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.30464787923722747,
+      "distance_mean_of_branch_maxima_m": 0.21307432370390023,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_goal",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 10,
+      "contact_observed_rows": 40,
+      "contact_true": 30,
+      "contact_true_rate_observed": 0.75,
+      "contact_unknown": 0,
+      "distance_max_m": 0.08686900108708107,
+      "distance_mean_of_branch_maxima_m": 0.05625572345761429,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_object",
+      "support_false": 32,
+      "support_observed_rows": 40,
+      "support_true": 8,
+      "support_true_rate_observed": 0.2,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 1
+      },
+      "branch_count": 2,
+      "contact_false": 20,
+      "contact_observed_rows": 40,
+      "contact_true": 20,
+      "contact_true_rate_observed": 0.5,
+      "contact_unknown": 0,
+      "distance_max_m": 0.15405984929567307,
+      "distance_mean_of_branch_maxima_m": 0.09465970694377411,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_object",
+      "support_false": 20,
+      "support_observed_rows": 40,
+      "support_true": 20,
+      "support_true_rate_observed": 0.5,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 2,
+      "contact_false": 9,
+      "contact_observed_rows": 26,
+      "contact_true": 17,
+      "contact_true_rate_observed": 0.6538461538461539,
+      "contact_unknown": 0,
+      "distance_max_m": 0.04577131413372056,
+      "distance_mean_of_branch_maxima_m": 0.04041347959304685,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_object",
+      "support_false": 17,
+      "support_observed_rows": 26,
+      "support_true": 9,
+      "support_true_rate_observed": 0.34615384615384615,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_CONTAMINATION_ABSTAIN": 1,
+        "NO_PHYSICAL_VULNERABILITY": 1
+      },
+      "branch_count": 2,
+      "contact_false": 15,
+      "contact_observed_rows": 30,
+      "contact_true": 15,
+      "contact_true_rate_observed": 0.5,
+      "contact_unknown": 0,
+      "distance_max_m": 0.09661609638397492,
+      "distance_mean_of_branch_maxima_m": 0.06588348567297672,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 1,
+        "PREMATURE_OBJECT_RELEASE": 1
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_object",
+      "support_false": 15,
+      "support_observed_rows": 30,
+      "support_true": 15,
+      "support_true_rate_observed": 0.5,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.1503864858681631,
+      "distance_mean_of_branch_maxima_m": 0.1340771371040387,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_object",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "<NULL>": 2
+      },
+      "branch_count": 2,
+      "contact_false": 35,
+      "contact_observed_rows": 40,
+      "contact_true": 5,
+      "contact_true_rate_observed": 0.125,
+      "contact_unknown": 0,
+      "distance_max_m": 0.11045663574143011,
+      "distance_mean_of_branch_maxima_m": 0.10412326220401613,
+      "distance_observed_rows": 40,
+      "dose": 0,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "CLEAN_REFERENCE",
+      "rows": 40,
+      "suite": "libero_spatial",
+      "support_false": 1,
+      "support_observed_rows": 40,
+      "support_true": 39,
+      "support_true_rate_observed": 0.975,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 35,
+      "contact_observed_rows": 40,
+      "contact_true": 5,
+      "contact_true_rate_observed": 0.125,
+      "contact_unknown": 0,
+      "distance_max_m": 0.11045663574143011,
+      "distance_mean_of_branch_maxima_m": 0.10412326220401613,
+      "distance_observed_rows": 40,
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 40,
+      "suite": "libero_spatial",
+      "support_false": 1,
+      "support_observed_rows": 40,
+      "support_true": 39,
+      "support_true_rate_observed": 0.975,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 40
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 26,
+      "contact_observed_rows": 26,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.094797528821038,
+      "distance_mean_of_branch_maxima_m": 0.09476157058293776,
+      "distance_observed_rows": 26,
+      "dose": 3,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 26,
+      "suite": "libero_spatial",
+      "support_false": 0,
+      "support_observed_rows": 26,
+      "support_true": 26,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 26
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.097611491325243,
+      "distance_mean_of_branch_maxima_m": 0.09650964392242983,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "NO_PHYSICAL_FAILURE": 2
+      },
+      "role": "CRITICAL_OPEN_PRIMARY",
+      "rows": 30,
+      "suite": "libero_spatial",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    },
+    {
+      "auto_v_phys_label_counts": {
+        "NOT_APPLICABLE_NONCRITICAL_CONTROL": 2
+      },
+      "branch_count": 2,
+      "contact_false": 30,
+      "contact_observed_rows": 30,
+      "contact_true": 0,
+      "contact_true_rate_observed": 0.0,
+      "contact_unknown": 0,
+      "distance_max_m": 0.38346826652571214,
+      "distance_mean_of_branch_maxima_m": 0.2997306374390054,
+      "distance_observed_rows": 30,
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "parent_count": 2,
+      "physical_class_counts": {
+        "GRIPPER_CONTACT_LOSS": 2
+      },
+      "role": "NONCRITICAL_T5_CONTROL",
+      "rows": 30,
+      "suite": "libero_spatial",
+      "support_false": 0,
+      "support_observed_rows": 30,
+      "support_true": 30,
+      "support_true_rate_observed": 1.0,
+      "support_unknown": 0,
+      "telemetry_invalid_rows": 0,
+      "telemetry_valid_rows": 30
+    }
+  ]
+}

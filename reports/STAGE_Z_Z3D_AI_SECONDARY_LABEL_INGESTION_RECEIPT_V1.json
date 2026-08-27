@@ -1,0 +1,61 @@
+{
+  "schema_version": "STAGE_Z_Z3D_AI_SECONDARY_LABEL_INGESTION_RECEIPT_V1",
+  "status": "STAGE_Z_Z3D_AI_SECONDARY_LABEL_INGESTION_PASS",
+  "ingestion_order": [
+    "exact_bytes_materialized",
+    "sha256_and_byte_count_verified",
+    "json_csv_row_and_field_parity_verified",
+    "seal_binding_verified",
+    "hidden_mapping_read_after_ingestion_pass"
+  ],
+  "exact_artifacts": {
+    "STAGE_Z_Z3D_AI_SECONDARY_BLINDED_LABELS_R1_V1.json": {
+      "bytes": 67648,
+      "sha256": "dfc3484db22c342f598c8e248388615cfdd28d9acb4c9b139501b5f1c3f600cd",
+      "append_only_evidence_path": "reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_BLINDED_LABELS_R1_V1.json"
+    },
+    "STAGE_Z_Z3D_AI_SECONDARY_BLINDED_LABELS_R1_V1.csv": {
+      "bytes": 26749,
+      "sha256": "ff1411afec9de439a1134fb8f228c77609a2cfb588feccdaae897d4f3923d12c",
+      "append_only_evidence_path": "reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_BLINDED_LABELS_R1_V1.csv"
+    },
+    "STAGE_Z_Z3D_AI_SECONDARY_LABEL_SEAL_R1_V1.json": {
+      "bytes": 721,
+      "sha256": "1c0d7beddaa6153c746ee541604ea861698289379278036bf634909b4e2878cd",
+      "append_only_evidence_path": "reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_LABEL_SEAL_R1_V1.json"
+    }
+  },
+  "row_integrity": {
+    "json_rows": 120,
+    "csv_rows": 120,
+    "json_unique_blinded_video_ids": 120,
+    "csv_unique_blinded_video_ids": 120,
+    "json_csv_same_ids_and_labels_and_visual_fields": true,
+    "allowed_vocabulary_only": true,
+    "label_distribution": {
+      "AMBIGUOUS_OR_OCCLUDED": 1,
+      "NOT_IDENTIFIABLE": 106,
+      "OBJECT_DISPLACEMENT": 4,
+      "STABLE_GRASP": 9
+    }
+  },
+  "governance": {
+    "reviewer_type": "AI_SECONDARY_REVIEWER",
+    "human_review_gate_satisfied": false,
+    "ai_secondary_unblind_reconciliation_permitted": true,
+    "z4_authorized": false,
+    "hidden_mapping_read_before_ingestion_pass": false,
+    "new_scientific_execution": false
+  },
+  "source_bindings": {
+    "r1_manifest_sha256": "4afc3170e6bd6bf7922d1c73c48bd8cbe34b38c9f96598246d8db3a37580791d",
+    "r1_package_sha256": "c4601c03340bc545e145893d6048886fc11714384c98d4ab9f397771acd54a34"
+  },
+  "next_authorized_gate": "STAGE_Z_Z3D_AI_SECONDARY_UNBLIND_RECONCILIATION_V1",
+  "stop_before": [
+    "Z4",
+    "Paper_V2_promotion",
+    "BRIDGE",
+    "new_simulator_execution"
+  ]
+}

@@ -1,0 +1,1843 @@
+{
+  "assigned_panel_distribution": {
+    "by_arm": [
+      {
+        "group": {
+          "arm": "CLEAN_BRANCH_CRITICAL"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 7,
+          "NOT_IDENTIFIABLE": 9,
+          "OBJECT_DISPLACEMENT": 3,
+          "PREMATURE_RELEASE_OR_DROP": 1,
+          "STABLE_GRASP": 4
+        },
+        "primary_ai_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 20,
+          "OBJECT_DISPLACEMENT": 1,
+          "STABLE_GRASP": 2
+        },
+        "row_count": 24
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T10_CRITICAL"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 6,
+          "CONTACT_LOSS": 1,
+          "NOT_IDENTIFIABLE": 10,
+          "OBJECT_DISPLACEMENT": 4,
+          "PREMATURE_RELEASE_OR_DROP": 1,
+          "STABLE_GRASP": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 21,
+          "OBJECT_DISPLACEMENT": 1,
+          "STABLE_GRASP": 2
+        },
+        "row_count": 24
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T3_CRITICAL"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 7,
+          "NOT_IDENTIFIABLE": 12,
+          "OBJECT_DISPLACEMENT": 3,
+          "PREMATURE_RELEASE_OR_DROP": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 21,
+          "OBJECT_DISPLACEMENT": 1,
+          "STABLE_GRASP": 2
+        },
+        "row_count": 24
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T5_CRITICAL"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 7,
+          "NOT_IDENTIFIABLE": 11,
+          "OBJECT_DISPLACEMENT": 3,
+          "PREMATURE_RELEASE_OR_DROP": 2,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 21,
+          "OBJECT_DISPLACEMENT": 1,
+          "STABLE_GRASP": 2
+        },
+        "row_count": 24
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 6,
+          "NOT_IDENTIFIABLE": 16,
+          "STABLE_GRASP": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 23,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 24
+      }
+    ],
+    "by_model": [
+      {
+        "group": {
+          "model_family": "M0_OPENVLA"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 12,
+          "CONTACT_LOSS": 1,
+          "NOT_IDENTIFIABLE": 18,
+          "OBJECT_DISPLACEMENT": 5,
+          "PREMATURE_RELEASE_OR_DROP": 1,
+          "STABLE_GRASP": 3
+        },
+        "primary_ai_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 35,
+          "OBJECT_DISPLACEMENT": 4
+        },
+        "row_count": 40
+      },
+      {
+        "group": {
+          "model_family": "M1_OPENVLA_OFT"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 10,
+          "NOT_IDENTIFIABLE": 17,
+          "OBJECT_DISPLACEMENT": 4,
+          "PREMATURE_RELEASE_OR_DROP": 4,
+          "STABLE_GRASP": 5
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 35,
+          "STABLE_GRASP": 5
+        },
+        "row_count": 40
+      },
+      {
+        "group": {
+          "model_family": "M2_PI05_LIBERO"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 11,
+          "NOT_IDENTIFIABLE": 23,
+          "OBJECT_DISPLACEMENT": 4,
+          "STABLE_GRASP": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 36,
+          "STABLE_GRASP": 4
+        },
+        "row_count": 40
+      }
+    ],
+    "by_model_arm_dose": [
+      {
+        "group": {
+          "arm": "CLEAN_BRANCH_CRITICAL",
+          "dose": "0",
+          "model_family": "M0_OPENVLA"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 3,
+          "NOT_IDENTIFIABLE": 2,
+          "OBJECT_DISPLACEMENT": 1,
+          "STABLE_GRASP": 2
+        },
+        "primary_ai_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 6,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T10_CRITICAL",
+          "dose": "10",
+          "model_family": "M0_OPENVLA"
+        },
+        "panel_label_counts": {
+          "CONTACT_LOSS": 1,
+          "NOT_IDENTIFIABLE": 4,
+          "OBJECT_DISPLACEMENT": 2,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T3_CRITICAL",
+          "dose": "3",
+          "model_family": "M0_OPENVLA"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 3,
+          "NOT_IDENTIFIABLE": 4,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T5_CRITICAL",
+          "dose": "5",
+          "model_family": "M0_OPENVLA"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 4,
+          "NOT_IDENTIFIABLE": 2,
+          "OBJECT_DISPLACEMENT": 1,
+          "PREMATURE_RELEASE_OR_DROP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL",
+          "dose": "5",
+          "model_family": "M0_OPENVLA"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2,
+          "NOT_IDENTIFIABLE": 6
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 8
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "CLEAN_BRANCH_CRITICAL",
+          "dose": "0",
+          "model_family": "M1_OPENVLA_OFT"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2,
+          "NOT_IDENTIFIABLE": 2,
+          "OBJECT_DISPLACEMENT": 1,
+          "PREMATURE_RELEASE_OR_DROP": 1,
+          "STABLE_GRASP": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T10_CRITICAL",
+          "dose": "10",
+          "model_family": "M1_OPENVLA_OFT"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 4,
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1,
+          "PREMATURE_RELEASE_OR_DROP": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T3_CRITICAL",
+          "dose": "3",
+          "model_family": "M1_OPENVLA_OFT"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 5,
+          "OBJECT_DISPLACEMENT": 1,
+          "PREMATURE_RELEASE_OR_DROP": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T5_CRITICAL",
+          "dose": "5",
+          "model_family": "M1_OPENVLA_OFT"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2,
+          "NOT_IDENTIFIABLE": 4,
+          "OBJECT_DISPLACEMENT": 1,
+          "PREMATURE_RELEASE_OR_DROP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL",
+          "dose": "5",
+          "model_family": "M1_OPENVLA_OFT"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2,
+          "NOT_IDENTIFIABLE": 5,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "CLEAN_BRANCH_CRITICAL",
+          "dose": "0",
+          "model_family": "M2_PI05_LIBERO"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2,
+          "NOT_IDENTIFIABLE": 5,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T10_CRITICAL",
+          "dose": "10",
+          "model_family": "M2_PI05_LIBERO"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2,
+          "NOT_IDENTIFIABLE": 5,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T3_CRITICAL",
+          "dose": "3",
+          "model_family": "M2_PI05_LIBERO"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 4,
+          "NOT_IDENTIFIABLE": 3,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T5_CRITICAL",
+          "dose": "5",
+          "model_family": "M2_PI05_LIBERO"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 5,
+          "OBJECT_DISPLACEMENT": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 7,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 8
+      },
+      {
+        "group": {
+          "arm": "COMMAND_OPEN_T5_NONCRITICAL_CONTROL",
+          "dose": "5",
+          "model_family": "M2_PI05_LIBERO"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2,
+          "NOT_IDENTIFIABLE": 5,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 8
+        },
+        "row_count": 8
+      }
+    ],
+    "by_model_suite_role_dose": [
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M0_OPENVLA",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "PREMATURE_RELEASE_OR_DROP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M0_OPENVLA",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M0_OPENVLA",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "CONTACT_LOSS": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M0_OPENVLA",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M0_OPENVLA",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M0_OPENVLA",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M0_OPENVLA",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M0_OPENVLA",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M0_OPENVLA",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "PREMATURE_RELEASE_OR_DROP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "PREMATURE_RELEASE_OR_DROP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "PREMATURE_RELEASE_OR_DROP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "PREMATURE_RELEASE_OR_DROP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "OBJECT_DISPLACEMENT": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M1_OPENVLA_OFT",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "OBJECT_DISPLACEMENT": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "0",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CLEAN_REFERENCE",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "10",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "3",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "CRITICAL_OPEN_PRIMARY",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 1,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      },
+      {
+        "group": {
+          "dose": "5",
+          "model_family": "M2_PI05_LIBERO",
+          "role": "NONCRITICAL_T5_CONTROL",
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 2
+        },
+        "row_count": 2
+      }
+    ],
+    "by_role": [
+      {
+        "group": {
+          "role": "CLEAN_REFERENCE"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 7,
+          "NOT_IDENTIFIABLE": 9,
+          "OBJECT_DISPLACEMENT": 3,
+          "PREMATURE_RELEASE_OR_DROP": 1,
+          "STABLE_GRASP": 4
+        },
+        "primary_ai_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 20,
+          "OBJECT_DISPLACEMENT": 1,
+          "STABLE_GRASP": 2
+        },
+        "row_count": 24
+      },
+      {
+        "group": {
+          "role": "CRITICAL_OPEN_PRIMARY"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 20,
+          "CONTACT_LOSS": 1,
+          "NOT_IDENTIFIABLE": 33,
+          "OBJECT_DISPLACEMENT": 10,
+          "PREMATURE_RELEASE_OR_DROP": 4,
+          "STABLE_GRASP": 4
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 63,
+          "OBJECT_DISPLACEMENT": 3,
+          "STABLE_GRASP": 6
+        },
+        "row_count": 72
+      },
+      {
+        "group": {
+          "role": "NONCRITICAL_T5_CONTROL"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 6,
+          "NOT_IDENTIFIABLE": 16,
+          "STABLE_GRASP": 2
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 23,
+          "STABLE_GRASP": 1
+        },
+        "row_count": 24
+      }
+    ],
+    "by_suite": [
+      {
+        "group": {
+          "suite": "libero_10"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 6,
+          "NOT_IDENTIFIABLE": 13,
+          "OBJECT_DISPLACEMENT": 5,
+          "PREMATURE_RELEASE_OR_DROP": 1,
+          "STABLE_GRASP": 5
+        },
+        "primary_ai_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 1,
+          "NOT_IDENTIFIABLE": 20,
+          "STABLE_GRASP": 9
+        },
+        "row_count": 30
+      },
+      {
+        "group": {
+          "suite": "libero_goal"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 10,
+          "CONTACT_LOSS": 1,
+          "NOT_IDENTIFIABLE": 14,
+          "OBJECT_DISPLACEMENT": 4,
+          "STABLE_GRASP": 1
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 26,
+          "OBJECT_DISPLACEMENT": 4
+        },
+        "row_count": 30
+      },
+      {
+        "group": {
+          "suite": "libero_object"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 7,
+          "NOT_IDENTIFIABLE": 19,
+          "PREMATURE_RELEASE_OR_DROP": 4
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 30
+        },
+        "row_count": 30
+      },
+      {
+        "group": {
+          "suite": "libero_spatial"
+        },
+        "panel_label_counts": {
+          "AMBIGUOUS_OR_OCCLUDED": 10,
+          "NOT_IDENTIFIABLE": 12,
+          "OBJECT_DISPLACEMENT": 4,
+          "STABLE_GRASP": 4
+        },
+        "primary_ai_label_counts": {
+          "NOT_IDENTIFIABLE": 30
+        },
+        "row_count": 30
+      }
+    ],
+    "overall": {
+      "AMBIGUOUS_OR_OCCLUDED": 33,
+      "CONTACT_LOSS": 1,
+      "NOT_IDENTIFIABLE": 58,
+      "OBJECT_DISPLACEMENT": 13,
+      "PREMATURE_RELEASE_OR_DROP": 5,
+      "STABLE_GRASP": 10
+    }
+  },
+  "automatic_endpoint_vs_assigned_panel": {
+    "auto_physical_class_to_panel": {
+      "GRIPPER_CONTACT_LOSS": {
+        "AMBIGUOUS_OR_OCCLUDED": 14,
+        "NOT_IDENTIFIABLE": 30,
+        "OBJECT_DISPLACEMENT": 3,
+        "PREMATURE_RELEASE_OR_DROP": 1,
+        "STABLE_GRASP": 7
+      },
+      "NO_PHYSICAL_FAILURE": {
+        "AMBIGUOUS_OR_OCCLUDED": 19,
+        "CONTACT_LOSS": 1,
+        "NOT_IDENTIFIABLE": 22,
+        "OBJECT_DISPLACEMENT": 10,
+        "PREMATURE_RELEASE_OR_DROP": 4,
+        "STABLE_GRASP": 2
+      },
+      "OBJECT_DROP": {
+        "NOT_IDENTIFIABLE": 3
+      },
+      "PREMATURE_OBJECT_RELEASE": {
+        "NOT_IDENTIFIABLE": 3,
+        "STABLE_GRASP": 1
+      }
+    },
+    "auto_v_phys_label_to_panel": {
+      "<NULL>": {
+        "AMBIGUOUS_OR_OCCLUDED": 7,
+        "NOT_IDENTIFIABLE": 9,
+        "OBJECT_DISPLACEMENT": 3,
+        "PREMATURE_RELEASE_OR_DROP": 1,
+        "STABLE_GRASP": 4
+      },
+      "CONTROL_CONTAMINATION_ABSTAIN": {
+        "AMBIGUOUS_OR_OCCLUDED": 2,
+        "NOT_IDENTIFIABLE": 9,
+        "STABLE_GRASP": 2
+      },
+      "CONTROL_PHYSICAL_FAILURE_ABSTAIN": {
+        "AMBIGUOUS_OR_OCCLUDED": 14,
+        "NOT_IDENTIFIABLE": 21,
+        "OBJECT_DISPLACEMENT": 10,
+        "PREMATURE_RELEASE_OR_DROP": 4,
+        "STABLE_GRASP": 2
+      },
+      "NOT_APPLICABLE_NONCRITICAL_CONTROL": {
+        "AMBIGUOUS_OR_OCCLUDED": 6,
+        "NOT_IDENTIFIABLE": 16,
+        "STABLE_GRASP": 2
+      },
+      "NO_PHYSICAL_VULNERABILITY": {
+        "AMBIGUOUS_OR_OCCLUDED": 4,
+        "CONTACT_LOSS": 1
+      },
+      "V_PHYS": {
+        "NOT_IDENTIFIABLE": 3
+      }
+    },
+    "gripper_contact_loss_not_identifiable_or_ambiguous": 44,
+    "gripper_contact_loss_panel_counts": {
+      "AMBIGUOUS_OR_OCCLUDED": 14,
+      "NOT_IDENTIFIABLE": 30,
+      "OBJECT_DISPLACEMENT": 3,
+      "PREMATURE_RELEASE_OR_DROP": 1,
+      "STABLE_GRASP": 7
+    },
+    "gripper_contact_loss_rows": 55,
+    "gripper_contact_loss_stable_grasp": 7,
+    "interpretation_guardrail": "Panel labels diagnose endpoint visibility/construct validity only; automatic abstentions and V_phys labels are not relabeled."
+  },
+  "interpretation": {
+    "automatic_contact_loss_guardrail": "Automatic GRIPPER_CONTACT_LOSS remains an automatic label; panel disagreement is diagnostic only.",
+    "cross_model_guardrail": "The observed denominator attrition and panel indeterminacy do not establish M1/M2 robustness or immunity.",
+    "endpoint_validity_signal": "The panel supplies exploratory visual-validity evidence and does not repair the primary endpoint."
+  },
+  "next_legal_action": "STATIC_Z4_CLOSEOUT_ONLY",
+  "panel_design_guardrail": {
+    "heterogeneous_confidence_encoding_preserved": true,
+    "panel_inter_rater_agreement": "NOT_ESTIMABLE",
+    "panel_is_not_human_review": true,
+    "seven_shards_are_disjoint": true
+  },
+  "primary_ai_vs_assigned_panel": {
+    "confusion_matrix_primary_ai_to_panel": {
+      "AMBIGUOUS_OR_OCCLUDED": {
+        "AMBIGUOUS_OR_OCCLUDED": 1
+      },
+      "NOT_IDENTIFIABLE": {
+        "AMBIGUOUS_OR_OCCLUDED": 30,
+        "CONTACT_LOSS": 1,
+        "NOT_IDENTIFIABLE": 56,
+        "OBJECT_DISPLACEMENT": 5,
+        "PREMATURE_RELEASE_OR_DROP": 5,
+        "STABLE_GRASP": 9
+      },
+      "OBJECT_DISPLACEMENT": {
+        "OBJECT_DISPLACEMENT": 4
+      },
+      "STABLE_GRASP": {
+        "AMBIGUOUS_OR_OCCLUDED": 2,
+        "NOT_IDENTIFIABLE": 2,
+        "OBJECT_DISPLACEMENT": 4,
+        "STABLE_GRASP": 1
+      }
+    },
+    "exact_label_agreement_count": 62,
+    "exact_label_agreement_rate": 0.5166666666666667,
+    "interpretation": "This is primary-AI versus assigned seven-agent panel agreement; the seven shards are disjoint, so inter-rater agreement among panel agents is not estimable.",
+    "label_vocabularies": {
+      "panel": [
+        "AMBIGUOUS_OR_OCCLUDED",
+        "CONTACT_LOSS",
+        "NOT_IDENTIFIABLE",
+        "OBJECT_DISPLACEMENT",
+        "PREMATURE_APERTURE",
+        "PREMATURE_RELEASE_OR_DROP",
+        "STABLE_GRASP"
+      ],
+      "primary_ai": [
+        "AMBIGUOUS_OR_OCCLUDED",
+        "NOT_IDENTIFIABLE",
+        "OBJECT_DISPLACEMENT",
+        "STABLE_GRASP"
+      ]
+    },
+    "row_count": 120
+  },
+  "same_parent_dose_diagnostics": {
+    "audit_subset_recompute": {
+      "M0_OPENVLA": {
+        "complete_all_dose_parents": 1,
+        "complete_all_dose_pattern_counts": {
+          "000": 1
+        },
+        "complete_all_dose_rows": [
+          {
+            "canonical_parent_key": "libero_goal/task_05/state_26",
+            "labels_3_5_10": [
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY"
+            ],
+            "pattern_3_5_10": "000",
+            "suite": "libero_goal"
+          }
+        ],
+        "dose_valid_parent_counts": {
+          "10": 1,
+          "3": 1,
+          "5": 1
+        },
+        "duplicate_parent_dose_keys": [],
+        "total_parents": 8
+      },
+      "M1_OPENVLA_OFT": {
+        "complete_all_dose_parents": 0,
+        "complete_all_dose_pattern_counts": {},
+        "complete_all_dose_rows": [],
+        "dose_valid_parent_counts": {
+          "10": 0,
+          "3": 0,
+          "5": 0
+        },
+        "duplicate_parent_dose_keys": [],
+        "total_parents": 8
+      },
+      "M2_PI05_LIBERO": {
+        "complete_all_dose_parents": 1,
+        "complete_all_dose_pattern_counts": {
+          "111": 1
+        },
+        "complete_all_dose_rows": [
+          {
+            "canonical_parent_key": "libero_10/task_05/state_21",
+            "labels_3_5_10": [
+              "V_PHYS",
+              "V_PHYS",
+              "V_PHYS"
+            ],
+            "pattern_3_5_10": "111",
+            "suite": "libero_10"
+          }
+        ],
+        "dose_valid_parent_counts": {
+          "10": 1,
+          "3": 2,
+          "5": 2
+        },
+        "duplicate_parent_dose_keys": [],
+        "total_parents": 8
+      }
+    },
+    "authoritative_full_z3c_static_diagnostic": {
+      "M0_OPENVLA": {
+        "complete_all_dose_parents": 3,
+        "complete_all_dose_pattern_counts": {
+          "000": 3
+        },
+        "complete_all_dose_rows": [
+          {
+            "canonical_parent_key": "libero_10/task_09/state_24",
+            "labels_3_5_10": [
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY"
+            ],
+            "pattern_3_5_10": "000",
+            "suite": "libero_10"
+          },
+          {
+            "canonical_parent_key": "libero_goal/task_05/state_26",
+            "labels_3_5_10": [
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY"
+            ],
+            "pattern_3_5_10": "000",
+            "suite": "libero_goal"
+          },
+          {
+            "canonical_parent_key": "libero_object/task_07/state_45",
+            "labels_3_5_10": [
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY"
+            ],
+            "pattern_3_5_10": "000",
+            "suite": "libero_object"
+          }
+        ],
+        "dose_valid_parent_counts": {
+          "10": 3,
+          "3": 4,
+          "5": 3
+        },
+        "total_parents": 32
+      },
+      "M1_OPENVLA_OFT": {
+        "complete_all_dose_parents": 2,
+        "complete_all_dose_pattern_counts": {
+          "000": 2
+        },
+        "complete_all_dose_rows": [
+          {
+            "canonical_parent_key": "libero_10/task_03/state_45",
+            "labels_3_5_10": [
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY"
+            ],
+            "pattern_3_5_10": "000",
+            "suite": "libero_10"
+          },
+          {
+            "canonical_parent_key": "libero_10/task_06/state_34",
+            "labels_3_5_10": [
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY"
+            ],
+            "pattern_3_5_10": "000",
+            "suite": "libero_10"
+          }
+        ],
+        "dose_valid_parent_counts": {
+          "10": 2,
+          "3": 2,
+          "5": 2
+        },
+        "total_parents": 26
+      },
+      "M2_PI05_LIBERO": {
+        "complete_all_dose_parents": 3,
+        "complete_all_dose_pattern_counts": {
+          "001": 1,
+          "100": 1,
+          "111": 1
+        },
+        "complete_all_dose_rows": [
+          {
+            "canonical_parent_key": "libero_10/task_02/state_30",
+            "labels_3_5_10": [
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY",
+              "V_PHYS"
+            ],
+            "pattern_3_5_10": "001",
+            "suite": "libero_10"
+          },
+          {
+            "canonical_parent_key": "libero_10/task_05/state_21",
+            "labels_3_5_10": [
+              "V_PHYS",
+              "V_PHYS",
+              "V_PHYS"
+            ],
+            "pattern_3_5_10": "111",
+            "suite": "libero_10"
+          },
+          {
+            "canonical_parent_key": "libero_10/task_09/state_24",
+            "labels_3_5_10": [
+              "V_PHYS",
+              "NO_PHYSICAL_VULNERABILITY",
+              "NO_PHYSICAL_VULNERABILITY"
+            ],
+            "pattern_3_5_10": "100",
+            "suite": "libero_10"
+          }
+        ],
+        "dose_valid_parent_counts": {
+          "10": 3,
+          "3": 4,
+          "5": 4
+        },
+        "total_parents": 34
+      }
+    },
+    "comparison_note": "The 120 audit videos are a selected presentation subset; their parent counts cannot be compared to the full 92-parent Z3-C matrix. The sealed full-matrix diagnostic is preserved as authoritative.",
+    "prior_static_diagnostic_preserved": true
+  },
+  "schema": "STAGE_Z_Z3DH_AI_PANEL_CROSS_AUDIT_V1",
+  "scientific_firewall": {
+    "branch_reexecution": 0,
+    "eval160_reads": 0,
+    "human_review_gate_satisfied": false,
+    "human_review_requirement_waived_for_exploratory_closeout_by_PI": true,
+    "new_env_step": 0,
+    "new_identities": 0,
+    "new_model_inference": 0,
+    "new_open_intervention": 0,
+    "pgd": 0,
+    "protected_reads": 0,
+    "v_phys_relabeling": 0
+  },
+  "source_reconciliation": {
+    "bytes": 340926,
+    "path": "reports/STAGE_Z_Z3DH_AI_SUBAGENT_PANEL_UNBLIND_RECONCILIATION_V1.json",
+    "sha256": "356975edfd0eef1f594504918acbe69c42e466060caa4a683f7faf5847abaa69"
+  },
+  "status": "STAGE_Z_Z3DH_AI_PANEL_CROSS_AUDIT_COMPLETE"
+}

@@ -1,0 +1,85 @@
+{
+  "schema": "STAGE_AA_AA1R1_RUNTIME_SOURCE_AUTHORITY_V1",
+  "status": "STAGE_AA_AA1R1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+  "gate": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_DECOUPLING_AND_QUALIFICATION_V1",
+  "authorization_pi_comment_id": 5419093246,
+  "claim_boundary": "Engineering branch-path qualification only; no scientific result.",
+  "git_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "commit": "8c9b30ff2024e764383af2dc5ddc1b6fe796b99a",
+    "tree": "c735681fd4a0e6312fbcd91f182f12f73f175bf5"
+  },
+  "runtime_files": [
+    {
+      "path": "configs/STAGE_AA_AA1R1_ENGINEERING_BRANCH_QUALIFICATION_PROTOCOL_V1.json",
+      "bytes": 4080,
+      "sha256": "56aaf3a0339af3e2d1d2df6e465d8dfd8aa9497b65c0f325b66f2be260e28fbf",
+      "git_blob_sha": "066edce63bd8ef40ef0b5c3668ea7edb29586094"
+    },
+    {
+      "path": "scripts/stage_aa/run_stage_aa1r1_engineering_branch.py",
+      "bytes": 26597,
+      "sha256": "051e31ce497a291499b04f2fdd8ad121ae29b7fa75f8ae88494a634a72ae11c0",
+      "git_blob_sha": "fd9ecf16a62d80e1af1245cfd6cb95d51c65c543"
+    },
+    {
+      "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
+      "bytes": 30378,
+      "sha256": "2d3a3dc4ae9729ef70730be6c13a42d68a8fe6930cd95c3f914b1273a7c6db94",
+      "git_blob_sha": "b5645d3d33265440c6f9bcb212ef30edc332f056"
+    }
+  ],
+  "parent_authorities": {
+    "aa0_protocol": {
+      "path": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+      "status": "STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_FROZEN_STOP_FOR_PI"
+    },
+    "aa1_protocol": {
+      "path": "configs/STAGE_AA_AA1_ENGINEERING_RUNTIME_PROTOCOL_V1.json",
+      "status": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_AUTHORIZED"
+    },
+    "aa1_terminal": {
+      "path": "reports/STAGE_AA_AA1_ENGINEERING_CANARY_TERMINAL_V1.json",
+      "sha256": "79796471be51d586b3fda46439db123d00f75ba2f56e4c9b7a5ae0d063101727",
+      "status": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_HOLD_STOP_FOR_PI"
+    },
+    "aa1_root": {
+      "path": "reports/STAGE_AA_AA1_ROOT_SEAL_V1.json",
+      "sha256": "e9b688730df7cad916259d929f733e3a80754be73f5fbb0c59d710dd192acaad"
+    },
+    "aa1_runtime_source_authority": {
+      "path": "reports/STAGE_AA_AA1_RUNTIME_SOURCE_AUTHORITY_V3.json",
+      "sha256": "3d6536d1583210755d51e0e1563043d5e866d1029fd74b6f2299034257cd6dfc"
+    },
+    "aa1_canary_plan": "reports/STAGE_AA_AA1_ENGINEERING_CANARY_PLAN_V1.json",
+    "aa0_capacity": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+    "z1_runtime_protocol": {
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24",
+      "status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN"
+    },
+    "m1_checkpoint_manifest": {
+      "path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+      "sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd"
+    }
+  },
+  "server_runtime": {
+    "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "common_libero_authority": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+    "gpu_admission": "free_memory_mib > 20480 immediately before launch",
+    "one_worker_per_gpu": true,
+    "foreign_process_policy": "record and preserve; never terminate or alter"
+  },
+  "scientific_firewall": {
+    "aa2_scientific_candidates": 0,
+    "stage_z_identity_exposure": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "task_success_reads": 0,
+    "paper_promotion": false
+  },
+  "next_legal_action": "STATIC_MOCK_AUDIT_THEN_EXECUTE_ONLY_THE_SAME_9_AA1R1_CELLS"
+}

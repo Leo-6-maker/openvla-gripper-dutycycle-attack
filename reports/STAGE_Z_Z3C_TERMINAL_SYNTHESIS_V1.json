@@ -1,0 +1,4240 @@
+{
+  "authority": {
+    "launch_plan_sha256": "7bff1fa45f2b752f1990b280085c97e45dccbc87386935d41afcca0c7b5b9b99",
+    "manifest_sha256": "b7d7c755e5f17744e168dc9e8911d60ba1c8e334fe6f4176dbbade0af7bcc037",
+    "ordered_receipt_digest_sha256": "e17d5c7782bfd4517594872670a2b0753e8a20460096a17263ccc41476941766",
+    "protocol_sha256": "92747fe2263fb47ad9b53dee916660f7b8e2db1d5d895e6c80922db29caf7f1b",
+    "reconciliation_sha256": "85c77d7be3387269c7296ee33a7250d8db671a4c9cf479504c7802a07129ad4b",
+    "z3r1_terminal_sha256": "bf898c71c2b020f3cafde5a5977ed1eb415e451d9eda51dfbdeb3a70672c41a1"
+  },
+  "claim_boundary": "Sealed command-OPEN physical counterfactual only; official policy inference, visual PGD, task success, protected/Eval160, F1, and BRIDGE are not measured here.",
+  "execution": {
+    "branch_counters": {
+      "attack_outcome_reads": 0,
+      "env_step_calls": 7636,
+      "eval160_reads": 0,
+      "pgd_calls": 0,
+      "physical_telemetry_reads": 7636,
+      "protected_reads": 0,
+      "v_phys_reads": 276
+    },
+    "expected_branches": 460,
+    "failure_count": 0,
+    "forbidden_reads_zero": true,
+    "model_inference_zero": true,
+    "model_parent_by_model": {
+      "M0_OPENVLA": 32,
+      "M1_OPENVLA_OFT": 26,
+      "M2_PI05_LIBERO": 34
+    },
+    "model_parent_count": 92,
+    "pass_receipts": 460,
+    "receipt_count": 460
+  },
+  "manual_audit": {
+    "all_branch_video": false,
+    "human_labels_pending": true,
+    "max_videos": 120,
+    "outcome_blind": true,
+    "video_bytes": 2357656,
+    "video_file_count": 120
+  },
+  "next_legal_action": "STOP_FOR_PI_NO_Z4_OR_BRIDGE",
+  "physical_results": {
+    "dose_order": [
+      3,
+      5,
+      10
+    ],
+    "model_suite_summary": {
+      "M0_OPENVLA/libero_10": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 8,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 2,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          },
+          "3": {
+            "invalid_or_abstain": 8,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 2,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          },
+          "5": {
+            "invalid_or_abstain": 8,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 2,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 9
+        },
+        "parents": 9
+      },
+      "M0_OPENVLA/libero_goal": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 3,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 3,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          },
+          "3": {
+            "invalid_or_abstain": 3,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 3,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          },
+          "5": {
+            "invalid_or_abstain": 3,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 3,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 4
+        },
+        "parents": 4
+      },
+      "M0_OPENVLA/libero_object": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 9,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 2,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          },
+          "3": {
+            "invalid_or_abstain": 9,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 9,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          },
+          "5": {
+            "invalid_or_abstain": 9,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 8,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 10
+        },
+        "parents": 10
+      },
+      "M0_OPENVLA/libero_spatial": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 9,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 4,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "3": {
+            "invalid_or_abstain": 8,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 3,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5,
+              "V_PHYS": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 1.0,
+              "mean": 1.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 1.0
+            },
+            "v_phys_parents": 1,
+            "v_phys_rate_all_parents": 0.1111111111111111,
+            "v_phys_rate_valid_parents": 1.0,
+            "valid_parents": 1
+          },
+          "5": {
+            "invalid_or_abstain": 9,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 4,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 5
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 9
+        },
+        "parents": 9
+      },
+      "M1_OPENVLA_OFT/libero_10": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 7,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+              "NO_PHYSICAL_VULNERABILITY": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 2,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 2
+          },
+          "3": {
+            "invalid_or_abstain": 7,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+              "NO_PHYSICAL_VULNERABILITY": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 2,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 2
+          },
+          "5": {
+            "invalid_or_abstain": 7,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+              "NO_PHYSICAL_VULNERABILITY": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 2,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 2
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 9
+        },
+        "parents": 9
+      },
+      "M1_OPENVLA_OFT/libero_goal": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 2,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "3": {
+            "invalid_or_abstain": 2,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "5": {
+            "invalid_or_abstain": 2,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 2
+        },
+        "parents": 2
+      },
+      "M1_OPENVLA_OFT/libero_object": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 5,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "3": {
+            "invalid_or_abstain": 5,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "5": {
+            "invalid_or_abstain": 5,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 5
+        },
+        "parents": 5
+      },
+      "M1_OPENVLA_OFT/libero_spatial": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 10,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 4,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "3": {
+            "invalid_or_abstain": 10,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 3,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "5": {
+            "invalid_or_abstain": 10,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 3,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 10
+        },
+        "parents": 10
+      },
+      "M2_PI05_LIBERO/libero_10": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 7,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+              "NO_PHYSICAL_VULNERABILITY": 1,
+              "V_PHYS": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.6666666666666666,
+              "n": 3,
+              "replicates": 2000,
+              "upper_97_5": 1.0
+            },
+            "v_phys_parents": 2,
+            "v_phys_rate_all_parents": 0.2,
+            "v_phys_rate_valid_parents": 0.6666666666666666,
+            "valid_parents": 3
+          },
+          "3": {
+            "invalid_or_abstain": 7,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 7,
+              "NO_PHYSICAL_VULNERABILITY": 1,
+              "V_PHYS": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.6666666666666666,
+              "n": 3,
+              "replicates": 2000,
+              "upper_97_5": 1.0
+            },
+            "v_phys_parents": 2,
+            "v_phys_rate_all_parents": 0.2,
+            "v_phys_rate_valid_parents": 0.6666666666666666,
+            "valid_parents": 3
+          },
+          "5": {
+            "invalid_or_abstain": 7,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6,
+              "NO_PHYSICAL_VULNERABILITY": 2,
+              "V_PHYS": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.3333333333333333,
+              "n": 3,
+              "replicates": 2000,
+              "upper_97_5": 1.0
+            },
+            "v_phys_parents": 1,
+            "v_phys_rate_all_parents": 0.1,
+            "v_phys_rate_valid_parents": 0.3333333333333333,
+            "valid_parents": 3
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 10
+        },
+        "parents": 10
+      },
+      "M2_PI05_LIBERO/libero_goal": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 4,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "3": {
+            "invalid_or_abstain": 4,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "5": {
+            "invalid_or_abstain": 4,
+            "label_counts": {
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 4
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 4
+        },
+        "parents": 4
+      },
+      "M2_PI05_LIBERO/libero_object": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 10,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 2,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 8
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "3": {
+            "invalid_or_abstain": 9,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 8,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          },
+          "5": {
+            "invalid_or_abstain": 9,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 8,
+              "NO_PHYSICAL_VULNERABILITY": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 1,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 1
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 10
+        },
+        "parents": 10
+      },
+      "M2_PI05_LIBERO/libero_spatial": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 10,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 4,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "3": {
+            "invalid_or_abstain": 10,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 1,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 9
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          },
+          "5": {
+            "invalid_or_abstain": 10,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 4,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 6
+            },
+            "parent_bootstrap": {
+              "lower_2_5": null,
+              "mean": null,
+              "n": 0,
+              "replicates": 2000,
+              "upper_97_5": null
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": null,
+            "valid_parents": 0
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 10
+        },
+        "parents": 10
+      }
+    },
+    "model_summary": {
+      "M0_OPENVLA": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 29,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 8,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 21,
+              "NO_PHYSICAL_VULNERABILITY": 3
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 3,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 3
+          },
+          "3": {
+            "invalid_or_abstain": 28,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 5,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 23,
+              "NO_PHYSICAL_VULNERABILITY": 3,
+              "V_PHYS": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.25,
+              "n": 4,
+              "replicates": 2000,
+              "upper_97_5": 0.75
+            },
+            "v_phys_parents": 1,
+            "v_phys_rate_all_parents": 0.03125,
+            "v_phys_rate_valid_parents": 0.25,
+            "valid_parents": 4
+          },
+          "5": {
+            "invalid_or_abstain": 29,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 7,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 22,
+              "NO_PHYSICAL_VULNERABILITY": 3
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 3,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 3
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 32
+        },
+        "parents": 32
+      },
+      "M1_OPENVLA_OFT": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 24,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 6,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 18,
+              "NO_PHYSICAL_VULNERABILITY": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 2,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 2
+          },
+          "3": {
+            "invalid_or_abstain": 24,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 5,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 19,
+              "NO_PHYSICAL_VULNERABILITY": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 2,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 2
+          },
+          "5": {
+            "invalid_or_abstain": 24,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 5,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 19,
+              "NO_PHYSICAL_VULNERABILITY": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.0,
+              "n": 2,
+              "replicates": 2000,
+              "upper_97_5": 0.0
+            },
+            "v_phys_parents": 0,
+            "v_phys_rate_all_parents": 0.0,
+            "v_phys_rate_valid_parents": 0.0,
+            "valid_parents": 2
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 26
+        },
+        "parents": 26
+      },
+      "M2_PI05_LIBERO": {
+        "dose": {
+          "10": {
+            "invalid_or_abstain": 31,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 7,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 24,
+              "NO_PHYSICAL_VULNERABILITY": 1,
+              "V_PHYS": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.6666666666666666,
+              "n": 3,
+              "replicates": 2000,
+              "upper_97_5": 1.0
+            },
+            "v_phys_parents": 2,
+            "v_phys_rate_all_parents": 0.058823529411764705,
+            "v_phys_rate_valid_parents": 0.6666666666666666,
+            "valid_parents": 3
+          },
+          "3": {
+            "invalid_or_abstain": 30,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 2,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 28,
+              "NO_PHYSICAL_VULNERABILITY": 2,
+              "V_PHYS": 2
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.5,
+              "n": 4,
+              "replicates": 2000,
+              "upper_97_5": 1.0
+            },
+            "v_phys_parents": 2,
+            "v_phys_rate_all_parents": 0.058823529411764705,
+            "v_phys_rate_valid_parents": 0.5,
+            "valid_parents": 4
+          },
+          "5": {
+            "invalid_or_abstain": 30,
+            "label_counts": {
+              "CONTROL_CONTAMINATION_ABSTAIN": 6,
+              "CONTROL_PHYSICAL_FAILURE_ABSTAIN": 24,
+              "NO_PHYSICAL_VULNERABILITY": 3,
+              "V_PHYS": 1
+            },
+            "parent_bootstrap": {
+              "lower_2_5": 0.0,
+              "mean": 0.25,
+              "n": 4,
+              "replicates": 2000,
+              "upper_97_5": 0.75
+            },
+            "v_phys_parents": 1,
+            "v_phys_rate_all_parents": 0.029411764705882353,
+            "v_phys_rate_valid_parents": 0.25,
+            "valid_parents": 4
+          }
+        },
+        "noncritical_t5_control": {
+          "GRIPPER_CONTACT_LOSS": 34
+        },
+        "parents": 34
+      }
+    },
+    "parent_rows": [
+      {
+        "canonical_parent_key": "libero_10/task_00/state_33",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.004539386725315536,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.005442089136589054,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.004539386725315536,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.005442089136589054,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.004539386725315536,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.005442089136589054,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002090653274634993,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_35",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.010434574285645357,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.001370753449247234,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.010434574285645357,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.001370753449247234,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.010434574285645357,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.001370753449247234,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0015832035422542051,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_02/state_30",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.00034907529380326374,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.00034907529380326374,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.00034907529380326374,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0008036218398993211,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_03/state_45",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.01877553922812332,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0013699653987540351,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.01877553922812332,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0013027910063837386,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.01877553922812332,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.001314199215171539,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0005617616652532076,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_04/state_34",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0038334968446979145,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.002092164137430686,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0038334968446979145,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.002092164137430686,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0038334968446979145,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.002092164137430686,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.01877558525218246,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_21",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.01503386284929422,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.01503386284929422,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.01503386284929422,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0018891610116318347,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_34",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018775767181566018,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.018775767181566018,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.018775767181566018,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0035493840284318776,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_07/state_20",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.004532707787840318,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.13585643480467827,
+            "physical_class": "OBJECT_DROP",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.004532707787840318,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.13585643480467827,
+            "physical_class": "OBJECT_DROP",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.004532707787840318,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.13585643480467827,
+            "physical_class": "OBJECT_DROP",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0016219816967208006,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_09/state_24",
+        "clean_physical_class": "NO_PHYSICAL_FAILURE",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.002313035580266798,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "3": {
+            "aperture_excess_max": 0.002313035580266798,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "5": {
+            "aperture_excess_max": 0.002313035580266798,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0021444725466790576,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_02/state_34",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018340008059003685,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.018340008059003685,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.018340008059003685,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0010286659839778556,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_goal"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_03/state_45",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018774985331843755,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.018774985331843755,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.018774985331843755,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00023716071056109622,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_goal"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_26",
+        "clean_physical_class": "NO_PHYSICAL_FAILURE",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0001116090144058432,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "3": {
+            "aperture_excess_max": -0.0015648718292608846,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "5": {
+            "aperture_excess_max": -0.0005772449856180639,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0025149026031930227,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_goal"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_08/state_20",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0005451042189973526,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0005451042189973526,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0005451042189973526,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0024429436540128052,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_goal"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_00/state_22",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.002461676136523594,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0963909881937382,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.002461676136523594,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.001363674473419272,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.002461676136523594,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.010391717254132894,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0017606579726243687,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_01/state_40",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.002251806110977514,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.008541133638257044,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.002251806110977514,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.002251806110977514,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0007292599574839354,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_02/state_26",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.001724103907933247,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.001724103907933247,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.001724103907933247,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0011416692444553844,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_03/state_29",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.016007508871329512,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.016007508871329512,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.016007508871329512,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0020200741512581555,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_35",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.012964801287602183,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.012964801287602183,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.012964801287602183,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.001025384768024551,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_05/state_27",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.003943858599727568,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.000296880575314879,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.003943858599727568,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.000296880575314879,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.003943858599727568,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.000296880575314879,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0017251155205926932,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_31",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.00025154742911939754,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.00025154742911939754,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.00025154742911939754,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0005110726017300005,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_45",
+        "clean_physical_class": "NO_PHYSICAL_FAILURE",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0008287623223125901,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0012496143579806827,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "3": {
+            "aperture_excess_max": 0.0003322066977890503,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "5": {
+            "aperture_excess_max": 0.0008287623223125901,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0017835327582932797,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_08/state_35",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.009282176085758084,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.005487519106216415,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.009282176085758084,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.005487519106216415,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.009282176085758084,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.005487519106216415,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0011638434981341705,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_09/state_23",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.007259274484261488,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0010636431167234451,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.007259274484261488,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0010636431167234451,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.007259274484261488,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0010636431167234451,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002042150400230938,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_00/state_37",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.010682856730638554,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.021350639140205387,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.010682856730638554,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.003187613776426503,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.010682856730638554,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.015014830122759231,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0015794138086431264,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_38",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.01873324385397352,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.008287985176713149,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.01873324385397352,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.005701434162820729,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.01873324385397352,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.006733700464874678,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002039164051143738,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_03/state_33",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0019967249538045684,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0019967249538045684,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0019967249538045684,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002129397930657334,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_04/state_31",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.002041398964497537,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.002041398964497537,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.002041398964497537,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.001728349905041393,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_05/state_23",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.01672006057168577,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.01615752503169882,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.01672006057168577,
+            "label": "V_PHYS",
+            "object_displacement_max_m": 0.015404592785263337,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "V_PHYS"
+          },
+          "5": {
+            "aperture_excess_max": 0.01672006057168577,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.016623140269590896,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002314004159182731,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_06/state_27",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.002117546682246396,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.002117546682246396,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.002117546682246396,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0019955075404548273,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_07/state_28",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.015637930860486843,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.11294104492231377,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.015637930860486843,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.020045175297092797,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.015637930860486843,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.04444085817679532,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0016957615547927712,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_08/state_32",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.015586745169141603,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.004507235984116435,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.015586745169141603,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.001978183357060422,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.015586745169141603,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.004146581745866907,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.01876785770416055,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_21",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018644483801513897,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.018644483801513897,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.018644483801513897,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M0_OPENVLA",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.000713632149228885,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_35",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0023611669437497845,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0023611669437497845,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0023611669437497845,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.011480598358979806,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_02/state_30",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.010204833014788833,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 9.664814742044696e-05,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.010204833014788833,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 9.664814742044696e-05,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.010204833014788833,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 9.664814742044696e-05,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0021605452025252186,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_03/state_45",
+        "clean_physical_class": "NO_PHYSICAL_FAILURE",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0013535432477855824,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "3": {
+            "aperture_excess_max": 0.0013535432477855824,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "5": {
+            "aperture_excess_max": 0.0013535432477855824,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002360252333905244,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_04/state_34",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018740110180786414,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0011873614369039504,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.018740110180786414,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0010721798246435652,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.018740110180786414,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0011873614369039504,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002014820704776085,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_21",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0012355835475895138,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.02404279461800275,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0012355835475895138,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0022723182600261566,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0012355835475895138,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.00775462340197381,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0009541136277830542,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_34",
+        "clean_physical_class": "NO_PHYSICAL_FAILURE",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.00022093084605293023,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0020276242939421484,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "3": {
+            "aperture_excess_max": 0.00022093084605293023,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.00023560724638580334,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "5": {
+            "aperture_excess_max": 0.00022093084605293023,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.001194747805669681,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0009657406267736673,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_07/state_20",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.017920226690749254,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.017920226690749254,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.017920226690749254,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.001427396144338261,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_08/state_20",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.00023264736644661166,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.00023264736644661166,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.00023264736644661166,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0006803567659660198,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_09/state_24",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.017738579390262542,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.017738579390262542,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.017738579390262542,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0023921697325991337,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_26",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.001850732038803149,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": -0.0007822415754289991,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0008349606366749029,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00023727141738028035,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_goal"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_08/state_20",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0077554365678182136,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.000387117288536951,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0077554365678182136,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0077554365678182136,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0009542644569557057,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_goal"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_01/state_40",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0022779309962925737,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.09760274652523436,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0022779309962925737,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0035433129155862278,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0022779309962925737,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.010832671404847722,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00023718004493868128,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_02/state_26",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.012303099749228906,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.00017464074312227942,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.012303099749228906,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.00017464074312227942,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.012303099749228906,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.00017464074312227942,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0009583569141283221,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_03/state_29",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0020519628255798728,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0020519628255798728,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0020519628255798728,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.004442993982755772,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_05/state_27",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.004690326269253101,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.01047769932488889,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.004690326269253101,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.01047769932488889,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.004690326269253101,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.01047769932488889,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.001998498038137314,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_09/state_23",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.007318415785197638,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0012962661710740693,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.007318415785197638,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0012962661710740693,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.007318415785197638,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0012962661710740693,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00023721027501330538,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_00/state_37",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0008220289251110596,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.014908009950976147,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0008220289251110596,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.005196187567874348,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0008220289251110596,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.012793108823112818,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00023703350620521424,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_38",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.017243330706575112,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.020041274969249408,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.017243330706575112,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 1.4196248694462353e-05,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.017243330706575112,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 1.4196248694462353e-05,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0020115381888031747,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_02/state_40",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.01876422982181947,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.01876422982181947,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.01876422982181947,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00023727130150555387,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_03/state_33",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.006140768854216855,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.09795856351563953,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.006140768854216855,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.04130258314101794,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.006140768854216855,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.061664984087954317,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0017628569943520384,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_04/state_31",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.004930864960195874,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.09626042636341654,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.004930864960195874,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.02660018884440942,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.004930864960195874,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.050997862453647395,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0009588956354339012,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_05/state_23",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.00019964513580188192,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.00019964513580188192,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.00019964513580188192,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0014381919343830762,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_06/state_27",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0022358105365760106,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0022358105365760106,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0022358105365760106,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.000237250068784417,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_07/state_28",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018681116757728905,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.018681116757728905,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.018681116757728905,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0009647688611554295,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_08/state_32",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.01870337296957916,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.01870337296957916,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.01870337296957916,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0021629142892591324,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_21",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0037893242385516057,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 3.5391611486776277e-06,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0037893242385516057,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 1.3970423718010617e-06,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0037893242385516057,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 3.2652198307789813e-06,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M1_OPENVLA_OFT",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.005119442555101161,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_00/state_33",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.004394014587607339,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0017456748326374455,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.004394014587607339,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0017456748326374455,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.004394014587607339,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0017456748326374455,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0013799739612513906,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_01/state_35",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.010122263810829202,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.008021682263922917,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.010122263810829202,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.008021682263922917,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.010122263810829202,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.008021682263922917,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0019438816590543473,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_02/state_30",
+        "clean_physical_class": "NO_PHYSICAL_FAILURE",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.000752737859715899,
+            "label": "V_PHYS",
+            "object_displacement_max_m": 0.03944480126261192,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "V_PHYS"
+          },
+          "3": {
+            "aperture_excess_max": 0.000752737859715899,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.0022327028048527283,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "5": {
+            "aperture_excess_max": 0.000752737859715899,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.005844779836754847,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002063763773787239,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_03/state_45",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.01877558516456617,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.01877558516456617,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.01877558516456617,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002391653206665373,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_04/state_34",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018772097922941097,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0038078153014372133,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.018772097922941097,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0015189742615158337,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.018772097922941097,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.00459159810934949,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0024838233072477095,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_05/state_21",
+        "clean_physical_class": "NO_PHYSICAL_FAILURE",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.00828897502347764,
+            "label": "V_PHYS",
+            "object_displacement_max_m": 0.02607792830011592,
+            "physical_class": "OBJECT_DROP",
+            "v_phys_label": "V_PHYS"
+          },
+          "3": {
+            "aperture_excess_max": 0.00828897502347764,
+            "label": "V_PHYS",
+            "object_displacement_max_m": 0.026023839194948165,
+            "physical_class": "OBJECT_DROP",
+            "v_phys_label": "V_PHYS"
+          },
+          "5": {
+            "aperture_excess_max": 0.00828897502347764,
+            "label": "V_PHYS",
+            "object_displacement_max_m": 0.02607792830011592,
+            "physical_class": "OBJECT_DROP",
+            "v_phys_label": "V_PHYS"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0016084946263230093,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_06/state_34",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0023237268062736294,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0023237268062736294,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0023237268062736294,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.009348910314717504,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_07/state_20",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.004535408671914931,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.004648809589238699,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.004535408671914931,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.004648809589238699,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.004535408671914931,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.004648809589238699,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00023713928021204533,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_08/state_20",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.017456910693878898,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.017456910693878898,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.017456910693878898,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0023170623387983175,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_10/task_09/state_24",
+        "clean_physical_class": "NO_PHYSICAL_FAILURE",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018133298935649425,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.01724063963781927,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "3": {
+            "aperture_excess_max": 0.018133298935649425,
+            "label": "V_PHYS",
+            "object_displacement_max_m": 0.00681385234388759,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "V_PHYS"
+          },
+          "5": {
+            "aperture_excess_max": 0.018133298935649425,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.008219485171566367,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002163926595385557,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_10"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_02/state_34",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018319784082724746,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.018319784082724746,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.018319784082724746,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00206420745094045,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_goal"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_03/state_45",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0187754057609662,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0187754057609662,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0187754057609662,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0022149151277928852,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_goal"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_05/state_26",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.002008686004795479,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.002008686004795479,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.002008686004795479,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0010882153133627143,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_goal"
+      },
+      {
+        "canonical_parent_key": "libero_goal/task_08/state_20",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0019654120769339173,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0019654120769339173,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0019654120769339173,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0020813423665351355,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_goal"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_00/state_22",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.004114645027875896,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.004114645027875896,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.004114645027875896,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.001944244736027334,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_01/state_40",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.010295025855167214,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.00021874711155269317,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.010295025855167214,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.00021874711155269317,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.010295025855167214,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.00021874711155269317,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00023725931654321186,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_02/state_26",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.01232660212897796,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.01232660212897796,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.01232660212897796,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0010895233245747926,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_03/state_29",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0010263427513872436,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.13018422867063398,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0010263427513872436,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.02131260330777282,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0010263427513872436,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.07260760403457896,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002160790149392716,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_04/state_35",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.012636747856169986,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 5.574334981720111e-05,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.012636747856169986,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 5.574334981720111e-05,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.012636747856169986,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 5.574334981720111e-05,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0013805345956118265,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_05/state_27",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.004910478348519334,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.014180527584336126,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.004910478348519334,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.014180527584336126,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.004910478348519334,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.014180527584336126,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0010886003301125158,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_06/state_31",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.011425375715461678,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0005221970417884959,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.011425375715461678,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0005221970417884959,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.011425375715461678,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0005221970417884959,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.002064852284986665,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_07/state_45",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.002301223496763788,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.03793974071697959,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.002301223496763788,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.002301223496763788,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.006291692153441985,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00023723099210455623,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_08/state_35",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.00923902334835805,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0011858180322553591,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.00923902334835805,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0011858180322553591,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.00923902334835805,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0011858180322553591,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0017942624479198588,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_object/task_09/state_23",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.00703810943630271,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.054341493065961796,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.00703810943630271,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.012869191319992472,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          },
+          "5": {
+            "aperture_excess_max": 0.00703810943630271,
+            "label": "NO_PHYSICAL_VULNERABILITY",
+            "object_displacement_max_m": 0.014262439489736635,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "NO_PHYSICAL_VULNERABILITY"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0017952638844837276,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_object"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_00/state_37",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.01073965023774169,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.01073965023774169,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.01073965023774169,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.00045748282013637065,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_01/state_38",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0028441001874317806,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0028441001874317806,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0028441001874317806,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0007920827134918623,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_02/state_40",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0020663516238569046,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.02312851540635163,
+            "physical_class": "PREMATURE_OBJECT_RELEASE",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0020663516238569046,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0011731629713107056,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0020663516238569046,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.00594220162468527,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.001094367342380359,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_03/state_33",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.0022902534838326327,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.0022902534838326327,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.0022902534838326327,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0013883774510619895,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_04/state_31",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.00019758515163217916,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.00019758515163217916,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.00019758515163217916,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0021579169114411545,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_05/state_23",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018702883829975425,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.013700160153776234,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.018702883829975425,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0008951010715450845,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.018702883829975425,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0022442804658387447,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0013700375029478962,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_06/state_27",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.01872973475405686,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.004486800490991591,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.01872973475405686,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0025893970315685813,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.01872973475405686,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.006583761562965336,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0013768072341789617,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_07/state_28",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.001882645608894784,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.001882645608894784,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.001882645608894784,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.0013835110685087026,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_08/state_32",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.018773399193765195,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0064892814827522925,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.018773399193765195,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.007625017915731673,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.018773399193765195,
+            "label": "CONTROL_CONTAMINATION_ABSTAIN",
+            "object_displacement_max_m": 0.0020901240525768986,
+            "physical_class": "GRIPPER_CONTACT_LOSS",
+            "v_phys_label": "CONTROL_CONTAMINATION_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.001949094193499562,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      },
+      {
+        "canonical_parent_key": "libero_spatial/task_09/state_21",
+        "clean_physical_class": "GRIPPER_CONTACT_LOSS",
+        "critical": {
+          "10": {
+            "aperture_excess_max": 0.017893447663065852,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "3": {
+            "aperture_excess_max": 0.017893447663065852,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          },
+          "5": {
+            "aperture_excess_max": 0.017893447663065852,
+            "label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN",
+            "object_displacement_max_m": 0.0,
+            "physical_class": "NO_PHYSICAL_FAILURE",
+            "v_phys_label": "CONTROL_PHYSICAL_FAILURE_ABSTAIN"
+          }
+        },
+        "model_family": "M2_PI05_LIBERO",
+        "noncritical_t5_control": {
+          "aperture_excess_max": 0.001098803183479713,
+          "object_displacement_max_m": null,
+          "physical_class": "GRIPPER_CONTACT_LOSS",
+          "v_phys_label": "NOT_APPLICABLE_NONCRITICAL_CONTROL"
+        },
+        "suite": "libero_spatial"
+      }
+    ],
+    "physical_contract": {
+      "arm_tolerance": 1e-07,
+      "h_phys": 10,
+      "invalid_is_abstain": true,
+      "native_open": -1.0,
+      "v_phys_label": "V_PHYS"
+    },
+    "primary_unit": "MODEL_PARENT"
+  },
+  "schema": "STAGE_Z_Z3C_TERMINAL_SYNTHESIS_V1",
+  "status": "PASS_Z3C_FIXED_MATRIX_COMPLETE",
+  "validation_failures": []
+}

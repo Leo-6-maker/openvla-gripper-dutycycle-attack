@@ -1,0 +1,22 @@
+{
+  "bytes": 15939159216,
+  "extra": [],
+  "files": 25,
+  "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+  "mismatches": [],
+  "missing": [],
+  "next_legal_action": "LAUNCH_Z3C_M1_LIBERO_SPATIAL",
+  "observed_utc": "2026-08-25T09:56:44Z",
+  "repo_id": "moojink/openvla-7b-oft-finetuned-libero-spatial",
+  "revision": "6d0231af0e48c5985f1ff86908f4674b84bc049b",
+  "schema": "STAGE_Z_Z3C_M1_CHECKPOINT_PREFLIGHT_V1",
+  "scientific_counters": {
+    "env_step_calls": 0,
+    "model_inference_calls": 0,
+    "scientific_parent_exposure": 0
+  },
+  "status": "PASS_EXACT_CURRENT_CACHE",
+  "suite": "libero_spatial",
+  "suite_manifest_sha256": "c49d038cee90e12040d04b9e868bc49d1af16ee9c819ecc2a47605c83683bcbb",
+  "target": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_spatial"
+}

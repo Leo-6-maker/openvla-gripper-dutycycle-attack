@@ -1,0 +1,92 @@
+{
+  "checks": {
+    "anchor_selector_determinism": true,
+    "current_head_tree_bound": true,
+    "engineering_canary_execution": "NOT_REQUIRED_STATIC_MOCK_PASS",
+    "forbidden_intervention_firewall": true,
+    "legacy_receipt_semantics": true,
+    "student_detector_leakage_guard": true,
+    "z1_terminal_root_bound": true
+  },
+  "disposition": "Z2-B may run only unexposed/engineering-invalid model-parent cells once under V2; do not relabel legacy receipts; STOP_FOR_PI before Z3.",
+  "legacy_exposure": {
+    "expected_model_parent_cells": 108,
+    "legacy_receipt_reconciliation": "reports/STAGE_Z_Z2_LEGACY_RECEIPT_RECONCILIATION_V1.json",
+    "missing_model_parent_cells": [
+      [
+        "M0_OPENVLA",
+        "libero_goal/task_00/state_21"
+      ],
+      [
+        "M0_OPENVLA",
+        "libero_goal/task_07/state_30"
+      ],
+      [
+        "M0_OPENVLA",
+        "libero_object/task_06/state_31"
+      ],
+      [
+        "M0_OPENVLA",
+        "libero_object/task_07/state_45"
+      ],
+      [
+        "M1_OPENVLA_OFT",
+        "libero_goal/task_00/state_21"
+      ],
+      [
+        "M1_OPENVLA_OFT",
+        "libero_goal/task_07/state_30"
+      ],
+      [
+        "M1_OPENVLA_OFT",
+        "libero_object/task_06/state_31"
+      ],
+      [
+        "M1_OPENVLA_OFT",
+        "libero_object/task_07/state_45"
+      ],
+      [
+        "M2_PI05_LIBERO",
+        "libero_goal/task_00/state_21"
+      ],
+      [
+        "M2_PI05_LIBERO",
+        "libero_goal/task_07/state_30"
+      ]
+    ],
+    "unique_model_parent_cells_exposed": 98,
+    "unique_scientific_identities_exposed": 34
+  },
+  "population": {
+    "bridge_reuse": false,
+    "identity_reuse_after_exposure": false,
+    "post_outcome_reranking": false,
+    "replacement": false,
+    "shared_fresh_identities": 36,
+    "structural_missing_cells": [
+      "libero_goal/task_01",
+      "libero_goal/task_04",
+      "libero_goal/task_06",
+      "libero_goal/task_09"
+    ],
+    "suite_denominators": {
+      "libero_10": 10,
+      "libero_goal": 6,
+      "libero_object": 10,
+      "libero_spatial": 10
+    },
+    "top_up": false
+  },
+  "protocol": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V2.json",
+  "protocol_sha256": "6569d6227731001b18b0b42cdd9a2c1672c525964c64da66824faebec28dd7ef",
+  "schema": "STAGE_Z_Z2A_STATIC_AUDIT_V2",
+  "scientific_counters": {
+    "attacked_env_steps": 0,
+    "command_open_intervention": 0,
+    "eval160_reads": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "v_phys_reads": 0
+  },
+  "status": "STAGE_Z_Z2_SOURCE_AND_ANCHOR_STATIC_PASS_WITH_LEGACY_RECONCILIATION_REQUIRED"
+}

@@ -1,0 +1,80 @@
+{
+  "schema": "STAGE_Z_Z1_R1_M1_OPTIONAL_IMPORT_ENGINEERING_INVALID_RECEIPT_V1",
+  "status": "ENGINEERING_INVALID_M1_OPTIONAL_IMPORT_DEPENDENCY",
+  "gate": "STAGE_Z_Z1R1_M1_OPTIONAL_IMPORT_SHIM_REPAIR_AND_SINGLE_CELL_RETRY",
+  "classification": "ENGINEERING_INVALID",
+  "consumable": false,
+  "counts_as_z1_cell": false,
+  "scientific_denominator": false,
+  "scientific_claim": "NONE_ENGINEERING_ONLY",
+  "model_family": "M1_OPENVLA_OFT",
+  "suite": "libero_10",
+  "role": "PRIMARY",
+  "canonical_parent_key": "libero_10/task_04/state_03",
+  "checkpoint": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10",
+  "checkpoint_manifest": {
+    "path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+    "sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "files": 25,
+    "bytes": 15939159245,
+    "verified": true,
+    "verification_boundary": "BEFORE_MODEL_LOAD"
+  },
+  "runtime_source_authority": {
+    "report": "reports/STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V2.json",
+    "report_sha256_server": "34c528cc21ac74d1c007b452c9f801a976c4600d9e98cad62fa5aa2d0539b275",
+    "commit": "e62c1bb44593e00bc050742f7af72e737e6df5d0",
+    "tree": "fae27406dc7b8b91190d7220b37beac16808310a",
+    "runner_git_blob": "80bf607a3df54fc8fa1529d689322fd9d16f75f1",
+    "runner_remote_sha256_observed": "0a471e1fc845b226f1b2e54c198c0c4a01197d1ff34b075941facd02c557134b",
+    "protocol": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V1.json",
+    "z0r2_root_seal_sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d"
+  },
+  "failure_evidence": {
+    "server_log": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/reports/logs/M1_OPENVLA_OFT_libero_10_PRIMARY.log",
+    "archived_log": "reports/server_evidence/STAGE_Z_Z1_R1_M1_OPTIONAL_IMPORT_ENGINEERING_INVALID_libero_10_PRIMARY.log",
+    "log_sha256": "282131df4375940bdd36b641794f40bca2dcffc7f42f24ab83530b24acede22b",
+    "log_bytes": 7005,
+    "log_first_timestamp_utc": "2026-08-24T16:25:08Z",
+    "log_last_modified_utc": "2026-08-24T16:25:56Z",
+    "phase": "M1_OPENVLA_OFT_MODEL_DYNAMIC_IMPORT",
+    "boundary": "FAILED_BEFORE_MODEL_CONSTRUCTION",
+    "exception_type": "ImportError",
+    "exception_message": "cannot import name 'Imports' from 'wandb.proto.wandb_telemetry_pb2'",
+    "exception_source": "wandb.proto.wandb_telemetry_pb2",
+    "failure_class": "ENGINEERING_INVALID_M1_OPTIONAL_IMPORT_DEPENDENCY"
+  },
+  "runtime_boundary": {
+    "checkpoint_manifest_verification": "COMPLETED",
+    "official_model_construction": "NOT_COMPLETED",
+    "model_inference": "NOT_REACHED",
+    "simulator_creation": "NOT_REACHED",
+    "env_step": "NOT_REACHED",
+    "attack_or_pgd": "NOT_REACHED",
+    "physical_intervention": "NOT_REACHED",
+    "v_phys": "NOT_REACHED",
+    "scientific_parent_exposure": "NOT_REACHED",
+    "protected_or_eval160": "NOT_REACHED"
+  },
+  "counters": {
+    "model_inference_calls": "NOT_MATERIALIZED",
+    "env_step_calls": "NOT_MATERIALIZED",
+    "physical_interventions": "NOT_MATERIALIZED",
+    "pgd_calls": "NOT_MATERIALIZED",
+    "attacked_env_steps": "NOT_MATERIALIZED",
+    "vphys_reads": "NOT_MATERIALIZED",
+    "attack_outcome_reads": "NOT_MATERIALIZED",
+    "stage_z_scientific_parent_exposure": "NOT_MATERIALIZED",
+    "eval160_reads": "NOT_MATERIALIZED",
+    "protected_reads": "NOT_MATERIALIZED"
+  },
+  "retry_policy": {
+    "retry_authorized_by_pi_comment": "5398342190",
+    "retry_scope": "ONE_SAME_CELL_M1_LIBERO_10_PRIMARY_AFTER_SHIM_REPAIR",
+    "backup_used": false,
+    "identity_replaced": false,
+    "scientific_outcome": "NOT_APPLICABLE"
+  },
+  "append_only": true,
+  "timestamp_utc": "2026-08-24T16:25:56Z"
+}

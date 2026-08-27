@@ -126,7 +126,7 @@ def test_hierarchy_uses_sealed_claim_ids_and_keeps_stage_z_pending() -> None:
             claim_id in (paper_claims | f1_claims) for claim_id in claim_ids
         )
 
-    stage_z = load_json("reports/STAGE_Z_Z0R2_ROOT_SEAL_V1.json")
+    stage_z = load_json("reports/STAGE_Z_Z0R2_ROOT_SEAL_V2.json")
     pending = rows[-1]
     assert pending["status"] == stage_z["status"]
     assert pending["promotable_wording_key"] is None

@@ -1,0 +1,220 @@
+{
+  "schema": "STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V2",
+  "status": "STAGE_Z_Z2_CLEAN_REFERENCE_AUTHORIZED_BY_PI_COMMENT_5404535968",
+  "gate": "STAGE_Z_Z2_CLEAN_REFERENCE_AND_ANCHOR_FREEZE_V1",
+  "authorization": {
+    "source": "PR_139_PI_COMMENT",
+    "comment_id": 5404535968,
+    "scope": "Z2-A static authority and Z2-B clean references/anchor freeze only",
+    "scientific_execution": true,
+    "protected_evaluation": false,
+    "z3_authorized": false
+  },
+  "supersedes": {
+    "path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V1.json",
+    "sha256": "156be87a764e31cfb08152cb89babe13f94209e40992bc7f23180b2191488e17",
+    "reason": "bind current Z1 terminal authority and make H_phys=10 semantics explicit"
+  },
+  "git_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "head_commit": "2665ca52b2c1110005b66b43bc353778373d8ccc",
+    "head_tree": "70352c2d9b188b27fcbb8cbd645105a4d156d0b1",
+    "runner": {
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "git_blob": "cf0dd0469c323be8123cf6bb06b28c1e7107f45f",
+      "sha256": "c4340a24c304c76b8404b5203bb342f6e26e6993c3a1dc017def1ba235daa041"
+    },
+    "loader": {
+      "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+      "git_blob": "5be4607203c45d91b978d876aa6f66cc7045c4e7",
+      "sha256": "16a9b4c655238cf02b4d1a0c7c5ebe30fe5fbd79bdaa1290691de6d7a6933d00"
+    },
+    "anchor_selector": {
+      "path": "src/stage_z_preparation/anchors.py",
+      "git_blob": "32d49de0a91d522caba0e7316262ff0117814b64",
+      "sha256": "1ae9bb576861ae4598b41e4091f34c67c9e03f4f91c8e3b5604d3ba95289512a"
+    },
+    "phase_classifier": {
+      "path": "src/gripper_attack/stage_v_m3_5_phase_classifier.py",
+      "sha256": "e3c48886777a45cfe7d2b9942bbeeb6ebc992f29568846180d31d064b839fbe6"
+    },
+    "physical_taxonomy": {
+      "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+      "sha256": "52e2d393018e13f95cabf12d47bae41246733710e7505680c1ef533517b32240"
+    }
+  },
+  "z1_terminal_authority": {
+    "synthesis": {
+      "path": "reports/STAGE_Z_Z1_TERMINAL_SYNTHESIS_V1.json",
+      "sha256": "022a8c621e8aaea1a5aa4c2551287ea1534adcb342410a489afb75497b673e20"
+    },
+    "root_seal": {
+      "path": "reports/STAGE_Z_Z1_TERMINAL_ROOT_SEAL_V1.json",
+      "sha256": "7651665fcd4137e445e504bd23978d611807ac7d805a36b6f83b5b9efc469c43"
+    },
+    "root_seal_sidecar": "reports/STAGE_Z_Z1_TERMINAL_ROOT_SEAL_V1.sha256",
+    "protocol": {
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"
+    },
+    "source_authority": {
+      "path": "reports/STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V12.json",
+      "sha256": "a29078339c795772e0d04d02ecf320c6a0cbba3e4a039ab6e2bd8382ef8b5002"
+    },
+    "disposition": "Z1_TERMINAL_ENGINEERING_PASS_12_OF_12; no scientific parent exposure"
+  },
+  "authority": {
+    "z0r2_root_seal_sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d",
+    "z0r2_model_authority_sha256": "7abcc9505c42a15c143d1333c1b3eda3254b46f2d210d5b15fcb5a5db684ea79",
+    "z0r2_common_libero_sha256": "bf2f85f6a8719349d18daa80e36b4a70571bb7044f14b2addc0de555c3b4b118",
+    "shared_panel_path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+    "shared_panel_sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1",
+    "m0_authority_path": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
+    "m0_authority_sha256": "d78c6e77547f0f0c3d0a05c75d3a114477adba0971ef8fdd9f4db4446ff63776"
+  },
+  "population": {
+    "shared_fresh_identities": 36,
+    "suite_denominators": {
+      "libero_10": 10,
+      "libero_goal": 6,
+      "libero_object": 10,
+      "libero_spatial": 10
+    },
+    "structural_missing_cells": [
+      "libero_goal/task_01",
+      "libero_goal/task_04",
+      "libero_goal/task_06",
+      "libero_goal/task_09"
+    ],
+    "replacement": false,
+    "top_up": false,
+    "bridge_reuse": false,
+    "post_outcome_reranking": false,
+    "identity_reuse_after_exposure": false
+  },
+  "model_panel": {
+    "M0_OPENVLA": {
+      "authority_path": "configs/STAGE_X_X1R2_Q3R2_RUNTIME_AUTHORITY_V1.json",
+      "authority_sha256": "d78c6e77547f0f0c3d0a05c75d3a114477adba0971ef8fdd9f4db4446ff63776",
+      "decision_boundary": "FRESH_PER_STEP"
+    },
+    "M1_OPENVLA_OFT": {
+      "source_commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "source_tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+      "checkpoint_manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+      "decision_boundary": "FRESH_OFT_ACTION_QUEUE",
+      "queue_steps": 8,
+      "residual_queue_at_anchor": "FORBIDDEN"
+    },
+    "M2_PI05_LIBERO": {
+      "source_commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "source_tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be",
+      "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+      "checkpoint_manifest_sha256": "d9104dfdea46eca2fadf05ec7fc478b19d39b19aa8dfda0e6adedcd6d6b6efac",
+      "decision_boundary": "FRESH_PI05_REPLAN",
+      "replan_steps": 5,
+      "residual_chunk_at_anchor": "FORBIDDEN"
+    }
+  },
+  "common_libero": {
+    "commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+    "tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60",
+    "camera": "agentview",
+    "camera_size": [
+      256,
+      256
+    ],
+    "preprocess": {
+      "rotate_180": true,
+      "resize": 224
+    },
+    "dummy_wait_steps": 10,
+    "horizons": {
+      "libero_10": 520,
+      "libero_goal": 300,
+      "libero_object": 280,
+      "libero_spatial": 220
+    }
+  },
+  "action_contract": {
+    "dimension": 7,
+    "arm_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "gripper_index": 6,
+    "native_open": -1.0,
+    "native_close": 1.0,
+    "decode_reencode": false,
+    "silent_fallback": false,
+    "intervention": "NOT_IN_Z2_CLEAN_REFERENCE"
+  },
+  "anchor_selection": {
+    "critical_phases": [
+      "CONTACT_MANIPULATION",
+      "ENGAGED_LIFT",
+      "CARRY"
+    ],
+    "noncritical_phases": [
+      "PRE_CONTACT"
+    ],
+    "h_phys": 10,
+    "anchor_window_steps": 10,
+    "minimum_remaining_horizon": 20,
+    "candidate_requires_fresh_boundary": true,
+    "critical_salt": "STAGE_Z_Z2_CRITICAL_ANCHOR_V1_20260823",
+    "noncritical_salt": "STAGE_Z_Z2_NONCRITICAL_CONTROL_V1_20260823",
+    "selection": "sha256(salt|model_family|canonical_parent_key|step), then step",
+    "inputs": [
+      "own clean trajectory",
+      "instantaneous privileged object/eef/contact geometry"
+    ],
+    "forbidden_inputs": [
+      "task success",
+      "reward",
+      "terminal outcome",
+      "future rows",
+      "Student",
+      "detector",
+      "attack outcome",
+      "manual label",
+      "V_phys"
+    ],
+    "no_anchor_policy": "ABSTAIN_WITHOUT_REPLACEMENT"
+  },
+  "execution": {
+    "workers": "at most one per physical GPU",
+    "gpu_admission": "free_memory_mib > 20480 immediately before launch",
+    "foreign_processes": "allowed and recorded; never touch",
+    "clean_env_steps": true,
+    "clean_model_inference": true,
+    "command_open_intervention": false,
+    "pgd": false,
+    "attacked_env_steps": false,
+    "v_phys_endpoint": false,
+    "attack_outcome_reads": false,
+    "protected_reads": false,
+    "eval160": false,
+    "checkpoint_mutation": false
+  },
+  "historical_exposure_reconciliation": {
+    "legacy_protocol_path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V1.json",
+    "legacy_protocol_sha256": "156be87a764e31cfb08152cb89babe13f94209e40992bc7f23180b2191488e17",
+    "policy": "retain every prior exposed parent in the exposure ledger; do not silently relabel legacy receipts as V2 execution",
+    "legacy_receipt_schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+    "legacy_receipts_are_reusable_only_after_static_semantic_reconciliation": true,
+    "unexposed_or_engineering_invalid_cells_may_be_run_once_under_v2": true
+  },
+  "outputs": {
+    "receipt_schema_v2": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V2",
+    "legacy_manifest_schema": "STAGE_Z_Z2_LEGACY_RECEIPT_RECONCILIATION_V1",
+    "exposure_ledger_schema": "STAGE_Z_Z2_SCIENTIFIC_EXPOSURE_LEDGER_V2",
+    "anchor_ledger_schema": "STAGE_Z_Z2_ANCHOR_LEDGER_V2",
+    "next_stage": "Z3_NOT_AUTHORIZED; STOP_FOR_PI_AFTER_Z2"
+  }
+}

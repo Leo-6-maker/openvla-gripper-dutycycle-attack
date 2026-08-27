@@ -1,0 +1,57 @@
+{
+  "entries": [
+    {
+      "bytes": 1442,
+      "path": "configs/STAGE_Z_CROSS_MODEL_OPEN_DUTY_PROTOCOL_V4.json",
+      "sha256": "e37acb1fa88fe38a27c847042c25e19937171ab4feafe8d652b9fecb323c12cb"
+    },
+    {
+      "bytes": 456019,
+      "path": "reports/STAGE_Z_Z0R2_COMMON_LIBERO_AUTHORITY_V1.json",
+      "sha256": "bf2f85f6a8719349d18daa80e36b4a70571bb7044f14b2addc0de555c3b4b118"
+    },
+    {
+      "bytes": 1573,
+      "path": "reports/STAGE_Z_Z0R2_ENVIRONMENT_ACTION_BRANCH_PARITY_V2.json",
+      "sha256": "b9fb8d634a145d4373b48a00600898e65d2a4ff90ac86dd9b94b1a598a931827"
+    },
+    {
+      "bytes": 6447,
+      "path": "reports/STAGE_Z_Z0R2_M0_FILE_LEVEL_AUTHORITY_DIFF_V2.json",
+      "sha256": "dc1aeaa43daeb488dea63475ee844f250b2feff77054caadc630c45287584dee"
+    },
+    {
+      "bytes": 1909,
+      "path": "reports/STAGE_Z_Z0R2_M0_SEMANTIC_CHECKPOINT_MANIFEST_V2.json",
+      "sha256": "8d0b7f5747dc0eedfc0a9afaa3649d7a2bdf9b37e83974403e72ff7f50343672"
+    },
+    {
+      "bytes": 1814,
+      "path": "reports/STAGE_Z_Z0R2_M1_MATERIALIZATION_LEDGER_V2.json",
+      "sha256": "fa36f9e8de4f522ef02e30f587ecbfed1e64060a042a70a900c040ca3e50bf82"
+    },
+    {
+      "bytes": 23200,
+      "path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+      "sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd"
+    },
+    {
+      "bytes": 749,
+      "path": "reports/STAGE_Z_Z0R2_M2_OPENPI_REVERIFICATION_V2.json",
+      "sha256": "d086c3d8b6ff504fb577defd888e72ddccbabf130fe2fbb5a63eae0c3b585530"
+    },
+    {
+      "bytes": 508537,
+      "path": "reports/STAGE_Z_Z0R2_MODEL_AUTHORITY_MAP_V2.json",
+      "sha256": "7abcc9505c42a15c143d1333c1b3eda3254b46f2d210d5b15fcb5a5db684ea79"
+    },
+    {
+      "bytes": 542,
+      "path": "reports/STAGE_Z_Z0R2_STORAGE_PREFLIGHT_V2.json",
+      "sha256": "3a0009bc80ab1e442962fa7fe996a9cf197060e882832e406257336f7d9104b9"
+    }
+  ],
+  "root_excluded": true,
+  "schema": "STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V2",
+  "status": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_CLOSURE_PASS"
+}

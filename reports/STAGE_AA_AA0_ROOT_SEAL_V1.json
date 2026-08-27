@@ -1,0 +1,129 @@
+{
+  "artifact_manifest": {
+    "entries": [
+      {
+        "bytes": 44744,
+        "path": "reports/STAGE_Z_Z0_SHARED_40_IDENTITY_PANEL_V1.json",
+        "sha256": "6523c1f2e514a2f329e369d17a38810e08669d23bcdbb63c0cf48462e0b0f84e"
+      },
+      {
+        "bytes": 19254,
+        "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+        "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+      },
+      {
+        "bytes": 1686,
+        "path": "reports/STAGE_Z_Z0R1_STRUCTURAL_MISSINGNESS_AMENDMENT_V1.json",
+        "sha256": "afd9330d9a99e39f78fad948e4f6adb4785a277443f0212c6be4bf648f6eaa48"
+      },
+      {
+        "bytes": 104495,
+        "path": "reports/STAGE_Z_Z2_ANCHOR_AVAILABILITY_V2.json",
+        "sha256": "c5785f49b439b82dca022aa88cfb8d10ff1de74272b57a3942e85fa0aeda30c2"
+      },
+      {
+        "bytes": 7925,
+        "path": "reports/STAGE_Z_Z2_TERMINAL_SYNTHESIS_V2.json",
+        "sha256": "237d4d894a34ab8c6234a75e8b194b8d1174b0520aa207fb4bf13baf9b6d2b37"
+      },
+      {
+        "bytes": 12576,
+        "path": "configs/STAGE_Z_Z3_CROSS_MODEL_COMMAND_OPEN_PHYSICAL_MATRIX_PROTOCOL_V2.json",
+        "sha256": "92747fe2263fb47ad9b53dee916660f7b8e2db1d5d895e6c80922db29caf7f1b"
+      },
+      {
+        "bytes": 270362,
+        "path": "reports/STAGE_Z_Z3_ELIGIBILITY_RECONCILIATION_V1.json",
+        "sha256": "8a7ae11c521bd39ae103d7338a90cb9979eb6006b286bde1d84f1d0c5cc6204a"
+      },
+      {
+        "bytes": 163987,
+        "path": "reports/STAGE_Z_Z3C_TERMINAL_SYNTHESIS_V1.json",
+        "sha256": "f76c58ca9b7e33d1ff340867304fd98bf9aa90501c411421ef7134c78383126c"
+      },
+      {
+        "bytes": 2236,
+        "path": "reports/STAGE_Z_Z3C_ROOT_SEAL_V1.json",
+        "sha256": "9ccceaa1c61e54aff3348491772c463853c7679aab4ec585d2adaf196ae57c77"
+      },
+      {
+        "bytes": 8903,
+        "path": "src/stage_z_preparation/z3_contract.py",
+        "sha256": "357e2ef5c0adf20b8dc6eff471a5d2ad544293a1dcf5927586f72429f760b6ee"
+      },
+      {
+        "bytes": 50533,
+        "path": "reports/STAGE_Z_Z3DH_AI_PANEL_CROSS_AUDIT_V1.json",
+        "sha256": "8cf4cd4354dee11cf5362f3eecd34dede2ede038d7384199a6709a4098770bc9"
+      },
+      {
+        "bytes": 4413,
+        "path": "reports/STAGE_Z_Z4_ROOT_SEAL_V1.json",
+        "sha256": "5fb20d4233c2e3ca4133336b00931be07b6ab9e67b8e7f2dc151428f297fb618"
+      },
+      {
+        "bytes": 9408,
+        "path": "reports/STAGE_Z_Z4_STATIC_CROSS_MODEL_SYNTHESIS_V1.json",
+        "sha256": "ce95ee0ca197842e1122cef5194c88f6a8edf5c2f3039ace4a8e9239bd861b9c"
+      },
+      {
+        "bytes": 22428,
+        "path": "reports/STAGE_AA_AA0_HISTORICAL_ENDPOINT_DENOMINATOR_AUDIT_V1.json",
+        "sha256": "f74f935790581e30f745a0f89db9fe777bcc679edb216320e38b95c7a669c425"
+      },
+      {
+        "bytes": 81848,
+        "path": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+        "sha256": "19679c6878a35c6e13bb46d2c1078d7d96a864a90525f542b6dedb62782fbbf5"
+      },
+      {
+        "bytes": 11817,
+        "path": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+        "sha256": "b795a796a81d76173e0cfce148ee768cdd9dc90dbd6d69d541d1e40a04c51d16"
+      },
+      {
+        "bytes": 29106,
+        "path": "scripts/stage_aa/build_stage_aa0_static.py",
+        "sha256": "214e9f578f0753ba0936e88c564fedd61ab707e6bb3e52158db7b5ba0f7ed11f"
+      }
+    ],
+    "root_seal_excludes_self": true
+  },
+  "gate": "STAGE_AA_AA0_ENDPOINT_REDESIGN_AND_FRESH_CAPACITY_FREEZE",
+  "git_binding": {
+    "generation_head": "304e8b83a9d7298812fb00225d48bd26fd6efb47",
+    "generation_tree": "be014e5a944f40a21a851ac9d9d4fd2e33d753af"
+  },
+  "historical_audit": {
+    "old_clean_gripper_contact_loss_count": 84,
+    "old_clean_total": 92,
+    "stage_z_immutable": true,
+    "z3_parent_count": 92
+  },
+  "next_legal_action": "STOP_FOR_PI_NO_AA1_AA2_AA3_AA4_AA5",
+  "population": {
+    "aa1_reserved_canaries": 3,
+    "common_primary_floor_n": 24,
+    "common_primary_target_n": 32,
+    "fresh_inventory_count": 108,
+    "structural_missing_task_cells": [
+      "libero_goal/task_01",
+      "libero_goal/task_04",
+      "libero_goal/task_06",
+      "libero_goal/task_09"
+    ]
+  },
+  "schema": "STAGE_AA_AA0_ROOT_SEAL_V1",
+  "scientific_firewall": {
+    "eval160_reads": 0,
+    "fresh_science_exposure": 0,
+    "new_env_step": 0,
+    "new_model_inference": 0,
+    "new_open_intervention": 0,
+    "pgd": 0,
+    "protected_reads": 0,
+    "stage_z_mutation": 0
+  },
+  "status": "STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_FROZEN_STOP_FOR_PI",
+  "validation_failures": []
+}

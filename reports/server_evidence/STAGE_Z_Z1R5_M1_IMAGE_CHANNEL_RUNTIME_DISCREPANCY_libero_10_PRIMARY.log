@@ -1,0 +1,76 @@
+2026-08-25 03:22:54.808714: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-08-25 03:22:54.887250: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2026-08-25 03:22:54.887375: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2026-08-25 03:22:54.889924: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2026-08-25 03:22:54.903092: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-08-25 03:22:56.545575: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+Using LIBERO constants:
+  NUM_ACTIONS_CHUNK = 8
+  ACTION_DIM = 7
+  PROPRIO_DIM = 8
+  ACTION_PROPRIO_NORMALIZATION_TYPE = bounds_q99
+If needed, manually set the correct constants in `prismatic/vla/constants.py`!
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:08<00:24,  8.26s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:12<00:11,  5.98s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:17<00:05,  5.46s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:18<00:00,  3.64s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:18<00:00,  4.59s/it]
+[robosuite WARNING] No private macro file found! (macros.py:53)
+08/25 [03:24:30] WARNING  | >> No private macro file found!         macros.py:53
+[robosuite WARNING] It is recommended to use a private macro file (macros.py:54)
+                 WARNING  | >> It is recommended to use a private   macros.py:54
+                          macro file                                            
+[robosuite WARNING] To setup, run: python /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (macros.py:55)
+                 WARNING  | >> To setup, run: python                macros.py:55
+                          /mnt/sdc/dty_user/openvla_attack/envs/ope             
+                          nvla-official-a800/lib/python3.10/site-pa             
+                          ckages/robosuite/scripts/setup_macros.py              
+                 INFO     | >> No OpenGL_accelerate      acceleratesupport.py:24
+                          module loaded: No module named                        
+                          'OpenGL_accelerate'                                   
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path /mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/datasets does not exist!
+[Warning]: datasets path /mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823/datasets does not exist!
+Traceback (most recent call last):
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/launch_stage_z_z1_runtime.py", line 37, in <module>
+    main()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/launch_stage_z_z1_runtime.py", line 33, in main
+    runpy.run_path(str(RUNNER), run_name="__main__")
+  File "/home/sz/miniconda3/envs/hallo/lib/python3.10/runpy.py", line 289, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/home/sz/miniconda3/envs/hallo/lib/python3.10/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/home/sz/miniconda3/envs/hallo/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 615, in <module>
+    main()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 608, in main
+    result = run_cell(config, ledger, args)
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 566, in run_cell
+    result = authorized_runtime()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 559, in authorized_runtime
+    return run_authorized_callback(
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/src/stage_z_preparation/runner.py", line 25, in run_authorized_callback
+    return callback()
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 508, in execute
+    action, action_meta = infer(obs, str(task.language))
+  File "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/scripts/stage_z/run_stage_z_z1_runtime_canary.py", line 395, in infer
+    raw = get_vla_action(
+  File "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823/experiments/robot/openvla_utils.py", line 786, in get_vla_action
+    action, _ = vla.predict_action(
+  File "/home/dty_user/.cache/huggingface/modules/transformers_modules/libero_10/modeling_prismatic.py", line 1005, in predict_action
+    projected_patch_embeddings = self._process_vision_features(pixel_values, language_embeddings, use_film)
+  File "/home/dty_user/.cache/huggingface/modules/transformers_modules/libero_10/modeling_prismatic.py", line 444, in _process_vision_features
+    patch_features = self.vision_backbone(pixel_values)  # (bsz, 256 * num_images, D)
+  File "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1511, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1520, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/dty_user/.cache/huggingface/modules/transformers_modules/libero_10/modeling_prismatic.py", line 201, in forward
+    img, img_fused = torch.split(pixel_values, [3, 3], dim=1)
+  File "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/torch/functional.py", line 190, in split
+    return tensor.split(split_size_or_sections, dim)
+  File "/home/sz/miniconda3/envs/hallo/lib/python3.10/site-packages/torch/_tensor.py", line 896, in split
+    return torch._VF.split_with_sizes(self, split_size, dim)
+RuntimeError: split_with_sizes expects split_sizes to sum exactly to 12 (input tensor's size at dimension 1), but got split_sizes=[3, 3]

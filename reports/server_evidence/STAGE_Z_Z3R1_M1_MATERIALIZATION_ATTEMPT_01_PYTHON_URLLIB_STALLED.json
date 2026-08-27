@@ -1,0 +1,31 @@
+{
+  "schema": "STAGE_Z_Z3R1_M1_MATERIALIZATION_ATTEMPT_RECEIPT_V1",
+  "status": "ENGINEERING_INVALID_MATERIALIZATION_INTERRUPTED",
+  "attempt": 1,
+  "started_utc": "2026-08-25T08:15:30Z",
+  "interrupted_utc": "2026-08-25T08:19:36Z",
+  "reason": "PYTHON_URLLIB_SOCKET_STALLED",
+  "diagnostic": "The Python urllib downloader remained blocked on the first hf-mirror socket request; the same immutable URL returned the expected 675-byte file with system curl in about 1.9 seconds.",
+  "remote_receipt_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/STAGE_Z_Z3R1_M1_MATERIALIZATION_RECOVERY_V1.json",
+  "remote_receipt_sha256_before_interruption": "315b112231fc6362d6a6adc274681677070fdbeebcd9414929dccfa36ce44d85",
+  "remote_pids": [
+    4029696,
+    4029700
+  ],
+  "suite": "libero_10",
+  "repo_id": "moojink/openvla-7b-oft-finetuned-libero-10",
+  "revision": "95220f9a3421a7ff12d4218e73d09ade830fa9a3",
+  "endpoint": "https://hf-mirror.com",
+  "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+  "suite_manifest_sha256": "8f970517dcf81c8eff754edca6816b8c7c2c7813f909b6d1ef481c3a6f2dbc15",
+  "target": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10",
+  "staging": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/.libero_10_z3r1_recovery",
+  "completed_files": 0,
+  "completed_bytes": 0,
+  "scientific_exposure": 0,
+  "runtime_counters": {
+    "model_inference_calls": 0,
+    "env_step_calls": 0,
+    "scientific_parent_exposure": 0
+  }
+}

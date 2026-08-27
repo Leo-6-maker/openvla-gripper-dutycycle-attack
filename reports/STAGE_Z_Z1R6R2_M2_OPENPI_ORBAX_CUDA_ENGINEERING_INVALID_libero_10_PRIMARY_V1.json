@@ -1,0 +1,71 @@
+{
+  "schema": "STAGE_Z_Z1_ENGINEERING_INVALID_RECEIPT_V1",
+  "status": "ENGINEERING_INVALID",
+  "classification": "ENGINEERING_INVALID_M2_ORBAX_VERSION_AND_CUDA_RUNTIME_MISMATCH",
+  "gate": "STAGE_Z_Z1R6R2_M2_OPENPI_RUNTIME_DEPENDENCY_REPAIR",
+  "model_family": "M2_PI05_LIBERO",
+  "suite": "libero_10",
+  "role": "PRIMARY",
+  "canonical_parent_key": "libero_10/task_04/state_03",
+  "task_idx": 4,
+  "state_id": 3,
+  "scientific_claim": "NONE_ENGINEERING_ONLY",
+  "runtime_boundary": {
+    "failure_phase": "checkpoint_restore_before_model_construction",
+    "model_inference_calls": 0,
+    "simulator_constructed": false,
+    "env_step_calls": 0,
+    "physical_interventions": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "vphys_reads": 0,
+    "attack_outcome_reads": 0,
+    "stage_z_scientific_parent_exposure": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0
+  },
+  "error": {
+    "type": "TypeError",
+    "message": "'StepMetadata' object is not subscriptable",
+    "failing_function": "openpi.models.model.restore_params",
+    "observed_runtime": {
+      "orbax_checkpoint_loaded": "0.11.39",
+      "orbax_checkpoint_required_by_openpi_lock": "0.11.13",
+      "jax": "0.5.3",
+      "jaxlib": "0.5.3",
+      "jax_backend": "cpu",
+      "cuda_enabled": false
+    },
+    "root_cause": "The mandated A800 environment loaded Orbax 0.11.39 rather than the frozen OpenPI 0.11.13 dependency, producing a StepMetadata API incompatible with the fixed OpenPI restore_params code; its JAX installation was also CPU-only despite the CUDA12 dependency contract.",
+    "raw_log_path": "reports/logs/STAGE_Z_Z1R6R2_M2_libero_10_PRIMARY.log",
+    "raw_log_sha256": "87978a529faee319ad99826b1baf6c8c11315ed63a96058140ca9b852def1331"
+  },
+  "gpu_admission_snapshot": {
+    "index": 4,
+    "free_memory_mib": 52664,
+    "used_memory_mib": 28558,
+    "utilization_gpu_percent": 62,
+    "foreign_process_policy": "record-only-never-touch"
+  },
+  "authority": {
+    "protocol_path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V9.json",
+    "protocol_sha256": "60a73e89f4328d03c29afb64b5c6d03e509250d38b7b17d070e6406b6777e03e",
+    "source_authority_path": "reports/STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V10.json",
+    "source_authority_sha256": "6f0f046fb9831e476eb9cbc05d69b776feb588a92f1f4787d861f71d33d157a5",
+    "runtime_code_commit": "e4a39251c21ba7be9da9c54ea60dcbf3181baf8d",
+    "runtime_code_tree": "ed9a949bc21ef60b0707ebc558df2d47eafaff1e",
+    "runner_git_blob": "b346edbfe9067c6ac90843395d36705e2eb373a6",
+    "runner_sha256": "281b45a6a846fef1acdedbdb2a2c795eb408e19901aa97680ad6bc169b93d303",
+    "openpi_source_commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+    "openpi_source_tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be",
+    "openpi_checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+    "openpi_checkpoint_manifest_sha256": "d9104dfdea46eca2fadf05ec7fc478b19d39b19aa8dfda0e6adedcd6d6b6efac",
+    "pre_gpu_audit": {
+      "path": "reports/STAGE_Z_Z1R6R2_PRE_M2_STATIC_AUDIT_V1.json",
+      "sha256": "24ba1fa8cbbc645393cf1acfbf469364fd6c08e977df331162b0eb1ff13a1c9c"
+    }
+  },
+  "retry_policy": "Do not count this as M2 qualification. Repair only the frozen OpenPI dependency binding and CUDA runtime in the mandated A800 environment, run CPU/static and GPU-device smoke, create a superseding runtime source authority, then retry this same cell once under the repaired authority.",
+  "raw_stderr_durable": true,
+  "observed_from": "live SSH execution result and durable tee log; no model inference, simulator, or scientific outcome was materialized"
+}

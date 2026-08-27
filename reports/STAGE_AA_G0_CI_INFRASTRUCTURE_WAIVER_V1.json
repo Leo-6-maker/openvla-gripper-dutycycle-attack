@@ -1,0 +1,94 @@
+{
+  "schema": "STAGE_AA_G0_CI_INFRASTRUCTURE_WAIVER_V1",
+  "status": "STAGE_AA_AUTONOMOUS_G0_GITHUB_CI_INFRASTRUCTURE_WAIVER",
+  "gate": "STAGE_AA_AUTONOMOUS_G0_GITHUB_CI_INFRASTRUCTURE_WAIVER",
+  "authorization": {
+    "pi_comment_id": 5428383254,
+    "waived_by_pi": true,
+    "prompt_source": "C:/Users/刘宇/.codex/attachments/f7588234-4c4a-4a21-b74c-92d7c1db88a5/pasted-text-1.txt",
+    "prompt_source_bytes": 18936,
+    "prompt_source_sha256": "67f3a3c444df0a4b6a422669fb35df8019ab41b337ddc02a7f37ea09a0105758"
+  },
+  "github_ci_status": "UNAVAILABLE_NOT_PASS_FOR_HISTORICAL_G0_OBSERVATION",
+  "ci_claim_boundary": "GitHub Actions did not generate an exact-head check suite after repeated trigger attempts at the historical G0 hold. PI authorized continuation under an explicit CI-infrastructure waiver. No missing GitHub CI result is represented as PASS.",
+  "exact_head_observations": {
+    "babd663f": {
+      "resolved_sha": "babd663f",
+      "exact_head_check_suite_count_current_recheck": 0,
+      "exact_head_workflow_run_count_current_recheck": 0,
+      "observation": "historical Phase-A artifact head had no exact-head GitHub Actions result"
+    },
+    "6db5e952": {
+      "resolved_sha": "6db5e952f7331be36a063ea71b8dffab5bbbba12",
+      "exact_head_check_suite_count_at_pi_g0_hold": 0,
+      "exact_head_workflow_run_count_at_pi_g0_hold": 0,
+      "hold_observation_source": "PI-authorized G0 prompt",
+      "current_recheck_exact_head_check_suite_count": 4,
+      "current_recheck_exact_head_workflow_run_count": 4,
+      "current_recheck_all_success": true,
+      "interpretation": "delayed GitHub result appeared after the historical waiver condition; it does not retroactively change the recorded G0 observation"
+    },
+    "fa9d782c": {
+      "resolved_sha": "fa9d782cd856cbca8c68524fa7b3309c6444cd8a",
+      "exact_head_check_suite_count_current_recheck": 4,
+      "exact_head_workflow_run_count_current_recheck": 4,
+      "current_recheck_all_success": true,
+      "waiver_used_as_current_ci_pass": false
+    }
+  },
+  "required_workflows": [
+    {
+      "name": "repository-hygiene",
+      "path": ".github/workflows/repository-hygiene.yml",
+      "bytes": 1830,
+      "sha256": "d5fca33529a73b1e1f25ed9dc9671823c3226846e99613ecb81aefaa7e957b0e",
+      "trigger": "pull_request"
+    },
+    {
+      "name": "cpu-stageb",
+      "path": ".github/workflows/cpu-stageb.yml",
+      "bytes": 2668,
+      "sha256": "005b5f94b2d96d66cc7fcc4a9e0f4910be694673a0eeca194a35d42280324389",
+      "trigger": "pull_request"
+    },
+    {
+      "name": "cpu-b3-official-v3",
+      "path": ".github/workflows/cpu-b3-official-v3.yml",
+      "bytes": 4021,
+      "sha256": "d53ad31bd666cf4eae42f15af26a073afd0aa63ff30963a9b3f91c308f265b20",
+      "trigger": "pull_request"
+    },
+    {
+      "name": "cpu-detector-v5",
+      "path": ".github/workflows/cpu-detector-v5.yml",
+      "bytes": 5874,
+      "sha256": "8eaf85250ea9871b7ca2ce1ab5897f79a82efd05bef24ea67173a4a87e0ca37a",
+      "trigger": "pull_request"
+    }
+  ],
+  "phase_a_binding": {
+    "path": "reports/STAGE_AA_AA2R2_PHASE_A_ROOT_SEAL_V2.json",
+    "bytes": 14340,
+    "sha256": "94830704cdb9c044b9a5d0d62bfaa33f4966f82174b91de4f5e52320d9deb2af"
+  },
+  "current_code_binding": {
+    "commit": "fa9d782cd856cbca8c68524fa7b3309c6444cd8a",
+    "tree": "f521fa8694bf0f00cc79cbea30ab80432fd1d3b4"
+  },
+  "scientific_firewall": {
+    "model_inference_calls": 0,
+    "env_step_calls": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "aa_v_phys_reads": 0,
+    "stage_z_v_phys_reads": 0,
+    "task_success_reads": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "scientific_parent_exposure": 0,
+    "aa2_exposure": 0,
+    "paper_promotion": false
+  },
+  "next_legal_action": "G0_LOCAL_SUBSTITUTE_VALIDATION_THEN_AA2R2_PHASE_B"
+}

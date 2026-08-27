@@ -1,0 +1,83 @@
+{
+  "schema": "STAGE_Z_Z1R4_OFT_DATASET_STATS_LOADER_PARITY_STATIC_V1",
+  "status": "STAGE_Z_Z1R4_OFT_DATASET_STATS_LOADER_PARITY_STATIC_PASS",
+  "gate": "STAGE_Z_Z1R4_OFT_DATASET_STATS_LOADER_PARITY_RECOVERY",
+  "authorization": {
+    "source": "user_direct_autonomous_continuation",
+    "instruction": "不用等待PI,自主往下推进",
+    "prior_pi_gate": "5399571767"
+  },
+  "append_only": true,
+  "claim_boundary": "CPU/static loader-parity and read-only checkpoint evidence only; no GPU/model load, simulator/env.step, scientific parent exposure, V_phys, Eval160, protected, F1, BRIDGE, or Paper-V2 scientific promotion.",
+  "root_cause": {
+    "observed": "Transformers from_pretrained supplied a config-level model.norm_stats attribute without the legal libero_10 key.",
+    "prior_runner_behavior": "The M1 branch loaded dataset_statistics.json only when model.norm_stats was absent, so the official checkpoint statistics were skipped.",
+    "repair": "Reuse frozen upstream experiments.robot.openvla_utils._load_dataset_stats for M1/OFT before exact-suite/no-noops key resolution.",
+    "scientific_estimand_unchanged": true,
+    "checkpoint_bytes_unchanged": true,
+    "checkpoint_mutation_forbidden": true
+  },
+  "upstream_authority": {
+    "repository": "moojink/openvla-oft",
+    "checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+    "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+    "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+    "file": "experiments/robot/openvla_utils.py",
+    "git_blob": "c14c9dcfd3d10bbf80191dd64120e8746e72bb6a",
+    "function": "_load_dataset_stats",
+    "verified_semantics": [
+      "use checkpoint-local dataset_statistics.json for a local checkpoint",
+      "json.load the file without modifying it",
+      "unconditionally assign the loaded object to vla.norm_stats",
+      "leave a missing file as the official warning path"
+    ]
+  },
+  "checkpoint_read_only_evidence": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10/dataset_statistics.json",
+    "sha256": "dbe516987e8124416af39c32d3f39ce2137ccb4e282adc590bb4bcede09fb5e1",
+    "top_level_keys": ["libero_10_no_noops"],
+    "bytes": 2975,
+    "checkpoint_mutated": false,
+    "key_alias_written": false
+  },
+  "local_runtime_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "commit": "7500d78ca7a3c8bc97c675f6a67fd0050c8b24fa",
+    "tree": "2c345ff07d36645af0d5342b21da892604c8a197",
+    "runner": {
+      "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+      "git_blob": "0d0dc820d0b660d73d7bea4e2bfc9efb4a6499",
+      "sha256": "585bfab4eb1aaa93e96010c3b80bcb1b87e3362324ba028e7d91dedfa7d4289"
+    },
+    "test": {
+      "path": "tests/stage_z/test_stage_z_z1r1_optional_import.py",
+      "git_blob": "f8e6ae6a2e0f77c5b085349bde1c460948a7f4d6",
+      "sha256": "6574b3ab8834e5694ab3553339f2dbf1b46c07c44574a723abc48dfa654abb90"
+    },
+    "unchanged_launcher_git_blob": "6b14b3fa933660977451cc808a3d68ba06689723",
+    "unchanged_smoke_git_blob": "0f02de48e4368dbd786d8cec36a08f9ca5743e4c",
+    "unchanged_preflight_git_blob": "414acc538ee2d43d25460ea89a36677f899a4a9d"
+  },
+  "static_regression": {
+    "command": "D:\\Users\\anaconda\\python.exe -m pytest -q tests/repository tests/paper_v2 tests/stage_z/test_stage_z_preparation.py tests/stage_z/test_stage_z_z1r1_optional_import.py",
+    "result": "35 passed in 4.57s",
+    "py_compile": "PASS",
+    "git_diff_check": "PASS",
+    "new_assertion": "official _load_dataset_stats call precedes resolve_official_unnorm_key and successful receipts identify the loader"
+  },
+  "runtime_counters": {
+    "gpu_workers": 0,
+    "model_inference": 0,
+    "simulator": 0,
+    "env_step": 0,
+    "physical_intervention": 0,
+    "pgd": 0,
+    "attacked_env_steps": 0,
+    "v_phys": 0,
+    "eval160": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0
+  },
+  "timestamp_utc": "2026-08-24T18:56:36Z"
+}

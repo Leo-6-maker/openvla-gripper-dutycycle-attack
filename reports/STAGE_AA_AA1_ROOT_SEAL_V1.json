@@ -1,0 +1,82 @@
+{
+  "gate": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_V1",
+  "historical_receipt_count": 19,
+  "latest_v3_receipts": [
+    {
+      "bytes": 2620,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M0_libero_10.json",
+      "sha256": "ce8d0924e4ce585e6b1b81d6f5651c7c806bfd1aeca3fe4834bdc80fcffaeccb"
+    },
+    {
+      "bytes": 3299,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M0_object.json",
+      "sha256": "bd628ed0a54d3f2bb196df308886085e9fd484fdaac9b2202b5997093b6d7c0c"
+    },
+    {
+      "bytes": 2646,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M0_spatial.json",
+      "sha256": "f417bb8a34bb761e700fcf1c5a298610b5476719300f9918c0615573217e7a06"
+    },
+    {
+      "bytes": 2663,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M1_10.json",
+      "sha256": "f73292cd1f582b9a84e7a6f15e438574d8669435132475a2651f615a3219cbe9"
+    },
+    {
+      "bytes": 2692,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M1_object.json",
+      "sha256": "25c5636416d78cb706eaabd61b08f6c5cc24430b96eaee29e6077ae1b84c4dc8"
+    },
+    {
+      "bytes": 2701,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M1_spatial.json",
+      "sha256": "7a0a53e8c3088d546cc9fa95b01dc5a2b557ad2cadd232d2cba4d50e25ea1d3e"
+    },
+    {
+      "bytes": 2033,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M2_10.json",
+      "sha256": "c71a7550ffc8ba0a4826534d1f1d210a2fb87605423bb9518c9eef74a2eec63b"
+    },
+    {
+      "bytes": 2042,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M2_object.json",
+      "sha256": "a8601491b888bd9802a58bb8a52cf45b75a2ec954a65be190395a48d29ae61dc"
+    },
+    {
+      "bytes": 2046,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M2_spatial.json",
+      "sha256": "64564d5ab380f3be5f3628e60d470e8b84c4a6268a7b6936dfc02d992a0829ee"
+    }
+  ],
+  "next_legal_action": "STOP_FOR_PI",
+  "receipt_index": {
+    "bytes": 14637,
+    "path": "reports/STAGE_AA_AA1_ENGINEERING_CANARY_RECEIPT_INDEX_V1.json",
+    "sha256": "efe2c9ba633c31e2e915ad27c34ef7102ef7c389d7b2a4d23d8c8041c1d5615b"
+  },
+  "root_payload_sha256": "8ceb27473590a045741c8e85f8033b64482c0a15e03c82d9fdb13ec5ffc54118",
+  "schema": "STAGE_AA_AA1_ROOT_SEAL_V1",
+  "scientific_firewall": {
+    "aa2_scientific_candidates_exposed": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "paper_promotion": false,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "stage_z_identity_exposure": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "source_authority": {
+    "bytes": 4004,
+    "path": "reports/STAGE_AA_AA1_RUNTIME_SOURCE_AUTHORITY_V3.json",
+    "sha256": "3d6536d1583210755d51e0e1563043d5e866d1029fd74b6f2299034257cd6dfc"
+  },
+  "status": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_HOLD_STOP_FOR_PI",
+  "terminal": {
+    "bytes": 2006,
+    "path": "reports/STAGE_AA_AA1_ENGINEERING_CANARY_TERMINAL_V1.json",
+    "sha256": "79796471be51d586b3fda46439db123d00f75ba2f56e4c9b7a5ae0d063101727"
+  }
+}

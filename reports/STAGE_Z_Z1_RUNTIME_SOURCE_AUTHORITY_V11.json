@@ -1,0 +1,173 @@
+{
+  "schema": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V11",
+  "status": "STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+  "gate": "STAGE_Z_Z1R6R3_M2_ORBAX_CUDA_RUNTIME_PARITY",
+  "supersedes": {
+    "path": "reports/STAGE_Z_Z1_RUNTIME_SOURCE_AUTHORITY_V10.json",
+    "sha256": "6f0f046fb9831e476eb9cbc05d69b776feb588a92f1f4787d861f71d33d157a5"
+  },
+  "claim_boundary": "Static runtime-source and engineering-authority binding only; no scientific vulnerability, physical mechanism, visual exploitability, V_phys, Eval160, protected, F1, BRIDGE, or Paper-V2 scientific promotion claim.",
+  "repair": {
+    "classification": "ENGINEERING_INVALID_M2_ORBAX_VERSION_AND_CUDA_RUNTIME_MISMATCH",
+    "failure_receipt": "reports/STAGE_Z_Z1R6R2_M2_OPENPI_ORBAX_CUDA_ENGINEERING_INVALID_libero_10_PRIMARY_V1.json",
+    "dependency_alignment": "The mandated A800 environment now loads the OpenPI-locked Orbax 0.11.13 and CUDA12 JAX plugin/runtime versions; checkpoint and external source checkout bytes are unchanged.",
+    "runner_change": "No runner semantics changed; the scoped datetime.UTC alias and official OpenPI src roots remain the only OpenPI loader compatibility behavior.",
+    "device_and_metadata_smoke": "CUDA_VISIBLE_DEVICES=4 exposes one CudaDevice with gpu backend; the fixed checkpoint metadata is indexable by the official OpenPI restore code.",
+    "cpu_static_regression": "39 pytest tests passed; py_compile passed; git diff --check passed"
+  },
+  "runtime_revision": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "code_commit": "e4a39251c21ba7be9da9c54ea60dcbf3181baf8d",
+    "code_tree": "ed9a949bc21ef60b0707ebc558df2d47eafaff1e",
+    "protocol_path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V10.json",
+    "protocol_sha256": "44f0a4939c744de6b86e86dba54dbc581b48f29e2170b211d5f829ef83a605f5",
+    "files": [
+      {
+        "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+        "git_blob_sha": "b346edbfe9067c6ac90843395d36705e2eb373a6",
+        "sha256": "281b45a6a846fef1acdedbdb2a2c795eb408e19901aa97680ad6bc169b93d303",
+        "role": "Z1 runner with official OFT parity, official OpenPI src-layout roots, and scoped Python 3.10 datetime compatibility"
+      },
+      {
+        "path": "tests/stage_z/test_stage_z_z1r1_optional_import.py",
+        "git_blob_sha": "d9ed74bc45089f34bdcad02eba5e334771f2725c",
+        "sha256": "a930ad1031edc8c11607e59a52dae94a9eecb84cb722f55d1be45e688337bbee",
+        "role": "CPU/static regression for optional imports, OpenPI source layout, and runtime dependency binding"
+      },
+      {
+        "path": "scripts/stage_z/launch_stage_z_z1_runtime.py",
+        "git_blob_sha": "6b14b3fa933660977451cc808a3d68ba06689723",
+        "role": "deterministic runtime-root/cwd/PYTHONPATH launcher"
+      },
+      {
+        "path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py",
+        "git_blob_sha": "414acc538ee2d43d25460ea89a36677f899a4a9d",
+        "role": "read-only pre-GPU source/resource audit"
+      }
+    ]
+  },
+  "runtime_dependency_binding": {
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "python_version": "3.10.16",
+    "pins": {
+      "augmax": "0.4.1",
+      "jax": "0.5.3",
+      "jaxlib": "0.5.3",
+      "orbax_checkpoint": "0.11.13",
+      "flax": "0.10.2",
+      "tensorstore": "0.1.74",
+      "jaxtyping": "0.2.36",
+      "lerobot": "0.1.0@0cf864870cf29f4738d3ade893e6fd13fbd7cdb5",
+      "numpydantic": "1.8.1",
+      "pyarrow": "24.0.0",
+      "transformers": "4.53.2",
+      "tokenizers": "0.21.4",
+      "huggingface_hub": "0.36.2",
+      "xxhash": "3.7.0",
+      "chex": "0.1.90",
+      "toolz": "1.1.0",
+      "tqdm_loggable": "0.4.1",
+      "tyro": "1.0.13",
+      "docstring_parser": "0.18.0"
+    },
+    "cuda12_runtime": {
+      "jax_cuda12_pjrt": "0.5.3",
+      "jax_cuda12_plugin": "0.5.3",
+      "nvidia_cublas_cu12": "12.6.4.1",
+      "nvidia_cuda_cupti_cu12": "12.6.80",
+      "nvidia_cuda_nvcc_cu12": "12.9.86",
+      "nvidia_cuda_runtime_cu12": "12.6.77",
+      "nvidia_cudnn_cu12": "9.5.1.17",
+      "nvidia_cufft_cu12": "11.3.0.4",
+      "nvidia_cusolver_cu12": "11.7.1.2",
+      "nvidia_cusparse_cu12": "12.5.4.2",
+      "nvidia_nccl_cu12": "2.26.2",
+      "nvidia_nvjitlink_cu12": "12.6.85"
+    },
+    "datetime_utc_alias": "datetime.timezone.utc only when datetime.UTC is absent",
+    "device_smoke": "CUDA_VISIBLE_DEVICES=4; jax.default_backend()==gpu; one CudaDevice visible"
+  },
+  "z0r2_bindings": {
+    "root_seal_sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d",
+    "model_authority_sha256": "7abcc9505c42a15c143d1333c1b3eda3254b46f2d210d5b15fcb5a5db684ea79",
+    "common_libero_sha256": "bf2f85f6a8719349d18daa80e36b4a70571bb7044f14b2addc0de555c3b4b118",
+    "panel_sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1",
+    "canary_ledger_sha256": "8191d54c38815bd73fba10495e90bc77dd0f56a271cd6ba497c12ab86bdee9fc"
+  },
+  "runtime_entrypoint": {
+    "runtime_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime",
+    "runtime_src": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/src",
+    "working_directory": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime",
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "libero_config_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/libero_config"
+  },
+  "model_authority": {
+    "M1_OPENVLA_OFT": {
+      "source_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+      "source_commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "source_tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+      "checkpoint_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache",
+      "manifest_path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+      "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+      "checkpoint_mutation": false
+    },
+    "M2_PI05_LIBERO": {
+      "source_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822",
+      "source_commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "source_tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be",
+      "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+      "checkpoint_manifest_sha256": "d9104dfdea46eca2fadf05ec7fc478b19d39b19aa8dfda0e6adedcd6d6b6efac",
+      "config": "pi05_libero"
+    }
+  },
+  "external_source_checkouts": {
+    "common_libero": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+      "commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+      "tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60",
+      "git_status_required": "CLEAN"
+    },
+    "openvla_oft": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+      "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+      "git_status_required": "CLEAN"
+    },
+    "openpi": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822",
+      "commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be",
+      "git_status_required": "CLEAN"
+    }
+  },
+  "pre_gpu_audit_binding": {
+    "path": "reports/STAGE_Z_Z1R6R3_PRE_M2_STATIC_AUDIT_V1.json",
+    "required_status": "STAGE_Z_Z1_PRE_GPU_STATIC_AUDIT_PASS",
+    "claim_boundary": "read-only source/resource/GPU admission audit; no model or simulator execution"
+  },
+  "execution_contract": {
+    "identities": "F1C4 permanently excluded engineering namespace only",
+    "one_worker_per_gpu": true,
+    "gpu_admission": "free_memory_mib > 20480 immediately before launch",
+    "foreign_processes": "allowed and recorded; never touched",
+    "required_backend": "gpu",
+    "interventions": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "v_phys_reads": 0,
+    "eval160_reads": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "checkpoint_mutation": false,
+    "task_success_and_physical_outcome": "not read or persisted"
+  },
+  "authorized_scope": {
+    "M0": "4/4 immutable engineering PASS",
+    "M1": "4/4 engineering PASS; not scientific replication",
+    "current_retry_cell": "M2_PI05_LIBERO/libero_10/PRIMARY/libero_10/task_04/state_03",
+    "conditional_remaining_m2": ["libero_goal", "libero_object", "libero_spatial"],
+    "terminal_after_new_engineering_defect_or_12_of_12": "STOP_FOR_PI",
+    "forbidden_scientific_gates": ["Z2", "Z3", "Z4", "Z5", "F1", "BRIDGE"]
+  }
+}

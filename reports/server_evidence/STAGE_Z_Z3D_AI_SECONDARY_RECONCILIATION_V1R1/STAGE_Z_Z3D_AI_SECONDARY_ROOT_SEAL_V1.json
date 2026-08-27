@@ -1,0 +1,95 @@
+{
+  "analysis_script": {
+    "path": "scripts/stage_z/reconcile_stage_z_z3d_ai_secondary.py",
+    "sha256": "90579004653c060a23da86d52579b138f29793b390a69bb3601659fe2ce84080"
+  },
+  "artifacts": {
+    "reconciliation_csv": {
+      "bytes": 55061,
+      "path": "stage_z_z3d_ai_secondary_reconciliation_v1r1/STAGE_Z_Z3D_AI_SECONDARY_UNBLIND_RECONCILIATION_V1.csv",
+      "sha256": "0f30711eec141819b2f7ac2b2c5c39be86c2c9896a5f1f9784cf15164c3b25fa"
+    },
+    "reconciliation_json": {
+      "bytes": 333363,
+      "path": "stage_z_z3d_ai_secondary_reconciliation_v1r1/STAGE_Z_Z3D_AI_SECONDARY_UNBLIND_RECONCILIATION_V1.json",
+      "sha256": "5d038c956318da2ab9b3c1041bfe4c4271971bbd42172de7d3ec95adca1dcdbd"
+    },
+    "static_diagnostic_synthesis": {
+      "bytes": 114244,
+      "path": "stage_z_z3d_ai_secondary_reconciliation_v1r1/STAGE_Z_Z3D_STATIC_DIAGNOSTIC_SYNTHESIS_V1.json",
+      "sha256": "c126cb15e6ae3c59fdb0ed3c56f7ff152bd0732c46cf8385c116b0b92259977c"
+    }
+  },
+  "claim_boundary": "AI-secondary unblind reconciliation of sealed Z3-C presentation videos only; no human-review completion, no V_phys relabeling, no new simulator execution, no Z4 or Paper promotion.",
+  "execution": {
+    "branch_receipts_read": 460,
+    "joined_rows": 120,
+    "label_rows": 120,
+    "z3c_parent_rows_read": 92
+  },
+  "next_legal_action": "STOP_FOR_PI_NO_Z4_NO_BRIDGE_NO_NEW_SIMULATOR_EXECUTION",
+  "schema": "STAGE_Z_Z3D_AI_SECONDARY_ROOT_SEAL_V1",
+  "scientific_firewall": {
+    "branch_reexecution": 0,
+    "bridge": 0,
+    "eval160_reads": 0,
+    "f1": 0,
+    "human_review_gate_satisfied": false,
+    "new_env_step": 0,
+    "new_identities": 0,
+    "new_model_inference": 0,
+    "new_open_intervention": 0,
+    "pgd": 0,
+    "protected_reads": 0,
+    "z4_authorized": false
+  },
+  "source_bindings": {
+    "branch_index": {
+      "bytes": 300580,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/STAGE_Z_Z3C_TERMINAL_V1/STAGE_Z_Z3C_BRANCH_RECEIPT_INDEX_V1.json",
+      "sha256": "e1ee03b782eb72a22f794681335a074bab79407c9b067f87556860c2667f3520"
+    },
+    "hidden_map": {
+      "bytes": 93770,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/server_evidence/STAGE_Z_Z3D_BLINDED_VIDEO_MAPPING_V1.json",
+      "sha256": "d9a23d75c126dcec0b91a3556c9bb9b64de34f4d3a4df057b4b2078feb328dcf"
+    },
+    "ingestion_receipt": {
+      "bytes": 2384,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/STAGE_Z_Z3D_AI_SECONDARY_LABEL_INGESTION_RECEIPT_V1.json",
+      "sha256": "4b639afa6de8c996bc1ca733f3f70a6f1e7db99f1c34e20df9080fc14b14233b"
+    },
+    "label_seal": {
+      "bytes": 721,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_LABEL_SEAL_R1_V1.json",
+      "sha256": "1c0d7beddaa6153c746ee541604ea861698289379278036bf634909b4e2878cd"
+    },
+    "labels_csv": {
+      "bytes": 26749,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_BLINDED_LABELS_R1_V1.csv",
+      "sha256": "ff1411afec9de439a1134fb8f228c77609a2cfb588feccdaae897d4f3923d12c"
+    },
+    "labels_json": {
+      "bytes": 67648,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_BLINDED_LABELS_R1_V1.json",
+      "sha256": "dfc3484db22c342f598c8e248388615cfdd28d9acb4c9b139501b5f1c3f600cd"
+    },
+    "r1_map": {
+      "bytes": 77603,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/stage_z_z3d_r1_reviewer_presentation_v1/STAGE_Z_Z3D_R1_SOURCE_TO_DERIVATIVE_MAPPING_V1.json",
+      "sha256": "e57af6ccfa5607a0c2335d9ce1e24b17dca473750ab6474e4c9bca7273ec2c65"
+    },
+    "terminal": {
+      "bytes": 163987,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/STAGE_Z_Z3C_TERMINAL_V1/STAGE_Z_Z3C_TERMINAL_SYNTHESIS_V1.json",
+      "sha256": "f76c58ca9b7e33d1ff340867304fd98bf9aa90501c411421ef7134c78383126c"
+    },
+    "z3c_root_seal": {
+      "bytes": 2236,
+      "path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/STAGE_Z_Z3C_TERMINAL_V1/STAGE_Z_Z3C_ROOT_SEAL_V1.json",
+      "sha256": "9ccceaa1c61e54aff3348491772c463853c7679aab4ec585d2adaf196ae57c77"
+    }
+  },
+  "status": "STAGE_Z_Z3D_AI_SECONDARY_RECONCILIATION_COMPLETE_STOP_FOR_PI",
+  "validation_failures": []
+}

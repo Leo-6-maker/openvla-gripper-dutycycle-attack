@@ -1,0 +1,29 @@
+{
+  "canonical_parent_key": "libero_spatial/task_04/state_41",
+  "cell_id": "AA2-0085",
+  "clean_only": true,
+  "gate": "STAGE_AA_AA2_CLEAN_ONLY_FULL_CENSUS_AND_COMMON_DENOMINATOR_FREEZE_V1",
+  "model_family": "M0_OPENVLA",
+  "runtime_counters": {
+    "aa2_exposure": 0,
+    "aa_v_phys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 0,
+    "eval160_reads": 0,
+    "model_inference_calls": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0
+  },
+  "schema": "STAGE_AA_AA2_CLEAN_SCREEN_CELL_RECEIPT_V1",
+  "seed": 714195826,
+  "source_task_idx": 4,
+  "state": "state_41",
+  "status": "RUNNING",
+  "suite": "libero_spatial",
+  "timestamp_utc": "2026-08-26T04:11:38Z"
+}

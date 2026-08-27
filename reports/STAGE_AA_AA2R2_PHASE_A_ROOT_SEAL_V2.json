@@ -1,0 +1,346 @@
+{
+  "aa3_authorized": false,
+  "aggregate_runtime_counters": {
+    "aa2_exposure": 0,
+    "aa_v_phys_reads": 0,
+    "action_pair_audit_count": 3064,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "dummy_wait_env_step_calls": 90,
+    "env_step_calls": 3060,
+    "eval160_reads": 0,
+    "model_inference_calls": 1352,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 3060,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "stage_z_v_phys_reads": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "authorization_pi_comment_id": 5421992873,
+  "canary_plan": {
+    "bytes": 4418,
+    "path": "reports/STAGE_AA_AA2R2_ENGINEERING_CANARY_PLAN_V1.json",
+    "sha256": "2a8e09ce222b1cc3a775b45e3f13c161b4dfe8a258595aa0d548651f2bd838b1"
+  },
+  "gate": "STAGE_AA_AA2R2_OFFICIAL_THREE_STATE_ACTION_SEMANTICS_AMENDMENT_REQUALIFICATION_AND_CENSUS_RESUME_V1",
+  "next_legal_action": "STOP_FOR_PI",
+  "phase_b_authorized": false,
+  "protocol": {
+    "bytes": 4279,
+    "path": "configs/STAGE_AA_AA2R2_ACTION_SEMANTICS_AMENDMENT_V1.json",
+    "sha256": "600b991b6841c794246cd95659bc6858f148348e65bf4d3e27615b56353eeb7c"
+  },
+  "receipt_count": 9,
+  "receipt_index": {
+    "bytes": 12319,
+    "path": "reports/STAGE_AA_AA2R2_ENGINEERING_CANARY_RECEIPT_INDEX_V2.json",
+    "sha256": "310cbf4a8cb96ef28e6289341cef4390aee30c4f356bba8102da6dd60cc9fff5"
+  },
+  "receipts": [
+    {
+      "action_pair_audit_count": 520,
+      "action_pair_audit_sha256": "d1d5d2ffc39690f96b1789bb57e1dedd5470534de353c546aacd3c2e8b898ba1",
+      "boundary_count": 520,
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "cell_id": "AA2R2-A-M0-LIBERO10",
+      "clean_trajectory_digest": "189b4f56a8780ee46d09fbdad2b1c5aaf1c4b4a9292fae1a5540af24ae423dc7",
+      "dummy_wait_env_step_calls": 10,
+      "env_step_calls": 520,
+      "horizon": 520,
+      "log": {
+        "bytes": 3702,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/AA2R2-R2-M0-LIBERO10.log",
+        "sha256": "ceced84e033e4db6effee55a709caab1b3aab3ff70aac40dcd2b5a720b927327"
+      },
+      "model_family": "M0_OPENVLA",
+      "model_inference_calls": 520,
+      "physical_telemetry_reads": 520,
+      "receipt": {
+        "bytes": 1245004,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/receipts/AA2R2-R2-M0-LIBERO10.json",
+        "sha256": "c20d316fab954fd45be9e320fdf0fe3366e8bcfe0a467e5ce9478a227178442e"
+      },
+      "scientific_claim": "NONE_ENGINEERING_ONLY",
+      "seed": 2026082601,
+      "status": "PASS_AA2R2_ENGINEERING_CANARY_CELL",
+      "suite": "libero_10",
+      "terminal_after_count": 0,
+      "terminal_before_count": 0
+    },
+    {
+      "action_pair_audit_count": 280,
+      "action_pair_audit_sha256": "4583683f7457aa903014e2d9d85b05a4e237f7b9da4c02687cc331a67590606d",
+      "boundary_count": 280,
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "cell_id": "AA2R2-A-M0-OBJECT",
+      "clean_trajectory_digest": "c5b1bb9cbbb2e07c53f842f88c87ddff266b9a81680bb1db11d23a6f93651b69",
+      "dummy_wait_env_step_calls": 10,
+      "env_step_calls": 280,
+      "horizon": 280,
+      "log": {
+        "bytes": 3706,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/AA2R2-R2-M0-OBJECT.log",
+        "sha256": "e5d32d7e33d6d8998fb03bc7043b3dc591865b0aba6b7cfbd53a276576fe01e7"
+      },
+      "model_family": "M0_OPENVLA",
+      "model_inference_calls": 280,
+      "physical_telemetry_reads": 280,
+      "receipt": {
+        "bytes": 661422,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/receipts/AA2R2-R2-M0-OBJECT.json",
+        "sha256": "c5e9db102b7098264d8ef8a6b6c1f7083557dc414ea5b746d9c09a5c63a7715e"
+      },
+      "scientific_claim": "NONE_ENGINEERING_ONLY",
+      "seed": 2026082602,
+      "status": "PASS_AA2R2_ENGINEERING_CANARY_CELL",
+      "suite": "libero_object",
+      "terminal_after_count": 33,
+      "terminal_before_count": 32
+    },
+    {
+      "action_pair_audit_count": 220,
+      "action_pair_audit_sha256": "25dac3db9b7e46d7f8f52d0d9960979f8b0c48f807454afb0348b5b2c63a5502",
+      "boundary_count": 220,
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "cell_id": "AA2R2-A-M0-SPATIAL",
+      "clean_trajectory_digest": "d5d08fb1103a34e6ff6e8175237ad4ad061a0dd14c688a973f5f99ba883bcf78",
+      "dummy_wait_env_step_calls": 10,
+      "env_step_calls": 220,
+      "horizon": 220,
+      "log": {
+        "bytes": 3707,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/AA2R2-R2-M0-SPATIAL.log",
+        "sha256": "6ba9b81ffe2184001f229537235b12bc45637d4f349285e1fc33e6ea48a972a5"
+      },
+      "model_family": "M0_OPENVLA",
+      "model_inference_calls": 220,
+      "physical_telemetry_reads": 220,
+      "receipt": {
+        "bytes": 525784,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/receipts/AA2R2-R2-M0-SPATIAL.json",
+        "sha256": "cf17298b6782989de756cd45c940d301595dd21b5cae49cb305a3ddfa4000646"
+      },
+      "scientific_claim": "NONE_ENGINEERING_ONLY",
+      "seed": 2026082603,
+      "status": "PASS_AA2R2_ENGINEERING_CANARY_CELL",
+      "suite": "libero_spatial",
+      "terminal_after_count": 136,
+      "terminal_before_count": 135
+    },
+    {
+      "action_pair_audit_count": 520,
+      "action_pair_audit_sha256": "11181d59b8be61b227ef8f7d6d198b92d3547fb33774169a7b64d3f3a264638c",
+      "boundary_count": 65,
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "cell_id": "AA2R2-A-M1-LIBERO10",
+      "clean_trajectory_digest": "5179725f35c8926ba479c99b25a6beb3e21028a5907d25898747543686162858",
+      "dummy_wait_env_step_calls": 10,
+      "env_step_calls": 520,
+      "horizon": 520,
+      "log": {
+        "bytes": 5100,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/AA2R2-R2-M1-LIBERO10.log",
+        "sha256": "0cbf24848a6e2f5c7fe09aab75d119ee12b3e89cc6a3bb7d2f8adad2642aee47"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_inference_calls": 65,
+      "physical_telemetry_reads": 520,
+      "receipt": {
+        "bytes": 1204917,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/receipts/AA2R2-R2-M1-LIBERO10.json",
+        "sha256": "97e252f755a2e1fb13776cd597469667f8511e1375f2d57a4dc36b17073a6a29"
+      },
+      "scientific_claim": "NONE_ENGINEERING_ONLY",
+      "seed": 2026082611,
+      "status": "PASS_AA2R2_ENGINEERING_CANARY_CELL",
+      "suite": "libero_10",
+      "terminal_after_count": 0,
+      "terminal_before_count": 0
+    },
+    {
+      "action_pair_audit_count": 280,
+      "action_pair_audit_sha256": "bbbb60b842a694b8d89450152abf731bb5a417e64e32f94a6796b835705858ce",
+      "boundary_count": 35,
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "cell_id": "AA2R2-A-M1-OBJECT",
+      "clean_trajectory_digest": "8c10d1220e2c98b7f73a7b4b3f561f196adad27131ea612b2b8d6c2472297ac6",
+      "dummy_wait_env_step_calls": 10,
+      "env_step_calls": 280,
+      "horizon": 280,
+      "log": {
+        "bytes": 5104,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/AA2R2-R2-M1-OBJECT.log",
+        "sha256": "d2534728da58269efaee3e8847922aa751da1fb0ade1dcda664f22d1f51f31d9"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_inference_calls": 35,
+      "physical_telemetry_reads": 280,
+      "receipt": {
+        "bytes": 647785,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/receipts/AA2R2-R2-M1-OBJECT.json",
+        "sha256": "101b27d2b821ad5662c5f977da032de03f86a67ada02b9555e5438b1bf478764"
+      },
+      "scientific_claim": "NONE_ENGINEERING_ONLY",
+      "seed": 2026082612,
+      "status": "PASS_AA2R2_ENGINEERING_CANARY_CELL",
+      "suite": "libero_object",
+      "terminal_after_count": 0,
+      "terminal_before_count": 0
+    },
+    {
+      "action_pair_audit_count": 224,
+      "action_pair_audit_sha256": "be5fd4d3cd54d1e03c784491ce37ea87089bb1a4f06d377a0f57545199557682",
+      "boundary_count": 28,
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "cell_id": "AA2R2-A-M1-SPATIAL",
+      "clean_trajectory_digest": "1c8eb8a50f40e444def91026960b28150bf0d78e30ff66abc777fece92e06c33",
+      "dummy_wait_env_step_calls": 10,
+      "env_step_calls": 220,
+      "horizon": 220,
+      "log": {
+        "bytes": 5105,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/AA2R2-R2-M1-SPATIAL.log",
+        "sha256": "0376ea90655b66b47423a60be08dd6fd8b795c42276904adb6944a4e3932335a"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_inference_calls": 28,
+      "physical_telemetry_reads": 220,
+      "receipt": {
+        "bytes": 519103,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/receipts/AA2R2-R2-M1-SPATIAL.json",
+        "sha256": "ab5f5ea21dcc07c0620ef7df271001bf4ec6d6bb1ee16012271d9bc92edfe873"
+      },
+      "scientific_claim": "NONE_ENGINEERING_ONLY",
+      "seed": 2026082613,
+      "status": "PASS_AA2R2_ENGINEERING_CANARY_CELL",
+      "suite": "libero_spatial",
+      "terminal_after_count": 0,
+      "terminal_before_count": 0
+    },
+    {
+      "action_pair_audit_count": 520,
+      "action_pair_audit_sha256": "76d2dc04a0308cc9964687b649630940441255fd68a4dc6053e2a283f0ccc642",
+      "boundary_count": 104,
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "cell_id": "AA2R2-A-M2-LIBERO10",
+      "clean_trajectory_digest": "a9822a7af7735869926cf3d6144b932cbc7a18c58b9a9c0f1852b90e889122f4",
+      "dummy_wait_env_step_calls": 10,
+      "env_step_calls": 520,
+      "horizon": 520,
+      "log": {
+        "bytes": 7069,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/AA2R2-R2-M2-LIBERO10.log",
+        "sha256": "35e6d18a662aea8c1d5de3231ef3e8fd81d832b16b685f0fe6bc2d4bafe114de"
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "model_inference_calls": 104,
+      "physical_telemetry_reads": 520,
+      "receipt": {
+        "bytes": 1327468,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/receipts/AA2R2-R2-M2-LIBERO10.json",
+        "sha256": "605dceaaeb66f74a404a117488ac4aa6863b6464026139553934813d9d9f48c7"
+      },
+      "scientific_claim": "NONE_ENGINEERING_ONLY",
+      "seed": 2026082621,
+      "status": "PASS_AA2R2_ENGINEERING_CANARY_CELL",
+      "suite": "libero_10",
+      "terminal_after_count": 294,
+      "terminal_before_count": 293
+    },
+    {
+      "action_pair_audit_count": 280,
+      "action_pair_audit_sha256": "094f902a51343cbd54293be833b62d089f1bd23a42151db0dcc7979bdc0bdbdf",
+      "boundary_count": 56,
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "cell_id": "AA2R2-A-M2-OBJECT",
+      "clean_trajectory_digest": "9a10e31f7da2ec5f95b9e72508d36ae38b09950cf0a5ae2e1a562e86ab3366f5",
+      "dummy_wait_env_step_calls": 10,
+      "env_step_calls": 280,
+      "horizon": 280,
+      "log": {
+        "bytes": 7073,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/AA2R2-R2-M2-OBJECT.log",
+        "sha256": "10aee5eb2e72a8856b43b5d713604a395ee00cdb70d93ee4565027ee87e9bcaa"
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "model_inference_calls": 56,
+      "physical_telemetry_reads": 280,
+      "receipt": {
+        "bytes": 716002,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/receipts/AA2R2-R2-M2-OBJECT.json",
+        "sha256": "5f23c4c81ec41f3ad85f4f78dcb9b73d6740b45b9c00322881b863fbf43a9d7d"
+      },
+      "scientific_claim": "NONE_ENGINEERING_ONLY",
+      "seed": 2026082622,
+      "status": "PASS_AA2R2_ENGINEERING_CANARY_CELL",
+      "suite": "libero_object",
+      "terminal_after_count": 161,
+      "terminal_before_count": 160
+    },
+    {
+      "action_pair_audit_count": 220,
+      "action_pair_audit_sha256": "58b9fd478ca6da9e5adc2ed764d64f5c888af600adc5f9dec506906c8d3be407",
+      "boundary_count": 44,
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "cell_id": "AA2R2-A-M2-SPATIAL",
+      "clean_trajectory_digest": "662a7d26c1c722b8c94197f4c5dcb3b28a5cb4efb6fd690bbd2d12b7685d4612",
+      "dummy_wait_env_step_calls": 10,
+      "env_step_calls": 220,
+      "horizon": 220,
+      "log": {
+        "bytes": 7074,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/AA2R2-R2-M2-SPATIAL.log",
+        "sha256": "7810a15babcd13b7a823e26305829edebeb40bbaa6f088830cd0e8c0b3e2d1d5"
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "model_inference_calls": 44,
+      "physical_telemetry_reads": 220,
+      "receipt": {
+        "bytes": 560996,
+        "path": "reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/receipts/AA2R2-R2-M2-SPATIAL.json",
+        "sha256": "c37a9ef8c53497de7a6060b7f7c8a74787d0763a752fe1e9c92cb0fb198c35f0"
+      },
+      "scientific_claim": "NONE_ENGINEERING_ONLY",
+      "seed": 2026082623,
+      "status": "PASS_AA2R2_ENGINEERING_CANARY_CELL",
+      "suite": "libero_spatial",
+      "terminal_after_count": 43,
+      "terminal_before_count": 42
+    }
+  ],
+  "root_payload_sha256": "d552fb78f922db40e873c11cd2f779501546f8e3a6cebad675f963f94cdf12ea",
+  "schema": "STAGE_AA_AA2R2_PHASE_A_ROOT_SEAL_V2",
+  "scientific_firewall": {
+    "aa2_exposure": 0,
+    "aa_v_phys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "stage_z_v_phys_reads": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "source_authority": {
+    "bytes": 6030,
+    "path": "reports/STAGE_AA_AA2R2_RUNTIME_SOURCE_AUTHORITY_V2.json",
+    "sha256": "b8cd13eb42b1255a4fd6220ff68427d731c7d342bd839ab74b253172d8c71e4e"
+  },
+  "static_semantics_report": {
+    "bytes": 6984,
+    "path": "reports/STAGE_AA_AA2R2_STATIC_SEMANTICS_RECONCILIATION_V2.json",
+    "sha256": "5e4058c29d6e69d2f97157dfcf21f220100a3a898b10e3de214afcc9d032c841"
+  },
+  "status": "STAGE_AA_AA2R2_THREE_STATE_SEMANTICS_ENGINEERING_REQUALIFIED_STOP_FOR_PI",
+  "terminal": {
+    "bytes": 14733,
+    "path": "reports/STAGE_AA_AA2R2_PHASE_A_TERMINAL_V2.json",
+    "sha256": "4b9c3fb0487e6788960d98b9ce7affc69e78691fb5ee51862359dfb26f764a10"
+  }
+}

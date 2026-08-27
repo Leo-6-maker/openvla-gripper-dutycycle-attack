@@ -1,0 +1,198 @@
+{
+  "artifact_outputs": {
+    "anchor_availability": "reports/STAGE_Z_Z2_ANCHOR_AVAILABILITY_V2.json",
+    "anchor_ledger": "reports/STAGE_Z_Z2_ANCHOR_LEDGER_V2.json",
+    "exposure_ledger": "reports/STAGE_Z_Z2_SCIENTIFIC_EXPOSURE_LEDGER_V2.json"
+  },
+  "authority": {
+    "anchor_selector": {
+      "bytes": 3441,
+      "path": "src/stage_z_preparation/anchors.py",
+      "sha256": "1ae9bb576861ae4598b41e4091f34c67c9e03f4f91c8e3b5604d3ba95289512a"
+    },
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "historical_static_audit_status": "STAGE_Z_Z2_SOURCE_AND_ANCHOR_STATIC_PASS_WITH_LEGACY_RECONCILIATION_REQUIRED",
+    "legacy_reconciliation": {
+      "bytes": 79262,
+      "path": "reports/STAGE_Z_Z2_LEGACY_RECEIPT_RECONCILIATION_V1.json",
+      "sha256": "901d0488b9a6975f0e4f05b4dbd397efc8c82a1e5b7d5da771b7cb7e590e403c"
+    },
+    "panel": {
+      "bytes": 19254,
+      "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+      "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+    },
+    "protocol_v2": {
+      "bytes": 8423,
+      "path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V2.json",
+      "sha256": "6569d6227731001b18b0b42cdd9a2c1672c525964c64da66824faebec28dd7ef"
+    },
+    "protocol_v3": {
+      "bytes": 3216,
+      "path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V3.json",
+      "sha256": "9cce2445906d5701a322c719b1d13437c9461985027c4faf632b7d1c10a9586b"
+    },
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "runner": {
+      "bytes": 21370,
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "sha256": "78cabdd0ddd7f836e5936a88396f1623d5f1f86b3eb379e36405fa73122fe918"
+    },
+    "source_head_before_terminal_seal": "836bdb81677678bf74e1c010df3efa3250415c95",
+    "source_tree_before_terminal_seal": "8f73ec92295309278036dd76ad51b7643f515e5d",
+    "static_audit_v2": {
+      "bytes": 2677,
+      "path": "reports/STAGE_Z_Z2A_STATIC_AUDIT_V2.json",
+      "sha256": "acc76d18cad93d6eeeebc62c2483fc0558a8fa3669a900418d319f8cc3c79caa"
+    },
+    "static_audit_v3": {
+      "bytes": 1336,
+      "path": "reports/STAGE_Z_Z2A_V3_STATIC_AUDIT.json",
+      "sha256": "927d5695b6d9d2345f06bda98890dc2801e099c9b07090ad8146ec32c83f1903"
+    },
+    "v3_static_audit_status": "STAGE_Z_Z2_SOURCE_AND_ANCHOR_STATIC_PASS_V3",
+    "working_tree_status_at_generation": [
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_goal_task_00_state_21.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_goal_task_07_state_30.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_object_task_06_state_31.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_object_task_07_state_45.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_goal_task_00_state_21.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_goal_task_07_state_30.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_object_task_06_state_31.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_object_task_07_state_45.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M2_libero_goal_task_00_state_21.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M2_libero_goal_task_07_state_30.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RETRY1_RAW_M1_libero_object_task_06_state_31.json",
+      "?? scripts/stage_z/build_stage_z_z2_v3_terminal.py"
+    ]
+  },
+  "authorization_source": "PR_139_PI_COMMENT_5404535968",
+  "claim_boundary": "Z2 establishes clean-reference/anchor feasibility bookkeeping only. It does not test cross-model physical OPEN susceptibility.",
+  "execution_counters": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "clean_anchor_telemetry_reads": 34200,
+    "clean_env_step_calls": 35220,
+    "clean_model_inference_calls": 15112,
+    "eval160_reads": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 102,
+    "vphys_reads": 0
+  },
+  "forbidden_execution_totals": {
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "pgd_calls": 0,
+    "physical_interventions": 0,
+    "protected_reads": 0,
+    "vphys_reads": 0
+  },
+  "gate": "STAGE_Z_Z2_CLEAN_REFERENCE_AND_ANCHOR_FREEZE_V1",
+  "matrix": {
+    "anchor_availability": {
+      "BOTH_ANCHORS_AVAILABLE": 58,
+      "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 10,
+      "NO_LEGAL_ANCHOR": 40
+    },
+    "covered_model_parent_cells": 108,
+    "expected_model_parent_cells": 108,
+    "identity_exposure": "34/36",
+    "model_parent_exposure": "102/108",
+    "model_summary": {
+      "M0_OPENVLA": {
+        "abstain_no_legal_anchor": 4,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 32,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 2,
+          "NO_LEGAL_ANCHOR": 2
+        },
+        "model_parent_cells": 36,
+        "pass_both_anchors": 32,
+        "scientific_parent_exposed": 34
+      },
+      "M1_OPENVLA_OFT": {
+        "abstain_no_legal_anchor": 10,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 26,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 8,
+          "NO_LEGAL_ANCHOR": 2
+        },
+        "model_parent_cells": 36,
+        "pass_both_anchors": 26,
+        "scientific_parent_exposed": 34
+      },
+      "M2_PI05_LIBERO": {
+        "abstain_no_legal_anchor": 36,
+        "anchor_availability": {
+          "NO_LEGAL_ANCHOR": 36
+        },
+        "model_parent_cells": 36,
+        "pass_both_anchors": 0,
+        "scientific_parent_exposed": 34
+      }
+    },
+    "status_counts": {
+      "ABSTAIN_Z2_NO_LEGAL_ANCHOR": 50,
+      "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 58
+    },
+    "suite_summary": {
+      "libero_10": {
+        "abstain_no_legal_anchor": 12,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 18,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 2,
+          "NO_LEGAL_ANCHOR": 10
+        },
+        "model_parent_cells": 30,
+        "pass_both_anchors": 18,
+        "scientific_parent_exposed": 30
+      },
+      "libero_goal": {
+        "abstain_no_legal_anchor": 12,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 6,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 2,
+          "NO_LEGAL_ANCHOR": 10
+        },
+        "model_parent_cells": 18,
+        "pass_both_anchors": 6,
+        "scientific_parent_exposed": 12
+      },
+      "libero_object": {
+        "abstain_no_legal_anchor": 15,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 15,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 5,
+          "NO_LEGAL_ANCHOR": 10
+        },
+        "model_parent_cells": 30,
+        "pass_both_anchors": 15,
+        "scientific_parent_exposed": 30
+      },
+      "libero_spatial": {
+        "abstain_no_legal_anchor": 11,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 19,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 1,
+          "NO_LEGAL_ANCHOR": 10
+        },
+        "model_parent_cells": 30,
+        "pass_both_anchors": 19,
+        "scientific_parent_exposed": 30
+      }
+    }
+  },
+  "next_legal_action": "STOP_FOR_PI",
+  "schema": "STAGE_Z_Z2_TERMINAL_SYNTHESIS_V2",
+  "scientific_interpretation": {
+    "clean_anchor_abstentions_are_scientific_negatives": false,
+    "cross_model_physical_mechanism_tested": false,
+    "cross_model_visual_pgd_tested": false,
+    "z1_runtime_action_interface_portability": "prior Z1 engineering result remains separate and accepted"
+  },
+  "status": "STAGE_Z_Z2_CLEAN_REFERENCE_AND_ANCHOR_FREEZE_COMPLETE_STOP_FOR_PI",
+  "z3_authorized": false
+}

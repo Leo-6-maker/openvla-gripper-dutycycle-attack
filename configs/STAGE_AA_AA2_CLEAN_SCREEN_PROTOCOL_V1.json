@@ -1,0 +1,128 @@
+{
+  "anchor_selection": {
+    "critical": "minimum hash rank among eligible clean established-grasp candidates",
+    "noncritical": "minimum hash rank among separate pre-contact candidates",
+    "noncritical_affects_primary_denominator": false,
+    "outcome_blind": true,
+    "rank_inputs": "fixed salt|model_family|canonical_parent_key|step"
+  },
+  "attack_or_pgd_allowed": false,
+  "authorization_pi_comment_id": 5419855172,
+  "clean_eligibility": {
+    "carry_relative_distance_max_m": 0.04,
+    "clean_stable_continuation_steps": 20,
+    "complete_trajectory": true,
+    "gripper_contact_true_for_window": true,
+    "lift_delta_min_m": 0.015,
+    "minimum_remaining_horizon_steps": 20,
+    "natural_release_in_continuation": "INELIGIBLE_NOT_PHYSICAL_FAILURE",
+    "object_eef_distance_max_m": 0.12,
+    "object_identity_and_baseline_valid": true,
+    "object_support_contact_false_for_window": true,
+    "stable_grasp_window_steps": 3,
+    "telemetry_valid_for_eligibility_window": true
+  },
+  "clean_only": true,
+  "denominator_freeze": {
+    "common_set": "E_M0 intersection E_M1 intersection E_M2",
+    "if_common_n_24_to_31": "use all common eligible parents",
+    "if_common_n_at_least_32": "minimum sha256(COMMON_PARENT_SALT|canonical_parent_key), select exactly 32",
+    "if_common_n_below_24": "STAGE_AA_AA2_CAPACITY_LIMIT_STOP_FOR_PI",
+    "model_specific_sets": [
+      "E_M0",
+      "E_M1",
+      "E_M2"
+    ],
+    "selection_inputs": [
+      "canonical_parent_key",
+      "clean eligibility only",
+      "STAGE_AA_AA2_COMMON_PARENT_SELECTION_V1_20260826"
+    ]
+  },
+  "env_step_allowed": true,
+  "gate": "STAGE_AA_AA2_CLEAN_ONLY_FULL_CENSUS_AND_COMMON_DENOMINATOR_FREEZE_V1",
+  "literal_salts": {
+    "clean_seed": "STAGE_AA_AA2_CLEAN_SCREEN_SEED_V1_20260826",
+    "common_parent_selection": "STAGE_AA_AA2_COMMON_PARENT_SELECTION_V1_20260826",
+    "critical_anchor": "STAGE_AA_AA2_CRITICAL_ANCHOR_V1_20260826",
+    "noncritical_anchor": "STAGE_AA_AA2_NONCRITICAL_ANCHOR_V1_20260826"
+  },
+  "model_inference_allowed": true,
+  "next_legal_action": "STOP_FOR_PI_AFTER_FULL_CENSUS",
+  "open_intervention_allowed": false,
+  "population": {
+    "aa1_canaries_excluded": [
+      "libero_10/task_04/state_20",
+      "libero_object/task_02/state_42",
+      "libero_spatial/task_05/state_34"
+    ],
+    "analysis_pool_count": 108,
+    "full_census_required": true,
+    "model_families": [
+      "M0_OPENVLA",
+      "M1_OPENVLA_OFT",
+      "M2_PI05_LIBERO"
+    ],
+    "model_parent_cell_count": 324,
+    "replacement_or_top_up": false,
+    "suites": [
+      "libero_10",
+      "libero_object",
+      "libero_spatial"
+    ]
+  },
+  "protected_or_eval160_allowed": false,
+  "schema": "STAGE_AA_AA2_CLEAN_SCREEN_PROTOCOL_V1",
+  "scientific_firewall": {
+    "aa_v_phys_reads": 0,
+    "attacked_env_steps": 0,
+    "bridge_f1_reads": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "paper_promotion": false,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "stage_z_v_phys_reads": 0,
+    "task_success_reads": 0
+  },
+  "source_bindings": {
+    "aa0_capacity": {
+      "bytes": 81848,
+      "path": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+      "sha256": "19679c6878a35c6e13bb46d2c1078d7d96a864a90525f542b6dedb62782fbbf5"
+    },
+    "aa0_protocol": {
+      "bytes": 11817,
+      "path": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+      "sha256": "b795a796a81d76173e0cfce148ee768cdd9dc90dbd6d69d541d1e40a04c51d16"
+    },
+    "aa1r1_root": {
+      "bytes": 4642,
+      "path": "reports/STAGE_AA_AA1R1_ROOT_SEAL_V1.json",
+      "sha256": "df867e763df4a68477704c517689104aa576278b7473d6c38f856af6cd8aba33"
+    },
+    "runtime_source_authority": {
+      "path": "reports/STAGE_AA_AA2_RUNTIME_SOURCE_AUTHORITY_V1.json"
+    },
+    "z1_runtime_protocol": {
+      "bytes": 7795,
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"
+    }
+  },
+  "stage_z_identity_reuse_allowed": false,
+  "status": "STAGE_AA_AA2_CLEAN_SCREEN_PROTOCOL_AUTHORIZED_PRE_EXPOSURE",
+  "technical_retry": {
+    "allowed_causes": [
+      "OOM",
+      "allocator",
+      "process crash",
+      "simulator exception",
+      "telemetry corruption",
+      "checkpoint materialization failure"
+    ],
+    "maximum_retries_per_model_parent_seed": 1,
+    "same_model_parent_seed_required": true,
+    "scientific_ineligibility_may_not_trigger_retry": true
+  }
+}

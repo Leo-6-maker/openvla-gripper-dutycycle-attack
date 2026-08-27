@@ -1,0 +1,411 @@
+{
+  "authorization_pi_comment_id": 5413730571,
+  "coverage": {
+    "branch_cells": 0,
+    "branch_count": 0,
+    "complete_engineering_point_cells": 0,
+    "expected_branches_if_legal": 45,
+    "expected_cells": 9,
+    "latest_v3_cells": 9,
+    "legal_critical_anchor_cells": 0,
+    "legal_noncritical_anchor_cells": 1
+  },
+  "gate": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_V1",
+  "historical_receipts_retained": [
+    {
+      "bytes": 2510,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_M0_libero_10_task_04_state_20.json",
+      "sha256": "bc66619c1ed9ac004a786a72091fd7bc1a9ab90af9b4999028734b990052de31"
+    },
+    {
+      "bytes": 2519,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_M0_OPENVLA_m0_object.json",
+      "sha256": "0c95dd4163f60fbf7148b8414d4a333a23f37e80ffbada543ee6cd6a08ebee61"
+    },
+    {
+      "bytes": 2646,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_M0_OPENVLA_m0_spatial.json",
+      "sha256": "0d332704666d8523584807d4ce3cef5007d33933efbccb69bacb91252b07085e"
+    },
+    {
+      "bytes": 2662,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_M1_OPENVLA_OFT_m1_10.json",
+      "sha256": "c6d13a1af639efe87d6737b1ad4bdefb995f2e7316dc625b32fbfdbf88186f91"
+    },
+    {
+      "bytes": 2581,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_M1_OPENVLA_OFT_m1_object.json",
+      "sha256": "b1b761b454bb235c8f1fd1e2a0f78a44f85c19149e0f8bf70697a5fe266e0f10"
+    },
+    {
+      "bytes": 2700,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_M1_OPENVLA_OFT_m1_spatial.json",
+      "sha256": "fa315932d28ade58ef0125c851bfed42d61db588525722fe6ec2ba4e46ad605c"
+    },
+    {
+      "bytes": 2033,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_M2_PI05_LIBERO_m2_10.json",
+      "sha256": "84648b8dd6d8dde0cb98eb3cf6b9d07023a8440760b726ec867d48f96ae47178"
+    },
+    {
+      "bytes": 2041,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_M2_PI05_LIBERO_m2_object.json",
+      "sha256": "3fa876bc53837afe9261d80dab1e71e3e43e148e7027410eb4f1cd640a3d1fe8"
+    },
+    {
+      "bytes": 427,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_M2_PI05_LIBERO_m2_spatial.json",
+      "sha256": "a643c2780d58060ed14fbeb4e1ea73bc6dcf2fe385985ed2e51ddec9e0b465bf"
+    },
+    {
+      "bytes": 2046,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_M2_PI05_LIBERO_m2_spatial_RETRY_V2.json",
+      "sha256": "c6de04f7c31acd9593b1d381c177e7b90c937694565f77be8d737e127bb7478c"
+    },
+    {
+      "bytes": 2620,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M0_libero_10.json",
+      "sha256": "ce8d0924e4ce585e6b1b81d6f5651c7c806bfd1aeca3fe4834bdc80fcffaeccb"
+    },
+    {
+      "bytes": 3299,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M0_object.json",
+      "sha256": "bd628ed0a54d3f2bb196df308886085e9fd484fdaac9b2202b5997093b6d7c0c"
+    },
+    {
+      "bytes": 2646,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M0_spatial.json",
+      "sha256": "f417bb8a34bb761e700fcf1c5a298610b5476719300f9918c0615573217e7a06"
+    },
+    {
+      "bytes": 2663,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M1_10.json",
+      "sha256": "f73292cd1f582b9a84e7a6f15e438574d8669435132475a2651f615a3219cbe9"
+    },
+    {
+      "bytes": 2692,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M1_object.json",
+      "sha256": "25c5636416d78cb706eaabd61b08f6c5cc24430b96eaee29e6077ae1b84c4dc8"
+    },
+    {
+      "bytes": 2701,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M1_spatial.json",
+      "sha256": "7a0a53e8c3088d546cc9fa95b01dc5a2b557ad2cadd232d2cba4d50e25ea1d3e"
+    },
+    {
+      "bytes": 2033,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M2_10.json",
+      "sha256": "c71a7550ffc8ba0a4826534d1f1d210a2fb87605423bb9518c9eef74a2eec63b"
+    },
+    {
+      "bytes": 2042,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M2_object.json",
+      "sha256": "a8601491b888bd9802a58bb8a52cf45b75a2ec954a65be190395a48d29ae61dc"
+    },
+    {
+      "bytes": 2046,
+      "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M2_spatial.json",
+      "sha256": "64564d5ab380f3be5f3628e60d470e8b84c4a6268a7b6936dfc02d992a0829ee"
+    }
+  ],
+  "latest_v3_cells": [
+    {
+      "artifact": {
+        "bytes": 2620,
+        "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M0_libero_10.json",
+        "sha256": "ce8d0924e4ce585e6b1b81d6f5651c7c806bfd1aeca3fe4834bdc80fcffaeccb"
+      },
+      "branch_count": 0,
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "model_family": "M0_OPENVLA",
+      "runtime_counters": {
+        "aa2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 520,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 520,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "selected_anchors": {
+        "critical": null,
+        "noncritical": null
+      },
+      "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT"
+    },
+    {
+      "artifact": {
+        "bytes": 3299,
+        "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M0_object.json",
+        "sha256": "bd628ed0a54d3f2bb196df308886085e9fd484fdaac9b2202b5997093b6d7c0c"
+      },
+      "branch_count": 0,
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "model_family": "M0_OPENVLA",
+      "runtime_counters": {
+        "aa2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 280,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 280,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "selected_anchors": {
+        "critical": null,
+        "noncritical": {
+          "anchor_class": "NONCRITICAL",
+          "baseline_z": 0.07270544927976626,
+          "boundary": "FRESH_PER_STEP",
+          "candidate_digest": "6dc7e35d15f68ff5dbc32e147f4eb098c9666b38fbb2f9c913b3ac90e215b054",
+          "selection_rank_sha256": "1afb0c6db65777425f5229b772a344e627161cf0671e64d1a476e5d295feb0dc",
+          "step": 255
+        }
+      },
+      "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT"
+    },
+    {
+      "artifact": {
+        "bytes": 2646,
+        "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M0_spatial.json",
+        "sha256": "f417bb8a34bb761e700fcf1c5a298610b5476719300f9918c0615573217e7a06"
+      },
+      "branch_count": 0,
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "model_family": "M0_OPENVLA",
+      "runtime_counters": {
+        "aa2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 220,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 220,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "selected_anchors": {
+        "critical": null,
+        "noncritical": null
+      },
+      "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT"
+    },
+    {
+      "artifact": {
+        "bytes": 2663,
+        "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M1_10.json",
+        "sha256": "f73292cd1f582b9a84e7a6f15e438574d8669435132475a2651f615a3219cbe9"
+      },
+      "branch_count": 0,
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "model_family": "M1_OPENVLA_OFT",
+      "runtime_counters": {
+        "aa2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 65,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 520,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "selected_anchors": {
+        "critical": null,
+        "noncritical": null
+      },
+      "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT"
+    },
+    {
+      "artifact": {
+        "bytes": 2692,
+        "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M1_object.json",
+        "sha256": "25c5636416d78cb706eaabd61b08f6c5cc24430b96eaee29e6077ae1b84c4dc8"
+      },
+      "branch_count": 0,
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "model_family": "M1_OPENVLA_OFT",
+      "runtime_counters": {
+        "aa2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 35,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 280,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "selected_anchors": {
+        "critical": null,
+        "noncritical": null
+      },
+      "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT"
+    },
+    {
+      "artifact": {
+        "bytes": 2701,
+        "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M1_spatial.json",
+        "sha256": "7a0a53e8c3088d546cc9fa95b01dc5a2b557ad2cadd232d2cba4d50e25ea1d3e"
+      },
+      "branch_count": 0,
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "model_family": "M1_OPENVLA_OFT",
+      "runtime_counters": {
+        "aa2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 28,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 220,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "selected_anchors": {
+        "critical": null,
+        "noncritical": null
+      },
+      "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT"
+    },
+    {
+      "artifact": {
+        "bytes": 2033,
+        "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M2_10.json",
+        "sha256": "c71a7550ffc8ba0a4826534d1f1d210a2fb87605423bb9518c9eef74a2eec63b"
+      },
+      "branch_count": 0,
+      "canonical_parent_key": "libero_10/task_04/state_20",
+      "model_family": "M2_PI05_LIBERO",
+      "runtime_counters": {
+        "aa2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 104,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 520,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "selected_anchors": {
+        "critical": null,
+        "noncritical": null
+      },
+      "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT"
+    },
+    {
+      "artifact": {
+        "bytes": 2042,
+        "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M2_object.json",
+        "sha256": "a8601491b888bd9802a58bb8a52cf45b75a2ec954a65be190395a48d29ae61dc"
+      },
+      "branch_count": 0,
+      "canonical_parent_key": "libero_object/task_02/state_42",
+      "model_family": "M2_PI05_LIBERO",
+      "runtime_counters": {
+        "aa2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 56,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 280,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "selected_anchors": {
+        "critical": null,
+        "noncritical": null
+      },
+      "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT"
+    },
+    {
+      "artifact": {
+        "bytes": 2046,
+        "path": "reports/server_evidence/STAGE_AA_AA1/AA1_REPAIR_V3_M2_spatial.json",
+        "sha256": "64564d5ab380f3be5f3628e60d470e8b84c4a6268a7b6936dfc02d992a0829ee"
+      },
+      "branch_count": 0,
+      "canonical_parent_key": "libero_spatial/task_05/state_34",
+      "model_family": "M2_PI05_LIBERO",
+      "runtime_counters": {
+        "aa2_exposure": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "env_step_calls": 230,
+        "eval160_reads": 0,
+        "model_inference_calls": 44,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_telemetry_reads": 220,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 0,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "selected_anchors": {
+        "critical": null,
+        "noncritical": null
+      },
+      "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT"
+    }
+  ],
+  "next_legal_action": "STOP_FOR_PI",
+  "runtime_totals": {
+    "env_step_calls": 3150,
+    "model_inference_calls": 1352,
+    "physical_telemetry_reads": 3060
+  },
+  "schema": "STAGE_AA_AA1_ENGINEERING_CANARY_RECEIPT_INDEX_V1",
+  "scientific_firewall": {
+    "aa2_scientific_candidates_exposed": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "paper_promotion": false,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "stage_z_identity_exposure": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "source_authority": "reports/STAGE_AA_AA1_RUNTIME_SOURCE_AUTHORITY_V3.json",
+  "status": "STAGE_AA_AA1_ENGINEERING_CANARY_RECEIPT_INDEX_FROZEN"
+}

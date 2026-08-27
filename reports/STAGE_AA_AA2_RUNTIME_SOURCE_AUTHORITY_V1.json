@@ -1,0 +1,93 @@
+{
+  "authorization_pi_comment_id": 5419855172,
+  "claim_boundary": "AA2 clean-only eligibility census and denominator diagnostics; no treatment or endpoint result",
+  "gate": "STAGE_AA_AA2_CLEAN_ONLY_FULL_CENSUS_AND_COMMON_DENOMINATOR_FREEZE_V1",
+  "git_binding": {
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "commit": "c3fbd9470d76af9eb975e803dba4e0c882fdb417",
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "tree": "b2b3d433f5433311c42a1451b3f5978f82506008"
+  },
+  "next_legal_action": "Execute only the 324-cell AA2 clean-only launch manifest",
+  "parent_authorities": {
+    "aa0_capacity": {
+      "bytes": 81848,
+      "path": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+      "sha256": "19679c6878a35c6e13bb46d2c1078d7d96a864a90525f542b6dedb62782fbbf5"
+    },
+    "aa0_protocol": {
+      "bytes": 11817,
+      "path": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+      "sha256": "b795a796a81d76173e0cfce148ee768cdd9dc90dbd6d69d541d1e40a04c51d16"
+    },
+    "aa1r1_root": {
+      "bytes": 4642,
+      "path": "reports/STAGE_AA_AA1R1_ROOT_SEAL_V1.json",
+      "sha256": "df867e763df4a68477704c517689104aa576278b7473d6c38f856af6cd8aba33"
+    },
+    "aa2_protocol": {
+      "bytes": 4454,
+      "path": "configs/STAGE_AA_AA2_CLEAN_SCREEN_PROTOCOL_V1.json",
+      "sha256": "89ba4b9c93a4fca65fc2e5005414e34fa2fe7e02360bb96eef67399239c245a2"
+    },
+    "z1_runtime_protocol": {
+      "bytes": 7795,
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"
+    }
+  },
+  "runtime_files": [
+    {
+      "bytes": 22255,
+      "path": "scripts/stage_aa/run_stage_aa2_clean_screen.py",
+      "sha256": "4fcc246d0ab1de834b8843e46d1649cb3b36b5aa5588ebc344a140d1d90d86c1"
+    },
+    {
+      "bytes": 30378,
+      "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
+      "sha256": "2d3a3dc4ae9729ef70730be6c13a42d68a8fe6930cd95c3f914b1273a7c6db94"
+    },
+    {
+      "bytes": 31442,
+      "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+      "sha256": "16a9b4c655238cf02b4d1a0c7c5ebe30fe5fbd79bdaa1290691de6d7a6933d00"
+    },
+    {
+      "bytes": 18122,
+      "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+      "sha256": "52e2d393018e13f95cabf12d47bae41246733710e7505680c1ef533517b32240"
+    },
+    {
+      "bytes": 7777,
+      "path": "src/stage_z_preparation/action_semantics.py",
+      "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c"
+    },
+    {
+      "bytes": 7795,
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"
+    }
+  ],
+  "schema": "STAGE_AA_AA2_RUNTIME_SOURCE_AUTHORITY_V1",
+  "scientific_firewall": {
+    "aa_v_phys_reads": 0,
+    "attacked_env_steps": 0,
+    "bridge_f1_reads": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "paper_promotion": false,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "stage_z_v_phys_reads": 0,
+    "task_success_reads": 0
+  },
+  "server_runtime": {
+    "common_libero_authority": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+    "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "foreign_process_policy": "record and preserve; never terminate or alter",
+    "gpu_admission": "free_memory_mib > 20480 immediately before every launch",
+    "one_worker_per_gpu": true,
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python"
+  },
+  "status": "STAGE_AA_AA2_RUNTIME_SOURCE_AUTHORITY_FROZEN"
+}

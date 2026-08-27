@@ -1,0 +1,62 @@
+{
+  "schema": "STAGE_Z_Z1R2_M1_ENTRYPOINT_AND_IMPORT_STATIC_SMOKE_V1",
+  "status": "STAGE_Z_Z1R2_M1_ENTRYPOINT_AND_IMPORT_STATIC_PASS",
+  "gate": "STAGE_Z_Z1R2_ENTRYPOINT_RECOVERY_AND_FULL_RUNTIME_QUALIFICATION",
+  "claim_boundary": "CPU-only import smoke; no model/checkpoint construction, GPU, simulator, env.step, scientific identity, attack, physical outcome, Eval160, or protected read.",
+  "source_authority": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "commit": "b505a5ce3dad2749c9674252eefb644741c85458",
+    "tree": "5e403f027b48e1d9ab6bb073a0d99be141359d3d",
+    "runner_path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+    "runner_git_blob": "8e18236f8108b93ebb030cd7421a001eb4ecc938",
+    "launcher_path": "scripts/stage_z/launch_stage_z_z1_runtime.py",
+    "launcher_git_blob": "6b14b3fa933660977451cc808a3d68ba06689723",
+    "smoke_path": "scripts/stage_z/smoke_stage_z_z1r2_m1_import.py",
+    "smoke_git_blob": "0f02de48e4368dbd786d8cec36a08f9ca5743e4c",
+    "protocol": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V2.json",
+    "preflight_path": "scripts/stage_z/audit_stage_z_z1_pre_gpu.py",
+    "preflight_git_blob": "414acc538ee2d43d25460ea89a36677f899a4a9d"
+  },
+  "environment": {
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "cuda_visible_devices": "",
+    "runtime_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime",
+    "runtime_src": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/src",
+    "working_directory": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime",
+    "pythonpath_contract": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/src prepended by launcher",
+    "oft_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+    "oft_commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+    "oft_tree": "0ae110ee28943b9e46feffad84429d2d6e026a32"
+  },
+  "command": {
+    "entrypoint": "scripts/stage_z/smoke_stage_z_z1r2_m1_import.py",
+    "arguments": "--runtime-root /mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime --oft-root /mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+    "launcher_contract": "configure_runtime_environment sets cwd, prepends runtime src to PYTHONPATH/sys.path, then imports the exact frozen OFT modules"
+  },
+  "module_imports": {
+    "process_action_module": "experiments.robot.libero.run_libero_eval",
+    "process_action_path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823/experiments/robot/libero/run_libero_eval.py",
+    "get_vla_action_module": "experiments.robot.openvla_utils",
+    "get_vla_action_path": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823/experiments/robot/openvla_utils.py",
+    "optional_shims_installed_before_official_import": true
+  },
+  "execution": {
+    "exit_code": 0,
+    "stdout_log_remote": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/reports/logs/STAGE_Z_Z1R2_M1_ENTRYPOINT_AND_IMPORT_STATIC_SMOKE.stdout.log",
+    "stdout_log": "reports/server_evidence/STAGE_Z_Z1R2_M1_ENTRYPOINT_AND_IMPORT_STATIC_SMOKE.stdout.log",
+    "stdout_bytes": 1405,
+    "stdout_sha256": "1aff2d94f409c43106c9b056a9d62e2381f69733cccbe33cf6c77415290bbd21",
+    "stderr_log_remote": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/reports/logs/STAGE_Z_Z1R2_M1_ENTRYPOINT_AND_IMPORT_STATIC_SMOKE.stderr.log",
+    "stderr_log": "reports/server_evidence/STAGE_Z_Z1R2_M1_ENTRYPOINT_AND_IMPORT_STATIC_SMOKE.stderr.log",
+    "stderr_bytes": 3084,
+    "stderr_sha256": "13ad1450813b9c85abda65c57c012124a54b68a66a722e2ca8f3981e642670de",
+    "model_construction": false,
+    "checkpoint_reads": 0,
+    "simulator_creation": false,
+    "env_step": 0,
+    "scientific_parent_exposure": 0,
+    "protected_reads": 0
+  },
+  "append_only": true,
+  "timestamp_utc": "2026-08-24T17:38:15Z"
+}

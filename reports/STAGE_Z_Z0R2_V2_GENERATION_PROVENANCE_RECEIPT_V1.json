@@ -1,0 +1,81 @@
+{
+  "schema": "STAGE_Z_Z0R2_V2_GENERATION_PROVENANCE_RECEIPT_V1",
+  "status": "STAGE_Z_Z0R2_V2_GENERATION_PROVENANCE_RECEIPT_PASS",
+  "gate": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_RECOVERY_AND_COMMON_LIBERO_CLOSURE",
+  "source_repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+  "pre_generation_authority": {
+    "head_commit": "c3862d3d88ce2dcf65d51ec16b03b1a093f10b52",
+    "head_tree": "10b8e13f3c44e3d735902d4d56c6d1c23370ad66",
+    "statement": "root.git_binding is the clean canonical authority/source snapshot from which the V2 closure working tree began; it does not claim that V2 generated files already existed in that tree"
+  },
+  "closure_commit": {
+    "commit": "247fe953f0b3c82336c0943aa00320743666675f",
+    "tree": "a89f46e6bd89f5a496827ff1b298a5775cd37c6f",
+    "purpose": "append-only V2 closure artifacts and final V2 builder"
+  },
+  "final_pr_head": {
+    "commit": "94d276d59cc07c92e96b2a63d2c50287ba508601",
+    "tree": "3c8289afbae45aad8402e1f3609615fc3c5df927",
+    "pr": 139,
+    "state": "OPEN_DRAFT_MERGEABLE"
+  },
+  "root": {
+    "path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V2.json",
+    "git_blob": "688d7c2d1f2d66e81a41911230aea1f446cdef83",
+    "sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d",
+    "status": "STAGE_Z_Z0R2_THREE_MODEL_AUTHORITY_CLOSURE_PASS",
+    "root_git_binding": {
+      "head_commit": "c3862d3d88ce2dcf65d51ec16b03b1a093f10b52",
+      "head_tree": "10b8e13f3c44e3d735902d4d56c6d1c23370ad66"
+    }
+  },
+  "root_sidecar": {
+    "path": "reports/STAGE_Z_Z0R2_ROOT_SEAL_V2.sha256",
+    "git_blob": "e557407021363d9e32ac56eaa0a7185bf0f7e395",
+    "file_sha256": "5878934d3a41cefeb9f936dfa89d657a826920a75daf30904d71a9fdcd45c2b6",
+    "sealed_root_sha256": "e6e3db5a9f5e7641d2c09c0b0ca225ca99763494430cdda22830edab1853053d"
+  },
+  "artifact_manifest": {
+    "path": "reports/STAGE_Z_Z0R2_ARTIFACT_MANIFEST_V2.json",
+    "git_blob": "e6497f915b7800303e23127fbabb1ec5611e731d",
+    "sha256": "4b4267d757ed5d59fc85286c9094bc03bdb04f00ef5d03c570f00786e5eb1640"
+  },
+  "generator": {
+    "path": "scripts/stage_z/build_stage_z_z0r2.py",
+    "git_blob": "c7642ca2d7f3512ee55c590ec58e92cdc1a7f4e6",
+    "sha256": "ab2c0d59dd58bc633781ed428069e00f60e7de53d81fab17262807ca1935eaf2",
+    "binding_commit": "247fe953f0b3c82336c0943aa00320743666675f"
+  },
+  "history": {
+    "first_attempt": "A write of PASS into historical Z0R2 *_V1 authority paths was rejected by CODE-R1 immutable-path audit.",
+    "classification": "ENGINEERING_PROVENANCE_ONLY",
+    "reverted": true,
+    "historical_v1_bytes_preserved": true,
+    "scientific_exposure_from_first_attempt": 0,
+    "final_namespace": "append-only V2"
+  },
+  "authority_checks": {
+    "code_r1_status": "CODE_R1_AUTHORITY_FIREWALL_PASS",
+    "code_r1_entries": 88,
+    "final_v1_immutable_paths_unchanged": true,
+    "paper_v2_export_check": "PAPER_V2_EXPORT_CHECK_PASS",
+    "final_ci": "ALL_REQUIRED_WORKFLOWS_PASS"
+  },
+  "counters": {
+    "gpu_workers": 0,
+    "model_inference": 0,
+    "simulator": 0,
+    "env_step": 0,
+    "physical_intervention": 0,
+    "attacked_env_steps": 0,
+    "pgd_calls": 0,
+    "v_phys": 0,
+    "attack_outcome_reads": 0,
+    "eval160": 0,
+    "protected_reads": 0,
+    "stage_z_scientific_parent_exposure": 0
+  },
+  "claim_boundary": "Z0R2 authority/provenance closure only; no cross-model scientific result, physical replication claim, or Paper V2 promotion",
+  "next_legal_action": "STAGE_Z_Z1_MULTI_MODEL_RUNTIME_CANARY_QUALIFICATION_V1",
+  "z1_prerequisite": "This receipt must be committed and independently verified before the first GPU/model call."
+}

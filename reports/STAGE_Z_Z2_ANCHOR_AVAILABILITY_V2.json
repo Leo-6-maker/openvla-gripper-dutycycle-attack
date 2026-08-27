@@ -1,0 +1,2349 @@
+{
+  "authority": {
+    "anchor_selector": {
+      "bytes": 3441,
+      "path": "src/stage_z_preparation/anchors.py",
+      "sha256": "1ae9bb576861ae4598b41e4091f34c67c9e03f4f91c8e3b5604d3ba95289512a"
+    },
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "historical_static_audit_status": "STAGE_Z_Z2_SOURCE_AND_ANCHOR_STATIC_PASS_WITH_LEGACY_RECONCILIATION_REQUIRED",
+    "legacy_reconciliation": {
+      "bytes": 79262,
+      "path": "reports/STAGE_Z_Z2_LEGACY_RECEIPT_RECONCILIATION_V1.json",
+      "sha256": "901d0488b9a6975f0e4f05b4dbd397efc8c82a1e5b7d5da771b7cb7e590e403c"
+    },
+    "panel": {
+      "bytes": 19254,
+      "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+      "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+    },
+    "protocol_v2": {
+      "bytes": 8423,
+      "path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V2.json",
+      "sha256": "6569d6227731001b18b0b42cdd9a2c1672c525964c64da66824faebec28dd7ef"
+    },
+    "protocol_v3": {
+      "bytes": 3216,
+      "path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V3.json",
+      "sha256": "9cce2445906d5701a322c719b1d13437c9461985027c4faf632b7d1c10a9586b"
+    },
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "runner": {
+      "bytes": 21370,
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "sha256": "78cabdd0ddd7f836e5936a88396f1623d5f1f86b3eb379e36405fa73122fe918"
+    },
+    "source_head_before_terminal_seal": "836bdb81677678bf74e1c010df3efa3250415c95",
+    "source_tree_before_terminal_seal": "8f73ec92295309278036dd76ad51b7643f515e5d",
+    "static_audit_v2": {
+      "bytes": 2677,
+      "path": "reports/STAGE_Z_Z2A_STATIC_AUDIT_V2.json",
+      "sha256": "acc76d18cad93d6eeeebc62c2483fc0558a8fa3669a900418d319f8cc3c79caa"
+    },
+    "static_audit_v3": {
+      "bytes": 1336,
+      "path": "reports/STAGE_Z_Z2A_V3_STATIC_AUDIT.json",
+      "sha256": "927d5695b6d9d2345f06bda98890dc2801e099c9b07090ad8146ec32c83f1903"
+    },
+    "v3_static_audit_status": "STAGE_Z_Z2_SOURCE_AND_ANCHOR_STATIC_PASS_V3",
+    "working_tree_status_at_generation": [
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_goal_task_00_state_21.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_goal_task_07_state_30.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_object_task_06_state_31.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M0_libero_object_task_07_state_45.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_goal_task_00_state_21.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_goal_task_07_state_30.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_object_task_06_state_31.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M1_libero_object_task_07_state_45.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M2_libero_goal_task_00_state_21.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RAW_M2_libero_goal_task_07_state_30.json",
+      "?? reports/server_evidence/STAGE_Z_Z2_V3_RETRY1_RAW_M1_libero_object_task_06_state_31.json",
+      "?? scripts/stage_z/build_stage_z_z2_v3_terminal.py"
+    ]
+  },
+  "claim_boundary": "Descriptive clean-anchor feasibility; abstention is not a scientific negative.",
+  "classification_definitions": {
+    "BOTH_ANCHORS_AVAILABLE": "critical anchor and noncritical control anchor are both selected",
+    "CRITICAL_ONLY_NONCRITICAL_CONTROL_MISSING": "critical anchor selected but no noncritical control anchor",
+    "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": "noncritical control selected but no critical anchor",
+    "NO_LEGAL_ANCHOR": "neither anchor is legally selected; includes pre-inference fixture ineligibility abstention"
+  },
+  "counts": {
+    "by_availability": {
+      "BOTH_ANCHORS_AVAILABLE": 58,
+      "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 10,
+      "NO_LEGAL_ANCHOR": 40
+    },
+    "by_model_family": {
+      "M0_OPENVLA": {
+        "abstain_no_legal_anchor": 4,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 32,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 2,
+          "NO_LEGAL_ANCHOR": 2
+        },
+        "model_parent_cells": 36,
+        "pass_both_anchors": 32,
+        "scientific_parent_exposed": 34
+      },
+      "M1_OPENVLA_OFT": {
+        "abstain_no_legal_anchor": 10,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 26,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 8,
+          "NO_LEGAL_ANCHOR": 2
+        },
+        "model_parent_cells": 36,
+        "pass_both_anchors": 26,
+        "scientific_parent_exposed": 34
+      },
+      "M2_PI05_LIBERO": {
+        "abstain_no_legal_anchor": 36,
+        "anchor_availability": {
+          "NO_LEGAL_ANCHOR": 36
+        },
+        "model_parent_cells": 36,
+        "pass_both_anchors": 0,
+        "scientific_parent_exposed": 34
+      }
+    },
+    "by_status": {
+      "ABSTAIN_Z2_NO_LEGAL_ANCHOR": 50,
+      "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS": 58
+    },
+    "by_suite": {
+      "libero_10": {
+        "abstain_no_legal_anchor": 12,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 18,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 2,
+          "NO_LEGAL_ANCHOR": 10
+        },
+        "model_parent_cells": 30,
+        "pass_both_anchors": 18,
+        "scientific_parent_exposed": 30
+      },
+      "libero_goal": {
+        "abstain_no_legal_anchor": 12,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 6,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 2,
+          "NO_LEGAL_ANCHOR": 10
+        },
+        "model_parent_cells": 18,
+        "pass_both_anchors": 6,
+        "scientific_parent_exposed": 12
+      },
+      "libero_object": {
+        "abstain_no_legal_anchor": 15,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 15,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 5,
+          "NO_LEGAL_ANCHOR": 10
+        },
+        "model_parent_cells": 30,
+        "pass_both_anchors": 15,
+        "scientific_parent_exposed": 30
+      },
+      "libero_spatial": {
+        "abstain_no_legal_anchor": 11,
+        "anchor_availability": {
+          "BOTH_ANCHORS_AVAILABLE": 19,
+          "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING": 1,
+          "NO_LEGAL_ANCHOR": 10
+        },
+        "model_parent_cells": 30,
+        "pass_both_anchors": 19,
+        "scientific_parent_exposed": 30
+      }
+    },
+    "model_parent_cells": 108
+  },
+  "entries": [
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "02c09b0e16f6ae36bc5a9a7c6ac8f2e92fe22a243c9cd5bcb733f0eaadd371e7",
+        "state_sha256": "aebded7017d95d1cad0ec32e8a8a7e312fe26c119c9eb318e599fe6c1747539b",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 115
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_10/task_00/state_33",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "01e0d54147b15abc3653e785bf1672e1aa531d80e5202a0a216e836fb6e252e1",
+        "state_sha256": "1ab80b120012d3c3c4dc37970ec8777af070d49f1b70a554e9db96726d3947fe",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 36
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "02715b50ed4e033dc942d7292f68ad68ee9a0a647131f8519dde9cfcd5a34dd1",
+        "state_sha256": "c597a0c51e8cf23248b3160c29a3658a1ff33c1857d9defd1f00791157d06093",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 260
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_10/task_01/state_35",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "05eceef922cf723e96973b79288b964274347a2bdf32c1617c37882a92f07c2d",
+        "state_sha256": "3546913e43497e0c1d10f2c1016a3013b2dd09b99a59f6ffbc867f5665a064d8",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 19
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_02/state_30",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "0ab32fcc6d3f172633fce847fb66308b2f8f96d6ce80e9f178755a13351474d0",
+        "state_sha256": "b1f607de4e84023161346b9c8cf07d7d0eb1c3dd11b1d8e8bfa24fef3e8fdadf",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 281
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_10/task_02/state_30",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "004a410f6f709bbe3e6a8b96dca18224aba62d8981594b9af8e6e5e95ca28efb",
+        "state_sha256": "c84de45968c6ec11494aa80b3a08b0a342f33370fcb5a68b93de1bf3b4f9b2f5",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 412
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_03/state_45",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "005933401b98e3766f6e9b4a2caa533bde3c49500273986b7fb6be3c82d0dbfc",
+        "state_sha256": "8257823a55921492de773a53f49e027866c62ed9c2636c6cc52bb21281cd7612",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 223
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_10/task_03/state_45",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "046a07bcf9e7c7999a7cb1e89387f359ed0320c4d172ee0332baa124746632dc",
+        "state_sha256": "cef445dc072b5305f63c920503b263b2b7162d41f41deca3fa2b53c73aa5fb75",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 3
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "090781a9aa500a08d8f970410f5e8e50129033399f007352d985179833f64969",
+        "state_sha256": "66dc47a17cf2f339b2dabf2ea811eb01180a74447dfc2126c9adf51364146b34",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 64
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_10/task_04/state_34",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "004185224b5b9247041c933bf9f74515a9d43baf5ba0c9f380f94746c34f9a70",
+        "state_sha256": "b7f5f8ad518a659d053dcf36b6f2c0eee10443f78f358412a6a80e4f8ac26817",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 365
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_05/state_21",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "00841b2b5c024884302607363c56d1f6914772576569cc69910f5209c8db95ad",
+        "state_sha256": "3d3a524fcfbf4d0a6cfbbad05b46c5336d35f1b49c2f18d2078743a25c7c4f00",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 157
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_10/task_05/state_21",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "00f0fd080b73db8914c142e28e9672ab228421435191ec8664e011cfd0607f81",
+        "state_sha256": "362a73526c1abcfe80db576e93e1a97e77cc376c8339f923c7e88e74ef1db290",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 28
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "00562102bf20247fd601bbb87a3590697519935c94671a76e9992a3223ec2225",
+        "state_sha256": "4183c268db5e84148b6d994c66fb519d35c1d9c249949c16ae7dbc934e5848bc",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 47
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_10/task_06/state_34",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0092864c865e7d016efba630a9098e15cd771ff5645aaac0dae1a25d7105de2a",
+        "state_sha256": "be66e9dcb458e96efce2b42c4caf958663cfb3adb2253548275b22060aeba64d",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 436
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_07/state_20",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "01763ee41c8bae34b324b1d930d13359b3630680b7d2a32188c37d9e3e8f8a12",
+        "state_sha256": "2cda48406218e77ee307fd9c0f0f5b1aac79cdb6b6528721b75196240ea34831",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 72
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_10/task_07/state_20",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "01def4006239c17e40c8b75f1101883cc00ca5e8dba45c2ab100911e98465e25",
+        "state_sha256": "45c3322b5c7cf9558b705ecd4662e13a64c7c61c091b64de82c97175d616c992",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 20
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING",
+      "canonical_parent_key": "libero_10/task_08/state_20",
+      "critical_anchor": null,
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_10/task_08/state_20",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "009e0cebf50cafe7a5d49d805ea9308fca483e4816803a9ff5cc2d4896529b44",
+        "state_sha256": "8d99c45d12c34e0a8e449e5f447938ecce3ee86138fd7309851a33530a68e90d",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 193
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_09/state_24",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "0006e3513dc1f2301e4cdad674d5859b034e3e9917b05bcbe50a6d13af18bb24",
+        "state_sha256": "0bca1a377bacea2e6934aa5d9eb2bd72842ccacdfe0fc8a6eda2405d5163637d",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 480
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_10/task_09/state_24",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "037e7191a4aa7fadf4d92735d8d5da1cbd3dbb288916ee3e5c87c064c5707810",
+        "state_sha256": "038e496ad58d22657e9f247a8e6972553e298481e9c6bb2577bff97df081ff18",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 39
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": "UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_goal/task_00/state_21",
+      "critical_anchor": null,
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_goal/task_00/state_21",
+      "noncritical_control": null,
+      "provenance": "V3_NEW_CLEAN_REFERENCE_EXECUTION",
+      "scientific_parent_exposure": 0,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "0551b9c1416d58e1865289163b5cc2a830c760517644aa4012a30747cd022c3d",
+        "state_sha256": "1cb6aafc6e87fd7966a82a63331a7c3413d8d0f169c1490fb8004e82d13d11c3",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 95
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_goal/task_02/state_34",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "026057826e3693bec9327968773f0311dc90e3686c2fd32e4c3b7bb4c3889608",
+        "state_sha256": "148e8d459601ee670fa809c57f0851fd169a5170861b3012b26aa9fabc718a60",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 9
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_goal/task_03/state_45",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "005a0f424bc62c1354f0fd4f287192c83a30fac4c90c39792890be3a8191e9fb",
+        "state_sha256": "e6fc3ccf7632378acf5f8c723e1ad5738824932f6af7bb7cb36b7f279c55fdcd",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 179
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_goal/task_03/state_45",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "00e01ce92525691a7fd2ce769f0339e08660843e0cb949f1163e6b4f6e4ee5a3",
+        "state_sha256": "7e1d65fb4217d12488918d5672f5ee49458e237bccaefd40866e0f4fd098ce55",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_goal/task_05/state_26",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "00b4ed16c640f0abc8ba491b3002bfe8e73fd97b03d54effd0a01643087bab7e",
+        "state_sha256": "e75b7a0c8781cd901fb7558c4ba928c0079750359a434d2552b2c7f35ad0f7d0",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 70
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_goal/task_05/state_26",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0622f98760725130a0ba197c7bd29959b215bc647aef5abdba983c9cf716abc4",
+        "state_sha256": "48de9a9d8a6063b027391b8935a2bb015c56cd0f48270d90eb6201f373b9883d",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 221
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": "UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_goal/task_07/state_30",
+      "critical_anchor": null,
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_goal/task_07/state_30",
+      "noncritical_control": null,
+      "provenance": "V3_NEW_CLEAN_REFERENCE_EXECUTION",
+      "scientific_parent_exposure": 0,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_goal/task_08/state_20",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "09d734c290050c9e196c43fab0b9a271b7b311a508a42d50e71e3a4fc4d53c5f",
+        "state_sha256": "3970eafcb6806452c1450378270624ee3ac850c0651c705c95327c34b6a738de",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 91
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_goal/task_08/state_20",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "018b9dabeb23919ae1bb4e4f29ef1f9deb7828f7d3f5dbb5f11de11894aca303",
+        "state_sha256": "21669d1d8694b12815c4586e41ac88910c6fca607106e10479f92a3f807a308e",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 174
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_00/state_22",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "03682d2a25d5a8422be74dd3f2fa2c7d18a5ed43d18dcd6ee1297b2dcdde4319",
+        "state_sha256": "e9577daef95937b1c266386c79ed2b686b9855d448d01817e42abfcb28ec0d84",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 73
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_object/task_00/state_22",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "002f4f09c3c14f3442b6b63bdeb4969c52ae8c981a5c05f4544100b28bad19cf",
+        "state_sha256": "60f1d9eadf887696a832326b343b2d72bdd0928c7b6985ecb26cbface9a33771",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 24
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_01/state_40",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "027141336f8e2a6791a22b48e267e3ebf62add4df8429de06716abf991ad961e",
+        "state_sha256": "1308934c5a8bf982c2ee79ab87ed649847c49ed8cb2056faf6c2463bafb3a853",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 46
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_object/task_01/state_40",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "032f71d73c9a44be5657764d088356d7ed0faf0fde4334452cf60ffca34bd1cd",
+        "state_sha256": "ab34fafb6ab1305744a57699afd6c85aa3c40ab0cc355fb753c0c563dc712094",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 5
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_02/state_26",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "020ce64763183543b745ae3436a44138a26fc382201f8f3cd377bd9bb516a4c9",
+        "state_sha256": "3fbce05bb77a4517697252dbd7eb2a6bcff2ccbc4ef108935f5fa1ad53ce6e89",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 49
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_object/task_02/state_26",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0063490452c782b55aee119cfeac2c23e7853a057b6e40d6cf4e6259a417ceab",
+        "state_sha256": "bd7377fc1c79fb9fdd7954e0607680c52ed40ad96fdd1182356be531ac5b94d6",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 225
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_03/state_29",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "01d711fb20d1f0447eef2afc12c1a5a277b6714823776dd259ccce87b6b1826c",
+        "state_sha256": "070cadd70ec89192e632d23b7f0eba7f222071a7160b3b11c762c3fbb7ef777c",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 117
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_object/task_03/state_29",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "003032bff508022fe28d86d4f4dd39390984b03b52999ec1687a2ce83557d285",
+        "state_sha256": "c7c9cea66c0a6d453cf7c6a1372133a4a16100be5a5a09744a0aeaff773965a7",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 33
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "002df316b163737edd7d6a48cc03a2815ca8628b6fa64441ceead42aa472a60e",
+        "state_sha256": "0cc9fcc73e87ca6108197de41d65882f0c42d3074370836a9e2cef3d8b88f105",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 153
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_object/task_04/state_35",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "036ff1069ecb72b99e991f948a25e083737aee8efb1c019caa4e6e47c5e35f6b",
+        "state_sha256": "bc0dd5663a06b4bc9593bb556699f4c1fc5175dd057871ee67c18bfafa298708",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 9
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_05/state_27",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "041205b23b231379a893b2531d762ce8d1dea7fc41406afb0c1cb7c7e1049705",
+        "state_sha256": "08041511c7cd4469cdada60b2726a7f9c1abfb2691ce27eaf506b503b5027a19",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 102
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_object/task_05/state_27",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "00d66c1a432f2a03411b449257952aade5076c6b73de98c05fe4ec7f9ed2d9ee",
+        "state_sha256": "a4ccf3d2f598f5410d40d4440926f28c0eeb661030c41aa525779e2cc3d1e18c",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 23
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_06/state_31",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "05cb5b6c6416d8f0877b034524b8c27b97d444058664f59aad89079b744e059b",
+        "state_sha256": "bfc1bcc46306415d44c12ebadae54a53463d0cc2002767aaf915ea8f1caee0af",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 170
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_object/task_06/state_31",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "01692d9f6713cd280b7b751ae21f973f22ebbf52f105875ed5b988c8b03620db",
+        "state_sha256": "7b1d48b7753b9adc4ece7a6d993e5041dc60c09d21f842b343b66a112d21abe4",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 241
+      },
+      "provenance": "V3_NEW_CLEAN_REFERENCE_EXECUTION",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_07/state_45",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "02d3c81e4255e5f6983822187e5380b93ad28f1afab35f0d068304f5a315985e",
+        "state_sha256": "ce19455b23f5ccd165360eb9d21efe19bc9ef6bdafa9445c7489146da20e9cc0",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 201
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_object/task_07/state_45",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "020a2294e4d2a16408857a3556f1a68f11b73441c02de06a6d098ba8bd6a8308",
+        "state_sha256": "ba023fb4e0dfcd4c96459070644df76ef2a611336b9ba7851a6cb9755dc6a9b1",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 24
+      },
+      "provenance": "V3_NEW_CLEAN_REFERENCE_EXECUTION",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_08/state_35",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "00c9104ce029b86ab7fd91e13ada89446ceed32a05b71979194af3b631bb88fc",
+        "state_sha256": "101e28bd2227f70dc25c696eecc9312fe5652b50bbeaee8e958b95ba89de0aa9",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 136
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_object/task_08/state_35",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0d6fb9f48e1bebf874d5608159347bc55c96970ea20358c3f3b49992f80b1b3d",
+        "state_sha256": "2ab8d2ce937fa4a0e3137192fe40374cd89c13fdf684ec9ec7694ca68ff4cfb1",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 26
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_09/state_23",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CARRY",
+        "rank_digest": "018441f955f96e9161731dcee1a91ebddf4115c09b049c4269e85258a6ea6e97",
+        "state_sha256": "d7dad495a2a013fbc20e718383403cd612ee2ddd01cdd960279912e781db675e",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 71
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_object/task_09/state_23",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0dd0ccef81aaf8d08902f5a551617499a4bc6c7e2cb07e1d9e9606f88a75f914",
+        "state_sha256": "5595626183ea8bc6fc4a5658af822d72f3d0f0eaa212803d0313a4be0027f59c",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 34
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_00/state_37",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "000935fa1be204fa5bac6055d1760ac2e0548fc3af6632cd9bc0a36c31aedc81",
+        "state_sha256": "ffaf2e27ab3ed00b7df062be617c3fdaf1155bd42e5b1e5dea69f3effc98e26e",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 159
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_spatial/task_00/state_37",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0b476fe3db7dceda793b9260e3b7c13c734032757ccf93ec40862ae9821fa107",
+        "state_sha256": "2c8df9094ca8be8d98f4ee52849d9507badf11b9f3bd2603a44734e3262ffdb3",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 19
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "01d1e05d1a3c1a2bc870146f3bc34138e72b98b33da0853fd23d1bfd13a44ead",
+        "state_sha256": "c5ca53e232e678cd7b2892f4f9cabb64bb09c16ff2bfe8ec59a2f3a7c1afb93c",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 94
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_spatial/task_01/state_38",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "001a64655b75d80d49b080dae87f1a8577f083373f4afa796e917d96fdc2985d",
+        "state_sha256": "397df31705284df1ea0164710be09e0d96561b12e4f3597aaa1b4a731f70dd03",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 179
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING",
+      "canonical_parent_key": "libero_spatial/task_02/state_40",
+      "critical_anchor": null,
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_spatial/task_02/state_40",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "001f4bc4663113b50d317197981d6dc754cde9e55d2b8b05037d7b0fe14e4d1c",
+        "state_sha256": "47cb0158150e05b6d600404feca2a5fae1cc6254dfa5bbcfec5e5cedc2ebeba2",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 29
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_03/state_33",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "0516b88ac23cb0c8867030e23d88d8e7a4ba9874722365833d4a5d005b77376e",
+        "state_sha256": "785913819ebc5004bb1ae8e4af299649979d2c47d7a0b91b84b2d4eb8446188c",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 138
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_spatial/task_03/state_33",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "006725cc68b8ae303f16d8eebe6717bcf8d5fcf97d050b9bf95610a8bccad90b",
+        "state_sha256": "924d21c64faa699511548e7d010a8d72373246dc32a6f0b7f48a2b26a2baad24",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 164
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_04/state_31",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "01635242634270658e362ddb22a87d8b966c1c877b36ef8e9c98d29064e4ef78",
+        "state_sha256": "96e55908f194ba023cc05c56bdfabc9828903f77fe2b3d74820f45186b9f3b7a",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 185
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_spatial/task_04/state_31",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "04c7e8789d36f821546e7589dfd7310b043ca34bc41c318e64de78ca4bd0b532",
+        "state_sha256": "e875d3929f13859e273beff6ba22f77a11c0b770a14acc29bf1ae466630dcbdc",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 23
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_05/state_23",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "01a9b5700cf45e54ebfc20819a37ce2d88851ca0f1ac540fcd744b734789ef53",
+        "state_sha256": "47a473c78c77c09e5c2537531b442b38df67d4044df2c56b2a21b19bcbaffcb1",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 87
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_spatial/task_05/state_23",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "009c1da4d570aabaddcb92186e12f4152990224e9e2e6238630810ed2a9dc875",
+        "state_sha256": "63140571f75916f891727d9ea96d4d3053c086f837f79b429162fd365e3cb110",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 180
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_06/state_27",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "006bdd6ed655877e997ea158dd3cb6c500b8c5657cc647df928c4fb6e2b5878f",
+        "state_sha256": "75e1419924858252f964633cba9aae529ea87165645cd96bb86cf543b556c7a0",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 176
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_spatial/task_06/state_27",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "028d2d55655b7fafee39e34a45c61523c3b3a4c7abd94b8cdccc59544b2de59a",
+        "state_sha256": "14303f7a7ea6ef9458f8e62c75fb94d198d808f1ddc84185bd9a94dd663445fd",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 32
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_07/state_28",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "047f5843c283f6e2cea36b365c8adbb73031b4d5699c71cbfda5a372e91e03f7",
+        "state_sha256": "dd3e6949281d217b69f0487790a44c0ba544a09d2c92bbd631dcf171496d4671",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 57
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_spatial/task_07/state_28",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "073c5abd43711b00bc609f54ba0834e77ded575fdb8a1ad4cd181a334427fc11",
+        "state_sha256": "04e5996eb5e0a43ee2b2b92ce0468427ffb8920a72567f01403001111f253fb8",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 22
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_08/state_32",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "04b32b4e720fe28e04c75f2f5285a3d4c840565048cc470c1a0725054a567674",
+        "state_sha256": "afbed1fd2121752a8496f217ef3ecac01e4834fbe7bff4ebe30059fde980444c",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 140
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_spatial/task_08/state_32",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "00b010cfd76442efd6314af1d1b560a3ab166482d273dd1ac6ac2a9186f0ab6b",
+        "state_sha256": "9af728130adf55317cb33d1c5838770fcbfd66af96fd1ba47a994b044abffdb3",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 66
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_09/state_21",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "00bf593dcc9c086f5fd2a4986965e4ba0bf137ecee31b16f4e09fb8a3643fb2f",
+        "state_sha256": "719533c09c18080dfa839e9be1f162dd43239700524e984e0e03659694b194d7",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 65
+      },
+      "model_family": "M0_OPENVLA",
+      "model_parent_key": "M0_OPENVLA|libero_spatial/task_09/state_21",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0811036efa8ef877ac75aa1d829604a5cc3af8f8757b85777feaea4eb4c391a7",
+        "state_sha256": "8d20e9675275f87d7068ced6e49e24df4ae126260a66074cb1283842108b1361",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 137
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING",
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "critical_anchor": null,
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_10/task_00/state_33",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "018191a8ef7cd15f66fefe3b87c5d4c52948bb802f944acad0d8b81d813a5719",
+        "state_sha256": "ff69d5a4218d10573b1fe0d0f729d55a4a5341b3656243d275b4cf867e891a7c",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 104
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "0326a168d6024873c4e46264aed2170d90ea05a27a919ee57f6030aa14c752ce",
+        "state_sha256": "e60b97e3c14a83cda822f85a53001496ec38469e15c94aa1f991e5024282430b",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 328
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_10/task_01/state_35",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0c3beca9cc6bab8c5043648b3a2034e82ff7b1340d0e0e79c091fc1afa84ab7f",
+        "state_sha256": "ad7143dd2c65d6ce878314e9d4892cb3971fa388b14754b7e94bdda1b9901b1f",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 136
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_02/state_30",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "0bf695b0f17d73ae28694e0e467de2d624912aadd46f8e422fda90c65479a123",
+        "state_sha256": "e5231613fb9aefc54958fbe07a9c1433e0b753cb9f4169114bc541028a7c03bb",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 240
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_10/task_02/state_30",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "00e5612dca10e28e0d61131884065ebd42802aa4971504790b23676edbc6df64",
+        "state_sha256": "587d9922340af84b068e3f0ca9f74992654fc72e02df2c4effc2fa2f858a1674",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 40
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_03/state_45",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "01a57c9043aa5dc8c865d8d33d0b31b2f6d6d46165e93c72acf054cd493a0bf8",
+        "state_sha256": "c8bbcc9f53ae9f09b511ee551ca9aa0755741499de7154dc2d7e61ea990010e2",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 400
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_10/task_03/state_45",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "415de4e8bf4735b779f6ac7293c30486d8918a697ea224cb907a19d0cf1333ff",
+        "state_sha256": "824d2a61f09531aedde5afd94a633df633fb8059fc38e914824186caf9b97e46",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 56
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "2fcc365d2960b20cee4706ea21ccfdac19de1e843ef53852618653a556a842ac",
+        "state_sha256": "616f2f2450a24d858fb5a9d1e8b0d33e193320e0ce98b7f5f8bd6c9851a3be7a",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 112
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_10/task_04/state_34",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "08e2d6907730244c0233ba9aa6719442da6f0a1648c0271d5e3f15ed4cf44a4a",
+        "state_sha256": "d21ef15b0c17516a88231ab52d36c58fd3318d414655cdc4aeaed68453f10620",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 168
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_05/state_21",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "9d16bce4cdf51ae0d4badd62122b78a11aa3f1f983dd506190e36305ca7f9a2d",
+        "state_sha256": "b0566c3edea71974ba4b8591914ccbb9023426b9bafce182bf1733bccd881a7b",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 88
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_10/task_05/state_21",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "10bd0c95b767854bcad6ed91fffb5b2328a5f4115a77c4dc27c27c98f2d25d16",
+        "state_sha256": "e179e7f94c26e733bff7b340931f068312bfd708917faaab358ba05508a080af",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 8
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "0053746733cece4920794ab9d702436fc3dfa194e8ae327b6022cdbc9490333d",
+        "state_sha256": "d285b0fa34adc4fc4ea51a16cb83e7c201251b686faf3b15487eb89386d90191",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 264
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_10/task_06/state_34",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "192e348804d3cddd9ae39301f941f4d157ad9ab06ef118b33d2610c88defbcb0",
+        "state_sha256": "12a3738c1edceaef4b6d868a0e488b7aa257ca4ce93f46aacf17f5f41e7c470f",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 8
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_07/state_20",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "02e65a906e5c6ce07129ea37f71d732b6d1fa94ba7fbf6aa277c75c1005900bd",
+        "state_sha256": "1741c0f4a0c6b9605c59d92d36c37e67c17188dba6630f77b39b5bd9de8bf074",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 384
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_10/task_07/state_20",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "562e56fd2f47151a174a3d0cda370e47eed482db91be8491b077396244bdcd2a",
+        "state_sha256": "9146979f3ee8c517522049cbdf6fd00b80f369fa31f5b1ed66c3e23b36b51b86",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 16
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_08/state_20",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "002f9fa6fe6ccf8fbd93d517d63b615843df62b91aa5da03a85c13d858cfb587",
+        "state_sha256": "d7589d021cc330ba8d4e5a20882d87a15b7dc370a363e2e64999e28ecaac24d9",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 424
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_10/task_08/state_20",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0107e18cf4648e5df82bb33fe1d9005c0e6415b7aa0017fbc5741fc1c86bccf4",
+        "state_sha256": "86fb9ceecadbc2fdbc993abd820d9b2b640ac1e82bf7e6dcb8024547453bd9a1",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 280
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_10/task_09/state_24",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "00f70c0f7a1410d521ac71305958523fcc1353347a7667638277002c4d4bd583",
+        "state_sha256": "fbb8ed6ee00d31ba6cb4a62e0d089136f6ad9d58563164cb1321566e23949447",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 144
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_10/task_09/state_24",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "167da7a2a0c66a854a7a3c90c481c869c59001b0b82eccbd6461c5e98f53cb75",
+        "state_sha256": "efcb2e112f80809cd92100e92a08022354d8ab6094387b554c85c145d79128bb",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 88
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": "UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_goal/task_00/state_21",
+      "critical_anchor": null,
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_goal/task_00/state_21",
+      "noncritical_control": null,
+      "provenance": "V3_NEW_CLEAN_REFERENCE_EXECUTION",
+      "scientific_parent_exposure": 0,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING",
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "critical_anchor": null,
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_goal/task_02/state_34",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0178a186cfeec40fd3365e701b0968b638c5b9f22f8a7322ecef9d479920d6e6",
+        "state_sha256": "2ea92026f9df3c87c1bb04f0735c87189b010ccf7306006fbbea50979de86ca2",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 216
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING",
+      "canonical_parent_key": "libero_goal/task_03/state_45",
+      "critical_anchor": null,
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_goal/task_03/state_45",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "11970fba66532062ea1303d469ba6b030300b281b0c937c0018f5d67810f006d",
+        "state_sha256": "6497867d59ac0720c26b6407e425bb1e3760dc16d094cc78dfddc6599a94eebf",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 112
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_goal/task_05/state_26",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "00db8c1b17f562148c61166f65c9d5c69653f452b65b1ae11b2ac13a68396a82",
+        "state_sha256": "88a24e9b4b6356f3bf15c6242ead56c71470011284e3600e7e52d941192a2a51",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 120
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_goal/task_05/state_26",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "3adae7b4b80765c8293d84d86d061262dc4fa93a1d3ae4a031ba5afd7059ae47",
+        "state_sha256": "8ffc6b194d8d57b33d8707f00022dbd234bb3afcadd192a7b457ec3cda433c87",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": "UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_goal/task_07/state_30",
+      "critical_anchor": null,
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_goal/task_07/state_30",
+      "noncritical_control": null,
+      "provenance": "V3_NEW_CLEAN_REFERENCE_EXECUTION",
+      "scientific_parent_exposure": 0,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_goal/task_08/state_20",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "092ea5db94f0ea54f0dbfd9dd7f1bc881738da175f84ba5c3c4c65a02eb65bad",
+        "state_sha256": "bed476a20a78ab802ac2ba1922145141616678f079a6a1d648da87536899176b",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 272
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_goal/task_08/state_20",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "67d0fbe9f05cbcfea49452647d07397a8ad32adf47c47225349d468a2573b6ad",
+        "state_sha256": "d47f0a3fc8acadabd85f4e7ebc543001f9d1c6562c4b192cc5aa940b158badef",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 8
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING",
+      "canonical_parent_key": "libero_object/task_00/state_22",
+      "critical_anchor": null,
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_object/task_00/state_22",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "12023fb2591b6791f0893d70d50afb1878c03405359328f582398ccd1812c39b",
+        "state_sha256": "3a44499b0549c082e0e8a40df71d84e7850e274844f823c5cf83bc3799dbd323",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 128
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_01/state_40",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "11572e15ec0b6dddd5071614beece9e912f1290d5d06af3ef432d84f47f90f26",
+        "state_sha256": "4b27f10dcf205abd4b6549c40a2f53bde7f7697c38ea74b10e4c25d39c4962ba",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 48
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_object/task_01/state_40",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "2cccd5fb800042356bcc78fa2197f39f1c2896068ec9a6b9564933368011cf63",
+        "state_sha256": "4184a5d72c06f9307954baf8ff1f0db12f2a9e0ded84255665f0e148b9364c96",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_02/state_26",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "1c3c2b4a2a27b403456716c04aa65a58ffb8bc4a78a73bacfb28768a344ddd5e",
+        "state_sha256": "a006bd5c48fb8db1f4a6641a607873254f2463da0fb473b1b7bbc80f9c3bf8c4",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 56
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_object/task_02/state_26",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "41c0ce18be4ef7f26e5bd16a34eded633968a6d1e2bfb26ff95922e881fd6b80",
+        "state_sha256": "b70eba9997974d38b2edfdcc40901081a573461132d79c4022e8ecae6cbcd45b",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 8
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_03/state_29",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "967730e6bd75172a26046a5ba1adffd241cde0d1a5ed66b5b98ad06b9a25a205",
+        "state_sha256": "154cde66e893f0560639d1f0b1616725cc63d62bcad9f6d9650717edfbe0ec5d",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 48
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_object/task_03/state_29",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "040e3368cb9a17bff3544916dca54185c3a955cf4d988f71fcb2a6629a4d7c4f",
+        "state_sha256": "b565ffc47faa8084b28b5e6ee5be568fb3c1d09557e4d912569d138511120edd",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 64
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING",
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "critical_anchor": null,
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_object/task_04/state_35",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0df5ab0e5093fd81ee5bd2d694aebeb9f55e970b70d90d448faf008d5422cc7b",
+        "state_sha256": "1489e0ee44e3c9b263cbd8968f1662830624a9b85848c8f6d6024950166e1161",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 120
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_05/state_27",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "01967b1173836b0414d06ae02c0c374a4c9d978a6211f0d926f244c76478baa5",
+        "state_sha256": "291734f38b4fcbf8845c83f0dc5d50d8ca18e5a708332f45f2c571b751250cdc",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 136
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_object/task_05/state_27",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "6baebec0ad7b274b23abfb7ae49f89fe900de14f17cdab8b14d81a855bea222d",
+        "state_sha256": "fc83f02dd4da420dbe7020e3dc0c200fb70ab03385a24443a55ee6f33131fe21",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 32
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING",
+      "canonical_parent_key": "libero_object/task_06/state_31",
+      "critical_anchor": null,
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_object/task_06/state_31",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0af5b6adbae83ca606084bc35fa58ef113a7fa2837cc74b6111c3f2a241b4a14",
+        "state_sha256": "0e29e01b9efc15b95eea18ce122f8c66227b1b4f6559b3d6f01064a8dd88a29d",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 216
+      },
+      "provenance": "V3_NEW_CLEAN_REFERENCE_EXECUTION",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING",
+      "canonical_parent_key": "libero_object/task_07/state_45",
+      "critical_anchor": null,
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_object/task_07/state_45",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0d75001e14a6687aabd56a35b450c82f9a994570cbc8115c3fad1482f7af6a2e",
+        "state_sha256": "3b1d2c5e12962fc3acea2b69b5e4ea6fe8ffd5c830a33fc7c13daaefe4d10aa1",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 104
+      },
+      "provenance": "V3_NEW_CLEAN_REFERENCE_EXECUTION",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NONCRITICAL_ONLY_CRITICAL_ANCHOR_MISSING",
+      "canonical_parent_key": "libero_object/task_08/state_35",
+      "critical_anchor": null,
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_object/task_08/state_35",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0192f64e5a8e42038548443ed63af374e26f6a57ed57485a4b1865e888c2428d",
+        "state_sha256": "ac3413739abb6f0256f6e848df2e1e84682fa97473c731a0b7a4f7d57476aa4c",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_object/task_09/state_23",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "15aa40241988563a8e99b034cb070d9007026afc0ad60521838422aaf007b1cf",
+        "state_sha256": "8370a8b42a8c05e04d1d1175ea733e6e2a0803c746c32be02532b059eed1e186",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 48
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_object/task_09/state_23",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "45fd646d2f40b584a2989ddbeba83b3d5e22ea04629f035b6825a3e32726cd6a",
+        "state_sha256": "654a38fecc0a27a03128f209707ff839c279debc386c2a6a00a8f662a4a0b642",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_00/state_37",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "0af025a673f245f03e585faadee44d0854e7c64deeab0903d8574a50bd81ccd1",
+        "state_sha256": "0971fd46767899761ed958c3f8800b25e2f1d4d713346b381c05ac098b44cdcd",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 152
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_spatial/task_00/state_37",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "0cd04550c2e42c5293e157aeadd073d669fe7949ac20a219fac3485ce3151cdb",
+        "state_sha256": "50ded2d4b88b5a9668ae108003745f759cef75980756d08ee9dadb4661345777",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "05579f63dc41a219c4e69db25812f1d7bfbe0f7786b75394aff35276c9b31dc3",
+        "state_sha256": "8929875587a37e3302a5667ea6c019b2cd071b73ace6cf354f06c8783023f825",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 72
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_spatial/task_01/state_38",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "4345f443c760d357b0a8596a9b8fc6e4096ad585aea20fbd6592eca035bf46e2",
+        "state_sha256": "b5a9d810344727bc89d2b8df881941aea7e4d48e61e70820a6e67b722a903f74",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 32
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_02/state_40",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "01205bd0fc33a5a8624c3aa24cf21ef5ae7b60b016a0d6862a57987cd7e83abc",
+        "state_sha256": "900c0fe1ddb5a381d9665ad93978f832c138de8e3f494fc05067950ab2dcea1d",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 48
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_spatial/task_02/state_40",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "1c9780aced0a9897153c9607f4dfb3a6cbadf0861cfb124128b992310b05bba3",
+        "state_sha256": "0f0d52fdf40ad824561197b137ff5d621442364a79719a8503810d3cf345f23a",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_03/state_33",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "01492e147c1be63f7d4b09bd34ae70660bae97cea97a85275bf96fab839454d7",
+        "state_sha256": "923d0170f666d56c13edf42e300dd9e4433e45cfc6cfd35d2f07f2f6f57871ab",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 40
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_spatial/task_03/state_33",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "06a92f7aebeaa82f94398c48f4bc2e18971ba853154828b1a14e717fd223fc54",
+        "state_sha256": "dda8d543b7591a48cc362aa342e6677e3ab1392edc9d8db8bf3327af1e4a25a3",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 24
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_04/state_31",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "17f0a08ba29623187b2eca2832518f8d3b8f4c72f8c62acac06f29262b8d41bf",
+        "state_sha256": "02e3d69705b38028c9c96caa394d284ef6e6b850ac3be588b63663949ebd595e",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 48
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_spatial/task_04/state_31",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "2ac8470026ae69b7c48e8e6f394a5589033a068066a83fb22e3966360123eafe",
+        "state_sha256": "37f9dbab38f1dc981cb78fb24217888b7d5185daf497d825272216754b9bed75",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 8
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_05/state_23",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "062a1c05cc1306aadf922093bd0430fb4e7ecc998537c1d271a956f9ebb09813",
+        "state_sha256": "0e79d7ceafa77b3835ad33b1e00bf7cbfced3b4c0c1ffad432f751fcc98742c9",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 120
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_spatial/task_05/state_23",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "7a37064a2fed5207d2d7c4d64d7a35c682f4ff07922c292505c78756bf44666f",
+        "state_sha256": "df4b3c82ca0144e891f8bea5cb9b6618fdc538b721b9bd60d07d37a52570bcc0",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 16
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_06/state_27",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "033922753765d706ded226f615d17b51818e0f86acc98aefe1e42bf4efaf315c",
+        "state_sha256": "0e092b32a6e783291689c205b27f65ac36f800512d68878cd4a11b265d57b09a",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 160
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_spatial/task_06/state_27",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "438110c1ba68026faeb100080d8064491d317839b7d44e437f17e0cec0e5880a",
+        "state_sha256": "992a5c41fdc04b88d8fb43127e0822a68532284114c32b4b60f6d435f6309f59",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 0
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_07/state_28",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "03275585d4fd0cb59e1ba6eca6554709a278fed10f6e8ca88a230ffd1d77081a",
+        "state_sha256": "c941b3420580cd19cab143866063006193d8e4376913ab378fc0a54eacf3caac",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 88
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_spatial/task_07/state_28",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "2a7f0dcd0c477b10fb555d7c6d5e823501b9c5b81476be84a0bcffcf3a5c0138",
+        "state_sha256": "6f2dfb0aaa167d5617cf99a82fdddd8cf6933d80ff0ed0cdc5899806a7da06aa",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 8
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_08/state_32",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "ENGAGED_LIFT",
+        "rank_digest": "069dde0b1bc573b90f37abb39c3e530b57b573a05c9829482e36d1f48d0d9568",
+        "state_sha256": "b38beb01a61480f785d1d9d89d856db5ac65e895c727927cd9f54a3c36eb5432",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 64
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_spatial/task_08/state_32",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "2df121fcb666551ecc30846a668b507a9653f03ae8d359979014abcc56ea56d5",
+        "state_sha256": "465de2e7006c2e49fac26919bbe40dadc73ae18894dd8202a7fb12b58c9de1ba",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 40
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "BOTH_ANCHORS_AVAILABLE",
+      "canonical_parent_key": "libero_spatial/task_09/state_21",
+      "critical_anchor": {
+        "anchor_class": "CRITICAL",
+        "phase": "CONTACT_MANIPULATION",
+        "rank_digest": "371ea4db6aacef1e215e508ee21060d1caa08f33f3697201921a9878b7469b40",
+        "state_sha256": "a1819b0133f7bf44d351a26e16dae8c08712c723671cdf53abec3b58ce1bd079",
+        "status": "SELECTED_CRITICAL_ANCHOR",
+        "step": 72
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "model_parent_key": "M1_OPENVLA_OFT|libero_spatial/task_09/state_21",
+      "noncritical_control": {
+        "anchor_class": "NONCRITICAL",
+        "phase": "PRE_CONTACT",
+        "rank_digest": "137d98b65da84fa4fff6bc535e710948380511d0d8e128709d0a0c4124867abe",
+        "state_sha256": "ac8e7d85389a78545bf428ee95d67fd99558d613b3c399d1751228d3b2d52772",
+        "status": "SELECTED_NONCRITICAL_ANCHOR",
+        "step": 64
+      },
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_10/task_00/state_33",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_10/task_01/state_35",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_10/task_02/state_30",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_10/task_02/state_30",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_10/task_03/state_45",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_10/task_03/state_45",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_10/task_04/state_34",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_10/task_05/state_21",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_10/task_05/state_21",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_10/task_06/state_34",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_10/task_07/state_20",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_10/task_07/state_20",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_10/task_08/state_20",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_10/task_08/state_20",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_10/task_09/state_24",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_10/task_09/state_24",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": "UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_goal/task_00/state_21",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_goal/task_00/state_21",
+      "noncritical_control": null,
+      "provenance": "V3_NEW_CLEAN_REFERENCE_EXECUTION",
+      "scientific_parent_exposure": 0,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_goal/task_02/state_34",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_goal/task_03/state_45",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_goal/task_03/state_45",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_goal/task_05/state_26",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_goal/task_05/state_26",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": "UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT",
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_goal/task_07/state_30",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_goal/task_07/state_30",
+      "noncritical_control": null,
+      "provenance": "V3_NEW_CLEAN_REFERENCE_EXECUTION",
+      "scientific_parent_exposure": 0,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_goal/task_08/state_20",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_goal/task_08/state_20",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_object/task_00/state_22",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_object/task_00/state_22",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_object/task_01/state_40",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_object/task_01/state_40",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_object/task_02/state_26",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_object/task_02/state_26",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_object/task_03/state_29",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_object/task_03/state_29",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_object/task_04/state_35",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_object/task_05/state_27",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_object/task_05/state_27",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_object/task_06/state_31",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_object/task_06/state_31",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_object/task_07/state_45",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_object/task_07/state_45",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_object/task_08/state_35",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_object/task_08/state_35",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_object/task_09/state_23",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_object/task_09/state_23",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_spatial/task_00/state_37",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_spatial/task_00/state_37",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_spatial/task_01/state_38",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_spatial/task_02/state_40",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_spatial/task_02/state_40",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_spatial/task_03/state_33",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_spatial/task_03/state_33",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_spatial/task_04/state_31",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_spatial/task_04/state_31",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_spatial/task_05/state_23",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_spatial/task_05/state_23",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_spatial/task_06/state_27",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_spatial/task_06/state_27",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_spatial/task_07/state_28",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_spatial/task_07/state_28",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_spatial/task_08/state_32",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_spatial/task_08/state_32",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "abstention_reason": null,
+      "anchor_availability": "NO_LEGAL_ANCHOR",
+      "canonical_parent_key": "libero_spatial/task_09/state_21",
+      "critical_anchor": null,
+      "model_family": "M2_PI05_LIBERO",
+      "model_parent_key": "M2_PI05_LIBERO|libero_spatial/task_09/state_21",
+      "noncritical_control": null,
+      "provenance": "LEGACY_V1_SEMANTICALLY_RECONCILED_READ_ONLY",
+      "scientific_parent_exposure": 1,
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    }
+  ],
+  "no_legal_anchor_reasons": {
+    "UNSUPPORTED_FIXTURE_ONLY_GOAL_NO_IN_OR_ON_SOURCE_OBJECT": 6
+  },
+  "schema": "STAGE_Z_Z2_ANCHOR_AVAILABILITY_V2",
+  "status": "STAGE_Z_Z2_ANCHOR_AVAILABILITY_AUDIT_COMPLETE_STOP_FOR_PI",
+  "terminal_action": "STOP_FOR_PI",
+  "z3_authorized": false
+}

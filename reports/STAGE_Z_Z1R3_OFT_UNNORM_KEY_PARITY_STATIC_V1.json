@@ -1,0 +1,78 @@
+{
+  "schema": "STAGE_Z_Z1R3_OFT_UNNORM_KEY_PARITY_STATIC_V1",
+  "status": "STAGE_Z_Z1R3_OFT_UNNORM_KEY_PARITY_STATIC_PASS",
+  "gate": "STAGE_Z_Z1R3_OFT_UNNORM_KEY_PARITY_REPAIR_AND_RUNTIME_QUALIFICATION_CONTINUATION",
+  "pi_authorization_comment": "5399571767",
+  "append_only": true,
+  "claim_boundary": "CPU/static adapter-parity evidence only; no GPU/model load, simulator/env.step, scientific parent exposure, V_phys, Eval160, protected, F1, BRIDGE, or Paper-V2 scientific promotion.",
+  "upstream_authority": {
+    "repository": "moojink/openvla-oft",
+    "checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+    "commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+    "tree": "0ae110ee28943b9e46feffad84429d2d6e026a32",
+    "files": {
+      "experiments/robot/libero/run_libero_eval.py": "cdf27f56c5464808481d56af0898475541e10817",
+      "experiments/robot/openvla_utils.py": "c14c9dcfd3d10bbf80191dd64120e8746e72bb6a"
+    },
+    "resolver_function": "check_unnorm_key",
+    "resolver_semantics": [
+      "candidate = cfg.task_suite_name",
+      "if candidate exists in model.norm_stats, retain candidate",
+      "elif f'{candidate}_no_noops' exists in model.norm_stats, select that fallback",
+      "otherwise fail closed",
+      "store the resolved key in cfg.unnorm_key before the evaluator action path"
+    ]
+  },
+  "local_runtime_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "commit": "7228f71ceb8e451a71c5e9941498b325c3968e0d",
+    "tree": "1cd6ac2f4d82372078467b691f00a57461e4fa83",
+    "runner": {
+      "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+      "git_blob": "72e62be7ef927a1012379d877bcb4f7f616a4031",
+      "sha256": "26ad885898c3b75a4ee48b02b0383e2343eed62cd99632375a4465126fb1d3db"
+    },
+    "test": {
+      "path": "tests/stage_z/test_stage_z_z1r1_optional_import.py",
+      "git_blob": "c47ccdc9e3086609597bc2f2b641d00df7639aed"
+    },
+    "unchanged_launcher_git_blob": "6b14b3fa933660977451cc808a3d68ba06689723"
+  },
+  "static_regression": {
+    "command": "pytest -q tests/repository tests/paper_v2 tests/stage_z/test_stage_z_preparation.py tests/stage_z/test_stage_z_z1r1_optional_import.py",
+    "result": "34 passed",
+    "coverage": [
+      "exact suite key resolves to the exact key",
+      "suite_no_noops fallback resolves when exact key is absent",
+      "exact key wins when both keys exist",
+      "missing keys raise OFTUnnormKeyResolutionError with MODEL_UNNORM_KEY_MISSING",
+      "resolved key is bound to cfg.unnorm_key used by get_vla_action",
+      "checkpoint JSON bytes remain unchanged after resolution",
+      "M0 predict_action compatibility branch remains present",
+      "previous optional-import and launcher tests remain green"
+    ],
+    "py_compile": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "checkpoint_read_only_contract": {
+    "dataset_statistics_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10/dataset_statistics.json",
+    "dataset_statistics_sha256": "dbe516987e8124416af39c32d3f39ce2137ccb4e282adc590bb4bcede09fb5e1",
+    "available_top_level_keys": ["libero_10_no_noops"],
+    "checkpoint_mutated": false,
+    "key_alias_written": false
+  },
+  "runtime_counters": {
+    "gpu_workers": 0,
+    "model_inference": 0,
+    "simulator": 0,
+    "env_step": 0,
+    "physical_intervention": 0,
+    "pgd": 0,
+    "attacked_env_steps": 0,
+    "v_phys": 0,
+    "eval160": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0
+  },
+  "timestamp_utc": "2026-08-24T18:34:20Z"
+}

@@ -1,0 +1,70 @@
+{
+  "checks": [
+    {
+      "bytes": 18160,
+      "path": "scripts/detector_v5/audit_stage_v_m3_5_v1_4_gate_b.py",
+      "sha256": "2196b24dfcad0f32065ae551b6b8840ce8a8136381bad130e5da3d94c9a201ca"
+    },
+    {
+      "bytes": 5332,
+      "path": "scripts/stage_z/audit_stage_z_z3_static.py",
+      "sha256": "0492c561470d719a26c3e09102c64bf7be1b725f36ce0060c21ba72c7db4558f"
+    },
+    {
+      "bytes": 8631,
+      "path": "scripts/stage_z/build_stage_z_z3_source_authority.py",
+      "sha256": "898d447c004825713558b9b6f1df9244913e5722cde985b9d766368ddb47db46"
+    },
+    {
+      "bytes": 31442,
+      "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+      "sha256": "16a9b4c655238cf02b4d1a0c7c5ebe30fe5fbd79bdaa1290691de6d7a6933d00"
+    },
+    {
+      "bytes": 24550,
+      "path": "scripts/stage_z/run_stage_z_z2_clean_reference.py",
+      "sha256": "f903b841524ec9eb687f6df6132da6ed8084686fe15b7cc12257815cdce8172c"
+    },
+    {
+      "bytes": 10813,
+      "path": "scripts/stage_z/run_stage_z_z3_sentinel.py",
+      "sha256": "49d7bf479f6d305addc760ee58f73bfde808ed7e47f76fabe24f01a610eb1165"
+    },
+    {
+      "bytes": 16608,
+      "path": "scripts/stage_z/run_stage_z_z3_worker.py",
+      "sha256": "3adf37e25f12dec4eb35ed3e7cca7322df9954154ac5c3e871194fc5fb8cc3fe"
+    },
+    {
+      "bytes": 18122,
+      "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+      "sha256": "52e2d393018e13f95cabf12d47bae41246733710e7505680c1ef533517b32240"
+    },
+    {
+      "bytes": 4069,
+      "path": "src/stage_z_preparation/adapters.py",
+      "sha256": "8a18eb9f9a9cab75627f48d1f3aa435f1cf36a77687efeb595f4323f64fa839e"
+    },
+    {
+      "bytes": 7715,
+      "path": "src/stage_z_preparation/contract.py",
+      "sha256": "9941726910944d7f2f011d970c57c5c97ef374308bff584b2e3fde5732f792c9"
+    },
+    {
+      "bytes": 3314,
+      "path": "src/stage_z_preparation/matrix.py",
+      "sha256": "f0afc3a8550b8425dc91371a1f6f24bdd49ffb901ec13113193941de37c9b7b4"
+    },
+    {
+      "bytes": 8903,
+      "path": "src/stage_z_preparation/z3_contract.py",
+      "sha256": "357e2ef5c0adf20b8dc6eff471a5d2ad544293a1dcf5927586f72429f760b6ee"
+    }
+  ],
+  "claim_boundary": "Static/source/resource contract only; no model inference, simulator, OPEN intervention, physical endpoint, V_phys, or protected read.",
+  "forbidden_import_namespaces": "PASS",
+  "next_legal_action": "Z3_B_ENGINEERING_SENTINELS",
+  "protocol_sha256": "92747fe2263fb47ad9b53dee916660f7b8e2db1d5d895e6c80922db29caf7f1b",
+  "schema": "STAGE_Z_Z3_STATIC_SOURCE_AUDIT_V1",
+  "status": "STAGE_Z_Z3_STATIC_SOURCE_AUDIT_PASS"
+}

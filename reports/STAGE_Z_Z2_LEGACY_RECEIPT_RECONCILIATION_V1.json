@@ -1,0 +1,1954 @@
+{
+  "attempts": [
+    {
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_ENGINEERING_INVALID_M0_libero_10_task_00_state_33.json",
+      "scientific_parent_exposure": 0,
+      "semantic_reconciliation": "NOT_PROMOTABLE",
+      "sha256": "f12907d6e449816e1599e0dbd01b78ebc7ed6754b14076cb5936b7fa476295ad",
+      "status": "ENGINEERING_INVALID_Z2_CLEAN_REFERENCE"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_ENGINEERING_INVALID_M0_libero_10_task_00_state_33_RETRY_V2.json",
+      "scientific_parent_exposure": 0,
+      "semantic_reconciliation": "NOT_PROMOTABLE",
+      "sha256": "1a9fd2aa682b4a3663c6bd689897980c7e665d196593202e9e37d75cfb600e24",
+      "status": "ENGINEERING_INVALID_Z2_CLEAN_REFERENCE"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_ENGINEERING_INVALID_M0_libero_10_task_00_state_33_RETRY_V3.json",
+      "scientific_parent_exposure": 0,
+      "semantic_reconciliation": "NOT_PROMOTABLE",
+      "sha256": "19bf0c15f3416a897fca9672ca45ad350854600392545c0da0ae03a91cd5f474",
+      "status": "ENGINEERING_INVALID_Z2_CLEAN_REFERENCE"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_ENGINEERING_INVALID_M1_libero_10_task_00_state_33.json",
+      "scientific_parent_exposure": 0,
+      "semantic_reconciliation": "NOT_PROMOTABLE",
+      "sha256": "72629af3ee4d51abc1f60163ec649ea9c4cc45788e672a1279ee1e0ff9d1482c",
+      "status": "ENGINEERING_INVALID_Z2_CLEAN_REFERENCE"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_02/state_30",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_ENGINEERING_INVALID_M1_OPENVLA_OFT_libero_10_task_02_state_30.json",
+      "scientific_parent_exposure": 0,
+      "semantic_reconciliation": "NOT_PROMOTABLE",
+      "sha256": "a6c3f7fabf36bcb537afae3afe949319a9fafcde74e8a5185ae99c2623419219",
+      "status": "ENGINEERING_INVALID_Z2_CLEAN_REFERENCE"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_00/state_21",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_ENGINEERING_INVALID_M2_PI05_LIBERO_libero_goal_task_00_state_21.json",
+      "scientific_parent_exposure": 0,
+      "semantic_reconciliation": "NOT_PROMOTABLE",
+      "sha256": "b5df7f9dd556f4ea8aaa88ab8e649e364993339f16a3ccf6c754aa46f3301a8b",
+      "status": "ENGINEERING_INVALID_Z2_CLEAN_REFERENCE"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_08/state_32",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_ENGINEERING_INVALID_M2_PI05_LIBERO_libero_goal_task_08_state_32.json",
+      "scientific_parent_exposure": 0,
+      "semantic_reconciliation": "NOT_PROMOTABLE",
+      "sha256": "c39211e4c0afcef21acfe7017172b48e5ca0df386d9a275a1c8c4420493c0ff3",
+      "status": "ENGINEERING_INVALID_Z2_CLEAN_REFERENCE"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_10_task_00_state_33_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "11826d6e84f29f84b2a0834b37fda1535147899b0dca4d9186372ff5e92eaf98",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_10_task_01_state_35_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "c8856a1ed01197070f6328afb779546948e9e2ded196f2154b43ac1550855993",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_02/state_30",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_10_task_02_state_30_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "bc030803fcef71757a59f7e8fcb0093a904b9bcad73104c983484ea2c44b38e3",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_03/state_45",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_10_task_03_state_45_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "5551ce7d0120751d1d5e16aeb6886d1232517218db6ce6604685d07136119454",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_10_task_04_state_34_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "5ffe6eb384b18081bfc564352d65d45193f4b1a8d3fdcc1513938f57c21a0c22",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_05/state_21",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_10_task_05_state_21_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "695e87619664bc19f76e4998e663724431f9da4569c46a9870c30866de683bf1",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_10_task_06_state_34_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "ebed8432edef72d53823d55c508b2f580574ebeb8e0b3e217be7e7b1b86a1053",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_07/state_20",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_10_task_07_state_20_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "792466beb8897162acac730d6ca08aa62e0ea5b72b1b543b14dd8b728e29e6fa",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_08/state_20",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_10_task_08_state_20_ABSTAIN.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "81f2c6fb97b094fa09bf33ff4326b39296c827e7308d662789a0e8bbab0ccf1d",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_09/state_24",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_10_task_09_state_24_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "62dbc3bf69f5b89fc0559fb340d3b767c8a5205a5eb35fc64646535e0faa9f17",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_goal_task_02_state_34.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "8ee34b3966956eba9c9ab5267cd9bd29bbaadc22a2e7239f5e6634fd0d21a6c8",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_03/state_45",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_goal_task_03_state_45.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "a4985526b3558aee4d0f60dc0d32435625b59b7f46ec2323776e38d140f9ce84",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_05/state_26",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_goal_task_05_state_26.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "0e7185ca464b6913e8eeee07f3c61d78e503a190fcd22204a6dbd90857b7220a",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_08/state_20",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_goal_task_08_state_20.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "0a1093a9795e2ed06ad8c02fa2652db6f722e148a2f91acad66b69478f2dbb2c",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_00/state_22",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_object_task_00_state_22.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "83b9354fcd3d4a68d825fabd5bd1cded9b1f9fa1fb085252920583f8d9fc2d03",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_01/state_40",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_object_task_01_state_40.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "e97723f1cf8f6e961465098e0e03abe2bfd4d1eb8d7e19afc7c53ecdc9d8d5f1",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_02/state_26",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_object_task_02_state_26.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "7ec018e80efa9f1cfda9f78c3b5a2094b5098570439f5dff01cbb72ff1d7b020",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_03/state_29",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_object_task_03_state_29.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "8ee89432fcb8ba7c9efcc4745b3b34f3e1b7851f2d9d3642d016e4e7eca1d3f8",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_object_task_04_state_35.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "e061d8ab43bae76c088c51aa191a1ba27f82ed7677bded57451063a132847d38",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_05/state_27",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_object_task_05_state_27.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "bcb937285f8e4fc5ffd70204d43f7aa8309fa9ad74b0f5638f2a86a8f75d66ae",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_08/state_35",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_object_task_08_state_35.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "2bd908cf53636e5aa2b2c2d105f5bf5007754096f4c22206151fef8c2ccaea05",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_09/state_23",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_object_task_09_state_23.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "6047a0b551c7a2991579d51d5eb462ad00e9d5b83e8826fcb8543a86ef3e1f72",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_00/state_37",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_spatial_task_00_state_37.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "633f1f91ff363b0df92cb472ede278cf3f669e544b8790725fbded0242fe5074",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_spatial_task_01_state_38.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "6a35c388b926f3e1370869fea9a40865a042cf43ff0e8b78270615cc95e2c7ac",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_40",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_spatial_task_02_state_40.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "0aa882d7227cbaa0d5c414cf3ff826db7b3b3a3e5c21eeff6e1048a570162e25",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_03/state_33",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_spatial_task_03_state_33.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "ee5d57488a50630cde22e24772cd5e7ac210c9fda442d90af14b83e0702755da",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_04/state_31",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_spatial_task_04_state_31.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "32dbfa395fe89da00ae9d7dd98dcf20b2e04024924fd77e332c61b6e8e4a3ab6",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_05/state_23",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_spatial_task_05_state_23.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "6df478cebde9010106189f2f2a6b1adeb76b4bd7f1b7f39d2ed55b8db95fa4b3",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_06/state_27",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_spatial_task_06_state_27.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "5bd4ebe5b131de220d6127d3710140d321d54259eda1881032a04c4f10ed4209",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_07/state_28",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_spatial_task_07_state_28.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "c5d181ce0b0901c893ef98efed0bbafcc3bc54fe6fd63133703f7f187d717c78",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_08/state_32",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_spatial_task_08_state_32.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "0124dd609a94e4e311802597a7cafea2fd10725d4f71b263a784914bcec379cf",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_09/state_21",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M0_OPENVLA_libero_spatial_task_09_state_21.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "3742ab1f8f02f4a00fa26078a6b2247ee7fd84157952ee8746ecbe1465c336d4",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_10_task_00_state_33_ABSTAIN.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "c27e7aabbc3555a8e1038350ac297c349060dad9909ba5c3fc47b6b792ab0b17",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_10_task_01_state_35_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "3125ef62dbcca8d6bccb1e21dd82f2d3f6fb2b3d73d4ee049ae92fcaca7e96bb",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_02/state_30",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_10_task_02_state_30_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "32c23d8d9185de4aedb03f6b01b6fb864e009b7332c192984be3cc0521165baf",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_03/state_45",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_10_task_03_state_45_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "e6bf7ac9dee9ce13032700ae9cc6e987f0b2c53dc08e3f0a443d34640370ba14",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_10_task_04_state_34.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "aa4e7d42ea2b85d6824cf768bec7d7b2c056274ebd6d5cb1e1a1128783ea4b12",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_05/state_21",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_10_task_05_state_21_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "2c3ca75d612ae640027d5d71df704dbdf07a2a00508446d22b82e5d79011d711",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_10_task_06_state_34_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "d5fbde8b9cac1772d292ab155de285576d32ed0073ce208561f9d3adfd1601f4",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_07/state_20",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_10_task_07_state_20_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "96e035a0fec8f64503fa147b4cb9938f78e96e65463a7376bdc40e54ad20bbe7",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_08/state_20",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_10_task_08_state_20_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "a57a31a083f11a39912e50032a7a11c4edb03c970a0796153aa73149e5fc60da",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_09/state_24",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_10_task_09_state_24_PASS.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "e2416a19406cc552827989d5d96ce336780e15438a6aff91b288751ea8d5fb4c",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_goal_task_02_state_34.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "ad42a7ace317395af1cc7c26f428a16433b21609d773f7dd9ba803f4eb90ff9b",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_03/state_45",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_goal_task_03_state_45.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "58775e7ec7e2c8e3573745b660911ed449fb54c68998dbd73464a7032147be8b",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_05/state_26",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_goal_task_05_state_26.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "f025838c10be8f99096206d5367a4dab856454c406ea55dcc8f9341e1d852b5e",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_08/state_20",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_goal_task_08_state_20.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "9cfa15db5f44adaa12a01e51405551f3d67cd7a9ea7618503367a8a0f53c794c",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_00/state_22",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_object_task_00_state_22.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "394c91329356ddfc6be04c3ead831dbf5aa68c6bd6735d485f2f371e710fe471",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_01/state_40",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_object_task_01_state_40.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "e5962b6bc3dff68b2999d262dbdf8515006ba450e394cc335da33d6d6dc9472c",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_02/state_26",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_object_task_02_state_26.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "3c1212c7bb4633999712807802cf39e63fb398ca51fd82e81112a0aa9c2ddaae",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_03/state_29",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_object_task_03_state_29.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "1ba5aee2f02e4687879bd1172fd0a7678815660c2c375a99ff98539d4c980b2c",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_object_task_04_state_35.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "d1843830cc2d4c84b9095455e97f40052656b711f4a77b007761fdbd808e4b56",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_05/state_27",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_object_task_05_state_27.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "d04714873c6db723bfe1f1efa169cf82bf8826e7abea865f79825f17da08bbbd",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_08/state_35",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_object_task_08_state_35.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "42718bd58b31fa3f30d75ee7445ebaa33dc2093a195a023a831e41185d77e680",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_09/state_23",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_object_task_09_state_23.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "8c69c11107ac1c25938f29d188cfc4bebd4f2ca6932bb9143318077dd39083b4",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_00/state_37",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_spatial_task_00_state_37.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "58350c098943f4e7a7dc26d542c392a731824f13ffe2ac09b387e8f81c5d3041",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_spatial_task_01_state_38.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "7e2d2d182658e6d512d954564f4c7a1e0d5e4540313218e06fb5e31e460d1b7a",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_40",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_spatial_task_02_state_40.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "fc2807afb26eaa66dba3fe5e670d16c8d74fdb2d4bf1942469bf0e8cd4ec355e",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_03/state_33",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_spatial_task_03_state_33.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "2f8b0597d3005bf91c8d901dcdd051624904a02cd11d6ab5204f3865880c363b",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_04/state_31",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_spatial_task_04_state_31.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "a6cdd37f1781d9df2579f7e388903a2b9a540d05b4cd62579608788b9f34eb09",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_05/state_23",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_spatial_task_05_state_23.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "b5e128468abdb4c95e2f0511278bef126c4ca94177ccd67142f07591e0537238",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_06/state_27",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_spatial_task_06_state_27.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "7e43d87a7f115927944dbb35d67e8507eddabf8c7bded2c9541b1c59fe4026f7",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_07/state_28",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_spatial_task_07_state_28.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "5bcc6306443073671883b72d1176e36922d5a69d295a222c89dca250bd10a675",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_08/state_32",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_spatial_task_08_state_32.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "30471c039f36af8e3cb538d14fb7d0aec31f16cfc0383b9454512d5901b4e537",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_09/state_21",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M1_OPENVLA_OFT_libero_spatial_task_09_state_21.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "7c083757038ebd854d3ee34ccb2732294667406a47a6b2de97cbecb7c18d44ea",
+      "status": "PASS_Z2_CLEAN_REFERENCE_WITH_BOTH_ANCHORS"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_00/state_33",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_10_task_00_state_33_ABSTAIN.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "0b54f1b91321ed3ac10f55bce932d297a364ae3d62df4807ab62beb27b539eb5",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_01/state_35",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_10_task_01_state_35.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "2d5e10e029a32129a060e18f17c6d6c04491c6fdc7dfae1dc167b5a24d7b6165",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_02/state_30",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_10_task_02_state_30.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "fb7193849fbcd8c74752cd2cbbff8662503d2167a10e771c70ab1f9055aad569",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_03/state_45",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_10_task_03_state_45.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "41b520d1f48dbb1b57a5d368b3c7f9c746eaf479cfb5fa51456942bd8ef8f26c",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_04/state_34",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_10_task_04_state_34.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "acde2167bcf13327e2a486b938050715fc8932da07df1fa6730c4c163b9c0d5a",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_05/state_21",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_10_task_05_state_21.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "dcb569b0ae2da65d729fc44240e00f267fd7e2da4db3cfb3c39de41f16741893",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_06/state_34",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_10_task_06_state_34.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "e5f7ad108ee8d934b222b91820278be151d6a57dd6d7da0b2766bce34229e564",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_07/state_20",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_10_task_07_state_20.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "6a1157e2669ca27b923027a81bb28d03f247ee516d7bae1247dc195f95116094",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_08/state_20",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_10_task_08_state_20.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "dc9b458a8c6dd25680436a0a15f04bddfda9ac048b6922d01441512b408b4633",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_10/task_09/state_24",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_10_task_09_state_24.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "f3fe7bdce918d47aa078f443e20169ea77f53eab582b588de441a095e386c64b",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_02/state_34",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_goal_task_02_state_34.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "0770505aa240cb6cf40f3ce4fe94ebc6afb0467b7fafd1a6ad97b8f4190c9baa",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_03/state_45",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_goal_task_03_state_45.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "f0cbb0238c54d928eba459d860e5af38982032ddfaf639763dc0b0297dd3de59",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_05/state_26",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_goal_task_05_state_26.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "a56d29c1ea97edd8c62c2b5f061752aa58046a802a5c302d26c83f3e359444e5",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_goal/task_08/state_20",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_goal_task_08_state_20.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "2b929c1a335f3dfd908c4c9ca6219ae0b2b64ac2f89e1956c0b08e177064ee38",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_00/state_22",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_object_task_00_state_22.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "3a7dcf60826ac3e9a12f308fc204456453f55c6970b91a98a202f0c00e2e142a",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_01/state_40",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_object_task_01_state_40.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "2fdc2a0b0874722c01802decf74d116041071c1412570b6fec006262ae0b8efc",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_02/state_26",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_object_task_02_state_26.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "5c4b1f43a9024363d066cf405baf087f599fa32c76107b50cdf3aeac0586b6df",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_03/state_29",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_object_task_03_state_29.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "10853e143e33cde9a1811ba5c3ff38e0afba6047fa553052dba01e63456b4ace",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_04/state_35",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_object_task_04_state_35.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "55c2aa0eda14c9406c504955c0f214a8e7649dbc718addec66e7654b5e639c69",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_05/state_27",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_object_task_05_state_27.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "be26c06dfc6a09cf9ce672886d91ce9e6291662149a606f945db184debb21752",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_06/state_31",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_object_task_06_state_31.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "56a40582807212f61d355037a5f9eb44c5a3f6c03211cb4a0c6b261aee6b7419",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_07/state_45",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_object_task_07_state_45.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "83ed7b1c6a50ae72b65921e307c690bd4fb50f674b4ad704702d7db754168ee1",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_08/state_35",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_object_task_08_state_35.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "c64af625d57ff7e4cab450827069aeb8e25609c94d4e7cf5499e7af622805db6",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_object/task_09/state_23",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_object_task_09_state_23.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "5fb4f740a3a13402f6c25b03e646b3d8cffab0efba043e092e5d98f34c848270",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_00/state_37",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_spatial_task_00_state_37.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "8b64c22a6fef6a3260e49c9d526f4dd1fd6faf3c956296f50f7d8b6577425e71",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_01/state_38",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_spatial_task_01_state_38.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "b64c754c05c87de49a1d7091f91275d77f8c66960380046f27f9963dfd8609f7",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_02/state_40",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_spatial_task_02_state_40.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "5e209004be5c32f1416f9ebec25abfe1e5763f72057ae7a8bf01fdb6d9bee99b",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_03/state_33",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_spatial_task_03_state_33.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "980d89a379c7bb3eb054af41364f41935499c780d67c99bf257c46cdf1063922",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_04/state_31",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_spatial_task_04_state_31.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "a00ea562062d6430cfa4f0b2005efbebbb4ea189629414a7b13390ee2a395cb7",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_05/state_23",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_spatial_task_05_state_23.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "b78f7ddaf5fdcdd6a9a1429bcae890ac48367e1e2b9c5fd9ce4dff6e8ad195dd",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_06/state_27",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_spatial_task_06_state_27.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "af78c9d55f0a1ac43dedcaff462c3a97579fbae3b0c57ad744ff227aafb2064f",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_07/state_28",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_spatial_task_07_state_28.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "462880bd8940a8793d0a74f2c2c767b644562200b9e2cd1228039b2496317557",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_08/state_32",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_spatial_task_08_state_32.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "2929d4e1161e288bd03ac0eec57a1e9f973943a4a835da9380f1cbb5ecde38d9",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    },
+    {
+      "canonical_parent_key": "libero_spatial/task_09/state_21",
+      "forbidden_counters": {
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "eval160_reads": 0,
+        "pgd_calls": 0,
+        "physical_interventions": 0,
+        "protected_reads": 0,
+        "vphys_reads": 0
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "reports/server_evidence/STAGE_Z_Z2_CLEAN_REFERENCE_M2_PI05_LIBERO_libero_spatial_task_09_state_21.json",
+      "scientific_parent_exposure": 1,
+      "semantic_reconciliation": "PASS_LEGACY_SEMANTICS",
+      "sha256": "48a74e0050944f4d616464d90fbb6ef31a140b917889335481a435d6e5868489",
+      "status": "ABSTAIN_Z2_NO_LEGAL_ANCHOR"
+    }
+  ],
+  "duplicate_legacy_attempt_keys": [],
+  "expected_model_parent_cells": 108,
+  "legacy_protocol": {
+    "legacy_protocol_path": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V1.json",
+    "legacy_protocol_sha256": "156be87a764e31cfb08152cb89babe13f94209e40992bc7f23180b2191488e17",
+    "legacy_receipt_schema": "STAGE_Z_Z2_CLEAN_REFERENCE_CELL_RECEIPT_V1",
+    "legacy_receipts_are_reusable_only_after_static_semantic_reconciliation": true,
+    "policy": "retain every prior exposed parent in the exposure ledger; do not silently relabel legacy receipts as V2 execution",
+    "unexposed_or_engineering_invalid_cells_may_be_run_once_under_v2": true
+  },
+  "legacy_receipt_files": 105,
+  "legacy_semantically_reconciled_files": 98,
+  "missing_model_parent_cells": [
+    [
+      "M0_OPENVLA",
+      "libero_goal/task_00/state_21"
+    ],
+    [
+      "M0_OPENVLA",
+      "libero_goal/task_07/state_30"
+    ],
+    [
+      "M0_OPENVLA",
+      "libero_object/task_06/state_31"
+    ],
+    [
+      "M0_OPENVLA",
+      "libero_object/task_07/state_45"
+    ],
+    [
+      "M1_OPENVLA_OFT",
+      "libero_goal/task_00/state_21"
+    ],
+    [
+      "M1_OPENVLA_OFT",
+      "libero_goal/task_07/state_30"
+    ],
+    [
+      "M1_OPENVLA_OFT",
+      "libero_object/task_06/state_31"
+    ],
+    [
+      "M1_OPENVLA_OFT",
+      "libero_object/task_07/state_45"
+    ],
+    [
+      "M2_PI05_LIBERO",
+      "libero_goal/task_00/state_21"
+    ],
+    [
+      "M2_PI05_LIBERO",
+      "libero_goal/task_07/state_30"
+    ]
+  ],
+  "protocol_v2": "configs/STAGE_Z_Z2_CLEAN_REFERENCE_PROTOCOL_V2.json",
+  "schema": "STAGE_Z_Z2_LEGACY_RECEIPT_RECONCILIATION_V1",
+  "scientific_claim": "NONE; historical exposure/provenance reconciliation only",
+  "status": "LEGACY_SEMANTIC_RECONCILIATION_PASS_WITH_UNEXPOSED_CELLS_REMAINING",
+  "unique_legacy_exposed_model_parent_cells": 98,
+  "z3_authorized": false
+}

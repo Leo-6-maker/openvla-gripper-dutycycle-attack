@@ -1,0 +1,73 @@
+{
+  "branch_count": 0,
+  "branches": [],
+  "canary_permanent_exclusion": true,
+  "canonical_parent_key": "libero_object/task_02/state_42",
+  "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+  "claim_boundary": "AA1 runtime/endpoint qualification only; canary permanently excluded from AA2-AA5.",
+  "expected_branch_count": 0,
+  "gate": "STAGE_AA_AA1_ENGINEERING_RUNTIME_QUALIFICATION_V1",
+  "gpu": {
+    "compute_processes": [
+      {
+        "name": "/opt/anaconda3/envs/unsloth/bin/python",
+        "pid": "2205371",
+        "used_memory_mib": "56988"
+      }
+    ],
+    "free_memory_mib": 24218,
+    "index": 7,
+    "used_memory_mib": 57004,
+    "utilization_gpu_percent": 78
+  },
+  "gpu_id": 7,
+  "model_family": "M2_PI05_LIBERO",
+  "next_legal_action": "STOP_FOR_PI",
+  "normalization": {
+    "checkpoint_mutated": false
+  },
+  "passive_clean": {
+    "candidate_counts": {
+      "critical": 0,
+      "noncritical": 0
+    },
+    "horizon": 280,
+    "selected": {
+      "critical": null,
+      "noncritical": null
+    },
+    "status": "PASS_AA1_PASSIVE_CLEAN_PIPELINE",
+    "target_object": "salad_dressing_1"
+  },
+  "runtime_counters": {
+    "aa2_exposure": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 290,
+    "eval160_reads": 0,
+    "model_inference_calls": 56,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 280,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "runtime_environment": {
+    "CUDA_VISIBLE_DEVICES": "7",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "schema": "STAGE_AA_AA1_ENGINEERING_CANARY_CELL_RECEIPT_V1",
+  "scientific_claim": "NONE_ENGINEERING_ONLY",
+  "scientific_use": false,
+  "selected_anchors": {
+    "critical": null,
+    "noncritical": null
+  },
+  "state_id": 42,
+  "status": "PASS_AA1_PASSIVE_PIPELINE_NO_LEGAL_ENGINEERING_POINT",
+  "suite": "libero_object",
+  "task_idx": 2,
+  "timestamp_utc": "2026-08-25T17:36:59Z"
+}

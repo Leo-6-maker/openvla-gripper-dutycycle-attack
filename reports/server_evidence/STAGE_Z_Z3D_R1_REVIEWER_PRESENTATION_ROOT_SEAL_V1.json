@@ -1,0 +1,15 @@
+{
+  "schema_version": "STAGE_Z_Z3D_R1_REVIEWER_PRESENTATION_ROOT_SEAL_V1",
+  "status": "PASS",
+  "formal_z3d_d_authorized": false,
+  "source_manifest_sha256": "efb00096f60009ff754dc192fe81984a975c47aa4a2b0b98316f4cae920f3a",
+  "artifact_sha256": {
+    "neutral_manifest": "4afc3170e6bd6bf7922d1c73c48bd8cbe34b38c9f96598246d8db3a37580791d",
+    "internal_mapping": "e57af6ccfa5607a0c2335d9ce1e24b17dca473750ab6474e4c9bca7273ec2c65",
+    "repair_receipt": "9fd9d144ab07899bfa5d3da707e44f68a541f70f088ee9cef42baaf10de39307",
+    "package_zip": "c4601c03340bc545e145893d6048886fc11714384c98d4ab9f397771acd54a34"
+  },
+  "source_videos_byte_identical": true,
+  "derivatives_uniform": true,
+  "labels_sealed": false
+}

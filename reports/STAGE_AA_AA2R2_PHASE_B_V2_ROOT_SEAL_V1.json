@@ -1,0 +1,25 @@
+{
+  "authorization_pi_comment_id": 5419855172,
+  "common_denominator_sha256": "50444de19a832fd56f30ad2a02567e8152a81a3fa5852d0270dadec02273b4b3",
+  "gate": "STAGE_AA_AA2_CLEAN_ONLY_FULL_CENSUS_AND_COMMON_DENOMINATOR_FREEZE_V1",
+  "manifest_sha256": "6eef2ea995fe75bfcf66c7f2c285b5e084aa386f2f4184a574fc6a4948a5dc35",
+  "next_legal_action": "STOP_FOR_PI",
+  "phase_a_root_seal_sha256": "94830704cdb9c044b9a5d0d62bfaa33f4966f82174b91de4f5e52320d9deb2af",
+  "receipt_count": 324,
+  "receipt_index_sha256": "beae081e18188be8103e3c52f481de42f2942836a66ce53ec3969869c16fc943",
+  "root_payload_sha256": "92004c2d17c4c3a966bb036259e55ebd8e04863e821305e27beb48d5836095ca",
+  "schema": "STAGE_AA_AA2R2_PHASE_B_ROOT_SEAL_V2",
+  "scientific_firewall": {
+    "aa_v_phys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "task_success_reads": 0
+  },
+  "source_authority_sha256": "e31694d4fbae2393d8c3daa5742cb7dc8ac3fddaa6f2f3e094477edca9c9890d",
+  "status": "STAGE_AA_AA2_CAPACITY_LIMIT_STOP_FOR_PI",
+  "terminal_sha256": "3df73e7a806088b36841fd2a910afff5401c498bfc7c5214b5fdee6088a386b4"
+}

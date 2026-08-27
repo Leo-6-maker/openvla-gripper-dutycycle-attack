@@ -1,0 +1,148 @@
+{
+  "canonical_parent_key": "libero_spatial/task_05/state_34",
+  "clean_trajectory_digest": "44af53b061f45ec69a070be73e2d470f61904b6eeaa9b0914b17957343ba1945",
+  "engineering_points": {
+    "candidate_count": 14,
+    "candidates": [
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "7ad718a0a40260f2814e46ffc5eea91a4c168f1d0544ede05a6a335743474287",
+        "clean_boundary_state_sha256": "0e90b45d5fe8f5671d87ff78b7cc0fab407b9f7b257e8edd0cf99615ee00f11e",
+        "remaining_horizon": 180,
+        "selection_rank_sha256": "2349b9829901740d42afa81c1060a2e04eb5a6d816600b9fb962a9441d038196",
+        "step": 40
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "2303325d82115b7755cdb5ff64aedb1beb25c873b7a43a523c4d94938fbac670",
+        "clean_boundary_state_sha256": "e0f27b7b8c1d7b10c19c31055b379a23bf05f573bf12c96c953587d32aaa82d1",
+        "remaining_horizon": 175,
+        "selection_rank_sha256": "35d1ef3bf1f5d91b00e82b5e1cdd9990fdb9787ebeb4219760bb3e00dc584fe9",
+        "step": 45
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "58064aa8c54d90dd7d1fd1b8f922e02739f4cfce69f43d22cec0baf5bcecb8a7",
+        "clean_boundary_state_sha256": "62cc0e7ab56a395bf1fe3b5ced0a208c695dc4b86b40af9e9fbce20ff596500e",
+        "remaining_horizon": 190,
+        "selection_rank_sha256": "368f5c819d4962aca3fda0a62a500ea4fe76b2bd0b682eeb87a4ef3b0b1d2698",
+        "step": 30
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "8ff12613b209638d4224fe4f78afc19bad7b0a045b04ae81dd7a073113ca053a",
+        "clean_boundary_state_sha256": "ee8684cc90bb2f142ec60038bb6dcdc5cd7b14fa1a37c9abc1dea59d03a54061",
+        "remaining_horizon": 215,
+        "selection_rank_sha256": "3a714ba7bef53efa40fd34d2d014ff6796c45ad4d7913816329547dc40d07d09",
+        "step": 5
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "5771e16c28d87892c979006faa7714d0043c82d0d908bb1ca906b1c14b0a2f28",
+        "clean_boundary_state_sha256": "a0481580a7c1d8ae23f885bbe94e9924c0fcf371e1a721ba11e870e9cfaf0461",
+        "remaining_horizon": 210,
+        "selection_rank_sha256": "3f861fe9400c4069fe8c7ed6dbb9ffa1f6d629a3f5fee60e5edd193a88192093",
+        "step": 10
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "1c2ad6f411301dc778ce4a9f0dcf60f887cd14975d831e0d845dccc94292d6ef",
+        "clean_boundary_state_sha256": "361e992ea31bf79ca91912abaac7584c63d6c344cfe22b515085ccc053f8959d",
+        "remaining_horizon": 195,
+        "selection_rank_sha256": "881fdf67ab0a034a545cb5a5f9776a22ad304b6e674c246dcef7b00c2b85ebec",
+        "step": 25
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "9793ca520b79e39484b80126a1702094472be961de708632b8001c690744053b",
+        "clean_boundary_state_sha256": "99d9338604b5a2ec06d3ec44e77586da23f2cc9b0bfa86a804af7af25d093f03",
+        "remaining_horizon": 185,
+        "selection_rank_sha256": "906fc57271dc9149581d36c12f68ce9621e8c527a41744e824d8d350b8c53cf9",
+        "step": 35
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "81a2838235a3883694d8ef6694c58d93facc5ec4a16bfb096f1e10320cf298e9",
+        "clean_boundary_state_sha256": "fcf6b9d9c23d35b1694f71e2b8fc5032f52d5f531fa392712f8c520716e2c6c9",
+        "remaining_horizon": 165,
+        "selection_rank_sha256": "9c90146ba1459f8431adc9bb4f76a57831f81007ffac245f63fcd113ed1f8f52",
+        "step": 55
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "cc8c74f8e011f47d68e381c9309514600385ae2c39c6ba961b29e1804efc9271",
+        "clean_boundary_state_sha256": "e001cf7c69eeb7d95fb6115e1cc70b47478aedfefbc9056c9415ff714ce95773",
+        "remaining_horizon": 170,
+        "selection_rank_sha256": "a7d38e2a11c45795477d75063fb6a02f983882422c71c8c60c8ca3b1676a9fc7",
+        "step": 50
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "ae99cce449a3fe3cda0698c31fc99ed9615bd9193cd6cf11ea01bad13f27402b",
+        "clean_boundary_state_sha256": "ba21ad7041a1d6807d7288e6ec23bee1b9caab85d7ffa24c5a7b2a8e849a0c89",
+        "remaining_horizon": 155,
+        "selection_rank_sha256": "a800e43fd591e0820ff934d53a6967b545de525b2b8b874de1b69345d4dd5379",
+        "step": 65
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "79b109affafe60417c98df703d11240f3a59ff2cee35e02a5b294b9c9ee96d64",
+        "clean_boundary_state_sha256": "0c7f6483d37b8d79b4276be4579e8a3a0b071231620235590fd4c887f387d953",
+        "remaining_horizon": 205,
+        "selection_rank_sha256": "acfd8aac9958d09a1f8046a1be64832ade7c50388f2ce731c1effc54a0ad9853",
+        "step": 15
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "1818cccaab7b96c0495d5c4c1a9345216c82147ac3b571e00012c6113b799b3f",
+        "clean_boundary_state_sha256": "79b94e1e88a960849ec056942e0ad5d14a4b88433ba660bdec17bdc6e5fdb89c",
+        "remaining_horizon": 160,
+        "selection_rank_sha256": "be2f57e95dd75dae27e07a034b11130eafc98ab7625546f80e4eb7ad264c6573",
+        "step": 60
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "0d2f5984d09f7ac5645093b1cb0061b13f91b523212a6652959778268bf01450",
+        "clean_boundary_state_sha256": "ca5f267135f35bd0e6b5824baae75f8d8183c9f509d0740cfbac4a0f5d04207f",
+        "remaining_horizon": 200,
+        "selection_rank_sha256": "e064179ee1247dd76b10a1030086dede2da762945bdac616af39252bb5f37433",
+        "step": 20
+      },
+      {
+        "boundary": "FRESH_PI05_REPLAN",
+        "candidate_digest": "f71f96a2c3a4dd45a1fd7e6141b6699563bc8ffbd4c1bf18835717115382e36f",
+        "clean_boundary_state_sha256": "9b29212c0580dcdca7dcb733cc01bed39bfbadc02f5d643e859008ea5c16989c",
+        "remaining_horizon": 220,
+        "selection_rank_sha256": "f020b7b0202435a400ea48f6dac9abcc9aa30ee1828c1ec128f3d7877396e52f",
+        "step": 0
+      }
+    ],
+    "point_a": {
+      "boundary": "FRESH_PI05_REPLAN",
+      "candidate_digest": "7ad718a0a40260f2814e46ffc5eea91a4c168f1d0544ede05a6a335743474287",
+      "clean_boundary_state_sha256": "0e90b45d5fe8f5671d87ff78b7cc0fab407b9f7b257e8edd0cf99615ee00f11e",
+      "point_label": "ENGINEERING_INTERVENTION_POINT_A",
+      "remaining_horizon": 180,
+      "selection_rank_sha256": "2349b9829901740d42afa81c1060a2e04eb5a6d816600b9fb962a9441d038196",
+      "step": 40
+    },
+    "point_b": {
+      "boundary": "FRESH_PI05_REPLAN",
+      "candidate_digest": "0d2f5984d09f7ac5645093b1cb0061b13f91b523212a6652959778268bf01450",
+      "clean_boundary_state_sha256": "ca5f267135f35bd0e6b5824baae75f8d8183c9f509d0740cfbac4a0f5d04207f",
+      "point_label": "ENGINEERING_INTERVENTION_POINT_B",
+      "remaining_horizon": 200,
+      "selection_rank_sha256": "e064179ee1247dd76b10a1030086dede2da762945bdac616af39252bb5f37433",
+      "step": 20
+    },
+    "selection_mode": "TWO_POINTS",
+    "status": "ENGINEERING_POINT_SELECTED"
+  },
+  "gate": "STAGE_AA_AA1R1_ENGINEERING_BRANCH_PATH_DECOUPLING_AND_QUALIFICATION_V1",
+  "model_family": "M2_PI05_LIBERO",
+  "runtime_source_checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+  "schema": "STAGE_AA_AA1R1_ENGINEERING_POINT_LEDGER_CELL_V1",
+  "scientific_anchor_evaluation": "NOT_EVALUATED_BY_DESIGN",
+  "selection_salt": "STAGE_AA_AA1R1_ENGINEERING_POINT_V1_20260826",
+  "status": "STAGE_AA_AA1R1_ENGINEERING_POINTS_SEALED_BEFORE_OPEN"
+}

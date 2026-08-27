@@ -1,0 +1,239 @@
+{
+  "boundary": {
+    "boundary": "FRESH_PER_STEP",
+    "chunk_length": 1,
+    "inference_calls": 3
+  },
+  "branch_replay": {
+    "clean_post_state_sha256": "10d325ec490338ed1865fed0d257ac10a1568520cb0025ee53e725e0ecb7c243",
+    "clean_pre_state_sha256": "3baeb562caa7bf14d04a26a77337be8f9c3a423dfeb07808d0efa3efbf30b3fb",
+    "fresh_pre_state_exact": true,
+    "open_pre_state_sha256": "3baeb562caa7bf14d04a26a77337be8f9c3a423dfeb07808d0efa3efbf30b3fb",
+    "snapshot_restore_exact": true
+  },
+  "canary": {
+    "canonical_parent_key": "libero_10/task_04/state_03",
+    "permanent_exclusion": true,
+    "role": "PRIMARY",
+    "selection_rank_sha256": "8ed42bb383b4328a021f6f991b53e4474c68528777704c6a40de4fba551a581a",
+    "suite": "libero_10"
+  },
+  "canonical_parent_key": "libero_10/task_04/state_03",
+  "checkpoint": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+  "checkpoint_manifest": null,
+  "claim_boundary": "Engineering sentinel only; no scientific parent, physical endpoint, V_phys, task success, or protected evaluation claim.",
+  "clean_rows": [
+    {
+      "boundary": "FRESH_PER_STEP",
+      "final_action": [
+        0.0352153480052948,
+        -0.001969544915482402,
+        0.0003413818485569209,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        -1.0
+      ],
+      "index": 0,
+      "raw_action": [
+        0.0352153480052948,
+        -0.001969544915482402,
+        0.0003413818485569209,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        0.9960784316062927
+      ]
+    },
+    {
+      "boundary": "FRESH_PER_STEP",
+      "final_action": [
+        0.0352153480052948,
+        -0.052809882909059525,
+        -0.03300945833325386,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        -1.0
+      ],
+      "index": 1,
+      "raw_action": [
+        0.0352153480052948,
+        -0.052809882909059525,
+        -0.03300945833325386,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        0.9960784316062927
+      ]
+    },
+    {
+      "boundary": "FRESH_PER_STEP",
+      "final_action": [
+        0.00212711445055902,
+        -0.09729517996311188,
+        0.0003413818485569209,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        -1.0
+      ],
+      "index": 2,
+      "raw_action": [
+        0.00212711445055902,
+        -0.09729517996311188,
+        0.0003413818485569209,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        0.9960784316062927
+      ]
+    }
+  ],
+  "gpu": {
+    "compute_processes": [],
+    "free_memory_mib": 81213,
+    "index": 6,
+    "used_memory_mib": 10,
+    "utilization_gpu_percent": 0
+  },
+  "gpu_id": 6,
+  "model_family": "M0_OPENVLA",
+  "next_legal_action": "Z3_C_SCIENTIFIC_MATRIX_AFTER_PI_REVIEW",
+  "normalization": {
+    "available_norm_stats_keys": [
+      "libero_10"
+    ],
+    "checkpoint_mutated": false,
+    "component_state_dict_loader": null,
+    "dataset_statistics_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10/dataset_statistics.json",
+    "dataset_statistics_sha256": "54ca346948d5e62e9519a9ed93e45f0a069b9ec997ad1f48f1d8867d4d2d86d2",
+    "requested_task_suite": "libero_10",
+    "resolution_mode": "EXACT_SUITE_KEY",
+    "resolved_unnorm_key": "libero_10",
+    "stats_loader": "checkpoint_embedded_or_existing_norm_stats",
+    "vision_num_images_in_input": 1
+  },
+  "open_rows": [
+    {
+      "action_semantics": {
+        "accepted": true,
+        "expected_final_action": null,
+        "final_action": null,
+        "model_family": "M0_OPENVLA",
+        "raw_action": null,
+        "reason": "OK",
+        "rule": "OPENVLA_THRESHOLD_INVERT_V1",
+        "tolerance": 1e-06
+      },
+      "arm_delta_linf": 0.0,
+      "final_action": [
+        0.0352153480052948,
+        -0.001969544915482402,
+        0.0003413818485569209,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        -1.0
+      ],
+      "final_native_open": -1.0,
+      "index": 0,
+      "raw_action": [
+        0.0352153480052948,
+        -0.001969544915482402,
+        0.0003413818485569209,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        1.0
+      ],
+      "raw_native_open": 1.0
+    },
+    {
+      "action_semantics": {
+        "accepted": true,
+        "expected_final_action": null,
+        "final_action": null,
+        "model_family": "M0_OPENVLA",
+        "raw_action": null,
+        "reason": "OK",
+        "rule": "OPENVLA_THRESHOLD_INVERT_V1",
+        "tolerance": 1e-06
+      },
+      "arm_delta_linf": 0.0,
+      "final_action": [
+        0.0352153480052948,
+        -0.052809882909059525,
+        -0.03300945833325386,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        -1.0
+      ],
+      "final_native_open": -1.0,
+      "index": 1,
+      "raw_action": [
+        0.0352153480052948,
+        -0.052809882909059525,
+        -0.03300945833325386,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        1.0
+      ],
+      "raw_native_open": 1.0
+    },
+    {
+      "action_semantics": {
+        "accepted": true,
+        "expected_final_action": null,
+        "final_action": null,
+        "model_family": "M0_OPENVLA",
+        "raw_action": null,
+        "reason": "OK",
+        "rule": "OPENVLA_THRESHOLD_INVERT_V1",
+        "tolerance": 1e-06
+      },
+      "arm_delta_linf": 0.0,
+      "final_action": [
+        0.00212711445055902,
+        -0.09729517996311188,
+        0.0003413818485569209,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        -1.0
+      ],
+      "final_native_open": -1.0,
+      "index": 2,
+      "raw_action": [
+        0.00212711445055902,
+        -0.09729517996311188,
+        0.0003413818485569209,
+        -0.00046428394853137434,
+        -0.00031470434623770416,
+        -0.0006575529696419835,
+        1.0
+      ],
+      "raw_native_open": 1.0
+    }
+  ],
+  "protocol_sha256": "92747fe2263fb47ad9b53dee916660f7b8e2db1d5d895e6c80922db29caf7f1b",
+  "role": "PRIMARY",
+  "runtime_counters": {
+    "attacked_env_steps": 0,
+    "engineering_command_open_steps": 3,
+    "env_step_calls": 26,
+    "eval160_reads": 0,
+    "model_inference_calls": 3,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0,
+    "vphys_reads": 0
+  },
+  "schema": "STAGE_Z_Z3_ENGINEERING_SENTINEL_RECEIPT_V1",
+  "status": "PASS_Z3_ENGINEERING_SENTINEL",
+  "suite": "libero_10",
+  "timestamp_utc": "2026-08-25T08:49:22Z"
+}

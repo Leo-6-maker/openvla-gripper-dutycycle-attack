@@ -1,0 +1,28 @@
+{
+  "completed_bytes": 15939159245,
+  "completed_files": 25,
+  "endpoint": "https://hf-mirror.com",
+  "expected_bytes": 15939159245,
+  "expected_files": 25,
+  "finished_utc": "2026-08-25T08:32:33Z",
+  "last_completed_path": "tokenizer_config.json",
+  "manifest_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z3_runtime/reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+  "manifest_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+  "materialized_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10",
+  "repo_id": "moojink/openvla-7b-oft-finetuned-libero-10",
+  "retention": "RETAIN_UNTIL_Z3_SENTINEL_AND_DECISION",
+  "revision": "95220f9a3421a7ff12d4218e73d09ade830fa9a3",
+  "runtime_counters": {
+    "env_step_calls": 0,
+    "model_inference_calls": 0,
+    "scientific_parent_exposure": 0
+  },
+  "schema": "STAGE_Z_Z3R1_M1_MATERIALIZATION_RECOVERY_RECEIPT_V1",
+  "scientific_exposure": 0,
+  "source_base": "https://hf-mirror.com/moojink/openvla-7b-oft-finetuned-libero-10/resolve/95220f9a3421a7ff12d4218e73d09ade830fa9a3",
+  "started_utc": "2026-08-25T08:20:10Z",
+  "status": "PASS_EXACT_RETAINED",
+  "suite": "libero_10",
+  "suite_manifest_sha256": "8f970517dcf81c8eff754edca6816b8c7c2c7813f909b6d1ef481c3a6f2dbc15",
+  "target": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache/libero_10"
+}

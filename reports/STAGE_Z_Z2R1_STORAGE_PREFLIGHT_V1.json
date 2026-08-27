@@ -1,0 +1,62 @@
+{
+  "schema": "STAGE_Z_Z2R1_STORAGE_PREFLIGHT_V1",
+  "status": "STAGE_Z_Z2R1_STORAGE_PREFLIGHT_PASS",
+  "gate": "STAGE_Z_Z2R1_M2_PHASE_ACTION_SEMANTICS_RECONCILIATION_AND_CLEAN_ANCHOR_REPAIR_V1",
+  "read_only": true,
+  "server": "dty-server",
+  "observed_at": "2026-08-25T12:47:02+08:00",
+  "filesystems": {
+    "/mnt/sdc": {
+      "device": "/dev/nvme0n1p1",
+      "bytes": 3149224534016,
+      "used_bytes": 2971983908864,
+      "available_bytes": 17192329216,
+      "capacity_percent": 100
+    },
+    "/llm_jzm": {
+      "device": "/dev/nvme1n1p1",
+      "bytes": 3149224534016,
+      "used_bytes": 2958316253184,
+      "available_bytes": 30859984896,
+      "capacity_percent": 99
+    }
+  },
+  "relevant_bytes": {
+    "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime": 11627234,
+    "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache": 31878338966,
+    "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero": 12439122345
+  },
+  "projection": {
+    "new_m1_materialization": false,
+    "new_m2_checkpoint_materialization": false,
+    "historical_evidence_deletion": false,
+    "unrelated_data_deletion": false,
+    "explicit_rematerializable_cache_cleanup": false,
+    "conservative_additional_bytes_cap": 1073741824,
+    "required_free_margin_bytes": 5368709120,
+    "mnt_sdc_available_after_cap_bytes": 16118588416,
+    "margin_satisfied": true,
+    "decision": "PASS_WITHOUT_CLEANUP"
+  },
+  "gpu_snapshot": {
+    "admission_rule": "free_memory_mib > 20480 immediately before launch",
+    "one_worker_per_physical_gpu": true,
+    "foreign_processes": "allowed and recorded; never touched",
+    "gpu0_free_mib": 4732,
+    "gpu1_free_mib": 4732,
+    "gpu2_free_mib": 4732,
+    "gpu3_free_mib": 4732,
+    "gpu4_free_mib": 45843,
+    "gpu5_free_mib": 52662,
+    "gpu6_free_mib": 52664,
+    "gpu7_free_mib": 52662,
+    "eligible_at_snapshot": [4, 5, 6, 7]
+  },
+  "stop_conditions": [
+    "recheck immediately before runtime launch",
+    "stop if /mnt/sdc available bytes fall below 5368709120",
+    "stop if projected receipt/source footprint exceeds available margin",
+    "do not delete historical evidence or unrelated user data"
+  ],
+  "next_legal_action": "MATERIALIZE_R1_CANARY_SOURCE_ONLY_THEN_RECHECK_GPU_AND_STORAGE"
+}

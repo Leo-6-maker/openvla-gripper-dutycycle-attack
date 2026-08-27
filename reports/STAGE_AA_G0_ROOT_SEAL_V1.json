@@ -1,0 +1,53 @@
+{
+  "schema": "STAGE_AA_G0_ROOT_SEAL_V1",
+  "status": "STAGE_AA_AUTONOMOUS_G0_LOCAL_SUBSTITUTE_VALIDATION_PASS_CI_WAIVED",
+  "gate": "STAGE_AA_AUTONOMOUS_G0_CI_INFRASTRUCTURE_WAIVER_AND_LOCAL_SUBSTITUTE_VALIDATION",
+  "authorization_pi_comment_id": 5428383254,
+  "git_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "commit": "fa9d782cd856cbca8c68524fa7b3309c6444cd8a",
+    "tree": "f521fa8694bf0f00cc79cbea30ab80432fd1d3b4"
+  },
+  "artifacts": {
+    "ci_waiver": {
+      "path": "reports/STAGE_AA_G0_CI_INFRASTRUCTURE_WAIVER_V1.json",
+      "bytes": 3839,
+      "sha256": "b4acaa8674c7b43fefa55d8d306d130b70857c3327207e7340198ebdda858a76"
+    },
+    "local_substitute_validation": {
+      "path": "reports/STAGE_AA_G0_LOCAL_SUBSTITUTE_VALIDATION_V1.json",
+      "bytes": 3481,
+      "sha256": "818473d636f41048c38904fd75b841157908f612ec159154037d6c5de5048ee6"
+    },
+    "phase_a_root": {
+      "path": "reports/STAGE_AA_AA2R2_PHASE_A_ROOT_SEAL_V2.json",
+      "bytes": 14340,
+      "sha256": "94830704cdb9c044b9a5d0d62bfaa33f4966f82174b91de4f5e52320d9deb2af"
+    },
+    "phase_b_source_authority": {
+      "path": "reports/STAGE_AA_AA2R2_PHASE_B_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "bytes": 6640,
+      "sha256": "9b3d28f27f16d747275dd5ae1608ea245b2e81bf018b14e100b7ac8491bf63e3"
+    }
+  },
+  "scientific_firewall": {
+    "model_inference_calls": 0,
+    "env_step_calls": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "attacked_env_steps": 0,
+    "aa_v_phys_reads": 0,
+    "stage_z_v_phys_reads": 0,
+    "task_success_reads": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "scientific_parent_exposure": 0,
+    "aa2_exposure": 0,
+    "eval160_protected_accessed": false,
+    "paper_promotion": false
+  },
+  "claim_boundary": "G0 local substitute/static validation only. GitHub CI was unavailable at the historical hold observation and is explicitly waived by PI; current-head CI results are recorded separately and no missing result is represented as PASS.",
+  "next_legal_action": "AA2R2_PHASE_B_FULL_324_CELL_CLEAN_CENSUS",
+  "root_payload_sha256": "31e096682a8b0c39a29c4744633b9e4c8659c3df9f85c3f8c344bd382958ed79"
+}

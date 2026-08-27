@@ -1,0 +1,109 @@
+{
+  "artifact_manifest": {
+    "entries": [
+      {
+        "bytes": 66752,
+        "path": "reports/server_evidence/STAGE_Z_Z3DH_AI_SUBAGENT_PANEL_V1/STAGE_Z_Z3DH_AI_SUBAGENT_PANEL_LABELS_V1.json",
+        "sha256": "aec7b751380603b0d384c011b175dd083203fa4672249f1a90c849273cc42cb1"
+      },
+      {
+        "bytes": 1241,
+        "path": "reports/server_evidence/STAGE_Z_Z3DH_AI_SUBAGENT_PANEL_V1/STAGE_Z_Z3DH_AI_SUBAGENT_PANEL_SEAL_V1.json",
+        "sha256": "2111adebc5f76ce1944373f21daf7ee7af9ad97cb2e6a08fa69f2f9d08bcc83c"
+      },
+      {
+        "bytes": 333363,
+        "path": "reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_RECONCILIATION_V1R1/STAGE_Z_Z3D_AI_SECONDARY_UNBLIND_RECONCILIATION_V1.json",
+        "sha256": "5d038c956318da2ab9b3c1041bfe4c4271971bbd42172de7d3ec95adca1dcdbd"
+      },
+      {
+        "bytes": 4379,
+        "path": "reports/server_evidence/STAGE_Z_Z3D_AI_SECONDARY_RECONCILIATION_V1R1/STAGE_Z_Z3D_AI_SECONDARY_ROOT_SEAL_V1.json",
+        "sha256": "bd0100dd513047000cf42ae11064123cd932c9ee9e840f0fc9f65b4c19052d9e"
+      },
+      {
+        "bytes": 2236,
+        "path": "reports/STAGE_Z_Z3C_ROOT_SEAL_V1.json",
+        "sha256": "9ccceaa1c61e54aff3348491772c463853c7679aab4ec585d2adaf196ae57c77"
+      },
+      {
+        "bytes": 300580,
+        "path": "reports/STAGE_Z_Z3C_BRANCH_RECEIPT_INDEX_V1.json",
+        "sha256": "e1ee03b782eb72a22f794681335a074bab79407c9b067f87556860c2667f3520"
+      },
+      {
+        "bytes": 163987,
+        "path": "reports/STAGE_Z_Z3C_TERMINAL_SYNTHESIS_V1.json",
+        "sha256": "f76c58ca9b7e33d1ff340867304fd98bf9aa90501c411421ef7134c78383126c"
+      },
+      {
+        "bytes": 340926,
+        "path": "reports/STAGE_Z_Z3DH_AI_SUBAGENT_PANEL_UNBLIND_RECONCILIATION_V1.json",
+        "sha256": "356975edfd0eef1f594504918acbe69c42e466060caa4a683f7faf5847abaa69"
+      },
+      {
+        "bytes": 50533,
+        "path": "reports/STAGE_Z_Z3DH_AI_PANEL_CROSS_AUDIT_V1.json",
+        "sha256": "8cf4cd4354dee11cf5362f3eecd34dede2ede038d7384199a6709a4098770bc9"
+      },
+      {
+        "bytes": 9408,
+        "path": "reports/STAGE_Z_Z4_STATIC_CROSS_MODEL_SYNTHESIS_V1.json",
+        "sha256": "ce95ee0ca197842e1122cef5194c88f6a8edf5c2f3039ace4a8e9239bd861b9c"
+      },
+      {
+        "bytes": 2867,
+        "path": "reports/STAGE_Z_Z4_CLAIM_BOUNDARY_V1.json",
+        "sha256": "a83c6315936acb37f8ab257ad71076c08ad79c21d047fc955b1b95e2c5aa9cfc"
+      },
+      {
+        "bytes": 2143,
+        "path": "reports/STAGE_Z_Z4_PROTOCOL_DEVIATION_V1.json",
+        "sha256": "95c0ffad11c893a5bff5204be643c9cff94a52c3d85651868fad7b1c41d1f419"
+      },
+      {
+        "bytes": 27863,
+        "path": "scripts/stage_z/reconcile_stage_z_z3dh_ai_subagent_panel.py",
+        "sha256": "44a0ef2e1d40d18685731cd76831808c2bbc75e58c2221c2daae228739af8aa7"
+      }
+    ],
+    "root_seal_excludes_self": true
+  },
+  "claim_boundary": {
+    "bytes": 2867,
+    "path": "reports/STAGE_Z_Z4_CLAIM_BOUNDARY_V1.json",
+    "sha256": "a83c6315936acb37f8ab257ad71076c08ad79c21d047fc955b1b95e2c5aa9cfc"
+  },
+  "classification": "STAGE_Z_CROSS_MODEL_GENERALIZATION_NOT_ESTABLISHED_ENDPOINT_VALIDITY_LIMITED_AI_ONLY",
+  "git_binding": {
+    "generation_head": "5b7dc765cc6359089f306e1056715e8c0f27115a",
+    "generation_tree": "36d90b93cb73b70845452d89e0b37eb5cc376239"
+  },
+  "next_legal_action": "STOP_FOR_PI_NO_PAPER_PROMOTION_NO_BRIDGE_NO_NEW_SIMULATOR_EXECUTION",
+  "protocol_deviation": {
+    "bytes": 2143,
+    "path": "reports/STAGE_Z_Z4_PROTOCOL_DEVIATION_V1.json",
+    "sha256": "95c0ffad11c893a5bff5204be643c9cff94a52c3d85651868fad7b1c41d1f419"
+  },
+  "reviewer_governance": {
+    "ai_only_exploratory": true,
+    "human_review_gate_satisfied": false,
+    "human_review_requirement_waived_for_exploratory_closeout_by_PI": true
+  },
+  "schema": "STAGE_Z_Z4_ROOT_SEAL_V1",
+  "scientific_firewall": {
+    "branch_reexecution": 0,
+    "eval160_reads": 0,
+    "human_review_gate_satisfied": false,
+    "human_review_requirement_waived_for_exploratory_closeout_by_PI": true,
+    "new_env_step": 0,
+    "new_identities": 0,
+    "new_model_inference": 0,
+    "new_open_intervention": 0,
+    "pgd": 0,
+    "protected_reads": 0,
+    "v_phys_relabeling": 0
+  },
+  "status": "STAGE_Z_Z4_STATIC_CLOSEOUT_COMPLETE_STOP_FOR_PI",
+  "validation_failures": []
+}

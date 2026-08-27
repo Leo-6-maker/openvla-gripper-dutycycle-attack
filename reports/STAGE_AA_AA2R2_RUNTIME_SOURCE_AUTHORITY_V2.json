@@ -1,0 +1,132 @@
+{
+  "schema": "STAGE_AA_AA2R2_RUNTIME_SOURCE_AUTHORITY_V2",
+  "status": "STAGE_AA_AA2R2_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+  "gate": "STAGE_AA_AA2R2_OFFICIAL_THREE_STATE_ACTION_SEMANTICS_AMENDMENT_REQUALIFICATION_AND_CENSUS_RESUME_V1",
+  "authorization_pi_comment_id": 5421992873,
+  "authority_revision": "fixed_horizon_engineering_retry_after_v1_runtime_hold",
+  "supersedes": {
+    "path": "reports/STAGE_AA_AA2R2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+    "sha256": "36208235546091c4b60fd30fb2dac9c9145cd6baaca05dd0b79ff6bf24322bc9",
+    "reason": "The V1 runner truncated the Phase-A fixed-horizon engineering audit after done=True; V2 records terminal state but continues the frozen clean horizon, matching the historical AA1 collector behavior."
+  },
+  "claim_boundary": "AA2R2 Phase-A engineering action-semantics and clean-runtime qualification only; no scientific eligibility, treatment, endpoint, denominator, or promotion claim.",
+  "git_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-z-cross-model-physical-replication-20260824-v2",
+    "commit": "8571cf7b63875544db84bcdb6a5d1364dde55701",
+    "tree": "3df545362ba45d2d2cfbe9ddc05048c90d4dd1e6"
+  },
+  "versioned_runtime_files": {
+    "amendment_protocol": {
+      "path": "configs/STAGE_AA_AA2R2_ACTION_SEMANTICS_AMENDMENT_V1.json",
+      "bytes": 4279,
+      "sha256": "600b991b6841c794246cd95659bc6858f148348e65bf4d3e27615b56353eeb7c"
+    },
+    "canary_plan": {
+      "path": "reports/STAGE_AA_AA2R2_ENGINEERING_CANARY_PLAN_V1.json",
+      "bytes": 4418,
+      "sha256": "2a8e09ce222b1cc3a775b45e3f13c161b4dfe8a258595aa0d548651f2bd838b1"
+    },
+    "static_semantics_report": {
+      "path": "reports/STAGE_AA_AA2R2_STATIC_SEMANTICS_RECONCILIATION_V2.json",
+      "bytes": 6984,
+      "sha256": "5e4058c29d6e69d2f97157dfcf21f220100a3a898b10e3de214afcc9d032c841"
+    },
+    "v2_validator": {
+      "path": "src/stage_aa/action_semantics_v2.py",
+      "bytes": 8314,
+      "sha256": "9c72edacc7c9c0b8811f36a2183ccb61f3da6fe009ae4db79c23c7bec6f684bc"
+    },
+    "v2_runner": {
+      "path": "scripts/stage_aa/run_stage_aa2r2_engineering_canary.py",
+      "bytes": 23325,
+      "sha256": "f8ee8dfff34f8ab0d4d2a5fb91ab16d8d3a871176b55ed614be2dca115c009c6"
+    }
+  },
+  "immutable_parent_authorities": {
+    "official_executable_spec": {
+      "path": "src/gripper_attack/openvla_libero_exec_spec.py",
+      "bytes": 7833,
+      "sha256": "13ea43ffe674da22c5d1c5a1a2c54c92a27c9fcc79ef13dc057594bbbe31bf92",
+      "rule": "raw < 0.5 -> env +1; raw == 0.5 -> env 0; raw > 0.5 -> env -1"
+    },
+    "historical_validator": {
+      "path": "src/stage_z_preparation/action_semantics.py",
+      "bytes": 7777,
+      "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c",
+      "authority": "reports/STAGE_AA_AA2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "immutable": true
+    },
+    "historical_aa2_source_authority": {
+      "path": "reports/STAGE_AA_AA2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "bytes": 3676,
+      "sha256": "04caf9c098c304546c79a5482daa982aaa63e68992e747a781cba26375ef5830"
+    },
+    "aa0_protocol": {
+      "path": "configs/STAGE_AA_AA0_PROSPECTIVE_PROTOCOL_V1.json",
+      "bytes": 11817,
+      "sha256": "b795a796a81d76173e0cfce148ee768cdd9dc90dbd6d69d541d1e40a04c51d16"
+    },
+    "aa0_capacity": {
+      "path": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+      "bytes": 81848,
+      "sha256": "19679c6878a35c6e13bb46d2c1078d7d96a864a90525f542b6dedb62782fbbf5"
+    },
+    "z1_runtime_protocol": {
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "bytes": 7795,
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"
+    },
+    "m1_checkpoint_manifest": {
+      "path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+      "bytes": 23200,
+      "sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd"
+    }
+  },
+  "runtime_materialization": {
+    "root": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa2r2-runtime-8571cf7b-requal-v2",
+    "archive_method": "copied from the exact V1 runtime root, then overlaid with the exact Git-blob runner for commit 8571cf7b",
+    "official_spec_delivery": "retained from the existing frozen authority-bound bytes",
+    "historical_runtime_root_untouched": true,
+    "previous_runtime_root_untouched": true,
+    "non_authoritative_staging_root": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-aa2r2-runtime-51c6b8ad",
+    "staging_root_used_for_execution": false
+  },
+  "server_runtime": {
+    "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "common_libero_authority": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+    "gpu_admission": "free_memory_mib > 20480 immediately before every launch",
+    "one_worker_per_gpu": true,
+    "foreign_process_policy": "record and preserve; never terminate or alter",
+    "allowed_phase_a_gpu_ids": [4, 5, 6, 7]
+  },
+  "phase_a_contract": {
+    "engineering_only": true,
+    "expected_cells": 9,
+    "canary_plan": "reports/STAGE_AA_AA2R2_ENGINEERING_CANARY_PLAN_V1.json",
+    "scientific_parent_exposure": 0,
+    "open_intervention_steps": 0,
+    "attacked_env_steps": 0,
+    "pgd_calls": 0,
+    "aa_v_phys_reads": 0,
+    "stage_z_v_phys_reads": 0,
+    "task_success_reads": 0,
+    "protected_eval160_reads": 0,
+    "bridge_f1_reads": 0,
+    "paper_promotion": false,
+    "phase_b_authorized_only_after_exact_phase_a_pass": true
+  },
+  "scientific_firewall": {
+    "aa2_scientific_candidates": 0,
+    "aa2_scientific_eligibility_scan": 0,
+    "stage_z_identity_exposure": 0,
+    "new_identity_or_top_up": false,
+    "replacement": false,
+    "treatment_or_endpoint_results": false,
+    "protected_or_eval160_reads": 0,
+    "aa3_authorized": false,
+    "paper_promotion": false
+  },
+  "next_legal_action": "PHASE_A_9_CELL_RUNTIME_QUALIFICATION"
+}
