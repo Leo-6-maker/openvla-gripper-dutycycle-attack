@@ -1,0 +1,171 @@
+{
+  "authorization_pi_comment_id": 5435208429,
+  "claim_boundary": "Versioned AC2 clean-only engineering recovery after preserved V1 runtime failures; same 720-cell manifest, no treatment or scientific outcome claim.",
+  "gate": "STAGE_AC_AC2R2_ENGINEERING_RUNTIME_REPAIR_AND_SAME_MANIFEST_CLEAN_RECOVERY",
+  "git_binding": {
+    "branch": "codex/stage-ac-model-specific-replication-20260827",
+    "commit": "3a0721b6abd53a7dd662fa1b4b22f5adb9b96fac",
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "tree": "9feed89b2fcf148b07c65ffa0537181cea07ffae"
+  },
+  "input_authorities": {
+    "ac2r1_canary_root": {
+      "bytes": 5445,
+      "path": "reports/STAGE_AC_AC2R1_M1_CANARY_ROOT_SEAL_V1.json",
+      "sha256": "fe2d1403bd6540c9d12e9b10ef62e7741b833361d92839759f329387d4db8f0a"
+    },
+    "launch_manifest": {
+      "bytes": 1298033,
+      "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+      "sha256": "ee2582686618f2738a4cd4fb3090911f3c7746f002dd7f683e26647dad6dc71a"
+    },
+    "prior_failure_receipts": {
+      "bytes": 10268,
+      "path": "reports/STAGE_AC_AC2R2_PRIOR_FAILURE_RECEIPTS_V1.json",
+      "sha256": "ddcb25ddb21e9dd8862a9a15213262076d74b96744003962f6c6fd985ea2d48d"
+    },
+    "protocol": {
+      "bytes": 7364,
+      "path": "configs/STAGE_AC_AC2R2_CLEAN_SCREEN_REPAIR_PROTOCOL_V1.json",
+      "sha256": "239b1b8a8fc5fcb9cfebe3dd327f4c3e160c47960710aee53ba829b53fb8a52a"
+    },
+    "z1_protocol": {
+      "bytes": 7795,
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"
+    }
+  },
+  "model_authorities": {
+    "M0_OPENVLA": {
+      "paths": {
+        "libero_10": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+        "libero_goal": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+        "libero_object": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+        "libero_spatial": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"
+      }
+    },
+    "M1_OPENVLA_OFT": {
+      "checkpoint_manifests": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json",
+      "checkpoint_manifests_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+      "checkpoint_root": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_m1_cache",
+      "source_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openvla-oft-stage-z-e4287e9_20260823",
+      "source_commit": "e4287e94541f459edc4feabc4e181f537cd569a8",
+      "source_tree": "0ae110ee28943b9e46feffad84429d2d6e026a32"
+    },
+    "M2_PI05_LIBERO": {
+      "checkpoint": "/llm_jzm/mt/models/openpi-assets/checkpoints/pi05_libero",
+      "checkpoint_manifest_sha256": "d9104dfdea46eca2fadf05ec7fc478b19d39b19aa8dfda0e6adedcd6d6b6efac",
+      "source_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/openpi-stage-z-15a9616a_20260822",
+      "source_commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "source_tree": "a7f18af2745255b5fa98c86d6031f858bf73d1be"
+    }
+  },
+  "next_legal_action": "EXECUTE_ONLY_THE_SAME_FROZEN_720_CELL_MANIFEST",
+  "repair_amendment": {
+    "failure_count": 8,
+    "prior_failure_receipts": {
+      "bytes": 10268,
+      "path": "reports/STAGE_AC_AC2R2_PRIOR_FAILURE_RECEIPTS_V1.json",
+      "sha256": "ddcb25ddb21e9dd8862a9a15213262076d74b96744003962f6c6fd985ea2d48d"
+    },
+    "prior_protocol": {
+      "bytes": 6339,
+      "path": "configs/STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1.json",
+      "sha256": "843739ca4eb4c9ea496f1a2596edec5713ff252efbcdd817d31f2ae69ea6da8c"
+    },
+    "prior_source_authority": {
+      "bytes": 7079,
+      "path": "reports/STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "sha256": "bea2ad26236eee51b3e4b355fb10826249165445f3da0333e01d10aea5ffc573"
+    },
+    "repairs": [
+      "restore the two frozen deterministic candidate-selection salts in the protocol payload",
+      "apply the already-official PI05 elementwise clip at the AC2 final-action boundary before validation and delivery"
+    ],
+    "replacement_or_top_up": false,
+    "same_cell_recovery_only": true,
+    "scientific_definition_changed": false
+  },
+  "runtime_environment": {
+    "camera": "agentview",
+    "camera_height": 256,
+    "camera_width": 256,
+    "common_libero_checkout": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+    "common_libero_commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+    "common_libero_tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60",
+    "control_freq": 20,
+    "dummy_wait_steps": 10,
+    "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "foreign_processes": "allowed and recorded; never touched",
+    "gpu_admission": "free_memory_mib > 20480 immediately before worker launch",
+    "libero_config_path": "/mnt/sdc/dty_user/openvla_attack/stage_z_z1_runtime/libero_config",
+    "max_project_workers_per_gpu": 1,
+    "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python",
+    "resize": 224
+  },
+  "runtime_files": [
+    {
+      "bytes": 27293,
+      "path": "scripts/stage_ac/run_stage_ac2_clean_screen.py",
+      "sha256": "cafce9b743a40a6e8d38c3c47d5669ffc5dfd45eb3e96ad8ddd249abf338541c"
+    },
+    {
+      "bytes": 7548,
+      "path": "scripts/stage_ac/run_stage_ac2_family_worker.py",
+      "sha256": "9dca347229b9cfd2b93d5f31b257827bc11dce4fb7c4182c95c9aac794d6e26b"
+    },
+    {
+      "bytes": 7252,
+      "path": "src/stage_ac/m1_manifest_authority.py",
+      "sha256": "65a0255ddeeb63214c2e4144192eaf4f4eb4e5bc78078a22f3307b9c5210c8e7"
+    },
+    {
+      "bytes": 1789,
+      "path": "scripts/stage_ac/reconcile_m1_manifest_authority.py",
+      "sha256": "e051688847462ba6959ad7a52002813dfe1a71daca8d4a1b0b47334f03617a27"
+    },
+    {
+      "bytes": 8535,
+      "path": "src/stage_ac/eligibility_v2.py",
+      "sha256": "486c20c772a28ee5eb489b8bf1b90c9bb4c44470a321c793c4a83e579822d0cc"
+    },
+    {
+      "bytes": 23325,
+      "path": "scripts/stage_aa/run_stage_aa2r2_engineering_canary.py",
+      "sha256": "f8ee8dfff34f8ab0d4d2a5fb91ab16d8d3a871176b55ed614be2dca115c009c6"
+    },
+    {
+      "bytes": 30378,
+      "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
+      "sha256": "2d3a3dc4ae9729ef70730be6c13a42d68a8fe6930cd95c3f914b1273a7c6db94"
+    },
+    {
+      "bytes": 31442,
+      "path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py",
+      "sha256": "16a9b4c655238cf02b4d1a0c7c5ebe30fe5fbd79bdaa1290691de6d7a6933d00"
+    },
+    {
+      "bytes": 17720,
+      "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+      "sha256": "ac1d8936bf6a705cec18904e97b56f24571f0f60a3e39f18f02ae58d7e735dac"
+    },
+    {
+      "bytes": 8314,
+      "path": "src/stage_aa/action_semantics_v2.py",
+      "sha256": "9c72edacc7c9c0b8811f36a2183ccb61f3da6fe009ae4db79c23c7bec6f684bc"
+    }
+  ],
+  "schema": "STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_V1",
+  "scientific_firewall": {
+    "aa_v_phys_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_endpoint_reads": 0,
+    "protected_reads": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "status": "STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_FROZEN"
+}

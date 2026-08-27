@@ -1,0 +1,182 @@
+{
+  "attack_or_pgd_allowed": false,
+  "authorization_pi_comment_id": 5435208429,
+  "claim_boundary": "Versioned AC2 clean-only engineering recovery after preserved V1 runtime failures; same 720-cell manifest, no treatment or scientific outcome claim.",
+  "clean_only": true,
+  "eligibility": {
+    "absolute_object_eef_distance_max_m": 0.12,
+    "clean_continuation_steps": 20,
+    "critical_selection_salt": "STAGE_AC_AC2_MODEL_SPECIFIC_DENOMINATOR_V1_20260827|CRITICAL",
+    "full_episode_horizon_required": false,
+    "implementation": {
+      "bytes": 8535,
+      "path": "src/stage_ac/eligibility_v2.py",
+      "sha256": "486c20c772a28ee5eb489b8bf1b90c9bb4c44470a321c793c4a83e579822d0cc"
+    },
+    "local_continuation_only": true,
+    "minimum_lift_m": 0.015,
+    "noncritical_selection_salt": "STAGE_AC_AC2_MODEL_SPECIFIC_DENOMINATOR_V1_20260827|NONCRITICAL",
+    "relative_carry_displacement_max_m": 0.04,
+    "relative_reference": "first row of local continuation",
+    "relative_vector": "object_position - eef_position",
+    "source_protocol": {
+      "bytes": 5307,
+      "path": "configs/STAGE_AC_AC0_CONSTRUCT_VALIDATION_PROTOCOL_V1.json",
+      "sha256": "ae24b1b0d087dd817c8e729c952d15cdfd83c0bb017850ca0907222801ef6b61"
+    },
+    "stable_grasp_window_steps": 3,
+    "strict_no_flicker": true,
+    "support_contact_forbidden": true,
+    "terminal_rule": "terminal_after allowed only on final local row; terminal_before or earlier terminal_after invalidates the window"
+  },
+  "env_step_allowed": true,
+  "evidence_requirements": {
+    "action_boundary_markers": true,
+    "boundary_state_digest_and_snapshot": true,
+    "candidate_rejection_intersections": true,
+    "complete_clean_rows": true,
+    "contact_and_support": true,
+    "every_cell_persisted": true,
+    "failure_receipt_before_raise": true,
+    "lift": true,
+    "object_eef_positions_and_distances": true,
+    "queue_or_replan_metadata": true,
+    "raw_and_final_7d_actions": true,
+    "relative_carry_displacement": true,
+    "selected_anchor_evidence": true,
+    "terminal_markers": true
+  },
+  "gate": "STAGE_AC_AC2R2_ENGINEERING_RUNTIME_REPAIR_AND_SAME_MANIFEST_CLEAN_RECOVERY",
+  "m1_manifest_authority": {
+    "git_lf_sha256": "0f7143983d1b64cd18dfa79585c1def28d5b5d4904663c40260a1155211a4280",
+    "historical_z1_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "reconciliation": {
+      "bytes": 3162,
+      "path": "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json",
+      "sha256": "29c48a904523ce028d1b16c233ba35486509b2de640b4a113c526c64b537361e"
+    },
+    "runtime_rule": "derive exact historical CRLF bytes for the unchanged Z1 per-file verifier; do not weaken verifier or alter checkpoint rows"
+  },
+  "model_inference_allowed": true,
+  "model_runtime": {
+    "action_dim": 7,
+    "action_semantics": "inherited frozen official three-state/PI05 boundary adapter",
+    "boundaries": {
+      "M0_OPENVLA": "FRESH_PER_STEP",
+      "M1_OPENVLA_OFT": "FRESH_OFT_ACTION_QUEUE",
+      "M2_PI05_LIBERO": "FRESH_PI05_REPLAN"
+    },
+    "final_action": "authoritative 7-D action delivered by existing clean runtime; no gripper overwrite",
+    "m2_final_action_adapter": "elementwise clip[-1,+1] before AC2 semantics validation and LIBERO delivery; raw action remains preserved",
+    "queue_lengths": {
+      "M0_OPENVLA": 1,
+      "M1_OPENVLA_OFT": 8,
+      "M2_PI05_LIBERO": 5
+    }
+  },
+  "next_legal_action": "EXECUTE_AC2R2_SAME_720_CELL_MANIFEST_CLEAN_ONLY",
+  "open_intervention_allowed": false,
+  "physical_endpoint_read_allowed": false,
+  "population": {
+    "full_census_required": true,
+    "goal_in_primary": false,
+    "model_families": [
+      "M0_OPENVLA",
+      "M1_OPENVLA_OFT",
+      "M2_PI05_LIBERO"
+    ],
+    "model_parent_cell_count": 720,
+    "parent_count": 240,
+    "parents_per_task": 8,
+    "replacement_or_top_up": false,
+    "selection_outcome_blind": true,
+    "suites": [
+      "libero_10",
+      "libero_object",
+      "libero_spatial"
+    ],
+    "task_strata": 30
+  },
+  "protected_or_eval160_allowed": false,
+  "repair_amendment": {
+    "failure_count": 8,
+    "prior_failure_receipts": {
+      "bytes": 10268,
+      "path": "reports/STAGE_AC_AC2R2_PRIOR_FAILURE_RECEIPTS_V1.json",
+      "sha256": "ddcb25ddb21e9dd8862a9a15213262076d74b96744003962f6c6fd985ea2d48d"
+    },
+    "prior_protocol": {
+      "bytes": 6339,
+      "path": "configs/STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1.json",
+      "sha256": "843739ca4eb4c9ea496f1a2596edec5713ff252efbcdd817d31f2ae69ea6da8c"
+    },
+    "prior_source_authority": {
+      "bytes": 7079,
+      "path": "reports/STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "sha256": "bea2ad26236eee51b3e4b355fb10826249165445f3da0333e01d10aea5ffc573"
+    },
+    "repairs": [
+      "restore the two frozen deterministic candidate-selection salts in the protocol payload",
+      "apply the already-official PI05 elementwise clip at the AC2 final-action boundary before validation and delivery"
+    ],
+    "replacement_or_top_up": false,
+    "same_cell_recovery_only": true,
+    "scientific_definition_changed": false
+  },
+  "schema": "STAGE_AC_AC2R2_CLEAN_SCREEN_REPAIR_PROTOCOL_V1",
+  "scientific_firewall": {
+    "aa_v_phys_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_endpoint_reads": 0,
+    "protected_reads": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "selection": {
+    "clean_seed_rule": "uint31(sha256(clean_seed_salt|model_family|canonical_parent_key)[:15])",
+    "clean_seed_salt": "STAGE_AC_AC2_CLEAN_SCREEN_SEED_V1_20260827",
+    "model_specific_denominator_salt": "STAGE_AC_AC2_MODEL_SPECIFIC_DENOMINATOR_V1_20260827",
+    "parent_rank_rule": "sha256(selection_salt|canonical_parent_key|state_sha256), ascending within each suite/task stratum",
+    "parent_selection_salt": "STAGE_AC_AC2_TREATMENT_NAIVE_PARENT_SELECTION_V1_20260827",
+    "selection_inputs_exclude": [
+      "AC2 eligibility result",
+      "OPEN outcome",
+      "V_phys",
+      "task success",
+      "future model response"
+    ]
+  },
+  "source_bindings": {
+    "ac2r1_canary_root": {
+      "bytes": 5445,
+      "path": "reports/STAGE_AC_AC2R1_M1_CANARY_ROOT_SEAL_V1.json",
+      "sha256": "fe2d1403bd6540c9d12e9b10ef62e7741b833361d92839759f329387d4db8f0a"
+    },
+    "launch_manifest": {
+      "bytes": 1298033,
+      "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+      "sha256": "ee2582686618f2738a4cd4fb3090911f3c7746f002dd7f683e26647dad6dc71a"
+    },
+    "prior_ac2_protocol": {
+      "bytes": 6339,
+      "path": "configs/STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1.json",
+      "sha256": "843739ca4eb4c9ea496f1a2596edec5713ff252efbcdd817d31f2ae69ea6da8c"
+    },
+    "prior_ac2_source_authority": {
+      "bytes": 7079,
+      "path": "reports/STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "sha256": "bea2ad26236eee51b3e4b355fb10826249165445f3da0333e01d10aea5ffc573"
+    },
+    "prior_failure_receipts": {
+      "bytes": 10268,
+      "path": "reports/STAGE_AC_AC2R2_PRIOR_FAILURE_RECEIPTS_V1.json",
+      "sha256": "ddcb25ddb21e9dd8862a9a15213262076d74b96744003962f6c6fd985ea2d48d"
+    }
+  },
+  "status": "STAGE_AC_AC2R2_CLEAN_SCREEN_REPAIR_PROTOCOL_AUTHORIZED_PRE_RESUME",
+  "task_success_read_allowed": false,
+  "v_phys_read_allowed": false
+}
