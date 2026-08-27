@@ -1,0 +1,98 @@
+{
+  "schema": "STAGE_AC_AC1_FRESH_POPULATION_INVENTORY_AUDIT_V1",
+  "status": "STAGE_AC_AC1_OFFICIAL_FRESH_CAPACITY_EXHAUSTED_HOLD_STOP_FOR_PI",
+  "gate": "STAGE_AC_AC1_MODEL_SPECIFIC_REPLICATION_FRESH_POPULATION_INVENTORY",
+  "claim_boundary": "Static population accounting only; no new model inference, env.step, treatment, endpoint, or scientific outcome.",
+  "source_authorities": {
+    "aa0_capacity_inventory": {
+      "path": "reports/STAGE_AA_AA0_FRESH_CAPACITY_INVENTORY_V1.json",
+      "bytes": 81848,
+      "sha256": "19679c6878a35c6e13bb46d2c1078d7d96a864a90525f542b6dedb62782fbbf5"
+    },
+    "aa2_clean_screen_launch_manifest": {
+      "path": "reports/STAGE_AA_AA2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+      "bytes": 318007,
+      "sha256": "6eef2ea995fe75bfcf66c7f2c285b5e084aa386f2f4184a574fc6a4948a5dc35"
+    },
+    "z0r1_shared_36_panel": {
+      "path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json",
+      "bytes": 19254,
+      "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"
+    },
+    "ac0_root_seal": {
+      "path": "reports/STAGE_AC_AC0_ROOT_SEAL_V1.json",
+      "bytes": 29882,
+      "sha256": "1a689871ab75edfda0f7ee01983036e0b8ed1425b15caecf11fbb1a0439a27df"
+    }
+  },
+  "historical_pool_partition": {
+    "pre_stage_z_candidate_count": 147,
+    "pre_stage_z_candidate_set_sha256": "77c4ea546f996b20e52e8679ee3255cc3aae32962b1894ae13fc6ac7ad2f8a91",
+    "pre_stage_z_candidate_by_suite": {
+      "libero_10": 34,
+      "libero_object": 52,
+      "libero_spatial": 55,
+      "libero_goal": 6
+    },
+    "z0r1_shared_selected_count": 36,
+    "z0r1_shared_selected_set_sha256": "db61ce12baec923cf7191ef36730389f32bfb929c5a7e70e3fe7a8e17b3610d8",
+    "aa0_full_fresh_inventory_count": 111,
+    "aa0_full_fresh_inventory_set_sha256": "2b53819c4ceb769563b1c60c4a0fadccea2699ed7567286e76fd12074132d32d",
+    "z0r1_plus_aa0_union_count": 147,
+    "z0r1_plus_aa0_union_set_sha256": "77c4ea546f996b20e52e8679ee3255cc3aae32962b1894ae13fc6ac7ad2f8a91",
+    "z0r1_aa0_intersection_count": 0,
+    "exact_partition_of_pre_stage_z_candidate_pool": true,
+    "remaining_unexposed_identity_count": 0,
+    "remaining_unexposed_identity_set_sha256": "a80e516bfb196e1c48a9acbe39da8fceb6bc82e0d991b8a990b8f3239c7efaed",
+    "remaining_unexposed_by_suite": {
+      "libero_10": 0,
+      "libero_object": 0,
+      "libero_spatial": 0,
+      "libero_goal": 0
+    }
+  },
+  "aa0_inventory_consumption": {
+    "aa1_engineering_canary_count": 3,
+    "aa1_engineering_canary_permanently_excluded": true,
+    "aa2_analysis_pool_count": 108,
+    "aa2_manifest_unique_parent_count": 108,
+    "aa0_full_inventory_minus_aa2_count": 3,
+    "aa0_full_inventory_minus_aa2_equals_aa1_canaries": true,
+    "aa2_clean_census_manifest_cell_count": 324,
+    "aa2_clean_census_parent_set_complete": true,
+    "ac0_canary_count": 3,
+    "ac0_canaries_reuse_aa1_canaries": true,
+    "all_111_previously_unexposed_rows_now_consumed_or_permanently_excluded": true
+  },
+  "structural_missingness": {
+    "goal_task_cells_without_official_fresh_identity": [
+      "libero_goal/task_01",
+      "libero_goal/task_04",
+      "libero_goal/task_06",
+      "libero_goal/task_09"
+    ],
+    "structurally_missing_task_cell_count": 4,
+    "cannot_be_used_as_silent_replacement_or_top_up": true
+  },
+  "ac_implication": {
+    "model_specific_fresh_denominator_available_under_current_frozen_universe": false,
+    "fresh_capacity_status": "CAPACITY_LIMITED",
+    "capacity_threshold_for_each_model": 24,
+    "available_fresh_parent_count_for_each_model": 0,
+    "aa2_e_common_zero_not_reinterpreted_as_scientific_negative": true,
+    "no_new_population_defined": true,
+    "no_replacement_or_top_up": true,
+    "new_population_authority_required_to_continue": true,
+    "permitted_next_decision": "PI must separately authorize a deterministic new initial-state population, or close Stage AC as measurement/capacity-limited."
+  },
+  "scientific_firewall": {
+    "new_model_inference": 0,
+    "new_env_step": 0,
+    "open_intervention": 0,
+    "pgd": 0,
+    "v_phys": 0,
+    "protected_or_eval160": 0,
+    "fresh_scientific_identity_exposure": 0
+  },
+  "next_legal_action": "PI_MUST_AUTHORIZE_NEW_DETERMINISTIC_INITIAL_STATE_POPULATION_OR_CLOSE_STAGE_AC"
+}
