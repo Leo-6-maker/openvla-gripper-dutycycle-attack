@@ -29,7 +29,7 @@ TARGET_SUITES = ("libero_10", "libero_object", "libero_spatial")
 STATES_PER_TASK = 50
 PARENTS_PER_TASK = 8
 TARGET_PARENT_COUNT = 30 * PARENTS_PER_TASK
-CANONICAL_ENCODING = "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=47"
+CANONICAL_ENCODING_FAMILY = "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape="
 KEY_RE = re.compile(r"^libero_(?:10|object|spatial|goal)/task_\d{2}/state_\d{2}$")
 
 
@@ -80,7 +80,13 @@ def git_binding(repo: Path) -> dict:
     def run(fmt: str) -> str:
         return subprocess.check_output(["git", "-C", str(repo), "show", "-s", f"--format={fmt}", "HEAD"], text=True).strip()
 
-    return {"commit": run("%H"), "tree": run("%T")}
+    dirty = subprocess.check_output(
+        ["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=all"],
+        text=True,
+    ).strip()
+    if dirty:
+        raise ValueError(f"official source checkout is not clean: {repo}")
+    return {"commit": run("%H"), "tree": run("%T"), "working_tree": "CLEAN"}
 
 
 def source_root_binding(repo: Path) -> dict:
@@ -107,10 +113,12 @@ def load_init(path: Path) -> np.ndarray:
     except TypeError:
         value = torch.load(path, map_location="cpu")
     array = np.asarray(value)
-    if array.ndim != 2 or array.shape != (STATES_PER_TASK, 47):
-        raise ValueError(f"{path}: expected {(STATES_PER_TASK, 47)}, got {array.shape}")
+    if array.ndim != 2 or array.shape[0] != STATES_PER_TASK or array.shape[1] <= 0:
+        raise ValueError(f"{path}: expected {STATES_PER_TASK} rows with a positive state width, got {array.shape}")
     if not np.issubdtype(array.dtype, np.floating):
         raise ValueError(f"{path}: expected floating state array, got {array.dtype}")
+    if not np.isfinite(array).all():
+        raise ValueError(f"{path}: state array contains non-finite values")
     return np.asarray(array, dtype="<f8", order="C")
 
 
@@ -128,8 +136,12 @@ def canonical_row_bytes(row: np.ndarray) -> bytes:
     return row.astype("<f8", copy=False).tobytes(order="C")
 
 
-def state_digest(raw: bytes) -> str:
-    return sha256_bytes((CANONICAL_ENCODING + "\n").encode("ascii") + raw)
+def canonical_encoding(width: int) -> str:
+    return f"{CANONICAL_ENCODING_FAMILY}{width}"
+
+
+def state_digest(raw: bytes, encoding: str) -> str:
+    return sha256_bytes((encoding + "\n").encode("ascii") + raw)
 
 
 def build_official_inventory(official_root: Path) -> tuple[dict, dict[str, dict], list[dict]]:
@@ -170,7 +182,8 @@ def build_official_inventory(official_root: Path) -> tuple[dict, dict[str, dict]
             seen = {}
             for state_index, row in enumerate(array):
                 raw = canonical_row_bytes(row)
-                digest = state_digest(raw)
+                encoding = canonical_encoding(array.shape[1])
+                digest = state_digest(raw, encoding)
                 key = f"{suite}/{task}/state_{state_index:02d}"
                 duplicate_of = seen.get(digest)
                 if duplicate_of is None:
@@ -185,8 +198,8 @@ def build_official_inventory(official_root: Path) -> tuple[dict, dict[str, dict]
                     "official_init_index": state_index,
                     "state": f"state_{state_index:02d}",
                     "state_dtype": "<f8",
-                    "state_shape": [47],
-                    "canonical_encoding": CANONICAL_ENCODING,
+                    "state_shape": [int(array.shape[1])],
+                    "canonical_encoding": encoding,
                     "state_sha256": digest,
                     "state_bytes_base64": base64.b64encode(raw).decode("ascii"),
                     "source_init_file": init_binding,
@@ -206,7 +219,7 @@ def build_official_inventory(official_root: Path) -> tuple[dict, dict[str, dict]
         "row_count": len(rows),
         "states_per_task": STATES_PER_TASK,
         "tasks": tasks,
-        "canonical_encoding": CANONICAL_ENCODING,
+        "canonical_encoding_family": CANONICAL_ENCODING_FAMILY + "<per-task-width>",
     }
     return authority, by_key, rows
 
