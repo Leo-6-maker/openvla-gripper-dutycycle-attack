@@ -427,8 +427,12 @@ def prepare_static(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[
         path = ROOT / str(entry["path"])
         require(path.is_file() and path.stat().st_size == int(entry["bytes"]) and sha256_file(path) == str(entry["sha256"]), f"AC3_G2_RUNTIME_FILE_MISMATCH:{path}")
     jobs = [job for job in manifest["branches"] if job.get("model_family") == args.model_family and job.get("suite") == args.suite]
-    require(len(jobs) == 128, f"AC3_G2_SHARD_SIZE:{args.model_family}:{args.suite}:{len(jobs)}")
-    require(len({job["branch_id"] for job in jobs}) == 128, "AC3_G2_BRANCH_ID_DUPLICATE")
+    parents = {job["canonical_parent_key"] for job in jobs}
+    require(len(jobs) == 4 * len(parents), f"AC3_G2_SHARD_SIZE_NOT_FOUR_CONDITIONS:{args.model_family}:{args.suite}:{len(jobs)}:{len(parents)}")
+    require(len({job["branch_id"] for job in jobs}) == len(jobs), "AC3_G2_BRANCH_ID_DUPLICATE")
+    for parent in parents:
+        conditions = {job["condition"] for job in jobs if job["canonical_parent_key"] == parent}
+        require(conditions == set(CONDITIONS), f"AC3_G2_PARENT_CONDITIONS_INVALID:{args.model_family}:{args.suite}:{parent}:{conditions}")
     sample = read_json(args.blind_sample)
     blind_map = {row["branch_id"]: row["blinded_video_id"] for row in sample.get("sample", [])}
     require(len(blind_map) == 96 and len(set(blind_map.values())) == 96, "AC3_G2_BLIND_SAMPLE_INVALID")
@@ -515,7 +519,7 @@ def self_test() -> None:
     assert len(MODELS) == 3 and len(SUITES) == 3
     assert sum(DOSES.values()) == 18
     assert QUEUE_LENGTH["M2_PI05_LIBERO"] == 5
-    print(json.dumps({"status": "AC3_G2_STATIC_SELF_TEST_PASS", "branches_per_shard": 128, "shards": 9, "primary_branches": 384}, sort_keys=True))
+    print(json.dumps({"status": "AC3_G2_STATIC_SELF_TEST_PASS", "shards": 9, "primary_branches": 384, "four_conditions_per_parent": True}, sort_keys=True))
 
 
 def main() -> int:
