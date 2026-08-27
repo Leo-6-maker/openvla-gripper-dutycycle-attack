@@ -9,9 +9,9 @@
   "gate": "STAGE_AC_AC2R2_ENGINEERING_RUNTIME_REPAIR_AND_SAME_MANIFEST_CLEAN_RECOVERY",
   "git_binding": {
     "branch": "codex/stage-ac-model-specific-replication-20260827",
-    "commit": "3a0721b6abd53a7dd662fa1b4b22f5adb9b96fac",
+    "commit": "bc9428fbb012d5b406f9875efd3d7f30e632ee2d",
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "tree": "9feed89b2fcf148b07c65ffa0537181cea07ffae"
+    "tree": "dcb358600b234bf6098986f60d5f976153fc8e21"
   },
   "next_legal_action": "GPU_AC2R2_CLEAN_ONLY_AFTER_THIS_SEAL_IS_COMMITTED_AND_VERIFIED",
   "prior_ac2_v1_failures": {
@@ -25,7 +25,7 @@
     "same_manifest_only": true,
     "same_seed_and_parent_bindings": true
   },
-  "root_payload_sha256": "ade73fc82b9726bb480e056077516355124eea67d8efe941b817766cf1ffcfa8",
+  "root_payload_sha256": "9aae610d171e79f05992ee49104057e3976cceafa73ad75ed6b5e54788898bec",
   "same_frozen_manifest": {
     "bytes": 1298033,
     "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
@@ -67,7 +67,7 @@
     "source_authority": {
       "bytes": 7323,
       "path": "reports/STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_V1.json",
-      "sha256": "b7909da2ae9a2d8fe68e6d8cd09567cf93a75ba33f7d0bf80823476812793783"
+      "sha256": "b101f68bcab1224f8927c8fb29c383eb2d972bfefb35fe97545670de3bfed38e"
     }
   },
   "status": "STAGE_AC_AC2R2_PRE_RESUME_STATIC_REPAIR_PASS"

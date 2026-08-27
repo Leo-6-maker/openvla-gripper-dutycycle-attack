@@ -4,9 +4,9 @@
   "gate": "STAGE_AC_AC2R2_ENGINEERING_RUNTIME_REPAIR_AND_SAME_MANIFEST_CLEAN_RECOVERY",
   "git_binding": {
     "branch": "codex/stage-ac-model-specific-replication-20260827",
-    "commit": "3a0721b6abd53a7dd662fa1b4b22f5adb9b96fac",
+    "commit": "bc9428fbb012d5b406f9875efd3d7f30e632ee2d",
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
-    "tree": "9feed89b2fcf148b07c65ffa0537181cea07ffae"
+    "tree": "dcb358600b234bf6098986f60d5f976153fc8e21"
   },
   "input_authorities": {
     "ac2r1_canary_root": {
