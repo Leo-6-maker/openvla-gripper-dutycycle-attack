@@ -83,6 +83,13 @@ def git_binding(repo: Path) -> dict:
     return {"commit": run("%H"), "tree": run("%T")}
 
 
+def source_root_binding(repo: Path) -> dict:
+    try:
+        return {"path": str(repo), "git": git_binding(repo)}
+    except (OSError, subprocess.CalledProcessError):
+        return {"path": str(repo), "git": None, "status": "NOT_A_GIT_CHECKOUT"}
+
+
 def load_task_map(path: Path) -> dict:
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     for node in tree.body:
@@ -326,7 +333,7 @@ def main() -> int:
     if not script_path.is_file():
         script_path = Path(__file__).resolve()
     script_binding = file_binding(script_path, str(script_rel).replace("\\", "/"))
-    project_git = git_binding(args.project_root)
+    project_source = source_root_binding(args.project_root)
     hits, history_sources, errors, unresolved = history_hits(args.project_root, official_by_key)
     fresh_rows, selected_rows, selection = select_fresh(official_rows, hits)
     target_history = {key: value for key, value in hits.items() if key in official_by_key}
@@ -404,7 +411,7 @@ def main() -> int:
         "gate": GATE,
         "source_authorities": {
             "official_repo": authority["libero_source"],
-            "project_repo": project_git,
+            "project_source": project_source,
             "builder_script": script_binding,
             "history_sources": history_sources,
             "selection_salt": SELECTION_SALT,
