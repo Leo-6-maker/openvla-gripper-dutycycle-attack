@@ -6,9 +6,18 @@ SUITE="$2"
 GPU_ID="$3"
 ROOT="/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf"
 OUT_ROOT="/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1"
+RUNTIME_CACHE_ROOT="/mnt/sdc/dty_user/openvla_attack_runtime_cache/stage_ac3_g2"
+
+mkdir -p "$RUNTIME_CACHE_ROOT/tmp" "$RUNTIME_CACHE_ROOT/hf/modules" "$RUNTIME_CACHE_ROOT/hf/transformers"
 
 export CUDA_VISIBLE_DEVICES="$GPU_ID"
 export XLA_PYTHON_CLIENT_PREALLOCATE="false"
+export TMPDIR="$RUNTIME_CACHE_ROOT/tmp"
+export TMP="$TMPDIR"
+export TEMP="$TMPDIR"
+export HF_HOME="$RUNTIME_CACHE_ROOT/hf"
+export HF_MODULES_CACHE="$RUNTIME_CACHE_ROOT/hf/modules"
+export TRANSFORMERS_CACHE="$RUNTIME_CACHE_ROOT/hf/transformers"
 exec /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python \
   "$ROOT/scripts/stage_ac/run_stage_ac3_g2_model_suite.py" \
   --model-family "$MODEL_FAMILY" \
