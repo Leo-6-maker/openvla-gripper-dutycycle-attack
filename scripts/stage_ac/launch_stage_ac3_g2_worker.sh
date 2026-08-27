@@ -31,4 +31,6 @@ exec /mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python \
   --runtime-authority "$ROOT/reports/STAGE_AC_AC3Q_RUNTIME_SOURCE_AUTHORITY_V7.json" \
   --manifest "$ROOT/reports/STAGE_AC_AC3_G0_LAUNCH_MANIFEST_V1.json" \
   --blind-sample "$ROOT/reports/STAGE_AC_AC4_BLIND_AUDIT_SAMPLE_V1.json" \
-  --config "$ROOT/configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json"
+  --config "$ROOT/configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json" \
+  --resume \
+  --recovery-dir "$OUT_ROOT/recovered_receipts_v7"

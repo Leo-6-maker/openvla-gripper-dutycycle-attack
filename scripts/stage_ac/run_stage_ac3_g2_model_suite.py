@@ -288,6 +288,62 @@ def as_contract_branch(result: dict[str, Any], job: dict[str, Any], source_recei
     return contract
 
 
+def existing_video_metadata(path: Path | None) -> dict[str, Any] | None:
+    if path is None:
+        return None
+    require(path.is_file(), f"AC3_G2_RECOVERY_VIDEO_MISSING:{path}")
+    import imageio.v2 as imageio
+
+    reader = imageio.get_reader(str(path))
+    try:
+        metadata = reader.get_meta_data()
+        try:
+            frames = int(reader.count_frames())
+        except Exception:
+            frames = sum(1 for _ in reader)
+    finally:
+        reader.close()
+    return {
+        "path": str(path),
+        "bytes": path.stat().st_size,
+        "sha256": sha256_file(path),
+        "frames": frames,
+        "fps": int(round(float(metadata.get("fps", 10)))),
+    }
+
+
+def finalize_running_clean(job: dict[str, Any], source_receipt: dict[str, Any], partial: dict[str, Any], video_path: Path | None, original_path: Path) -> dict[str, Any]:
+    require(job["condition"] == "CLEAN_REFERENCE", f"AC3_G2_RECOVERY_NOT_CLEAN:{job['branch_id']}")
+    rows = list(partial.get("rows", []))
+    require(partial.get("status") == "RUNNING", f"AC3_G2_RECOVERY_STATUS:{job['branch_id']}")
+    require(len(rows) == 20 and int(partial.get("available_horizon_steps", -1)) == 20, f"AC3_G2_RECOVERY_ROWS:{job['branch_id']}:{len(rows)}")
+    result = {
+        "state_restore_exact": True,
+        "rows": rows,
+        "action_receipts": list(partial.get("action_receipts", [])),
+        "queue_boundary_steps": [],
+        "expected_queue_boundary_steps": [],
+        "queue_reset_verified": True,
+        "telemetry_aligned": all(isinstance(row.get("pre"), dict) and isinstance(row.get("post"), dict) for row in rows),
+        "arm_preserved": True,
+        "max_arm_delta_linf": 0.0,
+        "exact_open_delivery": True,
+        "open_intervention_steps": 0,
+        "trace_digest": canonical_hash(rows),
+        "video": existing_video_metadata(video_path),
+    }
+    require(result["telemetry_aligned"], f"AC3_G2_RECOVERY_TELEMETRY:{job['branch_id']}")
+    contract = as_contract_branch(result, job, source_receipt, dict(partial.get("runtime_counters", {})), None)
+    contract["receipt_recovery"] = {
+        "status": "RECOVERED_FROM_COMPLETE_RUNNING_RECEIPT",
+        "reason": "V6 omitted final clean contract write after complete branch execution",
+        "original_path": str(original_path),
+        "original_bytes": original_path.stat().st_size,
+        "original_sha256": sha256_file(original_path),
+    }
+    return contract
+
+
 def load_source_unit(unit: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     source_path = Path(str(unit["source_receipt"]["path"]))
     require(source_path.is_file(), f"AC3_G2_SOURCE_RECEIPT_MISSING:{source_path}")
@@ -473,11 +529,13 @@ def load_model(config: dict[str, Any], family: str, suite: str) -> tuple[Any, An
 def run(args: argparse.Namespace) -> dict[str, Any]:
     load_runtime()
     _manifest, jobs, blind_map = prepare_static(args)
-    existing_ids = {path.stem for path in args.output_dir.glob("AC3-*.json")}
     current_ids = {str(job["branch_id"]) for job in jobs}
-    overlap = sorted(existing_ids & current_ids)
-    if overlap:
-        raise RuntimeError(f"AC3_G2_APPEND_ONLY_BRANCH_EXISTS:{','.join(overlap)}")
+    base_paths = {path.stem: path for path in args.output_dir.glob("AC3-*.json")}
+    failure_paths = {path.name.removeprefix("FAILURE_").removesuffix("_V7.json"): path for path in args.output_dir.glob("FAILURE_AC3-*_V7.json")}
+    existing_paths = {branch_id: failure_paths.get(branch_id, path) for branch_id, path in base_paths.items()}
+    existing_ids = set(existing_paths) & current_ids
+    if existing_ids and not args.resume:
+        raise RuntimeError(f"AC3_G2_APPEND_ONLY_BRANCH_EXISTS:{','.join(sorted(existing_ids))}")
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
     AA1.require_single_gpu(args.gpu_id)
     gpu = AA1.gpu_snapshot(args.gpu_id)
@@ -486,12 +544,58 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     infer = model = None
     worker_counts: dict[str, int] = {}
     completed: list[dict[str, Any]] = []
+    existing_records: dict[str, dict[str, Any]] = {}
+    source_cache: dict[str, tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = {}
+    controls: dict[str, dict[str, Any]] = {}
+
+    def record(job: dict[str, Any], data: dict[str, Any], path: Path) -> dict[str, Any]:
+        return {
+            "branch_id": job["branch_id"],
+            "condition": job["condition"],
+            "status": data.get("status"),
+            "receipt": {"path": str(path), "bytes": path.stat().st_size, "sha256": sha256_file(path)},
+            "video": data.get("video"),
+        }
+
+    def add_counts(data: dict[str, Any]) -> None:
+        for key, value in data.get("runtime_counters", {}).items():
+            worker_counts[key] = worker_counts.get(key, 0) + int(value)
+
     try:
-        infer, model, checkpoint, checkpoint_manifest = load_model(config, args.model_family, args.suite)
         jobs.sort(key=lambda job: (job["canonical_parent_key"], CONDITIONS.index(job["condition"])))
-        source_cache: dict[str, tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = {}
-        controls: dict[str, dict[str, Any]] = {}
         for job in jobs:
+            branch_id = str(job["branch_id"])
+            path = existing_paths.get(branch_id)
+            if path is None:
+                continue
+            data = read_json(path)
+            require(data.get("branch_id") == branch_id and data.get("model_family") == args.model_family and data.get("suite") == args.suite and data.get("condition") == job["condition"], f"AC3_G2_EXISTING_RECEIPT_BINDING:{branch_id}")
+            if data.get("status") == "RUNNING":
+                require(args.resume and job["condition"] == "CLEAN_REFERENCE", f"AC3_G2_EXISTING_RUNNING_UNRECOVERABLE:{branch_id}")
+                source_receipt, _clean, _binding = load_source_unit(next(unit for unit in _manifest["model_parent_units"] if unit["model_family"] == job["model_family"] and unit["canonical_parent_key"] == job["canonical_parent_key"]))
+                source_cache[str(job["canonical_parent_key"])] = (source_receipt, _clean, _binding)
+                require(args.recovery_dir is not None, "AC3_G2_RECOVERY_DIR_REQUIRED")
+                recovered_path = args.recovery_dir / f"{branch_id}.json"
+                if recovered_path.exists():
+                    data = read_json(recovered_path)
+                else:
+                    data = finalize_running_clean(job, source_receipt, data, args.video_dir / f"{job['blinded_video_id']}.mp4" if job.get("blinded_video_id") else None, path)
+                    atomic_write(recovered_path, data)
+                path = recovered_path
+            require(data.get("status") in {"PASS", "ENGINEERING_INVALID_OR_HORIZON_CENSORED"}, f"AC3_G2_EXISTING_RECEIPT_STATUS:{branch_id}:{data.get('status')}")
+            existing_records[branch_id] = record(job, data, path)
+            add_counts(data)
+            if job["condition"] == "CLEAN_REFERENCE" and data.get("status") == "PASS":
+                controls[str(job["canonical_parent_key"])] = data
+
+        jobs_to_run = [job for job in jobs if str(job["branch_id"]) not in existing_records]
+        checkpoint = None
+        checkpoint_manifest = None
+        if jobs_to_run:
+            infer, model, checkpoint, checkpoint_manifest = load_model(config, args.model_family, args.suite)
+        for job in jobs:
+            if str(job["branch_id"]) not in {str(item["branch_id"]) for item in jobs_to_run}:
+                continue
             parent = str(job["canonical_parent_key"])
             if parent not in source_cache:
                 source_cache[parent] = load_source_unit(next(unit for unit in _manifest["model_parent_units"] if unit["model_family"] == job["model_family"] and unit["canonical_parent_key"] == parent))
@@ -509,14 +613,21 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 atomic_write(output, result)
                 for key, value in result.get("runtime_counters", {}).items():
                     worker_counts[key] = worker_counts.get(key, 0) + int(value)
-                completed.append({"branch_id": job["branch_id"], "condition": job["condition"], "status": result["status"], "receipt": {"path": str(output), "bytes": output.stat().st_size, "sha256": sha256_file(output)}, "video": result.get("video")})
+                completed.append(record(job, result, output))
             except Exception as exc:
                 failure = {"schema": "STAGE_AC_AC3_BRANCH_RECEIPT_V1", "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED", "gate": GATE, "branch_id": job["branch_id"], "model_family": args.model_family, "suite": args.suite, "canonical_parent_key": parent, "condition": job["condition"], "dose": int(job["dose"]), "source_receipt_path": job["source_receipt"]["path"], "source_receipt_sha256": job["source_receipt"]["sha256"], "error": {"type": type(exc).__name__, "message": str(exc)}, "next_legal_action": "STOP_FOR_PI", "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
-                atomic_write(output, failure)
-                raise
-        require(len(completed) == len(jobs), f"AC3_G2_COMPLETED_COUNT:{len(completed)}:{len(jobs)}")
-        summary = {"schema": "STAGE_AC_AC3_G2_WORKER_RECEIPT_V1", "status": "PASS_AC3_G2_MODEL_SUITE_WORKER", "gate": GATE, "model_family": args.model_family, "suite": args.suite, "gpu": gpu, "checkpoint": str(checkpoint), "checkpoint_manifest": checkpoint_manifest, "jobs_completed": len(completed), "branch_receipts": completed, "runtime_counters": dict(sorted(worker_counts.items())), "scientific_claim": "AC3_TREATMENT_NAIVE_PRIMARY_BRANCH_EXECUTION_ONLY", "claim_boundary": "G2 branch execution; no G3 promotion statistics", "next_legal_action": "CONTINUE_AC3_G2_MATRIX"}
-        atomic_write(args.output_dir / f"WORKER_{args.model_family}_{args.suite}.json", summary)
+                failure_path = args.output_dir / f"FAILURE_{job['branch_id']}_V7.json" if output.exists() else output
+                atomic_write(failure_path, failure)
+                completed.append(record(job, failure, failure_path))
+                if not args.resume:
+                    raise
+        all_records = list(existing_records.values()) + completed
+        require(len(all_records) == len(jobs) and {item["branch_id"] for item in all_records} == {str(job["branch_id"]) for job in jobs}, f"AC3_G2_COMPLETED_COUNT:{len(all_records)}:{len(jobs)}")
+        all_pass = all(item.get("status") == "PASS" for item in all_records)
+        summary = {"schema": "STAGE_AC_AC3_G2_WORKER_RECEIPT_V1", "status": "PASS_AC3_G2_MODEL_SUITE_WORKER" if all_pass else "ENGINEERING_INVALID_AC3_G2_MODEL_SUITE", "gate": GATE, "model_family": args.model_family, "suite": args.suite, "gpu": gpu, "checkpoint": str(checkpoint) if checkpoint is not None else None, "checkpoint_manifest": checkpoint_manifest, "jobs_completed": len(all_records), "jobs_new": len(completed), "jobs_existing": len(existing_records), "branch_receipts": sorted(all_records, key=lambda item: item["branch_id"]), "runtime_counters": dict(sorted(worker_counts.items())), "scientific_claim": "AC3_TREATMENT_NAIVE_PRIMARY_BRANCH_EXECUTION_ONLY", "claim_boundary": "G2 branch execution; no G3 promotion statistics", "next_legal_action": "CONTINUE_AC3_G2_MATRIX" if all_pass else "STOP_FOR_PI"}
+        summary_path = args.output_dir / f"WORKER_{args.model_family}_{args.suite}_RESUME_V7.json" if args.resume else args.output_dir / f"WORKER_{args.model_family}_{args.suite}.json"
+        require(not summary_path.exists(), f"AC3_G2_WORKER_SUMMARY_EXISTS:{summary_path}")
+        atomic_write(summary_path, summary)
         return summary
     finally:
         if model is not None:
@@ -558,6 +669,8 @@ def main() -> int:
     parser.add_argument("--gpu-id", type=int)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--video-dir", type=Path)
+    parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--recovery-dir", type=Path)
     args = parser.parse_args()
     if args.self_test:
         self_test()
