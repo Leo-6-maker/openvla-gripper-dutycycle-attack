@@ -473,8 +473,11 @@ def load_model(config: dict[str, Any], family: str, suite: str) -> tuple[Any, An
 def run(args: argparse.Namespace) -> dict[str, Any]:
     load_runtime()
     _manifest, jobs, blind_map = prepare_static(args)
-    if args.output_dir.exists() and any(args.output_dir.glob("*.json")):
-        raise RuntimeError(f"AC3_G2_OUTPUT_DIR_NOT_EMPTY:{args.output_dir}")
+    existing_ids = {path.stem for path in args.output_dir.glob("AC3-*.json")}
+    current_ids = {str(job["branch_id"]) for job in jobs}
+    overlap = sorted(existing_ids & current_ids)
+    if overlap:
+        raise RuntimeError(f"AC3_G2_APPEND_ONLY_BRANCH_EXISTS:{','.join(overlap)}")
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
     AA1.require_single_gpu(args.gpu_id)
     gpu = AA1.gpu_snapshot(args.gpu_id)
@@ -503,7 +506,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     result["physical_class"] = physical_class(result, int(job["dose"]) + 10, controls.get(parent))
                     result["v_phys_label"] = physical_label(controls.get(parent) or {}, result, int(job["dose"]), args.model_family)
                     result["runtime_counters"]["v_phys_reads"] = 1
-                    atomic_write(output, result)
+                atomic_write(output, result)
                 for key, value in result.get("runtime_counters", {}).items():
                     worker_counts[key] = worker_counts.get(key, 0) + int(value)
                 completed.append({"branch_id": job["branch_id"], "condition": job["condition"], "status": result["status"], "receipt": {"path": str(output), "bytes": output.stat().st_size, "sha256": sha256_file(output)}, "video": result.get("video")})
@@ -511,7 +514,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 failure = {"schema": "STAGE_AC_AC3_BRANCH_RECEIPT_V1", "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED", "gate": GATE, "branch_id": job["branch_id"], "model_family": args.model_family, "suite": args.suite, "canonical_parent_key": parent, "condition": job["condition"], "dose": int(job["dose"]), "source_receipt_path": job["source_receipt"]["path"], "source_receipt_sha256": job["source_receipt"]["sha256"], "error": {"type": type(exc).__name__, "message": str(exc)}, "next_legal_action": "STOP_FOR_PI", "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
                 atomic_write(output, failure)
                 raise
-        require(len(completed) == 128, f"AC3_G2_COMPLETED_COUNT:{len(completed)}")
+        require(len(completed) == len(jobs), f"AC3_G2_COMPLETED_COUNT:{len(completed)}:{len(jobs)}")
         summary = {"schema": "STAGE_AC_AC3_G2_WORKER_RECEIPT_V1", "status": "PASS_AC3_G2_MODEL_SUITE_WORKER", "gate": GATE, "model_family": args.model_family, "suite": args.suite, "gpu": gpu, "checkpoint": str(checkpoint), "checkpoint_manifest": checkpoint_manifest, "jobs_completed": len(completed), "branch_receipts": completed, "runtime_counters": dict(sorted(worker_counts.items())), "scientific_claim": "AC3_TREATMENT_NAIVE_PRIMARY_BRANCH_EXECUTION_ONLY", "claim_boundary": "G2 branch execution; no G3 promotion statistics", "next_legal_action": "CONTINUE_AC3_G2_MATRIX"}
         atomic_write(args.output_dir / f"WORKER_{args.model_family}_{args.suite}.json", summary)
         return summary
