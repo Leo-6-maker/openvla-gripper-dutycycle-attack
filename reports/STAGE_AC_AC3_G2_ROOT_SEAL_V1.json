@@ -1,0 +1,99 @@
+{
+  "artifacts": {
+    "receipt_index": {
+      "bytes": 1193125,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3_G2_BRANCH_RECEIPT_INDEX_V1.json",
+      "sha256": "0daa5bb660085bdb3171af7ab1a2e3647d6eeba2be3b5e3f3100cf756b3a7fb4"
+    },
+    "terminal": {
+      "bytes": 2633,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3_G2_TERMINAL_V1.json",
+      "sha256": "6d6b939fe65100ddec98a8a7f1de2f0f4900484ff85c1dbdbefe144df8fb5ea5"
+    }
+  },
+  "claim_boundary": "AC3 G2 frozen model-suite branch execution reconciliation only; no G3 statistics or promotion",
+  "next_legal_action": "STOP_FOR_PI_G2_ENGINEERING_OR_HORIZON_REVIEW",
+  "root_payload": {
+    "aggregate_runtime_counters": {
+      "ac2_exposure": 0,
+      "attack_outcome_reads": 0,
+      "attacked_env_steps": 0,
+      "env_step_calls": 46954,
+      "eval160_reads": 0,
+      "model_inference_calls": 1982,
+      "open_intervention_steps": 1633,
+      "pgd_calls": 0,
+      "physical_endpoint_reads": 372,
+      "physical_telemetry_reads": 12626,
+      "protected_reads": 0,
+      "scientific_parent_exposure": 372,
+      "task_success_reads": 0,
+      "v_phys_reads": 276
+    },
+    "blind_sample": {
+      "bytes": 33359,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC4_BLIND_AUDIT_SAMPLE_V1.json",
+      "sha256": "6756393b524b9893d82fe75c7bcee6cac9753db0d78e2db56635fda1c41110bf"
+    },
+    "counts": {
+      "authoritative_terminal_branches": 384,
+      "base_receipts": 384,
+      "blind_sample_expected": 96,
+      "blind_sample_videos_missing": 5,
+      "blind_sample_videos_present": 91,
+      "duplicate_video_sha_groups": 0,
+      "failure_sidecars": 9,
+      "invalid_or_horizon_censored_branches": 12,
+      "manifest_branches": 384,
+      "pass_branches": 372,
+      "recovered_receipts": 62,
+      "unreferenced_video_files": 0,
+      "verified_source_receipts": 96,
+      "verified_videos": 91
+    },
+    "g0_root": {
+      "bytes": 3722,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3_G0_ROOT_SEAL_V1.json",
+      "sha256": "5b997085f210189532f72a827f4d6a601e81147437186ad93f6e4b8be407b917"
+    },
+    "g1_root": {
+      "bytes": 3540,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3Q_G1_ROOT_SEAL_V1.json",
+      "sha256": "f6c97949698494249ca1787e302ae438e0591711334b64d3e31479f67758de24"
+    },
+    "gate": "STAGE_AC_AC3_AC4_AC5_TREATMENT_NAIVE_MULTI_MODEL_PHYSICAL_REPLICATION_PROGRAM_V1",
+    "historical_attempts_preserved": true,
+    "manifest": {
+      "bytes": 8942568,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3_G0_LAUNCH_MANIFEST_V1.json",
+      "sha256": "501a000e25e828ebd12116d16e7f4c8fe6f5c52efdcdf3e04a762a60aaef8d64"
+    },
+    "receipt_index": {
+      "bytes": 1193125,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3_G2_BRANCH_RECEIPT_INDEX_V1.json",
+      "sha256": "0daa5bb660085bdb3171af7ab1a2e3647d6eeba2be3b5e3f3100cf756b3a7fb4"
+    },
+    "runtime_authority": {
+      "bytes": 4564,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3Q_RUNTIME_SOURCE_AUTHORITY_V9.json",
+      "sha256": "9fa0a87caf4c0b37ca53f087a18b7545a279395c8daa326b6e5235209507912f"
+    },
+    "scientific_firewall": {
+      "ac2_exposure": 0,
+      "attack_outcome_reads": 0,
+      "attacked_env_steps": 0,
+      "eval160_reads": 0,
+      "pgd_calls": 0,
+      "protected_reads": 0
+    },
+    "source_and_video_bytes_verified": true,
+    "terminal": {
+      "bytes": 2633,
+      "path": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac2-clean-screen-c217acfc-lf/reports/STAGE_AC_AC3_G2_TERMINAL_V1.json",
+      "sha256": "6d6b939fe65100ddec98a8a7f1de2f0f4900484ff85c1dbdbefe144df8fb5ea5"
+    }
+  },
+  "root_payload_sha256": "6156803fec89a1832360f5df3d3058d0ebcf5bd2ded607edd7f820845a49937c",
+  "schema": "STAGE_AC_AC3_G2_ROOT_SEAL_V1",
+  "status": "STAGE_AC_AC3_G2_ENGINEERING_OR_HORIZON_HOLD_STOP_FOR_PI"
+}
