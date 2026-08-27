@@ -219,6 +219,7 @@ def audit(root: Path, output_root: Path) -> dict[str, Any]:
     selected_steps: dict[str, Counter[int]] = defaultdict(Counter)
     row_length_by_model: dict[str, Counter[int]] = defaultdict(Counter)
     binding_by_model: dict[str, Counter[str]] = defaultdict(Counter)
+    checkpoint_manifest_coverage: dict[str, Counter[str]] = defaultdict(Counter)
     structural_cells: list[dict[str, Any]] = []
 
     for path in files:
@@ -255,6 +256,17 @@ def audit(root: Path, output_root: Path) -> dict[str, Any]:
             errors["status_not_complete"] += 1
         if receipt.get("clean_only") is not True:
             errors["clean_only_contract"] += 1
+        receipt_checkpoint_manifest = receipt.get("checkpoint_manifest")
+        if isinstance(receipt_checkpoint_manifest, dict):
+            checkpoint_manifest_coverage[family]["present"] += 1
+            if family == "M1_OPENVLA_OFT" and receipt_checkpoint_manifest.get("manifest_sha256", receipt_checkpoint_manifest.get("sha256")) != expected.get("checkpoint_manifest_sha256"):
+                errors["m1_checkpoint_manifest_mismatch"] += 1
+        else:
+            checkpoint_manifest_coverage[family]["missing"] += 1
+            if family == "M1_OPENVLA_OFT":
+                errors["m1_checkpoint_manifest_missing"] += 1
+            elif family == "M2_PI05_LIBERO":
+                checkpoint_manifest_coverage[family]["reconciled_by_global_authority"] += 1
         if not isinstance(clean.get("rows"), list) or not clean["rows"]:
             errors["rows_missing_or_empty"] += 1
         rows = clean.get("eligibility_rows")
@@ -346,7 +358,7 @@ def audit(root: Path, output_root: Path) -> dict[str, Any]:
     require(not errors, f"AC2R3 audit checks failed: {dict(errors)}")
 
     m2_map = load(root / M2_AUTHORITY)
-    m2_spec = m2_map["model_families"]["M2_PI05_LIBERO"]
+    m2_spec = m2_map["z_m2"]
     m2_checkpoint = Path(m2_spec["checkpoint"])
     expected_files = m2_spec.get("checkpoint_file_manifest") or m2_spec.get("checkpoint_manifest")
     require(isinstance(expected_files, list), "M2 global checkpoint file manifest missing")
@@ -410,6 +422,7 @@ def audit(root: Path, output_root: Path) -> dict[str, Any]:
         "row_length_by_model": {family: dict(sorted(values.items())) for family, values in row_length_by_model.items()},
         "structural_binding_by_model": {family: dict(sorted(values.items())) for family, values in binding_by_model.items()},
         "structurally_unsupported_cells": structural_cells,
+        "checkpoint_manifest_field_coverage": {family: dict(sorted(values.items())) for family, values in checkpoint_manifest_coverage.items()},
         "eligibility": {"critical_by_model": {family: len(eligible_by_model[family]) for family in MODELS}, "critical_by_model_suite": {f"{family}/{suite}": eligible_by_model_suite[(family, suite)] for family in MODELS for suite in SUITES}, "critical_by_model_task": {f"{family}/{task}": eligible_by_model_task[(family, task)] for family in MODELS for task in sorted({str(item.get('task')) for item in manifest['cells']})}, "critical_reason_counts_by_model": {family: dict(sorted(reason_by_model[family].items())) for family in MODELS}, "critical_reason_counts_by_suite": {suite: dict(sorted(reason_by_suite[suite].items())) for suite in SUITES}},
         "m2_global_checkpoint_rehash": {"path": str(m2_checkpoint), "manifest_sha256": m2_spec.get("checkpoint_manifest_sha256"), "expected_file_count": len(expected_files), "hashed_file_count": len(actual_files), "all_match": True, "files": actual_files},
         "telemetry_semantic_parity": parity,
@@ -430,7 +443,7 @@ def build(root: Path, output_root: Path, write: bool) -> dict[str, Any]:
         "root": root / "reports/STAGE_AC_AC2R3_ROOT_SEAL_V1.json",
     }
     if write:
-        evidence = {key: result[key] for key in ("gate", "authorization_pi_comment_id", "claim_boundary", "manifest", "protocol", "source_authority", "counts", "row_length_by_model", "structural_binding_by_model", "structurally_unsupported_cells", "m2_global_checkpoint_rehash", "errors")}
+        evidence = {key: result[key] for key in ("gate", "authorization_pi_comment_id", "claim_boundary", "manifest", "protocol", "source_authority", "counts", "row_length_by_model", "structural_binding_by_model", "structurally_unsupported_cells", "checkpoint_manifest_field_coverage", "m2_global_checkpoint_rehash", "errors")}
         eligibility = {key: result[key] for key in ("gate", "authorization_pi_comment_id", "claim_boundary", "manifest", "protocol", "source_authority", "eligibility", "receipt_index")}
         denominator = {key: result[key] for key in ("gate", "authorization_pi_comment_id", "claim_boundary", "manifest", "protocol", "source_authority", "denominator")}
         parity = {key: result[key] for key in ("gate", "authorization_pi_comment_id", "claim_boundary", "source_authority", "telemetry_semantic_parity", "m2_global_checkpoint_rehash")}
