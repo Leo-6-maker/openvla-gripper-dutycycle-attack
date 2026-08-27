@@ -1,0 +1,54 @@
+{
+  "schema": "STAGE_AC_AC0_RUNTIME_SOURCE_AUTHORITY_V1",
+  "status": "STAGE_AC_AC0_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+  "gate": "STAGE_AC_AC0_MODEL_SPECIFIC_PHASE_CONSTRUCT_VALIDATION",
+  "claim_boundary": "Consumed-only engineering calibration; no fresh scientific denominator, treatment, endpoint, or promotion claim.",
+  "git_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "branch": "codex/stage-ac-model-specific-replication-20260827",
+    "runtime_code_commit": "7ad340134edde1c76cd1bac0d882be0b80d550d6",
+    "runtime_code_tree": "04173e9093e75eebddc106943473c1ec5c209e5e"
+  },
+  "runtime_root": "/mnt/sdc/dty_user/openvla_attack_worktrees/stage-ac0-calibration-7ad34013",
+  "output_root": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC0_7ad34013",
+  "parent_authority": {
+    "stage_aa2r2_v2_source_authority_path": "reports/STAGE_AA_AA2R2_PHASE_B_RUNTIME_SOURCE_AUTHORITY_V2.json",
+    "stage_aa2r2_v2_source_authority_sha256": "e31694d4fbae2393d8c3daa5742cb7dc8ac3fddaa6f2f3e094477edca9c9890d",
+    "stage_aa2r2_v2_root_seal_sha256": "7fb7071eb78be4b8078895fab660295d3953ed82034cb8f56acf92921ef3531c"
+  },
+  "new_runtime_files": {
+    "protocol": {"path": "configs/STAGE_AC_AC0_CONSTRUCT_VALIDATION_PROTOCOL_V1.json", "sha256": "ae24b1b0d087dd817c8e729c952d15cdfd83c0bb017850ca0907222801ef6b61"},
+    "eligibility_v2": {"path": "src/stage_ac/eligibility_v2.py", "sha256": "486c20c772a28ee5eb489b8bf1b90c9bb4c44470a321c793c4a83e579822d0cc"},
+    "runner": {"path": "scripts/stage_ac/run_stage_ac0_calibration.py", "sha256": "b0c623b633204d6556b3e0ef18efe0e2ab6230448c18e1eef376da2d36b4bd32"}
+  },
+  "inherited_runtime_files": {
+    "aa2r2_engineering_loader": {"path": "scripts/stage_aa/run_stage_aa2r2_engineering_canary.py", "sha256": "f8ee8dfff34f8ab0d4d2a5fb91ab16d8d3a871176b55ed614be2dca115c009c6"},
+    "aa2_clean_loader": {"path": "scripts/stage_aa/run_stage_aa2_clean_screen.py", "sha256": "4fcc246d0ab1de834b8843e46d1649cb3b36b5aa5588ebc344a140d1d90d86c1"},
+    "aa1_loader": {"path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py", "sha256": "2d3a3dc4ae9729ef70730be6c13a42d68a8fe6930cd95c3f914b1273a7c6db94"},
+    "z1_loader": {"path": "scripts/stage_z/run_stage_z_z1_runtime_canary.py", "sha256": "16a9b4c655238cf02b4d1a0c7c5ebe30fe5fbd79bdaa1290691de6d7a6933d00"},
+    "taxonomy": {"path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py", "sha256": "52e2d393018e13f95cabf12d47bae41246733710e7505680c1ef533517b32240"},
+    "action_semantics_v2": {"path": "src/stage_aa/action_semantics_v2.py", "sha256": "9c72edacc7c9c0b8811f36a2183ccb61f3da6fe009ae4db79c23c7bec6f684bc"},
+    "z1_action_semantics": {"path": "src/stage_z_preparation/action_semantics.py", "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c"}
+  },
+  "input_authorities": {
+    "z1_protocol": {"path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json", "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"},
+    "canary_plan": {"path": "reports/STAGE_AA_AA2R2_ENGINEERING_CANARY_PLAN_V1.json", "sha256": "1310253378a27b964ef3b15860c5f1640e04444c75a8e262b433c2aca38c3b58"},
+    "m1_checkpoint_manifest": {"path": "reports/STAGE_Z_Z0R2_M1_OFT_CHECKPOINT_MANIFESTS_V2.json", "sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd"},
+    "stage_z_shared_identity_panel": {"path": "reports/STAGE_Z_Z0R1_SHARED_36_IDENTITY_PANEL_V1.json", "sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1"}
+  },
+  "resource_admission": {
+    "gpu_free_memory_threshold_mib_exclusive": 20480,
+    "max_project_workers_per_gpu": 1,
+    "foreign_processes_untouched": true,
+    "server_mnt_sdc_free_space_is_runtime_preflight": true
+  },
+  "scientific_firewall": {
+    "fresh_scientific_identity_exposure": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "v_phys_reads": 0,
+    "protected_reads": 0,
+    "aa2_denominator_rewrite": false
+  },
+  "next_legal_action": "AC0_RUNTIME_PREFLIGHT_THEN_CONSUMED_ONLY_CALIBRATION"
+}
