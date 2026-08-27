@@ -1,0 +1,122 @@
+{
+  "authorization_pi_comment_id": 5434166412,
+  "gate": "STAGE_AC_AC2_TREATMENT_NAIVE_MODEL_SPECIFIC_GPU_SCREENING_AND_CONDITIONAL_AC3_V1",
+  "git_binding": {
+    "branch": "codex/stage-ac-model-specific-replication-20260827",
+    "commit": "b376cc9a53ee919574faee4923ee04dc1c48c034",
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "tree": "dff0fbb24593200cb4e78393fc2c1d5659cd5eec"
+  },
+  "next_legal_action": "GPU_AC2_CLEAN_ONLY_AFTER_THIS_SEAL_IS_COMMITTED_AND_VERIFIED",
+  "official_libero_authority": {
+    "checkout": "/mnt/sdc/dty_user/openvla_attack/repos/libero-stage-z-8f1084e_20260823",
+    "commit": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
+    "tree": "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60"
+  },
+  "population": {
+    "cell_count": 720,
+    "h0_count": 109,
+    "hc_count": 131,
+    "parent_count": 240,
+    "parent_key_set_sha256": "87423f37334fb8f194d63affceb9d79a007df8309b3a73b7cb91ffc3c0c672e1",
+    "suite_counts": {
+      "libero_10": 80,
+      "libero_object": 80,
+      "libero_spatial": 80
+    },
+    "task_counts": {
+      "libero_10/task_00": 8,
+      "libero_10/task_01": 8,
+      "libero_10/task_02": 8,
+      "libero_10/task_03": 8,
+      "libero_10/task_04": 8,
+      "libero_10/task_05": 8,
+      "libero_10/task_06": 8,
+      "libero_10/task_07": 8,
+      "libero_10/task_08": 8,
+      "libero_10/task_09": 8,
+      "libero_object/task_00": 8,
+      "libero_object/task_01": 8,
+      "libero_object/task_02": 8,
+      "libero_object/task_03": 8,
+      "libero_object/task_04": 8,
+      "libero_object/task_05": 8,
+      "libero_object/task_06": 8,
+      "libero_object/task_07": 8,
+      "libero_object/task_08": 8,
+      "libero_object/task_09": 8,
+      "libero_spatial/task_00": 8,
+      "libero_spatial/task_01": 8,
+      "libero_spatial/task_02": 8,
+      "libero_spatial/task_03": 8,
+      "libero_spatial/task_04": 8,
+      "libero_spatial/task_05": 8,
+      "libero_spatial/task_06": 8,
+      "libero_spatial/task_07": 8,
+      "libero_spatial/task_08": 8,
+      "libero_spatial/task_09": 8
+    }
+  },
+  "root_payload_sha256": "12b53efc5ebb31e8111ed667bf4fef19122351ac053b997d9bad1c2c26b3c48b",
+  "schema": "STAGE_AC_AC2_PRE_GPU_ROOT_SEAL_V1",
+  "scientific_firewall": {
+    "env_step": 0,
+    "gpu_worker": 0,
+    "model_inference": 0,
+    "new_identity": 0,
+    "open_intervention": 0,
+    "pgd": 0,
+    "physical_endpoint_read": 0,
+    "protected_or_eval160": 0,
+    "task_success_read": 0,
+    "v_phys": 0
+  },
+  "source_bindings": {
+    "ac0_root": {
+      "bytes": 29882,
+      "path": "reports/STAGE_AC_AC0_ROOT_SEAL_V1.json",
+      "sha256": "1a689871ab75edfda0f7ee01983036e0b8ed1425b15caecf11fbb1a0439a27df"
+    },
+    "ac0_terminal": {
+      "bytes": 29513,
+      "path": "reports/STAGE_AC_AC0_CONSTRUCT_VALIDATION_TERMINAL_V1.json",
+      "sha256": "fecd402d0771b864384d3231b7888fb0a9d12e0d1e8806cf5139ec7bdb9649b0"
+    },
+    "ac1r2_population": {
+      "bytes": 7558920,
+      "path": "reports/STAGE_AC_AC1R2_TREATMENT_NAIVE_POPULATION_V1.json",
+      "sha256": "0a958dca82162f7de55c519785502b1232c1dcf3ca62a6be2c6e06b71472520e"
+    },
+    "ac1r2_root": {
+      "bytes": 16790,
+      "path": "reports/STAGE_AC_AC1R2_ROOT_SEAL_V1.json",
+      "sha256": "f7376842e9d0717f37a9497e00633004a1dd8b48bd937032025503855a436ff7"
+    },
+    "ac1r2_taxonomy": {
+      "bytes": 8443316,
+      "path": "reports/STAGE_AC_AC1R2_OFFICIAL_STATE_EXPOSURE_TAXONOMY_V1.json",
+      "sha256": "2b386876d94867cf10d1d053986f979396b8f55e6aa187ba772cc67ce37017e6"
+    },
+    "manifest": {
+      "bytes": 1297796,
+      "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+      "sha256": "2168b463b3546e94ef15b8d1038dde235789828131973f938e28c505ee51853c"
+    },
+    "protocol": {
+      "bytes": 5513,
+      "path": "configs/STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1.json",
+      "sha256": "f5f90b0a968c08bbf6d2fa43631660a2095163bee644089e03153c7d88ef7009"
+    },
+    "runtime_source_authority": {
+      "bytes": 6484,
+      "path": "reports/STAGE_AC_AC2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "sha256": "bd757496a3063cb88df5d01dfe5c5d682fdf5c08eaa83cea441956d5411e3cfb"
+    },
+    "z1_protocol": {
+      "bytes": 7795,
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"
+    }
+  },
+  "status": "STAGE_AC_AC2_PRE_GPU_STATIC_FREEZE_PASS"
+}
