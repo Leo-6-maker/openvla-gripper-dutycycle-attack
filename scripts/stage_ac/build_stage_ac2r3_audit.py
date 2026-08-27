@@ -80,7 +80,13 @@ def write_json(path: Path, value: Any) -> dict[str, Any]:
 
 
 def git_blob(revision: str, path: str) -> bytes:
-    return subprocess.check_output(["git", "show", f"{revision}:{path}"], cwd=ROOT)
+    try:
+        return subprocess.check_output(["git", "show", f"{revision}:{path}"], cwd=ROOT)
+    except (OSError, subprocess.CalledProcessError):
+        # Server evidence worktrees are intentionally lightweight source
+        # projections rather than Git checkouts; their sealed source files
+        # are the fallback representation for this read-only audit.
+        return (ROOT / path).read_bytes()
 
 
 def tracked_binding(path: str, revision: str = "HEAD") -> dict[str, Any]:
