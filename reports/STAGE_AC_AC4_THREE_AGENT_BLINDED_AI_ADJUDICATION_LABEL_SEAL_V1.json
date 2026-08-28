@@ -1,0 +1,23 @@
+{
+  "agent_count": 3,
+  "hidden_mapping_read_before_label_seal": false,
+  "human_review_gate_satisfied": false,
+  "label_bytes": 42812,
+  "label_sha256": "47fd5a60bb70a023f2b30122a80c6149511389abc5f8ceb3b2e46ce9bc0f628a",
+  "labels_sealed_before_unblind": true,
+  "manifest_sha256": "1b1a0aa3d24bf6aa2e21e83eda2a35b3a4751bd27963c1e4ab8ba5fe712e2c8f",
+  "orchestrator_prior_mapping_exposure_before_this_panel": true,
+  "reviewer_sessions_mapping_exposure": false,
+  "reviewer_type": "THREE_AGENT_BLINDED_AI_ADJUDICATION",
+  "row_count_per_agent": 91,
+  "schema": "STAGE_AC_AC4_THREE_AGENT_BLINDED_AI_ADJUDICATION_LABEL_SEAL_V1",
+  "scientific_firewall": {
+    "automatic_labels_rewritten": 0,
+    "new_env_step": 0,
+    "new_model_inference": 0,
+    "new_open_intervention": 0,
+    "new_pgd": 0,
+    "new_protected_reads": 0
+  },
+  "status": "STAGE_AC_AC4_THREE_AGENT_LABELS_SEALED"
+}
