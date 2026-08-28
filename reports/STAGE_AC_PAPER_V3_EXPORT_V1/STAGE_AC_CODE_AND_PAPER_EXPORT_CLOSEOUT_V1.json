@@ -1,0 +1,54 @@
+{
+  "claim_boundary": {
+    "headline": "Three VLA policy families support a dose-ordered command-level gripper-OPEN physical mechanism, while timing, visual selective realizability, sustained delivery, and endpoint observability remain independent evidence layers.",
+    "not_established": [
+      "pristine all-32 endpoint-identifiable 3-of-3 replication",
+      "cross-model visual PGD transfer or visual physical efficacy",
+      "human manual-review completion",
+      "robustness, immunity, or a vulnerability ranking between model families"
+    ],
+    "prohibited_claims": [
+      "all VLAs are vulnerable",
+      "PGD transferred to three models",
+      "3/3 pristine replication",
+      "human review confirmed endpoints",
+      "OFT is more vulnerable than OpenVLA"
+    ],
+    "supported": [
+      "In the treatment-naive AC program, all three qualified policy families show observed conditional T3/T5/T10 rates that are dose-monotone under the sealed automatic physical endpoint.",
+      "The complete-case triplet patterns are monotone in each model family, with UNKNOWN branches retained in the fixed denominator.",
+      "The three-agent endpoint audit is supplemental AI-only evidence and exposes limited video-only observability relative to privileged automatic telemetry."
+    ]
+  },
+  "export_artifact": {
+    "bytes": 31940,
+    "path": "reports/STAGE_AC_PAPER_V3_EXPORT_V1/STAGE_AC_PAPER_V3_EVIDENCE_EXPORT_V1.json",
+    "sha256": "fa1260531423bfe8500e70d53c591b22ea65a5630ca05ea7fa202aff66d36032"
+  },
+  "next_legal_action": "STOP_FOR_PI",
+  "root_seal": {
+    "bytes": 15248,
+    "path": "reports/STAGE_AC_PAPER_V3_EXPORT_V1/STAGE_AC_PAPER_V3_EXPORT_ROOT_SEAL_V1.json",
+    "sha256": "52fae66e05e0555d08b5912d01735de3f0e9e3815a08548ba12f133e38099e5e"
+  },
+  "schema": "STAGE_AC_CODE_AND_PAPER_EXPORT_CLOSEOUT_V1",
+  "scientific_firewall": {
+    "automatic_labels_rewritten": 0,
+    "denominator_changed": 0,
+    "new_env_step": 0,
+    "new_model_inference": 0,
+    "new_open_intervention": 0,
+    "new_pgd": 0,
+    "new_physical_outcome_reads": 0,
+    "new_protected_reads": 0,
+    "replacement_or_top_up": 0
+  },
+  "source_repository": {
+    "branch": "codex/stage-ac-model-specific-replication-20260827",
+    "remote": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack.git",
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "source_head_at_export": "8a030f637569e7a4a4cf94431dbe475efd8356fe",
+    "source_tree_at_export": "4cc136615e761387ca7ad0897f7e35e52fd116e6"
+  },
+  "status": "STAGE_AC_CODE_AND_PAPER_EXPORT_CLOSEOUT_COMPLETE_STOP_FOR_PI"
+}
