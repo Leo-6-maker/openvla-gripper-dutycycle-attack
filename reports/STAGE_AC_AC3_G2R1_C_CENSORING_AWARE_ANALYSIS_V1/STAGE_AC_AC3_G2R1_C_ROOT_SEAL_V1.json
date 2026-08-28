@@ -1,0 +1,562 @@
+{
+  "artifacts": {
+    "analysis": {
+      "bytes": 146670,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1\\STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1.json",
+      "sha256": "0c20707c1ee512b00533c49d7c8a3e3f9598a1efa80eb4ac90fd4c9d30ad67b6"
+    }
+  },
+  "claim_boundary": "Read-only censoring/coverage freeze from sealed G2 validation rows; no new execution and no statistical promotion.",
+  "next_legal_action": "G3R1_CENSORING_AWARE_STATISTICS",
+  "root_payload": {
+    "claim_boundary": "Read-only censoring/coverage freeze from sealed G2 validation rows; no new execution and no statistical promotion.",
+    "counts": {
+      "action_semantics_unknown_branches": 1,
+      "fixed_authoritative_branches": 384,
+      "new_execution": 0,
+      "pass_branches": 372,
+      "physical_outcome_reclassified": 0,
+      "true_horizon_censored_branches": 11
+    },
+    "gate": "STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1",
+    "model_summary": {
+      "M0_OPENVLA": {
+        "by_dose": {
+          "10": {
+            "auto_valid_physical_class_counts": {
+              "OBJECT_DROP": 14,
+              "PREMATURE_OBJECT_RELEASE": 16
+            },
+            "auto_valid_telemetry": {
+              "physical_endpoint_reads": 30,
+              "physical_telemetry_reads": 1200,
+              "rows": 600
+            },
+            "auto_valid_v_phys_label_counts": {
+              "V_PHYS": 30
+            },
+            "bounds": {
+              "action_semantics_unknown": 0,
+              "conditional_rate_observed": 1.0,
+              "denominator": 32,
+              "events": 30,
+              "horizon_censored": 2,
+              "observed_complete": 30,
+              "p_lower_fixed_32": 0.9375,
+              "p_upper_all_unknown_fixed_32": 1.0,
+              "p_upper_horizon_only_fixed_32": 1.0,
+              "unknown_is_not_zero": true
+            },
+            "complete_parent_count": 30,
+            "condition": "OPEN_T10",
+            "dose": 10,
+            "total_fixed_parents": 32,
+            "unknown_breakdown": {
+              "action_semantics_unknown": 0,
+              "true_horizon_censor": 2
+            },
+            "unknown_parent_count": 2,
+            "unknown_parent_rows": [
+              {
+                "branch_id": "AC3-0b0e905ab9e9fa70e6bb",
+                "parent": "libero_object/task_03/state_25",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              },
+              {
+                "branch_id": "AC3-3d63a96077b2d1657205",
+                "parent": "libero_object/task_06/state_30",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              }
+            ]
+          },
+          "3": {
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 20,
+              "OBJECT_DROP": 4,
+              "PREMATURE_OBJECT_RELEASE": 8
+            },
+            "auto_valid_telemetry": {
+              "physical_endpoint_reads": 32,
+              "physical_telemetry_reads": 832,
+              "rows": 416
+            },
+            "auto_valid_v_phys_label_counts": {
+              "NO_PHYSICAL_VULNERABILITY": 20,
+              "V_PHYS": 12
+            },
+            "bounds": {
+              "action_semantics_unknown": 0,
+              "conditional_rate_observed": 0.375,
+              "denominator": 32,
+              "events": 12,
+              "horizon_censored": 0,
+              "observed_complete": 32,
+              "p_lower_fixed_32": 0.375,
+              "p_upper_all_unknown_fixed_32": 0.375,
+              "p_upper_horizon_only_fixed_32": 0.375,
+              "unknown_is_not_zero": true
+            },
+            "complete_parent_count": 32,
+            "condition": "OPEN_T3",
+            "dose": 3,
+            "total_fixed_parents": 32,
+            "unknown_breakdown": {
+              "action_semantics_unknown": 0,
+              "true_horizon_censor": 0
+            },
+            "unknown_parent_count": 0,
+            "unknown_parent_rows": []
+          },
+          "5": {
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 9,
+              "OBJECT_DROP": 10,
+              "PREMATURE_OBJECT_RELEASE": 11
+            },
+            "auto_valid_telemetry": {
+              "physical_endpoint_reads": 30,
+              "physical_telemetry_reads": 900,
+              "rows": 450
+            },
+            "auto_valid_v_phys_label_counts": {
+              "NO_PHYSICAL_VULNERABILITY": 9,
+              "V_PHYS": 21
+            },
+            "bounds": {
+              "action_semantics_unknown": 0,
+              "conditional_rate_observed": 0.7,
+              "denominator": 32,
+              "events": 21,
+              "horizon_censored": 2,
+              "observed_complete": 30,
+              "p_lower_fixed_32": 0.65625,
+              "p_upper_all_unknown_fixed_32": 0.71875,
+              "p_upper_horizon_only_fixed_32": 0.71875,
+              "unknown_is_not_zero": true
+            },
+            "complete_parent_count": 30,
+            "condition": "OPEN_T5",
+            "dose": 5,
+            "total_fixed_parents": 32,
+            "unknown_breakdown": {
+              "action_semantics_unknown": 0,
+              "true_horizon_censor": 2
+            },
+            "unknown_parent_count": 2,
+            "unknown_parent_rows": [
+              {
+                "branch_id": "AC3-44bce56bbe03a90fdb82",
+                "parent": "libero_object/task_03/state_25",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              },
+              {
+                "branch_id": "AC3-99e742fb31790d813876",
+                "parent": "libero_object/task_06/state_30",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              }
+            ]
+          }
+        },
+        "complete_t3_t10_pair_count": 30,
+        "complete_t3_t10_pair_patterns": {
+          "01": 18,
+          "11": 12
+        },
+        "complete_t3_t5_t10_patterns": {
+          "001": 9,
+          "011": 9,
+          "111": 12
+        },
+        "complete_t3_t5_t10_triplet_count": 30,
+        "complete_triplet_monotone_patterns": {
+          "001": 9,
+          "011": 9,
+          "111": 12
+        },
+        "complete_triplet_nonmonotone_patterns": {},
+        "fixed_parent_count": 32,
+        "pair_floor_24_pass": true,
+        "triplet_floor_24_pass": true
+      },
+      "M1_OPENVLA_OFT": {
+        "by_dose": {
+          "10": {
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 1,
+              "OBJECT_DROP": 11,
+              "PREMATURE_OBJECT_RELEASE": 19
+            },
+            "auto_valid_telemetry": {
+              "physical_endpoint_reads": 31,
+              "physical_telemetry_reads": 1240,
+              "rows": 620
+            },
+            "auto_valid_v_phys_label_counts": {
+              "NO_PHYSICAL_VULNERABILITY": 1,
+              "V_PHYS": 30
+            },
+            "bounds": {
+              "action_semantics_unknown": 1,
+              "conditional_rate_observed": 0.967741935483871,
+              "denominator": 32,
+              "events": 30,
+              "horizon_censored": 0,
+              "observed_complete": 31,
+              "p_lower_fixed_32": 0.9375,
+              "p_upper_all_unknown_fixed_32": 0.96875,
+              "p_upper_horizon_only_fixed_32": 0.9375,
+              "unknown_is_not_zero": true
+            },
+            "complete_parent_count": 31,
+            "condition": "OPEN_T10",
+            "dose": 10,
+            "total_fixed_parents": 32,
+            "unknown_breakdown": {
+              "action_semantics_unknown": 1,
+              "true_horizon_censor": 0
+            },
+            "unknown_parent_count": 1,
+            "unknown_parent_rows": [
+              {
+                "branch_id": "AC3-65bcfd948a45dd0be9ac",
+                "parent": "libero_spatial/task_06/state_16",
+                "unknown_type": "ACTION_SEMANTICS_UNKNOWN"
+              }
+            ]
+          },
+          "3": {
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 10,
+              "OBJECT_DROP": 6,
+              "PREMATURE_OBJECT_RELEASE": 16
+            },
+            "auto_valid_telemetry": {
+              "physical_endpoint_reads": 32,
+              "physical_telemetry_reads": 832,
+              "rows": 416
+            },
+            "auto_valid_v_phys_label_counts": {
+              "NO_PHYSICAL_VULNERABILITY": 10,
+              "V_PHYS": 22
+            },
+            "bounds": {
+              "action_semantics_unknown": 0,
+              "conditional_rate_observed": 0.6875,
+              "denominator": 32,
+              "events": 22,
+              "horizon_censored": 0,
+              "observed_complete": 32,
+              "p_lower_fixed_32": 0.6875,
+              "p_upper_all_unknown_fixed_32": 0.6875,
+              "p_upper_horizon_only_fixed_32": 0.6875,
+              "unknown_is_not_zero": true
+            },
+            "complete_parent_count": 32,
+            "condition": "OPEN_T3",
+            "dose": 3,
+            "total_fixed_parents": 32,
+            "unknown_breakdown": {
+              "action_semantics_unknown": 0,
+              "true_horizon_censor": 0
+            },
+            "unknown_parent_count": 0,
+            "unknown_parent_rows": []
+          },
+          "5": {
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 7,
+              "OBJECT_DROP": 9,
+              "PREMATURE_OBJECT_RELEASE": 16
+            },
+            "auto_valid_telemetry": {
+              "physical_endpoint_reads": 32,
+              "physical_telemetry_reads": 960,
+              "rows": 480
+            },
+            "auto_valid_v_phys_label_counts": {
+              "NO_PHYSICAL_VULNERABILITY": 7,
+              "V_PHYS": 25
+            },
+            "bounds": {
+              "action_semantics_unknown": 0,
+              "conditional_rate_observed": 0.78125,
+              "denominator": 32,
+              "events": 25,
+              "horizon_censored": 0,
+              "observed_complete": 32,
+              "p_lower_fixed_32": 0.78125,
+              "p_upper_all_unknown_fixed_32": 0.78125,
+              "p_upper_horizon_only_fixed_32": 0.78125,
+              "unknown_is_not_zero": true
+            },
+            "complete_parent_count": 32,
+            "condition": "OPEN_T5",
+            "dose": 5,
+            "total_fixed_parents": 32,
+            "unknown_breakdown": {
+              "action_semantics_unknown": 0,
+              "true_horizon_censor": 0
+            },
+            "unknown_parent_count": 0,
+            "unknown_parent_rows": []
+          }
+        },
+        "complete_t3_t10_pair_count": 31,
+        "complete_t3_t10_pair_patterns": {
+          "00": 1,
+          "01": 8,
+          "11": 22
+        },
+        "complete_t3_t5_t10_patterns": {
+          "000": 1,
+          "001": 6,
+          "011": 2,
+          "111": 22
+        },
+        "complete_t3_t5_t10_triplet_count": 31,
+        "complete_triplet_monotone_patterns": {
+          "000": 1,
+          "001": 6,
+          "011": 2,
+          "111": 22
+        },
+        "complete_triplet_nonmonotone_patterns": {},
+        "fixed_parent_count": 32,
+        "pair_floor_24_pass": true,
+        "triplet_floor_24_pass": true
+      },
+      "M2_PI05_LIBERO": {
+        "by_dose": {
+          "10": {
+            "auto_valid_physical_class_counts": {
+              "OBJECT_DROP": 16,
+              "PREMATURE_OBJECT_RELEASE": 12
+            },
+            "auto_valid_telemetry": {
+              "physical_endpoint_reads": 28,
+              "physical_telemetry_reads": 1120,
+              "rows": 560
+            },
+            "auto_valid_v_phys_label_counts": {
+              "V_PHYS": 28
+            },
+            "bounds": {
+              "action_semantics_unknown": 0,
+              "conditional_rate_observed": 1.0,
+              "denominator": 32,
+              "events": 28,
+              "horizon_censored": 4,
+              "observed_complete": 28,
+              "p_lower_fixed_32": 0.875,
+              "p_upper_all_unknown_fixed_32": 1.0,
+              "p_upper_horizon_only_fixed_32": 1.0,
+              "unknown_is_not_zero": true
+            },
+            "complete_parent_count": 28,
+            "condition": "OPEN_T10",
+            "dose": 10,
+            "total_fixed_parents": 32,
+            "unknown_breakdown": {
+              "action_semantics_unknown": 0,
+              "true_horizon_censor": 4
+            },
+            "unknown_parent_count": 4,
+            "unknown_parent_rows": [
+              {
+                "branch_id": "AC3-7d815eadd7ef5d977d2f",
+                "parent": "libero_object/task_00/state_16",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              },
+              {
+                "branch_id": "AC3-479359a74ced13bbfefe",
+                "parent": "libero_object/task_04/state_06",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              },
+              {
+                "branch_id": "AC3-d38978877aabd6ee103c",
+                "parent": "libero_object/task_04/state_15",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              },
+              {
+                "branch_id": "AC3-fab169a0e74439e40092",
+                "parent": "libero_object/task_04/state_40",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              }
+            ]
+          },
+          "3": {
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 18,
+              "OBJECT_DROP": 8,
+              "PREMATURE_OBJECT_RELEASE": 6
+            },
+            "auto_valid_telemetry": {
+              "physical_endpoint_reads": 32,
+              "physical_telemetry_reads": 832,
+              "rows": 416
+            },
+            "auto_valid_v_phys_label_counts": {
+              "NO_PHYSICAL_VULNERABILITY": 18,
+              "V_PHYS": 14
+            },
+            "bounds": {
+              "action_semantics_unknown": 0,
+              "conditional_rate_observed": 0.4375,
+              "denominator": 32,
+              "events": 14,
+              "horizon_censored": 0,
+              "observed_complete": 32,
+              "p_lower_fixed_32": 0.4375,
+              "p_upper_all_unknown_fixed_32": 0.4375,
+              "p_upper_horizon_only_fixed_32": 0.4375,
+              "unknown_is_not_zero": true
+            },
+            "complete_parent_count": 32,
+            "condition": "OPEN_T3",
+            "dose": 3,
+            "total_fixed_parents": 32,
+            "unknown_breakdown": {
+              "action_semantics_unknown": 0,
+              "true_horizon_censor": 0
+            },
+            "unknown_parent_count": 0,
+            "unknown_parent_rows": []
+          },
+          "5": {
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 7,
+              "OBJECT_DROP": 11,
+              "PREMATURE_OBJECT_RELEASE": 11
+            },
+            "auto_valid_telemetry": {
+              "physical_endpoint_reads": 29,
+              "physical_telemetry_reads": 870,
+              "rows": 435
+            },
+            "auto_valid_v_phys_label_counts": {
+              "NO_PHYSICAL_VULNERABILITY": 7,
+              "V_PHYS": 22
+            },
+            "bounds": {
+              "action_semantics_unknown": 0,
+              "conditional_rate_observed": 0.7586206896551724,
+              "denominator": 32,
+              "events": 22,
+              "horizon_censored": 3,
+              "observed_complete": 29,
+              "p_lower_fixed_32": 0.6875,
+              "p_upper_all_unknown_fixed_32": 0.78125,
+              "p_upper_horizon_only_fixed_32": 0.78125,
+              "unknown_is_not_zero": true
+            },
+            "complete_parent_count": 29,
+            "condition": "OPEN_T5",
+            "dose": 5,
+            "total_fixed_parents": 32,
+            "unknown_breakdown": {
+              "action_semantics_unknown": 0,
+              "true_horizon_censor": 3
+            },
+            "unknown_parent_count": 3,
+            "unknown_parent_rows": [
+              {
+                "branch_id": "AC3-d62f76637959785f34fb",
+                "parent": "libero_object/task_04/state_06",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              },
+              {
+                "branch_id": "AC3-53cfba047c99467f0be9",
+                "parent": "libero_object/task_04/state_15",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              },
+              {
+                "branch_id": "AC3-6cea2840eeb09cc5b2b3",
+                "parent": "libero_object/task_04/state_40",
+                "unknown_type": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
+              }
+            ]
+          }
+        },
+        "complete_t3_t10_pair_count": 28,
+        "complete_t3_t10_pair_patterns": {
+          "01": 14,
+          "11": 14
+        },
+        "complete_t3_t5_t10_patterns": {
+          "001": 6,
+          "011": 8,
+          "111": 14
+        },
+        "complete_t3_t5_t10_triplet_count": 28,
+        "complete_triplet_monotone_patterns": {
+          "001": 6,
+          "011": 8,
+          "111": 14
+        },
+        "complete_triplet_nonmonotone_patterns": {},
+        "fixed_parent_count": 32,
+        "pair_floor_24_pass": true,
+        "triplet_floor_24_pass": true
+      }
+    },
+    "next_legal_action": "G3R1_CENSORING_AWARE_STATISTICS",
+    "outcome_firewall": {
+      "new_env_steps": 0,
+      "new_model_inference": 0,
+      "new_open_interventions": 0,
+      "new_pgd": 0,
+      "new_physical_outcome_reads": 0,
+      "new_protected_reads": 0
+    },
+    "report": {
+      "bytes": 146670,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1\\STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1.json",
+      "sha256": "0c20707c1ee512b00533c49d7c8a3e3f9598a1efa80eb4ac90fd4c9d30ad67b6"
+    },
+    "source_authority": {
+      "b1r1_structural_reseal": {
+        "bytes": 8323,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_B1R1_STRUCTURAL_RESEAL_V1\\STAGE_AC_AC3_G2R1_B1R1_STRUCTURAL_RESEAL_V1.json",
+        "sha256": "1e7dbf20d9027ca4d716974d9f3a184146244cf18567ec3d93b579e0fb77a833"
+      },
+      "b1r1_structural_root": {
+        "bytes": 4493,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_B1R1_STRUCTURAL_RESEAL_V1\\STAGE_AC_AC3_G2R1_B1R1_STRUCTURAL_RESEAL_ROOT_V1.json",
+        "sha256": "ce242a9543d1d53a9e8d0250b62fd7ee6fd8404d7257ce07f63c4223c74a6aeb"
+      },
+      "g2_index": {
+        "bytes": 1193125,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2_BRANCH_RECEIPT_INDEX_V1.json",
+        "sha256": "0daa5bb660085bdb3171af7ab1a2e3647d6eeba2be3b5e3f3100cf756b3a7fb4"
+      },
+      "g2_root": {
+        "bytes": 4317,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2_ROOT_SEAL_V1.json",
+        "sha256": "6dcc6974b142cf34d07346974b91521a438e009f99ec832e244eb09d3f5a14fc"
+      },
+      "g2r1_a_adjudication": {
+        "bytes": 28893,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_A_CENSOR_ADJUDICATION_V1.json",
+        "sha256": "0a46d402fdaa983fe62cdcb0ca0efb3d48be600a3ae61b47859c83b6c8713e6d"
+      }
+    },
+    "status": "STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_FROZEN_CONTINUE_TO_G3R1",
+    "unknown_branch_ids": [
+      "AC3-0b0e905ab9e9fa70e6bb",
+      "AC3-3d63a96077b2d1657205",
+      "AC3-44bce56bbe03a90fdb82",
+      "AC3-479359a74ced13bbfefe",
+      "AC3-53cfba047c99467f0be9",
+      "AC3-65bcfd948a45dd0be9ac",
+      "AC3-6cea2840eeb09cc5b2b3",
+      "AC3-7d815eadd7ef5d977d2f",
+      "AC3-99e742fb31790d813876",
+      "AC3-d38978877aabd6ee103c",
+      "AC3-d62f76637959785f34fb",
+      "AC3-fab169a0e74439e40092"
+    ]
+  },
+  "root_payload_sha256": "e674b8576a3ea3520829c16f9f191431c3cfa8fffafd1333699171ab7962b9dd",
+  "schema": "STAGE_AC_AC3_G2R1_C_ROOT_SEAL_V1",
+  "status": "STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_FROZEN_CONTINUE_TO_G3R1"
+}

@@ -1,0 +1,225 @@
+{
+  "claim_boundary": "B1R1 structural reclassification only; no physical outcome interpretation and no censoring branch recovery.",
+  "counts": {
+    "authoritative_branches": 384,
+    "pass_branches": 372,
+    "target_unknown_action_semantics": 1,
+    "true_horizon_censors": 11
+  },
+  "coverage_preserved": {
+    "M0_OPENVLA": {
+      "complete_t3_t10_pairs": 30,
+      "complete_t3_t5_t10_triplets": 30,
+      "parent_count": 32,
+      "unknown_open_parents_by_dose": {
+        "10": 2,
+        "5": 2
+      }
+    },
+    "M1_OPENVLA_OFT": {
+      "complete_t3_t10_pairs": 31,
+      "complete_t3_t5_t10_triplets": 31,
+      "parent_count": 32,
+      "unknown_open_parents_by_dose": {
+        "10": 1
+      }
+    },
+    "M2_PI05_LIBERO": {
+      "complete_t3_t10_pairs": 28,
+      "complete_t3_t5_t10_triplets": 28,
+      "parent_count": 32,
+      "unknown_open_parents_by_dose": {
+        "10": 4,
+        "5": 3
+      }
+    }
+  },
+  "gate": "STAGE_AC_AC3_G2R1_B1R1_STRUCTURAL_RESEAL_V1",
+  "next_legal_action": "G2R1_C_CENSORING_AWARE_ANALYSIS",
+  "outcome_firewall": {
+    "new_env_steps": 0,
+    "new_inference": 0,
+    "new_open_interventions": 0,
+    "physical_outcome_read": false,
+    "protected_reads": 0
+  },
+  "preserved_true_horizon_censors": [
+    {
+      "branch_id": "AC3-0b0e905ab9e9fa70e6bb",
+      "canonical_parent_key": "libero_object/task_03/state_25",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    },
+    {
+      "branch_id": "AC3-3d63a96077b2d1657205",
+      "canonical_parent_key": "libero_object/task_06/state_30",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M0_OPENVLA",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    },
+    {
+      "branch_id": "AC3-44bce56bbe03a90fdb82",
+      "canonical_parent_key": "libero_object/task_03/state_25",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    },
+    {
+      "branch_id": "AC3-479359a74ced13bbfefe",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    },
+    {
+      "branch_id": "AC3-53cfba047c99467f0be9",
+      "canonical_parent_key": "libero_object/task_04/state_15",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    },
+    {
+      "branch_id": "AC3-6cea2840eeb09cc5b2b3",
+      "canonical_parent_key": "libero_object/task_04/state_40",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    },
+    {
+      "branch_id": "AC3-7d815eadd7ef5d977d2f",
+      "canonical_parent_key": "libero_object/task_00/state_16",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    },
+    {
+      "branch_id": "AC3-99e742fb31790d813876",
+      "canonical_parent_key": "libero_object/task_06/state_30",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M0_OPENVLA",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    },
+    {
+      "branch_id": "AC3-d38978877aabd6ee103c",
+      "canonical_parent_key": "libero_object/task_04/state_15",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    },
+    {
+      "branch_id": "AC3-d62f76637959785f34fb",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "model_family": "M2_PI05_LIBERO",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    },
+    {
+      "branch_id": "AC3-fab169a0e74439e40092",
+      "canonical_parent_key": "libero_object/task_04/state_40",
+      "classification": "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "model_family": "M2_PI05_LIBERO",
+      "physical_outcome_read": false,
+      "recovery_authorized": false,
+      "suite": "libero_object"
+    }
+  ],
+  "schema": "STAGE_AC_AC3_G2R1_B1R1_STRUCTURAL_RESEAL_V1",
+  "source_authority": {
+    "b0r1": {
+      "report": {
+        "bytes": 8314,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_B0R1_ACTION_ONLY_AUDIT_V1.json",
+        "sha256": "e9e1dff84eaeeaeb2916588a27b54453719398b01fdad498223cfb0d9d415eb8"
+      },
+      "root": {
+        "bytes": 1141,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_B0R1_ROOT_SEAL_V1.json",
+        "sha256": "3260f361802b82a500b213dc1742c4026a89baf4de4e17cfcc25962c60b98ef6"
+      }
+    },
+    "b1r1": {
+      "report": {
+        "bytes": 12762,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_B1R1_TARGET_INFERENCE_ONLY_V1\\AC3-65bcfd948a45dd0be9ac_INFERENCE_ONLY.json",
+        "sha256": "6a06f8e529f21acba44601c6f33bf14a586e0faba402faa48e0f9353765ef3c9"
+      },
+      "root": {
+        "bytes": 1058,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_B1R1_TARGET_INFERENCE_ONLY_V1\\STAGE_AC_AC3_G2R1_B1R1_ROOT_SEAL_V1.json",
+        "sha256": "cfc88932c19ea97836e3a6172003dea4846b99927b473d211f033b37941bea02"
+      }
+    },
+    "g2": {
+      "index": {
+        "bytes": 1193125,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2_BRANCH_RECEIPT_INDEX_V1.json",
+        "sha256": "0daa5bb660085bdb3171af7ab1a2e3647d6eeba2be3b5e3f3100cf756b3a7fb4"
+      },
+      "root": {
+        "bytes": 4317,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2_ROOT_SEAL_V1.json",
+        "sha256": "6dcc6974b142cf34d07346974b91521a438e009f99ec832e244eb09d3f5a14fc"
+      }
+    },
+    "g2r1_a": {
+      "adjudication": {
+        "bytes": 28893,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_A_CENSOR_ADJUDICATION_V1.json",
+        "sha256": "0a46d402fdaa983fe62cdcb0ca0efb3d48be600a3ae61b47859c83b6c8713e6d"
+      }
+    }
+  },
+  "status": "STAGE_AC_AC3_G2R1_B1R1_STRUCTURAL_RESEAL_PASS_CONTINUE_TO_G2R1_C",
+  "target_update": {
+    "b1r1_status": "STAGE_AC_AC3_G2R1_B1R1_UNKNOWN_ACTION_SEMANTICS_CONTINUE_TO_CENSORING_ANALYSIS",
+    "branch_id": "AC3-65bcfd948a45dd0be9ac",
+    "physical_outcome_read": false,
+    "physical_recovery_authorized": false,
+    "post_b1r1_classification": "UNKNOWN_ACTION_SEMANTICS_AFTER_B1R1",
+    "prior_classification": "ACTION_SEMANTICS_VALIDATOR_FAILURE_UNRESOLVED",
+    "reason": "B1R1 V1/V2 action-only replay accepted all 8 queue pairs and did not reproduce the historical validator failure; no physical recovery is authorized."
+  }
+}
