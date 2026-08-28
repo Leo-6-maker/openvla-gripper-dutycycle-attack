@@ -1,0 +1,91 @@
+{
+  "artifacts": {
+    "report": {
+      "bytes": 10380,
+      "path": "STAGE_AC_AC5_STATIC_SYNTHESIS_V1.json",
+      "sha256": "93dd737df41c9297006469353d8946d7e0f6c484e957d590611b0ade1c4b2d0e"
+    }
+  },
+  "claim_boundary": {
+    "not_supported": [
+      "pristine all-32 endpoint-identifiable 3-of-3 replication",
+      "robustness or immunity of M1/M2",
+      "human-review completion",
+      "Paper V2 scientific promotion"
+    ],
+    "safe_synthesis": "Censoring-aware, endpoint-limited physical evidence is consistent with a shared dose-ordered signal across the three qualified policy families, while the stronger preregistered cross-model replication claim remains unestablished.",
+    "supported": [
+      "AC2 clean-only model-specific denominators are frozen at 32/32/32 from the complete 720-cell census.",
+      "AC3 contains censoring-aware physical branch evidence with dose-ordered complete-case patterns in all three model families.",
+      "The stronger pristine cross-model replication claim is limited by 12 unknown treatment branches and endpoint-validity evidence that is AI-secondary only."
+    ]
+  },
+  "next_legal_action": "STOP_FOR_PI",
+  "root_payload": {
+    "report_bytes": 10380,
+    "report_sha256": "93dd737df41c9297006469353d8946d7e0f6c484e957d590611b0ade1c4b2d0e",
+    "schema": "STAGE_AC_AC5_STATIC_SYNTHESIS_V1",
+    "scientific_firewall": {
+      "automatic_labels_rewritten": 0,
+      "denominator_changed": 0,
+      "new_env_step": 0,
+      "new_model_inference": 0,
+      "new_open_intervention": 0,
+      "new_pgd": 0,
+      "new_protected_reads": 0,
+      "paper_promotion": 0,
+      "replacement_or_top_up": 0
+    },
+    "source_count": 11,
+    "status": "STAGE_AC_AC5_STATIC_SYNTHESIS_COMPLETE_STOP_FOR_PI"
+  },
+  "root_payload_sha256": "602a61b6c1d6b72aad35b1940399086a13d92398982aa1cb7064b5caeda91f7f",
+  "schema": "STAGE_AC_AC5_ROOT_SEAL_V1",
+  "source_authority": {
+    "reports/STAGE_AC_AC2R3_EVIDENCE_INTEGRITY_AUDIT_V1.json": {
+      "bytes": 13079,
+      "sha256": "d43e995f2e228c7ede8c059853f810e8a2aba41369c23629a587822193c70025"
+    },
+    "reports/STAGE_AC_AC2R3_MODEL_SPECIFIC_DENOMINATOR_LEDGER_V1.json": {
+      "bytes": 149194,
+      "sha256": "7b0e4fea92ba9ddbdb8e2dff26ea4c393338b3d8cedb3c87a6c1f7b930a72a11"
+    },
+    "reports/STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V2/STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V2.json": {
+      "bytes": 19002,
+      "sha256": "ca7eab25298e4bea21093c0b8850e8260b9baf9e8668b71d5873baa0c4a4b4d8"
+    },
+    "reports/STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V2/STAGE_AC_AC3_G2R1_G3R1_ROOT_SEAL_V2.json": {
+      "bytes": 20123,
+      "sha256": "69c6b5c71dff68fddfc44377006b1a6b5889339e92977bc1e0f1246f86cc3ff3"
+    },
+    "reports/STAGE_AC_AC3_G2_BRANCH_RECEIPT_INDEX_V1.json": {
+      "bytes": 1193125,
+      "sha256": "0daa5bb660085bdb3171af7ab1a2e3647d6eeba2be3b5e3f3100cf756b3a7fb4"
+    },
+    "reports/STAGE_AC_AC4_AI_SECONDARY_BLINDED_LABELS_V1.json": {
+      "bytes": 19079,
+      "sha256": "b3832d03effb2a51bddc8b27ef730af355d8ab04e2c5e4e6f07b7807e3e9da8e"
+    },
+    "reports/STAGE_AC_AC4_AI_SECONDARY_LABEL_SEAL_V1.json": {
+      "bytes": 496,
+      "sha256": "cacd42572ec4730c3c15dee23f02f203c3df324a33e0facb072922cec9801481"
+    },
+    "reports/STAGE_AC_AC4_AI_SECONDARY_RECONCILIATION_V1/STAGE_AC_AC4_AI_SECONDARY_RECONCILIATION_V1.json": {
+      "bytes": 64065,
+      "sha256": "4703b7c7954ce5571ce417885284a88395214559717b4b7f744c8f7ba6e3c21d"
+    },
+    "reports/STAGE_AC_AC4_AI_SECONDARY_RECONCILIATION_V1/STAGE_AC_AC4_AI_SECONDARY_ROOT_SEAL_V1.json": {
+      "bytes": 1267,
+      "sha256": "3be15633a217912fb9e03acb5df128b140084dd16781399f979c19027de7509d"
+    },
+    "reports/STAGE_AC_AC4_NEUTRAL_BLIND_MANIFEST_V1.json": {
+      "bytes": 34927,
+      "sha256": "1b1a0aa3d24bf6aa2e21e83eda2a35b3a4751bd27963c1e4ab8ba5fe712e2c8f"
+    },
+    "reports/STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_SEAL_V1.json": {
+      "bytes": 899,
+      "sha256": "41e938a3eca1d3ce1ca277b059a7a879d05924eaba8c12fe31ec44d8f899877f"
+    }
+  },
+  "status": "STAGE_AC_AC5_STATIC_SYNTHESIS_COMPLETE_STOP_FOR_PI"
+}
