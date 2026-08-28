@@ -1,0 +1,351 @@
+{
+  "schema": "STAGE_AC_AC3_G2R1_A_REMOTE_STRUCTURAL_EVIDENCE_V1",
+  "source": {
+    "evidence_root": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1",
+    "capture_utc": "2026-08-28T01:49:27Z",
+    "read_scope": "structural execution boundary only"
+  },
+  "firewall": {
+    "physical_outcome_fields_read": false,
+    "physical_telemetry_values_read": false,
+    "v_phys_values_read": false,
+    "new_execution": false,
+    "new_env_steps": false,
+    "new_model_inference": false
+  },
+  "branches": [
+    {
+      "branch_id": "AC3-0b0e905ab9e9fa70e6bb",
+      "model_family": "M0_OPENVLA",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_03/state_25",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-0b0e905ab9e9fa70e6bb:145",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-0b0e905ab9e9fa70e6bb.json",
+        "bytes": 16513,
+        "sha256": "56ca10becaee808f24b9af82cadeafa4bce06cbe8c6f2a749d86d96bbd72f5b1",
+        "status": "RUNNING",
+        "rows_len": 7,
+        "available_horizon_steps": 7,
+        "last_terminal_after": true,
+        "last_step": 144,
+        "action_receipts_len": 7,
+        "env_step_calls": 155,
+        "model_inference_calls": 7,
+        "open_intervention_steps": 7
+      },
+      "sidecar": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/FAILURE_AC3-0b0e905ab9e9fa70e6bb_V7.json",
+        "bytes": 824,
+        "sha256": "11368ca6f1e8a3e1c857ec7c683222cb09b632990c35c70b606fa38e3ed550fd",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-0b0e905ab9e9fa70e6bb:145",
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-3d63a96077b2d1657205",
+      "model_family": "M0_OPENVLA",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_06/state_30",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-3d63a96077b2d1657205:115",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-3d63a96077b2d1657205.json",
+        "bytes": 18697,
+        "sha256": "e6a1272fa79c4056be2b3fcf5ca9c8b8d3f349b2b3575d60034aff275ad4e0c0",
+        "status": "RUNNING",
+        "rows_len": 8,
+        "available_horizon_steps": 8,
+        "last_terminal_after": true,
+        "last_step": 114,
+        "action_receipts_len": 8,
+        "env_step_calls": 125,
+        "model_inference_calls": 8,
+        "open_intervention_steps": 8
+      },
+      "sidecar": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/FAILURE_AC3-3d63a96077b2d1657205_V7.json",
+        "bytes": 824,
+        "sha256": "7437237f54c7fcf4f23531e7f0abff6dc493787ec802aa033689bcca1f0471bb",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-3d63a96077b2d1657205:115",
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-44bce56bbe03a90fdb82",
+      "model_family": "M0_OPENVLA",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_03/state_25",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-44bce56bbe03a90fdb82:145",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-44bce56bbe03a90fdb82.json",
+        "bytes": 822,
+        "sha256": "509395343802466deb4b476d07a0d5c1c4c9ae8fcb920a2762fb3fb27e60f393",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-44bce56bbe03a90fdb82:145",
+        "rows_len": 0,
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-479359a74ced13bbfefe",
+      "model_family": "M2_PI05_LIBERO",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-479359a74ced13bbfefe:116",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-479359a74ced13bbfefe.json",
+        "bytes": 24546,
+        "sha256": "32eca452226b7057c697acba026021f6731b6d3bc55e8348126b9d1dcdc8c02e",
+        "status": "RUNNING",
+        "rows_len": 11,
+        "available_horizon_steps": 11,
+        "last_terminal_after": true,
+        "last_step": 115,
+        "action_receipts_len": 10,
+        "env_step_calls": 126,
+        "model_inference_calls": 3,
+        "open_intervention_steps": 10
+      },
+      "sidecar": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/FAILURE_AC3-479359a74ced13bbfefe_V7.json",
+        "bytes": 828,
+        "sha256": "f3439878da79961e752a24f35897417e2f3840007954bb9c15de6d184c667ae9",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-479359a74ced13bbfefe:116",
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-53cfba047c99467f0be9",
+      "model_family": "M2_PI05_LIBERO",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_04/state_15",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-53cfba047c99467f0be9:131",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-53cfba047c99467f0be9.json",
+        "bytes": 13760,
+        "sha256": "05d3c8fdbe24633c69a3796e2fbffaba69fdb395e7e65d113d4da1e46ccdc4be",
+        "status": "RUNNING",
+        "rows_len": 6,
+        "available_horizon_steps": 6,
+        "last_terminal_after": true,
+        "last_step": 130,
+        "action_receipts_len": 5,
+        "env_step_calls": 141,
+        "model_inference_calls": 2,
+        "open_intervention_steps": 5
+      },
+      "sidecar": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/FAILURE_AC3-53cfba047c99467f0be9_V7.json",
+        "bytes": 826,
+        "sha256": "37b15e5f40c13a1839f4010966f612a87cf18fd8117a1cc42d1a03c6270df70e",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-53cfba047c99467f0be9:131",
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-65bcfd948a45dd0be9ac",
+      "model_family": "M1_OPENVLA_OFT",
+      "suite": "libero_spatial",
+      "canonical_parent_key": "libero_spatial/task_06/state_16",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "selected_error": "ACTION_SEMANTICS_INVALID:M1_OPENVLA_OFT:RAW_GRIPPER_AT_THRESHOLD",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-65bcfd948a45dd0be9ac.json",
+        "bytes": 835,
+        "sha256": "3b04c936a121f53e8d005efeeda0a26a39439fe88bcabc303c9db3fcb99461f5",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "ACTION_SEMANTICS_INVALID:M1_OPENVLA_OFT:RAW_GRIPPER_AT_THRESHOLD",
+        "rows_len": 0,
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-6cea2840eeb09cc5b2b3",
+      "model_family": "M2_PI05_LIBERO",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_04/state_40",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-6cea2840eeb09cc5b2b3:118",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-6cea2840eeb09cc5b2b3.json",
+        "bytes": 16491,
+        "sha256": "ea8d8ae9c2a3fc846ab514117819ce734b960c8d65a5fd0566f7267697e3addc",
+        "status": "RUNNING",
+        "rows_len": 8,
+        "available_horizon_steps": 8,
+        "last_terminal_after": true,
+        "last_step": 117,
+        "action_receipts_len": 5,
+        "env_step_calls": 128,
+        "model_inference_calls": 2,
+        "open_intervention_steps": 5
+      },
+      "sidecar": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/FAILURE_AC3-6cea2840eeb09cc5b2b3_V7.json",
+        "bytes": 826,
+        "sha256": "e194f216c36ef71b349a2476542f1b69edfae0287561ca9d23623b538b62c33e",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-6cea2840eeb09cc5b2b3:118",
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-7d815eadd7ef5d977d2f",
+      "model_family": "M2_PI05_LIBERO",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_00/state_16",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-7d815eadd7ef5d977d2f:234",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-7d815eadd7ef5d977d2f.json",
+        "bytes": 828,
+        "sha256": "eebc302383927bcf579caa7efc0e0ca50ae058f60fbc272e0cca8b804b606fa0",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-7d815eadd7ef5d977d2f:234",
+        "rows_len": 0,
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-99e742fb31790d813876",
+      "model_family": "M0_OPENVLA",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_06/state_30",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-99e742fb31790d813876:115",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-99e742fb31790d813876.json",
+        "bytes": 16409,
+        "sha256": "99a12181cbd46ce108754c4183d5eff4c87897d821cb6127ab012c6629c5b52f",
+        "status": "RUNNING",
+        "rows_len": 8,
+        "available_horizon_steps": 8,
+        "last_terminal_after": true,
+        "last_step": 114,
+        "action_receipts_len": 5,
+        "env_step_calls": 125,
+        "model_inference_calls": 8,
+        "open_intervention_steps": 5
+      },
+      "sidecar": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/FAILURE_AC3-99e742fb31790d813876_V7.json",
+        "bytes": 822,
+        "sha256": "85d3d70b758d0451e771dd1bc31921733acb1f4c6ff6b1b97a6b27f37340a676",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-99e742fb31790d813876:115",
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-d38978877aabd6ee103c",
+      "model_family": "M2_PI05_LIBERO",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_04/state_15",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-d38978877aabd6ee103c:131",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-d38978877aabd6ee103c.json",
+        "bytes": 14457,
+        "sha256": "21c6f8cd5d5eea625b7734d5de5f35552065583e00ace4a726068de155539a13",
+        "status": "RUNNING",
+        "rows_len": 6,
+        "available_horizon_steps": 6,
+        "last_terminal_after": true,
+        "last_step": 130,
+        "action_receipts_len": 6,
+        "env_step_calls": 141,
+        "model_inference_calls": 2,
+        "open_intervention_steps": 6
+      },
+      "sidecar": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/FAILURE_AC3-d38978877aabd6ee103c_V7.json",
+        "bytes": 828,
+        "sha256": "c0df5c4438a6300e28c83afa658b02b4cab8c88e8fa7a6ae61939eabf109d662",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-d38978877aabd6ee103c:131",
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-d62f76637959785f34fb",
+      "model_family": "M2_PI05_LIBERO",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_04/state_06",
+      "condition": "OPEN_T5",
+      "dose": 5,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-d62f76637959785f34fb:116",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-d62f76637959785f34fb.json",
+        "bytes": 20698,
+        "sha256": "3f83dc7393b45ca6b25653384399799d1ece719dc9126541501893163b96599f",
+        "status": "RUNNING",
+        "rows_len": 11,
+        "available_horizon_steps": 11,
+        "last_terminal_after": true,
+        "last_step": 115,
+        "action_receipts_len": 5,
+        "env_step_calls": 126,
+        "model_inference_calls": 3,
+        "open_intervention_steps": 5
+      },
+      "sidecar": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/FAILURE_AC3-d62f76637959785f34fb_V7.json",
+        "bytes": 826,
+        "sha256": "36b7472368b93f6555ba45ed9199fc6aaf5dda620330109d70635219a14b842e",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-d62f76637959785f34fb:116",
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    },
+    {
+      "branch_id": "AC3-fab169a0e74439e40092",
+      "model_family": "M2_PI05_LIBERO",
+      "suite": "libero_object",
+      "canonical_parent_key": "libero_object/task_04/state_40",
+      "condition": "OPEN_T10",
+      "dose": 10,
+      "selected_error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-fab169a0e74439e40092:118",
+      "base": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/AC3-fab169a0e74439e40092.json",
+        "bytes": 18716,
+        "sha256": "065955c35ff4a4987564286466b611358f3a5c2ccf6036e9aa7e4d4169500acb",
+        "status": "RUNNING",
+        "rows_len": 8,
+        "available_horizon_steps": 8,
+        "last_terminal_after": true,
+        "last_step": 117,
+        "action_receipts_len": 8,
+        "env_step_calls": 128,
+        "model_inference_calls": 2,
+        "open_intervention_steps": 8
+      },
+      "sidecar": {
+        "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2_PHYSICAL_V1/receipts/FAILURE_AC3-fab169a0e74439e40092_V7.json",
+        "bytes": 828,
+        "sha256": "c24ee5a99a3f6b5f070c6ef8735aae9ef1690a860b5636789fdc3ae93fa7e48b",
+        "status": "ENGINEERING_INVALID_OR_HORIZON_CENSORED",
+        "error": "AC3_G2_TERMINAL_BEFORE_HORIZON:AC3-fab169a0e74439e40092:118",
+        "next_legal_action": "STOP_FOR_PI"
+      }
+    }
+  ]
+}

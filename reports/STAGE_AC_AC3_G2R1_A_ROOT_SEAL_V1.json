@@ -1,0 +1,91 @@
+{
+  "artifacts": {
+    "adjudication": {
+      "bytes": 28893,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_A_CENSOR_ADJUDICATION_V1.json",
+      "sha256": "0a46d402fdaa983fe62cdcb0ca0efb3d48be600a3ae61b47859c83b6c8713e6d"
+    }
+  },
+  "claim_boundary": "G2R1-A structural censoring adjudication only; no physical outcome interpretation, no G3 statistics",
+  "next_legal_action": "STOP_FOR_PI",
+  "root_payload": {
+    "adjudication": {
+      "bytes": 28893,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_A_CENSOR_ADJUDICATION_V1.json",
+      "sha256": "0a46d402fdaa983fe62cdcb0ca0efb3d48be600a3ae61b47859c83b6c8713e6d"
+    },
+    "counts": {
+      "action_semantics_validator_failure_unresolved": 1,
+      "frozen_invalid_branches": 12,
+      "true_simulator_terminal_horizon_censor": 11,
+      "unclassified": 0
+    },
+    "g0_manifest": {
+      "bytes": 8942568,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G0_LAUNCH_MANIFEST_V1.json",
+      "sha256": "501a000e25e828ebd12116d16e7f4c8fe6f5c52efdcdf3e04a762a60aaef8d64"
+    },
+    "g2_index": {
+      "bytes": 1193125,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2_BRANCH_RECEIPT_INDEX_V1.json",
+      "sha256": "0daa5bb660085bdb3171af7ab1a2e3647d6eeba2be3b5e3f3100cf756b3a7fb4"
+    },
+    "g2_root": {
+      "bytes": 4317,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2_ROOT_SEAL_V1.json",
+      "sha256": "6dcc6974b142cf34d07346974b91521a438e009f99ec832e244eb09d3f5a14fc"
+    },
+    "g2_terminal": {
+      "bytes": 2633,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2_TERMINAL_V1.json",
+      "sha256": "6d6b939fe65100ddec98a8a7f1de2f0f4900484ff85c1dbdbefe144df8fb5ea5"
+    },
+    "gate": "STAGE_AC_AC3_G2R1_FAILURE_PATH_CENSORING_ADJUDICATION_V1",
+    "historical_evidence_preserved": true,
+    "model_coverage": {
+      "M0_OPENVLA": {
+        "complete_t3_t10_pairs": 30,
+        "complete_t3_t5_t10_triplets": 30,
+        "parent_count": 32,
+        "unknown_open_parents_by_dose": {
+          "10": 2,
+          "5": 2
+        }
+      },
+      "M1_OPENVLA_OFT": {
+        "complete_t3_t10_pairs": 31,
+        "complete_t3_t5_t10_triplets": 31,
+        "parent_count": 32,
+        "unknown_open_parents_by_dose": {
+          "10": 1
+        }
+      },
+      "M2_PI05_LIBERO": {
+        "complete_t3_t10_pairs": 28,
+        "complete_t3_t5_t10_triplets": 28,
+        "parent_count": 32,
+        "unknown_open_parents_by_dose": {
+          "10": 4,
+          "5": 3
+        }
+      }
+    },
+    "outcome_firewall": {
+      "new_env_steps": false,
+      "new_execution": false,
+      "new_model_inference": false,
+      "physical_outcome_fields_read": false,
+      "physical_telemetry_values_read": false,
+      "v_phys_values_read": false
+    },
+    "remote_structural_snapshot": {
+      "bytes": 14993,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_A_REMOTE_STRUCTURAL_EVIDENCE_V1.json",
+      "sha256": "30fb787287425c070161bfffdfa5831dafbf8495813732f8f114074404dd5883"
+    },
+    "status": "STAGE_AC_AC3_G2R1_A_ACTION_SEMANTICS_DISCREPANCY_HOLD_STOP_FOR_PI"
+  },
+  "root_payload_sha256": "43b3afe336d9efadd00ce4fc38c169727e1b6c9fa0981f84482781a534e2572e",
+  "schema": "STAGE_AC_AC3_G2R1_A_ROOT_SEAL_V1",
+  "status": "STAGE_AC_AC3_G2R1_A_ACTION_SEMANTICS_DISCREPANCY_HOLD_STOP_FOR_PI"
+}
