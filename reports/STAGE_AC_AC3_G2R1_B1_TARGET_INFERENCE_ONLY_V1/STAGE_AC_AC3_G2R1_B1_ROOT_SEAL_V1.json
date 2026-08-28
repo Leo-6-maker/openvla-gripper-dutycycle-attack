@@ -1,0 +1,23 @@
+{
+  "gate": "STAGE_AC_AC3_G2R1_B1_TARGET_INFERENCE_ONLY_REPLAY_V1",
+  "next_legal_action": "STOP_FOR_PI",
+  "root_payload": {
+    "branch_id": "AC3-65bcfd948a45dd0be9ac",
+    "gate": "STAGE_AC_AC3_G2R1_B1_TARGET_INFERENCE_ONLY_REPLAY_V1",
+    "receipt": {
+      "bytes": 11272,
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2R1_B1_TARGET_INFERENCE_ONLY_V1/AC3-65bcfd948a45dd0be9ac_INFERENCE_ONLY.json",
+      "sha256": "473e007cb3c403da9ee93fff3d5277353fadc61837aaea702b4432577e3bfca3"
+    },
+    "scientific_firewall": {
+      "new_env_step_calls": 0,
+      "new_model_inference_calls": 1,
+      "new_open_intervention_steps": 0,
+      "new_protected_reads": 0
+    },
+    "status": "STAGE_AC_AC3_G2R1_B1_TARGET_ACTION_CAUSE_UNRESOLVED_HOLD_STOP_FOR_PI"
+  },
+  "root_payload_sha256": "45725eede93fde778acedbe3e9ecb9f18eb5ac444b6e075b1ccaca3ce1e66d2d",
+  "schema": "STAGE_AC_AC3_G2R1_B1_ROOT_SEAL_V1",
+  "status": "STAGE_AC_AC3_G2R1_B1_TARGET_ACTION_CAUSE_UNRESOLVED_HOLD_STOP_FOR_PI"
+}
