@@ -1,0 +1,266 @@
+{
+  "checks": {
+    "clean_source_receipts_verified": true,
+    "historical_and_v2_source_equal": true,
+    "index_and_remote_pass_count_372": true,
+    "legacy_route_is_identified": true,
+    "official_semantics_reconciled": true,
+    "persisted_action_pairs_dimension_checked": true,
+    "persisted_pair_old_pass_implies_v2_pass": true,
+    "receipt_sha_matches_372": true,
+    "remote_receipt_set_exact": true,
+    "static_old_pass_implies_v2_pass": true,
+    "target_queue_not_persisted": true
+  },
+  "gate": "STAGE_AC_AC3_G2R1_B0R1_ACTION_ONLY_SEMANTICS_RECONCILIATION_V1",
+  "next_legal_action": "B1_TARGET_INFERENCE_ONLY_REPLAY",
+  "pass_branch_set": {
+    "count": 372,
+    "ids_sha256": "edab5b9a8900cbc32fe3f5e565165a0c147da3da9ad33f733732439bfe923a44",
+    "refs_sha256": "ddf86ef4ce05246cd0b12912f51e3d9b69e9c15c958aba339a707c50149f567d"
+  },
+  "remote_action_only_audit": {
+    "expected_count": 372,
+    "index_pass_count": 372,
+    "receipt_summary": {
+      "action_pairs": 21222,
+      "branches": 372,
+      "clean_branches": 96,
+      "clean_source_pairs": 21222,
+      "intervention_pairs": 0,
+      "old_pass_v2_fail": 0,
+      "old_v1_accepted": 21220,
+      "old_v1_rejected": 2,
+      "receipt_sha_matches": 372,
+      "source_receipts_verified": 96,
+      "treatment_branches": 276,
+      "v2_accepted": 21222,
+      "v2_rejected": 0
+    },
+    "remote_ids_digest": "edab5b9a8900cbc32fe3f5e565165a0c147da3da9ad33f733732439bfe923a44",
+    "remote_pass_count": 372,
+    "remote_refs_digest": "ddf86ef4ce05246cd0b12912f51e3d9b69e9c15c958aba339a707c50149f567d",
+    "remote_source": {
+      "aa2r2_v2": {
+        "bytes": 8314,
+        "sha256": "9c72edacc7c9c0b8811f36a2183ccb61f3da6fe009ae4db79c23c7bec6f684bc"
+      },
+      "historical_v1": {
+        "bytes": 7777,
+        "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c"
+      },
+      "official_exec_spec": {
+        "bytes": 7636,
+        "sha256": "e8244e8fcf1ca3ae4b81caf2ccf5e6055fa5f5ce12620d71627b216d47e44856"
+      },
+      "official_probe": [
+        [
+          0.4999999,
+          1.0
+        ],
+        [
+          0.5,
+          -0.0
+        ],
+        [
+          0.5000001,
+          -1.0
+        ]
+      ],
+      "official_version": "openvla_libero_exec_spec_v2_official_boundary_20260607"
+    },
+    "target_action_evidence": {
+      "action_receipt_count": 0,
+      "persisted": false
+    }
+  },
+  "schema": "STAGE_AC_AC3_G2R1_B0R1_ACTION_ONLY_AUDIT_V1",
+  "scientific_firewall": {
+    "new_attack_outcome_reads": 0,
+    "new_env_step_calls": 0,
+    "new_model_inference_calls": 0,
+    "new_open_intervention_steps": 0,
+    "new_physical_endpoint_reads": 0,
+    "new_physical_telemetry_reads": 0,
+    "new_protected_reads": 0,
+    "new_v_phys_reads": 0
+  },
+  "scope": "action-only projection; no physical_class, V_phys, endpoint, telemetry, or treatment-outcome field is used by this audit",
+  "source_commit": "9aae759022b37684a843005417280cd4e80283d7",
+  "source_reconciliation": {
+    "aa2r2_v2_byte_equal": true,
+    "historical_v1_byte_equal": true,
+    "official_spec_byte_equal": false,
+    "official_spec_semantic_probe_equal": true,
+    "official_version_equal": true
+  },
+  "static_authority": {
+    "boundary_probes": [
+      {
+        "official_env": 1.0,
+        "old_v1_accepted": false,
+        "raw": 0.4999999,
+        "v2_accepted": true,
+        "v2_semantic_state": "CLOSE"
+      },
+      {
+        "official_env": -0.0,
+        "old_v1_accepted": false,
+        "raw": 0.5,
+        "v2_accepted": true,
+        "v2_semantic_state": "NEUTRAL_BOUNDARY"
+      },
+      {
+        "official_env": -1.0,
+        "old_v1_accepted": false,
+        "raw": 0.5000001,
+        "v2_accepted": true,
+        "v2_semantic_state": "OPEN"
+      }
+    ],
+    "compatibility": {
+      "old_pass_count": 12,
+      "old_pass_implies_v2_pass": true,
+      "rows": [
+        {
+          "family": "M0_OPENVLA",
+          "old_v1_accepted": true,
+          "raw": -1.0,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M0_OPENVLA",
+          "old_v1_accepted": true,
+          "raw": 0.0,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M0_OPENVLA",
+          "old_v1_accepted": true,
+          "raw": 0.499,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M0_OPENVLA",
+          "old_v1_accepted": true,
+          "raw": 0.501,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M0_OPENVLA",
+          "old_v1_accepted": true,
+          "raw": 1.0,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M0_OPENVLA",
+          "old_v1_accepted": true,
+          "raw": 2.0,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M1_OPENVLA_OFT",
+          "old_v1_accepted": true,
+          "raw": -1.0,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M1_OPENVLA_OFT",
+          "old_v1_accepted": true,
+          "raw": 0.0,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M1_OPENVLA_OFT",
+          "old_v1_accepted": true,
+          "raw": 0.499,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M1_OPENVLA_OFT",
+          "old_v1_accepted": true,
+          "raw": 0.501,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M1_OPENVLA_OFT",
+          "old_v1_accepted": true,
+          "raw": 1.0,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        },
+        {
+          "family": "M1_OPENVLA_OFT",
+          "old_v1_accepted": true,
+          "raw": 2.0,
+          "same_open_close_meaning": true,
+          "v2_accepted": true
+        }
+      ]
+    },
+    "legacy_route_evidence": {
+      "aa1_uses_historical_v1_validator": true,
+      "ac3_loads_aa1r1_runner": true,
+      "ac3_routes_through_aa1_semantics": true
+    },
+    "m2_clip_probe_accepted": true,
+    "official_rule": "raw < 0.5 -> env +1; raw == 0.5 -> env 0; raw > 0.5 -> env -1",
+    "source_files": {
+      "aa2r2_v2": {
+        "bytes": 8314,
+        "path": "src/stage_aa/action_semantics_v2.py",
+        "sha256": "9c72edacc7c9c0b8811f36a2183ccb61f3da6fe009ae4db79c23c7bec6f684bc"
+      },
+      "ac3_runner": {
+        "bytes": 39604,
+        "path": "scripts/stage_ac/run_stage_ac3_g2_model_suite.py",
+        "sha256": "5e599bd81ad5b7f31703b852a5c617e014f7ad882c944e542b781137d5fa2451"
+      },
+      "historical_v1": {
+        "bytes": 7777,
+        "path": "src/stage_z_preparation/action_semantics.py",
+        "sha256": "788de8d4a2100d352f36150f1d6a9d366c9efdfb27bc5d646718f94ada6e222c"
+      },
+      "legacy_aa1_runner": {
+        "bytes": 30378,
+        "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
+        "sha256": "2d3a3dc4ae9729ef70730be6c13a42d68a8fe6930cd95c3f914b1273a7c6db94"
+      },
+      "official_exec_spec": {
+        "bytes": 7833,
+        "path": "src/gripper_attack/openvla_libero_exec_spec.py",
+        "sha256": "13ea43ffe674dae22c5d1c5a1a2c54c92a27c9fcc79ef13dc057594bbe31bf92"
+      }
+    },
+    "wrong_exact_threshold_final_values": [
+      {
+        "final": 1.0,
+        "reason": "OPENVLA_GRIPPER_MAPPING_MISMATCH",
+        "v2_accepted": false
+      },
+      {
+        "final": -1.0,
+        "reason": "OPENVLA_GRIPPER_MAPPING_MISMATCH",
+        "v2_accepted": false
+      }
+    ]
+  },
+  "status": "STAGE_AC_AC3_G2R1_B0R1_ACTION_ONLY_AUDIT_PASS_CONTINUE",
+  "target_branch": {
+    "action_evidence": {
+      "action_receipt_count": 0,
+      "persisted": false
+    },
+    "branch_id": "AC3-65bcfd948a45dd0be9ac"
+  }
+}
