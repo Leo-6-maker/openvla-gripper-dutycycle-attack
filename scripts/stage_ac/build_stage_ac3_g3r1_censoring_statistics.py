@@ -20,6 +20,7 @@ CONDITIONS = ("OPEN_T3", "OPEN_T5", "OPEN_T10")
 HORIZON = "TRUE_SIMULATOR_TERMINAL_HORIZON_CENSOR"
 TARGET_UNKNOWN = "ACTION_SEMANTICS_UNKNOWN"
 MONOTONE = {"000", "001", "011", "111"}
+ALPHA = 0.05
 
 
 def sha256(data: bytes) -> str:
@@ -58,8 +59,42 @@ def exact_mcnemar_p(discordant_t3_yes_t10_no: int, discordant_t3_no_t10_yes: int
     n = b + c
     if n == 0:
         return 1.0
-    tail = sum(comb(n, k) for k in range(min(b, c) + 1)) / (2 ** n)
-    return min(1.0, 2.0 * tail)
+    # One-sided alternative required by the AC3 contract: T10 > T3.
+    return sum(comb(n, k) for k in range(c, n + 1)) / (2 ** n)
+
+
+def binomial_cdf(n: int, k: int, probability: float) -> float:
+    return sum(comb(n, index) * probability**index * (1.0 - probability) ** (n - index) for index in range(k + 1))
+
+
+def clopper_pearson(successes: int, trials: int, alpha: float = ALPHA) -> list[float]:
+    """Exact two-sided binomial interval by direct tail inversion."""
+    require(0 <= successes <= trials and trials > 0, "AC3_G3R1_CP_COUNTS")
+    tail = alpha / 2.0
+    if successes == 0:
+        lower = 0.0
+    else:
+        low, high = 0.0, 1.0
+        for _ in range(80):
+            mid = (low + high) / 2.0
+            probability_ge = 1.0 - binomial_cdf(trials, successes - 1, mid)
+            if probability_ge < tail:
+                low = mid
+            else:
+                high = mid
+        lower = (low + high) / 2.0
+    if successes == trials:
+        upper = 1.0
+    else:
+        low, high = 0.0, 1.0
+        for _ in range(80):
+            mid = (low + high) / 2.0
+            if binomial_cdf(trials, successes, mid) > tail:
+                low = mid
+            else:
+                high = mid
+        upper = (low + high) / 2.0
+    return [lower, upper]
 
 
 def holm_adjust(p_values: dict[str, float]) -> dict[str, float]:
@@ -77,11 +112,14 @@ def holm_adjust(p_values: dict[str, float]) -> dict[str, float]:
 def build(args: argparse.Namespace) -> dict[str, Any]:
     c_report, c_record = read_json(args.g2r1_c)
     c_root, c_root_record = read_json(args.g2r1_c_root)
+    superseded, superseded_record = read_json(args.superseded_statistics)
     require(c_report["schema"] == "STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1", "AC3_G3R1_C_REPORT_SCHEMA")
     require(c_report["status"] == "STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_FROZEN_CONTINUE_TO_G3R1", "AC3_G3R1_C_REPORT_STATUS")
     require(c_root["schema"] == "STAGE_AC_AC3_G2R1_C_ROOT_SEAL_V1", "AC3_G3R1_C_ROOT_SCHEMA")
     require(canonical_hash(c_root["root_payload"]) == c_root["root_payload_sha256"], "AC3_G3R1_C_ROOT_PAYLOAD")
     require(c_root["root_payload"]["report"]["sha256"] == c_record["sha256"], "AC3_G3R1_C_REPORT_ROOT_SHA")
+    require(superseded["schema"] == "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1", "AC3_G3R1_SUPERSEDED_SCHEMA")
+    require(superseded["status"] == "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_COMPLETE_CONTINUE_TO_AC4", "AC3_G3R1_SUPERSEDED_STATUS")
     require(c_report["counts"] == {"action_semantics_unknown_branches": 1, "fixed_authoritative_branches": 384, "new_execution": 0, "pass_branches": 372, "physical_outcome_reclassified": 0, "true_horizon_censored_branches": 11}, "AC3_G3R1_C_COUNTS")
     require(c_report["outcome_firewall"]["new_model_inference"] == 0 and c_report["outcome_firewall"]["new_env_steps"] == 0 and c_report["outcome_firewall"]["new_open_interventions"] == 0, "AC3_G3R1_C_FIREWALL")
 
@@ -133,6 +171,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
                 "horizon_censored": horizon,
                 "action_semantics_unknown": action_unknown,
                 "conditional_rate_observed": events / len(complete) if complete else None,
+                "exact_binomial_95pct_ci_conditional_observed": clopper_pearson(events, len(complete)),
                 "p_lower_fixed_32": events / 32,
                 "p_upper_horizon_only_fixed_32": (events + horizon) / 32,
                 "p_upper_all_unknown_fixed_32": (events + horizon + action_unknown) / 32,
@@ -169,7 +208,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             "complete_triplet_monotone_patterns": dict(sorted((key, value) for key, value in triplet_pattern.items() if key in MONOTONE)),
             "complete_triplet_nonmonotone_patterns": dict(sorted((key, value) for key, value in triplet_pattern.items() if key not in MONOTONE)),
             "paired_exact_test": {
-                "test": "two-sided exact McNemar conditional binomial",
+                "test": "one-sided exact McNemar conditional binomial, alternative T10 > T3",
                 "t3_yes_t10_no": b,
                 "t3_no_t10_yes": c,
                 "discordant_total": b + c,
@@ -199,19 +238,33 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     adjusted = holm_adjust(p_values)
     for model in MODELS:
         model_stats[model]["paired_exact_test"]["holm_adjusted_p_value_across_models"] = adjusted[model]
+        dose = model_stats[model]["by_dose"]
+        monotone = model_stats[model]["dose_response_diagnostic"]["observed_conditional_monotone"]
+        effect = model_stats[model]["dose_response_diagnostic"]["t10_minus_t3_observed_conditional"]
+        all_32_identifiable = all(dose[str(value)]["complete_parent_count"] == 32 for value in DOSES)
+        model_stats[model]["strong_model_support_gate"] = {
+            "all_selected_parent_families_technically_valid": all_32_identifiable,
+            "primary_endpoint_identifiable_for_all_32": all_32_identifiable,
+            "dose_monotone": monotone,
+            "observed_t10_minus_t3_at_least_020": effect >= 0.20,
+            "one_sided_exact_mcnemar_holm_alpha_005": adjusted[model] <= ALPHA,
+            "candidate_strong_support": all_32_identifiable and monotone and effect >= 0.20 and adjusted[model] <= ALPHA,
+            "why_not_pristine_if_false": "UNKNOWN branches remain in the fixed denominator; endpoint-limited models cannot receive the strong all-32 classification." if not all_32_identifiable else None,
+        }
 
-    global_status = "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_COMPLETE_CONTINUE_TO_AC4"
+    global_status = "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V2_COMPLETE_CONTINUE_TO_AC4"
     next_action = "AC4_FROZEN_BLINDED_AUDIT"
     report = {
-        "schema": "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1",
+        "schema": "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V2",
         "status": global_status,
-        "gate": "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1",
+        "gate": "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V2",
         "claim_boundary": "Static G3R1 censoring-aware statistics only; no new execution, endpoint relabeling, or scientific promotion.",
-        "source_authority": {"g2r1_c_report": c_record, "g2r1_c_root": c_root_record},
+        "source_authority": {"g2r1_c_report": c_record, "g2r1_c_root": c_root_record, "superseded_two_sided_exploratory_statistics": superseded_record},
         "counts": {"fixed_parents_per_model": 32, "models": 3, "authoritative_treatment_rows": 288, "complete_treatment_rows": 276, "unknown_treatment_rows": 12, "true_horizon_unknown": 11, "action_semantics_unknown": 1, "new_execution": 0},
         "model_summary": model_stats,
-        "holm_correction": {"family": "three model paired exact tests", "raw_p_values": p_values, "adjusted_p_values": adjusted, "alpha_or_promotion_rule": "not applied in G3R1 closeout"},
+        "holm_correction": {"family": "three model paired exact tests", "raw_p_values": p_values, "adjusted_p_values": adjusted, "familywise_alpha": ALPHA, "significant_after_holm": {model: adjusted[model] <= ALPHA for model in MODELS}, "promotion_decision": "not applied in G3R1 closeout"},
         "censoring_policy": {"unknown_is_not_zero": True, "horizon_censor_in_primary_bounds": True, "action_unknown_separate_sensitivity": True, "fixed_denominator": 32, "pair_test_complete_pair_only": True, "triplet_pattern_complete_triplet_only": True},
+        "supersession": {"supersedes": superseded_record, "reason": "V1 used two-sided McNemar p-values and omitted exact binomial confidence intervals; V2 applies the preregistered one-sided T10>T3 test and adds Clopper-Pearson intervals. V1 remains immutable and is not used for promotion."},
         "global_diagnostic": {
             "models_with_pair_floor_24": sum(model_stats[model]["pair_floor_24_pass"] for model in MODELS),
             "models_with_triplet_floor_24": sum(model_stats[model]["triplet_floor_24_pass"] for model in MODELS),
@@ -222,15 +275,16 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         "outcome_firewall": {"new_model_inference": 0, "new_env_steps": 0, "new_open_interventions": 0, "new_physical_outcome_reads": 0, "new_pgd": 0, "new_protected_reads": 0},
         "next_legal_action": next_action,
     }
-    report_artifact = write_new(args.output_dir / "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1.json", report)
+    report_artifact = write_new(args.output_dir / "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V2.json", report)
     root_payload = {"gate": report["gate"], "status": global_status, "report": report_artifact, "source_authority": report["source_authority"], "counts": report["counts"], "model_summary": model_stats, "holm_correction": report["holm_correction"], "global_diagnostic": report["global_diagnostic"], "outcome_firewall": report["outcome_firewall"], "next_legal_action": next_action}
-    root = {"schema": "STAGE_AC_AC3_G2R1_G3R1_ROOT_SEAL_V1", "status": global_status, "root_payload": root_payload, "root_payload_sha256": canonical_hash(root_payload), "artifacts": {"statistics": report_artifact}, "claim_boundary": report["claim_boundary"], "next_legal_action": next_action}
-    root_artifact = write_new(args.output_dir / "STAGE_AC_AC3_G2R1_G3R1_ROOT_SEAL_V1.json", root)
+    root = {"schema": "STAGE_AC_AC3_G2R1_G3R1_ROOT_SEAL_V2", "status": global_status, "root_payload": root_payload, "root_payload_sha256": canonical_hash(root_payload), "artifacts": {"statistics": report_artifact}, "claim_boundary": report["claim_boundary"], "next_legal_action": next_action}
+    root_artifact = write_new(args.output_dir / "STAGE_AC_AC3_G2R1_G3R1_ROOT_SEAL_V2.json", root)
     return {"status": global_status, "counts": report["counts"], "model_summary": model_stats, "holm": report["holm_correction"], "artifacts": {"statistics": report_artifact, "root": root_artifact}, "root_payload_sha256": root["root_payload_sha256"]}
 
 
 def self_test() -> None:
-    assert math.isclose(exact_mcnemar_p(8, 0), 0.0078125)
+    assert math.isclose(exact_mcnemar_p(0, 8), 0.00390625)
+    assert clopper_pearson(0, 32)[0] == 0.0 and clopper_pearson(32, 32)[1] == 1.0
     assert holm_adjust({"a": 0.001, "b": 0.01, "c": 0.1}) == {"a": 0.003, "b": 0.02, "c": 0.1}
     print(json.dumps({"status": "AC3_G3R1_STATIC_SELF_TEST_PASS", "unknown_is_not_zero": True}, sort_keys=True))
 
@@ -240,7 +294,8 @@ def main() -> int:
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--g2r1-c", type=Path, default=ROOT / "reports/STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1/STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1.json")
     parser.add_argument("--g2r1-c-root", type=Path, default=ROOT / "reports/STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1/STAGE_AC_AC3_G2R1_C_ROOT_SEAL_V1.json")
-    parser.add_argument("--output-dir", type=Path, default=ROOT / "reports/STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1")
+    parser.add_argument("--superseded-statistics", type=Path, default=ROOT / "reports/STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1/STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1.json")
+    parser.add_argument("--output-dir", type=Path, default=ROOT / "reports/STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V2")
     args = parser.parse_args()
     if args.self_test:
         self_test()
