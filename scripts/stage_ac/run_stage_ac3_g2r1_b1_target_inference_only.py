@@ -212,6 +212,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     config = read_json(args.config)
     aa1.Z1.configure_libero(config)
     receipt = initial_receipt(job, target_failure, Path(__file__), args.gpu_id)
+    receipt["seed_binding"] = "SET_AFTER_MODEL_LOAD_BEFORE_STATE_RESTORE_AND_INFERENCE"
     receipt["gpu_snapshot_before_model"] = gpu
     receipt["runtime_environment"] = {"cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""), "checkpoint_materialization": "NOT_REQUESTED"}
     write_json(receipt_path, receipt)
@@ -220,6 +221,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         infer, model, checkpoint, checkpoint_manifest = ac3.load_model(config, MODEL, SUITE)
         receipt["checkpoint"] = str(checkpoint)
         receipt["checkpoint_manifest"] = checkpoint_manifest
+        ac3.set_branch_seed(SEED)
         env, obs = restore_anchor(aa1, config, job, clean)
         try:
             rows, meta = audit_queue(ac3, legacy, v2, infer, obs, str(clean["language"]))
