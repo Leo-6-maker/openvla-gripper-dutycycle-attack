@@ -1,0 +1,23 @@
+{
+  "gate": "STAGE_AC_AC3_G2R1_B1R1_TARGET_INFERENCE_ONLY_REPLAY_V1",
+  "next_legal_action": "G2R1_C_CENSORING_AWARE_ANALYSIS",
+  "root_payload": {
+    "branch_id": "AC3-65bcfd948a45dd0be9ac",
+    "gate": "STAGE_AC_AC3_G2R1_B1R1_TARGET_INFERENCE_ONLY_REPLAY_V1",
+    "receipt": {
+      "bytes": 12762,
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC3_G2R1_B1R1_TARGET_INFERENCE_ONLY_V1/AC3-65bcfd948a45dd0be9ac_INFERENCE_ONLY.json",
+      "sha256": "6a06f8e529f21acba44601c6f33bf14a586e0faba402faa48e0f9353765ef3c9"
+    },
+    "scientific_firewall": {
+      "new_env_step_calls": 0,
+      "new_model_inference_calls": 1,
+      "new_open_intervention_steps": 0,
+      "new_protected_reads": 0
+    },
+    "status": "STAGE_AC_AC3_G2R1_B1R1_UNKNOWN_ACTION_SEMANTICS_CONTINUE_TO_CENSORING_ANALYSIS"
+  },
+  "root_payload_sha256": "fad0835409fd9559982e9ae57d0db622ec196c071a0ae82b4b7e7220eb9edfef",
+  "schema": "STAGE_AC_AC3_G2R1_B1R1_ROOT_SEAL_V1",
+  "status": "STAGE_AC_AC3_G2R1_B1R1_UNKNOWN_ACTION_SEMANTICS_CONTINUE_TO_CENSORING_ANALYSIS"
+}
