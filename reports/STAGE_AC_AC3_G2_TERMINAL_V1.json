@@ -1,0 +1,93 @@
+{
+  "aggregate_runtime_counters": {
+    "ac2_exposure": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "env_step_calls": 46954,
+    "eval160_reads": 0,
+    "model_inference_calls": 1982,
+    "open_intervention_steps": 1633,
+    "pgd_calls": 0,
+    "physical_endpoint_reads": 372,
+    "physical_telemetry_reads": 12626,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 372,
+    "task_success_reads": 0,
+    "v_phys_reads": 276
+  },
+  "blind_sample": {
+    "expected": 96,
+    "missing_due_to_invalid_branches": 5,
+    "videos_missing": 5,
+    "videos_present": 91
+  },
+  "claim_boundary": "AC3 G2 frozen model-suite branch execution reconciliation only; no G3 statistics or promotion",
+  "execution_summary": {
+    "authoritative_terminal_branches": 384,
+    "failure_sidecars": 9,
+    "invalid_or_horizon_censored_branches": 12,
+    "manifest_branches": 384,
+    "pass_branches": 372,
+    "recovered_clean_receipts": 62
+  },
+  "g3_statistics_authorized": false,
+  "g4_blind_review_authorized": false,
+  "gate": "STAGE_AC_AC3_AC4_AC5_TREATMENT_NAIVE_MULTI_MODEL_PHYSICAL_REPLICATION_PROGRAM_V1",
+  "invalid_branch_ids": [
+    "AC3-0b0e905ab9e9fa70e6bb",
+    "AC3-3d63a96077b2d1657205",
+    "AC3-44bce56bbe03a90fdb82",
+    "AC3-479359a74ced13bbfefe",
+    "AC3-53cfba047c99467f0be9",
+    "AC3-65bcfd948a45dd0be9ac",
+    "AC3-6cea2840eeb09cc5b2b3",
+    "AC3-7d815eadd7ef5d977d2f",
+    "AC3-99e742fb31790d813876",
+    "AC3-d38978877aabd6ee103c",
+    "AC3-d62f76637959785f34fb",
+    "AC3-fab169a0e74439e40092"
+  ],
+  "model_suite_status": {
+    "M0_OPENVLA|libero_10": {
+      "PASS": 40
+    },
+    "M0_OPENVLA|libero_object": {
+      "ENGINEERING_INVALID_OR_HORIZON_CENSORED": 4,
+      "PASS": 52
+    },
+    "M0_OPENVLA|libero_spatial": {
+      "PASS": 32
+    },
+    "M1_OPENVLA_OFT|libero_10": {
+      "PASS": 52
+    },
+    "M1_OPENVLA_OFT|libero_object": {
+      "PASS": 16
+    },
+    "M1_OPENVLA_OFT|libero_spatial": {
+      "ENGINEERING_INVALID_OR_HORIZON_CENSORED": 1,
+      "PASS": 59
+    },
+    "M2_PI05_LIBERO|libero_10": {
+      "PASS": 40
+    },
+    "M2_PI05_LIBERO|libero_object": {
+      "ENGINEERING_INVALID_OR_HORIZON_CENSORED": 7,
+      "PASS": 45
+    },
+    "M2_PI05_LIBERO|libero_spatial": {
+      "PASS": 36
+    }
+  },
+  "next_legal_action": "STOP_FOR_PI_G2_ENGINEERING_OR_HORIZON_REVIEW",
+  "schema": "STAGE_AC_AC3_G2_TERMINAL_V1",
+  "scientific_firewall": {
+    "ac2_exposure": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0
+  },
+  "status": "STAGE_AC_AC3_G2_ENGINEERING_OR_HORIZON_HOLD_STOP_FOR_PI"
+}

@@ -1,0 +1,27 @@
+{
+  "gate": "STAGE_AC_AC3_G2R1_B0R1_ACTION_ONLY_SEMANTICS_RECONCILIATION_V1",
+  "next_legal_action": "B1_TARGET_INFERENCE_ONLY_REPLAY",
+  "root_payload": {
+    "gate": "STAGE_AC_AC3_G2R1_B0R1_ACTION_ONLY_SEMANTICS_RECONCILIATION_V1",
+    "report": {
+      "bytes": 8314,
+      "path": "reports/STAGE_AC_AC3_G2R1_B0R1_ACTION_ONLY_AUDIT_V1.json",
+      "sha256": "e9e1dff84eaeeaeb2916588a27b54453719398b01fdad498223cfb0d9d415eb8"
+    },
+    "scientific_firewall": {
+      "new_attack_outcome_reads": 0,
+      "new_env_step_calls": 0,
+      "new_model_inference_calls": 0,
+      "new_open_intervention_steps": 0,
+      "new_physical_endpoint_reads": 0,
+      "new_physical_telemetry_reads": 0,
+      "new_protected_reads": 0,
+      "new_v_phys_reads": 0
+    },
+    "source_commit": "9aae759022b37684a843005417280cd4e80283d7",
+    "status": "STAGE_AC_AC3_G2R1_B0R1_ACTION_ONLY_AUDIT_PASS_CONTINUE"
+  },
+  "root_payload_sha256": "400fb4615117aaa0b276e00f958905f85be3b054b44ac3f7998829a7a3b86d0b",
+  "schema": "STAGE_AC_AC3_G2R1_B0R1_ROOT_SEAL_V1",
+  "status": "STAGE_AC_AC3_G2R1_B0R1_ACTION_ONLY_AUDIT_PASS_CONTINUE"
+}

@@ -1,0 +1,12 @@
+{
+  "hidden_mapping_read_before_label_seal": false,
+  "human_review_gate_satisfied": false,
+  "label_bytes": 19079,
+  "label_sha256": "b3832d03effb2a51bddc8b27ef730af355d8ab04e2c5e4e6f07b7807e3e9da8e",
+  "labels_sealed_before_unblind": true,
+  "manifest_sha256": "1b1a0aa3d24bf6aa2e21e83eda2a35b3a4751bd27963c1e4ab8ba5fe712e2c8f",
+  "reviewer_type": "AI_SECONDARY",
+  "row_count": 91,
+  "schema": "STAGE_AC_AC4_AI_SECONDARY_LABEL_SEAL_V1",
+  "status": "STAGE_AC_AC4_AI_SECONDARY_LABELS_SEALED"
+}

@@ -1,0 +1,272 @@
+{
+  "evidence_root": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2_CLEAN_SCREEN_V1",
+  "receipt_count": 8,
+  "receipts": [
+    {
+      "bytes": 2818023,
+      "canonical_parent_key": "libero_10/task_00/state_26",
+      "cell_id": "AC2-0001",
+      "error": {
+        "message": "'critical_selection_salt'",
+        "partial_evidence_digest": "fb04b09aacf7ff7beda070e41c5a4961f435f3b805aada15fba44d0b771bac2d",
+        "type": "KeyError"
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2_CLEAN_SCREEN_V1/receipts/AC2-0001.json",
+      "relative_path": "receipts/AC2-0001.json",
+      "runtime_counters": {
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "clean_telemetry_reads": 0,
+        "dummy_wait_env_step_calls": 0,
+        "env_step_calls": 327,
+        "eval160_reads": 0,
+        "model_inference_calls": 317,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_endpoint_reads": 0,
+        "physical_telemetry_reads": 634,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 1,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "sha256": "c53c5ff0d2eecb48667e77da71592a9c7807b67d8894c3feef268ef40da3627c",
+      "status": "AC2_ENGINEERING_HOLD_RUNTIME_ERROR"
+    },
+    {
+      "bytes": 1148014,
+      "canonical_parent_key": "libero_object/task_00/state_40",
+      "cell_id": "AC2-0081",
+      "error": {
+        "message": "'critical_selection_salt'",
+        "partial_evidence_digest": "79f3913fd42eee664c34e1e1f5450c2924efda1d0dd5d19a4e964be4301d3857",
+        "type": "KeyError"
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2_CLEAN_SCREEN_V1/receipts/AC2-0081.json",
+      "relative_path": "receipts/AC2-0081.json",
+      "runtime_counters": {
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "clean_telemetry_reads": 0,
+        "dummy_wait_env_step_calls": 0,
+        "env_step_calls": 151,
+        "eval160_reads": 0,
+        "model_inference_calls": 141,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_endpoint_reads": 0,
+        "physical_telemetry_reads": 282,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 1,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "sha256": "03af398775585db1f66bc1cad6a02df63a81c642f2c636b10562a597b6254b6c",
+      "status": "AC2_ENGINEERING_HOLD_RUNTIME_ERROR"
+    },
+    {
+      "bytes": 623879,
+      "canonical_parent_key": "libero_spatial/task_00/state_46",
+      "cell_id": "AC2-0161",
+      "error": {
+        "message": "'critical_selection_salt'",
+        "partial_evidence_digest": "3371a113810658cac7fd7e7cd5b9a8c8eb873d2b36f2ed1db5e0974c76034348",
+        "type": "KeyError"
+      },
+      "model_family": "M0_OPENVLA",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2_CLEAN_SCREEN_V1/receipts/AC2-0161.json",
+      "relative_path": "receipts/AC2-0161.json",
+      "runtime_counters": {
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "clean_telemetry_reads": 0,
+        "dummy_wait_env_step_calls": 0,
+        "env_step_calls": 90,
+        "eval160_reads": 0,
+        "model_inference_calls": 80,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_endpoint_reads": 0,
+        "physical_telemetry_reads": 160,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 1,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "sha256": "82ed9519169265f7bdf5e7e236b4fa54117becc0e82f6d0bc565e0e83530c7aa",
+      "status": "AC2_ENGINEERING_HOLD_RUNTIME_ERROR"
+    },
+    {
+      "bytes": 2729937,
+      "canonical_parent_key": "libero_10/task_00/state_26",
+      "cell_id": "AC2-0241",
+      "error": {
+        "message": "'critical_selection_salt'",
+        "partial_evidence_digest": "78e45280405309a00264ca202d696c0da50e59857f3f195bf76e136cdb923572",
+        "type": "KeyError"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2_CLEAN_SCREEN_V1/receipts/AC2-0241.json",
+      "relative_path": "receipts/AC2-0241.json",
+      "runtime_counters": {
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "clean_telemetry_reads": 0,
+        "dummy_wait_env_step_calls": 0,
+        "env_step_calls": 530,
+        "eval160_reads": 0,
+        "model_inference_calls": 65,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_endpoint_reads": 0,
+        "physical_telemetry_reads": 1040,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 1,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "sha256": "4ae7fdf0f8ddd7960548e9002a3516d36894b88b57999a861a0a6ac1ca61e6e2",
+      "status": "AC2_ENGINEERING_HOLD_RUNTIME_ERROR"
+    },
+    {
+      "bytes": 1442145,
+      "canonical_parent_key": "libero_object/task_00/state_40",
+      "cell_id": "AC2-0321",
+      "error": {
+        "message": "'critical_selection_salt'",
+        "partial_evidence_digest": "f9fdc709285d90ff9d3090e0e7d95deaa64e6239755c093b9c4bf5cd7a822073",
+        "type": "KeyError"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2_CLEAN_SCREEN_V1/receipts/AC2-0321.json",
+      "relative_path": "receipts/AC2-0321.json",
+      "runtime_counters": {
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "clean_telemetry_reads": 0,
+        "dummy_wait_env_step_calls": 0,
+        "env_step_calls": 290,
+        "eval160_reads": 0,
+        "model_inference_calls": 35,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_endpoint_reads": 0,
+        "physical_telemetry_reads": 560,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 1,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "sha256": "4de7eeeb029e550f2bcb84639924815a2956f5bb211d8541e70c99a0adf0b6a9",
+      "status": "AC2_ENGINEERING_HOLD_RUNTIME_ERROR"
+    },
+    {
+      "bytes": 670825,
+      "canonical_parent_key": "libero_spatial/task_00/state_46",
+      "cell_id": "AC2-0401",
+      "error": {
+        "message": "'critical_selection_salt'",
+        "partial_evidence_digest": "c9ea98fc12bac2b46b9c074d9358aae5606d1fc4d52def7d3297f31a64f97235",
+        "type": "KeyError"
+      },
+      "model_family": "M1_OPENVLA_OFT",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2_CLEAN_SCREEN_V1/receipts/AC2-0401.json",
+      "relative_path": "receipts/AC2-0401.json",
+      "runtime_counters": {
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "clean_telemetry_reads": 0,
+        "dummy_wait_env_step_calls": 0,
+        "env_step_calls": 139,
+        "eval160_reads": 0,
+        "model_inference_calls": 17,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_endpoint_reads": 0,
+        "physical_telemetry_reads": 258,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 1,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "sha256": "3925e9d5409f5fd9566c5fd63bfc7e0a40f46d7890b54d71e3cd25b76642e2fd",
+      "status": "AC2_ENGINEERING_HOLD_RUNTIME_ERROR"
+    },
+    {
+      "bytes": 1069831,
+      "canonical_parent_key": "libero_10/task_00/state_26",
+      "cell_id": "AC2-0481",
+      "error": {
+        "message": "ACTION_SEMANTICS_INVALID:M2_PI05_LIBERO:FINAL_ACTION_OUT_OF_LIBERO_RANGE",
+        "partial_evidence_digest": "0cf4d136666dd1206aedae85e942d96a08a9f477c4d6d20d8bab07a71c4f8575",
+        "type": "RuntimeError"
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2_CLEAN_SCREEN_V1/receipts/AC2-0481.json",
+      "relative_path": "receipts/AC2-0481.json",
+      "runtime_counters": {
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "clean_telemetry_reads": 0,
+        "dummy_wait_env_step_calls": 0,
+        "env_step_calls": 185,
+        "eval160_reads": 0,
+        "model_inference_calls": 36,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_endpoint_reads": 0,
+        "physical_telemetry_reads": 350,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 1,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "sha256": "fd713ac81c60eec8245019da555e2fc17509c444dec1f814cf41a9e1b41ac681",
+      "status": "AC2_ENGINEERING_HOLD_RUNTIME_ERROR"
+    },
+    {
+      "bytes": 1008129,
+      "canonical_parent_key": "libero_object/task_05/state_47",
+      "cell_id": "AC2-0601",
+      "error": {
+        "message": "'critical_selection_salt'",
+        "partial_evidence_digest": "cec789cdaecaffc1e7c4f780ccda288f4f1ac56f42c2329f19486407046f3a6d",
+        "type": "KeyError"
+      },
+      "model_family": "M2_PI05_LIBERO",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2_CLEAN_SCREEN_V1/receipts/AC2-0601.json",
+      "relative_path": "receipts/AC2-0601.json",
+      "runtime_counters": {
+        "aa_v_phys_reads": 0,
+        "attack_outcome_reads": 0,
+        "attacked_env_steps": 0,
+        "clean_telemetry_reads": 0,
+        "dummy_wait_env_step_calls": 0,
+        "env_step_calls": 180,
+        "eval160_reads": 0,
+        "model_inference_calls": 34,
+        "open_intervention_steps": 0,
+        "pgd_calls": 0,
+        "physical_endpoint_reads": 0,
+        "physical_telemetry_reads": 340,
+        "protected_reads": 0,
+        "scientific_parent_exposure": 1,
+        "task_success_reads": 0,
+        "v_phys_reads": 0
+      },
+      "sha256": "3963a51c0125cfc2c0364576bca614d4083d552382aea47b51d3184c78c928ce",
+      "status": "AC2_ENGINEERING_HOLD_RUNTIME_ERROR"
+    }
+  ],
+  "schema": "STAGE_AC_AC2R2_PRIOR_FAILURE_RECEIPTS_V1",
+  "status": "STAGE_AC_AC2_V1_ENGINEERING_FAILURES_PRESERVED"
+}

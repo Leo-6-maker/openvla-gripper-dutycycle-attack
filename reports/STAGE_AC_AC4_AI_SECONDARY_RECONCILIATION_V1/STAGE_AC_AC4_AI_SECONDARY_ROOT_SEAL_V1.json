@@ -1,0 +1,36 @@
+{
+  "artifacts": {
+    "report": {
+      "bytes": 64065,
+      "path": "STAGE_AC_AC4_AI_SECONDARY_RECONCILIATION_V1.json",
+      "sha256": "4703b7c7954ce5571ce417885284a88395214559717b4b7f744c8f7ba6e3c21d"
+    }
+  },
+  "next_legal_action": "CONTINUE_TO_AC5_STATIC_SYNTHESIS",
+  "root_payload": {
+    "counts": {
+      "frozen_slots": 96,
+      "joined_rows": 91,
+      "label_rows": 91,
+      "missing_frozen_videos": 5,
+      "present_videos": 91
+    },
+    "report_bytes": 64065,
+    "report_sha256": "4703b7c7954ce5571ce417885284a88395214559717b4b7f744c8f7ba6e3c21d",
+    "schema": "STAGE_AC_AC4_AI_SECONDARY_RECONCILIATION_V1",
+    "scientific_firewall": {
+      "automatic_labels_rewritten": 0,
+      "denominator_changed": 0,
+      "new_env_step": 0,
+      "new_model_inference": 0,
+      "new_open_intervention": 0,
+      "new_pgd": 0,
+      "new_protected_reads": 0,
+      "replacement_or_top_up": 0
+    },
+    "status": "STAGE_AC_AC4_AI_SECONDARY_RECONCILIATION_COMPLETE_CONTINUE_TO_AC5"
+  },
+  "root_payload_sha256": "2254df4cb45478473752ebe66a6c460b10e6eea853a43664b93b445b3022864d",
+  "schema": "STAGE_AC_AC4_AI_SECONDARY_ROOT_SEAL_V1",
+  "status": "STAGE_AC_AC4_AI_SECONDARY_RECONCILIATION_COMPLETE_CONTINUE_TO_AC5"
+}

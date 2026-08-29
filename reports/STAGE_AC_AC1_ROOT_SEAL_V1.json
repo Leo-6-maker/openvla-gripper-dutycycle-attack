@@ -1,0 +1,40 @@
+{
+  "schema": "STAGE_AC_AC1_ROOT_SEAL_V1",
+  "status": "STAGE_AC_AC1_OFFICIAL_FRESH_CAPACITY_EXHAUSTED_HOLD_STOP_FOR_PI",
+  "gate": "STAGE_AC_AC1_MODEL_SPECIFIC_REPLICATION_FRESH_POPULATION_INVENTORY",
+  "audit": {
+    "path": "reports/STAGE_AC_AC1_FRESH_POPULATION_INVENTORY_AUDIT_V1.json",
+    "bytes": 4266,
+    "sha256": "a81ee396d52a31266a5c2d6e382756880a6172efecc1ee31e549226281846ce5"
+  },
+  "source_bindings": {
+    "aa0_capacity_inventory_sha256": "19679c6878a35c6e13bb46d2c1078d7d96a864a90525f542b6dedb62782fbbf5",
+    "aa2_launch_manifest_sha256": "6eef2ea995fe75bfcf66c7f2c285b5e084aa386f2f4184a574fc6a4948a5dc35",
+    "z0r1_shared_panel_sha256": "2d0066eba451006e81db490665e7822c35521caca4e96f7a7d7980f021506ef1",
+    "ac0_root_seal_sha256": "1a689871ab75edfda0f7ee01983036e0b8ed1425b15caecf11fbb1a0439a27df"
+  },
+  "partition": {
+    "pre_stage_z_candidate_count": 147,
+    "z0r1_shared_count": 36,
+    "aa0_full_fresh_count": 111,
+    "union_count": 147,
+    "intersection_count": 0,
+    "remaining_fresh_count": 0,
+    "exact_partition": true,
+    "aa2_parents_consumed": 108,
+    "aa1_canaries_consumed_or_excluded": 3
+  },
+  "scientific_firewall": {
+    "new_model_inference": 0,
+    "new_env_step": 0,
+    "open_intervention": 0,
+    "pgd": 0,
+    "v_phys": 0,
+    "protected_or_eval160": 0,
+    "fresh_scientific_identity_exposure": 0,
+    "new_population_defined": false,
+    "replacement_or_top_up": false
+  },
+  "next_legal_action": "PI_MUST_AUTHORIZE_NEW_DETERMINISTIC_INITIAL_STATE_POPULATION_OR_CLOSE_STAGE_AC",
+  "root_payload_sha256": "06c20e7e579f2d5616cd44964af0f53e5384f944a48228d5f33c96051bca688c"
+}

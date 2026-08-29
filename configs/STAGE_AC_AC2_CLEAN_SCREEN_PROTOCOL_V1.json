@@ -1,0 +1,164 @@
+{
+  "attack_or_pgd_allowed": false,
+  "authorization_pi_comment_id": 5434166412,
+  "claim_boundary": "Treatment-naive official-state AC2 clean-only screening; no OPEN treatment, endpoint, V_phys, protected read, or AC3 promotion.",
+  "clean_only": true,
+  "eligibility": {
+    "absolute_object_eef_distance_max_m": 0.12,
+    "clean_continuation_steps": 20,
+    "full_episode_horizon_required": false,
+    "implementation": {
+      "bytes": 8535,
+      "path": "src/stage_ac/eligibility_v2.py",
+      "sha256": "486c20c772a28ee5eb489b8bf1b90c9bb4c44470a321c793c4a83e579822d0cc"
+    },
+    "local_continuation_only": true,
+    "minimum_lift_m": 0.015,
+    "relative_carry_displacement_max_m": 0.04,
+    "relative_reference": "first row of local continuation",
+    "relative_vector": "object_position - eef_position",
+    "source_protocol": {
+      "bytes": 5307,
+      "path": "configs/STAGE_AC_AC0_CONSTRUCT_VALIDATION_PROTOCOL_V1.json",
+      "sha256": "ae24b1b0d087dd817c8e729c952d15cdfd83c0bb017850ca0907222801ef6b61"
+    },
+    "stable_grasp_window_steps": 3,
+    "strict_no_flicker": true,
+    "support_contact_forbidden": true,
+    "terminal_rule": "terminal_after allowed only on final local row; terminal_before or earlier terminal_after invalidates the window"
+  },
+  "env_step_allowed": true,
+  "evidence_requirements": {
+    "action_boundary_markers": true,
+    "boundary_state_digest_and_snapshot": true,
+    "candidate_rejection_intersections": true,
+    "complete_clean_rows": true,
+    "contact_and_support": true,
+    "every_cell_persisted": true,
+    "failure_receipt_before_raise": true,
+    "lift": true,
+    "object_eef_positions_and_distances": true,
+    "queue_or_replan_metadata": true,
+    "raw_and_final_7d_actions": true,
+    "relative_carry_displacement": true,
+    "selected_anchor_evidence": true,
+    "terminal_markers": true
+  },
+  "gate": "STAGE_AC_AC2_TREATMENT_NAIVE_MODEL_SPECIFIC_GPU_SCREENING_AND_CONDITIONAL_AC3_V1",
+  "m1_manifest_authority": {
+    "git_lf_sha256": "0f7143983d1b64cd18dfa79585c1def28d5b5d4904663c40260a1155211a4280",
+    "historical_z1_sha256": "7964bd74e4b42ef4c4ddbc843c8390cd32268ae63eee88d9689196ab95c999bd",
+    "reconciliation": {
+      "bytes": 3162,
+      "path": "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json",
+      "sha256": "29c48a904523ce028d1b16c233ba35486509b2de640b4a113c526c64b537361e"
+    },
+    "runtime_rule": "derive exact historical CRLF bytes for the unchanged Z1 per-file verifier; do not weaken verifier or alter checkpoint rows"
+  },
+  "model_inference_allowed": true,
+  "model_runtime": {
+    "action_dim": 7,
+    "action_semantics": "inherited frozen official three-state/PI05 boundary adapter",
+    "boundaries": {
+      "M0_OPENVLA": "FRESH_PER_STEP",
+      "M1_OPENVLA_OFT": "FRESH_OFT_ACTION_QUEUE",
+      "M2_PI05_LIBERO": "FRESH_PI05_REPLAN"
+    },
+    "final_action": "authoritative 7-D action delivered by existing clean runtime; no gripper overwrite",
+    "queue_lengths": {
+      "M0_OPENVLA": 1,
+      "M1_OPENVLA_OFT": 8,
+      "M2_PI05_LIBERO": 5
+    }
+  },
+  "next_legal_action": "EXECUTE_ALL_720_CLEAN_CELLS_ONLY",
+  "open_intervention_allowed": false,
+  "physical_endpoint_read_allowed": false,
+  "population": {
+    "full_census_required": true,
+    "goal_in_primary": false,
+    "model_families": [
+      "M0_OPENVLA",
+      "M1_OPENVLA_OFT",
+      "M2_PI05_LIBERO"
+    ],
+    "model_parent_cell_count": 720,
+    "parent_count": 240,
+    "parents_per_task": 8,
+    "replacement_or_top_up": false,
+    "selection_outcome_blind": true,
+    "suites": [
+      "libero_10",
+      "libero_object",
+      "libero_spatial"
+    ],
+    "task_strata": 30
+  },
+  "protected_or_eval160_allowed": false,
+  "schema": "STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_V1",
+  "scientific_firewall": {
+    "aa_v_phys_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_endpoint_reads": 0,
+    "protected_reads": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "selection": {
+    "clean_seed_rule": "uint31(sha256(clean_seed_salt|model_family|canonical_parent_key)[:15])",
+    "clean_seed_salt": "STAGE_AC_AC2_CLEAN_SCREEN_SEED_V1_20260827",
+    "model_specific_denominator_salt": "STAGE_AC_AC2_MODEL_SPECIFIC_DENOMINATOR_V1_20260827",
+    "parent_rank_rule": "sha256(selection_salt|canonical_parent_key|state_sha256), ascending within each suite/task stratum",
+    "parent_selection_salt": "STAGE_AC_AC2_TREATMENT_NAIVE_PARENT_SELECTION_V1_20260827",
+    "selection_inputs_exclude": [
+      "AC2 eligibility result",
+      "OPEN outcome",
+      "V_phys",
+      "task success",
+      "future model response"
+    ]
+  },
+  "source_bindings": {
+    "ac0_root": {
+      "bytes": 29882,
+      "path": "reports/STAGE_AC_AC0_ROOT_SEAL_V1.json",
+      "sha256": "1a689871ab75edfda0f7ee01983036e0b8ed1425b15caecf11fbb1a0439a27df"
+    },
+    "ac0_terminal": {
+      "bytes": 29513,
+      "path": "reports/STAGE_AC_AC0_CONSTRUCT_VALIDATION_TERMINAL_V1.json",
+      "sha256": "fecd402d0771b864384d3231b7888fb0a9d12e0d1e8806cf5139ec7bdb9649b0"
+    },
+    "ac1r2_population": {
+      "bytes": 7558920,
+      "path": "reports/STAGE_AC_AC1R2_TREATMENT_NAIVE_POPULATION_V1.json",
+      "sha256": "0a958dca82162f7de55c519785502b1232c1dcf3ca62a6be2c6e06b71472520e"
+    },
+    "ac1r2_root": {
+      "bytes": 16790,
+      "path": "reports/STAGE_AC_AC1R2_ROOT_SEAL_V1.json",
+      "sha256": "f7376842e9d0717f37a9497e00633004a1dd8b48bd937032025503855a436ff7"
+    },
+    "ac1r2_taxonomy": {
+      "bytes": 8443316,
+      "path": "reports/STAGE_AC_AC1R2_OFFICIAL_STATE_EXPOSURE_TAXONOMY_V1.json",
+      "sha256": "2b386876d94867cf10d1d053986f979396b8f55e6aa187ba772cc67ce37017e6"
+    },
+    "m1_manifest_reconciliation": {
+      "bytes": 3162,
+      "path": "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json",
+      "sha256": "29c48a904523ce028d1b16c233ba35486509b2de640b4a113c526c64b537361e"
+    },
+    "z1_runtime_protocol": {
+      "bytes": 7795,
+      "path": "configs/STAGE_Z_Z1_RUNTIME_PROTOCOL_V11.json",
+      "sha256": "54b5f853d93b615ffe880b78ffb85b1cc41c793af221143e993f754bc166fe24"
+    }
+  },
+  "status": "STAGE_AC_AC2_CLEAN_SCREEN_PROTOCOL_AUTHORIZED_PRE_EXPOSURE",
+  "task_success_read_allowed": false,
+  "v_phys_read_allowed": false
+}

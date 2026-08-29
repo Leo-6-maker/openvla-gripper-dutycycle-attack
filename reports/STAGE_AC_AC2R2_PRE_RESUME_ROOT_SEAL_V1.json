@@ -1,0 +1,79 @@
+{
+  "ac2r1_canary_root": {
+    "bytes": 5445,
+    "path": "reports/STAGE_AC_AC2R1_M1_CANARY_ROOT_SEAL_V1.json",
+    "sha256": "fe2d1403bd6540c9d12e9b10ef62e7741b833361d92839759f329387d4db8f0a"
+  },
+  "authorization_pi_comment_id": 5435208429,
+  "cell_count": 720,
+  "gate": "STAGE_AC_AC2R2_ENGINEERING_RUNTIME_REPAIR_AND_SAME_MANIFEST_CLEAN_RECOVERY",
+  "git_binding": {
+    "branch": "codex/stage-ac-model-specific-replication-20260827",
+    "commit": "5868380440818f93eba423ca1eb41c30ea640fd8",
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "tree": "d2da93110d364bc69cc3b013a5b3d55147a0542c"
+  },
+  "next_legal_action": "GPU_AC2R2_CLEAN_ONLY_AFTER_THIS_SEAL_IS_COMMITTED_AND_VERIFIED",
+  "prior_ac2_v1_failures": {
+    "bytes": 10268,
+    "path": "reports/STAGE_AC_AC2R2_PRIOR_FAILURE_RECEIPTS_V1.json",
+    "sha256": "ddcb25ddb21e9dd8862a9a15213262076d74b96744003962f6c6fd985ea2d48d"
+  },
+  "recovery_contract": {
+    "no_scientific_redenomination_before_720_cells": true,
+    "prior_receipts_preserved": true,
+    "same_manifest_only": true,
+    "same_seed_and_parent_bindings": true
+  },
+  "root_payload_sha256": "99c6ba29527c874e66f1ea814bbdbdffa2b9a2ecf0759d8105785f4f94ab97da",
+  "same_frozen_manifest": {
+    "bytes": 1298033,
+    "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+    "sha256": "ee2582686618f2738a4cd4fb3090911f3c7746f002dd7f683e26647dad6dc71a"
+  },
+  "schema": "STAGE_AC_AC2R2_PRE_RESUME_ROOT_SEAL_V1",
+  "scientific_firewall": {
+    "new_env_step_calls": 0,
+    "new_identity": 0,
+    "new_model_inference_calls": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_endpoint_reads": 0,
+    "protected_reads": 0,
+    "replacement_or_top_up": false,
+    "v_phys_reads": 0
+  },
+  "source_bindings": {
+    "ac2r1_canary_root": {
+      "bytes": 5445,
+      "path": "reports/STAGE_AC_AC2R1_M1_CANARY_ROOT_SEAL_V1.json",
+      "sha256": "fe2d1403bd6540c9d12e9b10ef62e7741b833361d92839759f329387d4db8f0a"
+    },
+    "launch_manifest": {
+      "bytes": 1298033,
+      "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+      "sha256": "ee2582686618f2738a4cd4fb3090911f3c7746f002dd7f683e26647dad6dc71a"
+    },
+    "m1_manifest_reconciliation": {
+      "bytes": 3162,
+      "path": "reports/STAGE_AC_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_V1.json",
+      "sha256": "29c48a904523ce028d1b16c233ba35486509b2de640b4a113c526c64b537361e"
+    },
+    "prior_failure_receipts": {
+      "bytes": 10268,
+      "path": "reports/STAGE_AC_AC2R2_PRIOR_FAILURE_RECEIPTS_V1.json",
+      "sha256": "ddcb25ddb21e9dd8862a9a15213262076d74b96744003962f6c6fd985ea2d48d"
+    },
+    "protocol": {
+      "bytes": 7601,
+      "path": "configs/STAGE_AC_AC2R2_CLEAN_SCREEN_REPAIR_PROTOCOL_V1.json",
+      "sha256": "3a7ec62cdeddfe337decd0f7bad5cc6f2c3ed61e958d2cf7e16d493d00c3dbe0"
+    },
+    "source_authority": {
+      "bytes": 7560,
+      "path": "reports/STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+      "sha256": "12ff0b1f8885c1f68322b5611d8155a6c95cb49fb9d13ce75b2e8f4b0b7f0c2b"
+    }
+  },
+  "status": "STAGE_AC_AC2R2_PRE_RESUME_STATIC_REPAIR_PASS"
+}

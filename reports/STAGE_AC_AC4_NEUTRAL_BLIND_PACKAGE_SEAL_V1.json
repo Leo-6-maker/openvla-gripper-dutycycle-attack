@@ -1,0 +1,29 @@
+{
+  "counts": {
+    "frozen_slots": 96,
+    "missing_frozen_videos": 5,
+    "present_videos": 91
+  },
+  "mapping": {
+    "available_before_labels_sealed": false,
+    "included_in_package": false,
+    "stored_separately": true
+  },
+  "package": {
+    "bytes": 1945579,
+    "path": "STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_V1.zip",
+    "sha256": "0bab4b174942baced11e75d83b913154deedc1c68883a87996df57d6f8f65dfe"
+  },
+  "public_manifest": {
+    "bytes": 34927,
+    "path": "STAGE_AC_AC4_NEUTRAL_BLIND_MANIFEST_V1.json",
+    "sha256": "1b1a0aa3d24bf6aa2e21e83eda2a35b3a4751bd27963c1e4ab8ba5fe712e2c8f"
+  },
+  "review_rubric": {
+    "bytes": 421,
+    "path": "REVIEW_RUBRIC_V1.txt",
+    "sha256": "6da003f2c7190b0dcab0d838b12906feb99ecd668e1b3bdbd4c0191e39b96025"
+  },
+  "schema": "STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_SEAL_V1",
+  "status": "STAGE_AC_AC4_NEUTRAL_PACKAGE_SEALED"
+}

@@ -1,2 +1,11 @@
 /exports/paper_v2/* text eol=lf
 reports/server_evidence/STAGE_AA_AA2R2/phase_a_retry_v2/logs/*.log whitespace=-trailing-space
+
+/reports/STAGE_AC_AC4_THREE_AGENT_BLINDED_AI_ADJUDICATION_INPUT_V1.txt text eol=lf
+/reports/STAGE_AC_AC4_THREE_AGENT_BLINDED_AI_ADJUDICATION_LABELS_V1.json text eol=lf
+/reports/STAGE_AC_AC4_THREE_AGENT_BLINDED_AI_ADJUDICATION_LABEL_SEAL_V1.json text eol=lf
+/reports/STAGE_AC_AC4_THREE_AGENT_AI_ADJUDICATION_RECONCILIATION_V1/* text eol=lf
+/scripts/stage_ac/build_three_agent_blinded_labels.py text eol=lf
+/scripts/stage_ac/reconcile_three_agent_blinded_adjudication.py text eol=lf
+/reports/STAGE_AC_PAPER_V3_EXPORT_V1/* text eol=lf
+/scripts/stage_ac/build_paper_v3_export.py text eol=lf

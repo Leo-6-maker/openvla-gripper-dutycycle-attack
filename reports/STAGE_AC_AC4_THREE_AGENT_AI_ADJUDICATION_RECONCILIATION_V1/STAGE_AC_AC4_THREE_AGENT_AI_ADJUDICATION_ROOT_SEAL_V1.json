@@ -1,0 +1,124 @@
+{
+  "artifact_manifest": {
+    "entries": [
+      {
+        "bytes": 34927,
+        "path": "reports\\STAGE_AC_AC4_NEUTRAL_BLIND_MANIFEST_V1.json",
+        "sha256": "1b1a0aa3d24bf6aa2e21e83eda2a35b3a4751bd27963c1e4ab8ba5fe712e2c8f"
+      },
+      {
+        "bytes": 899,
+        "path": "reports\\STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_SEAL_V1.json",
+        "sha256": "41e938a3eca1d3ce1ca277b059a7a879d05924eaba8c12fe31ec44d8f899877f"
+      },
+      {
+        "bytes": 1945579,
+        "path": "STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_V1.zip",
+        "sha256": "0bab4b174942baced11e75d83b913154deedc1c68883a87996df57d6f8f65dfe"
+      },
+      {
+        "bytes": 15251,
+        "path": "reports\\STAGE_AC_AC4_THREE_AGENT_BLINDED_AI_ADJUDICATION_INPUT_V1.txt",
+        "sha256": "754f639f4dd88666ec8f14254fb172ff072d99e1d58704add76180ab3b605f38"
+      },
+      {
+        "bytes": 42812,
+        "path": "reports\\STAGE_AC_AC4_THREE_AGENT_BLINDED_AI_ADJUDICATION_LABELS_V1.json",
+        "sha256": "47fd5a60bb70a023f2b30122a80c6149511389abc5f8ceb3b2e46ce9bc0f628a"
+      },
+      {
+        "bytes": 884,
+        "path": "reports\\STAGE_AC_AC4_THREE_AGENT_BLINDED_AI_ADJUDICATION_LABEL_SEAL_V1.json",
+        "sha256": "9bcf601c9a23340324917ccbb6c7cd943caeb3cb73748704ab4bf86287a47079"
+      },
+      {
+        "bytes": 1193125,
+        "path": "reports\\STAGE_AC_AC3_G2_BRANCH_RECEIPT_INDEX_V1.json",
+        "sha256": "0daa5bb660085bdb3171af7ab1a2e3647d6eeba2be3b5e3f3100cf756b3a7fb4"
+      },
+      {
+        "bytes": 19002,
+        "path": "reports\\STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V2\\STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V2.json",
+        "sha256": "ca7eab25298e4bea21093c0b8850e8260b9baf9e8668b71d5873baa0c4a4b4d8"
+      },
+      {
+        "bytes": 23520,
+        "path": "scripts\\stage_ac\\reconcile_three_agent_blinded_adjudication.py",
+        "sha256": "64ad325ecf2df9fdd369c7bffd6229a23cf2e5e22b2aa349f29698dd3f3d9678"
+      },
+      {
+        "bytes": 143167,
+        "path": "reports\\STAGE_AC_AC4_THREE_AGENT_AI_ADJUDICATION_RECONCILIATION_V1\\STAGE_AC_AC4_THREE_AGENT_AI_ADJUDICATION_RECONCILIATION_V1.json",
+        "sha256": "80619a691edbde8068b25e9e5f7d432eeaced534ca3d0c20bd1e21ef7c59f3bb"
+      }
+    ],
+    "root_seal_excludes_self": true
+  },
+  "claim_boundary": "Three-agent blinded AI adjudication is supplemental endpoint-validity evidence only; it is not human review, does not relabel automatic endpoints or V_phys, and creates no scientific promotion.",
+  "next_legal_action": "STOP_FOR_PI_NO_NEW_EXECUTION_NO_PAPER_PROMOTION_NO_BRIDGE",
+  "reviewer_governance": {
+    "agent_count": 3,
+    "agent_row_counts": {
+      "AGENT_A": 91,
+      "AGENT_B": 91,
+      "AGENT_C": 91
+    },
+    "agent_sessions_automatic_label_exposure": false,
+    "agent_sessions_mapping_exposure": false,
+    "formal_human_review_claim": false,
+    "human_review_gate_satisfied": false,
+    "labels_sealed_before_unblind": true,
+    "orchestrator_prior_mapping_exposure_before_this_panel": true,
+    "reviewer_type": "THREE_AGENT_BLINDED_AI_ADJUDICATION"
+  },
+  "root_payload": {
+    "agreement": {
+      "disagreement_1_1_1": 2,
+      "fleiss_kappa": -0.04951282561145332,
+      "majority_2_of_3": 55,
+      "unanimous_3_of_3": 34
+    },
+    "counts": {
+      "frozen_slots": 96,
+      "label_rows_per_agent": 91,
+      "missing_frozen_videos": 5,
+      "present_videos": 91,
+      "unblinded_joined_rows": 91
+    },
+    "report": {
+      "bytes": 143167,
+      "path": "reports\\STAGE_AC_AC4_THREE_AGENT_AI_ADJUDICATION_RECONCILIATION_V1\\STAGE_AC_AC4_THREE_AGENT_AI_ADJUDICATION_RECONCILIATION_V1.json",
+      "sha256": "80619a691edbde8068b25e9e5f7d432eeaced534ca3d0c20bd1e21ef7c59f3bb"
+    },
+    "schema": "STAGE_AC_AC4_THREE_AGENT_AI_ADJUDICATION_RECONCILIATION_V1",
+    "scientific_firewall": {
+      "automatic_labels_rewritten": 0,
+      "denominator_changed": 0,
+      "new_env_step": 0,
+      "new_eval160_reads": 0,
+      "new_identities": 0,
+      "new_model_inference": 0,
+      "new_open_intervention": 0,
+      "new_pgd": 0,
+      "new_protected_reads": 0,
+      "replacement_or_top_up": 0
+    },
+    "status": "STAGE_AC_AC4_THREE_AGENT_AI_ADJUDICATION_COMPLETE_STOP_FOR_PI"
+  },
+  "root_payload_sha256": "3b3bb86b6ebb92b7a13a535f133305e0492ac3e88176a615369537eb25835e49",
+  "schema": "STAGE_AC_AC4_THREE_AGENT_AI_ADJUDICATION_ROOT_SEAL_V1",
+  "scientific_firewall": {
+    "automatic_labels_rewritten": 0,
+    "denominator_changed": 0,
+    "new_env_step": 0,
+    "new_eval160_reads": 0,
+    "new_identities": 0,
+    "new_model_inference": 0,
+    "new_open_intervention": 0,
+    "new_pgd": 0,
+    "new_protected_reads": 0,
+    "replacement_or_top_up": 0
+  },
+  "status": "STAGE_AC_AC4_THREE_AGENT_AI_ADJUDICATION_COMPLETE_STOP_FOR_PI",
+  "validation_failures": []
+}

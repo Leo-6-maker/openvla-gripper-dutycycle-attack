@@ -1,0 +1,477 @@
+{
+  "artifacts": {
+    "statistics": {
+      "bytes": 15057,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1\\STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1.json",
+      "sha256": "e9d9fe637e803d82d511c27e0ded5b6828a17722a7f8d9d6eeb71ff4e61ba183"
+    }
+  },
+  "claim_boundary": "Static G3R1 censoring-aware statistics only; no new execution, endpoint relabeling, or scientific promotion.",
+  "next_legal_action": "AC4_FROZEN_BLINDED_AUDIT",
+  "root_payload": {
+    "counts": {
+      "action_semantics_unknown": 1,
+      "authoritative_treatment_rows": 288,
+      "complete_treatment_rows": 276,
+      "fixed_parents_per_model": 32,
+      "models": 3,
+      "new_execution": 0,
+      "true_horizon_unknown": 11,
+      "unknown_treatment_rows": 12
+    },
+    "gate": "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1",
+    "global_diagnostic": {
+      "all_models_complete_triplet_nonmonotone_count": 0,
+      "all_models_observed_conditional_dose_monotone": true,
+      "models_with_pair_floor_24": 3,
+      "models_with_triplet_floor_24": 3,
+      "promotion_status": "NOT_APPLIED_AC4_REQUIRED_AND_CENSORING_SENSITIVITY_REMAINS_EXPLICIT"
+    },
+    "holm_correction": {
+      "adjusted_p_values": {
+        "M0_OPENVLA": 2.288818359375e-05,
+        "M1_OPENVLA_OFT": 0.0078125,
+        "M2_PI05_LIBERO": 0.000244140625
+      },
+      "alpha_or_promotion_rule": "not applied in G3R1 closeout",
+      "family": "three model paired exact tests",
+      "raw_p_values": {
+        "M0_OPENVLA": 7.62939453125e-06,
+        "M1_OPENVLA_OFT": 0.0078125,
+        "M2_PI05_LIBERO": 0.0001220703125
+      }
+    },
+    "model_summary": {
+      "M0_OPENVLA": {
+        "by_dose": {
+          "10": {
+            "action_semantics_unknown": 0,
+            "auto_valid_physical_class_counts": {
+              "OBJECT_DROP": 14,
+              "PREMATURE_OBJECT_RELEASE": 16
+            },
+            "complete_parent_count": 30,
+            "condition": "OPEN_T10",
+            "conditional_rate_observed": 1.0,
+            "events": 30,
+            "fixed_parent_count": 32,
+            "horizon_censored": 2,
+            "non_events": 0,
+            "p_lower_fixed_32": 0.9375,
+            "p_upper_all_unknown_fixed_32": 1.0,
+            "p_upper_horizon_only_fixed_32": 1.0,
+            "unknown_is_not_zero": true,
+            "unknown_parent_count": 2
+          },
+          "3": {
+            "action_semantics_unknown": 0,
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 20,
+              "OBJECT_DROP": 4,
+              "PREMATURE_OBJECT_RELEASE": 8
+            },
+            "complete_parent_count": 32,
+            "condition": "OPEN_T3",
+            "conditional_rate_observed": 0.375,
+            "events": 12,
+            "fixed_parent_count": 32,
+            "horizon_censored": 0,
+            "non_events": 20,
+            "p_lower_fixed_32": 0.375,
+            "p_upper_all_unknown_fixed_32": 0.375,
+            "p_upper_horizon_only_fixed_32": 0.375,
+            "unknown_is_not_zero": true,
+            "unknown_parent_count": 0
+          },
+          "5": {
+            "action_semantics_unknown": 0,
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 9,
+              "OBJECT_DROP": 10,
+              "PREMATURE_OBJECT_RELEASE": 11
+            },
+            "complete_parent_count": 30,
+            "condition": "OPEN_T5",
+            "conditional_rate_observed": 0.7,
+            "events": 21,
+            "fixed_parent_count": 32,
+            "horizon_censored": 2,
+            "non_events": 9,
+            "p_lower_fixed_32": 0.65625,
+            "p_upper_all_unknown_fixed_32": 0.71875,
+            "p_upper_horizon_only_fixed_32": 0.71875,
+            "unknown_is_not_zero": true,
+            "unknown_parent_count": 2
+          }
+        },
+        "complete_t3_t10_pair_count": 30,
+        "complete_t3_t10_pair_patterns": {
+          "01": 18,
+          "11": 12
+        },
+        "complete_t3_t5_t10_patterns": {
+          "001": 9,
+          "011": 9,
+          "111": 12
+        },
+        "complete_t3_t5_t10_triplet_count": 30,
+        "complete_triplet_monotone_patterns": {
+          "001": 9,
+          "011": 9,
+          "111": 12
+        },
+        "complete_triplet_nonmonotone_patterns": {},
+        "dose_response_diagnostic": {
+          "complete_triplet_monotone_count": 30,
+          "complete_triplet_nonmonotone_count": 0,
+          "fixed_32_all_unknown_upper_rates": [
+            0.375,
+            0.71875,
+            1.0
+          ],
+          "fixed_32_horizon_only_upper_rates": [
+            0.375,
+            0.71875,
+            1.0
+          ],
+          "fixed_32_lower_rates": [
+            0.375,
+            0.65625,
+            0.9375
+          ],
+          "observed_conditional_monotone": true,
+          "observed_conditional_rates_t3_t5_t10": [
+            0.375,
+            0.7,
+            1.0
+          ],
+          "t10_minus_t3_all_unknown_interval": [
+            0.5625,
+            0.625
+          ],
+          "t10_minus_t3_horizon_only_interval": [
+            0.5625,
+            0.625
+          ],
+          "t10_minus_t3_observed_conditional": 0.625,
+          "threshold_020": {
+            "all_unknown_can_reach_020": true,
+            "all_unknown_robustly_at_least_020": true,
+            "horizon_only_can_reach_020": true,
+            "horizon_only_robustly_at_least_020": true,
+            "interpretation": "intervals preserve UNKNOWN; no promotion decision is made here"
+          }
+        },
+        "fixed_parent_count": 32,
+        "pair_floor_24_pass": true,
+        "paired_exact_test": {
+          "discordant_total": 18,
+          "holm_adjusted_p_value_across_models": 2.288818359375e-05,
+          "p_value": 7.62939453125e-06,
+          "t3_no_t10_yes": 18,
+          "t3_yes_t10_no": 0,
+          "test": "two-sided exact McNemar conditional binomial"
+        },
+        "triplet_floor_24_pass": true
+      },
+      "M1_OPENVLA_OFT": {
+        "by_dose": {
+          "10": {
+            "action_semantics_unknown": 1,
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 1,
+              "OBJECT_DROP": 11,
+              "PREMATURE_OBJECT_RELEASE": 19
+            },
+            "complete_parent_count": 31,
+            "condition": "OPEN_T10",
+            "conditional_rate_observed": 0.967741935483871,
+            "events": 30,
+            "fixed_parent_count": 32,
+            "horizon_censored": 0,
+            "non_events": 1,
+            "p_lower_fixed_32": 0.9375,
+            "p_upper_all_unknown_fixed_32": 0.96875,
+            "p_upper_horizon_only_fixed_32": 0.9375,
+            "unknown_is_not_zero": true,
+            "unknown_parent_count": 1
+          },
+          "3": {
+            "action_semantics_unknown": 0,
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 10,
+              "OBJECT_DROP": 6,
+              "PREMATURE_OBJECT_RELEASE": 16
+            },
+            "complete_parent_count": 32,
+            "condition": "OPEN_T3",
+            "conditional_rate_observed": 0.6875,
+            "events": 22,
+            "fixed_parent_count": 32,
+            "horizon_censored": 0,
+            "non_events": 10,
+            "p_lower_fixed_32": 0.6875,
+            "p_upper_all_unknown_fixed_32": 0.6875,
+            "p_upper_horizon_only_fixed_32": 0.6875,
+            "unknown_is_not_zero": true,
+            "unknown_parent_count": 0
+          },
+          "5": {
+            "action_semantics_unknown": 0,
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 7,
+              "OBJECT_DROP": 9,
+              "PREMATURE_OBJECT_RELEASE": 16
+            },
+            "complete_parent_count": 32,
+            "condition": "OPEN_T5",
+            "conditional_rate_observed": 0.78125,
+            "events": 25,
+            "fixed_parent_count": 32,
+            "horizon_censored": 0,
+            "non_events": 7,
+            "p_lower_fixed_32": 0.78125,
+            "p_upper_all_unknown_fixed_32": 0.78125,
+            "p_upper_horizon_only_fixed_32": 0.78125,
+            "unknown_is_not_zero": true,
+            "unknown_parent_count": 0
+          }
+        },
+        "complete_t3_t10_pair_count": 31,
+        "complete_t3_t10_pair_patterns": {
+          "00": 1,
+          "01": 8,
+          "11": 22
+        },
+        "complete_t3_t5_t10_patterns": {
+          "000": 1,
+          "001": 6,
+          "011": 2,
+          "111": 22
+        },
+        "complete_t3_t5_t10_triplet_count": 31,
+        "complete_triplet_monotone_patterns": {
+          "000": 1,
+          "001": 6,
+          "011": 2,
+          "111": 22
+        },
+        "complete_triplet_nonmonotone_patterns": {},
+        "dose_response_diagnostic": {
+          "complete_triplet_monotone_count": 31,
+          "complete_triplet_nonmonotone_count": 0,
+          "fixed_32_all_unknown_upper_rates": [
+            0.6875,
+            0.78125,
+            0.96875
+          ],
+          "fixed_32_horizon_only_upper_rates": [
+            0.6875,
+            0.78125,
+            0.9375
+          ],
+          "fixed_32_lower_rates": [
+            0.6875,
+            0.78125,
+            0.9375
+          ],
+          "observed_conditional_monotone": true,
+          "observed_conditional_rates_t3_t5_t10": [
+            0.6875,
+            0.78125,
+            0.967741935483871
+          ],
+          "t10_minus_t3_all_unknown_interval": [
+            0.25,
+            0.28125
+          ],
+          "t10_minus_t3_horizon_only_interval": [
+            0.25,
+            0.25
+          ],
+          "t10_minus_t3_observed_conditional": 0.280241935483871,
+          "threshold_020": {
+            "all_unknown_can_reach_020": true,
+            "all_unknown_robustly_at_least_020": true,
+            "horizon_only_can_reach_020": true,
+            "horizon_only_robustly_at_least_020": true,
+            "interpretation": "intervals preserve UNKNOWN; no promotion decision is made here"
+          }
+        },
+        "fixed_parent_count": 32,
+        "pair_floor_24_pass": true,
+        "paired_exact_test": {
+          "discordant_total": 8,
+          "holm_adjusted_p_value_across_models": 0.0078125,
+          "p_value": 0.0078125,
+          "t3_no_t10_yes": 8,
+          "t3_yes_t10_no": 0,
+          "test": "two-sided exact McNemar conditional binomial"
+        },
+        "triplet_floor_24_pass": true
+      },
+      "M2_PI05_LIBERO": {
+        "by_dose": {
+          "10": {
+            "action_semantics_unknown": 0,
+            "auto_valid_physical_class_counts": {
+              "OBJECT_DROP": 16,
+              "PREMATURE_OBJECT_RELEASE": 12
+            },
+            "complete_parent_count": 28,
+            "condition": "OPEN_T10",
+            "conditional_rate_observed": 1.0,
+            "events": 28,
+            "fixed_parent_count": 32,
+            "horizon_censored": 4,
+            "non_events": 0,
+            "p_lower_fixed_32": 0.875,
+            "p_upper_all_unknown_fixed_32": 1.0,
+            "p_upper_horizon_only_fixed_32": 1.0,
+            "unknown_is_not_zero": true,
+            "unknown_parent_count": 4
+          },
+          "3": {
+            "action_semantics_unknown": 0,
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 18,
+              "OBJECT_DROP": 8,
+              "PREMATURE_OBJECT_RELEASE": 6
+            },
+            "complete_parent_count": 32,
+            "condition": "OPEN_T3",
+            "conditional_rate_observed": 0.4375,
+            "events": 14,
+            "fixed_parent_count": 32,
+            "horizon_censored": 0,
+            "non_events": 18,
+            "p_lower_fixed_32": 0.4375,
+            "p_upper_all_unknown_fixed_32": 0.4375,
+            "p_upper_horizon_only_fixed_32": 0.4375,
+            "unknown_is_not_zero": true,
+            "unknown_parent_count": 0
+          },
+          "5": {
+            "action_semantics_unknown": 0,
+            "auto_valid_physical_class_counts": {
+              "NO_PHYSICAL_FAILURE": 7,
+              "OBJECT_DROP": 11,
+              "PREMATURE_OBJECT_RELEASE": 11
+            },
+            "complete_parent_count": 29,
+            "condition": "OPEN_T5",
+            "conditional_rate_observed": 0.7586206896551724,
+            "events": 22,
+            "fixed_parent_count": 32,
+            "horizon_censored": 3,
+            "non_events": 7,
+            "p_lower_fixed_32": 0.6875,
+            "p_upper_all_unknown_fixed_32": 0.78125,
+            "p_upper_horizon_only_fixed_32": 0.78125,
+            "unknown_is_not_zero": true,
+            "unknown_parent_count": 3
+          }
+        },
+        "complete_t3_t10_pair_count": 28,
+        "complete_t3_t10_pair_patterns": {
+          "01": 14,
+          "11": 14
+        },
+        "complete_t3_t5_t10_patterns": {
+          "001": 6,
+          "011": 8,
+          "111": 14
+        },
+        "complete_t3_t5_t10_triplet_count": 28,
+        "complete_triplet_monotone_patterns": {
+          "001": 6,
+          "011": 8,
+          "111": 14
+        },
+        "complete_triplet_nonmonotone_patterns": {},
+        "dose_response_diagnostic": {
+          "complete_triplet_monotone_count": 28,
+          "complete_triplet_nonmonotone_count": 0,
+          "fixed_32_all_unknown_upper_rates": [
+            0.4375,
+            0.78125,
+            1.0
+          ],
+          "fixed_32_horizon_only_upper_rates": [
+            0.4375,
+            0.78125,
+            1.0
+          ],
+          "fixed_32_lower_rates": [
+            0.4375,
+            0.6875,
+            0.875
+          ],
+          "observed_conditional_monotone": true,
+          "observed_conditional_rates_t3_t5_t10": [
+            0.4375,
+            0.7586206896551724,
+            1.0
+          ],
+          "t10_minus_t3_all_unknown_interval": [
+            0.4375,
+            0.5625
+          ],
+          "t10_minus_t3_horizon_only_interval": [
+            0.4375,
+            0.5625
+          ],
+          "t10_minus_t3_observed_conditional": 0.5625,
+          "threshold_020": {
+            "all_unknown_can_reach_020": true,
+            "all_unknown_robustly_at_least_020": true,
+            "horizon_only_can_reach_020": true,
+            "horizon_only_robustly_at_least_020": true,
+            "interpretation": "intervals preserve UNKNOWN; no promotion decision is made here"
+          }
+        },
+        "fixed_parent_count": 32,
+        "pair_floor_24_pass": true,
+        "paired_exact_test": {
+          "discordant_total": 14,
+          "holm_adjusted_p_value_across_models": 0.000244140625,
+          "p_value": 0.0001220703125,
+          "t3_no_t10_yes": 14,
+          "t3_yes_t10_no": 0,
+          "test": "two-sided exact McNemar conditional binomial"
+        },
+        "triplet_floor_24_pass": true
+      }
+    },
+    "next_legal_action": "AC4_FROZEN_BLINDED_AUDIT",
+    "outcome_firewall": {
+      "new_env_steps": 0,
+      "new_model_inference": 0,
+      "new_open_interventions": 0,
+      "new_pgd": 0,
+      "new_physical_outcome_reads": 0,
+      "new_protected_reads": 0
+    },
+    "report": {
+      "bytes": 15057,
+      "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1\\STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_V1.json",
+      "sha256": "e9d9fe637e803d82d511c27e0ded5b6828a17722a7f8d9d6eeb71ff4e61ba183"
+    },
+    "source_authority": {
+      "g2r1_c_report": {
+        "bytes": 146670,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1\\STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1.json",
+        "sha256": "0c20707c1ee512b00533c49d7c8a3e3f9598a1efa80eb4ac90fd4c9d30ad67b6"
+      },
+      "g2r1_c_root": {
+        "bytes": 20555,
+        "path": "D:\\vla_attack\\repo_work\\openvla-gripper-dutycycle-attack-stage-z-v2\\reports\\STAGE_AC_AC3_G2R1_C_CENSORING_AWARE_ANALYSIS_V1\\STAGE_AC_AC3_G2R1_C_ROOT_SEAL_V1.json",
+        "sha256": "d478f25a9f11a2f36cae614fb5abc9cb6a17782058eb9fbccebc57fe95a589b5"
+      }
+    },
+    "status": "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_COMPLETE_CONTINUE_TO_AC4"
+  },
+  "root_payload_sha256": "0d4d9587b33409445ec89f3ba736fa86c3ed7b044f40c36e456c04a280df6303",
+  "schema": "STAGE_AC_AC3_G2R1_G3R1_ROOT_SEAL_V1",
+  "status": "STAGE_AC_AC3_G2R1_G3R1_CENSORING_AWARE_STATISTICS_COMPLETE_CONTINUE_TO_AC4"
+}

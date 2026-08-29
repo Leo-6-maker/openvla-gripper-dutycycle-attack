@@ -1,0 +1,162 @@
+{
+  "ac4": {
+    "ai_only_remains_ai_only": true,
+    "blind_video_count": 96,
+    "exposure_strata": [
+      "H0_UNTOUCHED",
+      "HC_CLEAN_ONLY"
+    ],
+    "parents_per_model": 8,
+    "selection_is_pre_treatment": true,
+    "selection_salt": "STAGE_AC_AC4_BLIND_AUDIT_PARENT_SELECTION_V1_20260828",
+    "video_id_salt": "STAGE_AC_AC4_BLIND_VIDEO_ID_V1_20260828"
+  },
+  "authorization": {
+    "aa_history_immutable": true,
+    "g0_static_freeze": true,
+    "g1_consumed_only_engineering": true,
+    "g2_primary_branches": true,
+    "g3_static_analysis": true,
+    "g4_blinded_audit": true,
+    "g5_final_synthesis": true,
+    "no_replacement_or_top_up": true
+  },
+  "branch_contract": {
+    "action_dim": 7,
+    "arm_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "arm_linf_tolerance": 1e-07,
+    "boundaries": {
+      "M0_OPENVLA": "FRESH_PER_STEP",
+      "M1_OPENVLA_OFT": "FRESH_OFT_ACTION_QUEUE",
+      "M2_PI05_LIBERO": "FRESH_PI05_REPLAN"
+    },
+    "doses": [
+      3,
+      5,
+      10
+    ],
+    "gripper_index": 6,
+    "native_open_final": -1.0,
+    "native_open_raw": {
+      "M0_OPENVLA": 1.0,
+      "M1_OPENVLA_OFT": 1.0,
+      "M2_PI05_LIBERO": -1.0
+    },
+    "physical_horizon": 10
+  },
+  "claim_boundary": "G0 static authority freeze only; no treatment or physical susceptibility result",
+  "firewall": {
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "new_env_steps": 0,
+    "new_inference": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "v_phys_reads": 0
+  },
+  "gate": "STAGE_AC_AC3_AC4_AC5_TREATMENT_NAIVE_MULTI_MODEL_PHYSICAL_REPLICATION_PROGRAM_V1",
+  "next_legal_action": "EXECUTE_G1_CONSUMED_ONLY_ENGINEERING_QUALIFICATION",
+  "population": {
+    "conditions": [
+      "CLEAN_REFERENCE",
+      "OPEN_T3",
+      "OPEN_T5",
+      "OPEN_T10"
+    ],
+    "model_families": [
+      "M0_OPENVLA",
+      "M1_OPENVLA_OFT",
+      "M2_PI05_LIBERO"
+    ],
+    "model_parent_units": 96,
+    "parents_per_model": 32,
+    "primary_branches": 384
+  },
+  "schema": "STAGE_AC_AC3_AC4_AC5_PROGRAM_PROTOCOL_V1",
+  "seeds": {
+    "branch_seed_salt": "STAGE_AC_AC3_BRANCH_SEED_V1_20260828",
+    "formula": "uint31(sha256(salt|SEED|condition|model_family|canonical_parent_key)[:15])"
+  },
+  "source_authority": {
+    "git_commit": "32f83edcfd39dbb30bc9c13643b2f37833d01d21",
+    "git_tree": "876a9f36fc5f8604bc9ff653a6013daaf6a604b2",
+    "input_bindings": {
+      "configs/STAGE_AC_AC2R2_CLEAN_SCREEN_REPAIR_PROTOCOL_V1.json": {
+        "bytes": 7601,
+        "path": "configs/STAGE_AC_AC2R2_CLEAN_SCREEN_REPAIR_PROTOCOL_V1.json",
+        "sha256": "3a7ec62cdeddfe337decd0f7bad5cc6f2c3ed61e958d2cf7e16d493d00c3dbe0"
+      },
+      "reports/STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_V1.json": {
+        "bytes": 7560,
+        "path": "reports/STAGE_AC_AC2R2_RUNTIME_SOURCE_AUTHORITY_V1.json",
+        "sha256": "12ff0b1f8885c1f68322b5611d8155a6c95cb49fb9d13ce75b2e8f4b0b7f0c2b"
+      },
+      "reports/STAGE_AC_AC2R3_ELIGIBILITY_RECOMPUTATION_V1.json": {
+        "bytes": 897795,
+        "path": "reports/STAGE_AC_AC2R3_ELIGIBILITY_RECOMPUTATION_V1.json",
+        "sha256": "d5d836352c87fa2b3706716c6a399013302832bd2b51c1c81250ecdd6dd613d9"
+      },
+      "reports/STAGE_AC_AC2R3_MODEL_SPECIFIC_DENOMINATOR_LEDGER_V1.json": {
+        "bytes": 149194,
+        "path": "reports/STAGE_AC_AC2R3_MODEL_SPECIFIC_DENOMINATOR_LEDGER_V1.json",
+        "sha256": "7b0e4fea92ba9ddbdb8e2dff26ea4c393338b3d8cedb3c87a6c1f7b930a72a11"
+      },
+      "reports/STAGE_AC_AC2R3_ROOT_SEAL_V1.json": {
+        "bytes": 11616,
+        "path": "reports/STAGE_AC_AC2R3_ROOT_SEAL_V1.json",
+        "sha256": "368d8a8875d497042de7d4d3aed5a5d2d5ec6713b9efb897d9c11c2ba5606a97"
+      },
+      "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json": {
+        "bytes": 1298033,
+        "path": "reports/STAGE_AC_AC2_CLEAN_SCREEN_LAUNCH_MANIFEST_V1.json",
+        "sha256": "ee2582686618f2738a4cd4fb3090911f3c7746f002dd7f683e26647dad6dc71a"
+      }
+    },
+    "runtime_source_bindings": {
+      "scripts/stage_aa/run_stage_aa1_engineering_canary.py": {
+        "bytes": 30378,
+        "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
+        "sha256": "2d3a3dc4ae9729ef70730be6c13a42d68a8fe6930cd95c3f914b1273a7c6db94"
+      },
+      "scripts/stage_aa/run_stage_aa1r1_engineering_branch.py": {
+        "bytes": 27869,
+        "path": "scripts/stage_aa/run_stage_aa1r1_engineering_branch.py",
+        "sha256": "da41ffd0abb1dd1f8b0ec61d5f0d52297eba3bd0213cb360ed1f1a4382f19c83"
+      },
+      "scripts/stage_ac/run_stage_ac2_clean_screen.py": {
+        "bytes": 28485,
+        "path": "scripts/stage_ac/run_stage_ac2_clean_screen.py",
+        "sha256": "2d36d80c014c89b2353ddba2e30ee005b68a480a29e66512a7218f860e6eb91f"
+      },
+      "scripts/stage_ac/run_stage_ac2_family_worker.py": {
+        "bytes": 7548,
+        "path": "scripts/stage_ac/run_stage_ac2_family_worker.py",
+        "sha256": "9dca347229b9cfd2b93d5f31b257827bc11dce4fb7c4182c95c9aac794d6e26b"
+      },
+      "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py": {
+        "bytes": 18122,
+        "path": "src/gripper_attack/stage_v_m3_5_physical_taxonomy.py",
+        "sha256": "52e2d393018e13f95cabf12d47bae41246733710e7505680c1ef533517b32240"
+      },
+      "src/stage_ac/eligibility_v2.py": {
+        "bytes": 8535,
+        "path": "src/stage_ac/eligibility_v2.py",
+        "sha256": "486c20c772a28ee5eb489b8bf1b90c9bb4c44470a321c793c4a83e579822d0cc"
+      },
+      "src/stage_z_preparation/z3_contract.py": {
+        "bytes": 8903,
+        "path": "src/stage_z_preparation/z3_contract.py",
+        "sha256": "357e2ef5c0adf20b8dc6eff471a5d2ad544293a1dcf5927586f72429f760b6ee"
+      }
+    }
+  },
+  "status": "STAGE_AC_AC3_G0_STATIC_FREEZE_AUTHORIZED"
+}

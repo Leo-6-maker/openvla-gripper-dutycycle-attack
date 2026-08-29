@@ -1,0 +1,131 @@
+{
+  "ac2_resume_authorized_by_this_gate": true,
+  "aggregate_runtime_counters": {
+    "aa2_exposure": 0,
+    "aa_v_phys_reads": 0,
+    "action_pair_audit_count": 1024,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "dummy_wait_env_step_calls": 30,
+    "env_step_calls": 1020,
+    "eval160_reads": 0,
+    "model_inference_calls": 128,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "physical_telemetry_reads": 1020,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "authorization_pi_comment_id": 5435208429,
+  "claim_boundary": "AC2R1 M1 manifest-byte repair and clean-only permanently-excluded canary qualification; no fresh AC2 parent or treatment exposure.",
+  "evidence_root": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2R1_M1_CANARIES_V1",
+  "gate": "STAGE_Z_AC2R1_M1_MANIFEST_BYTE_AUTHORITY_RECONCILIATION_AND_PRE_GPU_REQUALIFICATION",
+  "next_legal_action": "RESUME_FROZEN_AC2_CLEAN_ONLY_CENSUS",
+  "pre_gpu_root_seal": {
+    "bytes": 3150,
+    "path": "reports/STAGE_AC_AC2R1_PRE_GPU_ROOT_SEAL_V1.json",
+    "sha256": "1968cbbac021c68f3243cb0cbad128aa5546d7d6099c3200d6e033350b9f6bf9"
+  },
+  "protocol": {
+    "bytes": 3209,
+    "path": "configs/STAGE_AC_AC2R1_M1_MANIFEST_REQUALIFICATION_PROTOCOL_V1.json",
+    "sha256": "9188f71b43b9299d728777ef9e2bc2784e51b5c21d5100aaa83f54f59dacf4ac"
+  },
+  "requalification": {
+    "expected_cells": 3,
+    "pass_cells": 3,
+    "records": [
+      {
+        "action_pair_audit_count": 520,
+        "action_pair_audit_sha256": "11181d59b8be61b227ef8f7d6d198b92d3547fb33774169a7b64d3f3a264638c",
+        "canonical_parent_key": "libero_10/task_04/state_20",
+        "cell_id": "AA2R2-A-M1-LIBERO10",
+        "clean_trajectory_digest": "5179725f35c8926ba479c99b25a6beb3e21028a5907d25898747543686162858",
+        "dummy_wait_env_step_calls": 10,
+        "env_step_calls": 520,
+        "horizon": 520,
+        "model_family": "M1_OPENVLA_OFT",
+        "model_inference_calls": 65,
+        "physical_telemetry_reads": 520,
+        "receipt": {
+          "bytes": 1205549,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2R1_M1_CANARIES_V1/receipts/AA2R2-A-M1-LIBERO10.json",
+          "relative_path": "receipts/AA2R2-A-M1-LIBERO10.json",
+          "sha256": "6a7fcc2502ee96cd2ccffec34043533c7a7daffbee836e69b7f81a40029cf229"
+        },
+        "scientific_claim": "NONE_ENGINEERING_ONLY",
+        "seed": 2026082611,
+        "status": "STAGE_AC_AC2R1_M1_CANARY_PASS",
+        "suite": "libero_10"
+      },
+      {
+        "action_pair_audit_count": 280,
+        "action_pair_audit_sha256": "bbbb60b842a694b8d89450152abf731bb5a417e64e32f94a6796b835705858ce",
+        "canonical_parent_key": "libero_object/task_02/state_42",
+        "cell_id": "AA2R2-A-M1-OBJECT",
+        "clean_trajectory_digest": "8c10d1220e2c98b7f73a7b4b3f561f196adad27131ea612b2b8d6c2472297ac6",
+        "dummy_wait_env_step_calls": 10,
+        "env_step_calls": 280,
+        "horizon": 280,
+        "model_family": "M1_OPENVLA_OFT",
+        "model_inference_calls": 35,
+        "physical_telemetry_reads": 280,
+        "receipt": {
+          "bytes": 648421,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2R1_M1_CANARIES_V1/receipts/AA2R2-A-M1-OBJECT.json",
+          "relative_path": "receipts/AA2R2-A-M1-OBJECT.json",
+          "sha256": "2eda326ce6a5008624c5a15f3889ae5f91b77a8023883c8f899c408f97a657d9"
+        },
+        "scientific_claim": "NONE_ENGINEERING_ONLY",
+        "seed": 2026082612,
+        "status": "STAGE_AC_AC2R1_M1_CANARY_PASS",
+        "suite": "libero_object"
+      },
+      {
+        "action_pair_audit_count": 224,
+        "action_pair_audit_sha256": "3de56b2856dda702154213e8ba8143dde9b17cb5bae40184f3c5f4870ad9d8e6",
+        "canonical_parent_key": "libero_spatial/task_05/state_34",
+        "cell_id": "AA2R2-A-M1-SPATIAL",
+        "clean_trajectory_digest": "731c03d7b61ab29e204141afd37dc9940ba8877e8da34283518f7a6c91fb642d",
+        "dummy_wait_env_step_calls": 10,
+        "env_step_calls": 220,
+        "horizon": 220,
+        "model_family": "M1_OPENVLA_OFT",
+        "model_inference_calls": 28,
+        "physical_telemetry_reads": 220,
+        "receipt": {
+          "bytes": 518595,
+          "path": "/mnt/sdc/dty_user/openvla_attack_outputs/STAGE_AC_AC2R1_M1_CANARIES_V1/receipts/AA2R2-A-M1-SPATIAL.json",
+          "relative_path": "receipts/AA2R2-A-M1-SPATIAL.json",
+          "sha256": "141b6517352a5332f2c10e495b1c6a192d8aa16c2e2874480a8c9fba0774da61"
+        },
+        "scientific_claim": "NONE_ENGINEERING_ONLY",
+        "seed": 2026082613,
+        "status": "STAGE_AC_AC2R1_M1_CANARY_PASS",
+        "suite": "libero_spatial"
+      }
+    ]
+  },
+  "schema": "STAGE_AC_AC2R1_M1_CANARY_TERMINAL_V1",
+  "scientific_firewall": {
+    "aa2_exposure": 0,
+    "aa_v_phys_reads": 0,
+    "attack_outcome_reads": 0,
+    "attacked_env_steps": 0,
+    "eval160_reads": 0,
+    "open_intervention_steps": 0,
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "scientific_parent_exposure": 0,
+    "task_success_reads": 0,
+    "v_phys_reads": 0
+  },
+  "source_authority": {
+    "bytes": 5083,
+    "path": "reports/STAGE_AC_AC2R1_M1_RUNTIME_SOURCE_AUTHORITY_V1.json",
+    "sha256": "1ac612172cd80cafe36db8b4c8618c024a035049bf3790f5793c55a226ea09c8"
+  },
+  "status": "STAGE_AC_AC2R1_M1_CANARY_QUALIFICATION_PASS"
+}

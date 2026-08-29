@@ -1,0 +1,90 @@
+{
+  "schema": "STAGE_AC_AC3Q_RUNTIME_SOURCE_AUTHORITY_V5",
+  "status": "STAGE_AC_AC3Q_RUNTIME_SOURCE_AUTHORITY_FROZEN",
+  "gate": "STAGE_AC_AC3_AC4_AC5_TREATMENT_NAIVE_MULTI_MODEL_PHYSICAL_REPLICATION_PROGRAM_V1",
+  "supersedes": {
+    "path": "reports/STAGE_AC_AC3Q_RUNTIME_SOURCE_AUTHORITY_V4.json",
+    "reason": "Redirects project-owned HF dynamic-module and temporary JAX files from the full /llm_jzm filesystem to a project-owned /mnt/sdc runtime cache; scientific code and branch contract are unchanged."
+  },
+  "git_binding": {
+    "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "commit": "16585ebd2214dd5f33d08c2eb98b7abf2f14b42c",
+    "tree": "311d3ab36beda8f13d71e9bfb6df5cdca0f7d999"
+  },
+  "g0_root": {
+    "path": "reports/STAGE_AC_AC3_G0_ROOT_SEAL_V1.json",
+    "bytes": 3722,
+    "sha256": "5b997085f210189532f72a827f4d6a601e81147437186ad93f6e4b8be407b917",
+    "historical_binding_unchanged": true
+  },
+  "g1_root": {
+    "path": "reports/STAGE_AC_AC3Q_G1_ROOT_SEAL_V1.json",
+    "bytes": 3540,
+    "sha256": "f6c97949698494249ca1787e302ae438e0591711334b64d3e31479f67758de24",
+    "status": "STAGE_AC_AC3Q_G1_ENGINEERING_QUALIFICATION_PASS_STOP_FOR_PI",
+    "historical_binding_unchanged": true
+  },
+  "runtime_files": {
+    "scripts/stage_aa/run_stage_aa1_engineering_canary.py": {
+      "path": "scripts/stage_aa/run_stage_aa1_engineering_canary.py",
+      "bytes": 30378,
+      "sha256": "2d3a3dc4ae9729ef70730be6c13a42d68a8fe6930cd95c3f914b1273a7c6db94"
+    },
+    "scripts/stage_aa/run_stage_aa1r1_engineering_branch.py": {
+      "path": "scripts/stage_aa/run_stage_aa1r1_engineering_branch.py",
+      "bytes": 27869,
+      "sha256": "da41ffd0abb1dd1f8b0ec61d5f0d52297eba3bd0213cb360ed1f1a4382f19c83"
+    },
+    "scripts/stage_ac/run_stage_ac3q_engineering_canary.py": {
+      "path": "scripts/stage_ac/run_stage_ac3q_engineering_canary.py",
+      "bytes": 22760,
+      "sha256": "16669c8f882146618487e20f25a89628373e3f043675f90ddb7ae4b3a17ea89c"
+    },
+    "scripts/stage_ac/launch_ac3q_cell.sh": {
+      "path": "scripts/stage_ac/launch_ac3q_cell.sh",
+      "bytes": 772,
+      "sha256": "d9e21372fce113c6b497def894d33bb753648f4d0f4eb54188ed8e1fabcec06b"
+    },
+    "scripts/stage_ac/build_stage_ac3q_g1_static.py": {
+      "path": "scripts/stage_ac/build_stage_ac3q_g1_static.py",
+      "bytes": 15914,
+      "sha256": "a21cd0f0b7e9abeb491220ed1063709b7b8307236521fdf2e31066b0c6058860"
+    },
+    "scripts/stage_ac/run_stage_ac3_g2_model_suite.py": {
+      "path": "scripts/stage_ac/run_stage_ac3_g2_model_suite.py",
+      "bytes": 32271,
+      "sha256": "51de8fef57922039e6dae9d608150a088cba784eb25e1404eef242516c660d23"
+    },
+    "scripts/stage_ac/launch_stage_ac3_g2_worker.sh": {
+      "path": "scripts/stage_ac/launch_stage_ac3_g2_worker.sh",
+      "bytes": 1555,
+      "sha256": "b6db5e493e53bfd641ed72779499693cb45731f5001361a0521a171ed872e31c"
+    }
+  },
+  "runtime_storage_contract": {
+    "project_cache_root": "/mnt/sdc/dty_user/openvla_attack_runtime_cache/stage_ac3_g2",
+    "tmpdir": "/mnt/sdc/dty_user/openvla_attack_runtime_cache/stage_ac3_g2/tmp",
+    "hf_modules_cache": "/mnt/sdc/dty_user/openvla_attack_runtime_cache/stage_ac3_g2/hf/modules",
+    "historical_shared_cache_mutation": false,
+    "full_filesystem_free_space_required_before_launch": true
+  },
+  "execution_contract": {
+    "frozen_manifest": "reports/STAGE_AC_AC3_G0_LAUNCH_MANIFEST_V1.json",
+    "branch_count": 384,
+    "conditions": ["CLEAN_REFERENCE", "OPEN_T3", "OPEN_T5", "OPEN_T10"],
+    "model_suite_shards": 9,
+    "g2_videos": 96,
+    "one_project_worker_per_gpu": true,
+    "prelaunch_free_memory_mib_strictly_greater_than": 20480
+  },
+  "scientific_firewall": {
+    "pgd_calls": 0,
+    "protected_reads": 0,
+    "eval160_reads": 0,
+    "replacement_or_top_up": false,
+    "g3_statistics_authorized_by_this_artifact": false,
+    "g4_blind_review_authorized_by_this_artifact": false
+  },
+  "historical_authorities_immutable": true,
+  "claim_boundary": "AC3 G2 frozen model-suite physical branch execution only; no G3 statistical promotion"
+}

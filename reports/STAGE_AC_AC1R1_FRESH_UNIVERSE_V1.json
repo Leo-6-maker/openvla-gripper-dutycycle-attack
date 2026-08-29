@@ -1,0 +1,1444 @@
+{
+  "claim_boundary": "Fresh official init-state candidates after the complete historical firewall; no model inference or scientific exposure.",
+  "fresh_rows": [
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=123",
+      "canonical_parent_key": "libero_10/task_00/state_28",
+      "duplicate_of_state_index": null,
+      "language": "put both the alphabet soup and the tomato sauce in the basket",
+      "official_init_index": 28,
+      "selection_rank_sha256": "96b802b64b49ff82bbf032605d9aca4b4d2de969bbab3f1d841b0bca6a4380f5",
+      "source_bddl_file": {
+        "bytes": 3284,
+        "path": "libero/libero/bddl_files/libero_10/LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket.bddl",
+        "sha256": "2e661058917f683a25bce480015197f0a2c1911bcbc2b9dd9d947199069c9618"
+      },
+      "source_init_file": {
+        "bytes": 58927,
+        "path": "libero/libero/init_files/libero_10/LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket.pruned_init",
+        "sha256": "1899fe54c51e24a41d5f9e32254730d6777f4894ab68e0e873f1fa7ae2062030"
+      },
+      "state": "state_28",
+      "state_bytes_base64": "AAAAAAAAAACO7g4Cmx+CP7u9rJpSyci/q+vTAS3ngT/iGHWT/JUDwJXHrkKxxqC/dOBVWEvhAUA9n5v8vXHpP2PUtfY+VZU/Y9S19j5Vlb9i8GgASv62v1YJ+lYQA8C/cD0K16Nw3T8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP+f0BBkugLc/oon04ZgFyL97FK5H4XrcPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/Y/bCKr8kvb89rqxJLa+gP7gehetRuN4/AAAAAAAAAAAAAAAAAAAAAMw7f2aeoOY/zTt/Zp6g5j/wQyvk3qfOv1DSVLXUScC/uB6F61G43j8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP1gKokGzt3i/mMK4wXhdzb+4HoXrUbjePwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/0uere/R7rz+TaHxYAb26v7gehetRuN4/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8cJVhiF+ixP4xg9nvvz6Y/KVyPwvUo3D8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP8Cl4Xh7wnm/iKtcrloH0T+4HoXrUbjeP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "state_dtype": "<f8",
+      "state_sha256": "b237e0556756059220d9bc960964e18c29419b39a7e6dcecfcc9bcf28b46785a",
+      "state_shape": [
+        123
+      ],
+      "suite": "libero_10",
+      "task": "task_00",
+      "task_index": 0,
+      "task_name": "LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=123",
+      "canonical_parent_key": "libero_10/task_00/state_44",
+      "duplicate_of_state_index": null,
+      "language": "put both the alphabet soup and the tomato sauce in the basket",
+      "official_init_index": 44,
+      "selection_rank_sha256": "4d5b54cf0dfd014bd942a4599dbd8d69a3ae3e29bc7765925b55731614d0045a",
+      "source_bddl_file": {
+        "bytes": 3284,
+        "path": "libero/libero/bddl_files/libero_10/LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket.bddl",
+        "sha256": "2e661058917f683a25bce480015197f0a2c1911bcbc2b9dd9d947199069c9618"
+      },
+      "source_init_file": {
+        "bytes": 58927,
+        "path": "libero/libero/init_files/libero_10/LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket.pruned_init",
+        "sha256": "1899fe54c51e24a41d5f9e32254730d6777f4894ab68e0e873f1fa7ae2062030"
+      },
+      "state": "state_44",
+      "state_bytes_base64": "AAAAAAAAAAAz/kMFFiWQP+RWevh098O/6ZB5X4w2jj/+6aVDaqQDwMBC78nXO20/cNYpwAvgAUBJ3jNwbhTpP2PUtfY+VZU/Y9S19j5Vlb9ajyHQFSu3v60Tf9TKn8O/cD0K16Nw3T8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP1Bb+P/pmbo/9PkJAp+zzL97FK5H4XrcPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/fEzcaZ/st7/Jk6O07tysP7gehetRuN4/AAAAAAAAAAAAAAAAAAAAAMw7f2aeoOY/zTt/Zp6g5j+yIT523H/Qv+En5MM/E8K/uB6F61G43j8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP6qTX3c7m5A/AiKyzmRs0L+4HoXrUbjePwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/qejimriLqj+ovU4tElC6v7gehetRuN4/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+rbfGgRmewPxcYmyGeWLI/KVyPwvUo3D8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwPyK+50fqano/855DdS+n0D+4HoXrUbjeP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "state_dtype": "<f8",
+      "state_sha256": "95635be615fb50a8461ca767fe9fa9f1fcf186594825a4616c9fa2dcf590b8a7",
+      "state_shape": [
+        123
+      ],
+      "suite": "libero_10",
+      "task": "task_00",
+      "task_index": 0,
+      "task_name": "LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=47",
+      "canonical_parent_key": "libero_10/task_02/state_34",
+      "duplicate_of_state_index": null,
+      "language": "turn on the stove and put the moka pot on it",
+      "official_init_index": 34,
+      "selection_rank_sha256": "43add2126b9e0581719bfe38b4a424034c05883f1e444e66faccfab48f1c11e8",
+      "source_bddl_file": {
+        "bytes": 1485,
+        "path": "libero/libero/bddl_files/libero_10/KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it.bddl",
+        "sha256": "491835cc2eb6956f7ce3d1ee4e266377116168fe453e6529fe105e3b0333635d"
+      },
+      "source_init_file": {
+        "bytes": 22959,
+        "path": "libero/libero/init_files/libero_10/KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it.pruned_init",
+        "sha256": "02a8401f8d59f5447fc8c5a16f4c158dd8c426c3eaed6779927a2a53e9abf3c5"
+      },
+      "state": "state_34",
+      "state_bytes_base64": "AAAAAAAAAAC3djqFs+GUP1WV3ZYjIsW/VZ74cPm+gL+wt+7ERZADwCPjMUD7J5Y/UG2u8564AUDr8p7ngRTpP2PUtfY+VZU/Y9S19j5Vlb9eyG0QiKmvv+QLgwelvc2/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP1/iz9mTUaM/Yr0Q6LM2lb8K16NwPQrvPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "df112d6770699d472e82a90e07717b49cd3f2385525de1ae2a0561c8b4c15d0b",
+      "state_shape": [
+        47
+      ],
+      "suite": "libero_10",
+      "task": "task_02",
+      "task_index": 2,
+      "task_name": "KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=47",
+      "canonical_parent_key": "libero_10/task_02/state_45",
+      "duplicate_of_state_index": null,
+      "language": "turn on the stove and put the moka pot on it",
+      "official_init_index": 45,
+      "selection_rank_sha256": "91bd5f1ee1c280c4fd873a2faa544320f2c75b4173d6670582263980e7d3df11",
+      "source_bddl_file": {
+        "bytes": 1485,
+        "path": "libero/libero/bddl_files/libero_10/KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it.bddl",
+        "sha256": "491835cc2eb6956f7ce3d1ee4e266377116168fe453e6529fe105e3b0333635d"
+      },
+      "source_init_file": {
+        "bytes": 22959,
+        "path": "libero/libero/init_files/libero_10/KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it.pruned_init",
+        "sha256": "02a8401f8d59f5447fc8c5a16f4c158dd8c426c3eaed6779927a2a53e9abf3c5"
+      },
+      "state": "state_45",
+      "state_bytes_base64": "AAAAAAAAAACMY6mYJeaGP3Jxmt9THMK/fMfKJVitl7+J8WmOh6oDwMpOpbGXO1m/AAAPYQ22AUDkSU4/P2joP2PUtfY+VZU/Y9S19j5Vlb9kxd4F9K2xv+V+ZZ+hHdG/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPzrze1Q1Y58/qFuvEelKgj8K16NwPQrvPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "25d326b81ca195575ef12d65930e6ef1a8c03637ed3219eb8ceff50e9249777b",
+      "state_shape": [
+        47
+      ],
+      "suite": "libero_10",
+      "task": "task_02",
+      "task_index": 2,
+      "task_name": "KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=51",
+      "canonical_parent_key": "libero_10/task_03/state_21",
+      "duplicate_of_state_index": null,
+      "language": "put the black bowl in the bottom drawer of the cabinet and close it",
+      "official_init_index": 21,
+      "selection_rank_sha256": "99ba3d9fea31ce30770c9a42523e0625a48c7e437545fdedd034f9f60b3f49b3",
+      "source_bddl_file": {
+        "bytes": 2233,
+        "path": "libero/libero/bddl_files/libero_10/KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it.bddl",
+        "sha256": "5255fe54d7f25fad4dee8fa30a30033d8cb908f1708d953c91ab609264fb4fb8"
+      },
+      "source_init_file": {
+        "bytes": 24815,
+        "path": "libero/libero/init_files/libero_10/KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it.pruned_init",
+        "sha256": "e98ded151f64a036c74c872336dd09b968c379f3c9db7bc333aba37e7c235b86"
+      },
+      "state": "state_21",
+      "state_bytes_base64": "AAAAAAAAAACH5b00+Plov8Xjrkfi68i/WPNYLUIjlr8INv0AgZIDwGuV7CPupYK//FTAWSvlAUCC9uyMlnfpP2PUtfY+VZU/Y9S19j5Vlb/Z/mlGBiSJP129Ldo5EKy/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPxbZ+PCaA8W/+nKDFGzNoz8K16NwPQrvPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/AAAAAAAAAAAAAAAAAAAAANuUbqU4o8K/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "state_dtype": "<f8",
+      "state_sha256": "d1e42e642ca2a8b99b02cee82080eddc3696298344304e7665cafc00cb6b7e7b",
+      "state_shape": [
+        51
+      ],
+      "suite": "libero_10",
+      "task": "task_03",
+      "task_index": 3,
+      "task_name": "KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=51",
+      "canonical_parent_key": "libero_10/task_03/state_31",
+      "duplicate_of_state_index": null,
+      "language": "put the black bowl in the bottom drawer of the cabinet and close it",
+      "official_init_index": 31,
+      "selection_rank_sha256": "daea86bd0eb3fe397ec881a67fc11a30bcaa62cfb420eef83eb77137cf73470a",
+      "source_bddl_file": {
+        "bytes": 2233,
+        "path": "libero/libero/bddl_files/libero_10/KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it.bddl",
+        "sha256": "5255fe54d7f25fad4dee8fa30a30033d8cb908f1708d953c91ab609264fb4fb8"
+      },
+      "source_init_file": {
+        "bytes": 24815,
+        "path": "libero/libero/init_files/libero_10/KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it.pruned_init",
+        "sha256": "e98ded151f64a036c74c872336dd09b968c379f3c9db7bc333aba37e7c235b86"
+      },
+      "state": "state_31",
+      "state_bytes_base64": "AAAAAAAAAABnjN+vKsmTPxwP86aoz8a/6khlCZ1sNL/tWyJRa80DwCdRkd3xRJk/AnMU5WF6AUC5RvqpOuPoP2PUtfY+VZU/Y9S19j5Vlb/NdcCuNOGaP2hH2l7sdqC/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP8UUntMTisK/tgipEA+ZqD8K16NwPQrvPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/AAAAAAAAAAAAAAAAAAAAAMf+EHSZUcK/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "state_dtype": "<f8",
+      "state_sha256": "76b285bb85d863dd2d2ffb0ca650e6c39ef685d295aa0384c0c24a24cc630239",
+      "state_shape": [
+        51
+      ],
+      "suite": "libero_10",
+      "task": "task_03",
+      "task_index": 3,
+      "task_name": "KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=84",
+      "canonical_parent_key": "libero_10/task_04/state_36",
+      "duplicate_of_state_index": null,
+      "language": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+      "official_init_index": 36,
+      "selection_rank_sha256": "4cf245724e167d3c9f03a507e04a9be748bf9b0061984425ef656b3b38237337",
+      "source_bddl_file": {
+        "bytes": 2241,
+        "path": "libero/libero/bddl_files/libero_10/LIVING_ROOM_SCENE5_put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate.bddl",
+        "sha256": "0c6749b920bff1e1efe47ffb0e0b801a3e6959a650e710f376dd2b812c74e865"
+      },
+      "source_init_file": {
+        "bytes": 41775,
+        "path": "libero/libero/init_files/libero_10/LIVING_ROOM_SCENE5_put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate.pruned_init",
+        "sha256": "b6f20784b381c75d715f4fdaadda1fb460cbe24adcbad76f381a009419b8474e"
+      },
+      "state": "state_36",
+      "state_bytes_base64": "AAAAAAAAAADDQXSzwYuNvztTvggzkcm/BaCIFHEigD/2LoszZW8DwBjbbjEfzHg/m8jtnHESAkAWZgbEIejoP2PUtfY+VZU/Y9S19j5Vlb+KtnJjewm8v9X1lk663sS/uB6F61G43j/MO39mnqDmvwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP2EcOA3X2Ma/lB4x8uAqjz+4HoXrUbjeP8w7f2aeoOa/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/wBwOuMTGr7/0AeHd6LK/P7gehetRuN4/zDt/Zp6g5r8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j+YhhvMZdxvv5HeOAWGKdO/uB6F61G43j/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP7CspM0NJla/CdL8+FYH0j+4HoXrUbjeP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "state_dtype": "<f8",
+      "state_sha256": "5069549a85152984c1101cd4903b4fac076ccfeddecbbe5743604fe6dcfd57bf",
+      "state_shape": [
+        84
+      ],
+      "suite": "libero_10",
+      "task": "task_04",
+      "task_index": 4,
+      "task_name": "LIVING_ROOM_SCENE5_put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=45",
+      "canonical_parent_key": "libero_10/task_05/state_41",
+      "duplicate_of_state_index": null,
+      "language": "pick up the book and place it in the back compartment of the caddy",
+      "official_init_index": 41,
+      "selection_rank_sha256": "6387324c519cc6f916666730448145c138d8d58f91375b9b1f0e407dfb2f237b",
+      "source_bddl_file": {
+        "bytes": 2055,
+        "path": "libero/libero/bddl_files/libero_10/STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy.bddl",
+        "sha256": "07ca32c940d70c065e870452ef9c63e6dfa1d8506e6a86cf9b3763f652ba2d9f"
+      },
+      "source_init_file": {
+        "bytes": 22831,
+        "path": "libero/libero/init_files/libero_10/STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy.pruned_init",
+        "sha256": "6cd3937ba18d64e72223222af36888d26ea201840415adbc4dae590454d0a5a8"
+      },
+      "state": "state_41",
+      "state_bytes_base64": "AAAAAAAAAABRhJQiM1aRvyiHH54n4sC/0m/Npvdgij+XfPsEuYADwOcOTQkL9C8/sYgqj53QAUDAw5gC54HpP2PUtfY+VZU/Y9S19j5Vlb/wk4ldp7fGv6diSyPlhMI/lkOLbOf77T+ucwzunjfmvwAAAAAAAAAAAAAAAAAAAAAJUmc/vwfnP/D8JSTD/bu/YNIbR6dqQz+WQ4ts5/vtP8w7f2aeoOa/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "state_dtype": "<f8",
+      "state_sha256": "3fec4ed3b7373f569807fdfb21a9148f6aaa2231cdbf47e7c0062fd0ccb7097e",
+      "state_shape": [
+        45
+      ],
+      "suite": "libero_10",
+      "task": "task_05",
+      "task_index": 5,
+      "task_name": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=71",
+      "canonical_parent_key": "libero_10/task_06/state_20",
+      "duplicate_of_state_index": null,
+      "language": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+      "official_init_index": 20,
+      "selection_rank_sha256": "35d3ea6887d1f78c08500a43a15b8179a30820a6b8c62880d86138c5d8e71a4a",
+      "source_bddl_file": {
+        "bytes": 2458,
+        "path": "libero/libero/bddl_files/libero_10/LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate.bddl",
+        "sha256": "dbc9464b424cdc9b771b92d0b8a8c185b1b539f6a4133b323dc858bcf8f6a9c2"
+      },
+      "source_init_file": {
+        "bytes": 35119,
+        "path": "libero/libero/init_files/libero_10/LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate.pruned_init",
+        "sha256": "6e811394c4ff9a43ae23515d8512e9b657c04344b94dd5baed121b595490514f"
+      },
+      "state": "state_20",
+      "state_bytes_base64": "AAAAAAAAAADXqzF2bQCiP86cSaEeyMi/W3NAt60bEr94S1r3JMcDwJqoCNOrm5O/hm4xFX+8AUA52pjy9ULpP2PUtfY+VZU/Y9S19j5Vlb8kXM+ZmYCzv1MXLso8ycO/uB6F61G43j/MO39mnqDmvwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPzi6Y/oxI8u/Xv20ANn2lz+4HoXrUbjeP8w7f2aeoOa/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/CmeFjhnNwz9gJIZm36BDv7gehetRuN4/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j8LJeeVyGKlv96XAtZgk7c/uB6F61G43j8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "c9c3ceb07c384c073f0cf223d8aa77c434f0b073f12352c5e957664c3ec870bd",
+      "state_shape": [
+        71
+      ],
+      "suite": "libero_10",
+      "task": "task_06",
+      "task_index": 6,
+      "task_name": "LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=71",
+      "canonical_parent_key": "libero_10/task_06/state_38",
+      "duplicate_of_state_index": null,
+      "language": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+      "official_init_index": 38,
+      "selection_rank_sha256": "2ca7602525a19ebdcb79cc909575ab3696b59885726270c6a0a2fbbe799b9c66",
+      "source_bddl_file": {
+        "bytes": 2458,
+        "path": "libero/libero/bddl_files/libero_10/LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate.bddl",
+        "sha256": "dbc9464b424cdc9b771b92d0b8a8c185b1b539f6a4133b323dc858bcf8f6a9c2"
+      },
+      "source_init_file": {
+        "bytes": 35119,
+        "path": "libero/libero/init_files/libero_10/LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate.pruned_init",
+        "sha256": "6e811394c4ff9a43ae23515d8512e9b657c04344b94dd5baed121b595490514f"
+      },
+      "state": "state_38",
+      "state_bytes_base64": "AAAAAAAAAACiHomfDsCTv4dv85vYIsW/Re6xc/UYYD+b7HPGz6cDwMcbrZSsMJe/yQRFFs/HAUA/TSaFtX7pP2PUtfY+VZU/Y9S19j5Vlb9FzetrYKi9v4Fr059np8K/uB6F61G43j/MO39mnqDmvwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP+vM2oAuNMy/0kf3Gagmkz+4HoXrUbjeP8w7f2aeoOa/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/20YAqRStxT/6RsKsdH+Qv7gehetRuN4/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j+KE6vmLC+tv3phZiM/vro/uB6F61G43j8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "8d57b24908f07bcfbee73a4242edbf2a76ca84586dba7d9f041cab852ccdcb85",
+      "state_shape": [
+        71
+      ],
+      "suite": "libero_10",
+      "task": "task_06",
+      "task_index": 6,
+      "task_name": "LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=84",
+      "canonical_parent_key": "libero_10/task_07/state_36",
+      "duplicate_of_state_index": null,
+      "language": "put both the alphabet soup and the cream cheese box in the basket",
+      "official_init_index": 36,
+      "selection_rank_sha256": "23e55f8945ddd484029d4b3a0259e5c104b6601a96dfda470ed24f239df8e973",
+      "source_bddl_file": {
+        "bytes": 2295,
+        "path": "libero/libero/bddl_files/libero_10/LIVING_ROOM_SCENE1_put_both_the_alphabet_soup_and_the_cream_cheese_box_in_the_basket.bddl",
+        "sha256": "e27ab37f512fe42e35771d6130f531e6a9656929e7b4c60b348b81360cf5675d"
+      },
+      "source_init_file": {
+        "bytes": 40879,
+        "path": "libero/libero/init_files/libero_10/LIVING_ROOM_SCENE1_put_both_the_alphabet_soup_and_the_cream_cheese_box_in_the_basket.pruned_init",
+        "sha256": "2113ea5923fcbbe1b57b428383934496072f062729d0b72d3021573d55d25abc"
+      },
+      "state": "state_36",
+      "state_bytes_base64": "AAAAAAAAAAC86NO49V6gP6QfimLUPcO/PT5DsPjtgT+POsscxoIDwJuGUmGUoZG/q/JzRGGvAUCUSYHIHI/oP2PUtfY+VZU/Y9S19j5Vlb98XPj24cGaP/wGPaAMJ7S/cD0K16Nw3T8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP6Mk/91/s8W/devjLqBisz97FK5H4XrcPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/YI3mUqVZvz/QxmHrqp3Jv7gehetRuN4/AAAAAAAAAAAAAAAAAAAAAMw7f2aeoOY/zTt/Zp6g5j/gR1jr+Y/KvwNfMbG9V8O/uB6F61G43j8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP+2x89txLYO/qs/YaCUQ0T+4HoXrUbjeP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "state_dtype": "<f8",
+      "state_sha256": "c5d72fc7ac89ac8b34968e04ede2f83920a1e65de21435c698545edb94c103e3",
+      "state_shape": [
+        84
+      ],
+      "suite": "libero_10",
+      "task": "task_07",
+      "task_index": 7,
+      "task_name": "LIVING_ROOM_SCENE1_put_both_the_alphabet_soup_and_the_cream_cheese_box_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=47",
+      "canonical_parent_key": "libero_10/task_08/state_39",
+      "duplicate_of_state_index": null,
+      "language": "put both moka pots on the stove",
+      "official_init_index": 39,
+      "selection_rank_sha256": "02efeaacb2e8323d4e6af91cb3d1c489236f44316dd3964a2b9d781f8937eff9",
+      "source_bddl_file": {
+        "bytes": 1551,
+        "path": "libero/libero/bddl_files/libero_10/KITCHEN_SCENE8_put_both_moka_pots_on_the_stove.bddl",
+        "sha256": "ae1299a707d3e810096ad648948c517de40474bcdacca93a15e17d191e34454a"
+      },
+      "source_init_file": {
+        "bytes": 22831,
+        "path": "libero/libero/init_files/libero_10/KITCHEN_SCENE8_put_both_moka_pots_on_the_stove.pruned_init",
+        "sha256": "44f992e911c84a1340589510ecdaf947a4872966f7678c8364d8bb5d13dc4dac"
+      },
+      "state": "state_39",
+      "state_bytes_base64": "AAAAAAAAAAD3BOm73mgTP9MtPXCyi8G//7vIlfh4jT/wfW3DtMYDwLi6MwYUaqa/Ye2uF2PpAUAp4bOEdnnoP2PUtfY+VZU/Y9S19j5Vlb/2j7Z01Uqhv3GQYSGWbtA/CtejcD0K7z8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP1t8u1bTy6M/ROpglMzYsj8K16NwPQrvPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/gAAoD622/z8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "91524c924016383d460924d638bea899ca5da8ab3f7e30c8a754237e001c3478",
+      "state_shape": [
+        47
+      ],
+      "suite": "libero_10",
+      "task": "task_08",
+      "task_index": 8,
+      "task_name": "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=47",
+      "canonical_parent_key": "libero_10/task_08/state_44",
+      "duplicate_of_state_index": null,
+      "language": "put both moka pots on the stove",
+      "official_init_index": 44,
+      "selection_rank_sha256": "9f03688f5360ad82358ac979971d713fc3274f5c78617693a52f874c4f926c08",
+      "source_bddl_file": {
+        "bytes": 1551,
+        "path": "libero/libero/bddl_files/libero_10/KITCHEN_SCENE8_put_both_moka_pots_on_the_stove.bddl",
+        "sha256": "ae1299a707d3e810096ad648948c517de40474bcdacca93a15e17d191e34454a"
+      },
+      "source_init_file": {
+        "bytes": 22831,
+        "path": "libero/libero/init_files/libero_10/KITCHEN_SCENE8_put_both_moka_pots_on_the_stove.pruned_init",
+        "sha256": "44f992e911c84a1340589510ecdaf947a4872966f7678c8364d8bb5d13dc4dac"
+      },
+      "state": "state_44",
+      "state_bytes_base64": "AAAAAAAAAAAN4LZFUzSKv+YLJ8ho7MS//pfSTO9kiL84nok6Z+EDwEhLYCC7OYM/4zewgPDJAUD/21B87P3oP2PUtfY+VZU/Y9S19j5Vlb9h6KsBXtOxv7DD3tsIJs0/CtejcD0K7z8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP++/7Pbqa64/ApVHy//vmz8K16NwPQrvPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/kcaQ2aa8/T8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "0b59745ac313afb572711e4091a5976a692ebaae556daa90270f4dba06d02313",
+      "state_shape": [
+        47
+      ],
+      "suite": "libero_10",
+      "task": "task_08",
+      "task_index": 8,
+      "task_name": "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=47",
+      "canonical_parent_key": "libero_10/task_09/state_29",
+      "duplicate_of_state_index": null,
+      "language": "put the yellow and white mug in the microwave and close it",
+      "official_init_index": 29,
+      "selection_rank_sha256": "275f7bbed37f36f7bd1fa82bfa2aa9b5e644b105d312e7096e9603b5444de0e3",
+      "source_bddl_file": {
+        "bytes": 1836,
+        "path": "libero/libero/bddl_files/libero_10/KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it.bddl",
+        "sha256": "456d145f92be049f445fc77673dc583d9d17ea7afe92f6ffcb2fd1fa5565d420"
+      },
+      "source_init_file": {
+        "bytes": 23663,
+        "path": "libero/libero/init_files/libero_10/KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it.pruned_init",
+        "sha256": "6b75c8d4d1e1c40b5d99c78ceea380d99ccffb0a484a4cb2d3153488a0afbbe2"
+      },
+      "state": "state_29",
+      "state_bytes_base64": "AAAAAAAAAADK4EE5OzWXv7bSkQqeE8a/fHd/uC7bcz8qwD+i62wDwEnlYwfbn5q/D21u0UkGAkDixixZTgXpP2PUtfY+VZU/Y9S19j5Vlb8HFQsWKo68vzQCPmcFrM+/CtejcD0K7z/MO39mnqDmvwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPwxOj//PbnY/DGC9y5TNeD8K16NwPQrvP8w7f2aeoOa/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/dBfo7Sh6AMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "4609a46fd97e995167c5a5996e5a3891a3eefbe8663b5ff8bb5d8c9aaee1e768",
+      "state_shape": [
+        47
+      ],
+      "suite": "libero_10",
+      "task": "task_09",
+      "task_index": 9,
+      "task_name": "KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=47",
+      "canonical_parent_key": "libero_10/task_09/state_34",
+      "duplicate_of_state_index": null,
+      "language": "put the yellow and white mug in the microwave and close it",
+      "official_init_index": 34,
+      "selection_rank_sha256": "988b7277290bcaffa2941fa79db60c63720d05368a706d2de9861fa614bca4e4",
+      "source_bddl_file": {
+        "bytes": 1836,
+        "path": "libero/libero/bddl_files/libero_10/KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it.bddl",
+        "sha256": "456d145f92be049f445fc77673dc583d9d17ea7afe92f6ffcb2fd1fa5565d420"
+      },
+      "source_init_file": {
+        "bytes": 23663,
+        "path": "libero/libero/init_files/libero_10/KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it.pruned_init",
+        "sha256": "6b75c8d4d1e1c40b5d99c78ceea380d99ccffb0a484a4cb2d3153488a0afbbe2"
+      },
+      "state": "state_34",
+      "state_bytes_base64": "AAAAAAAAAADp7dZPyMOLv/i+IKcvQsC/TvmbBE0tar/Me+PVykcDwEnuv8ThuYq/kpNCG6zAAUCLlp6YXgfpP2PUtfY+VZU/Y9S19j5Vlb8VhqIXW0a8v/Z/eqi1bc2/CtejcD0K7z/MO39mnqDmvwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPzbe1Ft3J5E/WHSqQXCOYL8K16NwPQrvP8w7f2aeoOa/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/pvCiCGFsAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "b1ba737f6de6f36dfd8eb4c750d7df7ec3bcd28fd25999ab4a49cc06aaef5f13",
+      "state_shape": [
+        47
+      ],
+      "suite": "libero_10",
+      "task": "task_09",
+      "task_index": 9,
+      "task_name": "KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_00/state_36",
+      "duplicate_of_state_index": null,
+      "language": "pick up the alphabet soup and place it in the basket",
+      "official_init_index": 36,
+      "selection_rank_sha256": "3e855e91b2af8944effb6f5e8bc3fc423c1e80df3bb575c0c4527cdc24fd77c6",
+      "source_bddl_file": {
+        "bytes": 2123,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_alphabet_soup_and_place_it_in_the_basket.bddl",
+        "sha256": "df088984da13131f8332ee0f13a7896c6a97afd02ee5007a42e8fc5e0893571e"
+      },
+      "source_init_file": {
+        "bytes": 53039,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_alphabet_soup_and_place_it_in_the_basket.pruned_init",
+        "sha256": "b9023e5546b239cacb2aaa3c76df3b73c3de6f97500fea5e27a0db9827002a19"
+      },
+      "state": "state_36",
+      "state_bytes_base64": "AAAAAAAAAAC/397BqNKEv1IVn+FFRMO/IaDh72OOkL+Intk/s3EDwPFgeZjveXW/Qtw86BPxAUCYhUfboBPqP2PUtfY+VZU/Y9S19j5Vlb+4HoXrUbi+v7gehetRuM6/uB6F61G4jj8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP5Uc1K6qAY6/UbK+jMlr0D/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/mpmZmZmZqT+amZmZmZm5v+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+gGdNqAmPDv4aCm3u2T7A/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP93Umo8Tx7o/zXb9PRA2yr/rUbgeheuhPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAAAAAAAAAAAAAAAMw7f2aeoOY/zTt/Zp6g5j9rrGrJmyDKvyaYmzr6QbW/fBSuR+F6dL8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "61e0a2fa0ac4493aa0dfa07b7569a6f4ad7a1dbe72b5cc0a052f4836171ddc6d",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_00",
+      "task_index": 0,
+      "task_name": "pick_up_the_alphabet_soup_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_00/state_44",
+      "duplicate_of_state_index": null,
+      "language": "pick up the alphabet soup and place it in the basket",
+      "official_init_index": 44,
+      "selection_rank_sha256": "e3da640309fbc5e5a62ef0b83f496abe460892bc1dbacc30525920d632e209ba",
+      "source_bddl_file": {
+        "bytes": 2123,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_alphabet_soup_and_place_it_in_the_basket.bddl",
+        "sha256": "df088984da13131f8332ee0f13a7896c6a97afd02ee5007a42e8fc5e0893571e"
+      },
+      "source_init_file": {
+        "bytes": 53039,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_alphabet_soup_and_place_it_in_the_basket.pruned_init",
+        "sha256": "b9023e5546b239cacb2aaa3c76df3b73c3de6f97500fea5e27a0db9827002a19"
+      },
+      "state": "state_44",
+      "state_bytes_base64": "AAAAAAAAAABA/TZjIVN9P+NFa3WSLMS/0HpfFVbGnj9oATvIt5QDwIWcKNJGn54/oekVPgyGAUAKcRbn+rboP2PUtfY+VZU/Y9S19j5Vlb+4HoXrUbi+v7gehetRuM6/uB6F61G4jj8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP1QJOoWoM26/7VA2kjEa0T/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/m5mZmZmZqT+amZmZmZm5v+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+mLdw9Q8fCv1j1elUjXK8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwPz3uI6Y6obk/3S1aggXVyb/rUbgeheuhPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAAAAAAAAAAAAAAAMw7f2aeoOY/zTt/Zp6g5j/mayk60xbJv7WNJpVH8rS/fBSuR+F6dL8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "cf2c8ba4b358703f5f538637f272e91fff577d5b3b610ba59cc7851270c26dbc",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_00",
+      "task_index": 0,
+      "task_name": "pick_up_the_alphabet_soup_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_01/state_34",
+      "duplicate_of_state_index": null,
+      "language": "pick up the cream cheese and place it in the basket",
+      "official_init_index": 34,
+      "selection_rank_sha256": "c8a26392d7c39d74c2d148edc8480b03db5c54f69d7db7e0865f824d0e7377a6",
+      "source_bddl_file": {
+        "bytes": 2114,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_cream_cheese_and_place_it_in_the_basket.bddl",
+        "sha256": "7019f37ee158d67a21338a6df0c441dd8f84979b946b5e20bb49463ef0508ea2"
+      },
+      "source_init_file": {
+        "bytes": 53359,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_cream_cheese_and_place_it_in_the_basket.pruned_init",
+        "sha256": "5ea5483bca8abd80a8f1935e2c60570d60eaaf6a985c283d62805b46fb76aa94"
+      },
+      "state": "state_34",
+      "state_bytes_base64": "AAAAAAAAAAD6mF3UBa00vz/Lctcl5ce/XMvRlfnapT9BKpJ/Q2kDwM3v4vc0OJ+/FDO6psEOAkCbNGRr4vvoP2PUtfY+VZU/Y9S19j5Vlb+EjCTywp6pP62hy32v07q/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwPzQWghmPN2u/rg6F/sq40D/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/uB6F61G4vr+5HoXrUbjOv7gehetRuI4/AAAAAAAAAAAAAAAAAAAAAMw7f2aeoOY/zTt/Zp6g5j/LWb3369bCv00IQKFrNbA/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP5qZmZmZmbk/mpmZmZmZyb/rUbgeheuhPwAAAAAAAAAAAAAAAAAAAADMO39mnqDmP807f2aeoOY/u3ADtGFtwz/IVk0l26OcP3wUrkfhenS/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8D+amZmZmZnJv3sUrkfherS/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "24d95da523f490eef5787b61358a347ef731f60ac9889e8d9def0d6e643eb1c2",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_01",
+      "task_index": 1,
+      "task_name": "pick_up_the_cream_cheese_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_02/state_21",
+      "duplicate_of_state_index": null,
+      "language": "pick up the salad dressing and place it in the basket",
+      "official_init_index": 21,
+      "selection_rank_sha256": "c3bbae578f8c964f1dcf59f421ff0c1d5c475b3db89ec8f0ee7e67a96de04049",
+      "source_bddl_file": {
+        "bytes": 2129,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_salad_dressing_and_place_it_in_the_basket.bddl",
+        "sha256": "024978e9e8f43a49b49d0965f4f426d364ce056307f0fcf5733dc4682fac437a"
+      },
+      "source_init_file": {
+        "bytes": 53423,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_salad_dressing_and_place_it_in_the_basket.pruned_init",
+        "sha256": "6f6793ee550419a4a79dcb6ac83a9ba7bbf5e76e92fef26b82b6a7a10f72b04a"
+      },
+      "state": "state_21",
+      "state_bytes_base64": "AAAAAAAAAADM3R1WTJliP4al6djqR8a/NZy8+igyqb/6+Q/3oksDwNhoRtd2C4u/O9cJPOHkAUBus+dfoGTpP2PUtfY+VZU/Y9S19j5Vlb+bmZmZmZmpP5qZmZmZmbm/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP1AqzViujU4/w7EPiCPUzz/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/uB6F61G4vr+4HoXrUbjOv+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8zMzMzMzPDv7cehetRuK4/uB6F61G4jj8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP3mCXuRw0bg/4RFx+13Uyb8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/CV+krcnMwz8AqPlKfNqcP+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+amZmZmZnJv3sUrkfherS/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "218e62acf66029e2a83171de3e5f8e44a5226050aa61870954745456a723da7d",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_02",
+      "task_index": 2,
+      "task_name": "pick_up_the_salad_dressing_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_02/state_25",
+      "duplicate_of_state_index": null,
+      "language": "pick up the salad dressing and place it in the basket",
+      "official_init_index": 25,
+      "selection_rank_sha256": "2c72234e49c6ab903fc64cbbd6978d4d494e2e6def58a57b6c9f3dad06615c5f",
+      "source_bddl_file": {
+        "bytes": 2129,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_salad_dressing_and_place_it_in_the_basket.bddl",
+        "sha256": "024978e9e8f43a49b49d0965f4f426d364ce056307f0fcf5733dc4682fac437a"
+      },
+      "source_init_file": {
+        "bytes": 53423,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_salad_dressing_and_place_it_in_the_basket.pruned_init",
+        "sha256": "6f6793ee550419a4a79dcb6ac83a9ba7bbf5e76e92fef26b82b6a7a10f72b04a"
+      },
+      "state": "state_25",
+      "state_bytes_base64": "AAAAAAAAAACYi7x2qJOCPxEHTqT4Vse/KwTjiDYtQ79YdDLGzNUDwPbUBdZNfH0/7/dise3YAUA36tfh5/XpP2PUtfY+VZU/Y9S19j5Vlb+amZmZmZmpP5qZmZmZmbm/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP9nTYu2v3oi/jKhJjyxN0T/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/uB6F61G4vr+5HoXrUbjOv+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8zMzMzMzPDv7cehetRuK4/uB6F61G4jj8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP+/4OZWAKbo/bsGyzZ0cyb8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/bsqpUuGewz8bi4QC2ECeP+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+amZmZmZnJv3sUrkfherS/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "0cb2cbdb6de8b8681ddbdd6e1a10234090b4671aca8ee82fa2a522be672bfe5c",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_02",
+      "task_index": 2,
+      "task_name": "pick_up_the_salad_dressing_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_03/state_30",
+      "duplicate_of_state_index": null,
+      "language": "pick up the bbq sauce and place it in the basket",
+      "official_init_index": 30,
+      "selection_rank_sha256": "e8be998e4d4520a5b7e652da0bbf678ff3391e64cdd33449c96a387f40214d05",
+      "source_bddl_file": {
+        "bytes": 2144,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_bbq_sauce_and_place_it_in_the_basket.bddl",
+        "sha256": "8a7e37b76fce5621e649e260dbcfcec7ce2f9a055ca09a4f1ebaf5ca74a739c2"
+      },
+      "source_init_file": {
+        "bytes": 53039,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_bbq_sauce_and_place_it_in_the_basket.pruned_init",
+        "sha256": "c524077b0c23006f28fc06760a5b5ab37eee67287b5329e84a34b0a8bd599b4a"
+      },
+      "state": "state_30",
+      "state_bytes_base64": "AAAAAAAAAADWVK3zvud7Pxnjtk0bp8O/pXRlcNUJdT92ZM0RF/gDwMV4Dsw1a4M/h+tWwZDvAUBuXZGxRDzpP2PUtfY+VZU/Y9S19j5Vlb9mdDPrxR6qP3yuqDuGZbm/61G4HoXroT/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP+/ryH4jPoG/WwzudIrO0D/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/uB6F61G4vr+5HoXrUbjOv+tRuB6F66E/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8D8zMzMzMzPDv7cehetRuK4/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP5qZmZmZmbk/mpmZmZmZyb/rUbgeheuhPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/MzMzMzMzwz+4HoXrUbieP7gehetRuI4/AAAAAAAAAAAAAAAAAAAAAMw7f2aeoOY/zTt/Zp6g5j+owayvTAnKv+Z6H1SOXrO/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "c1cf0181b45e7064575f2f02fc3bf76b108b2be8b6d76091ae2e829402440b81",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_03",
+      "task_index": 3,
+      "task_name": "pick_up_the_bbq_sauce_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_04/state_46",
+      "duplicate_of_state_index": null,
+      "language": "pick up the ketchup and place it in the basket",
+      "official_init_index": 46,
+      "selection_rank_sha256": "97b8f3446f37f1742cff79159757108ac8d580346283f2225866a27504233db2",
+      "source_bddl_file": {
+        "bytes": 2099,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_ketchup_and_place_it_in_the_basket.bddl",
+        "sha256": "4a4e545483a3fe30cf0ef3dc05bfe5e6ad5e37c94b4376dfa73fe1b60e75b319"
+      },
+      "source_init_file": {
+        "bytes": 53295,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_ketchup_and_place_it_in_the_basket.pruned_init",
+        "sha256": "b987f7b11e8f9b47353cd7882e1da38ecdf6ec9715ad8a84346583ea71049fd3"
+      },
+      "state": "state_46",
+      "state_bytes_base64": "AAAAAAAAAAAgJ8Z9AbyMP7oUB4Ahq8W/iG41FP/xbD+OY1fLxJQDwAiW7zkCi5u/DSFW6cDeAUAzdKVKuzjoP2PUtfY+VZU/Y9S19j5Vlb+4HoXrUbi+v7gehetRuM6/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP6d61TEeTYC/JFCda91l0D/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/GlARv9uirj+8IQbJWaS5v+tRuB6F66E/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j8zMzMzMzPDv7cehetRuK4/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP5qZmZmZmbk/mpmZmZmZyb+4HoXrUbiOPwAAAAAAAAAAAAAAAAAAAADMO39mnqDmP807f2aeoOY/uxLF4qkjwz/iUloNU4ShPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8D/EwZwvlQbKv29p9FmeSLW/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "5b3b834dec8a241e8dd5deb35fb3278fcb8f6b0177e7722350e5c5627dae8c30",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_04",
+      "task_index": 4,
+      "task_name": "pick_up_the_ketchup_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_05/state_22",
+      "duplicate_of_state_index": null,
+      "language": "pick up the tomato sauce and place it in the basket",
+      "official_init_index": 22,
+      "selection_rank_sha256": "c20e7442286ec88895ad9996d8c3fa145a5afdf8e6436073e7abc43902b93b26",
+      "source_bddl_file": {
+        "bytes": 2117,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_tomato_sauce_and_place_it_in_the_basket.bddl",
+        "sha256": "b1f4bb69d256a05f693838de46182bb0d3de0de68eec350df1b5b1e76f6c136d"
+      },
+      "source_init_file": {
+        "bytes": 53487,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_tomato_sauce_and_place_it_in_the_basket.pruned_init",
+        "sha256": "2326da7ccacd3ebc75d80847f92d2e310b537b8dbbd8a76840a29b13f00f9a65"
+      },
+      "state": "state_22",
+      "state_bytes_base64": "AAAAAAAAAAD8rz7d+eyKPypTy7lQPsW/V5oJJapph79MK+E09M8DwK26tFoDD5q/WAegkW6/AUD4SRDsd9PpP2PUtfY+VZU/Y9S19j5Vlb+amZmZmZmpP5qZmZmZmbm/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP9XaoivQn4s/algcEeTI0D/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/KKQGu4Vsvr85MCKcINvOv+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D9Zqz5q8MvDv0QSehkkMLA/fBSuR+F6dL8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP5qZmZmZmbk/mpmZmZmZyb/rUbgeheuhPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8D/l8e7pvrnJv2YvQgCeUrW/61G4HoXroT/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "962c5cb9f1628c44877a5e340fd0ab2352729af7c3c47320238d5f4e8fb7426d",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_05",
+      "task_index": 5,
+      "task_name": "pick_up_the_tomato_sauce_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_05/state_34",
+      "duplicate_of_state_index": null,
+      "language": "pick up the tomato sauce and place it in the basket",
+      "official_init_index": 34,
+      "selection_rank_sha256": "e90cb363a80439a8906bffb2300405f85162c49016067bed7582676e78951c38",
+      "source_bddl_file": {
+        "bytes": 2117,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_tomato_sauce_and_place_it_in_the_basket.bddl",
+        "sha256": "b1f4bb69d256a05f693838de46182bb0d3de0de68eec350df1b5b1e76f6c136d"
+      },
+      "source_init_file": {
+        "bytes": 53487,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_tomato_sauce_and_place_it_in_the_basket.pruned_init",
+        "sha256": "2326da7ccacd3ebc75d80847f92d2e310b537b8dbbd8a76840a29b13f00f9a65"
+      },
+      "state": "state_34",
+      "state_bytes_base64": "AAAAAAAAAAA7N4XLIGuiv/3IRa63osW/ILrpvgHjkz/eLLUx6I0DwMgcHMt4PnW/VYHfU7jLAUADg8rmFXLpP2PUtfY+VZU/Y9S19j5Vlb+amZmZmZmpP5qZmZmZmbm/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP4qgIw9N34Y/C2m7Q/eI0T/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/oT2Iz5Efv7+wLI3qyFjOv+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D/TvXtNE2bDvxKp0Myfz6w/fBSuR+F6dL8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP5qZmZmZmbk/mpmZmZmZyb/rUbgeheuhPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8D83ijh1d5PIv7tgAlZ+G7K/61G4HoXroT/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "8100a2ce940a0bf5b32b794a02601818f6db2651b52a4a6204dbad89c9b5937c",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_05",
+      "task_index": 5,
+      "task_name": "pick_up_the_tomato_sauce_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_05/state_38",
+      "duplicate_of_state_index": null,
+      "language": "pick up the tomato sauce and place it in the basket",
+      "official_init_index": 38,
+      "selection_rank_sha256": "3d75c214fdbc34646ee88073212171ad4e1d6b70b893452f7f5557bf9cad7b8d",
+      "source_bddl_file": {
+        "bytes": 2117,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_tomato_sauce_and_place_it_in_the_basket.bddl",
+        "sha256": "b1f4bb69d256a05f693838de46182bb0d3de0de68eec350df1b5b1e76f6c136d"
+      },
+      "source_init_file": {
+        "bytes": 53487,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_tomato_sauce_and_place_it_in_the_basket.pruned_init",
+        "sha256": "2326da7ccacd3ebc75d80847f92d2e310b537b8dbbd8a76840a29b13f00f9a65"
+      },
+      "state": "state_38",
+      "state_bytes_base64": "AAAAAAAAAACcZszQ6K+Zv99nGDL7xcW/t6P9Jb9chb/BBfa3EaEDwKUqzFTU/34/2o9RFFvsAUCy1WYCMdPoP2PUtfY+VZU/Y9S19j5Vlb+bmZmZmZmpP5qZmZmZmbm/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP67vD6jDYnI/Hpfa7G5v0T/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/JxTz46XAvb8p/grvGkLPv+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8bszXG8VzDv1UJwgRFkKw/fBSuR+F6dL8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP5qZmZmZmbk/mpmZmZmZyb/rUbgeheuhPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8D/0fWpxIc7Kv5UvJSfnD7S/61G4HoXroT/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "6cb7bee59619629a1b4954f077da5433ca9c2e80d0697ad226bc0d6a80ec5ed8",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_05",
+      "task_index": 5,
+      "task_name": "pick_up_the_tomato_sauce_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_06/state_24",
+      "duplicate_of_state_index": null,
+      "language": "pick up the butter and place it in the basket",
+      "official_init_index": 24,
+      "selection_rank_sha256": "889446038112e31487a73a50d8695241dcc4dd8e7bb10c41fc740c65707c7f0e",
+      "source_bddl_file": {
+        "bytes": 2108,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_butter_and_place_it_in_the_basket.bddl",
+        "sha256": "5d8053b40ff33246fdbcc38548db84032c6bb647b4b88b6646d9cf6b73a5006c"
+      },
+      "source_init_file": {
+        "bytes": 53551,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_butter_and_place_it_in_the_basket.pruned_init",
+        "sha256": "f0925a8653c5902c5a4d78a2053365382ad7d05be7f059abe19c2004ffc5dc59"
+      },
+      "state": "state_24",
+      "state_bytes_base64": "AAAAAAAAAAAlQoWtW5drPyTvK0L078K/+xTH+4rGeT+rqUO4r0wDwEpw5Ljdt3k/RI/LRiwBAkCGUZnqgy7pP2PUtfY+VZU/Y9S19j5Vlb8r72FkDaK/v8aXXuLfaM6/fBSuR+F6dL8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP/aRYaX7WIM/ZwLg88WRzz/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/m5mZmZmZqT+amZmZmZm5v+tRuB6F66E/AAAAAAAAAAAAAAAAAAAAAMw7f2aeoOY/zTt/Zp6g5j8zMzMzMzPDv7cehetRuK4/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP5qZmZmZmbk/mpmZmZmZyb/rUbgeheuhPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/xlWG6KhAwj/0Uth7ylqdP+tRuB6F66E/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j+amZmZmZnJv3wUrkfherS/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "601736172de7b956f1e452f4ae7560d067b510b0c2dc79aa5fa842b68ba0c56b",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_06",
+      "task_index": 6,
+      "task_name": "pick_up_the_butter_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_06/state_45",
+      "duplicate_of_state_index": null,
+      "language": "pick up the butter and place it in the basket",
+      "official_init_index": 45,
+      "selection_rank_sha256": "645914f96527a82f7d6da9ff114de25e0a8eab99a18c4b3b029ea20a03f2e08f",
+      "source_bddl_file": {
+        "bytes": 2108,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_butter_and_place_it_in_the_basket.bddl",
+        "sha256": "5d8053b40ff33246fdbcc38548db84032c6bb647b4b88b6646d9cf6b73a5006c"
+      },
+      "source_init_file": {
+        "bytes": 53551,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_butter_and_place_it_in_the_basket.pruned_init",
+        "sha256": "f0925a8653c5902c5a4d78a2053365382ad7d05be7f059abe19c2004ffc5dc59"
+      },
+      "state": "state_45",
+      "state_bytes_base64": "AAAAAAAAAACjd7qb3pSAvw+LQr2g4ca/FySgAfIgnr82+uUXSV4DwLG4r7510pe/ac7RsGrZAUASC8qJIqrpP2PUtfY+VZU/Y9S19j5Vlb8Y1sG7Y2a/vzeIqyEoms6/fBSuR+F6dL8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwPzSQmz5jNGK/heUOubqXzz/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/mpmZmZmZqT+amZmZmZm5v+tRuB6F66E/AAAAAAAAAAAAAAAAAAAAAMw7f2aeoOY/zTt/Zp6g5j8zMzMzMzPDv7gehetRuK4/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP5qZmZmZmbk/mpmZmZmZyb/rUbgeheuhPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/QCKR9yJPwz/fthq/u/SXP+tRuB6F66E/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j+amZmZmZnJv3sUrkfherS/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "51e8cca8771f5fabafd6d4fbb1aeaa5d2e1e414e9d98b1e45f4dd26a24daaabc",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_06",
+      "task_index": 6,
+      "task_name": "pick_up_the_butter_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_07/state_34",
+      "duplicate_of_state_index": null,
+      "language": "pick up the milk and place it in the basket",
+      "official_init_index": 34,
+      "selection_rank_sha256": "c42c7f069e63c1834f228ff273af33a49d272a387a8d7922eedc485f31d5cba4",
+      "source_bddl_file": {
+        "bytes": 2102,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_milk_and_place_it_in_the_basket.bddl",
+        "sha256": "9910aabf6717e8ba3e24a3f8500d9bce9ee075346ea6961e8fd766f1257d2996"
+      },
+      "source_init_file": {
+        "bytes": 52399,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_milk_and_place_it_in_the_basket.pruned_init",
+        "sha256": "4a86269faf4c98baff4c1428997ac828d00c56922a9a131be94e19b6027e1db2"
+      },
+      "state": "state_34",
+      "state_bytes_base64": "AAAAAAAAAAC+3A+sovumv/g8Y4PQhcO/ReukY8hGgr/jiaxovnkDwMi3AgGX2py/a5wSmAiPAUC8i2b2KM7oP2PUtfY+VZU/Y9S19j5Vlb8zYw95Epm/v9hh+KaYrc6/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgP5lu3NCi/I2/UWg8JbnQ0D/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/oblI5tk3qT9hux5NCbS4vwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8D8zMzMzMzPDv7cehetRuK4/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmP0+xxMNwqbg///Bnnl5uyb98FK5H4Xp0vwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+amZmZmZnJv3sUrkfherS/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "985e0b45119725b70a06c902b675cee9aeb95ac0dd5d23051e719c01f63c4900",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_07",
+      "task_index": 7,
+      "task_name": "pick_up_the_milk_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_08/state_37",
+      "duplicate_of_state_index": null,
+      "language": "pick up the chocolate pudding and place it in the basket",
+      "official_init_index": 37,
+      "selection_rank_sha256": "77525700b474aaa70dc1e4a542219efa389be52bcc104fea600079586e3b31af",
+      "source_bddl_file": {
+        "bytes": 2168,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_chocolate_pudding_and_place_it_in_the_basket.bddl",
+        "sha256": "674ceabc400b7b16d46e8eaf678709d4a633235c7e0a80233775044fe38b19b0"
+      },
+      "source_init_file": {
+        "bytes": 53935,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_chocolate_pudding_and_place_it_in_the_basket.pruned_init",
+        "sha256": "1124189363e76609da182dd92217cd02c41be58e88c42e3949d23ba160da75a5"
+      },
+      "state": "state_37",
+      "state_bytes_base64": "AAAAAAAAAACeMBqm2FZdPxJ+s7ED9MK/DiOCo/+Wqz8LjlAKBJMDwLdo+/ArKVU/v2cfLyTKAUCKnmcrKb7oP2PUtfY+VZU/Y9S19j5Vlb+4HoXrUbi+v7kehetRuM6/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP5kL3z3oaou/3HF+xydS0D/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/mpmZmZmZqT+amZmZmZm5v+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D9SYMYCACHEvxosqVM7Aao/61G4HoXroT/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP5qZmZmZmbk/mpmZmZmZyb/rUbgeheuhPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+amZmZmZnJv3sUrkfherS/uB6F61G4jj8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "ad179d608bea25170973666ae3deec450b8f85494e62633ab1db6e83c59dc64c",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_08",
+      "task_index": 8,
+      "task_name": "pick_up_the_chocolate_pudding_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_08/state_40",
+      "duplicate_of_state_index": null,
+      "language": "pick up the chocolate pudding and place it in the basket",
+      "official_init_index": 40,
+      "selection_rank_sha256": "c64ff9698f8462eef408264bd6fc28b3ee97d64539981f40b539665f6505c7d4",
+      "source_bddl_file": {
+        "bytes": 2168,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_chocolate_pudding_and_place_it_in_the_basket.bddl",
+        "sha256": "674ceabc400b7b16d46e8eaf678709d4a633235c7e0a80233775044fe38b19b0"
+      },
+      "source_init_file": {
+        "bytes": 53935,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_chocolate_pudding_and_place_it_in_the_basket.pruned_init",
+        "sha256": "1124189363e76609da182dd92217cd02c41be58e88c42e3949d23ba160da75a5"
+      },
+      "state": "state_40",
+      "state_bytes_base64": "AAAAAAAAAAD3LZbBsq+Qv+GSndHq+ci/kUwiFCgDpL/uaUTG3jADwLHMNNplhoO/77sl1icMAkAiQ9oiGRPqP2PUtfY+VZU/Y9S19j5Vlb+4HoXrUbi+v7kehetRuM6/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP4b3Oy6vXoY/npzYWm+rzz/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/m5mZmZmZqT+amZmZmZm5v+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+HjpOjPEDEvyT5SLg/Xaw/61G4HoXroT/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP5qZmZmZmbk/mpmZmZmZyb/rUbgeheuhPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+amZmZmZnJv3wUrkfherS/uB6F61G4jj8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "ce91b3ae38aa26b751b04cf630a1a4220c373e2387c235730664d472d7def1ef",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_08",
+      "task_index": 8,
+      "task_name": "pick_up_the_chocolate_pudding_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_08/state_46",
+      "duplicate_of_state_index": null,
+      "language": "pick up the chocolate pudding and place it in the basket",
+      "official_init_index": 46,
+      "selection_rank_sha256": "3fc2e9ae3b51068206f636fa398d68f552b33579a68ba2c70b3f09b46fd99b63",
+      "source_bddl_file": {
+        "bytes": 2168,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_chocolate_pudding_and_place_it_in_the_basket.bddl",
+        "sha256": "674ceabc400b7b16d46e8eaf678709d4a633235c7e0a80233775044fe38b19b0"
+      },
+      "source_init_file": {
+        "bytes": 53935,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_chocolate_pudding_and_place_it_in_the_basket.pruned_init",
+        "sha256": "1124189363e76609da182dd92217cd02c41be58e88c42e3949d23ba160da75a5"
+      },
+      "state": "state_46",
+      "state_bytes_base64": "AAAAAAAAAADGzTM+cyNiP/kHEra868C/75k4IGxQg7/J7su67p8DwH4ZzmcDmoC/c+M76MbKAUAVnMgNRnboP2PUtfY+VZU/Y9S19j5Vlb+4HoXrUbi+v7gehetRuM6/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP0rrLghe2IA/t0ION6UU0D/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/m5mZmZmZqT+amZmZmZm5v+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D9V3QiiYA3Ev0km9/xtUrE/61G4HoXroT/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP5qZmZmZmbk/mpmZmZmZyb/rUbgeheuhPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+amZmZmZnJv3sUrkfherS/uB6F61G4jj8AAAAAAAAAAAAAAAAAAAAAzDt/Zp6g5j/NO39mnqDmPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "6169b44e40e758eec04976ef1f94fb88d62ca6f2300663699da2b5a9a62fa2ef",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_08",
+      "task_index": 8,
+      "task_name": "pick_up_the_chocolate_pudding_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_09/state_26",
+      "duplicate_of_state_index": null,
+      "language": "pick up the orange juice and place it in the basket",
+      "official_init_index": 26,
+      "selection_rank_sha256": "06a10ebd0def6419d37d89bb11f0692bcaee27c46e1589dcdda7e8b37a72f40a",
+      "source_bddl_file": {
+        "bytes": 2132,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_orange_juice_and_place_it_in_the_basket.bddl",
+        "sha256": "6298533e7bcfb83e40779a77fda39216e8cd53f22bf1af6388585dad0abb0b50"
+      },
+      "source_init_file": {
+        "bytes": 52975,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_orange_juice_and_place_it_in_the_basket.pruned_init",
+        "sha256": "35b19ffab1fe08c6457ebd732c37d04b9bc0d22b7ce7de015986092ddddea151"
+      },
+      "state": "state_26",
+      "state_bytes_base64": "AAAAAAAAAADViO4LAjqhP93kAxpSGMe/4Qc78AlMlD/UvflIbJIDwExz0Rmxq5g/PVF+y8r3AUAaSM06ijLpP2PUtfY+VZU/Y9S19j5Vlb+bmZmZmZmpP5qZmZmZmbm/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwhuuupIbII/KxyNIufi0D/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/lZN0vP8zv7+URgvRymHOv3wUrkfhenS/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8D8zMzMzMzPDv7gehetRuK4/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP82n1HHynLc/xyknLt6syb/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+amZmZmZnJv3sUrkfherS/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "4c7bb15e59be7c06f9050c24be2133f6e6733b5f79488730b82427bfe9652c0a",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_09",
+      "task_index": 9,
+      "task_name": "pick_up_the_orange_juice_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=110",
+      "canonical_parent_key": "libero_object/task_09/state_28",
+      "duplicate_of_state_index": null,
+      "language": "pick up the orange juice and place it in the basket",
+      "official_init_index": 28,
+      "selection_rank_sha256": "d4502adb67ae91fbb1f5bf27052ad189420bd72bce3dd8824caec2d20cb05471",
+      "source_bddl_file": {
+        "bytes": 2132,
+        "path": "libero/libero/bddl_files/libero_object/pick_up_the_orange_juice_and_place_it_in_the_basket.bddl",
+        "sha256": "6298533e7bcfb83e40779a77fda39216e8cd53f22bf1af6388585dad0abb0b50"
+      },
+      "source_init_file": {
+        "bytes": 52975,
+        "path": "libero/libero/init_files/libero_object/pick_up_the_orange_juice_and_place_it_in_the_basket.pruned_init",
+        "sha256": "35b19ffab1fe08c6457ebd732c37d04b9bc0d22b7ce7de015986092ddddea151"
+      },
+      "state": "state_28",
+      "state_bytes_base64": "AAAAAAAAAAB73H/98Fh0vx/UvRjt98K/jRr3XiiBfj9aiS7Yb40DwAdpDIltEZI/KKiT0DPFAUCuUcLXT4XpP2PUtfY+VZU/Y9S19j5Vlb+amZmZmZmpP5qZmZmZmbm/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPyQOV56pmWi/fwgAxj1O0D/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/+YlRPptjv79bcnTH8irPv3wUrkfhenS/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8D8zMzMzMzPDv7cehetRuK4/61G4HoXroT8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwP8q72Dg1+Ls/ot/vP3t6yb/rUbgeheuhP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/MzMzMzMzwz+4HoXrUbieP+tRuB6F66E/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D+amZmZmZnJv3sUrkfherS/61G4HoXroT8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "76e392b09e4ed886b5d0ce46c260a6b9c266e4ca2e9767fbdf35262595c0edc4",
+      "state_shape": [
+        110
+      ],
+      "suite": "libero_object",
+      "task": "task_09",
+      "task_index": 9,
+      "task_name": "pick_up_the_orange_juice_and_place_it_in_the_basket"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_00/state_38",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+      "official_init_index": 38,
+      "selection_rank_sha256": "b4d369ae01e56fcc98c6676c054eb15987b0e21b9ae3154171e86fd98cd6543b",
+      "source_bddl_file": {
+        "bytes": 3035,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate.bddl",
+        "sha256": "9b59eb1287802868ad9bc78d58e6d36d4ba31134e679cfdbdf4b0feb660c959b"
+      },
+      "source_init_file": {
+        "bytes": 44271,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate.pruned_init",
+        "sha256": "cbbc73792ce546c9bec181fd328a411d3183074840b282671dee481511381d0a"
+      },
+      "state": "state_38",
+      "state_bytes_base64": "AAAAAAAAAACwjzC1wamhv+lnpop9M8S/E4OSI9TEnD/XGIzx9m0DwAeTqh3Hdpq/LiE3g1rhAUC7INQeD9HpP2PUtfY+VZU/Y9S19j5Vlb9HAfqvoEevv61lKD8MNMs/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP6OtSuMDlMW/duhL3zb11D8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/bmhPS2aNrD9mcYLnE+aVPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j+FXCYug47Kv56AOvKEl8o/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPzz6pnaPZK0/wCTa6iY8yD8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "d6d62a396aa4b2f1a8d776dffa382c48459d0b91139b9e9a46dfbc512156291f",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_00",
+      "task_index": 0,
+      "task_name": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_02/state_23",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl from table center and place it on the plate",
+      "official_init_index": 23,
+      "selection_rank_sha256": "2a5a33ea4cc1bd7afd3231d6b75da2a4af7ba55318088e5d8686b3c1e8c24ebb",
+      "source_bddl_file": {
+        "bytes": 3001,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate.bddl",
+        "sha256": "5e19880ebc844f86b89f63b172aab0b7a89f85b6e6955891f544f0ea7d0795d5"
+      },
+      "source_init_file": {
+        "bytes": 43951,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate.pruned_init",
+        "sha256": "27d5b81d739f969e40c72b6c88699e57a91ea61209946b21c593aae5990689cb"
+      },
+      "state": "state_23",
+      "state_bytes_base64": "AAAAAAAAAAAwaTgNhNGav7husnWtcsW/oy+eE5RhZ7+/daJwPNQDwFeQhSWkdYg/eY+BLYXAAUBRequxsEnqP2PUtfY+VZU/Y9S19j5Vlb80MzMzMzOzvyrOt5Vd8nO/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPxxRn3Y0tYM/N/rjZ2PD0z8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/FWzifJ8Vrz/g0g4OGMSmPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j8ouc22wdLKv43zXTitdcs/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP5eA1stvLrE/gruR/T9QyD8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "bf5cecc05ed846f77a03edc8773ac8dfff0f892a62015199d584c97eb6036a3d",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_02",
+      "task_index": 2,
+      "task_name": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_03/state_20",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl on the cookie box and place it on the plate",
+      "official_init_index": 20,
+      "selection_rank_sha256": "86dfc47d5e46adf60ff1d2d8cd0bcbbecba176ac9e7e5fe64e272dabdf965c20",
+      "source_bddl_file": {
+        "bytes": 2982,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate.bddl",
+        "sha256": "3d4ccf070c3d9883ae0676f2d888588f98c696ddad71b7694f47c379fc99ef36"
+      },
+      "source_init_file": {
+        "bytes": 44143,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate.pruned_init",
+        "sha256": "0627f5f5ce3ef23be546571012be8ef603d93bcb4032bc80feb34937ba580140"
+      },
+      "state": "state_20",
+      "state_bytes_base64": "AAAAAAAAAAAJ/0Eoom+NPwSpTwWvP8W/m3k6zAlImr9ymaEAe2gDwG0n1cnELW6/qWTi8oPJAUCWnZbjy0PpP2PUtfY+VZU/Y9S19j5Vlb+E9Q5j1X+zP/wzFIO3qY8/SOF6FK5H8T/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP9dk8Jn5/Ko/7Dx0+TIm0b8y68VQTrTzP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/hPUOY9V/sz/8MxSDt6mPPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j/VVDlvUqPJv1lPAXdSo8o/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP/I5SOaazrA/AWs3tsFRyz8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "5bf639b823438f205e6aeeb953a702ffcd6fed1de955b41eede3c866bfab7c5f",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_03",
+      "task_index": 3,
+      "task_name": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_03/state_32",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl on the cookie box and place it on the plate",
+      "official_init_index": 32,
+      "selection_rank_sha256": "dae80d4263ded83c902f63dd6ae4416e6fdd77dcb48184a5b901c7a74b6c7919",
+      "source_bddl_file": {
+        "bytes": 2982,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate.bddl",
+        "sha256": "3d4ccf070c3d9883ae0676f2d888588f98c696ddad71b7694f47c379fc99ef36"
+      },
+      "source_init_file": {
+        "bytes": 44143,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate.pruned_init",
+        "sha256": "0627f5f5ce3ef23be546571012be8ef603d93bcb4032bc80feb34937ba580140"
+      },
+      "state": "state_32",
+      "state_bytes_base64": "AAAAAAAAAAADe2NEcfOcPyiSBHVehcG/jw3X11dakj/x3Kb4rJwDwLUvKBPycIs/jH1bLkLxAUCYGJFfcrzoP2PUtfY+VZU/Y9S19j5Vlb8euWNwDiqyP5RaUYPpeqA/SOF6FK5H8T/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP4244Anvn4y/PyjcpGX30b8y68VQTrTzP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/HrljcA4qsj+UWlGD6XqgPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j+ieX2KzYPJvzJIGuSOPMs/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP+TVy7Rc6ak/pmi4XHbUyj8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "61f376d08a78b64ccfd757fdeb8ec6e703b6baa45bf2235959a5781056b05023",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_03",
+      "task_index": 3,
+      "task_name": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_03/state_37",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl on the cookie box and place it on the plate",
+      "official_init_index": 37,
+      "selection_rank_sha256": "cfd6e509207b5394ec0787b8732c3f5768dcb14135cd3a1dc1e2bd4ca62e3ec4",
+      "source_bddl_file": {
+        "bytes": 2982,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate.bddl",
+        "sha256": "3d4ccf070c3d9883ae0676f2d888588f98c696ddad71b7694f47c379fc99ef36"
+      },
+      "source_init_file": {
+        "bytes": 44143,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate.pruned_init",
+        "sha256": "0627f5f5ce3ef23be546571012be8ef603d93bcb4032bc80feb34937ba580140"
+      },
+      "state": "state_37",
+      "state_bytes_base64": "AAAAAAAAAAB36jalOACgv4GkM8yoesi/qPgG0h5RpD+WHMd+1+QDwKeEk+unX52/3w9vxzsCAkADNyWEteDpP2PUtfY+VZU/Y9S19j5Vlb8N55U7eduzP0gZjMtmupE/SOF6FK5H8T/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP1DkLtuizWe/Gl3SLgI10b8y68VQTrTzP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/DeeVO3nbsz9IGYzLZrqRPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j/XhNDCEnHKv03qsJKljcg/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP36b1imRJLI/1aHTSThdyD8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "d1f390a697e27f3809da7c809704a666336b9043b388cf12c1ccccc75eee40c3",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_03",
+      "task_index": 3,
+      "task_name": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_04/state_34",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate",
+      "official_init_index": 34,
+      "selection_rank_sha256": "aa83be0c35de47a91a54c3be220111dc5ed8026d0347f5b0b34c2b4c7c5c3221",
+      "source_bddl_file": {
+        "bytes": 3059,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate.bddl",
+        "sha256": "4371189e11d9fd29bb548ab9a8adcd741bb0ce41bb66c612672d0e8cb29a52a9"
+      },
+      "source_init_file": {
+        "bytes": 44591,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate.pruned_init",
+        "sha256": "deef3df529e0bb57658b973bbb3baf02b02922db065c025a73ebfcd11eb54d46"
+      },
+      "state": "state_34",
+      "state_bytes_base64": "AAAAAAAAAAAd0qpW71ODP2PR3e8oYsm/lYbembWlWj/mWOeYfJIDwC9nOwe1lYC/E5bHLKL+AUCIOHDEZ3vnP2PUtfY+VZU/Y9S19j5Vlb/KD99RK5a0P/JMZ5Dm5sC/Yr68APto8j/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP6ZxNNH3Nag/sEzQldCq0b8y68VQTrTzP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/pP1VAS5rsj92tZODQmWQPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j9L1EDYShTIv4CxxqY94so/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP563jdyPzK0/npzt6UTmyj8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/s0SEs2Lmw78AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "c24aa4881e117caf98fd19fb43993b7dec0544f6708a555e846dd801d86ef624",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_04",
+      "task_index": 4,
+      "task_name": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_05/state_25",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl on the ramekin and place it on the plate",
+      "official_init_index": 25,
+      "selection_rank_sha256": "c46ef5f5d0a84b7944386f2325fe03209efa41d7eea7e60214babda232a8bfb7",
+      "source_bddl_file": {
+        "bytes": 2983,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate.bddl",
+        "sha256": "10239815a9d18ad53e09365d453a362ee54d29ca276e04eef411cf1db8d72940"
+      },
+      "source_init_file": {
+        "bytes": 44079,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate.pruned_init",
+        "sha256": "2d2c50b7dcbf861fffa94d576f217ed34153e57487010d7a109a220d4d97189b"
+      },
+      "state": "state_25",
+      "state_bytes_base64": "AAAAAAAAAADtXU/OZkJ5Pyd8X95at8W/c259uIe2jD9Q1vbEM54DwKiS5uqg3Z2/S1y1zITgAUAhNyHsFdfpP2PUtfY+VZU/Y9S19j5Vlb/9Cn3X6PbHv8V8Z17SsMk/SOF6FK5H8T/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP3udyj9IhbM/piKWGidSnT9I4XoUrkfxP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/e53KP0iFsz+mIpYaJ1KdPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j/9Cn3X6PbHv8V8Z17SsMk/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP7BsIa7WuKk/ya5UfDFFyD8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "00608907c7c1ee3b1dc6095532f2adb6909aa49b0fd7ddfbb62098d0e9c2541c",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_05",
+      "task_index": 5,
+      "task_name": "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_06/state_29",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl next to the cookie box and place it on the plate",
+      "official_init_index": 29,
+      "selection_rank_sha256": "63089285b56a119374ec4c9aabeebb7cfdc0d22eacc5010686b78c8c9a20f015",
+      "source_bddl_file": {
+        "bytes": 3006,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate.bddl",
+        "sha256": "566c65596f3472e752e6522817bff51bbf3ce5159d7bec1d3554e5ead46b1e55"
+      },
+      "source_init_file": {
+        "bytes": 44335,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate.pruned_init",
+        "sha256": "ab86fb7b5942dc0fec762eae57e72bf636106b1c10ad8ce57227723d8eb9a81b"
+      },
+      "state": "state_29",
+      "state_bytes_base64": "AAAAAAAAAAC1oRjcEP9hv1/YvjvmKMW/8So9KxMclb8kYvKru40DwOluddm+UIC/cOgCvkbnAUDbVj91GmjqP2PUtfY+VZU/Y9S19j5Vlb8kWB5W8EO/P5Cq9gGfkLS/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP9Tla/26i9C/aPIfyc/nwL8pXI/C9SjwP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/vROK68+UsD8nyBv1R8GZPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j8SFEVhdZHJv+pZT0mMHck/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP6h3E4Tv06k/mJSFgm1IyT8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "d49eda8bea7a30f58f8a9f681601944ae69ab1404d97c9cff41dcc41f1398390",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_06",
+      "task_index": 6,
+      "task_name": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_06/state_37",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl next to the cookie box and place it on the plate",
+      "official_init_index": 37,
+      "selection_rank_sha256": "24cebddc7129f8a9c54e5ff748765740d653f5a82fb5a6de646eda98b88b1aaf",
+      "source_bddl_file": {
+        "bytes": 3006,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate.bddl",
+        "sha256": "566c65596f3472e752e6522817bff51bbf3ce5159d7bec1d3554e5ead46b1e55"
+      },
+      "source_init_file": {
+        "bytes": 44335,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate.pruned_init",
+        "sha256": "ab86fb7b5942dc0fec762eae57e72bf636106b1c10ad8ce57227723d8eb9a81b"
+      },
+      "state": "state_37",
+      "state_bytes_base64": "AAAAAAAAAAAjE9A7JpSRvwH+FePGSMe/YNpr+6aGlj8u+PvYV04DwFiWu4uvi5w/p5zasSvmAUD2QEyc8F/pP2PUtfY+VZU/Y9S19j5Vlb+8akQjCHnAP+XqjsxGeLW/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP/IR7aSsftC/BeIGkCM0wr8pXI/C9SjwP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/gU73ADkmtT90xfo0dOClPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j/M4ag67g7Jvx7fKM38Psk/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP1Y5QS93C60/6AhX0rKCyD8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "6491c07f5d0688acddc2c73c339a36de5d96d866e8074a05962bbcfcc538e618",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_06",
+      "task_index": 6,
+      "task_name": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_07/state_39",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl on the stove and place it on the plate",
+      "official_init_index": 39,
+      "selection_rank_sha256": "f44e374c545cb18962d3518456134827f86cbf0005036b1e12b19bc97d4232e4",
+      "source_bddl_file": {
+        "bytes": 2991,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate.bddl",
+        "sha256": "dd11837141a30d874ebbbfaae20e91ecc67ec85ab3872ceb4cff3abfcbef7cb0"
+      },
+      "source_init_file": {
+        "bytes": 44335,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate.pruned_init",
+        "sha256": "ea9cba2814bc166f3682f3f5a97329467839bcf584069cd419191b6c17adae25"
+      },
+      "state": "state_39",
+      "state_bytes_base64": "AAAAAAAAAAB45ZvanWhzv+TT9v5S88G/7FvcmwESiL+2VBFKK64DwEPdslngoWg/Ynjd1WG9AUDXoyVC4NLpP2PUtfY+VZU/Y9S19j5Vlb8mXw3+LeXQvww2O2YdMMK/KVyPwvUo8D/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP6wbXH/6n6I/eHvsa09w0b8y68VQTrTzP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/UaQ3ylgIrj/GKGnU8OuePwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j+5JkJUJjDKv04Zx9V0J8o/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP4urHoGMBqs/tUGW1Vt8yz8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "497a4cf12035582bdf5773dec0a5c132bf7c18dcaa910320c51ea470fb653f3d",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_07",
+      "task_index": 7,
+      "task_name": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_07/state_41",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl on the stove and place it on the plate",
+      "official_init_index": 41,
+      "selection_rank_sha256": "6db64a8d3291d9d026f566273aae25c33592838ffc1acf9bb18d71c5793c7cb8",
+      "source_bddl_file": {
+        "bytes": 2991,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate.bddl",
+        "sha256": "dd11837141a30d874ebbbfaae20e91ecc67ec85ab3872ceb4cff3abfcbef7cb0"
+      },
+      "source_init_file": {
+        "bytes": 44335,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate.pruned_init",
+        "sha256": "ea9cba2814bc166f3682f3f5a97329467839bcf584069cd419191b6c17adae25"
+      },
+      "state": "state_41",
+      "state_bytes_base64": "AAAAAAAAAAB0y8SE7x1hv3EcjuVYv8G/kWW75KXynb+oYdqnrkYDwPpldByl36I/T/H4PWvGAUAPpUWcdmvpP2PUtfY+VZU/Y9S19j5Vlb9kO6/TtMzRvyR8FQ+I2MO/KVyPwvUo8D/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP6nusVk3E4G/barPHRLM0b8y68VQTrTzP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AU0kKYq6tD+OuUVVkw6dPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j9bovcm9xrJv7B23Km7WMk/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP/xFzp3qWqc/FrFPB5F9yz8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "a93eb7af2c611393399f3946bd027719410801021a2f8dedd8a1015d75eca2af",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_07",
+      "task_index": 7,
+      "task_name": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_07/state_46",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl on the stove and place it on the plate",
+      "official_init_index": 46,
+      "selection_rank_sha256": "83bd0d83872c3ed1c771e171a62563e8139ab221ec615ae43fdc092b7ddf7042",
+      "source_bddl_file": {
+        "bytes": 2991,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate.bddl",
+        "sha256": "dd11837141a30d874ebbbfaae20e91ecc67ec85ab3872ceb4cff3abfcbef7cb0"
+      },
+      "source_init_file": {
+        "bytes": 44335,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate.pruned_init",
+        "sha256": "ea9cba2814bc166f3682f3f5a97329467839bcf584069cd419191b6c17adae25"
+      },
+      "state": "state_46",
+      "state_bytes_base64": "AAAAAAAAAABVi4YUN5qPP50R1owZpsa/I2NKmOBNgz/4+fhPtpUDwCXY/5hnrYm/t2jqH3QbAkCO7tJ+h8noP2PUtfY+VZU/Y9S19j5Vlb9Ah/3KPqjRvy9Rj+2hxsG/KVyPwvUo8D/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPylJmi8ME4M/SQnCT9w/0r8y68VQTrTzP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/183/Qo9dtD8A1qbGNc+gPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j8qRv5vs4vJvzvhj8Xl3Mc/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP6ScmgXytLE/adY0fDvQxz8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "b4b750ba08ebb49b241f0db8542aa9b604a8c8f7ba373c9fb598509081aad6a0",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_07",
+      "task_index": 7,
+      "task_name": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_08/state_35",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl next to the plate and place it on the plate",
+      "official_init_index": 35,
+      "selection_rank_sha256": "e2049190ebae3aaaa970cb267418f658bc15e4f6c28252423e9337bdda4c755f",
+      "source_bddl_file": {
+        "bytes": 3011,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate.bddl",
+        "sha256": "c8fbb9effa27b947d04d26862d75273d93cac1806734e53836cd472a08aec1fe"
+      },
+      "source_init_file": {
+        "bytes": 44079,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate.pruned_init",
+        "sha256": "f43df2d80042130ac8770590d83f1a1e6fd4df7479aebc392aa2ed6e3bd0b83e"
+      },
+      "state": "state_35",
+      "state_bytes_base64": "AAAAAAAAAABcQeyUIu2YPzD6O4cHyMO/VTwAHhOErD9Lg4t9nX4DwEktCMyFWaE/RFpmKFeOAUCX0m1D6EroP2PUtfY+VZU/Y9S19j5Vlb8QdVoXZxmCP54/DwJWUdM/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPyOg7k7GTcW/yo0yobKU0z8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/rasLST1ftD+oY9WYHgWQPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j//K4DBpYLJv4ucU0/rhMk/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP0GS+RvdmrI/pCV3Ug4gyz8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "ea53e34950bb83d11c90daeeb4cfce6faa13189e1d8ca2819334894e9691bd7d",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_08",
+      "task_index": 8,
+      "task_name": "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_09/state_29",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl on the wooden cabinet and place it on the plate",
+      "official_init_index": 29,
+      "selection_rank_sha256": "4a60caa5d12de80482f727fd6dde4af7073837be1c90ca4417f738058d116798",
+      "source_bddl_file": {
+        "bytes": 3000,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate.bddl",
+        "sha256": "5293e759381b477e126beaf83d738542bbd4d93f522a3eead1066e612bad4a8c"
+      },
+      "source_init_file": {
+        "bytes": 44335,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate.pruned_init",
+        "sha256": "08b0ac928dcc524a66d963851a6a4eece9aeb782b38466006e403a70e3287867"
+      },
+      "state": "state_29",
+      "state_bytes_base64": "AAAAAAAAAACIZuNFGJB9PxHa57Ann8i/YcwjRvXQkb/26lb/TVoDwPZqEhdb4KC/TmWV1qCZAUC0x5IxzqXpP2PUtfY+VZU/Y9S19j5Vlb+ggksuRTOvP1eIK3vu+NK/MuvFUE608z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPzBl4WJG3NC/3Ket6EAjwb8pXI/C9SjwP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/JxAmbBUXsj8hi2rlbgidPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j/0FCzHAUHKv0xvMkscEMo/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmPwIYoY2CVKo/oh6MKq+XyD8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "ce2a2922ca215609f13825e6fb008d5586dadd6e5fd94cabb2258f8a73d9e769",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_09",
+      "task_index": 9,
+      "task_name": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate"
+    },
+    {
+      "canonical_encoding": "STAGE_AC_INIT_STATE_CANONICAL_NUMERIC_V1|dtype=<f8|order=C|shape=92",
+      "canonical_parent_key": "libero_spatial/task_09/state_30",
+      "duplicate_of_state_index": null,
+      "language": "pick up the black bowl on the wooden cabinet and place it on the plate",
+      "official_init_index": 30,
+      "selection_rank_sha256": "73b4d843070b26b3f18bf3ee957ea9d50f99f732e679e6641cf1b8fe0be502c3",
+      "source_bddl_file": {
+        "bytes": 3000,
+        "path": "libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate.bddl",
+        "sha256": "5293e759381b477e126beaf83d738542bbd4d93f522a3eead1066e612bad4a8c"
+      },
+      "source_init_file": {
+        "bytes": 44335,
+        "path": "libero/libero/init_files/libero_spatial/pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate.pruned_init",
+        "sha256": "08b0ac928dcc524a66d963851a6a4eece9aeb782b38466006e403a70e3287867"
+      },
+      "state": "state_30",
+      "state_bytes_base64": "AAAAAAAAAABKQYP2ZPt/P3//Lbs2AMO/9SXWgNhmhT9fMhTiTkgDwCFAf6nE/46/ToRQY4lqAUBPlSjlLhPpP2PUtfY+VZU/Y9S19j5Vlb/keO8LgDuRP2bLhN/emNK/MuvFUE608z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP56VHQQ0rdC/e8vyVt8xwr8pXI/C9SjwP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/7K9GQdHJsD+LBq1UwKimPwrXo3A9Cu8/zDt/Zp6g5j8AAAAAAAAAAAAAAAAAAAAAzTt/Zp6g5j+jQPlTYpHJv5lewukptMo/CtejcD0K7z/MO39mnqDmPwAAAAAAAAAAAAAAAAAAAADNO39mnqDmP6AXEu5l4Ks/+p+TOpS7yD8K16NwPQrvP8w7f2aeoOY/AAAAAAAAAAAAAAAAAAAAAM07f2aeoOY/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "state_dtype": "<f8",
+      "state_sha256": "ed9e2a6d1c75e22321c695f7e9c926da2af2401ad04d4382b54dcad6b6b27cb3",
+      "state_shape": [
+        92
+      ],
+      "suite": "libero_spatial",
+      "task": "task_09",
+      "task_index": 9,
+      "task_name": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate"
+    }
+  ],
+  "fresh_set_sha256": "6d79daf431c9f3d4e87cf28ab79ce6dc4a16cb75a97b4106f31f088f913e5832",
+  "gate": "STAGE_AC_AC1R1_OFFICIAL_INIT_STATE_UNIVERSE_EXPANSION_AND_MODEL_SPECIFIC_REPLICATION_PROGRAM_V1",
+  "schema": "STAGE_AC_AC1R1_FRESH_UNIVERSE_V1",
+  "selected_parent_keys": [],
+  "selected_rows": [],
+  "selection": {
+    "all_tasks_have_target_capacity": false,
+    "duplicate_count": 0,
+    "fresh_count": 48,
+    "parents_per_task": 8,
+    "selection_capacity_ok": false,
+    "selection_salt": "STAGE_AC_AC2_FRESH_PARENT_SELECTION_V1_20260827",
+    "target_parent_count": 240,
+    "task_counts": {
+      "libero_10/task_00": 2,
+      "libero_10/task_01": 0,
+      "libero_10/task_02": 2,
+      "libero_10/task_03": 2,
+      "libero_10/task_04": 1,
+      "libero_10/task_05": 1,
+      "libero_10/task_06": 2,
+      "libero_10/task_07": 1,
+      "libero_10/task_08": 2,
+      "libero_10/task_09": 2,
+      "libero_object/task_00": 2,
+      "libero_object/task_01": 1,
+      "libero_object/task_02": 2,
+      "libero_object/task_03": 1,
+      "libero_object/task_04": 1,
+      "libero_object/task_05": 3,
+      "libero_object/task_06": 2,
+      "libero_object/task_07": 1,
+      "libero_object/task_08": 3,
+      "libero_object/task_09": 2,
+      "libero_spatial/task_00": 1,
+      "libero_spatial/task_01": 0,
+      "libero_spatial/task_02": 1,
+      "libero_spatial/task_03": 3,
+      "libero_spatial/task_04": 1,
+      "libero_spatial/task_05": 1,
+      "libero_spatial/task_06": 2,
+      "libero_spatial/task_07": 3,
+      "libero_spatial/task_08": 1,
+      "libero_spatial/task_09": 2
+    }
+  },
+  "status": "STAGE_AC_AC1R1_NEW_POPULATION_CAPACITY_HOLD_STOP_FOR_PI"
+}
