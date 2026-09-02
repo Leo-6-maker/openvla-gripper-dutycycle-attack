@@ -1,0 +1,13 @@
+episode_key,event_id,object_body_name,object_joint_name,target_body_or_site_name,binding_source,binding_confidence_class,close_onset_step,grasp_established_step,lift_onset_step,stable_carry_start,teacher_window_start,teacher_anchor_step,teacher_window_end,release_onset_step,timing_status,event_valid,event_invalid_reason
+libero_10|5|2|0|CLEAN,libero_10|5|2|0|CLEAN|event0,black_book_1_main,,study_table_desk_caddy_init_region,ontology_alias_body_site_match,medium,60,60,61,62,58,60,68,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_10|5|4|0|CLEAN,libero_10|5|4|0|CLEAN|event0,black_book_1_main,,study_table_desk_caddy_init_region,ontology_alias_body_site_match,medium,62,62,63,64,60,62,70,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_goal|6|4|0|CLEAN,libero_goal|6|4|0|CLEAN|event0,cream_cheese_1_main,,main_table_akita_black_bowl_region,ontology_alias_body_site_match,medium,36,36,37,38,34,36,44,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_goal|1|2|0|CLEAN,libero_goal|1|2|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_stove_front_region,ontology_alias_body_site_match,medium,31,31,32,33,29,31,39,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_spatial|7|9|0|CLEAN,libero_spatial|7|9|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_plate_region,ontology_alias_body_site_match,medium,51,51,52,53,49,51,59,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_spatial|8|7|0|CLEAN,libero_spatial|8|7|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_plate_region,ontology_alias_body_site_match,medium,48,48,49,50,46,48,56,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_10|5|5|0|CLEAN,libero_10|5|5|0|CLEAN|event0,black_book_1_main,,study_table_desk_caddy_init_region,ontology_alias_body_site_match,medium,59,59,60,61,57,59,67,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_10|5|6|0|CLEAN,libero_10|5|6|0|CLEAN|event0,black_book_1_main,,study_table_desk_caddy_init_region,ontology_alias_body_site_match,medium,56,56,57,58,54,56,64,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_goal|2|8|0|CLEAN,libero_goal|2|8|0|CLEAN|event0,wine_bottle_1_main,,wooden_cabinet_1_cabinet_top,ontology_alias_body_site_match,medium,290,290,291,292,288,290,298,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_goal|1|8|0|CLEAN,libero_goal|1|8|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_stove_front_region,ontology_alias_body_site_match,medium,40,40,41,42,38,40,48,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_spatial|3|7|0|CLEAN,libero_spatial|3|7|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_plate_region,ontology_alias_body_site_match,medium,57,57,58,59,55,57,65,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_spatial|3|1|0|CLEAN,libero_spatial|3|1|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_plate_region,ontology_alias_body_site_match,medium,49,49,50,51,47,49,57,,HEURISTIC_CLOSE_ONSET_WINDOW,True,

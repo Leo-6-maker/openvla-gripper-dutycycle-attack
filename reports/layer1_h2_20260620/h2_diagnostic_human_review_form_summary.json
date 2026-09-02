@@ -1,0 +1,16 @@
+{
+  "abstain_or_fail_closed_rows": 18,
+  "accepted_event_rows": 6,
+  "codex_populated_human_judgments": false,
+  "completed_review_rows": 0,
+  "errors": [],
+  "final_blind_selection": "NOT_RUN",
+  "layer2_or_attack_execution": "NOT_RUN",
+  "output_csv": "tables\\layer1_h2_20260620\\h2_diagnostic_human_review_form_template.csv",
+  "queue_csv": "tables\\layer1_h2_20260620\\blind_review_queue.csv",
+  "require_completed": false,
+  "row_count": 24,
+  "timestamp": "2026-06-20T20:28:33.011880+08:00",
+  "validation_error_count": 0,
+  "validation_status": "PASS"
+}

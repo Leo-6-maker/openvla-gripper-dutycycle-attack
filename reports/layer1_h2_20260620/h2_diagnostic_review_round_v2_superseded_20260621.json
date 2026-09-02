@@ -1,0 +1,9 @@
+{
+  "completed_review_rows": 0,
+  "new_proposal_version": "h2_diagnostic_review_package_v2_1",
+  "proposal_version": "h2_diagnostic_review_package_v2",
+  "reason": "provenance and completed-validator corrections",
+  "review_round_id": "h2_diagnostic_review_round_v2_20260620",
+  "status": "SUPERSEDED_BEFORE_HUMAN_REVIEW",
+  "superseded_by": "h2_diagnostic_review_round_v2_1_20260621"
+}

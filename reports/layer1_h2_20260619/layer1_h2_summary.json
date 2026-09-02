@@ -1,0 +1,137 @@
+{
+  "blind_review_queue.csv": {
+    "forbidden_fields_present": [],
+    "mechanism_type": {
+      "articulated_only": 3,
+      "mixed_articulated_pick_place": 4,
+      "multi_object_transfer": 4,
+      "push_or_planar": 1,
+      "single_object_pick_place": 12
+    },
+    "rows": 24,
+    "suite": {
+      "libero_10": 8,
+      "libero_goal": 12,
+      "libero_spatial": 4
+    },
+    "teacher_status": {
+      "CORRECT_SEMANTIC_ABSTAIN": 4,
+      "ELIGIBLE_EVENT": 12,
+      "MULTI_EVENT_AUDIT_ONLY": 8
+    },
+    "video_status": {
+      "symlink": 24
+    }
+  },
+  "layer1_blind_review_manifest_v1.csv": {
+    "forbidden_fields_present": [],
+    "mechanism_group": {
+      "primary_single_object": 12,
+      "semantic_abstain": 4,
+      "supplementary_event_audit": 8
+    },
+    "mechanism_type": {
+      "articulated_only": 3,
+      "mixed_articulated_pick_place": 4,
+      "multi_object_transfer": 4,
+      "push_or_planar": 1,
+      "single_object_pick_place": 12
+    },
+    "rows": 24,
+    "selection_bucket": {
+      "libero_10|primary_single_object|failure": 2,
+      "libero_10|primary_single_object|success": 2,
+      "libero_10|supplementary_event_audit|failure": 2,
+      "libero_10|supplementary_event_audit|success": 2,
+      "libero_goal|primary_single_object|failure": 2,
+      "libero_goal|primary_single_object|success": 2,
+      "libero_goal|semantic_abstain|failure": 2,
+      "libero_goal|semantic_abstain|success": 2,
+      "libero_goal|supplementary_event_audit|failure": 2,
+      "libero_goal|supplementary_event_audit|success": 2,
+      "libero_spatial|primary_single_object|failure": 2,
+      "libero_spatial|primary_single_object|success": 2
+    },
+    "suite": {
+      "libero_10": 8,
+      "libero_goal": 12,
+      "libero_spatial": 4
+    }
+  },
+  "layer1_dev_canary_manifest_v1.csv": {
+    "forbidden_fields_present": [],
+    "mechanism_group": {
+      "primary_single_object": 8,
+      "semantic_abstain": 2,
+      "supplementary_event_audit": 2
+    },
+    "mechanism_type": {
+      "articulated_only": 2,
+      "mixed_articulated_pick_place": 1,
+      "multi_object_transfer": 1,
+      "single_object_pick_place": 8
+    },
+    "rows": 12,
+    "selection_bucket": {
+      "goal_negative_or_abstain": 2,
+      "goal_primary_success": 2,
+      "libero10_multi_or_mixed": 2,
+      "libero10_single_event": 2,
+      "spatial_primary": 4
+    },
+    "suite": {
+      "libero_10": 4,
+      "libero_goal": 4,
+      "libero_spatial": 4
+    }
+  },
+  "resolver_blind_review_teacher_episode_labels_v1.csv": {
+    "forbidden_fields_present": [],
+    "mechanism_type": {
+      "articulated_only": 3,
+      "mixed_articulated_pick_place": 4,
+      "multi_object_transfer": 4,
+      "push_or_planar": 1,
+      "single_object_pick_place": 12
+    },
+    "rows": 24,
+    "suite": {
+      "libero_10": 8,
+      "libero_goal": 12,
+      "libero_spatial": 4
+    },
+    "teacher_status": {
+      "CORRECT_SEMANTIC_ABSTAIN": 4,
+      "ELIGIBLE_EVENT": 12,
+      "MULTI_EVENT_AUDIT_ONLY": 8
+    }
+  },
+  "resolver_blind_review_teacher_event_labels_v1.csv": {
+    "forbidden_fields_present": [],
+    "rows": 12
+  },
+  "resolver_dev_canary_teacher_episode_labels_v1.csv": {
+    "forbidden_fields_present": [],
+    "mechanism_type": {
+      "articulated_only": 2,
+      "mixed_articulated_pick_place": 1,
+      "multi_object_transfer": 1,
+      "single_object_pick_place": 8
+    },
+    "rows": 12,
+    "suite": {
+      "libero_10": 4,
+      "libero_goal": 4,
+      "libero_spatial": 4
+    },
+    "teacher_status": {
+      "CORRECT_SEMANTIC_ABSTAIN": 2,
+      "ELIGIBLE_EVENT": 8,
+      "MULTI_EVENT_AUDIT_ONLY": 2
+    }
+  },
+  "resolver_dev_canary_teacher_event_labels_v1.csv": {
+    "forbidden_fields_present": [],
+    "rows": 8
+  }
+}

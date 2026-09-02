@@ -1,0 +1,7 @@
+episode_key,episode_path,step_rows,frame_index_rows,sim_body_xpos_rows,mp4_frames,close_onset_step,grasp_established_step,lift_onset_step,stable_carry_start,teacher_window_start,teacher_window_end,step_frame_offset,sim_row_to_action_step_offset,video_frame_to_step_offset,status
+libero_spatial|4|1|0|CLEAN,/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397/A/waveA_libero_spatial_t04_s01,158,158,158,158,58,58,94,94,56,133,0,0,0,PASS
+libero_spatial|9|3|0|CLEAN,/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397/A/waveA_libero_spatial_t09_s03,118,118,118,118,42,42,61,61,40,106,0,0,0,PASS
+libero_spatial|3|4|0|CLEAN,/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397/A/waveA_libero_spatial_t03_s04,86,86,86,86,50,50,64,64,48,71,0,0,0,PASS
+libero_spatial|2|9|0|CLEAN,/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397/B/waveB_libero_spatial_t02_s09,117,117,117,117,54,54,76,76,52,96,0,0,0,PASS
+libero_goal|1|4|0|CLEAN,/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397/A/waveA_libero_goal_t01_s04,91,91,91,91,42,42,59,59,40,90,0,0,0,PASS
+libero_goal|4|5|0|CLEAN,/data/liuyu/outputs/cross_suite_clean_300_20260619_waveb_worker15_6379397/B/waveB_libero_goal_t04_s05,91,91,91,91,34,34,49,49,32,90,0,0,0,PASS

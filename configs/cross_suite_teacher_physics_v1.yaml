@@ -1,0 +1,28 @@
+physics_version: cross_suite_teacher_physics_v1
+coordinate_frame: MuJoCo world coordinates from sim_state_stream.npz
+sim_state_timing_convention: one_sim_state_row_per_executed_action_step
+sim_row_to_action_step_offset: 0
+video_frame_to_step_offset: 0
+timing_alignment_evidence: reports/layer1_h2_20260620/timing_alignment_contract_20260620.md
+freeze_policy:
+  threshold_scope: development_canary_only_until_h2_freeze
+  blind_set_tuning: forbidden
+  clean300_full_batch_tuning: forbidden
+  layer2_result_back_tuning: forbidden
+thresholds:
+  object_gripper_near_m: 0.12
+  object_gripper_separated_m: 0.18
+  object_lift_delta_m: 0.025
+  object_lift_lookahead_frames: 4
+  stable_carry_min_frames: 3
+  grasp_min_frames: 2
+  object_target_near_m: 0.14
+  max_close_to_grasp_delay_frames: 1
+  motion_coupling_max_delta_m: 0.06
+  orientation_jump_max: 0.25
+notes:
+  - Event existence requires grasp, lift, and stable carry.
+  - Event phases must satisfy close_onset < grasp_established < lift_onset <= stable_carry_start < window_end.
+  - Carry requires sustained object-gripper proximity plus coupled object/EEF motion; collision-only displacement is rejected.
+  - Target proximity is placement/outcome metadata, not an event-existence requirement.
+  - Gripper site binding must be exact and unique; no site-index fallback is allowed.

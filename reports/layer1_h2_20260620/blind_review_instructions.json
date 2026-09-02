@@ -1,0 +1,22 @@
+{
+  "blindness": "No detector telemetry, detector overlay, VIS/RAND/shuffled, or attack outputs are included. Teacher-only overlays contain only resolver proposal markers.",
+  "holdout_role": "diagnostic_only_observed_during_resolver_development_not_final_unbiased_validation",
+  "manifest": "/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/manifests/layer1_blind_review_manifest_v1.json",
+  "manual_review_complete": false,
+  "package_type": "resolver_diagnostic_holdout_review_package_v1",
+  "required_human_fields": [
+    "reviewer_id",
+    "object_binding_correct",
+    "target_binding_correct",
+    "mechanism_correct",
+    "event_count_correct",
+    "timing_window_correct",
+    "abstention_correct",
+    "corrected_window_start",
+    "corrected_window_end",
+    "disagreement_reason",
+    "review_timestamp"
+  ],
+  "resolver_dir": "/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/diagnostic_resolver",
+  "review_count": 24
+}

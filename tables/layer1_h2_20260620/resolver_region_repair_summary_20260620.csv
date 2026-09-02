@@ -1,0 +1,3 @@
+split,episode_rows,event_rows,eligible_event,target_binding_failed,target_binding_ambiguous,correct_semantic_abstain,resolver_not_implemented,no_relevant_grasp_event,target_binding_ambiguous_status
+dev,12,6,6,2,2,2,2,0,2
+diagnostic,24,6,6,9,3,4,8,2,4

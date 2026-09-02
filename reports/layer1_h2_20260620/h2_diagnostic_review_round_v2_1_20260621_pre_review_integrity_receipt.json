@@ -1,0 +1,56 @@
+{
+  "computed_sha256": {
+    "media_manifest_sha256": "01d951d5fc6523a15137f84fcfe6a8cade58bcfdf1c86d75397f1b52713fb3ba",
+    "overlay_only_manifest_sha256": "bc38e00735083d1da26ae8244345138de24c2d9beb6c46d23395d8b763e4b9ad",
+    "review_form_sha256": "0340c6aa37bcbe9a92239f3c40c8cd7dbcb4a31e8dbf0552284295a3fbeac3df",
+    "reviewer_a_form_sha256": "0340c6aa37bcbe9a92239f3c40c8cd7dbcb4a31e8dbf0552284295a3fbeac3df",
+    "reviewer_b_initial_form_sha256": "6848e7d6c367b370a86973c5c58ad3daf0fa86d82cd6f8a7535066fa520b7f97",
+    "timeline_manifest_sha256": "2beeccab8f087dcbbc632d280d011751de5b1a33046d7fe7bd465e3dc79fc1d9"
+  },
+  "errors": [],
+  "final_blind_selection": "NOT_RUN",
+  "forbidden_field_tokens_checked": [
+    "task_success",
+    "detector",
+    "emit",
+    "probability",
+    "pred_phase",
+    "predicted_phase",
+    "vis",
+    "rand",
+    "shuffled",
+    "oracle",
+    "attack"
+  ],
+  "human_fields_nonempty_count": {
+    "form": 0,
+    "reviewer_a": 0,
+    "reviewer_b_initial": 0
+  },
+  "layer2_or_attack_execution": "NOT_RUN",
+  "manifest_json": "reports\\layer1_h2_20260620\\h2_diagnostic_review_round_v2_1_manifest.json",
+  "media_counts": {
+    "raw_video|exists=true": 36,
+    "teacher_overlay_mp4|exists=true": 36,
+    "teacher_timeline_csv|exists=true": 36
+  },
+  "review_round_id": "h2_diagnostic_review_round_v2_1_20260621",
+  "reviewer_a_rows": 36,
+  "reviewer_b_initial_rows": 20,
+  "status": "PASS",
+  "timestamp": "2026-06-21T01:26:56.796104+08:00",
+  "working_copies": {
+    "reviewer_a_working_copy": {
+      "source_path": "tables\\layer1_h2_20260620\\reviewer_A_h2_diagnostic_review_round_v2_1.csv",
+      "source_sha256": "0340c6aa37bcbe9a92239f3c40c8cd7dbcb4a31e8dbf0552284295a3fbeac3df",
+      "working_copy_path": "human_reviews\\in_progress\\reviewer_A_h2_diagnostic_review_round_v2_1_WORKING_COPY.csv",
+      "working_copy_sha256": "0340c6aa37bcbe9a92239f3c40c8cd7dbcb4a31e8dbf0552284295a3fbeac3df"
+    },
+    "reviewer_b_initial_working_copy": {
+      "source_path": "tables\\layer1_h2_20260620\\reviewer_B_initial_h2_diagnostic_review_round_v2_1.csv",
+      "source_sha256": "6848e7d6c367b370a86973c5c58ad3daf0fa86d82cd6f8a7535066fa520b7f97",
+      "working_copy_path": "human_reviews\\in_progress\\reviewer_B_initial_h2_diagnostic_review_round_v2_1_WORKING_COPY.csv",
+      "working_copy_sha256": "6848e7d6c367b370a86973c5c58ad3daf0fa86d82cd6f8a7535066fa520b7f97"
+    }
+  }
+}

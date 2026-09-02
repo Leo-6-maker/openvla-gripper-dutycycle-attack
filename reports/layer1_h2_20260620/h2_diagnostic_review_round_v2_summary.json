@@ -1,0 +1,23 @@
+{
+  "abstain_or_fail_closed_rows": 24,
+  "accepted_event_rows": 12,
+  "completed_review_rows": 0,
+  "dev_rows": 12,
+  "diagnostic_rows": 24,
+  "errors": [],
+  "final_blind_selection": "NOT_RUN",
+  "layer2_or_attack_execution": "NOT_RUN",
+  "nonempty_human_field_count": 0,
+  "overlay_manifest_sha256": "01d951d5fc6523a15137f84fcfe6a8cade58bcfdf1c86d75397f1b52713fb3ba",
+  "proposal_version": "h2_diagnostic_review_package_v2",
+  "require_completed": false,
+  "review_round_id": "h2_diagnostic_review_round_v2_20260620",
+  "reviewer_a_rows": 36,
+  "reviewer_b_initial_rows": 20,
+  "row_count": 36,
+  "timeline_manifest_sha256": "2beeccab8f087dcbbc632d280d011751de5b1a33046d7fe7bd465e3dc79fc1d9",
+  "timestamp": "2026-06-21T00:01:06.934482+08:00",
+  "validation_error_count": 0,
+  "validation_mode": "template_or_partial",
+  "validation_status": "PASS"
+}
