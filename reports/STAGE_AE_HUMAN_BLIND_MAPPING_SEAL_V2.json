@@ -1,0 +1,69 @@
+{
+  "counts": {
+    "frozen_slots": 96,
+    "future_label_rows": 273,
+    "missing_frozen_videos": 5,
+    "present_videos": 91,
+    "reviewers": [
+      "HR1",
+      "HR2",
+      "HR3"
+    ]
+  },
+  "firewall": {
+    "human_labels_read": false,
+    "mapping_in_package": false,
+    "source_video_bytes_changed": false,
+    "unblind_performed": false
+  },
+  "mapping": {
+    "bytes": 94237,
+    "path": "reports/STAGE_AE_HUMAN_BLIND_MAPPING_V2.json",
+    "sha256": "619891ec252bbdd5eec56a3398cc0af2c140db082c3804948680733e586cf73b"
+  },
+  "order_manifests": {
+    "HR1": {
+      "bytes": 1694,
+      "clip_count": 91,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V2/HR1_ORDER_MANIFEST_V2.json",
+      "sha256": "3788870dd931bd63fd6e03eb52443edbc9855a62eb2dee23841108619b81e8be"
+    },
+    "HR2": {
+      "bytes": 1694,
+      "clip_count": 91,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V2/HR2_ORDER_MANIFEST_V2.json",
+      "sha256": "cd6c2eb697330f51b131309025975109783b971efecfe4f7f48013afff344459"
+    },
+    "HR3": {
+      "bytes": 1694,
+      "clip_count": 91,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V2/HR3_ORDER_MANIFEST_V2.json",
+      "sha256": "6d5e62f31c0e471620782891fe12b000ab2bc473945d4096200ec2c1f74bb252"
+    }
+  },
+  "reviewer_packages": {
+    "HR1": {
+      "bytes": 1943458,
+      "path": "stage-ae-human-review-HR1-v2.zip",
+      "sha256": "7182dd19cd0e3f945332f2976e16f54a91b334a3053d4a2a32f8f0d9bd896419"
+    },
+    "HR2": {
+      "bytes": 1943462,
+      "path": "stage-ae-human-review-HR2-v2.zip",
+      "sha256": "0d318d1f73200d3c5974c6cdca5ef7c1c1b06afc9c95bc4d876004a8279f1734"
+    },
+    "HR3": {
+      "bytes": 1943457,
+      "path": "stage-ae-human-review-HR3-v2.zip",
+      "sha256": "867cd7cfd154ea1089a6dfc1da1d74c787c46bd3948e1225e01c05c9ba887bd0"
+    }
+  },
+  "schema": "STAGE_AE_HUMAN_BLIND_MAPPING_SEAL_V2",
+  "source_ac4_package": {
+    "bytes": 1945579,
+    "path": "STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_V1.zip",
+    "sha256": "0bab4b174942baced11e75d83b913154deedc1c68883a87996df57d6f8f65dfe"
+  },
+  "status": "SEALED_BEFORE_HUMAN_LABELING",
+  "supersedes_for_reviewer_package_authority": "reports/STAGE_AE_HUMAN_BLIND_MAPPING_SEAL_V1.json"
+}

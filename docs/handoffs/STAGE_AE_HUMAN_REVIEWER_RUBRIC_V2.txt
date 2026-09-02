@@ -1,0 +1,83 @@
+Stage AE human endpoint-observability codebook V2
+===================================================
+
+Purpose and scope
+-----------------
+Review only visible video evidence.  This is an endpoint-observability audit;
+it is not a request to infer model, suite, parent, condition, dose, telemetry,
+automatic labels, V_phys, or the correctness of any simulator endpoint.
+
+First apply the observability gate
+----------------------------------
+1. If the evidence needed to identify the relevant object, gripper, or event
+   is substantially unavailable for the clip, use NOT_IDENTIFIABLE.
+2. If some relevant evidence is visible but occlusion, blur, truncation, or
+   conflicting cues leave the event uncertain, use AMBIGUOUS_OR_OCCLUDED.
+3. Do not infer a stable grasp or a failure from the absence of a visible
+   failure.  If continuous support/contact cannot be established, use one of
+   the two observability labels above.
+4. A normal placement or intended release is not by itself a premature failure.
+
+Primary labels and operational definitions
+------------------------------------------
+
+STABLE_GRASP
+  The object and gripper remain sufficiently visible together to establish
+  continuous support/contact through the observable clip, with no visible
+  premature aperture, contact loss, release/drop, or object displacement.
+  Do not use this label merely because no failure is visible.
+
+PREMATURE_APERTURE
+  A visible gripper opening occurs while the object is still in the grasp
+  context, before a clearly depicted normal placement or release.  The
+  aperture itself must be visible; do not infer it from object motion alone.
+
+CONTACT_LOSS
+  A visible transition from established gripper-object contact to no contact
+  occurs while the object remains sufficiently visible to distinguish that
+  transition from occlusion or normal placement.  If the transition cannot be
+  seen, use AMBIGUOUS_OR_OCCLUDED or NOT_IDENTIFIABLE.
+
+PREMATURE_RELEASE_OR_DROP
+  The object visibly leaves the gripper before a clearly depicted normal
+  placement or release, with release/drop motion or an equivalent visible
+  consequence.  Do not infer a drop from a changed final location when the
+  intervening release is not observable.
+
+OBJECT_DISPLACEMENT
+  A clear object pose or location change is visible, but the clip does not
+  establish a more specific visible premature aperture, contact loss, or
+  release/drop as its cause.  The change must be distinguishable from camera
+  motion, occlusion, or ordinary placement.
+
+AMBIGUOUS_OR_OCCLUDED
+  Some relevant visual evidence is present, but the required event or stable
+  grasp cannot be identified reliably because of occlusion, blur, conflicting
+  cues, or an uncertain normal-placement interpretation.
+
+NOT_IDENTIFIABLE
+  The required visual evidence is essentially unavailable: the object/gripper
+  relationship or the relevant transition is not sufficiently visible to
+  support either an event label or STABLE_GRASP.
+
+Priority when more than one event is visibly established
+---------------------------------------------------------
+After the observability gate, use one primary label with this fixed priority:
+
+  PREMATURE_RELEASE_OR_DROP > CONTACT_LOSS > OBJECT_DISPLACEMENT
+    > PREMATURE_APERTURE > STABLE_GRASP
+
+Use the highest-priority event that is directly established by the video.
+Do not use priority to resolve an otherwise ambiguous or unidentifiable clip.
+Do not turn a normal placement into a premature event.  Preserve uncertainty
+with AMBIGUOUS_OR_OCCLUDED or NOT_IDENTIFIABLE.
+
+Output contract
+---------------
+Use exactly one label per present clip and no technical note column.  Preserve
+the exact five CSV columns:
+
+  reviewer_id,review_order_index,reviewer_clip_id,label,review_complete
+
+The labels describe visual identifiability only.  They never rewrite the
+automatic endpoint, V_phys, denominators, unknowns, or any scientific result.
