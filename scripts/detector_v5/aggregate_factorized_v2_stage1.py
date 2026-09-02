@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """Aggregate 864 Stage-1 runs into 72 configuration records.
 
-Each config = (candidate, W, hidden_dim, dropout, weight_decay) × 12 inner-CV runs.
 Fail-closed: missing/invalid runs → HOLD.
-Outputs: per-config metrics, safety elimination, LR comparison, shortlist.
+Seal verification, 72×12 closure, safety elimination, same-split LR, shortlist.
 """
 import argparse, hashlib, json, os, sys, uuid
 from pathlib import Path
 from collections import defaultdict
 from statistics import mean, stdev
-
-import numpy as np
+import math
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 OPS = Path('/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops')
@@ -18,14 +16,11 @@ DEFAULT_RUNS = OPS / 'OFFICIAL_V3_FACTORIZED_STUDENT_V2_STAGE1_RUNS_V1_20260721'
 DEFAULT_LR = OPS / 'OFFICIAL_V3_FACTORIZED_STUDENT_V2_LR_BASELINE_V1_20260721'
 DEFAULT_OUT = OPS / 'OFFICIAL_V3_FACTORIZED_STUDENT_V2_STAGE1_AGGREGATION_V1_20260721'
 
-SEEDS = [42]
-OUTER_FOLDS = [0, 1, 2, 3]
-INNER_FOLDS = [0, 1, 2]
-SAFETY_LIMITS = {
-    'background_false_emit_rate': 0.10,
-    'release_overlap_emit_rate': 0.05,
-    'unsupported_route_emit_rate': 0.0,
-}
+CANDIDATES = ['V2A', 'V2B', 'V2C']
+W_VALS = [16, 32, 64]; H_VALS = [64, 128]; D_VALS = [0.0, 0.1]; WD_VALS = [1e-5, 1e-4]
+OUTER = [0, 1, 2, 3]; INNER = [0, 1, 2]; SEEDS = [42]
+SAFETY = {'background_false_emit_rate': 0.10, 'release_overlap_emit_rate': 0.05,
+          'unsupported_route_emit_rate': 0.0}
 
 
 def sha256_file(p):
@@ -50,70 +45,91 @@ def write_seal(root):
     _atomic_text(root / 'SHA256SUMS.sha256', f'{sha256_file(root / "SHA256SUMS")}  SHA256SUMS\n')
 
 
-def make_config_key(candidate, W, hidden_dim, dropout, weight_decay):
-    return f'{candidate}_W{W}_H{hidden_dim}_D{dropout}_WD{weight_decay}'
+def verify_sealed_directory(root):
+    s = root / 'SHA256SUMS'; c = root / 'SHA256SUMS.sha256'
+    if not s.is_file() or not c.is_file():
+        raise ValueError(f'SEAL MISSING: {root}')
+    if c.read_text().strip() != f'{sha256_file(s)}  SHA256SUMS':
+        raise ValueError(f'SEAL MISMATCH: {root}')
+    for l in s.read_text().splitlines():
+        d, _, n = l.partition('  '); t = root / n
+        if not t.is_file() or sha256_file(t) != d:
+            raise ValueError(f'FILE MISMATCH: {root}/{n}')
 
 
-def make_run_label(candidate, W, hidden_dim, dropout, weight_decay, outer, inner, seed):
-    return f'{candidate}_W{W}_H{hidden_dim}_D{dropout}_WD{weight_decay}_o{outer}_i{inner}_s{seed}'
+def make_label(c, W, H, D, WD, o, i, s):
+    return f'{c}_W{W}_H{H}_D{D}_WD{WD}_o{o}_i{i}_s{s}'
 
 
-def load_run_metrics(runs_root, label):
-    """Load evaluation metrics for one completed run."""
-    eval_file = runs_root / f'eval_{label}.json'
-    if not eval_file.is_file():
+def make_config_key(c, W, H, D, WD):
+    return f'{c}_W{W}_H{H}_D{D}_WD{WD}'
+
+
+def load_eval_metrics(runs_root, label):
+    ef = runs_root / f'eval_{label}.json'
+    if not ef.is_file():
         return None
-    data = json.loads(eval_file.read_text())
-    key = list(data.get('per_run', {}).keys())
-    if not key:
-        return None
-    return data['per_run'][key[0]]
+    data = json.loads(ef.read_text())
+    keys = list(data.get('per_run', {}).keys())
+    return data['per_run'][keys[0]] if keys else None
 
 
-def check_run_integrity(runs_root, label, auth_seal, source_commit):
-    """Verify all artifacts for one run. Returns (ok, issues)."""
+def check_run(runs_root, label, auth_seal, source_commit):
+    """Full integrity check. Returns (ok, issues, metadata)."""
     issues = []
     train_dir = runs_root / label
     pred_dir = runs_root / f'predict_{label}'
 
     # Training seal
-    if not (train_dir / 'SHA256SUMS').is_file():
-        issues.append('TRAIN_NOT_SEALED')
-    else:
-        try:
-            sb = json.loads((train_dir / 'source_binding.json').read_text())
-            ar = json.loads((train_dir / 'authorization_receipt.json').read_text())
-            if ar.get('authorization_seal') != auth_seal:
-                issues.append('AUTH_SEAL_MISMATCH')
-            if sb.get('source_commit', '') != source_commit:
-                issues.append('COMMIT_MISMATCH')
-        except Exception as e:
-            issues.append(f'TRAIN_METADATA: {e}')
+    try:
+        verify_sealed_directory(train_dir)
+    except Exception as e:
+        issues.append(f'TRAIN_SEAL: {e}')
+        return False, issues, {}, None
 
-    # Prediction seal
-    if not (pred_dir / 'SHA256SUMS').is_file():
-        issues.append('PREDICT_NOT_SEALED')
+    try:
+        verify_sealed_directory(pred_dir)
+    except Exception as e:
+        issues.append(f'PRED_SEAL: {e}')
+        return False, issues, {}, None
+
+    # Metadata
+    sb = json.loads((train_dir / 'source_binding.json').read_text())
+    ar = json.loads((train_dir / 'authorization_receipt.json').read_text())
+    rc = json.loads((train_dir / 'run_config.json').read_text())
+
+    if sb.get('source_commit', '') != source_commit:
+        issues.append(f'COMMIT: {sb.get("source_commit", "?")[:8]} != {source_commit[:8]}')
+    if ar.get('authorization_seal') != auth_seal:
+        issues.append('AUTH_SEAL_MISMATCH')
+
+    meta = {'source_commit': sb.get('source_commit', ''), 'candidate': sb.get('candidate', ''),
+            'outer_fold': sb.get('outer_fold'), 'inner_fold': sb.get('inner_fold'),
+            'seed': sb.get('seed'), 'W': rc.get('receptive_field'), 'H': rc.get('hidden_dim'),
+            'D': rc.get('dropout'), 'WD': rc.get('weight_decay'),
+            'param_count': rc.get('parameter_count', 0)}
 
     # Evaluation
-    if load_run_metrics(runs_root, label) is None:
+    metrics = load_eval_metrics(runs_root, label)
+    if metrics is None:
         issues.append('EVAL_MISSING')
 
     # Audit
-    audit_file = runs_root / f'audit_{label}.json'
-    if not audit_file.is_file():
+    af = runs_root / f'audit_{label}.json'
+    if not af.is_file():
         issues.append('AUDIT_MISSING')
     else:
-        audit = json.loads(audit_file.read_text())
+        audit = json.loads(af.read_text())
         if audit.get('status') != 'PASS':
-            issues.append(f'AUDIT_{audit.get("status", "UNKNOWN")}')
+            issues.append(f'AUDIT_{audit.get("status")}')
 
-    return len(issues) == 0, issues
+    return len(issues) == 0, issues, meta, metrics
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--runs-root', type=Path, default=DEFAULT_RUNS)
-    ap.add_argument('--lr-baseline-root', type=Path, default=DEFAULT_LR)
+    ap.add_argument('--lr-root', type=Path, default=DEFAULT_LR)
     ap.add_argument('--output-root', type=Path, default=DEFAULT_OUT)
     ap.add_argument('--auth-seal', type=str, required=True)
     ap.add_argument('--source-commit', type=str, required=True)
@@ -123,204 +139,344 @@ def main():
     if out.exists():
         raise SystemExit(f'OUTPUT EXISTS: {out}')
 
-    # Collect all 864 runs by config
-    candidates = ['V2A', 'V2B', 'V2C']
-    W_vals = [16, 32, 64]
-    H_vals = [64, 128]
-    D_vals = [0.0, 0.1]
-    WD_vals = [1e-5, 1e-4]
+    # ── Collect all 864 runs ──
+    missing, invalid, complete = [], [], []
+    config_runs = defaultdict(dict)
+    all_commits = set()
 
-    configs = {}
-    all_runs = {}
-    integrity_issues = []
-    missing_runs = []
-    invalid_runs = []
-
-    for candidate in candidates:
-        for W in W_vals:
-            for H in H_vals:
-                for D in D_vals:
-                    for WD in WD_vals:
-                        ck = make_config_key(candidate, W, H, D, WD)
-                        configs[ck] = {
-                            'candidate': candidate, 'W': W, 'hidden_dim': H,
-                            'dropout': D, 'weight_decay': WD, 'runs': {}
-                        }
-                        for outer in OUTER_FOLDS:
-                            for inner in INNER_FOLDS:
-                                for seed in SEEDS:
-                                    label = make_run_label(candidate, W, H, D, WD, outer, inner, seed)
-                                    ok, issues = check_run_integrity(
-                                        args.runs_root, label, args.auth_seal, args.source_commit)
-                                    run_info = {'label': label, 'ok': ok, 'issues': issues}
-                                    configs[ck]['runs'][(outer, inner)] = run_info
-                                    all_runs[label] = run_info
-                                    if not ok:
-                                        invalid_runs.append(run_info)
+    for c in CANDIDATES:
+        for W in W_VALS:
+            for H in H_VALS:
+                for D in D_VALS:
+                    for WD in WD_VALS:
+                        for o in OUTER:
+                            for i in INNER:
+                                for s in SEEDS:
+                                    label = make_label(c, W, H, D, WD, o, i, s)
                                     if not (args.runs_root / label).exists():
-                                        missing_runs.append(label)
+                                        missing.append(label)
+                                        continue
+                                    ok, issues, meta, metrics = check_run(
+                                        args.runs_root, label, args.auth_seal, args.source_commit)
+                                    if not ok:
+                                        invalid.append({'label': label, 'issues': issues})
+                                    else:
+                                        complete.append(label)
+                                        all_commits.add(meta.get('source_commit', ''))
+                                    config_runs[make_config_key(c, W, H, D, WD)][(o, i)] = {
+                                        'label': label, 'ok': ok, 'issues': issues,
+                                        'meta': meta, 'metrics': metrics}
 
-    print(f'Total configs: {len(configs)}')
-    print(f'Total runs expected: {864}')
-    print(f'Missing: {len(missing_runs)}')
-    print(f'Invalid: {len(invalid_runs)}')
+    n_total = 864
+    n_complete = len(complete)
+    n_invalid = len(invalid)
+    n_missing = len(missing)
+    is_full = (n_complete == 864)
 
-    if missing_runs or invalid_runs:
-        print('HOLD: missing or invalid runs')
-        if missing_runs:
-            print(f'  Missing: {missing_runs[:10]}...')
-        if invalid_runs:
-            for r in invalid_runs[:5]:
-                print(f'  Invalid {r["label"]}: {r["issues"]}')
-        # Still produce partial output for diagnosis
-        partial = {
-            'status': 'HOLD_INCOMPLETE',
-            'missing_runs': len(missing_runs),
-            'invalid_runs': len(invalid_runs),
-        }
+    print(f'Complete: {n_complete}/{n_total}')
+    print(f'Missing: {n_missing}  Invalid: {n_invalid}')
+    print(f'Commits: {all_commits}')
+
+    if not is_full:
+        partial = {'status': 'INCOMPLETE_NOT_FOR_SELECTION', 'complete': n_complete,
+                   'missing': n_missing, 'invalid': n_invalid, 'shortlist_valid': False}
         staging = out.with_name(f'.{out.name}.{uuid.uuid4().hex}.staging')
         staging.mkdir(parents=True)
         _atomic_text(staging / 'integrity_report.json', json.dumps(partial, indent=2))
-        write_seal(staging)
-        os.replace(staging, out)
-        sys.exit(1)
+        write_seal(staging); os.replace(staging, out)
+        sys.exit(1 if n_missing + n_invalid > 0 else 0)
 
-    # ── Aggregate metrics per config ──
-    lr_data = json.loads((args.lr_baseline_root / 'pooled_metrics.json').read_text())
-    lr_per_split = json.loads((args.lr_baseline_root / 'per_split_metrics.json').read_text())
+    # ── Verify 72×12 closure ──
+    config_issues = []
+    for ck in sorted(config_runs):
+        runs = config_runs[ck]
+        if len(runs) != 12:
+            config_issues.append(f'{ck}: {len(runs)}/12 splits')
+        for (o, i), r in runs.items():
+            if not r['ok']:
+                config_issues.append(f'{ck} o{o}i{i}: {r["issues"]}')
 
-    config_metrics = {}
-    safety_eliminated = {}
-    lr_comparison = {}
+    if config_issues:
+        print(f'Config issues: {len(config_issues)}')
+        for ci in config_issues[:10]:
+            print(f'  {ci}')
+        raise SystemExit('HOLD: config closure failed')
 
-    for ck, cfg in configs.items():
-        metrics_list = []
-        safety_failures = []
-        for (outer, inner), run_info in cfg['runs'].items():
-            m = load_run_metrics(args.runs_root, run_info['label'])
-            if m is None:
-                safety_failures.append(f'o{outer}_i{inner}: EVAL_MISSING')
-                continue
-            metrics_list.append(m)
+    # ── Per-config aggregation ──
+    lr_data = json.loads((args.lr_root / 'pooled_metrics.json').read_text())
+    lr_splits = json.loads((args.lr_root / 'per_split_metrics.json').read_text())
 
-            # Check safety per-split
-            for sk, limit in SAFETY_LIMITS.items():
-                val = m.get(sk)
-                if val is not None and val > limit:
-                    safety_failures.append(f'o{outer}_i{inner}: {sk}={val:.4f} > {limit}')
+    config_metrics, safety_elim, lr_comp = {}, {}, {}
+    metric_keys = ['release_auroc', 'release_auprc', 'release_short_auprc',
+                   'release_recall_05', 'background_false_emit_rate',
+                   'release_overlap_emit_rate', 'unsupported_route_emit_rate',
+                   'release_first_recall_05', 'release_later_recall_05']
 
-        if not metrics_list:
-            safety_eliminated[ck] = {'reason': 'NO_VALID_RUNS', 'failures': safety_failures}
+    global_metric_integrity_issues = []
+
+    for ck in sorted(config_runs):
+        runs = config_runs[ck]
+        mlist = [r['metrics'] for r in runs.values() if r['metrics'] is not None]
+        if len(mlist) != 12:
+            safety_elim[ck] = {'reason': 'INCOMPLETE_SPLITS', 'n': len(mlist)}
             continue
 
-        # Aggregate across 12 splits
         agg = {}
-        metric_keys = ['release_auroc', 'release_auprc', 'release_short_auprc',
-                       'release_recall_05', 'background_false_emit_rate',
-                       'release_overlap_emit_rate', 'unsupported_route_emit_rate',
-                       'release_first_recall_05', 'release_later_recall_05']
-
+        local_metric_fail = False
         for mk in metric_keys:
-            vals = [m[mk] for m in metrics_list if m.get(mk) is not None]
-            if vals:
-                agg[f'{mk}_mean'] = mean(vals)
-                agg[f'{mk}_stdev'] = stdev(vals) if len(vals) > 1 else 0
-                agg[f'{mk}_per_split'] = vals
-                if mk in SAFETY_LIMITS:
-                    agg[f'{mk}_worst'] = max(vals)
+            vals = [m[mk] for m in mlist if m.get(mk) is not None and math.isfinite(m[mk])]
+            if len(vals) != 12:
+                msg = f'{ck}: {mk} has {len(vals)}/12 finite values'
+                global_metric_integrity_issues.append(msg)
+                safety_elim[ck] = {'reason': f'METRIC_INTEGRITY: {mk} has {len(vals)}/12 finite values'}
+                local_metric_fail = True
+                break
+            agg[f'{mk}_mean'] = mean(vals)
+            agg[f'{mk}_stdev'] = stdev(vals) if len(vals) > 1 else 0
+            agg[f'{mk}_per_split'] = vals
+            if mk in SAFETY:
+                agg[f'{mk}_worst'] = max(vals)
 
-        agg['n_runs'] = len(metrics_list)
-        agg['n_expected'] = 12
+        if local_metric_fail:
+            continue
 
-        # Safety disposition (worst-split)
-        safety_pass = True
-        for sk, limit in SAFETY_LIMITS.items():
+        if ck in safety_elim:
+            continue
+
+        agg['n_runs'] = 12
+        agg['param_count'] = list(runs.values())[0]['meta'].get('param_count', 0)
+
+        # Safety elimination (worst split)
+        safety_fail = []
+        for sk, limit in SAFETY.items():
             worst = agg.get(f'{sk}_worst')
             if worst is not None and worst > limit:
-                safety_pass = False
-                safety_failures.append(f'WORST: {sk}={worst:.4f} > {limit}')
-
-        if not safety_pass:
-            safety_eliminated[ck] = {
-                'reason': 'SAFETY_FAILURE',
-                'failures': safety_failures,
-                'metrics': {k: v for k, v in agg.items() if not isinstance(v, list)},
-            }
+                safety_fail.append(f'{sk}={worst:.4f} > {limit}')
+        if safety_fail:
+            safety_elim[ck] = {'reason': 'SAFETY', 'failures': safety_fail}
             config_metrics[ck] = agg
             continue
 
         agg['safety_pass'] = True
         config_metrics[ck] = agg
 
-        # LR comparison
-        lr_auroc = lr_data.get('release_auroc', 0)
-        lr_auprc = lr_data.get('release_auprc', 0)
-        v2_auroc = agg.get('release_auroc_mean', 0)
-        v2_auprc = agg.get('release_auprc_mean', 0)
-        beats_lr = (v2_auroc > lr_auroc) and (v2_auprc > lr_auprc)
-        lr_comparison[ck] = {
-            'v2_auroc': v2_auroc, 'lr_auroc': lr_auroc,
-            'v2_auprc': v2_auprc, 'lr_auprc': lr_auprc,
-            'beats_lr': beats_lr,
+        # Same-split LR comparison — require exactly 12 LR split keys
+        per_split_deltas = []
+        lr_auroc_vals, lr_auprc_vals = [], []
+        v2_auroc_vals = agg.get('release_auroc_per_split', [])
+        v2_auprc_vals = agg.get('release_auprc_per_split', [])
+        lr_missing = False
+        for oi, (o, i) in enumerate(sorted(runs.keys())):
+            split_key = f'o{o}_i{i}'
+            lr_entry = lr_splits.get(split_key, {})
+            lr_au = lr_entry.get('release_auroc')
+            lr_ap = lr_entry.get('release_auprc')
+            if lr_au is None or lr_ap is None or not math.isfinite(lr_au) or not math.isfinite(lr_ap):
+                lr_missing = True; break
+            lr_auroc_vals.append(lr_au); lr_auprc_vals.append(lr_ap)
+            if oi < len(v2_auroc_vals) and oi < len(v2_auprc_vals):
+                per_split_deltas.append({
+                    'split': split_key, 'v2_auroc': v2_auroc_vals[oi],
+                    'lr_auroc': lr_au, 'delta_auroc': v2_auroc_vals[oi] - lr_au,
+                    'v2_auprc': v2_auprc_vals[oi], 'lr_auprc': lr_ap,
+                    'delta_auprc': v2_auprc_vals[oi] - lr_ap})
+
+        if lr_missing or len(lr_auroc_vals) != 12:
+            safety_elim[ck] = {'reason': f'LR_BASELINE_INCOMPLETE: {len(lr_auroc_vals)}/12 splits'}
+            continue
+
+        v2_mean_auroc = agg.get('release_auroc_mean', 0)
+        v2_mean_auprc = agg.get('release_auprc_mean', 0)
+        lr_mean_auroc = mean(lr_auroc_vals)
+        lr_mean_auprc = mean(lr_auprc_vals)
+        lr_comp[ck] = {'v2_auroc_mean': v2_mean_auroc, 'lr_auroc_mean': lr_mean_auroc,
+                       'v2_auprc_mean': v2_mean_auprc, 'lr_auprc_mean': lr_mean_auprc,
+                       'per_split_deltas': per_split_deltas,
+                       'beats_lr': v2_mean_auroc > lr_mean_auroc and v2_mean_auprc > lr_mean_auprc}
+
+    # Verify LR baseline seal and exact split keys
+    lr_seal_ok = False
+    lr_integrity_issues = []
+    try:
+        verify_sealed_directory(args.lr_root)
+        lr_seal_ok = True
+    except Exception as e:
+        lr_integrity_issues.append(f'LR_SEAL: {e}')
+
+    expected_lr_keys = {f'o{o}i{i}' for o in range(4) for i in range(3)}
+    actual_lr_keys = set(lr_splits.keys())
+    lr_missing_keys = expected_lr_keys - actual_lr_keys
+    lr_extra_keys = actual_lr_keys - expected_lr_keys
+    if lr_missing_keys:
+        lr_integrity_issues.append(f'LR_MISSING_KEYS: {sorted(lr_missing_keys)}')
+    if lr_extra_keys:
+        lr_integrity_issues.append(f'LR_EXTRA_KEYS: {sorted(lr_extra_keys)}')
+
+    lr_incomplete = not lr_seal_ok or len(lr_integrity_issues) > 0
+
+    n_safe = sum(1 for agg in config_metrics.values() if agg.get('safety_pass') is True)
+    n_lr = sum(1 for v in lr_comp.values() if v.get('beats_lr'))
+    print(f'\nSafety pass: {n_safe}/{len(config_runs)}')
+    print(f'Beats LR: {n_lr}/{n_safe}')
+    print(f'Eliminated: {len(safety_elim)}')
+    print(f'Metric integrity issues: {len(global_metric_integrity_issues)}')
+
+    # Global HOLD on metric integrity
+    if global_metric_integrity_issues:
+        print(f'GLOBAL HOLD: {len(global_metric_integrity_issues)} metric integrity issues')
+        for issue in global_metric_integrity_issues[:10]:
+            print(f'  {issue}')
+
+    # ── Lexicographic selection ──
+    # Build candidate metrics input for selection tool
+    selection_input = {}
+    for ck, agg in config_metrics.items():
+        if ck in safety_elim:
+            continue
+        if not lr_comp.get(ck, {}).get('beats_lr'):
+            continue
+        # Use per-split gap from evaluator (not cross-split mean cancellation)
+        first_vals = agg.get('release_first_recall_05_per_split', [])
+        later_vals = agg.get('release_later_recall_05_per_split', [])
+        per_split_gaps = [abs(f - l) for f, l in zip(first_vals, later_vals)] if len(first_vals) == len(later_vals) == 12 else []
+        gap_mean = mean(per_split_gaps) if per_split_gaps else None
+        gap_worst = max(per_split_gaps) if per_split_gaps else None
+
+        selection_input[ck] = {
+            'release_auprc': agg.get('release_auprc_mean'),
+            'release_auprc_per_split': agg.get('release_auprc_per_split'),
+            'release_short_auprc': agg.get('release_short_auprc_mean'),
+            'release_short_auprc_per_split': agg.get('release_short_auprc_per_split'),
+            'first_later_recall_gap_mean': gap_mean,
+            'first_later_recall_gap_worst': gap_worst,
+            'parameter_count': agg.get('param_count', 0),
+            'background_false_emit_rate': agg.get('background_false_emit_rate_worst'),
+            'release_overlap_emit_rate': agg.get('release_overlap_emit_rate_worst'),
+            'unsupported_route_emit_rate': agg.get('unsupported_route_emit_rate_worst'),
+            'release_auroc': agg.get('release_auroc_mean'),
         }
 
-    n_safety_pass = len(config_metrics) - len(safety_eliminated)
-    n_beats_lr = sum(1 for v in lr_comparison.values() if v['beats_lr'])
+    # Lexicographic: safety→auprc→short→gap→params. Keep all ties, no dict-order dependence.
+    def lexicographic_select(candidates):
+        if not candidates:
+            return [], [{'result': 'HOLD_NO_ELIGIBLE_CONFIG'}]
+        remaining = list(candidates.keys())
+        trace = [{'priority': 'safety', 'n': len(remaining)}]
 
-    print(f'\nSafety pass: {n_safety_pass}/{len(configs)}')
-    print(f'Beats LR: {n_beats_lr}/{n_safety_pass}')
-    print(f'Safety eliminated: {len(safety_eliminated)}')
+        for pri, key, direction, eps in [
+            ('release_auprc', 'release_auprc', 'higher', 0.005),
+            ('short_auprc', 'release_short_auprc', 'higher', 0.005),
+            ('first_later_gap', 'first_later_recall_gap_mean', 'lower', 0.02),
+            ('parameter_count', 'parameter_count', 'lower', 0),
+        ]:
+            if len(remaining) <= 1:
+                break
+            vals = [candidates[k].get(key) for k in remaining]
+            vals = [v for v in vals if v is not None]
+            if not vals:
+                trace.append({'priority': pri, 'error': 'ALL_NONE'})
+                break
+            if direction == 'higher':
+                best = max(vals)
+                remaining = [k for k in remaining if candidates[k].get(key, -1e9) >= best - eps]
+            else:
+                best = min(vals)
+                remaining = [k for k in remaining if candidates[k].get(key, 1e9) <= best + eps]
+            trace.append({'priority': pri, 'best': best, 'n': len(remaining)})
+
+        # All remaining are ties — keep all
+        return remaining, trace
+
+    shortlist_candidates = {k: v for k, v in selection_input.items()}
+    selected_configs, selection_trace = lexicographic_select(shortlist_candidates)
+
+    has_selection = len(selected_configs) > 0
+    print(f'\nSelected: {selected_configs}')
+    for t in selection_trace:
+        print(f'  {t}')
 
     # ── Write outputs ──
     staging = out.with_name(f'.{out.name}.{uuid.uuid4().hex}.staging')
     staging.mkdir(parents=True)
 
-    integrity = {
-        'status': 'PASS' if (not missing_runs and not invalid_runs) else 'HOLD',
-        'total_runs_expected': 864,
-        'total_configs': 72,
-        'missing_runs': len(missing_runs),
-        'invalid_runs': len(invalid_runs),
-        'source_commit': args.source_commit,
-    }
-    _atomic_text(staging / 'stage1_integrity_report.json', json.dumps(integrity, indent=2))
-    _atomic_text(staging / 'stage1_72config_metrics.json', json.dumps(config_metrics, indent=2))
-    _atomic_text(staging / 'stage1_safety_elimination.json', json.dumps(safety_eliminated, indent=2))
-    _atomic_text(staging / 'stage1_lr_comparison.json', json.dumps(lr_comparison, indent=2))
+    integrity_status = 'PASS'
+    if not is_full:
+        integrity_status = 'HOLD_INCOMPLETE'
+    if global_metric_integrity_issues:
+        integrity_status = 'HOLD_METRIC_INTEGRITY'
+    if lr_incomplete:
+        integrity_status = 'HOLD_LR_BASELINE_INTEGRITY'
 
-    summary = {
-        'n_configs': 72,
-        'n_safety_pass': n_safety_pass,
-        'n_safety_eliminated': len(safety_eliminated),
-        'n_beats_lr': n_beats_lr,
-        'by_candidate': {},
+    _atomic_text(staging / 'stage1_integrity_report.json', json.dumps({
+        'status': integrity_status,
+        'is_full': is_full, 'complete': n_complete, 'total': n_total,
+        'missing': n_missing, 'invalid': n_invalid,
+        'metric_integrity_issues': len(global_metric_integrity_issues),
+        'metric_integrity_issues_list': global_metric_integrity_issues[:50],
+        'lr_baseline_seal_ok': lr_seal_ok,
+        'lr_baseline_incomplete': lr_incomplete,
+        'source_commit': args.source_commit, 'commits_found': list(all_commits),
+    }, indent=2))
+
+    _atomic_text(staging / 'stage1_72config_metrics.json', json.dumps(config_metrics, indent=2))
+    _atomic_text(staging / 'stage1_safety_elimination.json', json.dumps(safety_elim, indent=2))
+    _atomic_text(staging / 'stage1_lr_comparison.json', json.dumps(lr_comp, indent=2))
+
+    summary = {'n_configs': 72, 'n_safety_pass': n_safe, 'n_eliminated': len(safety_elim),
+               'n_beats_lr': n_lr, 'by_candidate': {}}
+    for c in CANDIDATES:
+        cc = [ck for ck in config_metrics if ck.startswith(c)]
+        cs = [ck for ck in cc if ck not in safety_elim]
+        cl = [ck for ck in cs if lr_comp.get(ck, {}).get('beats_lr')]
+        summary['by_candidate'][c] = {'total': len(cc), 'safety_pass': len(cs), 'beats_lr': len(cl)}
+    # Global HOLD overrides selection — clear candidate list
+    if global_metric_integrity_issues:
+        effective_status = 'HOLD_GLOBAL_INTEGRITY'
+        has_selection = False
+        published_selected = []
+    elif lr_incomplete:
+        effective_status = 'HOLD_LR_BASELINE_INTEGRITY'
+        has_selection = False
+        published_selected = []
+    elif not has_selection:
+        effective_status = 'HOLD_NO_ELIGIBLE_CONFIG'
+        published_selected = []
+    else:
+        effective_status = 'SELECTED'
+        published_selected = selected_configs
+
+    shortlist = {
+        'status': effective_status,
+        'global_metric_integrity_hold': len(global_metric_integrity_issues) > 0,
+        'lr_integrity_issues': lr_integrity_issues,
+        'lr_baseline_incomplete': lr_incomplete,
+        'selected': published_selected,
+        'n_selected': len(published_selected),
+        'selection_trace': selection_trace,
+        'candidates_considered': len(shortlist_candidates),
+        'shortlist': published_selected,
+        'shortlist_valid': has_selection,
+        'eligible_for_stage2': has_selection,
+        'all_ties_kept': True,
     }
-    for c in ['V2A', 'V2B', 'V2C']:
-        c_configs = [ck for ck in config_metrics if ck.startswith(c)]
-        c_safe = [ck for ck in c_configs if ck not in safety_eliminated]
-        c_lr = [ck for ck in c_safe if lr_comparison.get(ck, {}).get('beats_lr')]
-        summary['by_candidate'][c] = {
-            'total': len(c_configs),
-            'safety_pass': len(c_safe),
-            'beats_lr': len(c_lr),
-        }
+    _atomic_text(staging / 'stage1_shortlist.json', json.dumps(shortlist, indent=2))
+    _atomic_text(staging / 'stage1_selection_trace.json', json.dumps(selection_trace, indent=2))
     _atomic_text(staging / 'stage1_summary.json', json.dumps(summary, indent=2))
 
     _atomic_text(staging / 'source_binding.json', json.dumps({
-        'runs_root': str(args.runs_root),
-        'lr_baseline_root': str(args.lr_baseline_root),
-        'auth_seal': args.auth_seal,
-        'source_commit': args.source_commit,
+        'runs_root': str(args.runs_root), 'lr_root': str(args.lr_root),
+        'auth_seal': args.auth_seal, 'source_commit': args.source_commit,
     }, indent=2))
 
-    write_seal(staging)
-    os.replace(staging, out)
-
-    print(f'\nAggregation sealed: {out}')
-    print(f'Seal: {sha256_file(out / "SHA256SUMS")}')
-    for c in ['V2A', 'V2B', 'V2C']:
+    write_seal(staging); os.replace(staging, out)
+    print(f'\nSealed: {out}')
+    for c in CANDIDATES:
         s = summary['by_candidate'][c]
-        print(f'  {c}: {s["total"]} configs, {s["safety_pass"]} safe, {s["beats_lr"]} beat LR')
+        print(f'  {c}: {s["total"]} total, {s["safety_pass"]} safe, {s["beats_lr"]} beat LR')
+
+    if not has_selection:
+        print(f'\nExiting with HOLD status: {effective_status}')
+        sys.exit(1)
 
 
 if __name__ == '__main__':

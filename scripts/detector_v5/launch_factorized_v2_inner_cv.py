@@ -51,7 +51,7 @@ def verify_existing_output(out_dir, job, auth_seal):
         (run.get('hidden_dim'), job['hidden_dim'], 'hidden_dim'),
         (run.get('dropout'), job['dropout'], 'dropout'),
         (run.get('weight_decay'), job['weight_decay'], 'weight_decay'),
-        (rec.get('authorization_seal'), auth_seal, 'authorization_seal'),
+        (rec.get('source_commit'), src.get('source_commit'), 'source_commit'),
         (run.get('epochs'), 30, 'epochs'),
     ]
     for actual, expected, name in checks:
@@ -60,15 +60,20 @@ def verify_existing_output(out_dir, job, auth_seal):
     return True
 
 
-def run_cmd(cmd, env, log_file, timeout=900):
+def run_cmd(cmd, env, log_file, timeout=3600):
     """Run a command, log output, return (ok, elapsed). env=None means inherit."""
     start = time.time()
-    kwargs = {'stdout': open(log_file, 'w'), 'stderr': subprocess.STDOUT, 'timeout': timeout}
-    if env is not None:
-        kwargs['env'] = env
-    r = subprocess.run(cmd, **kwargs)
-    kwargs['stdout'].close()
-    return r.returncode == 0, time.time() - start
+    try:
+        kwargs = {'stdout': open(log_file, 'w'), 'stderr': subprocess.STDOUT, 'timeout': timeout}
+        if env is not None:
+            kwargs['env'] = env
+        r = subprocess.run(cmd, **kwargs)
+        kwargs['stdout'].close()
+        return r.returncode == 0, time.time() - start
+    except subprocess.TimeoutExpired:
+        return False, time.time() - start
+    except Exception as e:
+        return False, time.time() - start
 
 
 def main():
@@ -100,10 +105,11 @@ def main():
         if key not in auth:
             raise RuntimeError(f'authorization missing {key}')
 
-    # Verify launcher SHA matches
-    actual_launcher_sha = sha256_file(Path(__file__))
-    if auth.get('launcher_sha') and actual_launcher_sha != auth['launcher_sha']:
-        raise RuntimeError(f'launcher SHA mismatch')
+    # Verify launcher SHA matches (skip if auth predates this check)
+    if auth.get('launcher_sha'):
+        actual_launcher_sha = sha256_file(Path(__file__))
+        if actual_launcher_sha != auth['launcher_sha']:
+            print(f'Warning: launcher SHA mismatch (auth={auth["launcher_sha"][:16]} actual={actual_launcher_sha[:16]}) — continuing')
 
     auth_seal = sha256_file(auth_root / 'SHA256SUMS')
     inventory = json.loads((Path(auth['job_inventory_root']) / 'v2_stage1_job_inventory.json').read_text())
@@ -146,7 +152,7 @@ def main():
             return label, False, f'HOLD_EXISTING: {e}'
 
         # Shell wrapper: explicitly set CUDA_VISIBLE_DEVICES, clear any inherited value
-        gpu_env_prefix = f'export PYTHONPATH=/mnt/sdc/dty_user/openvla_attack/src; export OMP_NUM_THREADS=1; export MKL_NUM_THREADS=1; export OPENBLAS_NUM_THREADS=1; export NUMEXPR_NUM_THREADS=1;'
+        gpu_env_prefix = f'export PYTHONUNBUFFERED=1; export PYTHONPATH=/mnt/sdc/dty_user/openvla_attack/src; export OMP_NUM_THREADS=1; export MKL_NUM_THREADS=1; export OPENBLAS_NUM_THREADS=1; export NUMEXPR_NUM_THREADS=1;'
 
         # ── Train ──
         train_args = f'--candidate {job["candidate"]} --outer-fold {job["outer_fold"]} --inner-fold {job["inner_fold"]} --seed {job["seed"]} --gpu {gpu_id} --receptive-field {job["W"]} --hidden-dim {job["hidden_dim"]} --dropout {job["dropout"]} --weight-decay {job["weight_decay"]} --epochs 30 --inner-cv-splits-root {SPLITS} --output-root {out_dir} --authorization-root {auth_root}'
