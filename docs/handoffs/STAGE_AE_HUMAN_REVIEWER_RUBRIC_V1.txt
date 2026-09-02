@@ -1,0 +1,10 @@
+AC4 neutral visual audit rubric (Stage AE human presentation)
+
+Review only visible video evidence. Do not infer model, suite, parent, arm, dose, automatic labels, or telemetry.
+Use one primary label per present clip:
+STABLE_GRASP, PREMATURE_APERTURE, CONTACT_LOSS, PREMATURE_RELEASE_OR_DROP, OBJECT_DISPLACEMENT, AMBIGUOUS_OR_OCCLUDED, NOT_IDENTIFIABLE.
+Use AMBIGUOUS_OR_OCCLUDED or NOT_IDENTIFIABLE when the video does not establish the event.
+
+Stage AE is an endpoint-observability audit only. A label describes what is
+visually identifiable in the clip; it does not confirm or rewrite the sealed
+automatic physical endpoint.
