@@ -1,0 +1,67 @@
+{
+  "counts": {
+    "frozen_slots": 96,
+    "future_label_rows": 273,
+    "missing_frozen_videos": 5,
+    "present_videos": 91,
+    "reviewers": [
+      "HR1",
+      "HR2",
+      "HR3"
+    ]
+  },
+  "firewall": {
+    "human_labels_read": false,
+    "mapping_in_package": false,
+    "unblind_performed": false
+  },
+  "mapping": {
+    "bytes": 94034,
+    "path": "reports/STAGE_AE_HUMAN_BLIND_MAPPING_V1.json",
+    "sha256": "03318aa066b6e2782d9c176e6e3c2e05cf6d6e93ba168986a949b85f11d8b001"
+  },
+  "order_manifests": {
+    "HR1": {
+      "bytes": 1694,
+      "clip_count": 91,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V1/HR1_ORDER_MANIFEST_V1.json",
+      "sha256": "77cda9b8b01a70ac720ddd975980173474a2edea45135a6248ee407aced22284"
+    },
+    "HR2": {
+      "bytes": 1694,
+      "clip_count": 91,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V1/HR2_ORDER_MANIFEST_V1.json",
+      "sha256": "f2d761cdc9fcb3a04c0d35bb3b736ae38cd358616f92d03f1009897017373412"
+    },
+    "HR3": {
+      "bytes": 1694,
+      "clip_count": 91,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V1/HR3_ORDER_MANIFEST_V1.json",
+      "sha256": "846180dbb463304a7ba56b5951074ea66080b4f91e24e1046df3efb86a542c17"
+    }
+  },
+  "reviewer_packages": {
+    "HR1": {
+      "bytes": 1942260,
+      "path": "stage-ae-human-review-HR1.zip",
+      "sha256": "da2bad78d1c77deed6ebf73b804a2c5a2bf74e2b7a14b7182cd222922ba10beb"
+    },
+    "HR2": {
+      "bytes": 1942265,
+      "path": "stage-ae-human-review-HR2.zip",
+      "sha256": "5a02582efc2648f26a8b6c8be6f01d2aaca42d9cc8faaf0018cd5113d42e8bca"
+    },
+    "HR3": {
+      "bytes": 1942260,
+      "path": "stage-ae-human-review-HR3.zip",
+      "sha256": "7a4e3bddd392ef7d477fec1b4b9ca0e455fbd6ef99dc14b3399a30e6a634d1a2"
+    }
+  },
+  "schema": "STAGE_AE_HUMAN_BLIND_MAPPING_SEAL_V1",
+  "source_ac4_package": {
+    "bytes": 1945579,
+    "path": "STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_V1.zip",
+    "sha256": "0bab4b174942baced11e75d83b913154deedc1c68883a87996df57d6f8f65dfe"
+  },
+  "status": "SEALED_BEFORE_HUMAN_LABELING"
+}

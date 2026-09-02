@@ -1,0 +1,89 @@
+{
+  "schema": "STAGE_AE_HUMAN_BLINDED_ENDPOINT_OBSERVABILITY_PROTOCOL_V1",
+  "status": "PENDING_REAL_HUMAN_REVIEW",
+  "purpose": "Pre-register a blinded human audit of endpoint observability only.",
+  "source_authority": {
+    "stage_ac4_manifest": "reports/STAGE_AC_AC4_NEUTRAL_BLIND_MANIFEST_V1.json",
+    "stage_ac4_package_seal": "reports/STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_SEAL_V1.json",
+    "stage_ac4_rubric": "reports/STAGE_AC_AC4_NEUTRAL_BLIND_REVIEW_RUBRIC_V1.txt",
+    "population_reuse": "Exact AC4 neutral presentation population; no replacement, top-up, rerender, new video, or new state."
+  },
+  "reviewers": {
+    "reviewer_ids": ["HR1", "HR2", "HR3"],
+    "identity_policy": "Use reviewer IDs only; do not commit real names, contact details, signatures, or personal information.",
+    "independence": "Each reviewer works from a separate package and must not see another review, AI labels, automatic labels, telemetry, model, suite, parent, condition, dose, or hidden mapping."
+  },
+  "frozen_population": {
+    "frozen_slots": 96,
+    "present_videos": 91,
+    "fixed_missing_slots": 5,
+    "future_label_rows": 273,
+    "present_clip_rule": "One label for each of the 91 present clips; fixed missing slots are not replaced and are not labelable."
+  },
+  "legal_labels": [
+    "STABLE_GRASP",
+    "PREMATURE_APERTURE",
+    "CONTACT_LOSS",
+    "PREMATURE_RELEASE_OR_DROP",
+    "OBJECT_DISPLACEMENT",
+    "AMBIGUOUS_OR_OCCLUDED",
+    "NOT_IDENTIFIABLE"
+  ],
+  "reviewer_row_schema": [
+    "reviewer_id",
+    "review_order_index",
+    "reviewer_clip_id",
+    "label",
+    "review_complete"
+  ],
+  "presentation": {
+    "order_salt": "STAGE_AE_HUMAN_REVIEW_ORDER_SALT_V1",
+    "order_is_reviewer_specific": true,
+    "video_bytes_are_copied_from_frozen_ac4_package": true,
+    "reviewer_clip_ids_are_local_only": true,
+    "no_source_mapping_in_package": true
+  },
+  "review_instructions": {
+    "visible_evidence_only": true,
+    "one_primary_label": true,
+    "normal_playback_only": true,
+    "no_frame_extraction_or_speed_change": true,
+    "no_external_enhancement_or_reencoding": true,
+    "no_inference_about_hidden_metadata": true,
+    "reviewer_note_is_optional_and_technical_only": true,
+    "reviewer_must_declare_completion": true
+  },
+  "analysis_plan_after_all_three_seals": {
+    "phase_a": "Validate exactly 91 rows per reviewer, legal labels, no duplicate or missing local IDs, correct order, package digests, mapping seal, and reviewer identity; seal returned files before unblinding.",
+    "phase_b_requires_explicit_pi_authorization": true,
+    "phase_b_outputs": [
+      "3/3 unanimous rows",
+      "2/3 majority rows",
+      "1/1/1 disagreement rows",
+      "pairwise raw agreement",
+      "Fleiss kappa",
+      "per-reviewer label distributions",
+      "majority label distribution",
+      "binary observability fractions and agreement"
+    ],
+    "binary_observability": {
+      "UNOBSERVABLE": ["AMBIGUOUS_OR_OCCLUDED", "NOT_IDENTIFIABLE"],
+      "OBSERVABLE": "All other legal labels",
+      "interpretation": "Observability/adjudicability only; not physical failure, success, robustness, or endpoint confirmation."
+    },
+    "no_arbitrary_kappa_threshold": true,
+    "human_review_completed_is_separate_from_human_endpoint_confirmed": true,
+    "automatic_endpoint_is_immutable": true,
+    "denominators_and_unknowns_are_immutable": true
+  },
+  "firewall": {
+    "new_inference": 0,
+    "new_env_step": 0,
+    "new_open": 0,
+    "new_pgd": 0,
+    "new_simulator": 0,
+    "protected_or_eval160_read": 0,
+    "human_labels_present_at_pregistration": false,
+    "unblind_before_all_three_seals": false
+  }
+}

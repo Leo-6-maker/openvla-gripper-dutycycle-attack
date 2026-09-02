@@ -1,0 +1,2220 @@
+{
+  "counts": {
+    "frozen_slots": 96,
+    "future_label_rows": 273,
+    "missing_frozen_videos": 5,
+    "present_videos": 91,
+    "reviewers": 3
+  },
+  "mapping_in_reviewer_packages": false,
+  "order_contract": {
+    "order_salt": "STAGE_AE_HUMAN_REVIEW_ORDER_SALT_V1",
+    "same_deterministic_order_as_v1": true,
+    "source_video_bytes_unchanged": true
+  },
+  "rows": [
+    {
+      "reviewer_clip_id": "HR1-C001",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-c61eb0b35777644e391e6d98",
+      "source_bytes": 21032,
+      "source_package_filename": "videos/A4-c61eb0b35777644e391e6d98.mp4",
+      "source_sha256": "0928373ce921f7125ba14638fb52d4a3e307b8229524c0f588e82070510b5833"
+    },
+    {
+      "reviewer_clip_id": "HR1-C002",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-bce7d8567d1376490ea0fc6a",
+      "source_bytes": 23670,
+      "source_package_filename": "videos/A4-bce7d8567d1376490ea0fc6a.mp4",
+      "source_sha256": "96b67597b37629965bda6598bfe8d585874f6f66a1afc3b89bc6411c5dbd7c91"
+    },
+    {
+      "reviewer_clip_id": "HR1-C003",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-da56672a07556c09349baf0e",
+      "source_bytes": 24325,
+      "source_package_filename": "videos/A4-da56672a07556c09349baf0e.mp4",
+      "source_sha256": "648d2ab53fa3b3508d9f6b18d8a6a6057ce90bdb1d4c1acbe626b3eaa3c1ccde"
+    },
+    {
+      "reviewer_clip_id": "HR1-C004",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-6c4feabbad9b1feafcb69de5",
+      "source_bytes": 19525,
+      "source_package_filename": "videos/A4-6c4feabbad9b1feafcb69de5.mp4",
+      "source_sha256": "5aae0d4bf6adcbeff43ef2771da1c01db452282161e70cad5807fc60104c9bb7"
+    },
+    {
+      "reviewer_clip_id": "HR1-C005",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-ccf7fdf1611157810c67253e",
+      "source_bytes": 24089,
+      "source_package_filename": "videos/A4-ccf7fdf1611157810c67253e.mp4",
+      "source_sha256": "befdf0dabfe9a59bbacf1a8f547046593267824d895c08befe073596fb8e8eb5"
+    },
+    {
+      "reviewer_clip_id": "HR1-C006",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-8f41106dba2ce87b51d041fb",
+      "source_bytes": 20394,
+      "source_package_filename": "videos/A4-8f41106dba2ce87b51d041fb.mp4",
+      "source_sha256": "1c644c2333ce39295e9669873ae47dc9e278a153d4952d1e6a0bdd67b6393807"
+    },
+    {
+      "reviewer_clip_id": "HR1-C007",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-be80308ff90a17e8721fc34d",
+      "source_bytes": 22698,
+      "source_package_filename": "videos/A4-be80308ff90a17e8721fc34d.mp4",
+      "source_sha256": "da31b881a45e636c704c78f4e6483570ff67a849b8917c24027361a7f7b72043"
+    },
+    {
+      "reviewer_clip_id": "HR1-C008",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-59b7ba4dfadbe7df12433653",
+      "source_bytes": 19554,
+      "source_package_filename": "videos/A4-59b7ba4dfadbe7df12433653.mp4",
+      "source_sha256": "9e2a4eb9ad5ad0b7cf3cae1d7d57db57da171ee6b3538ff0a34e59bcc3fb4dba"
+    },
+    {
+      "reviewer_clip_id": "HR1-C009",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-ca6a461b62d90070cad00af6",
+      "source_bytes": 19139,
+      "source_package_filename": "videos/A4-ca6a461b62d90070cad00af6.mp4",
+      "source_sha256": "3ccf40696b8e800090c1dd07b8d226d2365216c4a9d12a90a579453bc304d191"
+    },
+    {
+      "reviewer_clip_id": "HR1-C010",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-c100d2e0b4c227078a34f5fd",
+      "source_bytes": 24931,
+      "source_package_filename": "videos/A4-c100d2e0b4c227078a34f5fd.mp4",
+      "source_sha256": "f063068226e969e2b7bcb384942aa2e6a2d41e0d376736297a39728e3a380743"
+    },
+    {
+      "reviewer_clip_id": "HR1-C011",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-b1c29c3462ef3e0acff2adf6",
+      "source_bytes": 19315,
+      "source_package_filename": "videos/A4-b1c29c3462ef3e0acff2adf6.mp4",
+      "source_sha256": "d081e0fd21eb475a6a400f83de317620da53aedae5b3b71d7f4aa41670f2b78a"
+    },
+    {
+      "reviewer_clip_id": "HR1-C012",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-3cf1a05b492945dd90889d84",
+      "source_bytes": 21404,
+      "source_package_filename": "videos/A4-3cf1a05b492945dd90889d84.mp4",
+      "source_sha256": "8ea42b22299d28fae36050505d4573c1bdb98446fe67b132bb0fc5d1dc11449a"
+    },
+    {
+      "reviewer_clip_id": "HR1-C013",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-b40ec1fdecf83fa46af4afa1",
+      "source_bytes": 18549,
+      "source_package_filename": "videos/A4-b40ec1fdecf83fa46af4afa1.mp4",
+      "source_sha256": "4c0c6ff3d2fe8d69fd727c57e01c5a7191d68779d732b50c45e51c2e8e1c9c0a"
+    },
+    {
+      "reviewer_clip_id": "HR1-C014",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-bac987774bd0443578701921",
+      "source_bytes": 21937,
+      "source_package_filename": "videos/A4-bac987774bd0443578701921.mp4",
+      "source_sha256": "a9a94c43d3cb080940641e8466e1f730d186814bbfdf1749e7709ee9ffd0635e"
+    },
+    {
+      "reviewer_clip_id": "HR1-C015",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-a3fa2ab516212083474cc615",
+      "source_bytes": 14214,
+      "source_package_filename": "videos/A4-a3fa2ab516212083474cc615.mp4",
+      "source_sha256": "6dac9e5cae1a17568cb58e449cce3759b28f0497afdea52375f8b5fda27c2a69"
+    },
+    {
+      "reviewer_clip_id": "HR1-C016",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-5a5674737a679f3ce8b731a1",
+      "source_bytes": 26045,
+      "source_package_filename": "videos/A4-5a5674737a679f3ce8b731a1.mp4",
+      "source_sha256": "e59a594c2c59858c5745da3ec4ceff9ff9a424a940d7cdf6d1fa3ea8c35047b1"
+    },
+    {
+      "reviewer_clip_id": "HR1-C017",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-0d561dd0ced669f27353c8df",
+      "source_bytes": 23096,
+      "source_package_filename": "videos/A4-0d561dd0ced669f27353c8df.mp4",
+      "source_sha256": "0595487ed0e1447fa30baa6bb57dc63f488f879751d66992dacc8d9fef837d15"
+    },
+    {
+      "reviewer_clip_id": "HR1-C018",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-1a7b3fae66acaa9271909568",
+      "source_bytes": 21010,
+      "source_package_filename": "videos/A4-1a7b3fae66acaa9271909568.mp4",
+      "source_sha256": "8f25b559f6ea62a3522b72ec6cb71d520c4ebfb6cbd390eeebec12089b894438"
+    },
+    {
+      "reviewer_clip_id": "HR1-C019",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-348cdc95ad6ca1037451ad89",
+      "source_bytes": 21716,
+      "source_package_filename": "videos/A4-348cdc95ad6ca1037451ad89.mp4",
+      "source_sha256": "cdb4a9f20ede735f97ab091d80731da8b2e5985e786f008b82047be22c5e7ad8"
+    },
+    {
+      "reviewer_clip_id": "HR1-C020",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-aa51c7e43b7d038a53b09462",
+      "source_bytes": 20707,
+      "source_package_filename": "videos/A4-aa51c7e43b7d038a53b09462.mp4",
+      "source_sha256": "687ae00a11a55e1789e55b95cd83274bd70ae7a3a9f5677a3c650262e12b05e8"
+    },
+    {
+      "reviewer_clip_id": "HR1-C021",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-1c54f8f807d3fd34294f51c4",
+      "source_bytes": 23967,
+      "source_package_filename": "videos/A4-1c54f8f807d3fd34294f51c4.mp4",
+      "source_sha256": "b621866e398ef570bccc894bc40e1c275ef6e43a7e604aa0a31cfa3b4e6ad9bb"
+    },
+    {
+      "reviewer_clip_id": "HR1-C022",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-e3f7cbc6471ad3b6f7973e0a",
+      "source_bytes": 23012,
+      "source_package_filename": "videos/A4-e3f7cbc6471ad3b6f7973e0a.mp4",
+      "source_sha256": "a5ac5d4a1a914f68201d17f8ecf1146ba34b6ef6bdbe0238d626c90128f3ea4e"
+    },
+    {
+      "reviewer_clip_id": "HR1-C023",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-5a0c4c42e8a3fd1a6eb0bc7f",
+      "source_bytes": 20666,
+      "source_package_filename": "videos/A4-5a0c4c42e8a3fd1a6eb0bc7f.mp4",
+      "source_sha256": "86c324602ee83cc7de4812b31eeb142c0e517dffc0e1df91557c6b3872facef6"
+    },
+    {
+      "reviewer_clip_id": "HR1-C024",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-159e7d8fa3abe3253bd35060",
+      "source_bytes": 21576,
+      "source_package_filename": "videos/A4-159e7d8fa3abe3253bd35060.mp4",
+      "source_sha256": "dc357fed681e4bab105138a6b02e4e0cfa683441abe4ba83d6b4196c9fcef20c"
+    },
+    {
+      "reviewer_clip_id": "HR1-C025",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-ef2d7f1e79754ccc7719220d",
+      "source_bytes": 22761,
+      "source_package_filename": "videos/A4-ef2d7f1e79754ccc7719220d.mp4",
+      "source_sha256": "0ac666d0073f26bbeef960d241c5e091370ed77a6ae5ea83c7e369ec603a92da"
+    },
+    {
+      "reviewer_clip_id": "HR1-C026",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-f903474e520c9af18c7a20f2",
+      "source_bytes": 17735,
+      "source_package_filename": "videos/A4-f903474e520c9af18c7a20f2.mp4",
+      "source_sha256": "0f719885b38ad3097faf90cfbff39e094bbf9dc3cd4046002109dd2b8c71ba1b"
+    },
+    {
+      "reviewer_clip_id": "HR1-C027",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-44c493074a8b9dc2cf9c619c",
+      "source_bytes": 21173,
+      "source_package_filename": "videos/A4-44c493074a8b9dc2cf9c619c.mp4",
+      "source_sha256": "7dba0eefd7384adbe43347b5533b7f840046f5b1e2a55e0c7d0c742f9f0511cf"
+    },
+    {
+      "reviewer_clip_id": "HR1-C028",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-ef9c123d145fa514107f58af",
+      "source_bytes": 27551,
+      "source_package_filename": "videos/A4-ef9c123d145fa514107f58af.mp4",
+      "source_sha256": "e4b4591cb2cd45afcaa037efdf9d280f377dd9e8c99c3e85335d94efdb8c3f0c"
+    },
+    {
+      "reviewer_clip_id": "HR1-C029",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-68618bc75f72acb25c744766",
+      "source_bytes": 21709,
+      "source_package_filename": "videos/A4-68618bc75f72acb25c744766.mp4",
+      "source_sha256": "158e90cd8aaf5df0a1d74625de26091ac94df106e8ca8bbff195b2f251c5bb39"
+    },
+    {
+      "reviewer_clip_id": "HR1-C030",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-8cc952e3fb17d4ade43d9748",
+      "source_bytes": 20035,
+      "source_package_filename": "videos/A4-8cc952e3fb17d4ade43d9748.mp4",
+      "source_sha256": "17271b7b9bd27a328e28c15c0bf40ecc1b5d8eccbfe19540334661ec5eb1d365"
+    },
+    {
+      "reviewer_clip_id": "HR1-C031",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-2cdd949df512f7e3220d5344",
+      "source_bytes": 23885,
+      "source_package_filename": "videos/A4-2cdd949df512f7e3220d5344.mp4",
+      "source_sha256": "4994f95221ab348d37abd62b6344a3cd04eb5a126645589cf4a8fe5aea544f3f"
+    },
+    {
+      "reviewer_clip_id": "HR1-C032",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-d72ccda9038e1928fa756081",
+      "source_bytes": 20074,
+      "source_package_filename": "videos/A4-d72ccda9038e1928fa756081.mp4",
+      "source_sha256": "4119ad2e201ccc16070a3789cf7ef8a3adbc009a4cf8829df83ba5e75bfc7524"
+    },
+    {
+      "reviewer_clip_id": "HR1-C033",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-070354e1b9b523ce64da755a",
+      "source_bytes": 24878,
+      "source_package_filename": "videos/A4-070354e1b9b523ce64da755a.mp4",
+      "source_sha256": "3ca0bfa412abba44c72e9f96c8c322527ad3203fa7654a6fbb8bc846af2e1c55"
+    },
+    {
+      "reviewer_clip_id": "HR1-C034",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-80847e94e83bd256c72179be",
+      "source_bytes": 23282,
+      "source_package_filename": "videos/A4-80847e94e83bd256c72179be.mp4",
+      "source_sha256": "46c3f7732ff6e388522ff0bd60c3b1898a1cfdacdd4f8fd9ec3430ca813f4100"
+    },
+    {
+      "reviewer_clip_id": "HR1-C035",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-85239a8e104f0f21e05d73c3",
+      "source_bytes": 16043,
+      "source_package_filename": "videos/A4-85239a8e104f0f21e05d73c3.mp4",
+      "source_sha256": "578566ce9cf2d3b675d7ca7ff6387e1f1d0bd895b455f396581ddd49a94cf86b"
+    },
+    {
+      "reviewer_clip_id": "HR1-C036",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-9492656b51acceb698860505",
+      "source_bytes": 20966,
+      "source_package_filename": "videos/A4-9492656b51acceb698860505.mp4",
+      "source_sha256": "c2600be1919b9e07210751c26e7e6c4a8cf8fdd1a24481a49cd11c08ced351ab"
+    },
+    {
+      "reviewer_clip_id": "HR1-C037",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-9de1fed613fc2b8d116c73fc",
+      "source_bytes": 23244,
+      "source_package_filename": "videos/A4-9de1fed613fc2b8d116c73fc.mp4",
+      "source_sha256": "23f19b4afb4288e4c0dbb23aeec86de10e498c8fa4be0718c2f7786a62f13cbc"
+    },
+    {
+      "reviewer_clip_id": "HR1-C038",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-33b5ff9adc75a6c776095fee",
+      "source_bytes": 19745,
+      "source_package_filename": "videos/A4-33b5ff9adc75a6c776095fee.mp4",
+      "source_sha256": "77711bbf393f5cd664d1ef122e582556ce43966f7f931559cc95a1311337da4a"
+    },
+    {
+      "reviewer_clip_id": "HR1-C039",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-62f3ea88e22bcae670007a66",
+      "source_bytes": 24331,
+      "source_package_filename": "videos/A4-62f3ea88e22bcae670007a66.mp4",
+      "source_sha256": "cbe8374d7ec64d0f287c7f4f34395c0bd6cf738c1eb7c1781c373228ff45116b"
+    },
+    {
+      "reviewer_clip_id": "HR1-C040",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-41168b63eb6f7910d9beb0bd",
+      "source_bytes": 23711,
+      "source_package_filename": "videos/A4-41168b63eb6f7910d9beb0bd.mp4",
+      "source_sha256": "fbf502bea8316136b15035a02eff4a1feb4f1758b0f656d47c5555760eca2975"
+    },
+    {
+      "reviewer_clip_id": "HR1-C041",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-bc354e30501d5221e24706d7",
+      "source_bytes": 19498,
+      "source_package_filename": "videos/A4-bc354e30501d5221e24706d7.mp4",
+      "source_sha256": "b05e6f517b348c6876d465a99cf52a1b2320b88cd1d0bd999d46ba283af1c803"
+    },
+    {
+      "reviewer_clip_id": "HR1-C042",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-711dbaac7b7b5bb79a5c43aa",
+      "source_bytes": 25557,
+      "source_package_filename": "videos/A4-711dbaac7b7b5bb79a5c43aa.mp4",
+      "source_sha256": "4e721cf1fed0f5a2e3d86a58d54c3f284fe62e63dc68d13bd4032a0faba7d0ad"
+    },
+    {
+      "reviewer_clip_id": "HR1-C043",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-04164bee1bbcffd4086eec1d",
+      "source_bytes": 16336,
+      "source_package_filename": "videos/A4-04164bee1bbcffd4086eec1d.mp4",
+      "source_sha256": "add82ee5c94002173c6da51fbb120519a6a2ed06e9ad6e6def2bc834a2db324e"
+    },
+    {
+      "reviewer_clip_id": "HR1-C044",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-6454034d73044e41404c81b9",
+      "source_bytes": 21643,
+      "source_package_filename": "videos/A4-6454034d73044e41404c81b9.mp4",
+      "source_sha256": "24571b729e1b3f6c97d080a231994e24987f8b834e7d893ad3309bc27ee193e9"
+    },
+    {
+      "reviewer_clip_id": "HR1-C045",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-6db7c4badfeca919ff3ad2b7",
+      "source_bytes": 19773,
+      "source_package_filename": "videos/A4-6db7c4badfeca919ff3ad2b7.mp4",
+      "source_sha256": "5dc048f8f1cb75259ee2b3bc76fff0c5e8f1e81d651115c62b7e489d89012a30"
+    },
+    {
+      "reviewer_clip_id": "HR1-C046",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-3fa2e975eb60ba21f4d08709",
+      "source_bytes": 20849,
+      "source_package_filename": "videos/A4-3fa2e975eb60ba21f4d08709.mp4",
+      "source_sha256": "7e6972c267f327d212930fd1b4ae95c0c2110a9bb3917bde9bf7f80f1f4d10b1"
+    },
+    {
+      "reviewer_clip_id": "HR1-C047",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-0c03bbc253387e2f8d6c74f4",
+      "source_bytes": 23011,
+      "source_package_filename": "videos/A4-0c03bbc253387e2f8d6c74f4.mp4",
+      "source_sha256": "ec226970cf8cb61d82e47123b48088de57ccd052703c8c195f561f5d95f068d2"
+    },
+    {
+      "reviewer_clip_id": "HR1-C048",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-8f80ce2478d48b71d29a8162",
+      "source_bytes": 21890,
+      "source_package_filename": "videos/A4-8f80ce2478d48b71d29a8162.mp4",
+      "source_sha256": "a2adaef5f286e26a5236841c0d1768b5a8eb2ad0ed6fef5bf8c44cdf0d5bedb2"
+    },
+    {
+      "reviewer_clip_id": "HR1-C049",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-bebf91a869dff3cf9132b673",
+      "source_bytes": 21286,
+      "source_package_filename": "videos/A4-bebf91a869dff3cf9132b673.mp4",
+      "source_sha256": "a4172af15938afcda52855417bed94bcf58f7c06f43fe2bc8c92111060e9f0b1"
+    },
+    {
+      "reviewer_clip_id": "HR1-C050",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-d6f758695ac59af66b85312f",
+      "source_bytes": 21572,
+      "source_package_filename": "videos/A4-d6f758695ac59af66b85312f.mp4",
+      "source_sha256": "8a89e463fd3bc718a25d798766f41120d9c1dba548b2fdf0ee8f6e4cbeb0375b"
+    },
+    {
+      "reviewer_clip_id": "HR1-C051",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-2d887a6cce83796be23f25cf",
+      "source_bytes": 20882,
+      "source_package_filename": "videos/A4-2d887a6cce83796be23f25cf.mp4",
+      "source_sha256": "6134853f92eec4989b64c73658aa53d311a12aac08275d64cd6fd799271bbee4"
+    },
+    {
+      "reviewer_clip_id": "HR1-C052",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-14c517152bf27f0c942d39df",
+      "source_bytes": 25352,
+      "source_package_filename": "videos/A4-14c517152bf27f0c942d39df.mp4",
+      "source_sha256": "49d17256aeafd89eb7f888fc75ea55a34ffa8cb5862b8a1d557b7e5db668197e"
+    },
+    {
+      "reviewer_clip_id": "HR1-C053",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-a04b8276b47138892e59ac44",
+      "source_bytes": 19427,
+      "source_package_filename": "videos/A4-a04b8276b47138892e59ac44.mp4",
+      "source_sha256": "7a82cb9e580849c325a363d8d58cd1b8aa0a762aee890ce2098b413d3dad912a"
+    },
+    {
+      "reviewer_clip_id": "HR1-C054",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-2b89a3d61467858cafb486d0",
+      "source_bytes": 23442,
+      "source_package_filename": "videos/A4-2b89a3d61467858cafb486d0.mp4",
+      "source_sha256": "7617f02cd63903ea065e142f9557525f3a54494eca04b4b235745377280990d0"
+    },
+    {
+      "reviewer_clip_id": "HR1-C055",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-10fa433c4c697104b9c22863",
+      "source_bytes": 24754,
+      "source_package_filename": "videos/A4-10fa433c4c697104b9c22863.mp4",
+      "source_sha256": "bac9c83680ca4b6f473ad62110e475284a8a259c26af56769151b09599255cdf"
+    },
+    {
+      "reviewer_clip_id": "HR1-C056",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-586d1ea3a5fb1577f213c5d6",
+      "source_bytes": 24086,
+      "source_package_filename": "videos/A4-586d1ea3a5fb1577f213c5d6.mp4",
+      "source_sha256": "a648862dcb961fe8a5a6c550b467d60276ec67a4051e08bf74bb83394e3d3316"
+    },
+    {
+      "reviewer_clip_id": "HR1-C057",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-6de3ec9d7153998600e26306",
+      "source_bytes": 19968,
+      "source_package_filename": "videos/A4-6de3ec9d7153998600e26306.mp4",
+      "source_sha256": "5970876f4e27184bac838c09fe070042a75ad3a64ded4669d044a4dbb9173dd0"
+    },
+    {
+      "reviewer_clip_id": "HR1-C058",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-99fa1060b13aeacef950d8d3",
+      "source_bytes": 23670,
+      "source_package_filename": "videos/A4-99fa1060b13aeacef950d8d3.mp4",
+      "source_sha256": "9d23097cea5ccb29b928e8e1020b4e0448db2b4555aef2bb16f1ef884c1423ad"
+    },
+    {
+      "reviewer_clip_id": "HR1-C059",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-baf7eeb2a878a3f5569e03a1",
+      "source_bytes": 20439,
+      "source_package_filename": "videos/A4-baf7eeb2a878a3f5569e03a1.mp4",
+      "source_sha256": "36718d3516ba98e1d8613bd25364552c84c64804b94d22031a75b003b6036873"
+    },
+    {
+      "reviewer_clip_id": "HR1-C060",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-5313e315ef035cfba148b57a",
+      "source_bytes": 19009,
+      "source_package_filename": "videos/A4-5313e315ef035cfba148b57a.mp4",
+      "source_sha256": "991a13ba0102bd7a1c1ddd35470d7e73c87aff09535b64d6020391952b635441"
+    },
+    {
+      "reviewer_clip_id": "HR1-C061",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-7ae121730b220e92334ade89",
+      "source_bytes": 22703,
+      "source_package_filename": "videos/A4-7ae121730b220e92334ade89.mp4",
+      "source_sha256": "2e37e52e107ddf14464c1248d4537340e3365223fd1fefaaac35dbfdf4b16b5d"
+    },
+    {
+      "reviewer_clip_id": "HR1-C062",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-07af196c733562c32296b855",
+      "source_bytes": 19579,
+      "source_package_filename": "videos/A4-07af196c733562c32296b855.mp4",
+      "source_sha256": "6555851d0e6c2fc55b4ce565516c4fd60266636921d58c3d2d7655528fc4201e"
+    },
+    {
+      "reviewer_clip_id": "HR1-C063",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-9a8a33e4b39c82b5f772dc79",
+      "source_bytes": 24197,
+      "source_package_filename": "videos/A4-9a8a33e4b39c82b5f772dc79.mp4",
+      "source_sha256": "26bfeec1b212ceeb7033ebaa532c42c436f384566ec30492cf9777f768f714e6"
+    },
+    {
+      "reviewer_clip_id": "HR1-C064",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-afdb2500e34ee76a007cf425",
+      "source_bytes": 17169,
+      "source_package_filename": "videos/A4-afdb2500e34ee76a007cf425.mp4",
+      "source_sha256": "670b6e59314c731766e1346e01a744aa612b5823347bdb7fe9ed4e4df2cd1077"
+    },
+    {
+      "reviewer_clip_id": "HR1-C065",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-e085245903a2a1739c4b8f2a",
+      "source_bytes": 20783,
+      "source_package_filename": "videos/A4-e085245903a2a1739c4b8f2a.mp4",
+      "source_sha256": "2be91934210e2043efd82cf6ad3f670158916323043e9d4c94a07fe83d905b79"
+    },
+    {
+      "reviewer_clip_id": "HR1-C066",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-0474bac4273e44e06eaac848",
+      "source_bytes": 26622,
+      "source_package_filename": "videos/A4-0474bac4273e44e06eaac848.mp4",
+      "source_sha256": "382384e0583299999446ccc4324811d0ac91f98ef496bc401cd199e0d7946d8e"
+    },
+    {
+      "reviewer_clip_id": "HR1-C067",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-85b1fe760d67a95f6d30799f",
+      "source_bytes": 19229,
+      "source_package_filename": "videos/A4-85b1fe760d67a95f6d30799f.mp4",
+      "source_sha256": "34af54cb779726f0cabf0c7a66e9aa65f4ee19bd4a48e34d069cc9616086538e"
+    },
+    {
+      "reviewer_clip_id": "HR1-C068",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-ce7195076098c5a0f6a5e84c",
+      "source_bytes": 24736,
+      "source_package_filename": "videos/A4-ce7195076098c5a0f6a5e84c.mp4",
+      "source_sha256": "5619ea24dab3b88f7893183aac8d3b9caf3145d19c1427ee019580a04a72463a"
+    },
+    {
+      "reviewer_clip_id": "HR1-C069",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-56c424ee8eec005699ed2d1b",
+      "source_bytes": 19730,
+      "source_package_filename": "videos/A4-56c424ee8eec005699ed2d1b.mp4",
+      "source_sha256": "a9e695c2a93296a772342b396525dc0a7c8732c710e19a4383fb26c2b9fddebc"
+    },
+    {
+      "reviewer_clip_id": "HR1-C070",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-ec4baa7f44a6395e16255402",
+      "source_bytes": 22802,
+      "source_package_filename": "videos/A4-ec4baa7f44a6395e16255402.mp4",
+      "source_sha256": "6f91127591e74e2305738ee1ddb1970aa81bd3a23030f4538fad7dc982242560"
+    },
+    {
+      "reviewer_clip_id": "HR1-C071",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-9a3c9be9fdb6ea9ca131f66e",
+      "source_bytes": 21722,
+      "source_package_filename": "videos/A4-9a3c9be9fdb6ea9ca131f66e.mp4",
+      "source_sha256": "bd6f1d0e7001a3fbbdf70cf36a0add8d73d9d12f5f302bb045fde5ef83df2068"
+    },
+    {
+      "reviewer_clip_id": "HR1-C072",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-70174c76ca96a7d1b79e5963",
+      "source_bytes": 20756,
+      "source_package_filename": "videos/A4-70174c76ca96a7d1b79e5963.mp4",
+      "source_sha256": "534f03e59f92d4d51fe44184749e95451973d4d8606e7c5128f7467307b1375e"
+    },
+    {
+      "reviewer_clip_id": "HR1-C073",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-62cd5b9d129ffd4686084b35",
+      "source_bytes": 23911,
+      "source_package_filename": "videos/A4-62cd5b9d129ffd4686084b35.mp4",
+      "source_sha256": "29a47d57088d5dbd2586913c9f80263a4e9a46e829ddf2f74ae811cfd6c4589f"
+    },
+    {
+      "reviewer_clip_id": "HR1-C074",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-cf708be7e061db270f3d166a",
+      "source_bytes": 21312,
+      "source_package_filename": "videos/A4-cf708be7e061db270f3d166a.mp4",
+      "source_sha256": "6158e2930c10a3a8de8318a177b7f100bb5c7ab42e9d88dc5f4e1ec71c31ee00"
+    },
+    {
+      "reviewer_clip_id": "HR1-C075",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-d546c7c7bec5fb287318cc0a",
+      "source_bytes": 22527,
+      "source_package_filename": "videos/A4-d546c7c7bec5fb287318cc0a.mp4",
+      "source_sha256": "9920f6a5b4e24beacd1f9d53b66a3701d1a551ed221d1f75f00d4c99ec93606a"
+    },
+    {
+      "reviewer_clip_id": "HR1-C076",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-cd73dc7704002ef35c5055d8",
+      "source_bytes": 27254,
+      "source_package_filename": "videos/A4-cd73dc7704002ef35c5055d8.mp4",
+      "source_sha256": "5a2b753ee462db0ce655bf95ba48d1a155ecb5e156e8c73195e84b34fb2c0d02"
+    },
+    {
+      "reviewer_clip_id": "HR1-C077",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-0b9f0a2b262d2d7d8db14641",
+      "source_bytes": 25209,
+      "source_package_filename": "videos/A4-0b9f0a2b262d2d7d8db14641.mp4",
+      "source_sha256": "2e259e68d9fba6d5ba6f0e5f7d4d9b82aa32c9ee763e16d033d6ce99f6cb1e55"
+    },
+    {
+      "reviewer_clip_id": "HR1-C078",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-701870d157ce86caaa2abe9a",
+      "source_bytes": 22874,
+      "source_package_filename": "videos/A4-701870d157ce86caaa2abe9a.mp4",
+      "source_sha256": "071a09cd0f6ded3431c1ef2ec2f7db217ec5eea35d5d6a1d771d89c6c120b4ff"
+    },
+    {
+      "reviewer_clip_id": "HR1-C079",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-c75754d01544eb51f65a6335",
+      "source_bytes": 21954,
+      "source_package_filename": "videos/A4-c75754d01544eb51f65a6335.mp4",
+      "source_sha256": "57049167edf804f7e4f5033351d3b882b5244fdc5911a922952aa0f52064fcd5"
+    },
+    {
+      "reviewer_clip_id": "HR1-C080",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-7f51b223e9f3d09f45e9aa85",
+      "source_bytes": 20847,
+      "source_package_filename": "videos/A4-7f51b223e9f3d09f45e9aa85.mp4",
+      "source_sha256": "8ffe9a768e825b0e529d94b37946c091c06d22dfe3a9feb1290b9c45545277ea"
+    },
+    {
+      "reviewer_clip_id": "HR1-C081",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-b66f5735b18fb02e6542a612",
+      "source_bytes": 22129,
+      "source_package_filename": "videos/A4-b66f5735b18fb02e6542a612.mp4",
+      "source_sha256": "6b12b51fc75dda0d3ecb367e664cd6da48d38f61d6daa66d9c7eb172b0800312"
+    },
+    {
+      "reviewer_clip_id": "HR1-C082",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-a0561b2c2dba2d29602f4638",
+      "source_bytes": 21674,
+      "source_package_filename": "videos/A4-a0561b2c2dba2d29602f4638.mp4",
+      "source_sha256": "c450c2e13e9c01fb03b74710858fdbe9495493982f44f4d85067279c2502849f"
+    },
+    {
+      "reviewer_clip_id": "HR1-C083",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-23557db2a747a762de7b0387",
+      "source_bytes": 18882,
+      "source_package_filename": "videos/A4-23557db2a747a762de7b0387.mp4",
+      "source_sha256": "d63515821c2e7448461964533905f5d062c07d263536ec36e2d658f5147bd386"
+    },
+    {
+      "reviewer_clip_id": "HR1-C084",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-e0970623b788e7143f97bc45",
+      "source_bytes": 20659,
+      "source_package_filename": "videos/A4-e0970623b788e7143f97bc45.mp4",
+      "source_sha256": "6df8e7c0d71d332d74d0be1f5aece039023316d0711d44eed5981ef124ca5f90"
+    },
+    {
+      "reviewer_clip_id": "HR1-C085",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-aeed0005f821d7179e34e18c",
+      "source_bytes": 20053,
+      "source_package_filename": "videos/A4-aeed0005f821d7179e34e18c.mp4",
+      "source_sha256": "ae6b7c897a95dbb00e761e27d3ec6039bfe34e39ebc3626cde186d84c7771561"
+    },
+    {
+      "reviewer_clip_id": "HR1-C086",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-d6da1788f93235a5261fbbef",
+      "source_bytes": 14667,
+      "source_package_filename": "videos/A4-d6da1788f93235a5261fbbef.mp4",
+      "source_sha256": "63f4e5344c60c44b7e28e87836f7e439cd6725af00d511299e5196709a2fbe4a"
+    },
+    {
+      "reviewer_clip_id": "HR1-C087",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-8fca39b31a9c428b79c9211b",
+      "source_bytes": 22415,
+      "source_package_filename": "videos/A4-8fca39b31a9c428b79c9211b.mp4",
+      "source_sha256": "a16893b8a96d9a6e37d70b6c559d2e0e40948046ca56ed3ff7da0346175c4109"
+    },
+    {
+      "reviewer_clip_id": "HR1-C088",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-e03bfa4807f3069223e6d573",
+      "source_bytes": 25663,
+      "source_package_filename": "videos/A4-e03bfa4807f3069223e6d573.mp4",
+      "source_sha256": "a7c7b06b1dc7a4e0f07b463a7fd71928bbf957ed1a204a453dad9dec1536a89a"
+    },
+    {
+      "reviewer_clip_id": "HR1-C089",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-1782c9f823a5cab9570ef087",
+      "source_bytes": 19819,
+      "source_package_filename": "videos/A4-1782c9f823a5cab9570ef087.mp4",
+      "source_sha256": "7174054ae88c81818a5f6df4cc237694f4972f66cdad0d47b202dfe7cb06ce09"
+    },
+    {
+      "reviewer_clip_id": "HR1-C090",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-371225f6ab6a1aa8dd85d8f4",
+      "source_bytes": 24429,
+      "source_package_filename": "videos/A4-371225f6ab6a1aa8dd85d8f4.mp4",
+      "source_sha256": "a965581fa5f32c5e6984ba3027b6198454e9ef348a1b5dcd56be9730c9bcebf3"
+    },
+    {
+      "reviewer_clip_id": "HR1-C091",
+      "reviewer_id": "HR1",
+      "source_ac4_blinded_video_id": "A4-f1b85898a9900eef29bae1c7",
+      "source_bytes": 21886,
+      "source_package_filename": "videos/A4-f1b85898a9900eef29bae1c7.mp4",
+      "source_sha256": "1c8813e2647933a3303bd5aa0d49b147feb56d3a87fc682489006c4306b9d493"
+    },
+    {
+      "reviewer_clip_id": "HR2-C001",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-1782c9f823a5cab9570ef087",
+      "source_bytes": 19819,
+      "source_package_filename": "videos/A4-1782c9f823a5cab9570ef087.mp4",
+      "source_sha256": "7174054ae88c81818a5f6df4cc237694f4972f66cdad0d47b202dfe7cb06ce09"
+    },
+    {
+      "reviewer_clip_id": "HR2-C002",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-711dbaac7b7b5bb79a5c43aa",
+      "source_bytes": 25557,
+      "source_package_filename": "videos/A4-711dbaac7b7b5bb79a5c43aa.mp4",
+      "source_sha256": "4e721cf1fed0f5a2e3d86a58d54c3f284fe62e63dc68d13bd4032a0faba7d0ad"
+    },
+    {
+      "reviewer_clip_id": "HR2-C003",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-14c517152bf27f0c942d39df",
+      "source_bytes": 25352,
+      "source_package_filename": "videos/A4-14c517152bf27f0c942d39df.mp4",
+      "source_sha256": "49d17256aeafd89eb7f888fc75ea55a34ffa8cb5862b8a1d557b7e5db668197e"
+    },
+    {
+      "reviewer_clip_id": "HR2-C004",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-d6da1788f93235a5261fbbef",
+      "source_bytes": 14667,
+      "source_package_filename": "videos/A4-d6da1788f93235a5261fbbef.mp4",
+      "source_sha256": "63f4e5344c60c44b7e28e87836f7e439cd6725af00d511299e5196709a2fbe4a"
+    },
+    {
+      "reviewer_clip_id": "HR2-C005",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-6c4feabbad9b1feafcb69de5",
+      "source_bytes": 19525,
+      "source_package_filename": "videos/A4-6c4feabbad9b1feafcb69de5.mp4",
+      "source_sha256": "5aae0d4bf6adcbeff43ef2771da1c01db452282161e70cad5807fc60104c9bb7"
+    },
+    {
+      "reviewer_clip_id": "HR2-C006",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-371225f6ab6a1aa8dd85d8f4",
+      "source_bytes": 24429,
+      "source_package_filename": "videos/A4-371225f6ab6a1aa8dd85d8f4.mp4",
+      "source_sha256": "a965581fa5f32c5e6984ba3027b6198454e9ef348a1b5dcd56be9730c9bcebf3"
+    },
+    {
+      "reviewer_clip_id": "HR2-C007",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-baf7eeb2a878a3f5569e03a1",
+      "source_bytes": 20439,
+      "source_package_filename": "videos/A4-baf7eeb2a878a3f5569e03a1.mp4",
+      "source_sha256": "36718d3516ba98e1d8613bd25364552c84c64804b94d22031a75b003b6036873"
+    },
+    {
+      "reviewer_clip_id": "HR2-C008",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-afdb2500e34ee76a007cf425",
+      "source_bytes": 17169,
+      "source_package_filename": "videos/A4-afdb2500e34ee76a007cf425.mp4",
+      "source_sha256": "670b6e59314c731766e1346e01a744aa612b5823347bdb7fe9ed4e4df2cd1077"
+    },
+    {
+      "reviewer_clip_id": "HR2-C009",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-bce7d8567d1376490ea0fc6a",
+      "source_bytes": 23670,
+      "source_package_filename": "videos/A4-bce7d8567d1376490ea0fc6a.mp4",
+      "source_sha256": "96b67597b37629965bda6598bfe8d585874f6f66a1afc3b89bc6411c5dbd7c91"
+    },
+    {
+      "reviewer_clip_id": "HR2-C010",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-f903474e520c9af18c7a20f2",
+      "source_bytes": 17735,
+      "source_package_filename": "videos/A4-f903474e520c9af18c7a20f2.mp4",
+      "source_sha256": "0f719885b38ad3097faf90cfbff39e094bbf9dc3cd4046002109dd2b8c71ba1b"
+    },
+    {
+      "reviewer_clip_id": "HR2-C011",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-9492656b51acceb698860505",
+      "source_bytes": 20966,
+      "source_package_filename": "videos/A4-9492656b51acceb698860505.mp4",
+      "source_sha256": "c2600be1919b9e07210751c26e7e6c4a8cf8fdd1a24481a49cd11c08ced351ab"
+    },
+    {
+      "reviewer_clip_id": "HR2-C012",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-be80308ff90a17e8721fc34d",
+      "source_bytes": 22698,
+      "source_package_filename": "videos/A4-be80308ff90a17e8721fc34d.mp4",
+      "source_sha256": "da31b881a45e636c704c78f4e6483570ff67a849b8917c24027361a7f7b72043"
+    },
+    {
+      "reviewer_clip_id": "HR2-C013",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-23557db2a747a762de7b0387",
+      "source_bytes": 18882,
+      "source_package_filename": "videos/A4-23557db2a747a762de7b0387.mp4",
+      "source_sha256": "d63515821c2e7448461964533905f5d062c07d263536ec36e2d658f5147bd386"
+    },
+    {
+      "reviewer_clip_id": "HR2-C014",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-0b9f0a2b262d2d7d8db14641",
+      "source_bytes": 25209,
+      "source_package_filename": "videos/A4-0b9f0a2b262d2d7d8db14641.mp4",
+      "source_sha256": "2e259e68d9fba6d5ba6f0e5f7d4d9b82aa32c9ee763e16d033d6ce99f6cb1e55"
+    },
+    {
+      "reviewer_clip_id": "HR2-C015",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-5313e315ef035cfba148b57a",
+      "source_bytes": 19009,
+      "source_package_filename": "videos/A4-5313e315ef035cfba148b57a.mp4",
+      "source_sha256": "991a13ba0102bd7a1c1ddd35470d7e73c87aff09535b64d6020391952b635441"
+    },
+    {
+      "reviewer_clip_id": "HR2-C016",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-8f80ce2478d48b71d29a8162",
+      "source_bytes": 21890,
+      "source_package_filename": "videos/A4-8f80ce2478d48b71d29a8162.mp4",
+      "source_sha256": "a2adaef5f286e26a5236841c0d1768b5a8eb2ad0ed6fef5bf8c44cdf0d5bedb2"
+    },
+    {
+      "reviewer_clip_id": "HR2-C017",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-d72ccda9038e1928fa756081",
+      "source_bytes": 20074,
+      "source_package_filename": "videos/A4-d72ccda9038e1928fa756081.mp4",
+      "source_sha256": "4119ad2e201ccc16070a3789cf7ef8a3adbc009a4cf8829df83ba5e75bfc7524"
+    },
+    {
+      "reviewer_clip_id": "HR2-C018",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-7f51b223e9f3d09f45e9aa85",
+      "source_bytes": 20847,
+      "source_package_filename": "videos/A4-7f51b223e9f3d09f45e9aa85.mp4",
+      "source_sha256": "8ffe9a768e825b0e529d94b37946c091c06d22dfe3a9feb1290b9c45545277ea"
+    },
+    {
+      "reviewer_clip_id": "HR2-C019",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-e0970623b788e7143f97bc45",
+      "source_bytes": 20659,
+      "source_package_filename": "videos/A4-e0970623b788e7143f97bc45.mp4",
+      "source_sha256": "6df8e7c0d71d332d74d0be1f5aece039023316d0711d44eed5981ef124ca5f90"
+    },
+    {
+      "reviewer_clip_id": "HR2-C020",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-0c03bbc253387e2f8d6c74f4",
+      "source_bytes": 23011,
+      "source_package_filename": "videos/A4-0c03bbc253387e2f8d6c74f4.mp4",
+      "source_sha256": "ec226970cf8cb61d82e47123b48088de57ccd052703c8c195f561f5d95f068d2"
+    },
+    {
+      "reviewer_clip_id": "HR2-C021",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-348cdc95ad6ca1037451ad89",
+      "source_bytes": 21716,
+      "source_package_filename": "videos/A4-348cdc95ad6ca1037451ad89.mp4",
+      "source_sha256": "cdb4a9f20ede735f97ab091d80731da8b2e5985e786f008b82047be22c5e7ad8"
+    },
+    {
+      "reviewer_clip_id": "HR2-C022",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-ccf7fdf1611157810c67253e",
+      "source_bytes": 24089,
+      "source_package_filename": "videos/A4-ccf7fdf1611157810c67253e.mp4",
+      "source_sha256": "befdf0dabfe9a59bbacf1a8f547046593267824d895c08befe073596fb8e8eb5"
+    },
+    {
+      "reviewer_clip_id": "HR2-C023",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-b40ec1fdecf83fa46af4afa1",
+      "source_bytes": 18549,
+      "source_package_filename": "videos/A4-b40ec1fdecf83fa46af4afa1.mp4",
+      "source_sha256": "4c0c6ff3d2fe8d69fd727c57e01c5a7191d68779d732b50c45e51c2e8e1c9c0a"
+    },
+    {
+      "reviewer_clip_id": "HR2-C024",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-f1b85898a9900eef29bae1c7",
+      "source_bytes": 21886,
+      "source_package_filename": "videos/A4-f1b85898a9900eef29bae1c7.mp4",
+      "source_sha256": "1c8813e2647933a3303bd5aa0d49b147feb56d3a87fc682489006c4306b9d493"
+    },
+    {
+      "reviewer_clip_id": "HR2-C025",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-ef2d7f1e79754ccc7719220d",
+      "source_bytes": 22761,
+      "source_package_filename": "videos/A4-ef2d7f1e79754ccc7719220d.mp4",
+      "source_sha256": "0ac666d0073f26bbeef960d241c5e091370ed77a6ae5ea83c7e369ec603a92da"
+    },
+    {
+      "reviewer_clip_id": "HR2-C026",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-ec4baa7f44a6395e16255402",
+      "source_bytes": 22802,
+      "source_package_filename": "videos/A4-ec4baa7f44a6395e16255402.mp4",
+      "source_sha256": "6f91127591e74e2305738ee1ddb1970aa81bd3a23030f4538fad7dc982242560"
+    },
+    {
+      "reviewer_clip_id": "HR2-C027",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-d546c7c7bec5fb287318cc0a",
+      "source_bytes": 22527,
+      "source_package_filename": "videos/A4-d546c7c7bec5fb287318cc0a.mp4",
+      "source_sha256": "9920f6a5b4e24beacd1f9d53b66a3701d1a551ed221d1f75f00d4c99ec93606a"
+    },
+    {
+      "reviewer_clip_id": "HR2-C028",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-9de1fed613fc2b8d116c73fc",
+      "source_bytes": 23244,
+      "source_package_filename": "videos/A4-9de1fed613fc2b8d116c73fc.mp4",
+      "source_sha256": "23f19b4afb4288e4c0dbb23aeec86de10e498c8fa4be0718c2f7786a62f13cbc"
+    },
+    {
+      "reviewer_clip_id": "HR2-C029",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-e03bfa4807f3069223e6d573",
+      "source_bytes": 25663,
+      "source_package_filename": "videos/A4-e03bfa4807f3069223e6d573.mp4",
+      "source_sha256": "a7c7b06b1dc7a4e0f07b463a7fd71928bbf957ed1a204a453dad9dec1536a89a"
+    },
+    {
+      "reviewer_clip_id": "HR2-C030",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-1c54f8f807d3fd34294f51c4",
+      "source_bytes": 23967,
+      "source_package_filename": "videos/A4-1c54f8f807d3fd34294f51c4.mp4",
+      "source_sha256": "b621866e398ef570bccc894bc40e1c275ef6e43a7e604aa0a31cfa3b4e6ad9bb"
+    },
+    {
+      "reviewer_clip_id": "HR2-C031",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-070354e1b9b523ce64da755a",
+      "source_bytes": 24878,
+      "source_package_filename": "videos/A4-070354e1b9b523ce64da755a.mp4",
+      "source_sha256": "3ca0bfa412abba44c72e9f96c8c322527ad3203fa7654a6fbb8bc846af2e1c55"
+    },
+    {
+      "reviewer_clip_id": "HR2-C032",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-70174c76ca96a7d1b79e5963",
+      "source_bytes": 20756,
+      "source_package_filename": "videos/A4-70174c76ca96a7d1b79e5963.mp4",
+      "source_sha256": "534f03e59f92d4d51fe44184749e95451973d4d8606e7c5128f7467307b1375e"
+    },
+    {
+      "reviewer_clip_id": "HR2-C033",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-85239a8e104f0f21e05d73c3",
+      "source_bytes": 16043,
+      "source_package_filename": "videos/A4-85239a8e104f0f21e05d73c3.mp4",
+      "source_sha256": "578566ce9cf2d3b675d7ca7ff6387e1f1d0bd895b455f396581ddd49a94cf86b"
+    },
+    {
+      "reviewer_clip_id": "HR2-C034",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-1a7b3fae66acaa9271909568",
+      "source_bytes": 21010,
+      "source_package_filename": "videos/A4-1a7b3fae66acaa9271909568.mp4",
+      "source_sha256": "8f25b559f6ea62a3522b72ec6cb71d520c4ebfb6cbd390eeebec12089b894438"
+    },
+    {
+      "reviewer_clip_id": "HR2-C035",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-99fa1060b13aeacef950d8d3",
+      "source_bytes": 23670,
+      "source_package_filename": "videos/A4-99fa1060b13aeacef950d8d3.mp4",
+      "source_sha256": "9d23097cea5ccb29b928e8e1020b4e0448db2b4555aef2bb16f1ef884c1423ad"
+    },
+    {
+      "reviewer_clip_id": "HR2-C036",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-aa51c7e43b7d038a53b09462",
+      "source_bytes": 20707,
+      "source_package_filename": "videos/A4-aa51c7e43b7d038a53b09462.mp4",
+      "source_sha256": "687ae00a11a55e1789e55b95cd83274bd70ae7a3a9f5677a3c650262e12b05e8"
+    },
+    {
+      "reviewer_clip_id": "HR2-C037",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-9a3c9be9fdb6ea9ca131f66e",
+      "source_bytes": 21722,
+      "source_package_filename": "videos/A4-9a3c9be9fdb6ea9ca131f66e.mp4",
+      "source_sha256": "bd6f1d0e7001a3fbbdf70cf36a0add8d73d9d12f5f302bb045fde5ef83df2068"
+    },
+    {
+      "reviewer_clip_id": "HR2-C038",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-59b7ba4dfadbe7df12433653",
+      "source_bytes": 19554,
+      "source_package_filename": "videos/A4-59b7ba4dfadbe7df12433653.mp4",
+      "source_sha256": "9e2a4eb9ad5ad0b7cf3cae1d7d57db57da171ee6b3538ff0a34e59bcc3fb4dba"
+    },
+    {
+      "reviewer_clip_id": "HR2-C039",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-e3f7cbc6471ad3b6f7973e0a",
+      "source_bytes": 23012,
+      "source_package_filename": "videos/A4-e3f7cbc6471ad3b6f7973e0a.mp4",
+      "source_sha256": "a5ac5d4a1a914f68201d17f8ecf1146ba34b6ef6bdbe0238d626c90128f3ea4e"
+    },
+    {
+      "reviewer_clip_id": "HR2-C040",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-80847e94e83bd256c72179be",
+      "source_bytes": 23282,
+      "source_package_filename": "videos/A4-80847e94e83bd256c72179be.mp4",
+      "source_sha256": "46c3f7732ff6e388522ff0bd60c3b1898a1cfdacdd4f8fd9ec3430ca813f4100"
+    },
+    {
+      "reviewer_clip_id": "HR2-C041",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-62f3ea88e22bcae670007a66",
+      "source_bytes": 24331,
+      "source_package_filename": "videos/A4-62f3ea88e22bcae670007a66.mp4",
+      "source_sha256": "cbe8374d7ec64d0f287c7f4f34395c0bd6cf738c1eb7c1781c373228ff45116b"
+    },
+    {
+      "reviewer_clip_id": "HR2-C042",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-2b89a3d61467858cafb486d0",
+      "source_bytes": 23442,
+      "source_package_filename": "videos/A4-2b89a3d61467858cafb486d0.mp4",
+      "source_sha256": "7617f02cd63903ea065e142f9557525f3a54494eca04b4b235745377280990d0"
+    },
+    {
+      "reviewer_clip_id": "HR2-C043",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-7ae121730b220e92334ade89",
+      "source_bytes": 22703,
+      "source_package_filename": "videos/A4-7ae121730b220e92334ade89.mp4",
+      "source_sha256": "2e37e52e107ddf14464c1248d4537340e3365223fd1fefaaac35dbfdf4b16b5d"
+    },
+    {
+      "reviewer_clip_id": "HR2-C044",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-56c424ee8eec005699ed2d1b",
+      "source_bytes": 19730,
+      "source_package_filename": "videos/A4-56c424ee8eec005699ed2d1b.mp4",
+      "source_sha256": "a9e695c2a93296a772342b396525dc0a7c8732c710e19a4383fb26c2b9fddebc"
+    },
+    {
+      "reviewer_clip_id": "HR2-C045",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-a3fa2ab516212083474cc615",
+      "source_bytes": 14214,
+      "source_package_filename": "videos/A4-a3fa2ab516212083474cc615.mp4",
+      "source_sha256": "6dac9e5cae1a17568cb58e449cce3759b28f0497afdea52375f8b5fda27c2a69"
+    },
+    {
+      "reviewer_clip_id": "HR2-C046",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-cd73dc7704002ef35c5055d8",
+      "source_bytes": 27254,
+      "source_package_filename": "videos/A4-cd73dc7704002ef35c5055d8.mp4",
+      "source_sha256": "5a2b753ee462db0ce655bf95ba48d1a155ecb5e156e8c73195e84b34fb2c0d02"
+    },
+    {
+      "reviewer_clip_id": "HR2-C047",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-3cf1a05b492945dd90889d84",
+      "source_bytes": 21404,
+      "source_package_filename": "videos/A4-3cf1a05b492945dd90889d84.mp4",
+      "source_sha256": "8ea42b22299d28fae36050505d4573c1bdb98446fe67b132bb0fc5d1dc11449a"
+    },
+    {
+      "reviewer_clip_id": "HR2-C048",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-62cd5b9d129ffd4686084b35",
+      "source_bytes": 23911,
+      "source_package_filename": "videos/A4-62cd5b9d129ffd4686084b35.mp4",
+      "source_sha256": "29a47d57088d5dbd2586913c9f80263a4e9a46e829ddf2f74ae811cfd6c4589f"
+    },
+    {
+      "reviewer_clip_id": "HR2-C049",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-c100d2e0b4c227078a34f5fd",
+      "source_bytes": 24931,
+      "source_package_filename": "videos/A4-c100d2e0b4c227078a34f5fd.mp4",
+      "source_sha256": "f063068226e969e2b7bcb384942aa2e6a2d41e0d376736297a39728e3a380743"
+    },
+    {
+      "reviewer_clip_id": "HR2-C050",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-ca6a461b62d90070cad00af6",
+      "source_bytes": 19139,
+      "source_package_filename": "videos/A4-ca6a461b62d90070cad00af6.mp4",
+      "source_sha256": "3ccf40696b8e800090c1dd07b8d226d2365216c4a9d12a90a579453bc304d191"
+    },
+    {
+      "reviewer_clip_id": "HR2-C051",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-701870d157ce86caaa2abe9a",
+      "source_bytes": 22874,
+      "source_package_filename": "videos/A4-701870d157ce86caaa2abe9a.mp4",
+      "source_sha256": "071a09cd0f6ded3431c1ef2ec2f7db217ec5eea35d5d6a1d771d89c6c120b4ff"
+    },
+    {
+      "reviewer_clip_id": "HR2-C052",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-cf708be7e061db270f3d166a",
+      "source_bytes": 21312,
+      "source_package_filename": "videos/A4-cf708be7e061db270f3d166a.mp4",
+      "source_sha256": "6158e2930c10a3a8de8318a177b7f100bb5c7ab42e9d88dc5f4e1ec71c31ee00"
+    },
+    {
+      "reviewer_clip_id": "HR2-C053",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-586d1ea3a5fb1577f213c5d6",
+      "source_bytes": 24086,
+      "source_package_filename": "videos/A4-586d1ea3a5fb1577f213c5d6.mp4",
+      "source_sha256": "a648862dcb961fe8a5a6c550b467d60276ec67a4051e08bf74bb83394e3d3316"
+    },
+    {
+      "reviewer_clip_id": "HR2-C054",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-c75754d01544eb51f65a6335",
+      "source_bytes": 21954,
+      "source_package_filename": "videos/A4-c75754d01544eb51f65a6335.mp4",
+      "source_sha256": "57049167edf804f7e4f5033351d3b882b5244fdc5911a922952aa0f52064fcd5"
+    },
+    {
+      "reviewer_clip_id": "HR2-C055",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-a0561b2c2dba2d29602f4638",
+      "source_bytes": 21674,
+      "source_package_filename": "videos/A4-a0561b2c2dba2d29602f4638.mp4",
+      "source_sha256": "c450c2e13e9c01fb03b74710858fdbe9495493982f44f4d85067279c2502849f"
+    },
+    {
+      "reviewer_clip_id": "HR2-C056",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-bc354e30501d5221e24706d7",
+      "source_bytes": 19498,
+      "source_package_filename": "videos/A4-bc354e30501d5221e24706d7.mp4",
+      "source_sha256": "b05e6f517b348c6876d465a99cf52a1b2320b88cd1d0bd999d46ba283af1c803"
+    },
+    {
+      "reviewer_clip_id": "HR2-C057",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-85b1fe760d67a95f6d30799f",
+      "source_bytes": 19229,
+      "source_package_filename": "videos/A4-85b1fe760d67a95f6d30799f.mp4",
+      "source_sha256": "34af54cb779726f0cabf0c7a66e9aa65f4ee19bd4a48e34d069cc9616086538e"
+    },
+    {
+      "reviewer_clip_id": "HR2-C058",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-07af196c733562c32296b855",
+      "source_bytes": 19579,
+      "source_package_filename": "videos/A4-07af196c733562c32296b855.mp4",
+      "source_sha256": "6555851d0e6c2fc55b4ce565516c4fd60266636921d58c3d2d7655528fc4201e"
+    },
+    {
+      "reviewer_clip_id": "HR2-C059",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-159e7d8fa3abe3253bd35060",
+      "source_bytes": 21576,
+      "source_package_filename": "videos/A4-159e7d8fa3abe3253bd35060.mp4",
+      "source_sha256": "dc357fed681e4bab105138a6b02e4e0cfa683441abe4ba83d6b4196c9fcef20c"
+    },
+    {
+      "reviewer_clip_id": "HR2-C060",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-5a5674737a679f3ce8b731a1",
+      "source_bytes": 26045,
+      "source_package_filename": "videos/A4-5a5674737a679f3ce8b731a1.mp4",
+      "source_sha256": "e59a594c2c59858c5745da3ec4ceff9ff9a424a940d7cdf6d1fa3ea8c35047b1"
+    },
+    {
+      "reviewer_clip_id": "HR2-C061",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-bac987774bd0443578701921",
+      "source_bytes": 21937,
+      "source_package_filename": "videos/A4-bac987774bd0443578701921.mp4",
+      "source_sha256": "a9a94c43d3cb080940641e8466e1f730d186814bbfdf1749e7709ee9ffd0635e"
+    },
+    {
+      "reviewer_clip_id": "HR2-C062",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-68618bc75f72acb25c744766",
+      "source_bytes": 21709,
+      "source_package_filename": "videos/A4-68618bc75f72acb25c744766.mp4",
+      "source_sha256": "158e90cd8aaf5df0a1d74625de26091ac94df106e8ca8bbff195b2f251c5bb39"
+    },
+    {
+      "reviewer_clip_id": "HR2-C063",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-c61eb0b35777644e391e6d98",
+      "source_bytes": 21032,
+      "source_package_filename": "videos/A4-c61eb0b35777644e391e6d98.mp4",
+      "source_sha256": "0928373ce921f7125ba14638fb52d4a3e307b8229524c0f588e82070510b5833"
+    },
+    {
+      "reviewer_clip_id": "HR2-C064",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-bebf91a869dff3cf9132b673",
+      "source_bytes": 21286,
+      "source_package_filename": "videos/A4-bebf91a869dff3cf9132b673.mp4",
+      "source_sha256": "a4172af15938afcda52855417bed94bcf58f7c06f43fe2bc8c92111060e9f0b1"
+    },
+    {
+      "reviewer_clip_id": "HR2-C065",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-8fca39b31a9c428b79c9211b",
+      "source_bytes": 22415,
+      "source_package_filename": "videos/A4-8fca39b31a9c428b79c9211b.mp4",
+      "source_sha256": "a16893b8a96d9a6e37d70b6c559d2e0e40948046ca56ed3ff7da0346175c4109"
+    },
+    {
+      "reviewer_clip_id": "HR2-C066",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-0474bac4273e44e06eaac848",
+      "source_bytes": 26622,
+      "source_package_filename": "videos/A4-0474bac4273e44e06eaac848.mp4",
+      "source_sha256": "382384e0583299999446ccc4324811d0ac91f98ef496bc401cd199e0d7946d8e"
+    },
+    {
+      "reviewer_clip_id": "HR2-C067",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-aeed0005f821d7179e34e18c",
+      "source_bytes": 20053,
+      "source_package_filename": "videos/A4-aeed0005f821d7179e34e18c.mp4",
+      "source_sha256": "ae6b7c897a95dbb00e761e27d3ec6039bfe34e39ebc3626cde186d84c7771561"
+    },
+    {
+      "reviewer_clip_id": "HR2-C068",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-6db7c4badfeca919ff3ad2b7",
+      "source_bytes": 19773,
+      "source_package_filename": "videos/A4-6db7c4badfeca919ff3ad2b7.mp4",
+      "source_sha256": "5dc048f8f1cb75259ee2b3bc76fff0c5e8f1e81d651115c62b7e489d89012a30"
+    },
+    {
+      "reviewer_clip_id": "HR2-C069",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-ce7195076098c5a0f6a5e84c",
+      "source_bytes": 24736,
+      "source_package_filename": "videos/A4-ce7195076098c5a0f6a5e84c.mp4",
+      "source_sha256": "5619ea24dab3b88f7893183aac8d3b9caf3145d19c1427ee019580a04a72463a"
+    },
+    {
+      "reviewer_clip_id": "HR2-C070",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-5a0c4c42e8a3fd1a6eb0bc7f",
+      "source_bytes": 20666,
+      "source_package_filename": "videos/A4-5a0c4c42e8a3fd1a6eb0bc7f.mp4",
+      "source_sha256": "86c324602ee83cc7de4812b31eeb142c0e517dffc0e1df91557c6b3872facef6"
+    },
+    {
+      "reviewer_clip_id": "HR2-C071",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-2cdd949df512f7e3220d5344",
+      "source_bytes": 23885,
+      "source_package_filename": "videos/A4-2cdd949df512f7e3220d5344.mp4",
+      "source_sha256": "4994f95221ab348d37abd62b6344a3cd04eb5a126645589cf4a8fe5aea544f3f"
+    },
+    {
+      "reviewer_clip_id": "HR2-C072",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-10fa433c4c697104b9c22863",
+      "source_bytes": 24754,
+      "source_package_filename": "videos/A4-10fa433c4c697104b9c22863.mp4",
+      "source_sha256": "bac9c83680ca4b6f473ad62110e475284a8a259c26af56769151b09599255cdf"
+    },
+    {
+      "reviewer_clip_id": "HR2-C073",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-da56672a07556c09349baf0e",
+      "source_bytes": 24325,
+      "source_package_filename": "videos/A4-da56672a07556c09349baf0e.mp4",
+      "source_sha256": "648d2ab53fa3b3508d9f6b18d8a6a6057ce90bdb1d4c1acbe626b3eaa3c1ccde"
+    },
+    {
+      "reviewer_clip_id": "HR2-C074",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-b1c29c3462ef3e0acff2adf6",
+      "source_bytes": 19315,
+      "source_package_filename": "videos/A4-b1c29c3462ef3e0acff2adf6.mp4",
+      "source_sha256": "d081e0fd21eb475a6a400f83de317620da53aedae5b3b71d7f4aa41670f2b78a"
+    },
+    {
+      "reviewer_clip_id": "HR2-C075",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-3fa2e975eb60ba21f4d08709",
+      "source_bytes": 20849,
+      "source_package_filename": "videos/A4-3fa2e975eb60ba21f4d08709.mp4",
+      "source_sha256": "7e6972c267f327d212930fd1b4ae95c0c2110a9bb3917bde9bf7f80f1f4d10b1"
+    },
+    {
+      "reviewer_clip_id": "HR2-C076",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-0d561dd0ced669f27353c8df",
+      "source_bytes": 23096,
+      "source_package_filename": "videos/A4-0d561dd0ced669f27353c8df.mp4",
+      "source_sha256": "0595487ed0e1447fa30baa6bb57dc63f488f879751d66992dacc8d9fef837d15"
+    },
+    {
+      "reviewer_clip_id": "HR2-C077",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-44c493074a8b9dc2cf9c619c",
+      "source_bytes": 21173,
+      "source_package_filename": "videos/A4-44c493074a8b9dc2cf9c619c.mp4",
+      "source_sha256": "7dba0eefd7384adbe43347b5533b7f840046f5b1e2a55e0c7d0c742f9f0511cf"
+    },
+    {
+      "reviewer_clip_id": "HR2-C078",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-33b5ff9adc75a6c776095fee",
+      "source_bytes": 19745,
+      "source_package_filename": "videos/A4-33b5ff9adc75a6c776095fee.mp4",
+      "source_sha256": "77711bbf393f5cd664d1ef122e582556ce43966f7f931559cc95a1311337da4a"
+    },
+    {
+      "reviewer_clip_id": "HR2-C079",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-6de3ec9d7153998600e26306",
+      "source_bytes": 19968,
+      "source_package_filename": "videos/A4-6de3ec9d7153998600e26306.mp4",
+      "source_sha256": "5970876f4e27184bac838c09fe070042a75ad3a64ded4669d044a4dbb9173dd0"
+    },
+    {
+      "reviewer_clip_id": "HR2-C080",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-04164bee1bbcffd4086eec1d",
+      "source_bytes": 16336,
+      "source_package_filename": "videos/A4-04164bee1bbcffd4086eec1d.mp4",
+      "source_sha256": "add82ee5c94002173c6da51fbb120519a6a2ed06e9ad6e6def2bc834a2db324e"
+    },
+    {
+      "reviewer_clip_id": "HR2-C081",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-b66f5735b18fb02e6542a612",
+      "source_bytes": 22129,
+      "source_package_filename": "videos/A4-b66f5735b18fb02e6542a612.mp4",
+      "source_sha256": "6b12b51fc75dda0d3ecb367e664cd6da48d38f61d6daa66d9c7eb172b0800312"
+    },
+    {
+      "reviewer_clip_id": "HR2-C082",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-8f41106dba2ce87b51d041fb",
+      "source_bytes": 20394,
+      "source_package_filename": "videos/A4-8f41106dba2ce87b51d041fb.mp4",
+      "source_sha256": "1c644c2333ce39295e9669873ae47dc9e278a153d4952d1e6a0bdd67b6393807"
+    },
+    {
+      "reviewer_clip_id": "HR2-C083",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-8cc952e3fb17d4ade43d9748",
+      "source_bytes": 20035,
+      "source_package_filename": "videos/A4-8cc952e3fb17d4ade43d9748.mp4",
+      "source_sha256": "17271b7b9bd27a328e28c15c0bf40ecc1b5d8eccbfe19540334661ec5eb1d365"
+    },
+    {
+      "reviewer_clip_id": "HR2-C084",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-9a8a33e4b39c82b5f772dc79",
+      "source_bytes": 24197,
+      "source_package_filename": "videos/A4-9a8a33e4b39c82b5f772dc79.mp4",
+      "source_sha256": "26bfeec1b212ceeb7033ebaa532c42c436f384566ec30492cf9777f768f714e6"
+    },
+    {
+      "reviewer_clip_id": "HR2-C085",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-2d887a6cce83796be23f25cf",
+      "source_bytes": 20882,
+      "source_package_filename": "videos/A4-2d887a6cce83796be23f25cf.mp4",
+      "source_sha256": "6134853f92eec4989b64c73658aa53d311a12aac08275d64cd6fd799271bbee4"
+    },
+    {
+      "reviewer_clip_id": "HR2-C086",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-41168b63eb6f7910d9beb0bd",
+      "source_bytes": 23711,
+      "source_package_filename": "videos/A4-41168b63eb6f7910d9beb0bd.mp4",
+      "source_sha256": "fbf502bea8316136b15035a02eff4a1feb4f1758b0f656d47c5555760eca2975"
+    },
+    {
+      "reviewer_clip_id": "HR2-C087",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-ef9c123d145fa514107f58af",
+      "source_bytes": 27551,
+      "source_package_filename": "videos/A4-ef9c123d145fa514107f58af.mp4",
+      "source_sha256": "e4b4591cb2cd45afcaa037efdf9d280f377dd9e8c99c3e85335d94efdb8c3f0c"
+    },
+    {
+      "reviewer_clip_id": "HR2-C088",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-6454034d73044e41404c81b9",
+      "source_bytes": 21643,
+      "source_package_filename": "videos/A4-6454034d73044e41404c81b9.mp4",
+      "source_sha256": "24571b729e1b3f6c97d080a231994e24987f8b834e7d893ad3309bc27ee193e9"
+    },
+    {
+      "reviewer_clip_id": "HR2-C089",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-e085245903a2a1739c4b8f2a",
+      "source_bytes": 20783,
+      "source_package_filename": "videos/A4-e085245903a2a1739c4b8f2a.mp4",
+      "source_sha256": "2be91934210e2043efd82cf6ad3f670158916323043e9d4c94a07fe83d905b79"
+    },
+    {
+      "reviewer_clip_id": "HR2-C090",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-a04b8276b47138892e59ac44",
+      "source_bytes": 19427,
+      "source_package_filename": "videos/A4-a04b8276b47138892e59ac44.mp4",
+      "source_sha256": "7a82cb9e580849c325a363d8d58cd1b8aa0a762aee890ce2098b413d3dad912a"
+    },
+    {
+      "reviewer_clip_id": "HR2-C091",
+      "reviewer_id": "HR2",
+      "source_ac4_blinded_video_id": "A4-d6f758695ac59af66b85312f",
+      "source_bytes": 21572,
+      "source_package_filename": "videos/A4-d6f758695ac59af66b85312f.mp4",
+      "source_sha256": "8a89e463fd3bc718a25d798766f41120d9c1dba548b2fdf0ee8f6e4cbeb0375b"
+    },
+    {
+      "reviewer_clip_id": "HR3-C001",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-aeed0005f821d7179e34e18c",
+      "source_bytes": 20053,
+      "source_package_filename": "videos/A4-aeed0005f821d7179e34e18c.mp4",
+      "source_sha256": "ae6b7c897a95dbb00e761e27d3ec6039bfe34e39ebc3626cde186d84c7771561"
+    },
+    {
+      "reviewer_clip_id": "HR3-C002",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-c100d2e0b4c227078a34f5fd",
+      "source_bytes": 24931,
+      "source_package_filename": "videos/A4-c100d2e0b4c227078a34f5fd.mp4",
+      "source_sha256": "f063068226e969e2b7bcb384942aa2e6a2d41e0d376736297a39728e3a380743"
+    },
+    {
+      "reviewer_clip_id": "HR3-C003",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-b1c29c3462ef3e0acff2adf6",
+      "source_bytes": 19315,
+      "source_package_filename": "videos/A4-b1c29c3462ef3e0acff2adf6.mp4",
+      "source_sha256": "d081e0fd21eb475a6a400f83de317620da53aedae5b3b71d7f4aa41670f2b78a"
+    },
+    {
+      "reviewer_clip_id": "HR3-C004",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-8fca39b31a9c428b79c9211b",
+      "source_bytes": 22415,
+      "source_package_filename": "videos/A4-8fca39b31a9c428b79c9211b.mp4",
+      "source_sha256": "a16893b8a96d9a6e37d70b6c559d2e0e40948046ca56ed3ff7da0346175c4109"
+    },
+    {
+      "reviewer_clip_id": "HR3-C005",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-9a3c9be9fdb6ea9ca131f66e",
+      "source_bytes": 21722,
+      "source_package_filename": "videos/A4-9a3c9be9fdb6ea9ca131f66e.mp4",
+      "source_sha256": "bd6f1d0e7001a3fbbdf70cf36a0add8d73d9d12f5f302bb045fde5ef83df2068"
+    },
+    {
+      "reviewer_clip_id": "HR3-C006",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-0b9f0a2b262d2d7d8db14641",
+      "source_bytes": 25209,
+      "source_package_filename": "videos/A4-0b9f0a2b262d2d7d8db14641.mp4",
+      "source_sha256": "2e259e68d9fba6d5ba6f0e5f7d4d9b82aa32c9ee763e16d033d6ce99f6cb1e55"
+    },
+    {
+      "reviewer_clip_id": "HR3-C007",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-371225f6ab6a1aa8dd85d8f4",
+      "source_bytes": 24429,
+      "source_package_filename": "videos/A4-371225f6ab6a1aa8dd85d8f4.mp4",
+      "source_sha256": "a965581fa5f32c5e6984ba3027b6198454e9ef348a1b5dcd56be9730c9bcebf3"
+    },
+    {
+      "reviewer_clip_id": "HR3-C008",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-9a8a33e4b39c82b5f772dc79",
+      "source_bytes": 24197,
+      "source_package_filename": "videos/A4-9a8a33e4b39c82b5f772dc79.mp4",
+      "source_sha256": "26bfeec1b212ceeb7033ebaa532c42c436f384566ec30492cf9777f768f714e6"
+    },
+    {
+      "reviewer_clip_id": "HR3-C009",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-41168b63eb6f7910d9beb0bd",
+      "source_bytes": 23711,
+      "source_package_filename": "videos/A4-41168b63eb6f7910d9beb0bd.mp4",
+      "source_sha256": "fbf502bea8316136b15035a02eff4a1feb4f1758b0f656d47c5555760eca2975"
+    },
+    {
+      "reviewer_clip_id": "HR3-C010",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-e3f7cbc6471ad3b6f7973e0a",
+      "source_bytes": 23012,
+      "source_package_filename": "videos/A4-e3f7cbc6471ad3b6f7973e0a.mp4",
+      "source_sha256": "a5ac5d4a1a914f68201d17f8ecf1146ba34b6ef6bdbe0238d626c90128f3ea4e"
+    },
+    {
+      "reviewer_clip_id": "HR3-C011",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-159e7d8fa3abe3253bd35060",
+      "source_bytes": 21576,
+      "source_package_filename": "videos/A4-159e7d8fa3abe3253bd35060.mp4",
+      "source_sha256": "dc357fed681e4bab105138a6b02e4e0cfa683441abe4ba83d6b4196c9fcef20c"
+    },
+    {
+      "reviewer_clip_id": "HR3-C012",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-e0970623b788e7143f97bc45",
+      "source_bytes": 20659,
+      "source_package_filename": "videos/A4-e0970623b788e7143f97bc45.mp4",
+      "source_sha256": "6df8e7c0d71d332d74d0be1f5aece039023316d0711d44eed5981ef124ca5f90"
+    },
+    {
+      "reviewer_clip_id": "HR3-C013",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-2d887a6cce83796be23f25cf",
+      "source_bytes": 20882,
+      "source_package_filename": "videos/A4-2d887a6cce83796be23f25cf.mp4",
+      "source_sha256": "6134853f92eec4989b64c73658aa53d311a12aac08275d64cd6fd799271bbee4"
+    },
+    {
+      "reviewer_clip_id": "HR3-C014",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-70174c76ca96a7d1b79e5963",
+      "source_bytes": 20756,
+      "source_package_filename": "videos/A4-70174c76ca96a7d1b79e5963.mp4",
+      "source_sha256": "534f03e59f92d4d51fe44184749e95451973d4d8606e7c5128f7467307b1375e"
+    },
+    {
+      "reviewer_clip_id": "HR3-C015",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-d72ccda9038e1928fa756081",
+      "source_bytes": 20074,
+      "source_package_filename": "videos/A4-d72ccda9038e1928fa756081.mp4",
+      "source_sha256": "4119ad2e201ccc16070a3789cf7ef8a3adbc009a4cf8829df83ba5e75bfc7524"
+    },
+    {
+      "reviewer_clip_id": "HR3-C016",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-14c517152bf27f0c942d39df",
+      "source_bytes": 25352,
+      "source_package_filename": "videos/A4-14c517152bf27f0c942d39df.mp4",
+      "source_sha256": "49d17256aeafd89eb7f888fc75ea55a34ffa8cb5862b8a1d557b7e5db668197e"
+    },
+    {
+      "reviewer_clip_id": "HR3-C017",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-5a0c4c42e8a3fd1a6eb0bc7f",
+      "source_bytes": 20666,
+      "source_package_filename": "videos/A4-5a0c4c42e8a3fd1a6eb0bc7f.mp4",
+      "source_sha256": "86c324602ee83cc7de4812b31eeb142c0e517dffc0e1df91557c6b3872facef6"
+    },
+    {
+      "reviewer_clip_id": "HR3-C018",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-80847e94e83bd256c72179be",
+      "source_bytes": 23282,
+      "source_package_filename": "videos/A4-80847e94e83bd256c72179be.mp4",
+      "source_sha256": "46c3f7732ff6e388522ff0bd60c3b1898a1cfdacdd4f8fd9ec3430ca813f4100"
+    },
+    {
+      "reviewer_clip_id": "HR3-C019",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-d6f758695ac59af66b85312f",
+      "source_bytes": 21572,
+      "source_package_filename": "videos/A4-d6f758695ac59af66b85312f.mp4",
+      "source_sha256": "8a89e463fd3bc718a25d798766f41120d9c1dba548b2fdf0ee8f6e4cbeb0375b"
+    },
+    {
+      "reviewer_clip_id": "HR3-C020",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-3cf1a05b492945dd90889d84",
+      "source_bytes": 21404,
+      "source_package_filename": "videos/A4-3cf1a05b492945dd90889d84.mp4",
+      "source_sha256": "8ea42b22299d28fae36050505d4573c1bdb98446fe67b132bb0fc5d1dc11449a"
+    },
+    {
+      "reviewer_clip_id": "HR3-C021",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-59b7ba4dfadbe7df12433653",
+      "source_bytes": 19554,
+      "source_package_filename": "videos/A4-59b7ba4dfadbe7df12433653.mp4",
+      "source_sha256": "9e2a4eb9ad5ad0b7cf3cae1d7d57db57da171ee6b3538ff0a34e59bcc3fb4dba"
+    },
+    {
+      "reviewer_clip_id": "HR3-C022",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-6c4feabbad9b1feafcb69de5",
+      "source_bytes": 19525,
+      "source_package_filename": "videos/A4-6c4feabbad9b1feafcb69de5.mp4",
+      "source_sha256": "5aae0d4bf6adcbeff43ef2771da1c01db452282161e70cad5807fc60104c9bb7"
+    },
+    {
+      "reviewer_clip_id": "HR3-C023",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-d6da1788f93235a5261fbbef",
+      "source_bytes": 14667,
+      "source_package_filename": "videos/A4-d6da1788f93235a5261fbbef.mp4",
+      "source_sha256": "63f4e5344c60c44b7e28e87836f7e439cd6725af00d511299e5196709a2fbe4a"
+    },
+    {
+      "reviewer_clip_id": "HR3-C024",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-bac987774bd0443578701921",
+      "source_bytes": 21937,
+      "source_package_filename": "videos/A4-bac987774bd0443578701921.mp4",
+      "source_sha256": "a9a94c43d3cb080940641e8466e1f730d186814bbfdf1749e7709ee9ffd0635e"
+    },
+    {
+      "reviewer_clip_id": "HR3-C025",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-ec4baa7f44a6395e16255402",
+      "source_bytes": 22802,
+      "source_package_filename": "videos/A4-ec4baa7f44a6395e16255402.mp4",
+      "source_sha256": "6f91127591e74e2305738ee1ddb1970aa81bd3a23030f4538fad7dc982242560"
+    },
+    {
+      "reviewer_clip_id": "HR3-C026",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-6db7c4badfeca919ff3ad2b7",
+      "source_bytes": 19773,
+      "source_package_filename": "videos/A4-6db7c4badfeca919ff3ad2b7.mp4",
+      "source_sha256": "5dc048f8f1cb75259ee2b3bc76fff0c5e8f1e81d651115c62b7e489d89012a30"
+    },
+    {
+      "reviewer_clip_id": "HR3-C027",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-ccf7fdf1611157810c67253e",
+      "source_bytes": 24089,
+      "source_package_filename": "videos/A4-ccf7fdf1611157810c67253e.mp4",
+      "source_sha256": "befdf0dabfe9a59bbacf1a8f547046593267824d895c08befe073596fb8e8eb5"
+    },
+    {
+      "reviewer_clip_id": "HR3-C028",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-44c493074a8b9dc2cf9c619c",
+      "source_bytes": 21173,
+      "source_package_filename": "videos/A4-44c493074a8b9dc2cf9c619c.mp4",
+      "source_sha256": "7dba0eefd7384adbe43347b5533b7f840046f5b1e2a55e0c7d0c742f9f0511cf"
+    },
+    {
+      "reviewer_clip_id": "HR3-C029",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-62cd5b9d129ffd4686084b35",
+      "source_bytes": 23911,
+      "source_package_filename": "videos/A4-62cd5b9d129ffd4686084b35.mp4",
+      "source_sha256": "29a47d57088d5dbd2586913c9f80263a4e9a46e829ddf2f74ae811cfd6c4589f"
+    },
+    {
+      "reviewer_clip_id": "HR3-C030",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-04164bee1bbcffd4086eec1d",
+      "source_bytes": 16336,
+      "source_package_filename": "videos/A4-04164bee1bbcffd4086eec1d.mp4",
+      "source_sha256": "add82ee5c94002173c6da51fbb120519a6a2ed06e9ad6e6def2bc834a2db324e"
+    },
+    {
+      "reviewer_clip_id": "HR3-C031",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-99fa1060b13aeacef950d8d3",
+      "source_bytes": 23670,
+      "source_package_filename": "videos/A4-99fa1060b13aeacef950d8d3.mp4",
+      "source_sha256": "9d23097cea5ccb29b928e8e1020b4e0448db2b4555aef2bb16f1ef884c1423ad"
+    },
+    {
+      "reviewer_clip_id": "HR3-C032",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-d546c7c7bec5fb287318cc0a",
+      "source_bytes": 22527,
+      "source_package_filename": "videos/A4-d546c7c7bec5fb287318cc0a.mp4",
+      "source_sha256": "9920f6a5b4e24beacd1f9d53b66a3701d1a551ed221d1f75f00d4c99ec93606a"
+    },
+    {
+      "reviewer_clip_id": "HR3-C033",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-b40ec1fdecf83fa46af4afa1",
+      "source_bytes": 18549,
+      "source_package_filename": "videos/A4-b40ec1fdecf83fa46af4afa1.mp4",
+      "source_sha256": "4c0c6ff3d2fe8d69fd727c57e01c5a7191d68779d732b50c45e51c2e8e1c9c0a"
+    },
+    {
+      "reviewer_clip_id": "HR3-C034",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-711dbaac7b7b5bb79a5c43aa",
+      "source_bytes": 25557,
+      "source_package_filename": "videos/A4-711dbaac7b7b5bb79a5c43aa.mp4",
+      "source_sha256": "4e721cf1fed0f5a2e3d86a58d54c3f284fe62e63dc68d13bd4032a0faba7d0ad"
+    },
+    {
+      "reviewer_clip_id": "HR3-C035",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-0c03bbc253387e2f8d6c74f4",
+      "source_bytes": 23011,
+      "source_package_filename": "videos/A4-0c03bbc253387e2f8d6c74f4.mp4",
+      "source_sha256": "ec226970cf8cb61d82e47123b48088de57ccd052703c8c195f561f5d95f068d2"
+    },
+    {
+      "reviewer_clip_id": "HR3-C036",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-23557db2a747a762de7b0387",
+      "source_bytes": 18882,
+      "source_package_filename": "videos/A4-23557db2a747a762de7b0387.mp4",
+      "source_sha256": "d63515821c2e7448461964533905f5d062c07d263536ec36e2d658f5147bd386"
+    },
+    {
+      "reviewer_clip_id": "HR3-C037",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-7ae121730b220e92334ade89",
+      "source_bytes": 22703,
+      "source_package_filename": "videos/A4-7ae121730b220e92334ade89.mp4",
+      "source_sha256": "2e37e52e107ddf14464c1248d4537340e3365223fd1fefaaac35dbfdf4b16b5d"
+    },
+    {
+      "reviewer_clip_id": "HR3-C038",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-8f41106dba2ce87b51d041fb",
+      "source_bytes": 20394,
+      "source_package_filename": "videos/A4-8f41106dba2ce87b51d041fb.mp4",
+      "source_sha256": "1c644c2333ce39295e9669873ae47dc9e278a153d4952d1e6a0bdd67b6393807"
+    },
+    {
+      "reviewer_clip_id": "HR3-C039",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-2cdd949df512f7e3220d5344",
+      "source_bytes": 23885,
+      "source_package_filename": "videos/A4-2cdd949df512f7e3220d5344.mp4",
+      "source_sha256": "4994f95221ab348d37abd62b6344a3cd04eb5a126645589cf4a8fe5aea544f3f"
+    },
+    {
+      "reviewer_clip_id": "HR3-C040",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-5a5674737a679f3ce8b731a1",
+      "source_bytes": 26045,
+      "source_package_filename": "videos/A4-5a5674737a679f3ce8b731a1.mp4",
+      "source_sha256": "e59a594c2c59858c5745da3ec4ceff9ff9a424a940d7cdf6d1fa3ea8c35047b1"
+    },
+    {
+      "reviewer_clip_id": "HR3-C041",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-ef9c123d145fa514107f58af",
+      "source_bytes": 27551,
+      "source_package_filename": "videos/A4-ef9c123d145fa514107f58af.mp4",
+      "source_sha256": "e4b4591cb2cd45afcaa037efdf9d280f377dd9e8c99c3e85335d94efdb8c3f0c"
+    },
+    {
+      "reviewer_clip_id": "HR3-C042",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-cf708be7e061db270f3d166a",
+      "source_bytes": 21312,
+      "source_package_filename": "videos/A4-cf708be7e061db270f3d166a.mp4",
+      "source_sha256": "6158e2930c10a3a8de8318a177b7f100bb5c7ab42e9d88dc5f4e1ec71c31ee00"
+    },
+    {
+      "reviewer_clip_id": "HR3-C043",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-afdb2500e34ee76a007cf425",
+      "source_bytes": 17169,
+      "source_package_filename": "videos/A4-afdb2500e34ee76a007cf425.mp4",
+      "source_sha256": "670b6e59314c731766e1346e01a744aa612b5823347bdb7fe9ed4e4df2cd1077"
+    },
+    {
+      "reviewer_clip_id": "HR3-C044",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-7f51b223e9f3d09f45e9aa85",
+      "source_bytes": 20847,
+      "source_package_filename": "videos/A4-7f51b223e9f3d09f45e9aa85.mp4",
+      "source_sha256": "8ffe9a768e825b0e529d94b37946c091c06d22dfe3a9feb1290b9c45545277ea"
+    },
+    {
+      "reviewer_clip_id": "HR3-C045",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-a3fa2ab516212083474cc615",
+      "source_bytes": 14214,
+      "source_package_filename": "videos/A4-a3fa2ab516212083474cc615.mp4",
+      "source_sha256": "6dac9e5cae1a17568cb58e449cce3759b28f0497afdea52375f8b5fda27c2a69"
+    },
+    {
+      "reviewer_clip_id": "HR3-C046",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-586d1ea3a5fb1577f213c5d6",
+      "source_bytes": 24086,
+      "source_package_filename": "videos/A4-586d1ea3a5fb1577f213c5d6.mp4",
+      "source_sha256": "a648862dcb961fe8a5a6c550b467d60276ec67a4051e08bf74bb83394e3d3316"
+    },
+    {
+      "reviewer_clip_id": "HR3-C047",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-be80308ff90a17e8721fc34d",
+      "source_bytes": 22698,
+      "source_package_filename": "videos/A4-be80308ff90a17e8721fc34d.mp4",
+      "source_sha256": "da31b881a45e636c704c78f4e6483570ff67a849b8917c24027361a7f7b72043"
+    },
+    {
+      "reviewer_clip_id": "HR3-C048",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-0474bac4273e44e06eaac848",
+      "source_bytes": 26622,
+      "source_package_filename": "videos/A4-0474bac4273e44e06eaac848.mp4",
+      "source_sha256": "382384e0583299999446ccc4324811d0ac91f98ef496bc401cd199e0d7946d8e"
+    },
+    {
+      "reviewer_clip_id": "HR3-C049",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-e085245903a2a1739c4b8f2a",
+      "source_bytes": 20783,
+      "source_package_filename": "videos/A4-e085245903a2a1739c4b8f2a.mp4",
+      "source_sha256": "2be91934210e2043efd82cf6ad3f670158916323043e9d4c94a07fe83d905b79"
+    },
+    {
+      "reviewer_clip_id": "HR3-C050",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-56c424ee8eec005699ed2d1b",
+      "source_bytes": 19730,
+      "source_package_filename": "videos/A4-56c424ee8eec005699ed2d1b.mp4",
+      "source_sha256": "a9e695c2a93296a772342b396525dc0a7c8732c710e19a4383fb26c2b9fddebc"
+    },
+    {
+      "reviewer_clip_id": "HR3-C051",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-6de3ec9d7153998600e26306",
+      "source_bytes": 19968,
+      "source_package_filename": "videos/A4-6de3ec9d7153998600e26306.mp4",
+      "source_sha256": "5970876f4e27184bac838c09fe070042a75ad3a64ded4669d044a4dbb9173dd0"
+    },
+    {
+      "reviewer_clip_id": "HR3-C052",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-8f80ce2478d48b71d29a8162",
+      "source_bytes": 21890,
+      "source_package_filename": "videos/A4-8f80ce2478d48b71d29a8162.mp4",
+      "source_sha256": "a2adaef5f286e26a5236841c0d1768b5a8eb2ad0ed6fef5bf8c44cdf0d5bedb2"
+    },
+    {
+      "reviewer_clip_id": "HR3-C053",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-85239a8e104f0f21e05d73c3",
+      "source_bytes": 16043,
+      "source_package_filename": "videos/A4-85239a8e104f0f21e05d73c3.mp4",
+      "source_sha256": "578566ce9cf2d3b675d7ca7ff6387e1f1d0bd895b455f396581ddd49a94cf86b"
+    },
+    {
+      "reviewer_clip_id": "HR3-C054",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-aa51c7e43b7d038a53b09462",
+      "source_bytes": 20707,
+      "source_package_filename": "videos/A4-aa51c7e43b7d038a53b09462.mp4",
+      "source_sha256": "687ae00a11a55e1789e55b95cd83274bd70ae7a3a9f5677a3c650262e12b05e8"
+    },
+    {
+      "reviewer_clip_id": "HR3-C055",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-a04b8276b47138892e59ac44",
+      "source_bytes": 19427,
+      "source_package_filename": "videos/A4-a04b8276b47138892e59ac44.mp4",
+      "source_sha256": "7a82cb9e580849c325a363d8d58cd1b8aa0a762aee890ce2098b413d3dad912a"
+    },
+    {
+      "reviewer_clip_id": "HR3-C056",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-2b89a3d61467858cafb486d0",
+      "source_bytes": 23442,
+      "source_package_filename": "videos/A4-2b89a3d61467858cafb486d0.mp4",
+      "source_sha256": "7617f02cd63903ea065e142f9557525f3a54494eca04b4b235745377280990d0"
+    },
+    {
+      "reviewer_clip_id": "HR3-C057",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-f1b85898a9900eef29bae1c7",
+      "source_bytes": 21886,
+      "source_package_filename": "videos/A4-f1b85898a9900eef29bae1c7.mp4",
+      "source_sha256": "1c8813e2647933a3303bd5aa0d49b147feb56d3a87fc682489006c4306b9d493"
+    },
+    {
+      "reviewer_clip_id": "HR3-C058",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-5313e315ef035cfba148b57a",
+      "source_bytes": 19009,
+      "source_package_filename": "videos/A4-5313e315ef035cfba148b57a.mp4",
+      "source_sha256": "991a13ba0102bd7a1c1ddd35470d7e73c87aff09535b64d6020391952b635441"
+    },
+    {
+      "reviewer_clip_id": "HR3-C059",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-3fa2e975eb60ba21f4d08709",
+      "source_bytes": 20849,
+      "source_package_filename": "videos/A4-3fa2e975eb60ba21f4d08709.mp4",
+      "source_sha256": "7e6972c267f327d212930fd1b4ae95c0c2110a9bb3917bde9bf7f80f1f4d10b1"
+    },
+    {
+      "reviewer_clip_id": "HR3-C060",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-c75754d01544eb51f65a6335",
+      "source_bytes": 21954,
+      "source_package_filename": "videos/A4-c75754d01544eb51f65a6335.mp4",
+      "source_sha256": "57049167edf804f7e4f5033351d3b882b5244fdc5911a922952aa0f52064fcd5"
+    },
+    {
+      "reviewer_clip_id": "HR3-C061",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-f903474e520c9af18c7a20f2",
+      "source_bytes": 17735,
+      "source_package_filename": "videos/A4-f903474e520c9af18c7a20f2.mp4",
+      "source_sha256": "0f719885b38ad3097faf90cfbff39e094bbf9dc3cd4046002109dd2b8c71ba1b"
+    },
+    {
+      "reviewer_clip_id": "HR3-C062",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-bce7d8567d1376490ea0fc6a",
+      "source_bytes": 23670,
+      "source_package_filename": "videos/A4-bce7d8567d1376490ea0fc6a.mp4",
+      "source_sha256": "96b67597b37629965bda6598bfe8d585874f6f66a1afc3b89bc6411c5dbd7c91"
+    },
+    {
+      "reviewer_clip_id": "HR3-C063",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-33b5ff9adc75a6c776095fee",
+      "source_bytes": 19745,
+      "source_package_filename": "videos/A4-33b5ff9adc75a6c776095fee.mp4",
+      "source_sha256": "77711bbf393f5cd664d1ef122e582556ce43966f7f931559cc95a1311337da4a"
+    },
+    {
+      "reviewer_clip_id": "HR3-C064",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-bebf91a869dff3cf9132b673",
+      "source_bytes": 21286,
+      "source_package_filename": "videos/A4-bebf91a869dff3cf9132b673.mp4",
+      "source_sha256": "a4172af15938afcda52855417bed94bcf58f7c06f43fe2bc8c92111060e9f0b1"
+    },
+    {
+      "reviewer_clip_id": "HR3-C065",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-0d561dd0ced669f27353c8df",
+      "source_bytes": 23096,
+      "source_package_filename": "videos/A4-0d561dd0ced669f27353c8df.mp4",
+      "source_sha256": "0595487ed0e1447fa30baa6bb57dc63f488f879751d66992dacc8d9fef837d15"
+    },
+    {
+      "reviewer_clip_id": "HR3-C066",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-9de1fed613fc2b8d116c73fc",
+      "source_bytes": 23244,
+      "source_package_filename": "videos/A4-9de1fed613fc2b8d116c73fc.mp4",
+      "source_sha256": "23f19b4afb4288e4c0dbb23aeec86de10e498c8fa4be0718c2f7786a62f13cbc"
+    },
+    {
+      "reviewer_clip_id": "HR3-C067",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-07af196c733562c32296b855",
+      "source_bytes": 19579,
+      "source_package_filename": "videos/A4-07af196c733562c32296b855.mp4",
+      "source_sha256": "6555851d0e6c2fc55b4ce565516c4fd60266636921d58c3d2d7655528fc4201e"
+    },
+    {
+      "reviewer_clip_id": "HR3-C068",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-1a7b3fae66acaa9271909568",
+      "source_bytes": 21010,
+      "source_package_filename": "videos/A4-1a7b3fae66acaa9271909568.mp4",
+      "source_sha256": "8f25b559f6ea62a3522b72ec6cb71d520c4ebfb6cbd390eeebec12089b894438"
+    },
+    {
+      "reviewer_clip_id": "HR3-C069",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-e03bfa4807f3069223e6d573",
+      "source_bytes": 25663,
+      "source_package_filename": "videos/A4-e03bfa4807f3069223e6d573.mp4",
+      "source_sha256": "a7c7b06b1dc7a4e0f07b463a7fd71928bbf957ed1a204a453dad9dec1536a89a"
+    },
+    {
+      "reviewer_clip_id": "HR3-C070",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-1c54f8f807d3fd34294f51c4",
+      "source_bytes": 23967,
+      "source_package_filename": "videos/A4-1c54f8f807d3fd34294f51c4.mp4",
+      "source_sha256": "b621866e398ef570bccc894bc40e1c275ef6e43a7e604aa0a31cfa3b4e6ad9bb"
+    },
+    {
+      "reviewer_clip_id": "HR3-C071",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-348cdc95ad6ca1037451ad89",
+      "source_bytes": 21716,
+      "source_package_filename": "videos/A4-348cdc95ad6ca1037451ad89.mp4",
+      "source_sha256": "cdb4a9f20ede735f97ab091d80731da8b2e5985e786f008b82047be22c5e7ad8"
+    },
+    {
+      "reviewer_clip_id": "HR3-C072",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-070354e1b9b523ce64da755a",
+      "source_bytes": 24878,
+      "source_package_filename": "videos/A4-070354e1b9b523ce64da755a.mp4",
+      "source_sha256": "3ca0bfa412abba44c72e9f96c8c322527ad3203fa7654a6fbb8bc846af2e1c55"
+    },
+    {
+      "reviewer_clip_id": "HR3-C073",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-b66f5735b18fb02e6542a612",
+      "source_bytes": 22129,
+      "source_package_filename": "videos/A4-b66f5735b18fb02e6542a612.mp4",
+      "source_sha256": "6b12b51fc75dda0d3ecb367e664cd6da48d38f61d6daa66d9c7eb172b0800312"
+    },
+    {
+      "reviewer_clip_id": "HR3-C074",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-ce7195076098c5a0f6a5e84c",
+      "source_bytes": 24736,
+      "source_package_filename": "videos/A4-ce7195076098c5a0f6a5e84c.mp4",
+      "source_sha256": "5619ea24dab3b88f7893183aac8d3b9caf3145d19c1427ee019580a04a72463a"
+    },
+    {
+      "reviewer_clip_id": "HR3-C075",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-9492656b51acceb698860505",
+      "source_bytes": 20966,
+      "source_package_filename": "videos/A4-9492656b51acceb698860505.mp4",
+      "source_sha256": "c2600be1919b9e07210751c26e7e6c4a8cf8fdd1a24481a49cd11c08ced351ab"
+    },
+    {
+      "reviewer_clip_id": "HR3-C076",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-cd73dc7704002ef35c5055d8",
+      "source_bytes": 27254,
+      "source_package_filename": "videos/A4-cd73dc7704002ef35c5055d8.mp4",
+      "source_sha256": "5a2b753ee462db0ce655bf95ba48d1a155ecb5e156e8c73195e84b34fb2c0d02"
+    },
+    {
+      "reviewer_clip_id": "HR3-C077",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-da56672a07556c09349baf0e",
+      "source_bytes": 24325,
+      "source_package_filename": "videos/A4-da56672a07556c09349baf0e.mp4",
+      "source_sha256": "648d2ab53fa3b3508d9f6b18d8a6a6057ce90bdb1d4c1acbe626b3eaa3c1ccde"
+    },
+    {
+      "reviewer_clip_id": "HR3-C078",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-baf7eeb2a878a3f5569e03a1",
+      "source_bytes": 20439,
+      "source_package_filename": "videos/A4-baf7eeb2a878a3f5569e03a1.mp4",
+      "source_sha256": "36718d3516ba98e1d8613bd25364552c84c64804b94d22031a75b003b6036873"
+    },
+    {
+      "reviewer_clip_id": "HR3-C079",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-62f3ea88e22bcae670007a66",
+      "source_bytes": 24331,
+      "source_package_filename": "videos/A4-62f3ea88e22bcae670007a66.mp4",
+      "source_sha256": "cbe8374d7ec64d0f287c7f4f34395c0bd6cf738c1eb7c1781c373228ff45116b"
+    },
+    {
+      "reviewer_clip_id": "HR3-C080",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-68618bc75f72acb25c744766",
+      "source_bytes": 21709,
+      "source_package_filename": "videos/A4-68618bc75f72acb25c744766.mp4",
+      "source_sha256": "158e90cd8aaf5df0a1d74625de26091ac94df106e8ca8bbff195b2f251c5bb39"
+    },
+    {
+      "reviewer_clip_id": "HR3-C081",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-ca6a461b62d90070cad00af6",
+      "source_bytes": 19139,
+      "source_package_filename": "videos/A4-ca6a461b62d90070cad00af6.mp4",
+      "source_sha256": "3ccf40696b8e800090c1dd07b8d226d2365216c4a9d12a90a579453bc304d191"
+    },
+    {
+      "reviewer_clip_id": "HR3-C082",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-c61eb0b35777644e391e6d98",
+      "source_bytes": 21032,
+      "source_package_filename": "videos/A4-c61eb0b35777644e391e6d98.mp4",
+      "source_sha256": "0928373ce921f7125ba14638fb52d4a3e307b8229524c0f588e82070510b5833"
+    },
+    {
+      "reviewer_clip_id": "HR3-C083",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-1782c9f823a5cab9570ef087",
+      "source_bytes": 19819,
+      "source_package_filename": "videos/A4-1782c9f823a5cab9570ef087.mp4",
+      "source_sha256": "7174054ae88c81818a5f6df4cc237694f4972f66cdad0d47b202dfe7cb06ce09"
+    },
+    {
+      "reviewer_clip_id": "HR3-C084",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-85b1fe760d67a95f6d30799f",
+      "source_bytes": 19229,
+      "source_package_filename": "videos/A4-85b1fe760d67a95f6d30799f.mp4",
+      "source_sha256": "34af54cb779726f0cabf0c7a66e9aa65f4ee19bd4a48e34d069cc9616086538e"
+    },
+    {
+      "reviewer_clip_id": "HR3-C085",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-6454034d73044e41404c81b9",
+      "source_bytes": 21643,
+      "source_package_filename": "videos/A4-6454034d73044e41404c81b9.mp4",
+      "source_sha256": "24571b729e1b3f6c97d080a231994e24987f8b834e7d893ad3309bc27ee193e9"
+    },
+    {
+      "reviewer_clip_id": "HR3-C086",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-bc354e30501d5221e24706d7",
+      "source_bytes": 19498,
+      "source_package_filename": "videos/A4-bc354e30501d5221e24706d7.mp4",
+      "source_sha256": "b05e6f517b348c6876d465a99cf52a1b2320b88cd1d0bd999d46ba283af1c803"
+    },
+    {
+      "reviewer_clip_id": "HR3-C087",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-ef2d7f1e79754ccc7719220d",
+      "source_bytes": 22761,
+      "source_package_filename": "videos/A4-ef2d7f1e79754ccc7719220d.mp4",
+      "source_sha256": "0ac666d0073f26bbeef960d241c5e091370ed77a6ae5ea83c7e369ec603a92da"
+    },
+    {
+      "reviewer_clip_id": "HR3-C088",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-10fa433c4c697104b9c22863",
+      "source_bytes": 24754,
+      "source_package_filename": "videos/A4-10fa433c4c697104b9c22863.mp4",
+      "source_sha256": "bac9c83680ca4b6f473ad62110e475284a8a259c26af56769151b09599255cdf"
+    },
+    {
+      "reviewer_clip_id": "HR3-C089",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-8cc952e3fb17d4ade43d9748",
+      "source_bytes": 20035,
+      "source_package_filename": "videos/A4-8cc952e3fb17d4ade43d9748.mp4",
+      "source_sha256": "17271b7b9bd27a328e28c15c0bf40ecc1b5d8eccbfe19540334661ec5eb1d365"
+    },
+    {
+      "reviewer_clip_id": "HR3-C090",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-701870d157ce86caaa2abe9a",
+      "source_bytes": 22874,
+      "source_package_filename": "videos/A4-701870d157ce86caaa2abe9a.mp4",
+      "source_sha256": "071a09cd0f6ded3431c1ef2ec2f7db217ec5eea35d5d6a1d771d89c6c120b4ff"
+    },
+    {
+      "reviewer_clip_id": "HR3-C091",
+      "reviewer_id": "HR3",
+      "source_ac4_blinded_video_id": "A4-a0561b2c2dba2d29602f4638",
+      "source_bytes": 21674,
+      "source_package_filename": "videos/A4-a0561b2c2dba2d29602f4638.mp4",
+      "source_sha256": "c450c2e13e9c01fb03b74710858fdbe9495493982f44f4d85067279c2502849f"
+    }
+  ],
+  "schema": "STAGE_AE_HUMAN_BLIND_MAPPING_V2",
+  "sealed_before_human_labeling": true,
+  "source_ac4_manifest": {
+    "bytes": 34927,
+    "path": "reports/STAGE_AC_AC4_NEUTRAL_BLIND_MANIFEST_V1.json",
+    "sha256": "1b1a0aa3d24bf6aa2e21e83eda2a35b3a4751bd27963c1e4ab8ba5fe712e2c8f"
+  },
+  "source_ac4_package": {
+    "bytes": 1945579,
+    "path": "STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_V1.zip",
+    "sha256": "0bab4b174942baced11e75d83b913154deedc1c68883a87996df57d6f8f65dfe"
+  },
+  "source_ac4_package_seal": {
+    "bytes": 899,
+    "path": "reports/STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_SEAL_V1.json",
+    "sha256": "41e938a3eca1d3ce1ca277b059a7a879d05924eaba8c12fe31ec44d8f899877f"
+  },
+  "status": "SEALED_PRIVATE_NOT_FOR_REVIEWER",
+  "v1_artifacts_immutable": true
+}

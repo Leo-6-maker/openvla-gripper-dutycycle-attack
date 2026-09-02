@@ -1,0 +1,170 @@
+{
+  "artifacts": {
+    "configs/STAGE_AE_HUMAN_BLINDED_ENDPOINT_OBSERVABILITY_PROTOCOL_V2.json": {
+      "bytes": 4580,
+      "path": "configs/STAGE_AE_HUMAN_BLINDED_ENDPOINT_OBSERVABILITY_PROTOCOL_V2.json",
+      "sha256": "337c9bfc194964a505eba541fbcc651c6d0eeaa3ddb09f4a31d2cf4f19a32727"
+    },
+    "docs/handoffs/STAGE_AE_HUMAN_REVIEWER_INSTRUCTIONS_V2.md": {
+      "bytes": 1910,
+      "path": "docs/handoffs/STAGE_AE_HUMAN_REVIEWER_INSTRUCTIONS_V2.md",
+      "sha256": "026dcd56dd82dbf1bed190fa58c6b6c38cb8062810dd529ecd9c7bcdbf1ce660"
+    },
+    "docs/handoffs/STAGE_AE_HUMAN_REVIEWER_RUBRIC_V2.txt": {
+      "bytes": 3907,
+      "path": "docs/handoffs/STAGE_AE_HUMAN_REVIEWER_RUBRIC_V2.txt",
+      "sha256": "5b9407265e19b2fa4909a8c166f4f6aa5beacce2917a98543c028867279eee18"
+    },
+    "docs/handoffs/STAGE_AE_HUMAN_REVIEW_ETHICS_CHECKLIST_V1.md": {
+      "bytes": 835,
+      "path": "docs/handoffs/STAGE_AE_HUMAN_REVIEW_ETHICS_CHECKLIST_V1.md",
+      "sha256": "1b63f57ad3adcdb2c1ea1daa006fc28d060a2bcca17062175660affaaf5d1775"
+    },
+    "docs/handoffs/STAGE_AE_HUMAN_REVIEW_LABEL_SCHEMA_V2.csv": {
+      "bytes": 70,
+      "path": "docs/handoffs/STAGE_AE_HUMAN_REVIEW_LABEL_SCHEMA_V2.csv",
+      "sha256": "a6b50372c69585ce54926864750f68f6ba98a47d28c6541c2e09f16f26527617"
+    },
+    "reports/STAGE_AE_HUMAN_BLIND_MAPPING_SEAL_V2.json": {
+      "bytes": 2233,
+      "path": "reports/STAGE_AE_HUMAN_BLIND_MAPPING_SEAL_V2.json",
+      "sha256": "de27990453b3d123d25d7ef2826055fc30b138ea61787121ba42e258933a2cfd"
+    },
+    "reports/STAGE_AE_HUMAN_BLIND_MAPPING_V2.json": {
+      "bytes": 94237,
+      "path": "reports/STAGE_AE_HUMAN_BLIND_MAPPING_V2.json",
+      "sha256": "619891ec252bbdd5eec56a3398cc0af2c140db082c3804948680733e586cf73b"
+    },
+    "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V2/HR1_ORDER_MANIFEST_V2.json": {
+      "bytes": 1694,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V2/HR1_ORDER_MANIFEST_V2.json",
+      "sha256": "3788870dd931bd63fd6e03eb52443edbc9855a62eb2dee23841108619b81e8be"
+    },
+    "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V2/HR2_ORDER_MANIFEST_V2.json": {
+      "bytes": 1694,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V2/HR2_ORDER_MANIFEST_V2.json",
+      "sha256": "cd6c2eb697330f51b131309025975109783b971efecfe4f7f48013afff344459"
+    },
+    "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V2/HR3_ORDER_MANIFEST_V2.json": {
+      "bytes": 1694,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_ORDER_MANIFESTS_V2/HR3_ORDER_MANIFEST_V2.json",
+      "sha256": "6d5e62f31c0e471620782891fe12b000ab2bc473945d4096200ec2c1f74bb252"
+    },
+    "reports/STAGE_AE_HUMAN_REVIEW_PACKAGES_V2/stage-ae-human-review-HR1-v2.zip": {
+      "bytes": 1943458,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_PACKAGES_V2/stage-ae-human-review-HR1-v2.zip",
+      "sha256": "7182dd19cd0e3f945332f2976e16f54a91b334a3053d4a2a32f8f0d9bd896419"
+    },
+    "reports/STAGE_AE_HUMAN_REVIEW_PACKAGES_V2/stage-ae-human-review-HR2-v2.zip": {
+      "bytes": 1943462,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_PACKAGES_V2/stage-ae-human-review-HR2-v2.zip",
+      "sha256": "0d318d1f73200d3c5974c6cdca5ef7c1c1b06afc9c95bc4d876004a8279f1734"
+    },
+    "reports/STAGE_AE_HUMAN_REVIEW_PACKAGES_V2/stage-ae-human-review-HR3-v2.zip": {
+      "bytes": 1943457,
+      "path": "reports/STAGE_AE_HUMAN_REVIEW_PACKAGES_V2/stage-ae-human-review-HR3-v2.zip",
+      "sha256": "867cd7cfd154ea1089a6dfc1da1d74c787c46bd3948e1225e01c05c9ba887bd0"
+    },
+    "scripts/stage_ae/build_human_review_packages_v2.py": {
+      "bytes": 12041,
+      "path": "scripts/stage_ae/build_human_review_packages_v2.py",
+      "sha256": "56aa96b53a4d44fee0697d18e9f14c726d4f6ab048f52feb04fbdbaa51d75c0d"
+    },
+    "scripts/stage_ae/reconcile_human_blinded_reviews_v2.py": {
+      "bytes": 20833,
+      "path": "scripts/stage_ae/reconcile_human_blinded_reviews_v2.py",
+      "sha256": "8bcd48a610fff22e4763d379ef5060dba9701981abe527da09541a3b8abe668e"
+    },
+    "scripts/stage_ae/test_reconcile_human_blinded_reviews_v2.py": {
+      "bytes": 9074,
+      "path": "scripts/stage_ae/test_reconcile_human_blinded_reviews_v2.py",
+      "sha256": "44e58d39f6f1e701fd5d4d3339a6bc6f5120cefb1a509f30bbb0f365bed19fe4"
+    }
+  },
+  "firewall": {
+    "denominator_modification": 0,
+    "human_label_read": 0,
+    "new_env_step": 0,
+    "new_identity": 0,
+    "new_model_inference": 0,
+    "new_open_intervention": 0,
+    "new_pgd": 0,
+    "new_simulator_execution": 0,
+    "protected_or_eval160_read": 0,
+    "relabeling": 0,
+    "unblind_performed": 0
+  },
+  "generated_at_utc": "2026-09-02T14:35:25Z",
+  "path_normalization": {
+    "artifact_paths_use_posix_separators": true,
+    "backslash_paths_present": false
+  },
+  "population": {
+    "fixed_missing": 5,
+    "frozen_slots": 96,
+    "future_label_rows": 273,
+    "present_videos": 91,
+    "replacement": false,
+    "rerender": false,
+    "reviewers": [
+      "HR1",
+      "HR2",
+      "HR3"
+    ],
+    "source_video_bytes_changed": false,
+    "top_up": false
+  },
+  "review_boundary": {
+    "ai_or_synthetic_labels_used": false,
+    "human_labels_exist_in_repo": false,
+    "human_labels_submitted": false,
+    "phase_b_unblind_authorized": false,
+    "technical_note_column": false,
+    "terminal_requires_pi_review": true
+  },
+  "schema": "STAGE_AE_PRE_HUMAN_REVIEW_ROOT_SEAL_V2",
+  "self_hash": "excluded_from_artifact_list_to_avoid_circularity",
+  "source_authority": {
+    "ac4_manifest": {
+      "bytes": 34927,
+      "path": "reports/STAGE_AC_AC4_NEUTRAL_BLIND_MANIFEST_V1.json",
+      "sha256": "1b1a0aa3d24bf6aa2e21e83eda2a35b3a4751bd27963c1e4ab8ba5fe712e2c8f"
+    },
+    "ac4_package_external": {
+      "bytes": 1945579,
+      "path": "STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_V1.zip",
+      "sha256": "0bab4b174942baced11e75d83b913154deedc1c68883a87996df57d6f8f65dfe"
+    },
+    "ac4_package_seal": {
+      "bytes": 899,
+      "path": "reports/STAGE_AC_AC4_NEUTRAL_BLIND_PACKAGE_SEAL_V1.json",
+      "sha256": "41e938a3eca1d3ce1ca277b059a7a879d05924eaba8c12fe31ec44d8f899877f"
+    },
+    "ac4_rubric": {
+      "bytes": 421,
+      "path": "reports/STAGE_AC_AC4_NEUTRAL_BLIND_REVIEW_RUBRIC_V1.txt",
+      "sha256": "6da003f2c7190b0dcab0d838b12906feb99ecd668e1b3bdbd4c0191e39b96025"
+    },
+    "ac4_sample": {
+      "bytes": 34331,
+      "path": "reports/STAGE_AC_AC4_BLIND_AUDIT_SAMPLE_V1.json",
+      "sha256": "9218b50045b814b6afd9778486b036611729783839d5f195feba00d2cd21d62c"
+    },
+    "experiment_commit": "29ace181e2d8125489cb0d62e92f33c87fc62afc",
+    "experiment_tree": "c899166a0cb9884c4ade824b2e7bf997c69430c8"
+  },
+  "status": "STAGE_AE_PRE_HUMAN_REVIEW_PACKAGE_V2_COMPLETE_STOP_FOR_PI",
+  "supersedes": {
+    "v1_artifacts_unchanged": true,
+    "v1_mapping_seal": {
+      "bytes": 2083,
+      "path": "reports/STAGE_AE_HUMAN_BLIND_MAPPING_SEAL_V1.json",
+      "sha256": "262f247f5a7b7ee72eb8f68d4e53ffd0974c41d03035b836ccff285f5c890ee7"
+    },
+    "v1_root_seal": {
+      "bytes": 6520,
+      "path": "reports/STAGE_AE_PRE_HUMAN_REVIEW_ROOT_SEAL_V1.json",
+      "sha256": "f32b093b92ca5732a6f1758f8a4d0629c9c2686576a8d8e0f5cb06a05925b315"
+    }
+  }
+}
